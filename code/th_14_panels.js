@@ -914,13 +914,33 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxBtnGap2.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
     shortxQuickRow.addView(shortxBtnGap2);
 
-    var btnClearShortXIcon = self.ui.createFlatButton(self, "清空", subTextColor, function() {
+    var btnClearShortXIcon = self.ui.createFlatButton(self, "\u6e05\u7a7a", subTextColor, function() {
         self.touchActivity();
         currentShortXIconName = "";
         updateShortXIconPreview();
     });
     shortxPickerState.clearBtn = btnClearShortXIcon;
     shortxQuickRow.addView(btnClearShortXIcon);
+
+    var shortxBtnGap3 = new android.view.View(context);
+    shortxBtnGap3.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
+    shortxQuickRow.addView(shortxBtnGap3);
+
+    var btnColorShortX = self.ui.createFlatButton(self, "\u989c\u8272", C.primary, function() {
+        self.touchActivity();
+        var currentTint = (inputShortXIconTint && inputShortXIconTint.input) ? String(inputShortXIconTint.input.getText() || "") : "";
+        self.showColorPickerPopup({
+            currentColor: currentTint,
+            currentIconName: currentShortXIconName,
+            onSelect: function(colorHex) {
+                if (inputShortXIconTint && inputShortXIconTint.input) {
+                    inputShortXIconTint.input.setText(colorHex);
+                }
+                try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(colorHex || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
+            }
+        });
+    });
+    shortxQuickRow.addView(btnColorShortX);
 
     var shortxPickerWrap = new android.widget.LinearLayout(context);
     shortxPickerWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -1449,8 +1469,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPaletteWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
     tintPaletteWrap.setPadding(0, 0, 0, self.dp(12));
     tintPaletteWrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.92), self.dp(14)));
-    // [Popup] tint palette moved to showColorPickerPopup() — no longer embedded
-    // form.addView(tintPaletteWrap);
+    form.addView(tintPaletteWrap);
     tintPaletteState.pickerWrap = tintPaletteWrap;
 
     var tintPaletteHead = new android.widget.LinearLayout(context);
@@ -4232,6 +4251,43 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
     "#FFE91E63", "#FF795548", "#FF9E9E9E", "#FF607D8B", "#FF000000", "#FFFFFFFF"
   ];
 
+  // ========== 最近使用颜色 ==========
+  var RECENT_COLORS_KEY = "color_picker_recent";
+  var MAX_RECENT_COLORS = 8;
+  var recentColors = [];
+  try {
+    var recentSaved = self.loadPanelState(RECENT_COLORS_KEY);
+    if (recentSaved && recentSaved.colors && recentSaved.colors.length) {
+      var rc;
+      for (rc = 0; rc < recentSaved.colors.length && rc < MAX_RECENT_COLORS; rc++) {
+        var rn = normalizeTintColorValue(recentSaved.colors[rc], false);
+        if (rn) recentColors.push(rn);
+      }
+    }
+  } catch(eRecentLoad) {}
+
+  function saveRecentColors() {
+    try {
+      self.savePanelState(RECENT_COLORS_KEY, { colors: recentColors.slice(0, MAX_RECENT_COLORS) });
+    } catch(eRecentSave) {}
+  }
+
+  function pushRecentColor(hex) {
+    var normalized = normalizeTintColorValue(hex, false);
+    if (!normalized) return;
+    var next = [normalized];
+    var i;
+    for (i = 0; i < recentColors.length; i++) {
+      if (recentColors[i] !== normalized) {
+        next.push(recentColors[i]);
+      }
+      if (next.length >= MAX_RECENT_COLORS) break;
+    }
+    recentColors = next;
+    saveRecentColors();
+    refreshRecentGrid();
+  }
+
   var selectedColor = currentColor;
   var isFollowTheme = !currentColor;
   var currentBaseRgbHex = extractTintRgbHex(currentColor);
@@ -4284,7 +4340,97 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       }
       updatePreview();
 
-      // 21 色快捷网格
+      // ========== 最近使用颜色 ==========
+      var recentTitle = new android.widget.TextView(context);
+      recentTitle.setText("最近使用");
+      recentTitle.setTextColor(subTextColor);
+      recentTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      recentTitle.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(4));
+      content.addView(recentTitle);
+
+      var recentGrid = new android.widget.GridLayout(context);
+      recentGrid.setColumnCount(8);
+      recentGrid.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(4));
+      content.addView(recentGrid);
+
+      var recentEmptyTv = new android.widget.TextView(context);
+      recentEmptyTv.setText("暂无最近颜色");
+      recentEmptyTv.setTextColor(subTextColor);
+      recentEmptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+      recentEmptyTv.setPadding(self.dp(12), self.dp(4), self.dp(12), self.dp(8));
+      recentEmptyTv.setVisibility(android.view.View.GONE);
+      content.addView(recentEmptyTv);
+
+      function refreshRecentGrid() {
+        try {
+          recentGrid.removeAllViews();
+          if (!recentColors.length) {
+            recentEmptyTv.setVisibility(android.view.View.VISIBLE);
+            return;
+          }
+          recentEmptyTv.setVisibility(android.view.View.GONE);
+          var ri;
+          for (ri = 0; ri < recentColors.length && ri < MAX_RECENT_COLORS; ri++) {
+            (function(hex) {
+              var cell = new android.widget.FrameLayout(context);
+              var margin = self.dp(3);
+              try {
+                var lp = new android.widget.GridLayout.LayoutParams();
+                lp.width = self.dp(28);
+                lp.height = self.dp(28);
+                lp.setMargins(margin, margin, margin, margin);
+                cell.setLayoutParams(lp);
+              } catch(e) {}
+
+              var swatch = new android.view.View(context);
+              swatch.setLayoutParams(new android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
+              try {
+                var bg = new android.graphics.drawable.GradientDrawable();
+                bg.setColor(android.graphics.Color.parseColor(hex));
+                bg.setCornerRadius(self.dp(5));
+                swatch.setBackground(bg);
+              } catch(e) {}
+              cell.addView(swatch);
+
+              if (selectedColor === hex) {
+                try {
+                  var border = new android.graphics.drawable.GradientDrawable();
+                  border.setColor(android.graphics.Color.TRANSPARENT);
+                  border.setCornerRadius(self.dp(5));
+                  border.setStroke(self.dp(2), C.primary);
+                  cell.setForeground(border);
+                } catch(e) {}
+              }
+
+              cell.setOnClickListener(new android.view.View.OnClickListener({
+                onClick: function() {
+                  self.touchActivity();
+                  isFollowTheme = false;
+                  selectedColor = hex;
+                  currentBaseRgbHex = extractTintRgbHex(hex);
+                  currentAlphaByte = extractTintAlphaByte(hex);
+                  updatePreview();
+                  updateValueTv();
+                  refreshRecentGrid();
+                  refreshCommonGrid();
+                  syncRgbSeeks();
+                }
+              }));
+              recentGrid.addView(cell);
+            })(recentColors[ri]);
+          }
+        } catch(e) {}
+      }
+      refreshRecentGrid();
+
+      // 21 色常用颜色
+      var commonTitle = new android.widget.TextView(context);
+      commonTitle.setText("常用颜色");
+      commonTitle.setTextColor(subTextColor);
+      commonTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      commonTitle.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(4));
+      content.addView(commonTitle);
+
       var commonGrid = new android.widget.GridLayout(context);
       commonGrid.setColumnCount(7);
       commonGrid.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(8));
@@ -4292,7 +4438,6 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       for (ci = 0; ci < commonTintHexValues.length; ci++) {
         (function(hex) {
           var cell = new android.widget.FrameLayout(context);
-          cell.setLayoutParams(new android.widget.GridLayout.LayoutParams(self.dp(32), self.dp(32)));
           var margin = self.dp(4);
           try {
             var lp = new android.widget.GridLayout.LayoutParams();
@@ -4331,7 +4476,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               currentAlphaByte = extractTintAlphaByte(hex);
               updatePreview();
               updateValueTv();
+              refreshRecentGrid();
               refreshCommonGrid();
+              syncRgbSeeks();
             }
           }));
           commonGrid.addView(cell);
@@ -4348,7 +4495,6 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
             if (!cell) continue;
             try { cell.setForeground(null); } catch(e) {}
           }
-          // 找到匹配的子项设置边框
           var idx = commonTintHexValues.indexOf(selectedColor);
           if (idx >= 0 && idx < count) {
             var matchedCell = commonGrid.getChildAt(idx);
@@ -4380,6 +4526,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       // RGB 滑块
       var rgbLabels = ["R", "G", "B"];
       var rgbSeeks = [];
+      var rgbValTvs = [];
       var ri;
       for (ri = 0; ri < 3; ri++) {
         (function(idx) {
@@ -4408,6 +4555,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           valTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
           valTv.setMinWidth(self.dp(28));
           row.addView(valTv);
+          rgbValTvs.push(valTv);
 
           seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener({
             onProgressChanged: function(s, progress, fromUser) {
@@ -4422,6 +4570,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               selectedColor = buildArgbHex(currentAlphaByte, currentBaseRgbHex);
               updatePreview();
               updateValueTv();
+              refreshRecentGrid();
               refreshCommonGrid();
             },
             onStartTrackingTouch: function() {},
@@ -4432,15 +4581,20 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         })(ri);
       }
 
-      // 初始化 RGB 滑块值
-      try {
-        var initR = parseInt(currentBaseRgbHex.slice(0, 2), 16) || 0;
-        var initG = parseInt(currentBaseRgbHex.slice(2, 4), 16) || 0;
-        var initB = parseInt(currentBaseRgbHex.slice(4, 6), 16) || 0;
-        rgbSeeks[0].setProgress(initR);
-        rgbSeeks[1].setProgress(initG);
-        rgbSeeks[2].setProgress(initB);
-      } catch(e) {}
+      function syncRgbSeeks() {
+        try {
+          var initR = parseInt(currentBaseRgbHex.slice(0, 2), 16) || 0;
+          var initG = parseInt(currentBaseRgbHex.slice(2, 4), 16) || 0;
+          var initB = parseInt(currentBaseRgbHex.slice(4, 6), 16) || 0;
+          rgbSeeks[0].setProgress(initR);
+          rgbSeeks[1].setProgress(initG);
+          rgbSeeks[2].setProgress(initB);
+          rgbValTvs[0].setText(String(initR));
+          rgbValTvs[1].setText(String(initG));
+          rgbValTvs[2].setText(String(initB));
+        } catch(e) {}
+      }
+      syncRgbSeeks();
 
       // 透明度滑块
       var alphaRow = new android.widget.LinearLayout(context);
@@ -4477,6 +4631,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           selectedColor = buildArgbHex(currentAlphaByte, currentBaseRgbHex);
           updatePreview();
           updateValueTv();
+          refreshRecentGrid();
           refreshCommonGrid();
         },
         onStartTrackingTouch: function() {},
@@ -4499,13 +4654,21 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         selectedColor = "";
         updatePreview();
         updateValueTv();
+        refreshRecentGrid();
         refreshCommonGrid();
+        syncRgbSeeks();
+        alphaSeek.setProgress(255);
+        alphaValTv.setText("255");
+        currentAlphaByte = 255;
       });
       actionRow.addView(btnClear);
 
       var btnOk = self.ui.createSolidButton(self, "确定", C.primary, android.graphics.Color.WHITE, function() {
         self.touchActivity();
         var finalColor = isFollowTheme ? "" : selectedColor;
+        if (!isFollowTheme && selectedColor) {
+          pushRecentColor(selectedColor);
+        }
         if (typeof onSelect === "function") onSelect(finalColor);
         closePopup();
       });
