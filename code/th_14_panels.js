@@ -895,9 +895,18 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxBtnGap.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
     shortxQuickRow.addView(shortxBtnGap);
 
-    var btnBrowseShortXIcon = self.ui.createFlatButton(self, getShortXPickerClosedLabel(), C.primary, function() {
+    var btnBrowseShortXIcon = self.ui.createFlatButton(self, "选择图标", C.primary, function() {
         self.touchActivity();
-        setShortXPickerExpanded(!shortxPickerState.expanded, true);
+        self.showShortXIconPickerPopup({
+            currentName: currentShortXIconName,
+            currentTint: (inputShortXIconTint && inputShortXIconTint.input) ? String(inputShortXIconTint.input.getText() || "") : "",
+            onSelect: function(name) {
+                currentShortXIconName = name;
+                if (inputShortXIconName && inputShortXIconName.input) inputShortXIconName.input.setText(name);
+                updateShortXIconPreview();
+                try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(name || "选择图标"); } catch(e) {}
+            }
+        });
     });
     shortxPickerState.toggleBtn = btnBrowseShortXIcon;
     shortxQuickRow.addView(btnBrowseShortXIcon);
@@ -919,7 +928,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxPickerWrap.setPadding(0, 0, 0, self.dp(8));
     shortxPickerWrap.setVisibility(android.view.View.GONE);
     shortxPickerWrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.92), self.dp(14)));
-    form.addView(shortxPickerWrap);
+    // [Popup] ShortX icon picker moved to showShortXIconPickerPopup() — no longer embedded
+    // form.addView(shortxPickerWrap);
     shortxPickerState.pickerWrap = shortxPickerWrap;
 
     var shortxPickerHead = new android.widget.TextView(context);
@@ -3640,6 +3650,460 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
   }
 
   return panel;
+};
+
+
+
+// =======================【弹出式选择器（WindowManager 覆盖层）】======================
+FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
+  var self = this;
+  var opt = opts || {};
+  var title = String(opt.title || "");
+  var onDismiss = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
+  var builder = (typeof opt.builder === "function") ? opt.builder : null;
+
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var wm = this.state.wm;
+
+  var root = new android.widget.FrameLayout(context);
+  root.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, 0.55));
+  root.setClickable(true);
+
+  var card = new android.widget.LinearLayout(context);
+  card.setOrientation(android.widget.LinearLayout.VERTICAL);
+  var cardLp = new android.widget.FrameLayout.LayoutParams(
+    self.dp(340), self.dp(520)
+  );
+  cardLp.gravity = android.view.Gravity.CENTER;
+  card.setLayoutParams(cardLp);
+  card.setBackground(self.ui.createRoundDrawable(isDark ? C.cardDark : C.cardLight, self.dp(16)));
+  card.setPadding(self.dp(12), self.dp(12), self.dp(12), self.dp(12));
+
+  var header = new android.widget.LinearLayout(context);
+  header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  header.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  var titleTv = new android.widget.TextView(context);
+  titleTv.setText(title);
+  titleTv.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+  titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
+  header.addView(titleTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+  var closeBtn = self.ui.createFlatButton(self, "关闭", C.primary, function() {
+    closePopup();
+  });
+  header.addView(closeBtn);
+  card.addView(header);
+
+  var content = new android.widget.LinearLayout(context);
+  content.setOrientation(android.widget.LinearLayout.VERTICAL);
+  var contentLp = new android.widget.LinearLayout.LayoutParams(
+    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+    android.widget.LinearLayout.LayoutParams.MATCH_PARENT
+  );
+  content.setLayoutParams(contentLp);
+  card.addView(content);
+
+  root.addView(card);
+
+  root.setOnClickListener(new android.view.View.OnClickListener({
+    onClick: function(v) { closePopup(); }
+  }));
+  card.setOnClickListener(new android.view.View.OnClickListener({
+    onClick: function(v) { /* 阻止冒泡 */ }
+  }));
+
+  var lp = new android.view.WindowManager.LayoutParams(
+    android.view.WindowManager.LayoutParams.MATCH_PARENT,
+    android.view.WindowManager.LayoutParams.MATCH_PARENT,
+    android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+    android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND,
+    android.graphics.PixelFormat.TRANSLUCENT
+  );
+  lp.dimAmount = 0.5;
+  lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+  lp.x = 0;
+  lp.y = 0;
+  lp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
+
+  try { wm.addView(root, lp); } catch(eAdd) { safeLog(self.L, 'e', "popup addView fail: " + String(eAdd)); return null; }
+
+  function closePopup() {
+    try { wm.removeView(root); } catch(e) {}
+    if (typeof onDismiss === "function") {
+      try { onDismiss(); } catch(eD) {}
+    }
+  }
+
+  if (typeof builder === "function") {
+    try { builder(content, closePopup); } catch(eB) { safeLog(self.L, 'e', "popup builder fail: " + String(eB)); }
+  }
+
+  return { close: closePopup, content: content };
+};
+
+FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
+  var self = this;
+  var opt = opts || {};
+  var currentName = String(opt.currentName || "");
+  var onSelect = (typeof opt.onSelect === "function") ? opt.onSelect : null;
+  var onDismiss = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
+
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var textColor = isDark ? C.textPriDark : C.textPriLight;
+  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+
+  var catalog = [];
+  try { catalog = self.getShortXIconCatalog() || []; } catch(e) {}
+  if (!catalog.length) {
+    self.toast("图标库未加载，请检查 ShortX 是否安装");
+    return null;
+  }
+
+  var selectedName = currentName;
+
+  var popupState = {
+    currentPage: 0,
+    activeTab: "all",
+    pageSize: 0,
+    pageCols: 0,
+    pageRows: 0,
+    cellMinWidthDp: 72,
+    cellWidthPx: 0,
+    cellHeightDp: 92,
+    cellMarginDp: 4,
+    lastMeasuredGridWidth: 0,
+    lastMeasuredGridHeight: 0,
+    lastQuery: ""
+  };
+
+  var tabDefs = [
+    { key: "all", label: "全部" },
+    { key: "system", label: "系统" },
+    { key: "common", label: "常用" },
+    { key: "media", label: "媒体" },
+    { key: "comm", label: "通讯" },
+    { key: "device", label: "设备" },
+    { key: "action", label: "动作" }
+  ];
+
+  function filterCatalog(q, tab) {
+    var qLower = String(q || "").toLowerCase();
+    var out = [];
+    var i;
+    for (i = 0; i < catalog.length; i++) {
+      var entry = catalog[i];
+      if (!entry) continue;
+      if (qLower) {
+        var n = String(entry.shortName || entry.name).toLowerCase();
+        if (n.indexOf(qLower) < 0) continue;
+      }
+      if (tab && tab !== "all") {
+        var t = String(entry.category || "all").toLowerCase();
+        if (t !== tab) continue;
+      }
+      out.push(entry);
+    }
+    return out;
+  }
+
+  function resolvePageSize(gridWidth, gridHeight) {
+    var rawWidth = 0, rawHeight = 0;
+    try { rawWidth = Number(gridWidth || 0); } catch(e) {}
+    try { rawHeight = Number(gridHeight || 0); } catch(e) {}
+    if (rawWidth <= 0) rawWidth = self.dp(300);
+    if (rawHeight <= 0) rawHeight = self.dp(360);
+    var marginPx = self.dp(Number(popupState.cellMarginDp || 4));
+    var minCellWidthPx = self.dp(Number(popupState.cellMinWidthDp || 72));
+    var availW = rawWidth - marginPx * 2;
+    var cols = Math.max(1, Math.floor(availW / (minCellWidthPx + marginPx * 2)));
+    var cellWidthPx = Math.floor((availW - (cols - 1) * marginPx) / cols);
+    var availH = rawHeight - marginPx * 2;
+    var cellOuterHeight = self.dp(Number(popupState.cellHeightDp || 92)) + marginPx * 2;
+    var rows = Math.max(1, Math.floor(availH / cellOuterHeight));
+    var size = cols * rows;
+    popupState.pageCols = cols;
+    popupState.pageRows = rows;
+    popupState.cellWidthPx = cellWidthPx;
+    popupState.pageSize = size;
+    popupState.lastMeasuredGridWidth = rawWidth;
+    popupState.lastMeasuredGridHeight = rawHeight;
+    return size;
+  }
+
+  var popupResult = self.showPopupOverlay({
+    title: "选择 ShortX 图标",
+    onDismiss: onDismiss,
+    builder: function(content, closePopup) {
+      var searchEt = new android.widget.EditText(context);
+      searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+      searchEt.setTextColor(textColor);
+      try { searchEt.setHintTextColor(subTextColor); } catch(e) {}
+      searchEt.setHint("搜索图标名，如 share / home / save");
+      searchEt.setSingleLine(true);
+      searchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
+      searchEt.setBackground(self.ui.createStrokeDrawable(isDark ? self.ui.colors.inputBgDark : self.ui.colors.inputBgLight, isDark ? self.ui.colors.dividerDark : self.ui.colors.dividerLight, self.dp(1), self.dp(10)));
+      content.addView(searchEt);
+
+      var tabsScroll = new android.widget.HorizontalScrollView(context);
+      tabsScroll.setHorizontalScrollBarEnabled(false);
+      var tabsRow = new android.widget.LinearLayout(context);
+      tabsRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      tabsRow.setPadding(self.dp(8), self.dp(8), self.dp(8), self.dp(8));
+      tabsScroll.addView(tabsRow);
+      content.addView(tabsScroll);
+
+      var tabButtons = {};
+      var ti;
+      for (ti = 0; ti < tabDefs.length; ti++) {
+        (function(def) {
+          var btn = new android.widget.TextView(context);
+          btn.setText(String(def.label));
+          btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+          btn.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
+          var btnLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+          btnLp.setMargins(0, 0, self.dp(6), 0);
+          btn.setLayoutParams(btnLp);
+          btn.setClickable(true);
+          btn.setOnClickListener(new android.view.View.OnClickListener({
+            onClick: function() {
+              self.touchActivity();
+              popupState.activeTab = def.key;
+              popupState.currentPage = 0;
+              refreshTabs();
+              renderGrid();
+            }
+          }));
+          tabsRow.addView(btn);
+          tabButtons[def.key] = btn;
+        })(tabDefs[ti]);
+      }
+
+      function refreshTabs() {
+        var k;
+        for (k in tabButtons) {
+          if (!tabButtons.hasOwnProperty(k)) continue;
+          var btn = tabButtons[k];
+          var active = popupState.activeTab === k;
+          btn.setTextColor(active ? C.primary : subTextColor);
+          try {
+            btn.setBackground(active ? self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.15), self.dp(16)) : null);
+          } catch(e) {}
+        }
+      }
+      refreshTabs();
+
+      var statusTv = new android.widget.TextView(context);
+      statusTv.setTextColor(subTextColor);
+      statusTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+      statusTv.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
+      content.addView(statusTv);
+
+      var pageBar = new android.widget.LinearLayout(context);
+      pageBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      pageBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
+      pageBar.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
+
+      var btnPrev = self.ui.createFlatButton(self, "上一页", subTextColor, function() {
+        if (popupState.currentPage > 0) {
+          popupState.currentPage--;
+          renderGrid();
+        }
+      });
+      pageBar.addView(btnPrev);
+
+      var pageInfo = new android.widget.TextView(context);
+      pageInfo.setTextColor(textColor);
+      pageInfo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      pageInfo.setGravity(android.view.Gravity.CENTER);
+      pageInfo.setPadding(self.dp(8), 0, self.dp(8), 0);
+      var pageInfoLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+      pageInfo.setLayoutParams(pageInfoLp);
+      pageBar.addView(pageInfo);
+
+      var btnNext = self.ui.createFlatButton(self, "下一页", C.primary, function() {
+        popupState.currentPage++;
+        renderGrid();
+      });
+      pageBar.addView(btnNext);
+      content.addView(pageBar);
+
+      var gridScroll = new android.widget.ScrollView(context);
+      var gridScrollLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0);
+      gridScrollLp.weight = 1;
+      gridScroll.setLayoutParams(gridScrollLp);
+      content.addView(gridScroll);
+
+      var grid = new android.widget.GridLayout(context);
+      grid.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(4));
+      gridScroll.addView(grid);
+
+      var selectRow = new android.widget.LinearLayout(context);
+      selectRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      selectRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+      selectRow.setPadding(self.dp(8), self.dp(8), self.dp(8), 0);
+
+      var selectPreview = new android.widget.ImageView(context);
+      selectPreview.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28)));
+      selectPreview.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+      selectRow.addView(selectPreview);
+
+      var selectNameTv = new android.widget.TextView(context);
+      selectNameTv.setTextColor(textColor);
+      selectNameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+      selectNameTv.setPadding(self.dp(8), 0, 0, 0);
+      selectRow.addView(selectNameTv);
+
+      var selectConfirm = self.ui.createSolidButton(self, "确定", C.primary, android.graphics.Color.WHITE, function() {
+        self.touchActivity();
+        if (typeof onSelect === "function") onSelect(selectedName);
+        closePopup();
+      });
+      selectRow.addView(selectConfirm);
+      content.addView(selectRow);
+
+      function updateSelectPreview() {
+        try {
+          if (selectedName) {
+            selectNameTv.setText(selectedName);
+            var dr = null;
+            try { dr = self.getShortXIconDrawable(selectedName); } catch(e) {}
+            if (dr) selectPreview.setImageDrawable(dr);
+            else selectPreview.setImageDrawable(null);
+          } else {
+            selectNameTv.setText("未选择");
+            selectPreview.setImageDrawable(null);
+          }
+        } catch(e) {}
+      }
+      updateSelectPreview();
+
+      function renderGrid() {
+        try {
+          grid.removeAllViews();
+          var q = String(searchEt.getText() || "");
+          var matched = filterCatalog(q, popupState.activeTab);
+          var size = popupState.pageSize;
+          if (size <= 0) {
+            grid.post(new java.lang.Runnable({ run: function() {
+              resolvePageSize(grid.getWidth(), grid.getHeight());
+              renderGrid();
+            }}));
+            statusTv.setText("正在计算布局...");
+            return;
+          }
+          var totalPages = Math.max(1, Math.ceil(matched.length / size));
+          if (popupState.currentPage >= totalPages) popupState.currentPage = totalPages - 1;
+          if (popupState.currentPage < 0) popupState.currentPage = 0;
+          var start = popupState.currentPage * size;
+          var pageItems = matched.slice(start, start + size);
+
+          statusTv.setText("共 " + matched.length + " 个，第 " + (popupState.currentPage + 1) + "/" + totalPages + " 页，每页 " + size + " 个");
+          pageInfo.setText((popupState.currentPage + 1) + " / " + totalPages);
+
+          if (pageItems.length === 0) {
+            var emptyTv = new android.widget.TextView(context);
+            emptyTv.setText("未找到匹配的图标");
+            emptyTv.setTextColor(subTextColor);
+            emptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+            emptyTv.setGravity(android.view.Gravity.CENTER);
+            emptyTv.setPadding(0, self.dp(40), 0, self.dp(40));
+            grid.addView(emptyTv);
+            return;
+          }
+
+          var cols = popupState.pageCols;
+          grid.setColumnCount(cols);
+
+          var idx;
+          for (idx = 0; idx < pageItems.length; idx++) {
+            (function(item) {
+              var cell = new android.widget.LinearLayout(context);
+              cell.setOrientation(android.widget.LinearLayout.VERTICAL);
+              cell.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+              cell.setPadding(self.dp(4), self.dp(6), self.dp(4), self.dp(6));
+              cell.setClickable(true);
+              cell.setBackground(self.ui.createRipple(C.primary, self.dp(10)));
+
+              var iv = new android.widget.ImageView(context);
+              iv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28)));
+              iv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+              try {
+                var dr = self.getShortXIconDrawable(item.name);
+                if (dr) iv.setImageDrawable(dr);
+              } catch(e) {}
+              cell.addView(iv);
+
+              var tv = new android.widget.TextView(context);
+              tv.setText(String(item.shortName || item.name));
+              tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
+              tv.setGravity(android.view.Gravity.CENTER);
+              tv.setMaxLines(1);
+              try { tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(e) {}
+              tv.setPadding(self.dp(2), self.dp(2), self.dp(2), 0);
+              cell.addView(tv);
+
+              if (selectedName === item.name) {
+                try { cell.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.2), self.dp(10))); } catch(e) {}
+                try { tv.setTextColor(C.primary); } catch(e) {}
+              } else {
+                try { tv.setTextColor(subTextColor); } catch(e) {}
+              }
+
+              cell.setOnClickListener(new android.view.View.OnClickListener({
+                onClick: function() {
+                  self.touchActivity();
+                  selectedName = item.name;
+                  updateSelectPreview();
+                  renderGrid();
+                }
+              }));
+
+              var cellLp = new android.widget.GridLayout.LayoutParams();
+              cellLp.width = popupState.cellWidthPx || self.dp(72);
+              cellLp.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT;
+              cell.setLayoutParams(cellLp);
+              grid.addView(cell);
+            })(pageItems[idx]);
+          }
+        } catch(eRender) {
+          safeLog(self.L, 'e', "renderShortXIconGrid err=" + String(eRender));
+        }
+      }
+
+      searchEt.addTextChangedListener(new android.text.TextWatcher({
+        beforeTextChanged: function() {},
+        onTextChanged: function() {
+          self.touchActivity();
+          popupState.currentPage = 0;
+          renderGrid();
+        },
+        afterTextChanged: function() {}
+      }));
+
+      grid.post(new java.lang.Runnable({
+        run: function() {
+          try {
+            var w = grid.getWidth();
+            var h = grid.getHeight();
+            if (w > 0 && h > 0) {
+              resolvePageSize(w, h);
+              renderGrid();
+            } else {
+              grid.postDelayed(new java.lang.Runnable({ run: function() {
+                resolvePageSize(grid.getWidth(), grid.getHeight());
+                renderGrid();
+              }}), 100);
+            }
+          } catch(ePost) { safeLog(self.L, 'e', "iconPicker post err=" + String(ePost)); }
+        }
+      }));
+    }
+  });
+
+  return popupResult;
 };
 
 // =======================【查看器面板：UI】======================
