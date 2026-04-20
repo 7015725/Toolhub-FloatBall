@@ -713,7 +713,11 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         blueValueTv: null,
         recentGrid: null,
         recentEmptyTv: null,
-        commonGrid: null
+        commonGrid: null,
+        commonCols: 0,
+        commonCellWidthPx: 0,
+        commonMinCellWidthDp: 72,
+        commonLastMeasuredWidth: 0
     };
 
     function getShortXPickerClosedLabel() {
@@ -1360,12 +1364,13 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         applyTintHexValue(buildArgbHex(alphaByte, rgbHex), !!pushRecent);
     }
 
-    function createTintSwatchCell(label, hexValue, isFollowTheme) {
+    function createTintSwatchCell(label, hexValue, isFollowTheme, cellWidthPx) {
         var wrap = new android.widget.LinearLayout(context);
         wrap.setOrientation(android.widget.LinearLayout.VERTICAL);
         wrap.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
         wrap.setPadding(self.dp(6), self.dp(6), self.dp(6), self.dp(6));
         var lp = new android.widget.GridLayout.LayoutParams();
+        if (cellWidthPx && Number(cellWidthPx) > 0) lp.width = Number(cellWidthPx);
         lp.setMargins(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
         wrap.setLayoutParams(lp);
         try { wrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.96), self.dp(10))); } catch(eTintSwBg0) {}
@@ -1415,7 +1420,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         }
         try { if (tintPaletteState.recentEmptyTv) tintPaletteState.recentEmptyTv.setVisibility(android.view.View.GONE); } catch(eTintRecent2) {}
         for (i = 0; i < list.length && i < 5; i++) {
-            tintPaletteState.recentGrid.addView(createTintSwatchCell("最近" + (i + 1), list[i], false));
+            tintPaletteState.recentGrid.addView(createTintSwatchCell("最近" + (i + 1), list[i], false, 0));
         }
     }
 
@@ -1604,9 +1609,30 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPaletteBody.addView(tintCommonTitle);
 
     var tintCommonGrid = new android.widget.GridLayout(context);
-    try { tintCommonGrid.setColumnCount(4); } catch(eTintCommonCols0) {}
+    try { tintCommonGrid.setColumnCount(1); } catch(eTintCommonCols0) {}
     tintPaletteBody.addView(tintCommonGrid);
     tintPaletteState.commonGrid = tintCommonGrid;
+
+    function resolveTintCommonGridLayout() {
+        var rawWidth = 0;
+        try { if (tintPaletteState.commonGrid) rawWidth = Number(tintPaletteState.commonGrid.getWidth() || 0); } catch(eTintCommonW0) {}
+        if (rawWidth <= 0) {
+            try { if (tintPaletteState.body) rawWidth = Number(tintPaletteState.body.getWidth() || 0); } catch(eTintCommonW1) {}
+        }
+        if (rawWidth <= 0) rawWidth = self.dp(320);
+        var marginPx = self.dp(4);
+        var minCellWidthPx = self.dp(Number(tintPaletteState.commonMinCellWidthDp || 72));
+        var cellOuterMinWidth = minCellWidthPx + marginPx * 2;
+        var innerWidth = rawWidth - self.dp(4);
+        if (innerWidth <= 0) innerWidth = rawWidth;
+        var cols = Math.max(1, Math.floor(innerWidth / cellOuterMinWidth));
+        var cellWidthPx = Math.floor(innerWidth / cols) - marginPx * 2;
+        if (cellWidthPx < self.dp(56)) cellWidthPx = self.dp(56);
+        tintPaletteState.commonCols = cols;
+        tintPaletteState.commonCellWidthPx = cellWidthPx;
+        tintPaletteState.commonLastMeasuredWidth = rawWidth;
+        return { cols: cols, cellWidthPx: cellWidthPx };
+    }
 
     function getTintSortInfo(hexValue) {
         var normalized = normalizeTintColorValue(hexValue, false);
@@ -1683,12 +1709,22 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         { label: "棕色", hex: "#FF8D6E63" },
         { label: "银灰", hex: "#FFCBD5E1" }
     ]);
-    var tintCi;
-    for (tintCi = 0; tintCi < tintCommonDefs.length; tintCi++) {
-        tintCommonGrid.addView(createTintSwatchCell(tintCommonDefs[tintCi].label, tintCommonDefs[tintCi].hex, !!tintCommonDefs[tintCi].followTheme));
+
+    function renderTintCommonGrid() {
+        if (!tintPaletteState.commonGrid) return;
+        var layoutInfo = resolveTintCommonGridLayout();
+        try {
+            tintPaletteState.commonGrid.removeAllViews();
+            tintPaletteState.commonGrid.setColumnCount(Math.max(1, Number(layoutInfo.cols || 1)));
+        } catch(eTintCommonRender0) {}
+        var tintCi;
+        for (tintCi = 0; tintCi < tintCommonDefs.length; tintCi++) {
+            tintPaletteState.commonGrid.addView(createTintSwatchCell(tintCommonDefs[tintCi].label, tintCommonDefs[tintCi].hex, !!tintCommonDefs[tintCi].followTheme, layoutInfo.cellWidthPx));
+        }
     }
 
     renderRecentTintGrid();
+    renderTintCommonGrid();
     setTintPaletteExpanded(tintPaletteState.expanded);
     syncTintUiFromInput(false);
 
@@ -1702,6 +1738,19 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             onTextChanged: function(s, st, b, c) {}
         }));
     } catch(eTwIcon2) {}
+    try {
+        tintCommonGrid.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener({
+            onGlobalLayout: function() {
+                if (!tintPaletteState.expanded) return;
+                var oldCols = Number(tintPaletteState.commonCols || 0);
+                var oldWidth = Number(tintPaletteState.commonLastMeasuredWidth || 0);
+                var info = resolveTintCommonGridLayout();
+                if (Number(info.cols || 0) !== oldCols || Number(tintPaletteState.commonLastMeasuredWidth || 0) !== oldWidth) {
+                    renderTintCommonGrid();
+                }
+            }
+        }));
+    } catch(eTintCommonLayout0) {}
     // 图标类型切换函数
     function updateIconInputs(type) {
         if (type === "file") {
