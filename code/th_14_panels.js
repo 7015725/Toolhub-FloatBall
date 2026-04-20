@@ -705,6 +705,12 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         previewTextTv: null,
         alphaSeek: null,
         alphaValueTv: null,
+        redSeek: null,
+        greenSeek: null,
+        blueSeek: null,
+        redValueTv: null,
+        greenValueTv: null,
+        blueValueTv: null,
         recentGrid: null,
         recentEmptyTv: null,
         commonGrid: null
@@ -1228,14 +1234,45 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         } catch(eTintSeek0) {}
     }
 
+    function setRgbSeekProgress(which, value) {
+        var v = Number(value || 0);
+        if (isNaN(v) || v < 0) v = 0;
+        if (v > 255) v = 255;
+        try {
+            if (which === "r" && tintPaletteState.redSeek) tintPaletteState.redSeek.setProgress(v);
+            if (which === "g" && tintPaletteState.greenSeek) tintPaletteState.greenSeek.setProgress(v);
+            if (which === "b" && tintPaletteState.blueSeek) tintPaletteState.blueSeek.setProgress(v);
+        } catch(eTintRgbSeek0) {}
+    }
+
     function updateTintAlphaLabel(alphaByte) {
         var a = Number(alphaByte || 0);
         if (isNaN(a) || a < 0) a = 0;
         if (a > 255) a = 255;
         var pct = Math.round((a / 255) * 100);
         try {
-            if (tintPaletteState.alphaValueTv) tintPaletteState.alphaValueTv.setText("透明度 " + pct + "%");
+            if (tintPaletteState.alphaValueTv) tintPaletteState.alphaValueTv.setText("透明度 " + pct + "%（" + a + "/255）");
         } catch(eTintAlpha0) {}
+    }
+
+    function updateRgbValueLabel(which, value) {
+        var v = Number(value || 0);
+        if (isNaN(v) || v < 0) v = 0;
+        if (v > 255) v = 255;
+        try {
+            if (which === "r" && tintPaletteState.redValueTv) tintPaletteState.redValueTv.setText("R " + v);
+            if (which === "g" && tintPaletteState.greenValueTv) tintPaletteState.greenValueTv.setText("G " + v);
+            if (which === "b" && tintPaletteState.blueValueTv) tintPaletteState.blueValueTv.setText("B " + v);
+        } catch(eTintRgbLbl0) {}
+    }
+
+    function updateRgbLabelsFromHex(rgbHex) {
+        var rgb = String(rgbHex || "#FFFFFF").toUpperCase();
+        if (rgb.charAt(0) !== "#") rgb = "#" + rgb;
+        if (!/^#[0-9A-F]{6}$/.test(rgb)) rgb = "#FFFFFF";
+        updateRgbValueLabel("r", parseInt(rgb.substring(1, 3), 16));
+        updateRgbValueLabel("g", parseInt(rgb.substring(3, 5), 16));
+        updateRgbValueLabel("b", parseInt(rgb.substring(5, 7), 16));
     }
 
     function updateTintPalettePreviewText(normalizedHex, isThemeFollow, invalidRaw) {
@@ -1275,8 +1312,12 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         tintPaletteState.currentBaseRgbHex = extractTintRgbHex(effectiveHex);
         tintPaletteState.syncing = true;
         setTintSeekProgress(alphaByte);
+        setRgbSeekProgress("r", parseInt(tintPaletteState.currentBaseRgbHex.substring(1, 3), 16));
+        setRgbSeekProgress("g", parseInt(tintPaletteState.currentBaseRgbHex.substring(3, 5), 16));
+        setRgbSeekProgress("b", parseInt(tintPaletteState.currentBaseRgbHex.substring(5, 7), 16));
         tintPaletteState.syncing = false;
         updateTintAlphaLabel(alphaByte);
+        updateRgbLabelsFromHex(tintPaletteState.currentBaseRgbHex);
         updateTintPalettePreviewText(normalized, !normalized, null);
         updateShortXIconPreview();
         if (shortxPickerState.expanded) renderShortXIconGrid();
@@ -1296,7 +1337,27 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         var baseRgb = tintPaletteState.currentBaseRgbHex || extractTintRgbHex(getThemeTintHex());
         var alphaByte = 255;
         try { alphaByte = Number(tintPaletteState.alphaSeek.getProgress() || 0); } catch(eTintAlpha1) { alphaByte = 255; }
+        updateRgbLabelsFromHex(baseRgb);
         applyTintHexValue(buildArgbHex(alphaByte, baseRgb), !!pushRecent);
+    }
+
+    function applyTintFromRgbSeekbars(pushRecent) {
+        var r = 255, g = 255, b = 255, alphaByte = 255;
+        try { r = Number(tintPaletteState.redSeek.getProgress() || 0); } catch(eTintR0) { r = 255; }
+        try { g = Number(tintPaletteState.greenSeek.getProgress() || 0); } catch(eTintG0) { g = 255; }
+        try { b = Number(tintPaletteState.blueSeek.getProgress() || 0); } catch(eTintB0) { b = 255; }
+        try { alphaByte = Number(tintPaletteState.alphaSeek.getProgress() || 0); } catch(eTintA0) { alphaByte = 255; }
+        var rgbHex = "#";
+        var parts = [r, g, b];
+        var i;
+        for (i = 0; i < parts.length; i++) {
+            var hx = java.lang.Integer.toHexString(parts[i] & 255).toUpperCase();
+            if (hx.length < 2) hx = "0" + hx;
+            rgbHex += hx;
+        }
+        tintPaletteState.currentBaseRgbHex = rgbHex;
+        updateRgbLabelsFromHex(rgbHex);
+        applyTintHexValue(buildArgbHex(alphaByte, rgbHex), !!pushRecent);
     }
 
     function createTintSwatchCell(label, hexValue, isFollowTheme) {
@@ -1458,6 +1519,62 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             }
         }));
     } catch(eTintSeekListener0) {}
+
+    function createRgbControlRow(label, key, accentHex) {
+        var row = new android.widget.LinearLayout(context);
+        row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(0, self.dp(4), 0, self.dp(2));
+
+        var title = new android.widget.TextView(context);
+        title.setText(String(label));
+        title.setTextColor(subTextColor);
+        title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+        title.setPadding(0, 0, self.dp(8), 0);
+        row.addView(title);
+
+        var valueTv = new android.widget.TextView(context);
+        valueTv.setTextColor(textColor);
+        valueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+        valueTv.setPadding(0, 0, self.dp(8), 0);
+        row.addView(valueTv);
+
+        var seek = new android.widget.SeekBar(context);
+        try { seek.setMax(255); } catch(eTintRgbMax0) {}
+        row.addView(seek, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+        if (key === "r") { tintPaletteState.redSeek = seek; tintPaletteState.redValueTv = valueTv; }
+        else if (key === "g") { tintPaletteState.greenSeek = seek; tintPaletteState.greenValueTv = valueTv; }
+        else if (key === "b") { tintPaletteState.blueSeek = seek; tintPaletteState.blueValueTv = valueTv; }
+
+        updateRgbValueLabel(key, 255);
+
+        try {
+            seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener({
+                onProgressChanged: function(seekBar, progress, fromUser) {
+                    updateRgbValueLabel(key, progress);
+                    if (tintPaletteState.syncing) return;
+                    if (fromUser) applyTintFromRgbSeekbars(false);
+                },
+                onStartTrackingTouch: function(seekBar) {},
+                onStopTrackingTouch: function(seekBar) {
+                    if (tintPaletteState.syncing) return;
+                    applyTintFromRgbSeekbars(true);
+                }
+            }));
+        } catch(eTintRgbListener0) {}
+        return row;
+    }
+
+    var tintRgbTitle = new android.widget.TextView(context);
+    tintRgbTitle.setText("RGB 调色器（0-255）");
+    tintRgbTitle.setTextColor(subTextColor);
+    tintRgbTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    tintRgbTitle.setPadding(0, 0, 0, self.dp(4));
+    tintPaletteBody.addView(tintRgbTitle);
+    tintPaletteBody.addView(createRgbControlRow("红", "r", "#FFE53935"));
+    tintPaletteBody.addView(createRgbControlRow("绿", "g", "#FF43A047"));
+    tintPaletteBody.addView(createRgbControlRow("蓝", "b", "#FF1E88E5"));
 
     var tintRecentTitle = new android.widget.TextView(context);
     tintRecentTitle.setText("最近使用（最多 5 个）");
