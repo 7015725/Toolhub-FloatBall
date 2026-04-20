@@ -682,11 +682,13 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         pageInfoTv: null,
         prevBtn: null,
         nextBtn: null,
-        pageCols: 4,
+        pageCols: 0,
         pageRows: 0,
-        cellWidthDp: 76,
+        cellMinWidthDp: 72,
+        cellWidthPx: 0,
         cellHeightDp: 92,
         cellMarginDp: 4,
+        lastMeasuredGridWidth: 0,
         lastMeasuredGridHeight: 0
     };
 
@@ -712,19 +714,31 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     }
 
     function resolveShortXPickerPageSize() {
-        var cols = Number(shortxPickerState.pageCols || 4);
-        if (cols < 1) cols = 4;
+        var fallbackWidth = self.dp(320);
         var fallbackHeight = self.dp(520);
+        var rawWidth = 0;
         var rawHeight = 0;
-        try {
-            if (shortxPickerState.gridScroll) rawHeight = Number(shortxPickerState.gridScroll.getHeight() || 0);
-        } catch(eH0) {}
+        try { if (shortxPickerState.gridScroll) rawWidth = Number(shortxPickerState.gridScroll.getWidth() || 0); } catch(eW0) {}
+        try { if (shortxPickerState.gridScroll) rawHeight = Number(shortxPickerState.gridScroll.getHeight() || 0); } catch(eH0) {}
+        if (rawWidth <= 0) rawWidth = fallbackWidth;
         if (rawHeight <= 0) rawHeight = fallbackHeight;
-        var cellOuterHeight = self.dp(Number(shortxPickerState.cellHeightDp || 92) + Number(shortxPickerState.cellMarginDp || 4) * 2);
+        var marginPx = self.dp(Number(shortxPickerState.cellMarginDp || 4));
+        var minCellWidthPx = self.dp(Number(shortxPickerState.cellMinWidthDp || 72));
+        var cellOuterMinWidth = minCellWidthPx + marginPx * 2;
+        if (cellOuterMinWidth <= 0) cellOuterMinWidth = self.dp(80);
+        var innerWidth = rawWidth - self.dp(8);
+        if (innerWidth <= 0) innerWidth = rawWidth;
+        var cols = Math.max(1, Math.floor(innerWidth / cellOuterMinWidth));
+        var cellWidthPx = Math.floor(innerWidth / cols) - marginPx * 2;
+        if (cellWidthPx < self.dp(56)) cellWidthPx = self.dp(56);
+        var cellOuterHeight = self.dp(Number(shortxPickerState.cellHeightDp || 92)) + marginPx * 2;
         if (cellOuterHeight <= 0) cellOuterHeight = self.dp(100);
         var rows = Math.max(1, Math.floor(rawHeight / cellOuterHeight));
         var size = Math.max(cols, rows * cols);
+        shortxPickerState.pageCols = cols;
         shortxPickerState.pageRows = rows;
+        shortxPickerState.cellWidthPx = cellWidthPx;
+        shortxPickerState.lastMeasuredGridWidth = rawWidth;
         shortxPickerState.lastMeasuredGridHeight = rawHeight;
         shortxPickerState.pageSize = size;
         return size;
@@ -805,7 +819,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxPickerState.pickerWrap = shortxPickerWrap;
 
     var shortxPickerHead = new android.widget.TextView(context);
-    shortxPickerHead.setText("ShortX 图标库（分页模式，支持搜索 / 分类 / 点击即回填）");
+    shortxPickerHead.setText("ShortX 图标库（分页模式，按宽度自动排列，支持搜索 / 分类 / 点击即回填）");
     shortxPickerHead.setTextColor(subTextColor);
     shortxPickerHead.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     shortxPickerHead.setPadding(self.dp(12), self.dp(10), self.dp(12), self.dp(6));
@@ -941,7 +955,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxPickerState.gridScroll = shortxGridScroll;
 
     var shortxGrid = new android.widget.GridLayout(context);
-    try { shortxGrid.setColumnCount(4); } catch(eGC0) {}
+    try { shortxGrid.setColumnCount(Math.max(1, Number(shortxPickerState.pageCols || 1))); } catch(eGC0) {}
     shortxGrid.setPadding(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
     shortxGridScroll.addView(shortxGrid);
     shortxPickerState.grid = shortxGrid;
@@ -971,7 +985,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try {
             if (!shortxPickerState.grid) return;
             shortxPickerState.grid.removeAllViews();
-            try { shortxPickerState.grid.setColumnCount(Number(shortxPickerState.pageCols || 4)); } catch(eColSet) {}
+            try { shortxPickerState.grid.setColumnCount(Math.max(1, Number(shortxPickerState.pageCols || 1))); } catch(eColSet) {}
             var icons = self.getShortXIconCatalog();
             shortxPickerState.iconList = icons;
             var query = "";
@@ -1004,13 +1018,13 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     var errMsg = self._shortxIconCatalogError ? String(self._shortxIconCatalogError) : "未知原因";
                     shortxPickerState.statusTv.setText("ShortX 图标反射失败/为空：" + errMsg);
                 } else if (!query) {
-                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 共 " + filtered.length + " 个，每页 " + pageSize + " 个（" + shortxPickerState.pageRows + " 行 × " + shortxPickerState.pageCols + " 列），当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
+                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 共 " + filtered.length + " 个，按宽度自动排成 " + shortxPickerState.pageCols + " 列，每页 " + pageSize + " 个（" + shortxPickerState.pageRows + " 行），当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
                 } else {
-                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 搜索 [" + query + "] 命中 " + totalMatch + " 个，每页 " + pageSize + " 个，当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
+                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 搜索 [" + query + "] 命中 " + totalMatch + " 个，当前按宽度自动排成 " + shortxPickerState.pageCols + " 列，每页 " + pageSize + " 个，当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
                 }
             }
             if (shortxPickerState.pageInfoTv) {
-                shortxPickerState.pageInfoTv.setText((filtered.length > 0 ? (shortxPickerState.currentPage + 1) : 0) + " / " + totalPages + " · " + filtered.length + "项 · 每页" + pageSize + "个");
+                shortxPickerState.pageInfoTv.setText((filtered.length > 0 ? (shortxPickerState.currentPage + 1) : 0) + " / " + totalPages + " · " + filtered.length + "项 · " + shortxPickerState.pageCols + "列 · 每页" + pageSize + "个");
             }
             try { shortxPickerState.prevBtn.setEnabled(shortxPickerState.currentPage > 0); } catch(ePrev) {}
             try { shortxPickerState.nextBtn.setEnabled(shortxPickerState.currentPage < totalPages - 1); } catch(eNext) {}
@@ -1024,7 +1038,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     cell.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
                     cell.setPadding(self.dp(8), self.dp(8), self.dp(8), self.dp(8));
                     var lp = new android.widget.GridLayout.LayoutParams();
-                    lp.width = self.dp(Number(shortxPickerState.cellWidthDp || 76));
+                    lp.width = Number(shortxPickerState.cellWidthPx || self.dp(Number(shortxPickerState.cellMinWidthDp || 72)));
                     lp.height = self.dp(Number(shortxPickerState.cellHeightDp || 92));
                     lp.setMargins(self.dp(Number(shortxPickerState.cellMarginDp || 4)), self.dp(Number(shortxPickerState.cellMarginDp || 4)), self.dp(Number(shortxPickerState.cellMarginDp || 4)), self.dp(Number(shortxPickerState.cellMarginDp || 4)));
                     cell.setLayoutParams(lp);
@@ -1092,8 +1106,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             onGlobalLayout: function() {
                 if (!shortxPickerState.expanded) return;
                 var oldSize = Number(shortxPickerState.pageSize || 0);
+                var oldCols = Number(shortxPickerState.pageCols || 0);
+                var oldWidth = Number(shortxPickerState.lastMeasuredGridWidth || 0);
                 var newSize = resolveShortXPickerPageSize();
-                if (newSize > 0 && newSize !== oldSize) {
+                if (newSize > 0 && (newSize !== oldSize || oldCols !== Number(shortxPickerState.pageCols || 0) || oldWidth !== Number(shortxPickerState.lastMeasuredGridWidth || 0))) {
                     shortxPickerState.currentPage = 0;
                     renderShortXIconGrid();
                 }
