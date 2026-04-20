@@ -778,7 +778,6 @@ var ConfigManager = {
         { key: "BALL_ICON_TYPE", name: "图标类型", type: "single_choice", options: [
             { label: "应用图标 (app)", value: "app" },
             { label: "文件图标 (file)", value: "file" },
-            { label: "系统图标 (android)", value: "android" },
             { label: "ShortX内置 (shortx)", value: "shortx" }
         ]},
         { key: "BALL_ICON_FILE_PATH", name: "图标路径(file模式)", type: "text" },

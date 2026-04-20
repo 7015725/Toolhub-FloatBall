@@ -364,7 +364,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     row.addView(rg);
     parent.addView(row);
   } else if (item.type === "ball_shortx_icon") {
-    // === 悬浮球 ShortX 图标选择器（内嵌式，无 AlertDialog）===
+    // === 悬浮球 ShortX 图标选择器（复用按钮图标同款弹窗）===
     row.setOrientation(android.widget.LinearLayout.VERTICAL);
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
@@ -382,124 +382,67 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     previewIvLp.rightMargin = self.dp(10);
     previewIv.setLayoutParams(previewIvLp);
     previewIv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-    try {
-        var curIconName0 = String(self.getPendingValue(item.key) || "");
-        var curTint0 = String(self.getPendingValue("BALL_ICON_TINT_HEX") || "");
-        if (curIconName0) {
-            var dr0 = self.resolveShortXDrawable(curIconName0, curTint0);
-            if (dr0) previewIv.setImageDrawable(dr0);
-        }
-    } catch(ePreview) {}
     iconRow.addView(previewIv);
 
     var nameTv = new android.widget.TextView(context);
     nameTv.setTextColor(secColor);
     nameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-    nameTv.setText(String(self.getPendingValue(item.key) || "未选择"));
     var nameTvLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
     nameTv.setLayoutParams(nameTvLp);
     iconRow.addView(nameTv);
 
-    // 展开/收起状态
-    var iconPickerExpanded = false;
-
-    var btnPick = self.ui.createFlatButton(self, "展开图标库", primary, function() {
-        iconPickerExpanded = !iconPickerExpanded;
-        btnPick.setText(iconPickerExpanded ? "收起图标库" : "展开图标库");
-        iconPickerWrap.setVisibility(iconPickerExpanded ? android.view.View.VISIBLE : android.view.View.GONE);
-        if (iconPickerExpanded) {
-            try {
-                if (!iconListView.getAdapter() || iconListView.getAdapter().getCount() === 0) {
-                    var catalog0 = self.getShortXIconCatalog();
-                    if (!catalog0 || catalog0.length === 0) {
-                        self.toast("图标库未加载，请检查 ShortX 是否安装");
-                        iconPickerExpanded = false;
-                        btnPick.setText("展开图标库");
-                        iconPickerWrap.setVisibility(android.view.View.GONE);
-                        return;
-                    }
-                    var adapterData0 = [];
-                    var ii;
-                    for (ii = 0; ii < catalog0.length; ii++) {
-                        adapterData0.push(String(catalog0[ii].shortName || catalog0[ii].name));
-                    }
-                    var adapter0 = new android.widget.ArrayAdapter(context, android.R.layout.simple_list_item_1, adapterData0);
-                    iconListView.setAdapter(adapter0);
-                }
-            } catch(eLoad) {
-                self.toast("加载图标库失败: " + String(eLoad));
-            }
+    function refreshBallShortXPreview() {
+      try {
+        var curIconName0 = String(self.getPendingValue(item.key) || "");
+        var curTint0 = String(self.getPendingValue("BALL_ICON_TINT_HEX") || "");
+        nameTv.setText(curIconName0 || "未选择");
+        if (curIconName0) {
+          var dr0 = self.resolveShortXDrawable(curIconName0, curTint0);
+          if (dr0) previewIv.setImageDrawable(dr0);
+          else previewIv.setImageDrawable(null);
+        } else {
+          previewIv.setImageDrawable(null);
         }
+      } catch(ePreview0) {}
+    }
+    refreshBallShortXPreview();
+
+    var btnPick = self.ui.createFlatButton(self, "选择图标", primary, function() {
+      self.touchActivity();
+      self.showShortXIconPickerPopup({
+        currentName: String(self.getPendingValue(item.key) || ""),
+        currentTint: String(self.getPendingValue("BALL_ICON_TINT_HEX") || ""),
+        onSelect: function(name) {
+          try {
+            var selectedName = String(name || "");
+            self.setPendingValue(item.key, selectedName);
+            self.setPendingValue("BALL_ICON_TYPE", "shortx");
+            refreshBallShortXPreview();
+          } catch(ePickBallIcon) {
+            safeLog(self.L, 'e', "ball shortx picker err=" + String(ePickBallIcon));
+          }
+        }
+      });
     });
     iconRow.addView(btnPick);
+
+    var gapView = new android.view.View(context);
+    gapView.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
+    iconRow.addView(gapView);
+
+    var btnClear = self.ui.createFlatButton(self, "清空", secColor, function() {
+      self.touchActivity();
+      try {
+        self.setPendingValue(item.key, "");
+        refreshBallShortXPreview();
+      } catch(eClearBallIcon) {}
+    });
+    iconRow.addView(btnClear);
     row.addView(iconRow);
-
-    // 内嵌图标选择区域
-    var iconPickerWrap = new android.widget.LinearLayout(context);
-    iconPickerWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
-    iconPickerWrap.setVisibility(android.view.View.GONE);
-    iconPickerWrap.setPadding(0, self.dp(8), 0, 0);
-
-    var searchEt = new android.widget.EditText(context);
-    searchEt.setHint("搜索图标...");
-    searchEt.setTextColor(textColor);
-    searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-    searchEt.setBackground(self.ui.createRoundDrawable(isDark ? C.inputBgDark : C.inputBgLight, self.dp(6)));
-    searchEt.setPadding(self.dp(8), self.dp(6), self.dp(8), self.dp(6));
-    searchEt.setSingleLine(true);
-    iconPickerWrap.addView(searchEt);
-
-    var iconListView = new android.widget.ListView(context);
-    var listLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(280));
-    listLp.topMargin = self.dp(6);
-    iconListView.setLayoutParams(listLp);
-    iconPickerWrap.addView(iconListView);
-
-    iconListView.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener({
-        onItemClick: function(parent, view, position, id) {
-            try {
-                var adapter1 = iconListView.getAdapter();
-                var selectedName = String(adapter1.getItem(position));
-                self.setPendingValue(item.key, selectedName);
-                nameTv.setText(selectedName);
-                try {
-                    var tint1 = String(self.getPendingValue("BALL_ICON_TINT_HEX") || "");
-                    var dr1 = self.resolveShortXDrawable(selectedName, tint1);
-                    if (dr1) previewIv.setImageDrawable(dr1);
-                    else previewIv.setImageDrawable(null);
-                } catch(eDr) {}
-                iconPickerExpanded = false;
-                btnPick.setText("展开图标库");
-                iconPickerWrap.setVisibility(android.view.View.GONE);
-                if (self.state.previewMode) self.rebuildBallForNewSize(true);
-            } catch(eClick) {}
-        }
-    }));
-
-    searchEt.addTextChangedListener(new android.text.TextWatcher({
-        beforeTextChanged: function(s, start, count, after) {},
-        onTextChanged: function(s, start, before, count) {},
-        afterTextChanged: function(s) {
-            try {
-                var catalog1 = self.getShortXIconCatalog();
-                var q = String(s).toLowerCase();
-                var filtered = [];
-                var j;
-                for (j = 0; j < catalog1.length; j++) {
-                    var n = String(catalog1[j].shortName || catalog1[j].name).toLowerCase();
-                    if (n.indexOf(q) >= 0) filtered.push(String(catalog1[j].shortName || catalog1[j].name));
-                }
-                var newAdapter = new android.widget.ArrayAdapter(context, android.R.layout.simple_list_item_1, filtered);
-                iconListView.setAdapter(newAdapter);
-            } catch(eFilter) {}
-        }
-    }));
-
-    row.addView(iconPickerWrap);
     parent.addView(row);
 
   } else if (item.type === "ball_color") {
-    // === 悬浮球图标颜色选择器（内嵌式，无 AlertDialog）===
+    // === 悬浮球图标颜色选择器（复用按钮图标同款弹窗）===
     row.setOrientation(android.widget.LinearLayout.VERTICAL);
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
@@ -516,141 +459,61 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     var colorDotLp = new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28));
     colorDotLp.rightMargin = self.dp(10);
     colorDot.setLayoutParams(colorDotLp);
-    try {
-        var curHex0 = String(self.getPendingValue(item.key) || "");
-        if (curHex0) {
-            colorDot.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(curHex0), self.dp(14)));
-        } else {
-            colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14)));
-        }
-    } catch(eDot) {
-        colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14)));
-    }
     colorRow.addView(colorDot);
 
     var colorValueTv = new android.widget.TextView(context);
     colorValueTv.setTextColor(secColor);
     colorValueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-    colorValueTv.setText(String(self.getPendingValue(item.key) || "默认"));
     var colorValueLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
     colorValueTv.setLayoutParams(colorValueLp);
     colorRow.addView(colorValueTv);
 
-    var paletteExpanded = false;
+    function refreshBallColorPreview() {
+      try {
+        var curHex0 = String(self.getPendingValue(item.key) || "");
+        colorValueTv.setText(curHex0 || "默认");
+        if (curHex0) {
+          colorDot.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(curHex0), self.dp(14)));
+        } else {
+          colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14)));
+        }
+      } catch(eDot0) {
+        try { colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14))); } catch(eDot1) {}
+        colorValueTv.setText("默认");
+      }
+    }
+    refreshBallColorPreview();
 
-    var btnColor = self.ui.createFlatButton(self, "展开调色板", primary, function() {
-        paletteExpanded = !paletteExpanded;
-        btnColor.setText(paletteExpanded ? "收起调色板" : "展开调色板");
-        paletteWrap.setVisibility(paletteExpanded ? android.view.View.VISIBLE : android.view.View.GONE);
+    var btnColor = self.ui.createFlatButton(self, "选择颜色", primary, function() {
+      self.touchActivity();
+      self.showColorPickerPopup({
+        currentColor: String(self.getPendingValue(item.key) || ""),
+        currentIconName: String(self.getPendingValue("BALL_ICON_RES_NAME") || ""),
+        onSelect: function(colorHex) {
+          try {
+            self.setPendingValue(item.key, String(colorHex || ""));
+            refreshBallColorPreview();
+          } catch(ePickBallColor) {
+            safeLog(self.L, 'e', "ball color picker err=" + String(ePickBallColor));
+          }
+        }
+      });
     });
     colorRow.addView(btnColor);
-    row.addView(colorRow);
 
-    var paletteWrap = new android.widget.LinearLayout(context);
-    paletteWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
-    paletteWrap.setVisibility(android.view.View.GONE);
-    paletteWrap.setPadding(0, self.dp(8), 0, 0);
+    var gapColorView = new android.view.View(context);
+    gapColorView.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
+    colorRow.addView(gapColorView);
 
-    var scroll = new android.widget.ScrollView(context);
-    var scrollBox = new android.widget.LinearLayout(context);
-    scrollBox.setOrientation(android.widget.LinearLayout.VERTICAL);
-    scroll.addView(scrollBox);
-    paletteWrap.addView(scroll);
-
-    var grid = new android.widget.GridLayout(context);
-    try { grid.setColumnCount(5); } catch(e){}
-    var gridLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-    grid.setLayoutParams(gridLp);
-    scrollBox.addView(grid);
-
-    var commonColors = [
-        "#F44336", "#E91E63", "#9C27B0", "#673AB7", "#3F51B5",
-        "#2196F3", "#03A9F4", "#00BCD4", "#009688", "#4CAF50",
-        "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800",
-        "#FF5722", "#795548", "#9E9E9E", "#607D8B", "#000000", "#FFFFFF"
-    ];
-
-    var ci;
-    for (ci = 0; ci < commonColors.length; ci++) {
-        (function(hex) {
-            var colorBtn = new android.widget.TextView(context);
-            var colorBtnLp = new android.widget.GridLayout.LayoutParams();
-            colorBtnLp.width = self.dp(44);
-            colorBtnLp.height = self.dp(44);
-            colorBtn.setLayoutParams(colorBtnLp);
-            try {
-                colorBtn.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(hex), self.dp(8)));
-            } catch(eBg) {}
-            colorBtn.setOnClickListener(new android.view.View.OnClickListener({
-                onClick: function(v) {
-                    try {
-                        self.setPendingValue(item.key, hex);
-                        colorValueTv.setText(hex);
-                        try { colorDot.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(hex), self.dp(14))); } catch(eDot2) {}
-                        if (self.state.previewMode) self.rebuildBallForNewSize(true);
-                    } catch(eSet) {}
-                }
-            }));
-            grid.addView(colorBtn);
-        })(commonColors[ci]);
-    }
-
-    var inputEt = new android.widget.EditText(context);
-    inputEt.setHint("手动输入 #RRGGBB");
-    inputEt.setTextColor(textColor);
-    inputEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-    inputEt.setBackground(self.ui.createRoundDrawable(isDark ? C.inputBgDark : C.inputBgLight, self.dp(6)));
-    inputEt.setPadding(self.dp(8), self.dp(6), self.dp(8), self.dp(6));
-    inputEt.setSingleLine(true);
-    inputEt.setText(String(self.getPendingValue(item.key) || ""));
-    var inputLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-    inputLp.topMargin = self.dp(10);
-    inputEt.setLayoutParams(inputLp);
-    scrollBox.addView(inputEt);
-
-    var btnRow = new android.widget.LinearLayout(context);
-    btnRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-    btnRow.setGravity(android.view.Gravity.END);
-    btnRow.setPadding(0, self.dp(8), 0, 0);
-
-    var btnConfirm = self.ui.createFlatButton(self, "确定", primary, function() {
-        try {
-            var val = String(inputEt.getText() || "").replace(/^\s+|\s+$/g, "");
-            if (val) {
-                if (val.indexOf("#") !== 0) val = "#" + val;
-                android.graphics.Color.parseColor(val);
-                self.setPendingValue(item.key, val);
-                colorValueTv.setText(val);
-                try { colorDot.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(val), self.dp(14))); } catch(eDot3) {}
-            } else {
-                self.setPendingValue(item.key, "");
-                colorValueTv.setText("默认");
-                try { colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14))); } catch(eDot4) {}
-            }
-            paletteExpanded = false;
-            btnColor.setText("展开调色板");
-            paletteWrap.setVisibility(android.view.View.GONE);
-            if (self.state.previewMode) self.rebuildBallForNewSize(true);
-        } catch(eOk) {
-            self.toast("颜色格式无效");
-        }
-    });
-    btnRow.addView(btnConfirm);
-
-    var btnClear = self.ui.createFlatButton(self, "清空", secColor, function() {
+    var btnClearColor = self.ui.createFlatButton(self, "清空", secColor, function() {
+      self.touchActivity();
+      try {
         self.setPendingValue(item.key, "");
-        colorValueTv.setText("默认");
-        try { colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14))); } catch(eDot5) {}
-        inputEt.setText("");
-        paletteExpanded = false;
-        btnColor.setText("展开调色板");
-        paletteWrap.setVisibility(android.view.View.GONE);
-        if (self.state.previewMode) self.rebuildBallForNewSize(true);
+        refreshBallColorPreview();
+      } catch(eClearBallColor) {}
     });
-    btnRow.addView(btnClear);
-
-    scrollBox.addView(btnRow);
-    row.addView(paletteWrap);
+    colorRow.addView(btnClearColor);
+    row.addView(colorRow);
     parent.addView(row);
 
   } else {

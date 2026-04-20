@@ -1387,7 +1387,8 @@ try {
 
   if (!showIcon && textStr.length === 0) showIcon = true;
 
-  var showText = textStr.length > 0;
+  // # 用户要求：悬浮球本球不再显示文字，只保留图标内容
+  var showText = false;
   if (showIcon || showText) {
     var box = new android.widget.LinearLayout(context);
     box.setOrientation(android.widget.LinearLayout.VERTICAL);
