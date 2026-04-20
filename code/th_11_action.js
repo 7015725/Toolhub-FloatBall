@@ -131,7 +131,7 @@ return;
     var r = this.execShellSmart(cmdB64, needRoot);
     if (r && r.ok) return;
 
-    this.toast("shell 失败（Action + 广播桥均失败）");
+    this.toast("shell 广播桥发送失败");
     safeLog(this.L, 'e',  "shell all failed cmd_b64=" + cmdB64 + " ret=" + JSON.stringify(r || {}));
     return;
   }

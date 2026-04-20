@@ -1097,7 +1097,7 @@ function getProcessInfo(tag) {
 
 
 // =======================【工具：Base64 解码（UTF-8）】=======================
-// # 这段代码的主要内容/用途：把 cmd_b64 还原成原始 shell 文本（仅用于 Action 优先路径；广播桥永远传 b64）
+// # 这段代码的主要内容/用途：把 cmd_b64 还原成原始 shell 文本
 function decodeBase64Utf8(b64) {
   try {
     var s = String(b64 || "");
