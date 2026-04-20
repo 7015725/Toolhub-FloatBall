@@ -452,8 +452,8 @@ FloatBallAppWM.prototype.getShortXIconCatalog = function(forceReload) {
   try {
     var handle = this.getShortXResHandle();
     if (handle && handle.cl) {
+      // 策略1：反射 R$drawable 类（未混淆时可用）
       try {
-        // 尝试反射获取 R$drawable 类（未混淆时可用）
         var clz = handle.cl.loadClass(CONST_SHORTX_PACKAGE + ".R$drawable");
         var fields = clz.getFields();
         var i;
@@ -470,10 +470,42 @@ FloatBallAppWM.prototype.getShortXIconCatalog = function(forceReload) {
           } catch (eField) {}
         }
       } catch (eClz) {
-        this._shortxIconCatalogError = "reflect: " + String(eClz);
-        safeLog(this.L, 'w', "getShortXIconCatalog reflect failed: " + String(eClz));
+        this._shortxIconCatalogError = "R$drawable reflect: " + String(eClz);
+        safeLog(this.L, 'w', "getShortXIconCatalog R$drawable failed: " + String(eClz));
+      }
+
+      // 策略2：直接遍历资源 ID（绕过混淆，更稳定）
+      if (!out || out.length === 0) {
+        try {
+          var ctx = context.createPackageContext(CONST_SHORTX_PACKAGE, android.content.Context.CONTEXT_IGNORE_SECURITY);
+          var res = ctx.getResources();
+          var startId = 2131230000;
+          var endId = 2131240000;
+          var count = 0;
+          for (var id = startId; id < endId && count < 20000; id++) {
+            try {
+              var rname = res.getResourceName(id);
+              if (rname && rname.indexOf("/ic_remix_") > 0) {
+                var parts = rname.split("/");
+                var resName = parts[parts.length - 1];
+                out.push({
+                  name: resName,
+                  shortName: resName.substring("ic_remix_".length),
+                  id: id
+                });
+                count++;
+              }
+            } catch (eId) {
+              // ID 无效，跳过
+            }
+          }
+        } catch (eRes) {
+          this._shortxIconCatalogError = (this._shortxIconCatalogError ? this._shortxIconCatalogError + "; " : "") + "res scan: " + String(eRes);
+          safeLog(this.L, 'w', "getShortXIconCatalog res scan failed: " + String(eRes));
+        }
       }
     }
+    // 策略3：APK 文件扫描（最后兜底）
     if (!out || out.length === 0) {
       out = this.scanShortXIconsFromApk();
     }
@@ -486,7 +518,7 @@ FloatBallAppWM.prototype.getShortXIconCatalog = function(forceReload) {
       return as < bs ? -1 : (as > bs ? 1 : 0);
     });
     if (!out || out.length === 0) {
-      if (!this._shortxIconCatalogError) this._shortxIconCatalogError = "反射与 APK 扫描均未获取到图标";
+      if (!this._shortxIconCatalogError) this._shortxIconCatalogError = "所有策略均未获取到图标";
     } else {
       this._shortxIconCatalogError = "";
     }
