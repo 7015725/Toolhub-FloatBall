@@ -902,9 +902,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             currentTint: (inputShortXIconTint && inputShortXIconTint.input) ? String(inputShortXIconTint.input.getText() || "") : "",
             onSelect: function(name) {
                 currentShortXIconName = name;
-                if (inputShortXIconName && inputShortXIconName.input) inputShortXIconName.input.setText(name);
                 updateShortXIconPreview();
-                try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(name || "选择图标"); } catch(e) {}
+                try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(name || "\u9009\u62e9\u56fe\u6807"); } catch(e) {}
             }
         });
     });
