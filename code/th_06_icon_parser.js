@@ -436,6 +436,15 @@ FloatBallAppWM.prototype.resolveShortXDrawable = function(name, tintHex) {
   return null;
 };
 
+FloatBallAppWM.prototype.getShortXIconDrawable = function(name) {
+  try {
+    return this.resolveShortXDrawable(name, null);
+  } catch (e) {
+    safeLog(this.L, 'w', "getShortXIconDrawable failed: " + String(e));
+    return null;
+  }
+};
+
 FloatBallAppWM.prototype.getShortXIconCatalog = function(forceReload) {
   if (!forceReload && this._shortxIconCatalog) return this._shortxIconCatalog;
   var out = [];

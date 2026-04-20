@@ -4083,7 +4083,17 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
               iv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
               try {
                 var dr = self.getShortXIconDrawable(item.name);
-                if (dr) iv.setImageDrawable(dr);
+                if (dr) {
+                  iv.setImageDrawable(dr);
+                } else {
+                  // 图\u6807\u83b7\u53d6\u5931\u8d25，\u663e\u793a\u6587\u5b57\u5360\u4f4d\u7b26
+                  try {
+                    var placeholder = new android.graphics.drawable.GradientDrawable();
+                    placeholder.setColor(self.withAlpha(subTextColor, 0.1));
+                    placeholder.setCornerRadius(self.dp(6));
+                    iv.setBackground(placeholder);
+                  } catch(e) {}
+                }
               } catch(e) {}
               cell.addView(iv);
 
