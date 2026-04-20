@@ -4338,7 +4338,6 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
     }
     recentColors = next;
     saveRecentColors();
-    refreshRecentGrid();
   }
 
   var selectedColor = currentColor;
