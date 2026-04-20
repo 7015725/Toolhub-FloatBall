@@ -1,24 +1,6 @@
 // ToolHub - 入口文件 (加载子模块并执行)
-// 将本文件放入 ShortX 任务，th_*.js 放入 ShortX 数据根目录/ToolHub/code/ 文件夹
-
-var MODULE_MANIFEST = {
-    "th_01_base.js": "1.0.1",
-    "th_02_core.js": "1.0.0",
-    "th_03_icon.js": "1.0.0",
-    "th_04_theme.js": "1.0.0",
-    "th_05_persistence.js": "1.0.0",
-    "th_06_icon_parser.js": "1.0.0",
-    "th_07_shortcut.js": "1.0.0",
-    "th_08_content.js": "1.0.0",
-    "th_09_animation.js": "1.0.0",
-    "th_10_shell.js": "1.0.1",
-    "th_11_action.js": "1.0.1",
-    "th_12_rebuild.js": "1.0.0",
-    "th_13_panel_ui.js": "1.0.0",
-    "th_14_panels.js": "1.0.0",
-    "th_15_extra.js": "1.0.0",
-    "th_16_entry.js": "1.0.0"
-};
+// 将本文件粘贴到 ShortX 任务，子模块会自动从 git 下载到 ToolHub/code/
+// 更新机制：HEAD 请求对比 Last-Modified，入口文件无需更新版本号
 
 var GIT_BASE = "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/code/";
 var __dirChecked = false;
@@ -27,13 +9,15 @@ function getLogPath() {
     return shortx.getShortXDir() + "/ToolHub/logs/init.log";
 }
 
+function getLmPath(relPath) {
+    return shortx.getShortXDir() + "/ToolHub/code/.lm_" + relPath;
+}
+
 function writeLog(msg) {
     try {
         var f = new java.io.File(getLogPath());
         var dir = f.getParentFile();
-        if (dir && !dir.exists()) {
-            dir.mkdirs();
-        }
+        if (dir && !dir.exists()) dir.mkdirs();
         var sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         var ts = sdf.format(new java.util.Date());
         var writer = new java.io.FileWriter(f, true);
@@ -47,9 +31,7 @@ function runShell(cmdArr) {
         var proc = java.lang.Runtime.getRuntime().exec(cmdArr);
         proc.waitFor();
         return proc.exitValue() === 0;
-    } catch (e) {
-        return false;
-    }
+    } catch (e) { return false; }
 }
 
 function checkDirPerms(path) {
@@ -62,10 +44,7 @@ function checkDirPerms(path) {
         if (line) {
             var parts = String(line).trim().split(/\s+/);
             if (parts.length >= 3) {
-                var uid = String(parts[0]);
-                var gid = String(parts[1]);
-                var mode = String(parts[2]);
-                return uid === "1000" && gid === "1000" && mode === "700";
+                return String(parts[0]) === "1000" && String(parts[1]) === "1000" && String(parts[2]) === "700";
             }
         }
     } catch (e) {}
@@ -77,6 +56,43 @@ function setDirPerms(path) {
     runShell(["chown", "1000:1000", path]);
 }
 
+function getRemoteLastModified(urlStr) {
+    try {
+        var url = new java.net.URL(urlStr);
+        var conn = url.openConnection();
+        conn.setRequestMethod("HEAD");
+        conn.setConnectTimeout(5000);
+        conn.setReadTimeout(10000);
+        conn.setRequestProperty("User-Agent", "ShortX-ToolHub/1.0");
+        var code = conn.getResponseCode();
+        if (code !== 200) return null;
+        var lm = conn.getHeaderField("Last-Modified");
+        return lm ? String(lm) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function getLocalLastModified(relPath) {
+    try {
+        var f = new java.io.File(getLmPath(relPath));
+        if (!f.exists()) return null;
+        var r = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(f), "UTF-8"));
+        var lm = r.readLine();
+        r.close();
+        return lm ? String(lm).trim() : null;
+    } catch (e) { return null; }
+}
+
+function saveLocalLastModified(relPath, lm) {
+    try {
+        var f = new java.io.File(getLmPath(relPath));
+        var w = new java.io.FileWriter(f, false);
+        w.write(String(lm || ""));
+        w.close();
+    } catch (e) {}
+}
+
 function downloadFile(urlStr, destFile) {
     var url = new java.net.URL(urlStr);
     var conn = url.openConnection();
@@ -84,21 +100,16 @@ function downloadFile(urlStr, destFile) {
     conn.setReadTimeout(30000);
     conn.setRequestProperty("User-Agent", "ShortX-ToolHub/1.0");
     var code = conn.getResponseCode();
-    if (code !== 200) {
-        throw "HTTP " + code;
-    }
+    if (code !== 200) throw "HTTP " + code;
     var expectedLen = conn.getContentLength();
     var inStream = conn.getInputStream();
     var outStream = new java.io.FileOutputStream(destFile);
     var buf = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 8192);
-    var n;
-    var total = 0;
+    var n, total = 0;
     while ((n = inStream.read(buf)) !== -1) {
-        outStream.write(buf, 0, n);
-        total += n;
+        outStream.write(buf, 0, n); total += n;
     }
-    outStream.close();
-    inStream.close();
+    outStream.close(); inStream.close();
     if (expectedLen > 0 && total !== expectedLen) {
         throw "Size mismatch: expected=" + expectedLen + ", got=" + total;
     }
@@ -113,27 +124,6 @@ function downloadFile(urlStr, destFile) {
         }
     }
     return total;
-}
-
-function getFileVersion(filePath) {
-    try {
-        var f = new java.io.File(filePath);
-        if (!f.exists()) return null;
-        var r = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(f), "UTF-8"));
-        var line = r.readLine();
-        r.close();
-        if (line) {
-            var lineStr = String(line);
-            var idx = lineStr.indexOf("@version");
-            if (idx >= 0) {
-                var rest = lineStr.substring(idx + 8).trim();
-                var spaceIdx = rest.indexOf(" ");
-                var ver = spaceIdx >= 0 ? rest.substring(0, spaceIdx) : rest;
-                return ver;
-            }
-        }
-    } catch (e) {}
-    return null;
 }
 
 function loadScript(relPath) {
@@ -153,18 +143,24 @@ function loadScript(relPath) {
             __dirChecked = true;
         }
 
-        if (!dir.canWrite()) {
-            throw "Dir not writable: " + dir.getAbsolutePath();
-        }
+        if (!dir.canWrite()) throw "Dir not writable: " + dir.getAbsolutePath();
 
         var f = new java.io.File(dir, relPath);
-        var expectedVer = MODULE_MANIFEST[relPath];
-        var localVer = getFileVersion(f.getAbsolutePath());
         var needsDownload = !f.exists();
 
-        if (!needsDownload && expectedVer && localVer !== null && localVer !== expectedVer) {
-            needsDownload = true;
-            writeLog("Version mismatch for " + relPath + ": local=" + localVer + ", expected=" + expectedVer);
+        // 本地文件存在时，HEAD 检查远程是否有更新
+        if (!needsDownload) {
+            try {
+                var urlStr = GIT_BASE + relPath;
+                var remoteLm = getRemoteLastModified(urlStr);
+                var localLm = getLocalLastModified(relPath);
+                if (remoteLm && remoteLm !== localLm) {
+                    needsDownload = true;
+                    writeLog("Update detected for " + relPath + ": remote=" + remoteLm + ", local=" + localLm);
+                }
+            } catch (netErr) {
+                writeLog("Network check skipped for " + relPath + ": " + String(netErr));
+            }
         }
 
         if (needsDownload) {
@@ -172,9 +168,14 @@ function loadScript(relPath) {
                 var urlStr = GIT_BASE + relPath;
                 writeLog("Downloading " + relPath + " from " + urlStr);
                 var size = downloadFile(urlStr, f);
+                var remoteLm = getRemoteLastModified(urlStr);
+                if (remoteLm) saveLocalLastModified(relPath, remoteLm);
                 writeLog("Downloaded " + relPath + " (" + size + " bytes)");
             } catch (dlErr) {
-                throw "Not found: " + f.getAbsolutePath() + ", download failed: " + dlErr;
+                if (!f.exists()) {
+                    throw "Not found: " + f.getAbsolutePath() + ", download failed: " + dlErr;
+                }
+                writeLog("Download failed for " + relPath + ", using existing local file: " + String(dlErr));
             }
         }
 
@@ -187,9 +188,7 @@ function loadScript(relPath) {
             new java.io.FileInputStream(f), "UTF-8"));
         var sb = new java.lang.StringBuilder();
         var line;
-        while ((line = r.readLine()) != null) {
-            sb.append(line).append("\n");
-        }
+        while ((line = r.readLine()) != null) sb.append(line).append("\n");
         r.close();
         var geval = eval;
         geval(String(sb.toString()));
@@ -222,18 +221,15 @@ var __out = (function() {
   var app = new FloatBallAppWM(logger);
   var closeRule = String(app.config.ACTION_CLOSE_ALL_RULE || "shortx.wm.floatball.CLOSE");
   var startRet = null;
-
   try {
     startRet = app.startAsync(entryInfo, closeRule);
   } catch (eTop) {
     try { logger.fatal("TOP startAsync crash err=" + String(eTop)); } catch (eLog) {}
     startRet = { ok: false, err: String(eTop) };
   }
-
   function optStr(v) {
     return (v === undefined || v === null) ? "" : String(v);
   }
-
   var out = {
     ok: true,
     started: startRet && startRet.ok,
@@ -241,11 +237,7 @@ var __out = (function() {
     closeAction: optStr(startRet && startRet.closeAction),
     layout: startRet && startRet.layout || null
   };
-
-  if (!out.started) {
-    out.err = optStr(startRet && startRet.err);
-  }
-
+  if (!out.started) out.err = optStr(startRet && startRet.err);
   return out;
 })();
 
