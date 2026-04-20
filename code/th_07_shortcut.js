@@ -1173,3 +1173,533 @@ try { state.root.setVisibility(android.view.View.VISIBLE); } catch(eVis) {}
   api.show(opts);
 };
 
+// =======================【工具：ShortX 图标库选择器【多宫格自适应排列】======================
+FloatBallAppWM.prototype.showIconPicker = function(opts) {
+  var self = this;
+  var opt = opts || {};
+  var onPick = (typeof opt.onPick === "function") ? opt.onPick : null;
+  var onDismiss = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
+
+  // # 会话隔离
+  var sessionId = String(new Date().getTime()) + "_" + Math.random().toString(36).substr(2, 9);
+  var currentSession = sessionId;
+  this.__currentIconSession = sessionId;
+
+  function checkSession() {
+    if (self.__currentIconSession !== currentSession) return false;
+    return true;
+  }
+
+  // # 单例复用
+  try {
+    if (self.__iconPickerSingleton && typeof self.__iconPickerSingleton.show === "function") {
+      self.__iconPickerSingleton.show(opts);
+      return;
+    }
+  } catch(eSingle) {}
+
+  // # 获取图标列表
+  var allIcons = [];
+  try {
+    allIcons = self.getShortXIconCatalog(true) || [];
+  } catch(eCatalog) {
+    safeLog(self.L, 'e', "icon picker catalog failed: " + String(eCatalog));
+  }
+  if (!allIcons || allIcons.length === 0) {
+    self.toast("无法加载 ShortX 图标库");
+    if (onDismiss) try { onDismiss(); } catch(eD) {}
+    return;
+  }
+
+  var Context = android.content.Context;
+  var wm = context.getSystemService(Context.WINDOW_SERVICE);
+
+  // # 状态
+  var state = {
+    destroyed: false,
+    hidden: false,
+    root: null,
+    params: null,
+    isAdded: false,
+    query: "",
+    filteredIcons: allIcons.slice(),
+    grid: null,
+    etSearch: null,
+    tvStat: null,
+    scrollView: null,
+    onDismiss: onDismiss,
+    onDismissCalled: false
+  };
+
+  function Li(msg) { try { if (self.L) self.L.i("[iconPicker] " + msg); } catch(e) {} }
+  function Le(msg) { try { if (self.L) self.L.e("[iconPicker] " + msg); } catch(e) {} }
+
+  // # 列数自适应计算
+  function computeColumns() {
+    try {
+      var sw = self.state.screen.w;
+      var sh = self.state.screen.h;
+      var isLandscape = sw > sh;
+      // 每个格子最小宽度（dp）：图标 + 文字 + 边距
+      var cellMinDp = isLandscape ? 60 : 68;
+      var paddingTotalDp = 32; // 左右 16dp
+      var availablePx = sw - self.dp(paddingTotalDp);
+      var cols = Math.floor(availablePx / self.dp(cellMinDp));
+      // 限制范围
+      if (isLandscape) {
+        cols = Math.max(6, Math.min(12, cols));
+      } else {
+        cols = Math.max(3, Math.min(6, cols));
+      }
+      return cols;
+    } catch(e) { return 4; }
+  }
+
+  // # 过滤
+  function filterIcons(q) {
+    var qLower = "";
+    try { qLower = String(q || "").toLowerCase(); } catch(e) {}
+    if (!qLower) return allIcons.slice();
+    var out = [];
+    for (var i = 0; i < allIcons.length; i++) {
+      var ic = allIcons[i];
+      if (!ic) continue;
+      var name = "";
+      try { name = String(ic.shortName || ic.name || "").toLowerCase(); } catch(e) {}
+      if (name.indexOf(qLower) >= 0) out.push(ic);
+    }
+    return out;
+  }
+
+  // # 更新统计
+  function updateStat() {
+    try {
+      if (state.tvStat) {
+        state.tvStat.setText("共 " + String(allIcons.length) + " 个 · 当前 " + String(state.filteredIcons.length) + " 个");
+      }
+    } catch(e) {}
+  }
+
+  // # 构建网格
+  function buildGrid() {
+    try {
+      if (!state.grid) return;
+      state.grid.removeAllViews();
+
+      var cols = computeColumns();
+      state.grid.setColumnCount(cols);
+
+      var isDark = self.isDarkTheme();
+      var C = self.ui.colors;
+      var cardColor = isDark ? C.cardDark : C.cardLight;
+      var textColor = isDark ? C.textPriDark : C.textPriLight;
+
+      var cellSizeDp = 56; // 图标大小
+      var labelSizeSp = 9; // 文字大小
+      var cellPadDp = 4;
+
+      for (var i = 0; i < state.filteredIcons.length; i++) {
+        (function(idx, iconInfo) {
+          var cell = new android.widget.LinearLayout(context);
+          cell.setOrientation(android.widget.LinearLayout.VERTICAL);
+          cell.setGravity(android.view.Gravity.CENTER);
+          cell.setPadding(self.dp(cellPadDp), self.dp(cellPadDp), self.dp(cellPadDp), self.dp(cellPadDp));
+
+          var lp = new android.widget.GridLayout.LayoutParams();
+          lp.width = 0;
+          lp.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT;
+          lp.columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1, 1.0);
+          lp.setMargins(self.dp(2), self.dp(2), self.dp(2), self.dp(2));
+          cell.setLayoutParams(lp);
+
+          // 图标
+          var iv = new android.widget.ImageView(context);
+          try {
+            var dr = self.resolveShortXDrawable(iconInfo.name);
+            if (dr) iv.setImageDrawable(dr);
+          } catch(eIcon) {}
+          try { iv.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE); } catch(e) {}
+          var ivLp = new android.widget.LinearLayout.LayoutParams(self.dp(cellSizeDp), self.dp(cellSizeDp));
+          iv.setLayoutParams(ivLp);
+          cell.addView(iv);
+
+          // 文字
+          var tv = new android.widget.TextView(context);
+          var label = "";
+          try { label = String(iconInfo.shortName || iconInfo.name || ""); } catch(e) {}
+          // 超长截断
+          if (label.length > 10) label = label.substring(0, 9) + "…";
+          tv.setText(label);
+          tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, labelSizeSp);
+          tv.setTextColor(textColor);
+          tv.setGravity(android.view.Gravity.CENTER);
+          try { tv.setLines(1); tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(e) {}
+          var tvLp = new android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+          );
+          tvLp.topMargin = self.dp(2);
+          tv.setLayoutParams(tvLp);
+          cell.addView(tv);
+
+          // 点击效果
+          try {
+            var rippleDr = self.ui.createRippleDrawable(cardColor, self.withAlpha(C.primary, 0.2), self.dp(8));
+            cell.setBackground(rippleDr);
+          } catch(eRipple) {
+            cell.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(8)));
+          }
+          cell.setClickable(true);
+
+          cell.setOnClickListener(new android.view.View.OnClickListener({
+            onClick: function() {
+              try {
+                self.touchActivity();
+                if (onPick) onPick(iconInfo.name);
+                hide();
+              } catch(eClick) {}
+            }
+          }));
+
+          state.grid.addView(cell);
+        })(i, state.filteredIcons[i]);
+      }
+
+      updateStat();
+    } catch(eBuild) {
+      Le("buildGrid err=" + String(eBuild));
+    }
+  }
+
+  // # 重新渲染
+  function rebuild() {
+    try {
+      state.filteredIcons = filterIcons(state.query);
+      buildGrid();
+    } catch(e) {}
+  }
+
+  // # 隐藏
+  function hide() {
+    try {
+      if (state.destroyed || state.hidden) return;
+      state.hidden = true;
+
+      // 退输入法
+      try {
+        if (state.etSearch) {
+          state.etSearch.clearFocus();
+          var imm = context.getSystemService(Context.INPUT_METHOD_SERVICE);
+          if (imm) imm.hideSoftInputFromWindow(state.etSearch.getWindowToken(), 0);
+        }
+      } catch(eK) {}
+
+      // 隐藏 View
+      try {
+        if (state.root) state.root.setVisibility(android.view.View.GONE);
+      } catch(eV) {}
+
+      // 通知外层
+      try {
+        if (state.onDismiss && !state.onDismissCalled) {
+          state.onDismissCalled = true;
+          state.onDismiss();
+        }
+      } catch(eD) {}
+
+      Li("icon picker hidden");
+    } catch(eHide) {}
+  }
+
+  // # 销毁
+  function destroy() {
+    try {
+      if (state.destroyed) return;
+      state.destroyed = true;
+      state.hidden = true;
+
+      hide();
+
+      try {
+        if (state.isAdded && state.root) {
+          wm.removeView(state.root);
+        }
+      } catch(eR) {}
+
+      state.isAdded = false;
+      state.root = null;
+
+      if (self.__currentIconSession === currentSession) {
+        self.__currentIconSession = null;
+      }
+      try { self.__iconPickerSingleton = null; } catch(eS) {}
+
+      Li("icon picker destroyed");
+    } catch(eDes) {}
+  }
+
+  // # 显示
+  function show() {
+    if (!checkSession()) return;
+    if (state.destroyed) return;
+
+    // 如果已隐藏，只需显示
+    if (state.hidden && state.root) {
+      try {
+        state.hidden = false;
+        state.root.setVisibility(android.view.View.VISIBLE);
+        // 刷新列数（可能旋转了屏幕）
+        rebuild();
+        Li("icon picker re-shown");
+        return;
+      } catch(eShow) {}
+    }
+
+    // 新建
+    var isDark = self.isDarkTheme();
+    var C = self.ui.colors;
+    var bgColor = isDark ? C.bgDark : C.bgLight;
+    var textColor = isDark ? C.textPriDark : C.textPriLight;
+    var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+    var dividerColor = isDark ? C.dividerDark : C.dividerLight;
+    var inputBgColor = isDark ? C.inputBgDark : C.inputBgLight;
+
+    var sw = self.state.screen.w;
+    var sh = self.state.screen.h;
+
+    // 面板宽度：屏幕宽度减去边距
+    var panelW = sw - self.dp(32);
+    // 面板高度：最多 75% 屏幕高
+    var maxPanelH = Math.floor(sh * 0.75);
+
+    // --- Root ---
+    var root = new android.widget.FrameLayout(context);
+    root.setBackgroundColor(0x00000000);
+    root.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
+      onTouch: function(v, e) {
+        self.touchActivity();
+        // 点击空白处关闭
+        if (e.getAction() === android.view.MotionEvent.ACTION_DOWN) {
+          try {
+            // 检查点击是否在面板外
+            var rect = new android.graphics.Rect();
+            if (state.root) {
+              state.root.getGlobalVisibleRect(rect);
+              var x = e.getRawX();
+              var y = e.getRawY();
+              if (!rect.contains(x, y)) {
+                hide();
+              }
+            }
+          } catch(eOut) {}
+        }
+        return false;
+      }
+    }));
+
+    // --- 面板容器 ---
+    var panel = new android.widget.LinearLayout(context);
+    panel.setOrientation(android.widget.LinearLayout.VERTICAL);
+    var bgDr = new android.graphics.drawable.GradientDrawable();
+    bgDr.setColor(bgColor);
+    bgDr.setCornerRadius(self.dp(16));
+    panel.setBackground(bgDr);
+    try { panel.setElevation(self.dp(8)); } catch(e) {}
+    panel.setPadding(self.dp(16), self.dp(12), self.dp(16), self.dp(12));
+
+    var panelLp = new android.widget.FrameLayout.LayoutParams(panelW, android.widget.FrameLayout.LayoutParams.WRAP_CONTENT);
+    panelLp.gravity = android.view.Gravity.CENTER;
+    root.addView(panel, panelLp);
+
+    // --- 标题栏 ---
+    var header = new android.widget.LinearLayout(context);
+    header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    header.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
+    var tvTitle = new android.widget.TextView(context);
+    tvTitle.setText("选择图标");
+    tvTitle.setTextColor(textColor);
+    tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+    tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+    header.addView(tvTitle);
+
+    // Spacer
+    var spacer = new android.widget.LinearLayout(context);
+    spacer.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, 0, 1));
+    header.addView(spacer);
+
+    // 关闭按钮
+    var btnClose = new android.widget.TextView(context);
+    btnClose.setText("✕");
+    btnClose.setTextColor(subTextColor);
+    btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+    btnClose.setPadding(self.dp(8), self.dp(4), self.dp(4), self.dp(4));
+    btnClose.setOnClickListener(new android.view.View.OnClickListener({
+      onClick: function() { hide(); }
+    }));
+    header.addView(btnClose);
+
+    panel.addView(header);
+
+    // --- 分隔线 ---
+    var sep = new android.view.View(context);
+    sep.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+      android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(1)
+    ));
+    sep.setBackgroundColor(dividerColor);
+    panel.addView(sep);
+
+    // --- 搜索框 ---
+    var searchBox = new android.widget.LinearLayout(context);
+    searchBox.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    searchBox.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    searchBox.setBackground(self.ui.createRoundDrawable(inputBgColor, self.dp(8)));
+    searchBox.setPadding(self.dp(10), self.dp(6), self.dp(10), self.dp(6));
+    var searchLp = new android.widget.LinearLayout.LayoutParams(
+      android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+      android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+    );
+    searchLp.setMargins(0, self.dp(8), 0, self.dp(8));
+    searchBox.setLayoutParams(searchLp);
+
+    var et = new android.widget.EditText(context);
+    et.setHint("搜索图标名称...");
+    try { et.setHintTextColor(subTextColor); } catch(e) {}
+    et.setTextColor(textColor);
+    et.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+    et.setBackground(null);
+    et.setSingleLine(true);
+    var etLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+    et.setLayoutParams(etLp);
+
+    // 实时搜索
+    et.addTextChangedListener(new JavaAdapter(android.text.TextWatcher, {
+      beforeTextChanged: function(s, start, count, after) {},
+      onTextChanged: function(s, start, before, count) {},
+      afterTextChanged: function(s) {
+        try {
+          state.query = String(s || "");
+          rebuild();
+        } catch(eTxt) {}
+      }
+    }));
+
+    searchBox.addView(et);
+    state.etSearch = et;
+
+    // 清空按钮
+    var btnClear = new android.widget.TextView(context);
+    btnClear.setText("✕");
+    btnClear.setTextColor(subTextColor);
+    btnClear.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+    btnClear.setPadding(self.dp(6), self.dp(2), self.dp(2), self.dp(2));
+    btnClear.setOnClickListener(new android.view.View.OnClickListener({
+      onClick: function() {
+        try {
+          et.setText("");
+          state.query = "";
+          rebuild();
+        } catch(eClr) {}
+      }
+    }));
+    searchBox.addView(btnClear);
+
+    panel.addView(searchBox);
+
+    // --- 滚动区域 ---
+    var scroll = new android.widget.ScrollView(context);
+    try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch(e) {}
+    try { scroll.setVerticalScrollBarEnabled(false); } catch(e) {}
+
+    var grid = new android.widget.GridLayout(context);
+    state.grid = grid;
+    scroll.addView(grid);
+
+    var scrollLp = new android.widget.LinearLayout.LayoutParams(
+      android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0
+    );
+    scrollLp.weight = 1;
+    scroll.setLayoutParams(scrollLp);
+    panel.addView(scroll);
+    state.scrollView = scroll;
+
+    // --- 底部状态栏 ---
+    var footer = new android.widget.LinearLayout(context);
+    footer.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    footer.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    footer.setPadding(0, self.dp(4), 0, 0);
+
+    var tvStat = new android.widget.TextView(context);
+    tvStat.setTextColor(subTextColor);
+    tvStat.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+    footer.addView(tvStat);
+    state.tvStat = tvStat;
+
+    panel.addView(footer);
+
+    // --- 添加到 WM ---
+    var lp = new android.view.WindowManager.LayoutParams(
+      android.view.WindowManager.LayoutParams.MATCH_PARENT,
+      android.view.WindowManager.LayoutParams.MATCH_PARENT,
+      android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+      android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND,
+      android.graphics.PixelFormat.TRANSLUCENT
+    );
+    lp.dimAmount = 0.5;
+    lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+    lp.x = 0;
+    lp.y = 0;
+
+    try {
+      wm.addView(root, lp);
+      state.isAdded = true;
+    } catch(eAdd) {
+      Le("addView failed: " + String(eAdd));
+      self.toast("图标选择器打开失败");
+      if (onDismiss) try { onDismiss(); } catch(eD) {}
+      return;
+    }
+
+    state.root = root;
+    state.params = lp;
+
+    // 动画
+    try {
+      panel.setScaleX(0.95);
+      panel.setScaleY(0.95);
+      panel.setAlpha(0);
+      panel.animate()
+        .scaleX(1)
+        .scaleY(1)
+        .alpha(1)
+        .setDuration(180)
+        .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+        .start();
+    } catch(eA) {}
+
+    // 初始渲染
+    rebuild();
+
+    Li("icon picker shown icons=" + String(allIcons.length));
+  }
+
+  // 入口
+  var api = {
+    show: function(newOpts) {
+      try {
+        var o = newOpts || {};
+        onPick = (typeof o.onPick === "function") ? o.onPick : onPick;
+        onDismiss = (typeof o.onDismiss === "function") ? o.onDismiss : onDismiss;
+        state.onDismiss = onDismiss;
+        state.onDismissCalled = false;
+      } catch(eOpt) {}
+      try { state.hidden = false; } catch(eH) {}
+      show();
+    },
+    hide: hide,
+    destroy: destroy
+  };
+  try { self.__iconPickerSingleton = api; } catch(eSet) {}
+  api.show(opts);
+};
+

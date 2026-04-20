@@ -716,14 +716,17 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxBtnGap.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
     shortxQuickRow.addView(shortxBtnGap);
 
-    var btnBrowseShortXIcon = self.ui.createFlatButton(self, "图标库", C.primary, function() {
+    var btnBrowseShortXIcon = self.ui.createFlatButton(self, "选择图标", C.primary, function() {
         self.touchActivity();
-        shortxPickerState.expanded = !shortxPickerState.expanded;
-        if (shortxPickerState.pickerWrap) {
-            shortxPickerState.pickerWrap.setVisibility(shortxPickerState.expanded ? android.view.View.VISIBLE : android.view.View.GONE);
-        }
-        try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(shortxPickerState.expanded ? "收起" : "图标库"); } catch(eT1) {}
-        if (shortxPickerState.expanded) renderShortXIconGrid();
+        self.showIconPicker({
+            onPick: function(iconName) {
+                try {
+                    var shortName = self.normalizeShortXIconName(iconName, false);
+                    inputShortXIcon.input.setText(shortName);
+                    updateShortXIconPreview();
+                } catch(ePick) {}
+            }
+        });
     });
     shortxPickerState.toggleBtn = btnBrowseShortXIcon;
     shortxQuickRow.addView(btnBrowseShortXIcon);
@@ -1069,9 +1072,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             inputShortXIcon.view.setVisibility(android.view.View.VISIBLE);
             shortxQuickRow.setVisibility(android.view.View.VISIBLE);
             inputShortXIconTint.view.setVisibility(android.view.View.VISIBLE);
-            shortxPickerState.expanded = true;
-            shortxPickerWrap.setVisibility(android.view.View.VISIBLE);
-            try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText("收起"); } catch(eBt1) {}
+            // 不再展开内联面板
+            shortxPickerState.expanded = false;
+            if (shortxPickerState.pickerWrap) shortxPickerWrap.setVisibility(android.view.View.GONE);
+            try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText("选择图标"); } catch(eBt1) {}
             // 清空另一种方式的值
             inputIconPath.input.setText("");
             // # ShortX 图标颜色默认跟随主题

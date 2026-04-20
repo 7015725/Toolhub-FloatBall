@@ -147,6 +147,7 @@ function loadScript(relPath) {
 
         var f = new java.io.File(dir, relPath);
         var needsDownload = !f.exists();
+        var isNew = !f.exists();
 
         // 本地文件存在时，HEAD 检查远程是否有更新
         if (!needsDownload) {
@@ -171,6 +172,8 @@ function loadScript(relPath) {
                 var remoteLm = getRemoteLastModified(urlStr);
                 if (remoteLm) saveLocalLastModified(relPath, remoteLm);
                 writeLog("Downloaded " + relPath + " (" + size + " bytes)");
+                // 记录更新信息
+                __moduleUpdates.push({ module: relPath, isNew: isNew, size: size });
             } catch (dlErr) {
                 if (!f.exists()) {
                     throw "Not found: " + f.getAbsolutePath() + ", download failed: " + dlErr;
@@ -201,6 +204,7 @@ var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.j
                "th_06_icon_parser.js", "th_07_shortcut.js", "th_08_content.js", "th_09_animation.js",
                "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
                "th_14_panels.js", "th_15_extra.js", "th_16_entry.js"];
+var __moduleUpdates = [];
 var loadErrors = [];
 for (var i = 0; i < modules.length; i++) {
     try {
@@ -235,7 +239,9 @@ var __out = (function() {
     started: startRet && startRet.ok,
     msg: optStr(startRet && startRet.msg),
     closeAction: optStr(startRet && startRet.closeAction),
-    layout: startRet && startRet.layout || null
+    layout: startRet && startRet.layout || null,
+    updates: __moduleUpdates,
+    errors: loadErrors
   };
   if (!out.started) out.err = optStr(startRet && startRet.err);
   return out;
