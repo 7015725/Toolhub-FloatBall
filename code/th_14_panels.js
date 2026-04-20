@@ -904,6 +904,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 currentShortXIconName = name;
                 updateShortXIconPreview();
                 try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(name || "\u9009\u62e9\u56fe\u6807"); } catch(e) {}
+                // # 选中 ShortX 图标后自动切换到 ShortX 图标模式，避免保存时走 file 分支导致颜色丢失
+                try { rbIconShortX.setChecked(true); } catch(eRb) {}
+                try { updateIconInputs("shortx"); } catch(eUp) {}
             }
         });
     });
@@ -934,17 +937,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             currentIconName: currentShortXIconName,
             onSelect: function(colorHex) {
                 try {
-                    var safeColor = String(colorHex || "");
-                    // # 避免 Rhino 闭包问题：从 self.state 读取输入框引用
-                    var tintInput = self.state._btnEditorTintInput || inputShortXIconTint;
-                    if (tintInput && tintInput.input) {
-                        tintInput.input.setText(safeColor);
-                        try { tintInput.input.invalidate(); } catch(e) {}
-                    }
-                    // # 双保险：直接更新 targetBtn，确保保存时能拿到正确值
-                    if (safeColor) targetBtn.iconTint = safeColor;
-                    else delete targetBtn.iconTint;
-                    try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
+                    applyTintSelectionFromPopup(colorHex);
                 } catch(eSelect) {
                     safeLog(self.L, 'e', "colorPicker callback err=" + String(eSelect));
                 }
@@ -1382,6 +1375,16 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         syncTintUiFromInput(!!pushRecent);
     }
 
+    function applyTintSelectionFromPopup(colorHex) {
+        var safeColor = normalizeTintColorValue(colorHex, true);
+        if (safeColor === null) safeColor = "";
+        applyTintHexValue(safeColor, !!safeColor);
+        if (safeColor) targetBtn.iconTint = safeColor;
+        else delete targetBtn.iconTint;
+        try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272"); } catch(eTintPopupBtn0) {}
+        try { updateShortXIconPreview(); } catch(eTintPopupPreview0) {}
+    }
+
     function applyTintFromCurrentBase(pushRecent) {
         var baseRgb = tintPaletteState.currentBaseRgbHex || extractTintRgbHex(getThemeTintHex());
         var alphaByte = 255;
@@ -1505,17 +1508,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             currentIconName: currentShortXIconName,
             onSelect: function(colorHex) {
                 try {
-                    var safeColor = String(colorHex || "");
-                    // # 避免 Rhino 闭包问题：从 self.state 读取输入框引用
-                    var tintInput = self.state._btnEditorTintInput || inputShortXIconTint;
-                    if (tintInput && tintInput.input) {
-                        tintInput.input.setText(safeColor);
-                        try { tintInput.input.invalidate(); } catch(e) {}
-                    }
-                    // # 双保险：直接更新 targetBtn，确保保存时能拿到正确值
-                    if (safeColor) targetBtn.iconTint = safeColor;
-                    else delete targetBtn.iconTint;
-                    try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
+                    applyTintSelectionFromPopup(colorHex);
                 } catch(eSelect) {
                     safeLog(self.L, 'e', "colorPicker callback err=" + String(eSelect));
                 }
@@ -3398,6 +3391,9 @@ try {
             } else {
                 buttons[editIdx] = newBtn;
             }
+
+            // # 立即持久化，避免 refreshPanel 重新加载时丢失（keepBtnEditorState=false 会触发重新克隆）
+            ConfigManager.saveButtons(buttons);
 
             self.state.editingButtonIndex = null;
             refreshPanel();
