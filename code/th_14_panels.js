@@ -4144,23 +4144,9 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
         afterTextChanged: function() {}
       }));
 
-      grid.post(new java.lang.Runnable({
-        run: function() {
-          try {
-            var w = grid.getWidth();
-            var h = grid.getHeight();
-            if (w > 0 && h > 0) {
-              resolvePageSize(w, h);
-              renderGrid();
-            } else {
-              grid.postDelayed(new java.lang.Runnable({ run: function() {
-                resolvePageSize(grid.getWidth(), grid.getHeight());
-                renderGrid();
-              }}), 100);
-            }
-          } catch(ePost) { safeLog(self.L, 'e', "iconPicker post err=" + String(ePost)); }
-        }
-      }));
+      // 直接计算默认页面大小并渲染，不依赖 grid.post
+      resolvePageSize(self.dp(300), self.dp(360));
+      renderGrid();
     }
   });
 
