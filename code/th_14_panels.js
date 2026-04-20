@@ -3772,17 +3772,45 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     var errMsg = "\u56fe\u6807\u5e93\u672a\u52a0\u8f7d";
     try { errMsg = self._shortxIconCatalogError || errMsg; } catch(e) {}
     self.toast("\u56fe\u6807\u5e93\u672a\u52a0\u8f7d: " + errMsg);
-    // 尝试强\u5236\u91cd\u65b0\u52a0\u8f7d
+    // 尝试强制重新加载
     try {
       catalog = self.getShortXIconCatalog(true) || [];
       if (!catalog.length) {
         try { errMsg = self._shortxIconCatalogError || "\u91cd\u8bd5\u4ecd\u5931\u8d25"; } catch(e) {}
         self.toast("\u56fe\u6807\u5e93\u91cd\u8bd5\u5931\u8d25: " + errMsg);
-        return null;
       }
-    } catch(eRetry) {
-      return null;
-    }
+    } catch(eRetry) {}
+  }
+  
+  // 如\u679c\u8fd8\u662f\u7a7a，\u663e\u793a\u8bca\u65ad\u4fe1\u606f
+  if (!catalog.length) {
+    var diagPaths = [];
+    try { diagPaths = self.getShortXApkPaths() || []; } catch(e) {}
+    var diagInfo = "\u5305\u540d: " + CONST_SHORTX_PACKAGE + "\nAPK\u8def\u5f84: " + (diagPaths.join(", ") || "\u65e0") + "\n\u9519\u8bef: " + (self._shortxIconCatalogError || "\u672a\u77e5");
+    
+    // 备\u7528\u56fe\u6807\u5217\u8868（\u5f53\u6240\u6709\u81ea\u52a8\u83b7\u53d6\u5931\u8d25\u65f6\uff0c\u81f3\u5c11\u663e\u793a\u4e00\u4e9b\u5e38\u7528\u56fe\u6807\uff09
+    catalog = [
+      {name: "ic_remix_home", shortName: "home"},
+      {name: "ic_remix_settings", shortName: "settings"},
+      {name: "ic_remix_share", shortName: "share"},
+      {name: "ic_remix_save", shortName: "save"},
+      {name: "ic_remix_delete", shortName: "delete"},
+      {name: "ic_remix_edit", shortName: "edit"},
+      {name: "ic_remix_search", shortName: "search"},
+      {name: "ic_remix_refresh", shortName: "refresh"},
+      {name: "ic_remix_add", shortName: "add"},
+      {name: "ic_remix_close", shortName: "close"},
+      {name: "ic_remix_play", shortName: "play"},
+      {name: "ic_remix_pause", shortName: "pause"},
+      {name: "ic_remix_camera", shortName: "camera"},
+      {name: "ic_remix_image", shortName: "image"},
+      {name: "ic_remix_folder", shortName: "folder"},
+      {name: "ic_remix_file", shortName: "file"},
+      {name: "ic_remix_link", shortName: "link"},
+      {name: "ic_remix_bluetooth", shortName: "bluetooth"},
+      {name: "ic_remix_wifi", shortName: "wifi"},
+      {name: "ic_remix_flashlight", shortName: "flashlight"}
+    ];
   }
 
   var selectedName = currentName;

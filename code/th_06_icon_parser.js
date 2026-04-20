@@ -341,9 +341,10 @@ FloatBallAppWM.prototype.scanShortXIconsFromApk = function() {
   var out = [];
   var seen = {};
   var paths = this.getShortXApkPaths();
-  // 宽松匹配：匹配 res/drawable* 下所有以 ic_ 开头的图标，不限于 ic_remix_
-  var regex = /^res\/drawable[^\/]*\/(ic_[a-z0-9_]+)\.(xml|png|webp|jpg|jpeg)$/;
+  // 宽松匹配：匹配 res/drawable* 和 res/mipmap* 下所有以 ic_ 开头的图标
+  var regex = /^res\/(drawable[^\/]*|mipmap[^\/]*)\/(ic_[a-z0-9_]+)\.(xml|png|webp|jpg|jpeg)$/;
   var lastErr = "";
+  var totalFiles = 0;
   var pi;
   for (pi = 0; pi < paths.length; pi++) {
     var zip = null;
@@ -353,10 +354,11 @@ FloatBallAppWM.prototype.scanShortXIconsFromApk = function() {
       while (en.hasMoreElements()) {
         var ze = en.nextElement();
         var name = String(ze.getName());
+        totalFiles++;
         var m = regex.exec(name);
         if (!m) continue;
-        var fullName = String(m[1]);
-        // 过\u6ee4\u6389\u7cfb\u7edf\u56fe\u6807，只\u4fdd\u7559 ShortX 自\u5b9a\u4e49\u56fe\u6807
+        var fullName = String(m[2]);
+        // 过滤掉系统图标
         if (fullName.indexOf("ic_launcher") === 0 || fullName.indexOf("ic_menu_") === 0) continue;
         if (seen[fullName]) continue;
         seen[fullName] = true;
@@ -372,7 +374,7 @@ FloatBallAppWM.prototype.scanShortXIconsFromApk = function() {
       try { if (zip) zip.close(); } catch (eClose) {}
     }
   }
-  if ((!out || out.length === 0) && lastErr) this._shortxIconCatalogError = lastErr;
+  if ((!out || out.length === 0) && lastErr) this._shortxIconCatalogError = "APK扫描: " + lastErr + " (路径数=" + paths.length + ", 文件数=" + totalFiles + ")";
   return out;
 };
 
