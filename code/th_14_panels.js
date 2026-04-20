@@ -935,10 +935,15 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             onSelect: function(colorHex) {
                 try {
                     var safeColor = String(colorHex || "");
-                    if (inputShortXIconTint && inputShortXIconTint.input) {
-                        inputShortXIconTint.input.setText(safeColor);
-                        try { inputShortXIconTint.input.invalidate(); } catch(e) {}
+                    // # 避免 Rhino 闭包问题：从 self.state 读取输入框引用
+                    var tintInput = self.state._btnEditorTintInput || inputShortXIconTint;
+                    if (tintInput && tintInput.input) {
+                        tintInput.input.setText(safeColor);
+                        try { tintInput.input.invalidate(); } catch(e) {}
                     }
+                    // # 双保险：直接更新 targetBtn，确保保存时能拿到正确值
+                    if (safeColor) targetBtn.iconTint = safeColor;
+                    else delete targetBtn.iconTint;
                     try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
                 } catch(eSelect) {
                     safeLog(self.L, 'e', "colorPicker callback err=" + String(eSelect));
@@ -1254,6 +1259,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var defaultTint = targetBtn.iconTint ? String(targetBtn.iconTint) : "";
     var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空跟随主题)", defaultTint, false, "支持 #RRGGBB / #AARRGGBB；下方可展开完整调色板");
     form.addView(inputShortXIconTint.view);
+    // # 避免 Rhino 闭包问题：将输入框引用存储到 self.state，供颜色选择器回调使用
+    self.state._btnEditorTintInput = inputShortXIconTint;
 
     function updateTintPaletteToggleText() {
         try {
@@ -1499,10 +1506,15 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             onSelect: function(colorHex) {
                 try {
                     var safeColor = String(colorHex || "");
-                    if (inputShortXIconTint && inputShortXIconTint.input) {
-                        inputShortXIconTint.input.setText(safeColor);
-                        try { inputShortXIconTint.input.invalidate(); } catch(e) {}
+                    // # 避免 Rhino 闭包问题：从 self.state 读取输入框引用
+                    var tintInput = self.state._btnEditorTintInput || inputShortXIconTint;
+                    if (tintInput && tintInput.input) {
+                        tintInput.input.setText(safeColor);
+                        try { tintInput.input.invalidate(); } catch(e) {}
                     }
+                    // # 双保险：直接更新 targetBtn，确保保存时能拿到正确值
+                    if (safeColor) targetBtn.iconTint = safeColor;
+                    else delete targetBtn.iconTint;
                     try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
                 } catch(eSelect) {
                     safeLog(self.L, 'e', "colorPicker callback err=" + String(eSelect));
@@ -3314,8 +3326,11 @@ shortcutWrap.addView(scBody);
             } else {
                 var sxIcon = self.normalizeShortXIconName(currentShortXIconName, false);
                 if (sxIcon) newBtn.iconResName = sxIcon; else delete newBtn.iconResName;
-                // 保存 ShortX 图标颜色
-                var sxTint = inputShortXIconTint.getValue();
+                // # 保存 ShortX 图标颜色：优先使用 targetBtn.iconTint（颜色选择器已更新），回退到输入框
+                var sxTint = targetBtn.iconTint || "";
+                if (!sxTint) {
+                    try { sxTint = inputShortXIconTint.getValue(); } catch(eGetTint) {}
+                }
                 if (sxTint && sxTint.length > 0) newBtn.iconTint = sxTint; else delete newBtn.iconTint;
                 delete newBtn.iconPath; // 清除文件路径
             }
