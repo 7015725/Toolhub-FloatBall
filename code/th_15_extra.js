@@ -1370,7 +1370,6 @@ try {
   var iconResId = Number(this.config.BALL_ICON_RES_ID || 0);
   var iconType = this.config.BALL_ICON_TYPE ? String(this.config.BALL_ICON_TYPE) : "android";
   var iconFilePath = (this.config.BALL_ICON_FILE_PATH == null) ? "" : String(this.config.BALL_ICON_FILE_PATH);
-  var textStr = (this.config.BALL_TEXT == null) ? "" : String(this.config.BALL_TEXT);
 
   // # 是否显示图标：file 只看路径；app 优先看包名，其次可回退 iconResId；android 走 iconResId；shortx 总是显示
   var showIcon = false;
@@ -1385,11 +1384,9 @@ try {
     showIcon = (iconResId > 0);
   }
 
-  if (!showIcon && textStr.length === 0) showIcon = true;
+  if (!showIcon) showIcon = true;
 
-  // # 用户要求：悬浮球本球不再显示文字，只保留图标内容
-  var showText = false;
-  if (showIcon || showText) {
+  if (showIcon) {
     var box = new android.widget.LinearLayout(context);
     box.setOrientation(android.widget.LinearLayout.VERTICAL);
     box.setGravity(android.view.Gravity.CENTER);
@@ -1401,9 +1398,6 @@ try {
     box.setLayoutParams(boxLp);
 
     var tintHex = (this.config.BALL_ICON_TINT_HEX == null) ? "" : String(this.config.BALL_ICON_TINT_HEX);
-    var textColorHex = (this.config.BALL_TEXT_COLOR_HEX == null) ? "" : String(this.config.BALL_TEXT_COLOR_HEX);
-
-    var defaultColor = android.graphics.Color.WHITE;
 
     if (showIcon) {
       var iv = new android.widget.ImageView(context);
@@ -1520,35 +1514,6 @@ try {
 
         box.addView(iv);
       }
-    }
-
-    if (showText) {
-      var tv = new android.widget.TextView(context);
-      tv.setText(textStr);
-      tv.setGravity(android.view.Gravity.CENTER);
-      try { tv.setIncludeFontPadding(false); } catch (eFP) {}
-      tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, Number(this.config.BALL_TEXT_SIZE_SP || 10));
-
-      var txtColor = defaultColor;
-      if (textColorHex.length > 0) {
-        try { txtColor = android.graphics.Color.parseColor(textColorHex); } catch (eTC) {}
-      } else if (tintHex.length > 0) {
-        // # 如果没单独指定文字颜色，则跟随图标颜色
-        try { txtColor = android.graphics.Color.parseColor(tintHex); } catch (eTC2) {}
-      }
-      tv.setTextColor(txtColor);
-
-      // # 设置一点点阴影，提高可读性
-      try { tv.setShadowLayer(1.2, 0, 1.0, 0x66000000); } catch (eSH) {}
-
-      // # 图标与文字间距
-      if (showIcon) {
-        var gap = this.dp(Number(this.config.BALL_ICON_TEXT_GAP_DP || 1));
-        var padTop = Math.max(0, gap);
-        tv.setPadding(0, padTop, 0, 0);
-      }
-
-      box.addView(tv);
     }
 
     content.addView(box);
