@@ -9,7 +9,7 @@ var MODULE_MANIFEST = {
     "th_5_entry.js": "1.0.0"
 };
 
-var GIT_BASE = "https://git.xin-blog.com/chenziran/ShortX_ToolHub/raw/branch/main/code/";
+var GIT_BASE = "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/code/";
 var __dirChecked = false;
 
 function getLogPath() {
