@@ -4076,7 +4076,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
               cell.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
               cell.setPadding(self.dp(4), self.dp(6), self.dp(4), self.dp(6));
               cell.setClickable(true);
-              cell.setBackground(self.ui.createRipple(C.primary, self.dp(10)));
+              cell.setBackground(self.ui.createRippleDrawable(C.card, self.withAlpha(C.primary, 0.2), self.dp(10)));
 
               var iv = new android.widget.ImageView(context);
               iv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28)));
