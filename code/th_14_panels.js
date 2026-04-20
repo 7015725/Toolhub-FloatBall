@@ -1608,7 +1608,60 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPaletteBody.addView(tintCommonGrid);
     tintPaletteState.commonGrid = tintCommonGrid;
 
-    var tintCommonDefs = [
+    function getTintSortInfo(hexValue) {
+        var normalized = normalizeTintColorValue(hexValue, false);
+        if (!normalized) return { hue: 999, sat: -1, val: -1 };
+        var rgb = normalized.substring(3);
+        var r = parseInt(rgb.substring(0, 2), 16) / 255.0;
+        var g = parseInt(rgb.substring(2, 4), 16) / 255.0;
+        var b = parseInt(rgb.substring(4, 6), 16) / 255.0;
+        var max = Math.max(r, g, b);
+        var min = Math.min(r, g, b);
+        var d = max - min;
+        var h = 0;
+        if (d === 0) {
+            h = 999;
+        } else if (max === r) {
+            h = ((g - b) / d) % 6;
+        } else if (max === g) {
+            h = ((b - r) / d) + 2;
+        } else {
+            h = ((r - g) / d) + 4;
+        }
+        if (h !== 999) {
+            h = h * 60;
+            if (h < 0) h += 360;
+        }
+        var s = max === 0 ? 0 : d / max;
+        var v = max;
+        return { hue: h, sat: s, val: v };
+    }
+
+    function sortTintCommonDefs(defs) {
+        var fixed = [];
+        var auto = [];
+        var i;
+        for (i = 0; i < defs.length; i++) {
+            var item = defs[i];
+            if (!item) continue;
+            if (item.followTheme) fixed.push(item);
+            else {
+                var sortInfo = getTintSortInfo(item.hex);
+                item.__sortHue = sortInfo.hue;
+                item.__sortSat = sortInfo.sat;
+                item.__sortVal = sortInfo.val;
+                auto.push(item);
+            }
+        }
+        auto.sort(function(a, b) {
+            if (a.__sortHue !== b.__sortHue) return a.__sortHue - b.__sortHue;
+            if (a.__sortSat !== b.__sortSat) return b.__sortSat - a.__sortSat;
+            return b.__sortVal - a.__sortVal;
+        });
+        return fixed.concat(auto);
+    }
+
+    var tintCommonDefs = sortTintCommonDefs([
         { label: "跟随主题", hex: "", followTheme: true },
         { label: "白色", hex: "#FFFFFFFF" },
         { label: "黑色", hex: "#FF000000" },
@@ -1629,7 +1682,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         { label: "粉色", hex: "#FFD81B60" },
         { label: "棕色", hex: "#FF8D6E63" },
         { label: "银灰", hex: "#FFCBD5E1" }
-    ];
+    ]);
     var tintCi;
     for (tintCi = 0; tintCi < tintCommonDefs.length; tintCi++) {
         tintCommonGrid.addView(createTintSwatchCell(tintCommonDefs[tintCi].label, tintCommonDefs[tintCi].hex, !!tintCommonDefs[tintCi].followTheme));
