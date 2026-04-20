@@ -2,11 +2,22 @@
 // 将本文件放入 ShortX 任务，th_*.js 放入 ShortX 数据根目录/ToolHub/code/ 文件夹
 
 var MODULE_MANIFEST = {
-    "th_1_base.js": "1.0.0",
-    "th_2_core.js": "1.0.0",
-    "th_3_panels.js": "1.0.0",
-    "th_4_extra.js": "1.0.0",
-    "th_5_entry.js": "1.0.0"
+    "th_01_base.js": "1.0.0",
+    "th_02_core.js": "1.0.0",
+    "th_03_icon.js": "1.0.0",
+    "th_04_theme.js": "1.0.0",
+    "th_05_persistence.js": "1.0.0",
+    "th_06_icon_parser.js": "1.0.0",
+    "th_07_shortcut.js": "1.0.0",
+    "th_08_content.js": "1.0.0",
+    "th_09_animation.js": "1.0.0",
+    "th_10_shell.js": "1.0.0",
+    "th_11_action.js": "1.0.0",
+    "th_12_rebuild.js": "1.0.0",
+    "th_13_panel_ui.js": "1.0.0",
+    "th_14_panels.js": "1.0.0",
+    "th_15_extra.js": "1.0.0",
+    "th_16_entry.js": "1.0.0"
 };
 
 var GIT_BASE = "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/code/";
@@ -187,7 +198,10 @@ function loadScript(relPath) {
     }
 }
 
-var modules = ["th_1_base.js", "th_2_core.js", "th_3_panels.js", "th_4_extra.js", "th_5_entry.js"];
+var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.js", "th_05_persistence.js",
+               "th_06_icon_parser.js", "th_07_shortcut.js", "th_08_content.js", "th_09_animation.js",
+               "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
+               "th_14_panels.js", "th_15_extra.js", "th_16_entry.js"];
 var loadErrors = [];
 for (var i = 0; i < modules.length; i++) {
     try {
@@ -195,7 +209,7 @@ for (var i = 0; i < modules.length; i++) {
     } catch (e) {
         writeLog("Module load failed: " + modules[i] + " -> " + String(e));
         loadErrors.push({ module: modules[i], err: String(e) });
-        if (modules[i] === "th_5_entry.js") {
+        if (modules[i] === "th_16_entry.js") {
             throw "Critical module failed: " + modules[i];
         }
     }
