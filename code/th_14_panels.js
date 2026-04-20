@@ -3759,82 +3759,42 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var opt = opts || {};
   var currentName = String(opt.currentName || "");
   var onSelect = (typeof opt.onSelect === "function") ? opt.onSelect : null;
-  var onDismiss = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
-
-  var isDark = this.isDarkTheme();
-  var C = this.ui.colors;
-  var textColor = isDark ? C.textPriDark : C.textPriLight;
-  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+  var onDismissCb = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
 
   var catalog = [];
   try { catalog = self.getShortXIconCatalog() || []; } catch(e) {}
   if (!catalog.length) {
-    var errMsg = "\u56fe\u6807\u5e93\u672a\u52a0\u8f7d";
-    try { errMsg = self._shortxIconCatalogError || errMsg; } catch(e) {}
-    self.toast("\u56fe\u6807\u5e93\u672a\u52a0\u8f7d: " + errMsg);
-    // 尝试强制重新加载
-    try {
-      catalog = self.getShortXIconCatalog(true) || [];
-      if (!catalog.length) {
-        try { errMsg = self._shortxIconCatalogError || "\u91cd\u8bd5\u4ecd\u5931\u8d25"; } catch(e) {}
-        self.toast("\u56fe\u6807\u5e93\u91cd\u8bd5\u5931\u8d25: " + errMsg);
-      }
-    } catch(eRetry) {}
+    try { catalog = self.getShortXIconCatalog(true) || []; } catch(e) {}
   }
-  
-  // 如\u679c\u8fd8\u662f\u7a7a，\u663e\u793a\u8bca\u65ad\u4fe1\u606f
   if (!catalog.length) {
-    var diagPaths = [];
-    try { diagPaths = self.getShortXApkPaths() || []; } catch(e) {}
-    var diagInfo = "\u5305\u540d: " + CONST_SHORTX_PACKAGE + "\nAPK\u8def\u5f84: " + (diagPaths.join(", ") || "\u65e0") + "\n\u9519\u8bef: " + (self._shortxIconCatalogError || "\u672a\u77e5");
-    
-    // 备\u7528\u56fe\u6807\u5217\u8868（\u5f53\u6240\u6709\u81ea\u52a8\u83b7\u53d6\u5931\u8d25\u65f6\uff0c\u81f3\u5c11\u663e\u793a\u4e00\u4e9b\u5e38\u7528\u56fe\u6807\uff09
-    catalog = [
-      {name: "ic_remix_home", shortName: "home"},
-      {name: "ic_remix_settings", shortName: "settings"},
-      {name: "ic_remix_share", shortName: "share"},
-      {name: "ic_remix_save", shortName: "save"},
-      {name: "ic_remix_delete", shortName: "delete"},
-      {name: "ic_remix_edit", shortName: "edit"},
-      {name: "ic_remix_search", shortName: "search"},
-      {name: "ic_remix_refresh", shortName: "refresh"},
-      {name: "ic_remix_add", shortName: "add"},
-      {name: "ic_remix_close", shortName: "close"},
-      {name: "ic_remix_play", shortName: "play"},
-      {name: "ic_remix_pause", shortName: "pause"},
-      {name: "ic_remix_camera", shortName: "camera"},
-      {name: "ic_remix_image", shortName: "image"},
-      {name: "ic_remix_folder", shortName: "folder"},
-      {name: "ic_remix_file", shortName: "file"},
-      {name: "ic_remix_link", shortName: "link"},
-      {name: "ic_remix_bluetooth", shortName: "bluetooth"},
-      {name: "ic_remix_wifi", shortName: "wifi"},
-      {name: "ic_remix_flashlight", shortName: "flashlight"}
-    ];
+    self.toast("\u56fe\u6807\u5e93\u672a\u52a0\u8f7d");
+    return null;
   }
 
   var selectedName = currentName;
-
-  var popupState = {
-    currentPage: 0,
-    activeTab: "all"
-  };
+  var popupState = { currentPage: 0, activeTab: "all" };
+  var isDark = self.isDarkTheme();
+  var C = self.ui.colors;
+  var textColor = isDark ? C.textPriDark : C.textPriLight;
+  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+  var cardColor = isDark ? C.cardDark : C.cardLight;
+  var bgColor = isDark ? C.bgDark : C.bgLight;
+  var wm = self.state.wm;
 
   var tabDefs = [
-    { key: "all", label: "全部" },
-    { key: "system", label: "系统" },
-    { key: "common", label: "常用" },
-    { key: "media", label: "媒体" },
-    { key: "comm", label: "通讯" },
-    { key: "device", label: "设备" },
-    { key: "action", label: "动作" }
+    { key: "all", label: "\u5168\u90e8" },
+    { key: "system", label: "\u7cfb\u7edf" },
+    { key: "common", label: "\u5e38\u7528" },
+    { key: "media", label: "\u5a92\u4f53" },
+    { key: "comm", label: "\u901a\u8baf" },
+    { key: "device", label: "\u8bbe\u5907" },
+    { key: "action", label: "\u52a8\u4f5c" }
   ];
 
   function filterCatalog(q, tab) {
     var qLower = String(q || "").toLowerCase();
     var out = [];
-    var i;
-    for (i = 0; i < catalog.length; i++) {
+    for (var i = 0; i < catalog.length; i++) {
       var entry = catalog[i];
       if (!entry) continue;
       if (qLower) {
@@ -3850,287 +3810,340 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     return out;
   }
 
-  function filterCatalog(q, tab) {
-    var qLower = String(q || "").toLowerCase();
-    var out = [];
-    var i;
-    for (i = 0; i < catalog.length; i++) {
-      var entry = catalog[i];
-      if (!entry) continue;
-      if (qLower) {
-        var n = String(entry.shortName || entry.name).toLowerCase();
-        if (n.indexOf(qLower) < 0) continue;
-      }
-      if (tab && tab !== "all") {
-        var t = String(entry.category || "all").toLowerCase();
-        if (t !== tab) continue;
-      }
-      out.push(entry);
-    }
-    return out;
+  // \u5f39\u7a97\u5c3a\u5bf8\u8ba1\u7b97（\u81ea\u9002\u5e94\u5c4f\u5e55\uff09
+  var dm = context.getResources().getDisplayMetrics();
+  var sw = dm.widthPixels;
+  var sh = dm.heightPixels;
+  var density = dm.density;
+
+  var panelWidth = Math.round(sw * 0.92);
+  if (panelWidth > self.dp(420)) panelWidth = self.dp(420);
+  if (panelWidth < self.dp(300)) panelWidth = self.dp(300);
+
+  var padH = self.dp(14);
+  var padV = self.dp(12);
+  var gap = self.dp(8);
+
+  // \u8ba1\u7b97\u5217\u6570\u548c\u5355\u5143\u683c\u5bbd\u5ea6
+  var minCellW = self.dp(64);
+  var availW = panelWidth - padH * 2 - gap * 2;
+  var colCount = Math.max(3, Math.floor(availW / (minCellW + gap)));
+  var cellW = Math.floor((availW - gap * (colCount - 1)) / colCount);
+  if (cellW < minCellW) { cellW = minCellW; colCount = Math.max(3, Math.floor(availW / (cellW + gap))); }
+
+  // \u8ba1\u7b97\u884c\u6570\u548c\u6bcf\u9875\u5927\u5c0f
+  var iconSize = Math.floor(cellW * 0.5);
+  if (iconSize < self.dp(22)) iconSize = self.dp(22);
+  if (iconSize > self.dp(32)) iconSize = self.dp(32);
+  var cellH = self.dp(6) * 2 + iconSize + self.dp(14); // padding + icon + text
+  var headerH = self.dp(160); // header + search + tabs + status + pageBar \u7ea6\u5360\u9ad8\u5ea6
+  var maxGridH = Math.round(sh * 0.55);
+  var rowCount = Math.max(3, Math.floor((maxGridH - headerH) / (cellH + gap)));
+  var pageSize = colCount * rowCount;
+  if (pageSize < 12) pageSize = 12;
+  if (pageSize > 40) pageSize = 40;
+
+  var rootOverlay = new android.widget.FrameLayout(context);
+  rootOverlay.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, 0.55));
+  rootOverlay.setClickable(true);
+
+  var card = new android.widget.LinearLayout(context);
+  card.setOrientation(android.widget.LinearLayout.VERTICAL);
+  card.setPadding(padH, padV, padH, padV);
+  card.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(16)));
+
+  var cardLp = new android.widget.FrameLayout.LayoutParams(panelWidth, android.widget.FrameLayout.LayoutParams.WRAP_CONTENT);
+  cardLp.gravity = android.view.Gravity.CENTER;
+  card.setLayoutParams(cardLp);
+
+  rootOverlay.addView(card);
+
+  var overlayLp = new android.view.WindowManager.LayoutParams(
+    android.view.WindowManager.LayoutParams.MATCH_PARENT,
+    android.view.WindowManager.LayoutParams.MATCH_PARENT,
+    android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+    android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+    android.graphics.PixelFormat.TRANSLUCENT
+  );
+
+  try { wm.addView(rootOverlay, overlayLp); } catch(eAdd) {
+    safeLog(self.L, 'e', "icon picker addView fail: " + String(eAdd));
+    return null;
   }
 
-  var popupResult = self.showPopupOverlay({
-    title: "选择 ShortX 图标",
-    onDismiss: onDismiss,
-    builder: function(content, closePopup) {
-      var searchEt = new android.widget.EditText(context);
-      searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-      searchEt.setTextColor(textColor);
-      try { searchEt.setHintTextColor(subTextColor); } catch(e) {}
-      searchEt.setHint("搜索图标名，如 share / home / save");
-      searchEt.setSingleLine(true);
-      searchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
-      searchEt.setBackground(self.ui.createStrokeDrawable(isDark ? self.ui.colors.inputBgDark : self.ui.colors.inputBgLight, isDark ? self.ui.colors.dividerDark : self.ui.colors.dividerLight, self.dp(1), self.dp(10)));
-      content.addView(searchEt);
+  var isDismissed = false;
+  function dismiss() {
+    if (isDismissed) return;
+    isDismissed = true;
+    try { wm.removeView(rootOverlay); } catch(e) {}
+    if (typeof onDismissCb === "function") {
+      try { onDismissCb(); } catch(eD) {}
+    }
+  }
+  rootOverlay.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { dismiss(); } }));
+  card.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { /* \u963b\u6b62\u5192\u6ce1 */ } }));
 
-      var tabsScroll = new android.widget.HorizontalScrollView(context);
-      tabsScroll.setHorizontalScrollBarEnabled(false);
-      var tabsRow = new android.widget.LinearLayout(context);
-      tabsRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-      tabsRow.setPadding(self.dp(8), self.dp(8), self.dp(8), self.dp(8));
-      tabsScroll.addView(tabsRow);
-      content.addView(tabsScroll);
+  // \u6807\u9898\u680f
+  var header = new android.widget.LinearLayout(context);
+  header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  header.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  var titleTv = new android.widget.TextView(context);
+  titleTv.setText("\u9009\u62e9 ShortX \u56fe\u6807");
+  titleTv.setTextColor(textColor);
+  titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+  titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
+  header.addView(titleTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-      var tabButtons = {};
-      var ti;
-      for (ti = 0; ti < tabDefs.length; ti++) {
-        (function(def) {
-          var btn = new android.widget.TextView(context);
-          btn.setText(String(def.label));
-          btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-          btn.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
-          var btnLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-          btnLp.setMargins(0, 0, self.dp(6), 0);
-          btn.setLayoutParams(btnLp);
-          btn.setClickable(true);
-          btn.setOnClickListener(new android.view.View.OnClickListener({
+  var closeBtn = self.ui.createFlatButton(self, "\u5173\u95ed", C.primary, function() { dismiss(); });
+  header.addView(closeBtn);
+  card.addView(header);
+
+  // \u641c\u7d22\u6846
+  var searchEt = new android.widget.EditText(context);
+  searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+  searchEt.setTextColor(textColor);
+  try { searchEt.setHintTextColor(subTextColor); } catch(e) {}
+  searchEt.setHint("\u641c\u7d22\u56fe\u6807\u540d\uff0c\u5982 share / home");
+  searchEt.setSingleLine(true);
+  searchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
+  searchEt.setBackground(self.ui.createStrokeDrawable(isDark ? self.ui.colors.inputBgDark : self.ui.colors.inputBgLight, isDark ? self.ui.colors.dividerDark : self.ui.colors.dividerLight, self.dp(1), self.dp(10)));
+  card.addView(searchEt);
+
+  // Tabs
+  var tabsScroll = new android.widget.HorizontalScrollView(context);
+  tabsScroll.setHorizontalScrollBarEnabled(false);
+  var tabsRow = new android.widget.LinearLayout(context);
+  tabsRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  tabsRow.setPadding(self.dp(8), self.dp(8), self.dp(8), self.dp(8));
+  tabsScroll.addView(tabsRow);
+  card.addView(tabsScroll);
+
+  var tabButtons = {};
+  for (var ti = 0; ti < tabDefs.length; ti++) {
+    (function(def) {
+      var btn = new android.widget.TextView(context);
+      btn.setText(String(def.label));
+      btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      btn.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
+      var btnLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+      btnLp.setMargins(0, 0, self.dp(6), 0);
+      btn.setLayoutParams(btnLp);
+      btn.setClickable(true);
+      btn.setOnClickListener(new android.view.View.OnClickListener({
+        onClick: function() {
+          self.touchActivity();
+          popupState.activeTab = def.key;
+          popupState.currentPage = 0;
+          refreshTabs();
+          renderGrid();
+        }
+      }));
+      tabsRow.addView(btn);
+      tabButtons[def.key] = btn;
+    })(tabDefs[ti]);
+  }
+
+  function refreshTabs() {
+    for (var k in tabButtons) {
+      if (!tabButtons.hasOwnProperty(k)) continue;
+      var btn = tabButtons[k];
+      var active = popupState.activeTab === k;
+      btn.setTextColor(active ? C.primary : subTextColor);
+      try {
+        btn.setBackground(active ? self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.15), self.dp(16)) : null);
+      } catch(e) {}
+    }
+  }
+  refreshTabs();
+
+  // \u72b6\u6001\u680f
+  var statusTv = new android.widget.TextView(context);
+  statusTv.setTextColor(subTextColor);
+  statusTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+  statusTv.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
+  card.addView(statusTv);
+
+  // \u5206\u9875\u680f
+  var pageBar = new android.widget.LinearLayout(context);
+  pageBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  pageBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  pageBar.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
+
+  var btnPrev = self.ui.createFlatButton(self, "\u4e0a\u4e00\u9875", subTextColor, function() {
+    if (popupState.currentPage > 0) { popupState.currentPage--; renderGrid(); }
+  });
+  pageBar.addView(btnPrev);
+
+  var pageInfo = new android.widget.TextView(context);
+  pageInfo.setTextColor(textColor);
+  pageInfo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  pageInfo.setGravity(android.view.Gravity.CENTER);
+  pageInfo.setPadding(self.dp(8), 0, self.dp(8), 0);
+  pageInfo.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+  pageBar.addView(pageInfo);
+
+  var btnNext = self.ui.createFlatButton(self, "\u4e0b\u4e00\u9875", C.primary, function() {
+    popupState.currentPage++; renderGrid();
+  });
+  pageBar.addView(btnNext);
+  card.addView(pageBar);
+
+  // \u7f51\u683c
+  var gridScroll = new android.widget.ScrollView(context);
+  gridScroll.setVerticalScrollBarEnabled(false);
+  gridScroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);
+  gridScroll.setLayoutParams(new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, maxGridH));
+  card.addView(gridScroll);
+
+  var grid = new android.widget.GridLayout(context);
+  grid.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(4));
+  gridScroll.addView(grid);
+
+  // \u5e95\u90e8\u9009\u4e2d\u680f
+  var selectRow = new android.widget.LinearLayout(context);
+  selectRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  selectRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  selectRow.setPadding(self.dp(8), self.dp(8), self.dp(8), 0);
+
+  var selectPreview = new android.widget.ImageView(context);
+  selectPreview.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28)));
+  selectPreview.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+  selectRow.addView(selectPreview);
+
+  var selectNameTv = new android.widget.TextView(context);
+  selectNameTv.setTextColor(textColor);
+  selectNameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+  selectNameTv.setPadding(self.dp(8), 0, 0, 0);
+  selectRow.addView(selectNameTv);
+
+  var selectConfirm = self.ui.createSolidButton(self, "\u786e\u5b9a", C.primary, android.graphics.Color.WHITE, function() {
+    self.touchActivity();
+    if (typeof onSelect === "function") onSelect(selectedName);
+    dismiss();
+  });
+  selectRow.addView(selectConfirm);
+  card.addView(selectRow);
+
+  function updateSelectPreview() {
+    try {
+      if (selectedName) {
+        selectNameTv.setText(selectedName);
+        var dr = null;
+        try { dr = self.getShortXIconDrawable(selectedName); } catch(e) {}
+        if (dr) selectPreview.setImageDrawable(dr);
+        else selectPreview.setImageDrawable(null);
+      } else {
+        selectNameTv.setText("\u672a\u9009\u62e9");
+        selectPreview.setImageDrawable(null);
+      }
+    } catch(e) {}
+  }
+  updateSelectPreview();
+
+  function renderGrid() {
+    try {
+      grid.removeAllViews();
+      var q = String(searchEt.getText() || "");
+      var matched = filterCatalog(q, popupState.activeTab);
+
+      var totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (popupState.currentPage >= totalPages) popupState.currentPage = totalPages - 1;
+      if (popupState.currentPage < 0) popupState.currentPage = 0;
+      var start = popupState.currentPage * pageSize;
+      var pageItems = matched.slice(start, start + pageSize);
+
+      statusTv.setText("\u5171 " + matched.length + " \u4e2a\uff0c\u7b2c " + (popupState.currentPage + 1) + "/" + totalPages + " \u9875\uff0c\u6bcf\u9875 " + pageSize + " \u4e2a");
+      pageInfo.setText((popupState.currentPage + 1) + " / " + totalPages);
+      btnPrev.setEnabled(popupState.currentPage > 0);
+      btnNext.setEnabled(popupState.currentPage < totalPages - 1);
+
+      if (pageItems.length === 0) {
+        var emptyTv = new android.widget.TextView(context);
+        emptyTv.setText("\u672a\u627e\u5230\u5339\u914d\u7684\u56fe\u6807");
+        emptyTv.setTextColor(subTextColor);
+        emptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        emptyTv.setGravity(android.view.Gravity.CENTER);
+        emptyTv.setPadding(0, self.dp(40), 0, self.dp(40));
+        grid.addView(emptyTv);
+        return;
+      }
+
+      grid.setColumnCount(colCount);
+
+      for (var idx = 0; idx < pageItems.length; idx++) {
+        (function(item) {
+          var cell = new android.widget.LinearLayout(context);
+          cell.setOrientation(android.widget.LinearLayout.VERTICAL);
+          cell.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+          cell.setPadding(self.dp(4), self.dp(6), self.dp(4), self.dp(6));
+          cell.setClickable(true);
+
+          var bgColor = cardColor;
+          try { bgColor = self.withAlpha(cardColor, 0.96); } catch(e) {}
+          cell.setBackground(self.ui.createRoundDrawable(bgColor, self.dp(10)));
+
+          var iv = new android.widget.ImageView(context);
+          iv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(iconSize, iconSize));
+          iv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+          try {
+            var dr = self.getShortXIconDrawable(item.name);
+            if (dr) { iv.setImageDrawable(dr); }
+          } catch(e) {}
+          cell.addView(iv);
+
+          var tv = new android.widget.TextView(context);
+          tv.setText(String(item.shortName || item.name));
+          tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
+          tv.setGravity(android.view.Gravity.CENTER);
+          tv.setMaxLines(1);
+          try { tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(e) {}
+          tv.setPadding(self.dp(2), self.dp(2), self.dp(2), 0);
+          cell.addView(tv);
+
+          if (selectedName === item.name) {
+            try { cell.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.2), self.dp(10))); } catch(e) {}
+            try { tv.setTextColor(C.primary); } catch(e) {}
+          } else {
+            try { tv.setTextColor(subTextColor); } catch(e) {}
+          }
+
+          cell.setOnClickListener(new android.view.View.OnClickListener({
             onClick: function() {
               self.touchActivity();
-              popupState.activeTab = def.key;
-              popupState.currentPage = 0;
-              refreshTabs();
+              selectedName = item.name;
+              updateSelectPreview();
               renderGrid();
             }
           }));
-          tabsRow.addView(btn);
-          tabButtons[def.key] = btn;
-        })(tabDefs[ti]);
+
+          var cellLp = new android.widget.GridLayout.LayoutParams();
+          cellLp.width = cellW;
+          cellLp.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT;
+          var col = idx % colCount;
+          var mr = (col === colCount - 1) ? 0 : gap;
+          cellLp.setMargins(0, 0, mr, gap);
+          cell.setLayoutParams(cellLp);
+          grid.addView(cell);
+        })(pageItems[idx]);
       }
-
-      function refreshTabs() {
-        var k;
-        for (k in tabButtons) {
-          if (!tabButtons.hasOwnProperty(k)) continue;
-          var btn = tabButtons[k];
-          var active = popupState.activeTab === k;
-          btn.setTextColor(active ? C.primary : subTextColor);
-          try {
-            btn.setBackground(active ? self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.15), self.dp(16)) : null);
-          } catch(e) {}
-        }
-      }
-      refreshTabs();
-
-      var statusTv = new android.widget.TextView(context);
-      statusTv.setTextColor(subTextColor);
-      statusTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-      statusTv.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
-      content.addView(statusTv);
-
-      var pageBar = new android.widget.LinearLayout(context);
-      pageBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-      pageBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      pageBar.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
-
-      var btnPrev = self.ui.createFlatButton(self, "上一页", subTextColor, function() {
-        if (popupState.currentPage > 0) {
-          popupState.currentPage--;
-          renderGrid();
-        }
-      });
-      pageBar.addView(btnPrev);
-
-      var pageInfo = new android.widget.TextView(context);
-      pageInfo.setTextColor(textColor);
-      pageInfo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-      pageInfo.setGravity(android.view.Gravity.CENTER);
-      pageInfo.setPadding(self.dp(8), 0, self.dp(8), 0);
-      var pageInfoLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-      pageInfo.setLayoutParams(pageInfoLp);
-      pageBar.addView(pageInfo);
-
-      var btnNext = self.ui.createFlatButton(self, "下一页", C.primary, function() {
-        popupState.currentPage++;
-        renderGrid();
-      });
-      pageBar.addView(btnNext);
-      content.addView(pageBar);
-
-      var gridScroll = new android.widget.ScrollView(context);
-      var gridScrollLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0);
-      gridScrollLp.weight = 1;
-      gridScroll.setLayoutParams(gridScrollLp);
-      content.addView(gridScroll);
-
-      var grid = new android.widget.GridLayout(context);
-      grid.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(4));
-      gridScroll.addView(grid);
-
-      var selectRow = new android.widget.LinearLayout(context);
-      selectRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-      selectRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      selectRow.setPadding(self.dp(8), self.dp(8), self.dp(8), 0);
-
-      var selectPreview = new android.widget.ImageView(context);
-      selectPreview.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28)));
-      selectPreview.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-      selectRow.addView(selectPreview);
-
-      var selectNameTv = new android.widget.TextView(context);
-      selectNameTv.setTextColor(textColor);
-      selectNameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-      selectNameTv.setPadding(self.dp(8), 0, 0, 0);
-      selectRow.addView(selectNameTv);
-
-      var selectConfirm = self.ui.createSolidButton(self, "确定", C.primary, android.graphics.Color.WHITE, function() {
-        self.touchActivity();
-        if (typeof onSelect === "function") onSelect(selectedName);
-        closePopup();
-      });
-      selectRow.addView(selectConfirm);
-      content.addView(selectRow);
-
-      function updateSelectPreview() {
-        try {
-          if (selectedName) {
-            selectNameTv.setText(selectedName);
-            var dr = null;
-            try { dr = self.getShortXIconDrawable(selectedName); } catch(e) {}
-            if (dr) selectPreview.setImageDrawable(dr);
-            else selectPreview.setImageDrawable(null);
-          } else {
-            selectNameTv.setText("未选择");
-            selectPreview.setImageDrawable(null);
-          }
-        } catch(e) {}
-      }
-      updateSelectPreview();
-
-      function renderGrid() {
-        try {
-          grid.removeAllViews();
-          var q = String(searchEt.getText() || "");
-          var matched = filterCatalog(q, popupState.activeTab);
-
-          // 固定分页参数，不依赖动态测量
-          var size = 20;
-          var cols = 4;
-
-          var totalPages = Math.max(1, Math.ceil(matched.length / size));
-          if (popupState.currentPage >= totalPages) popupState.currentPage = totalPages - 1;
-          if (popupState.currentPage < 0) popupState.currentPage = 0;
-          var start = popupState.currentPage * size;
-          var pageItems = matched.slice(start, start + size);
-
-          statusTv.setText("\u5171 " + matched.length + " \u4e2a\uff0c\u7b2c " + (popupState.currentPage + 1) + "/" + totalPages + " \u9875");
-          pageInfo.setText((popupState.currentPage + 1) + " / " + totalPages);
-          btnPrev.setEnabled(popupState.currentPage > 0);
-          btnNext.setEnabled(popupState.currentPage < totalPages - 1);
-
-          if (pageItems.length === 0) {
-            var emptyTv = new android.widget.TextView(context);
-            emptyTv.setText("\u672a\u627e\u5230\u5339\u914d\u7684\u56fe\u6807");
-            emptyTv.setTextColor(subTextColor);
-            emptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-            emptyTv.setGravity(android.view.Gravity.CENTER);
-            emptyTv.setPadding(0, self.dp(40), 0, self.dp(40));
-            grid.addView(emptyTv);
-            return;
-          }
-
-          grid.setColumnCount(cols);
-
-          var idx;
-          for (idx = 0; idx < pageItems.length; idx++) {
-            (function(item) {
-              var cell = new android.widget.LinearLayout(context);
-              cell.setOrientation(android.widget.LinearLayout.VERTICAL);
-              cell.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
-              cell.setPadding(self.dp(4), self.dp(6), self.dp(4), self.dp(6));
-              cell.setClickable(true);
-              cell.setBackground(self.ui.createRippleDrawable(C.card, self.withAlpha(C.primary, 0.2), self.dp(10)));
-
-              var iv = new android.widget.ImageView(context);
-              iv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28)));
-              iv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-              try {
-                var dr = self.getShortXIconDrawable(item.name);
-                if (dr) {
-                  iv.setImageDrawable(dr);
-                } else {
-                  try {
-                    var placeholder = new android.graphics.drawable.GradientDrawable();
-                    placeholder.setColor(self.withAlpha(subTextColor, 0.1));
-                    placeholder.setCornerRadius(self.dp(6));
-                    iv.setBackground(placeholder);
-                  } catch(e) {}
-                }
-              } catch(e) {}
-              cell.addView(iv);
-
-              var tv = new android.widget.TextView(context);
-              tv.setText(String(item.shortName || item.name));
-              tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
-              tv.setGravity(android.view.Gravity.CENTER);
-              tv.setMaxLines(1);
-              try { tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(e) {}
-              tv.setPadding(self.dp(2), self.dp(2), self.dp(2), 0);
-              cell.addView(tv);
-
-              if (selectedName === item.name) {
-                try { cell.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.2), self.dp(10))); } catch(e) {}
-                try { tv.setTextColor(C.primary); } catch(e) {}
-              } else {
-                try { tv.setTextColor(subTextColor); } catch(e) {}
-              }
-
-              cell.setOnClickListener(new android.view.View.OnClickListener({
-                onClick: function() {
-                  self.touchActivity();
-                  selectedName = item.name;
-                  updateSelectPreview();
-                  renderGrid();
-                }
-              }));
-
-              var cellLp = new android.widget.GridLayout.LayoutParams();
-              cellLp.width = self.dp(72);
-              cellLp.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT;
-              cell.setLayoutParams(cellLp);
-              grid.addView(cell);
-            })(pageItems[idx]);
-          }
-        } catch(eRender) {
-          safeLog(self.L, 'e', "renderShortXIconGrid err=" + String(eRender));
-        }
-      }
-
-      searchEt.addTextChangedListener(new android.text.TextWatcher({
-        beforeTextChanged: function() {},
-        onTextChanged: function() {
-          self.touchActivity();
-          popupState.currentPage = 0;
-          renderGrid();
-        },
-        afterTextChanged: function() {}
-      }));
-
-      renderGrid();
+    } catch(eRender) {
+      safeLog(self.L, 'e', "renderShortXIconGrid err=" + String(eRender));
     }
-  });
+  }
 
-  return popupResult;
+  searchEt.addTextChangedListener(new android.text.TextWatcher({
+    beforeTextChanged: function() {},
+    onTextChanged: function() {
+      self.touchActivity();
+      popupState.currentPage = 0;
+      renderGrid();
+    },
+    afterTextChanged: function() {}
+  }));
+
+  renderGrid();
+
+  return { close: dismiss };
 };
 
 
