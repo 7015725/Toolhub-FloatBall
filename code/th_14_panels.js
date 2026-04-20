@@ -3817,17 +3817,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
 
   var popupState = {
     currentPage: 0,
-    activeTab: "all",
-    pageSize: 0,
-    pageCols: 0,
-    pageRows: 0,
-    cellMinWidthDp: 72,
-    cellWidthPx: 0,
-    cellHeightDp: 92,
-    cellMarginDp: 4,
-    lastMeasuredGridWidth: 0,
-    lastMeasuredGridHeight: 0,
-    lastQuery: ""
+    activeTab: "all"
   };
 
   var tabDefs = [
@@ -3860,28 +3850,24 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     return out;
   }
 
-  function resolvePageSize(gridWidth, gridHeight) {
-    var rawWidth = 0, rawHeight = 0;
-    try { rawWidth = Number(gridWidth || 0); } catch(e) {}
-    try { rawHeight = Number(gridHeight || 0); } catch(e) {}
-    if (rawWidth <= 0) rawWidth = self.dp(300);
-    if (rawHeight <= 0) rawHeight = self.dp(360);
-    var marginPx = self.dp(Number(popupState.cellMarginDp || 4));
-    var minCellWidthPx = self.dp(Number(popupState.cellMinWidthDp || 72));
-    var availW = rawWidth - marginPx * 2;
-    var cols = Math.max(1, Math.floor(availW / (minCellWidthPx + marginPx * 2)));
-    var cellWidthPx = Math.floor((availW - (cols - 1) * marginPx) / cols);
-    var availH = rawHeight - marginPx * 2;
-    var cellOuterHeight = self.dp(Number(popupState.cellHeightDp || 92)) + marginPx * 2;
-    var rows = Math.max(1, Math.floor(availH / cellOuterHeight));
-    var size = cols * rows;
-    popupState.pageCols = cols;
-    popupState.pageRows = rows;
-    popupState.cellWidthPx = cellWidthPx;
-    popupState.pageSize = size;
-    popupState.lastMeasuredGridWidth = rawWidth;
-    popupState.lastMeasuredGridHeight = rawHeight;
-    return size;
+  function filterCatalog(q, tab) {
+    var qLower = String(q || "").toLowerCase();
+    var out = [];
+    var i;
+    for (i = 0; i < catalog.length; i++) {
+      var entry = catalog[i];
+      if (!entry) continue;
+      if (qLower) {
+        var n = String(entry.shortName || entry.name).toLowerCase();
+        if (n.indexOf(qLower) < 0) continue;
+      }
+      if (tab && tab !== "all") {
+        var t = String(entry.category || "all").toLowerCase();
+        if (t !== tab) continue;
+      }
+      out.push(entry);
+    }
+    return out;
   }
 
   var popupResult = self.showPopupOverlay({
@@ -4036,27 +4022,25 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           grid.removeAllViews();
           var q = String(searchEt.getText() || "");
           var matched = filterCatalog(q, popupState.activeTab);
-          var size = popupState.pageSize;
-          if (size <= 0) {
-            grid.post(new java.lang.Runnable({ run: function() {
-              resolvePageSize(grid.getWidth(), grid.getHeight());
-              renderGrid();
-            }}));
-            statusTv.setText("正在计算布局...");
-            return;
-          }
+
+          // 固定分页参数，不依赖动态测量
+          var size = 20;
+          var cols = 4;
+
           var totalPages = Math.max(1, Math.ceil(matched.length / size));
           if (popupState.currentPage >= totalPages) popupState.currentPage = totalPages - 1;
           if (popupState.currentPage < 0) popupState.currentPage = 0;
           var start = popupState.currentPage * size;
           var pageItems = matched.slice(start, start + size);
 
-          statusTv.setText("共 " + matched.length + " 个，第 " + (popupState.currentPage + 1) + "/" + totalPages + " 页，每页 " + size + " 个");
+          statusTv.setText("\u5171 " + matched.length + " \u4e2a\uff0c\u7b2c " + (popupState.currentPage + 1) + "/" + totalPages + " \u9875");
           pageInfo.setText((popupState.currentPage + 1) + " / " + totalPages);
+          btnPrev.setEnabled(popupState.currentPage > 0);
+          btnNext.setEnabled(popupState.currentPage < totalPages - 1);
 
           if (pageItems.length === 0) {
             var emptyTv = new android.widget.TextView(context);
-            emptyTv.setText("未找到匹配的图标");
+            emptyTv.setText("\u672a\u627e\u5230\u5339\u914d\u7684\u56fe\u6807");
             emptyTv.setTextColor(subTextColor);
             emptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
             emptyTv.setGravity(android.view.Gravity.CENTER);
@@ -4065,7 +4049,6 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
             return;
           }
 
-          var cols = popupState.pageCols;
           grid.setColumnCount(cols);
 
           var idx;
@@ -4086,7 +4069,6 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
                 if (dr) {
                   iv.setImageDrawable(dr);
                 } else {
-                  // 图\u6807\u83b7\u53d6\u5931\u8d25，\u663e\u793a\u6587\u5b57\u5360\u4f4d\u7b26
                   try {
                     var placeholder = new android.graphics.drawable.GradientDrawable();
                     placeholder.setColor(self.withAlpha(subTextColor, 0.1));
@@ -4123,7 +4105,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
               }));
 
               var cellLp = new android.widget.GridLayout.LayoutParams();
-              cellLp.width = popupState.cellWidthPx || self.dp(72);
+              cellLp.width = self.dp(72);
               cellLp.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT;
               cell.setLayoutParams(cellLp);
               grid.addView(cell);
@@ -4144,8 +4126,6 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
         afterTextChanged: function() {}
       }));
 
-      // 直接计算默认页面大小并渲染，不依赖 grid.post
-      resolvePageSize(self.dp(300), self.dp(360));
       renderGrid();
     }
   });
