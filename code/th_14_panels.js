@@ -1128,9 +1128,126 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空跟随主题)", defaultTint, false, "例如: #FF3A86FF（十六进制 ARGB）");
     form.addView(inputShortXIconTint.view);
 
+    var tintQuickWrap = new android.widget.LinearLayout(context);
+    tintQuickWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
+    tintQuickWrap.setPadding(0, 0, 0, self.dp(12));
+    form.addView(tintQuickWrap);
+
+    var tintQuickHead = new android.widget.TextView(context);
+    tintQuickHead.setText("快捷颜色选择");
+    tintQuickHead.setTextColor(subTextColor);
+    tintQuickHead.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    tintQuickHead.setPadding(0, 0, 0, self.dp(6));
+    tintQuickWrap.addView(tintQuickHead);
+
+    var tintPreviewRow = new android.widget.LinearLayout(context);
+    tintPreviewRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    tintPreviewRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    tintPreviewRow.setPadding(0, 0, 0, self.dp(6));
+    tintQuickWrap.addView(tintPreviewRow);
+
+    var tintPreviewDot = new android.view.View(context);
+    var tintPreviewDotLp = new android.widget.LinearLayout.LayoutParams(self.dp(18), self.dp(18));
+    tintPreviewDotLp.rightMargin = self.dp(8);
+    tintPreviewRow.addView(tintPreviewDot, tintPreviewDotLp);
+
+    var tintPreviewTv = new android.widget.TextView(context);
+    tintPreviewTv.setTextColor(textColor);
+    tintPreviewTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    tintPreviewRow.addView(tintPreviewTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+    var tintPresetGrid = new android.widget.GridLayout(context);
+    try { tintPresetGrid.setColumnCount(4); } catch(eTintGrid0) {}
+    tintQuickWrap.addView(tintPresetGrid);
+
+    function updateTintQuickPreview() {
+        var raw = "";
+        try { raw = String(inputShortXIconTint.getValue() || ""); } catch(eTintRaw) {}
+        var colorInt = 0;
+        var showText = raw ? raw : "跟随主题";
+        if (!raw) {
+            try {
+                colorInt = self.getMonetAccentForBall();
+                showText = "跟随主题（" + _th_hex(colorInt).replace("0x", "#") + "）";
+            } catch(eThemeTint) {
+                colorInt = C.primary;
+            }
+        } else {
+            try {
+                colorInt = android.graphics.Color.parseColor(raw);
+            } catch(eParseTint) {
+                colorInt = self.withAlpha(C.danger, 0.9);
+                showText = raw + "（格式无效）";
+            }
+        }
+        try { tintPreviewDot.setBackground(self.ui.createRoundDrawable(colorInt, self.dp(9))); } catch(eTintDot) {}
+        try { tintPreviewTv.setText("当前：" + showText); } catch(eTintTv) {}
+    }
+
+    function applyQuickTintValue(v) {
+        try { inputShortXIconTint.input.setText(String(v || "")); } catch(eSetTint0) {}
+        updateTintQuickPreview();
+        updateShortXIconPreview();
+        if (shortxPickerState.expanded) renderShortXIconGrid();
+    }
+
+    function createTintPresetCell(label, colorHex) {
+        var wrap = new android.widget.LinearLayout(context);
+        wrap.setOrientation(android.widget.LinearLayout.VERTICAL);
+        wrap.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+        wrap.setPadding(self.dp(6), self.dp(6), self.dp(6), self.dp(6));
+        var lp = new android.widget.GridLayout.LayoutParams();
+        lp.setMargins(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
+        wrap.setLayoutParams(lp);
+        try { wrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.96), self.dp(10))); } catch(eTintBg) {}
+
+        var dot = new android.view.View(context);
+        var dotLp = new android.widget.LinearLayout.LayoutParams(self.dp(22), self.dp(22));
+        dotLp.bottomMargin = self.dp(4);
+        try { dot.setBackground(self.ui.createRoundDrawable(colorHex ? android.graphics.Color.parseColor(colorHex) : self.withAlpha(C.primary, 0.18), self.dp(11))); } catch(eTintDot2) {}
+        wrap.addView(dot, dotLp);
+
+        var tv = new android.widget.TextView(context);
+        tv.setText(String(label));
+        tv.setTextColor(textColor);
+        tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
+        tv.setGravity(android.view.Gravity.CENTER);
+        wrap.addView(tv);
+
+        wrap.setClickable(true);
+        wrap.setOnClickListener(new android.view.View.OnClickListener({
+            onClick: function() {
+                self.touchActivity();
+                applyQuickTintValue(colorHex || "");
+            }
+        }));
+        return wrap;
+    }
+
+    var tintPresetDefs = [
+        { label: "跟随", hex: "" },
+        { label: "白色", hex: "#FFFFFFFF" },
+        { label: "黑色", hex: "#FF000000" },
+        { label: "红色", hex: "#FFE53935" },
+        { label: "橙色", hex: "#FFFB8C00" },
+        { label: "黄色", hex: "#FFFDD835" },
+        { label: "绿色", hex: "#FF43A047" },
+        { label: "青色", hex: "#FF00ACC1" },
+        { label: "蓝色", hex: "#FF1E88E5" },
+        { label: "紫色", hex: "#FF8E24AA" },
+        { label: "粉色", hex: "#FFD81B60" },
+        { label: "重置", hex: defaultTint || "" }
+    ];
+    var tintPi;
+    for (tintPi = 0; tintPi < tintPresetDefs.length; tintPi++) {
+        tintPresetGrid.addView(createTintPresetCell(tintPresetDefs[tintPi].label, tintPresetDefs[tintPi].hex));
+    }
+    updateTintQuickPreview();
+
     try {
         inputShortXIconTint.input.addTextChangedListener(new JavaAdapter(android.text.TextWatcher, {
             afterTextChanged: function(s) {
+                updateTintQuickPreview();
                 updateShortXIconPreview();
                 if (shortxPickerState.expanded) renderShortXIconGrid();
             },
@@ -1147,6 +1264,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             shortxQuickRow.setVisibility(android.view.View.GONE);
             shortxPickerWrap.setVisibility(android.view.View.GONE);
             inputShortXIconTint.view.setVisibility(android.view.View.GONE);
+            tintQuickWrap.setVisibility(android.view.View.GONE);
             shortxPickerState.expanded = false;
             try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(getShortXPickerClosedLabel()); } catch(eBt0) {}
             // 清空另一种方式的值
@@ -1157,6 +1275,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             inputShortXIcon.view.setVisibility(android.view.View.VISIBLE);
             shortxQuickRow.setVisibility(android.view.View.VISIBLE);
             inputShortXIconTint.view.setVisibility(android.view.View.VISIBLE);
+            tintQuickWrap.setVisibility(android.view.View.VISIBLE);
             // 清空另一种方式的值
             inputIconPath.input.setText("");
             // # ShortX 图标颜色默认跟随主题
@@ -1167,6 +1286,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     inputShortXIconTint.input.setText(hexColor);
                 }
             } catch(e) {}
+            updateTintQuickPreview();
             updateShortXIconPreview();
             setShortXPickerExpanded(true, true);
         }
