@@ -4016,11 +4016,27 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   selectNameTv.setPadding(self.dp(8), 0, 0, 0);
   selectRow.addView(selectNameTv);
 
-  var selectConfirm = self.ui.createSolidButton(self, "\u786e\u5b9a", C.primary, android.graphics.Color.WHITE, function() {
-    self.touchActivity();
-    if (typeof onSelect === "function") onSelect(selectedName);
-    dismiss();
-  });
+  var selectConfirm = new android.widget.TextView(context);
+  selectConfirm.setText("\u786e\u5b9a");
+  selectConfirm.setTextColor(android.graphics.Color.WHITE);
+  selectConfirm.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+  selectConfirm.setTypeface(null, android.graphics.Typeface.BOLD);
+  selectConfirm.setPadding(self.dp(16), self.dp(8), self.dp(16), self.dp(8));
+  selectConfirm.setGravity(android.view.Gravity.CENTER);
+  var pressedColor = self.withAlpha(C.primary, 0.8);
+  selectConfirm.setBackground(self.ui.createRippleDrawable(C.primary, pressedColor, self.dp(24)));
+  try { selectConfirm.setElevation(self.dp(2)); } catch(e){}
+  selectConfirm.setOnClickListener(new android.view.View.OnClickListener({
+    onClick: function(v) {
+      self.touchActivity();
+      try {
+        if (typeof onSelect === "function") onSelect(selectedName);
+      } catch(eSelect) {
+        safeLog(self.L, 'e', "icon onSelect err=" + String(eSelect));
+      }
+      dismiss();
+    }
+  }));
   selectRow.addView(selectConfirm);
   card.addView(selectRow);
 
