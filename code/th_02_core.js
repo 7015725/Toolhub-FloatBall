@@ -82,7 +82,7 @@ function FloatBallAppWM(logger) {
   this.ui.colors = {};
 
   // # 初始化莫奈动态配色（传入当前主题避免重复检测）
-  try { this.refreshMonetColors(this.isDarkTheme()); } catch (eM) {}
+  try { this.refreshMonetColors(this.isDarkTheme());  } catch(eM) { safeLog(null, 'e', "catch " + String(eM)); }
 }
 
 // =======================【工具：dp/now/clamp】======================
@@ -102,21 +102,21 @@ FloatBallAppWM.prototype.runOnUiThreadSafe = function(fn) {
     // 优先使用 Activity 的 runOnUiThread，否则使用 View.post
     if (this.state && this.state.ballRoot) {
       this.state.ballRoot.post(new java.lang.Runnable({
-        run: function() { try { fn.call(self); } catch(e) {} }
+        run: function() { try { fn.call(self);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } }
       }));
     } else {
       // 兜底：直接执行（如果已经在 UI 线程）或尝试使用 Handler
       try {
         var h = new android.os.Handler(android.os.Looper.getMainLooper());
         h.post(new java.lang.Runnable({
-          run: function() { try { fn.call(self); } catch(e) {} }
+          run: function() { try { fn.call(self);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } }
         }));
       } catch(e) {
         // 最后兜底：直接执行
-        try { fn.call(self); } catch(e2) {}
+        try { fn.call(self);  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
       }
     }
-  } catch(e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 };
 
 // # 这段代码的主要内容/用途：统一图标缓存（LRU），减少反复解码/反复走 PackageManager，降低卡顿与内存波动（不改变 UI 与功能）

@@ -13,6 +13,53 @@ function getLmPath(relPath) {
     return shortx.getShortXDir() + "/ToolHub/code/.lm_" + relPath;
 }
 
+function getShaPath(relPath) {
+    return shortx.getShortXDir() + "/ToolHub/code/.sha_" + relPath;
+}
+
+function sha256File(path) {
+    try {
+        var md = java.security.MessageDigest.getInstance("SHA-256");
+        var fis = new java.io.FileInputStream(path);
+        var buf = java.lang.reflect.Array.newInstance(java.lang.Byte.TYPE, 8192);
+        var n;
+        while ((n = fis.read(buf)) !== -1) {
+            md.update(buf, 0, n);
+        }
+        fis.close();
+        var digest = md.digest();
+        var sb = new java.lang.StringBuilder();
+        for (var i = 0; i < digest.length; i++) {
+            var hex = java.lang.Integer.toHexString(0xFF & digest[i]);
+            if (hex.length() === 1) sb.append("0");
+            sb.append(hex);
+        }
+        return sb.toString();
+    } catch (e) {
+        return null;
+    }
+}
+
+function saveSha256(relPath, hash) {
+    try {
+        var f = new java.io.File(getShaPath(relPath));
+        var w = new java.io.FileWriter(f, false);
+        w.write(String(hash || ""));
+        w.close();
+    } catch (e) { safeLog(null, 'e', "catch " + String(e)); }
+}
+
+function getLocalSha256(relPath) {
+    try {
+        var f = new java.io.File(getShaPath(relPath));
+        if (!f.exists()) return null;
+        var r = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(f), "UTF-8"));
+        var hash = r.readLine();
+        r.close();
+        return hash ? String(hash).trim() : null;
+    } catch (e) { return null; }
+}
+
 function writeLog(msg) {
     try {
         var f = new java.io.File(getLogPath());
@@ -23,7 +70,7 @@ function writeLog(msg) {
         var writer = new java.io.FileWriter(f, true);
         writer.write("[" + ts + "] " + String(msg) + "\n");
         writer.close();
-    } catch (e) {}
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 }
 
 function runShell(cmdArr) {
@@ -47,7 +94,7 @@ function checkDirPerms(path) {
                 return String(parts[0]) === "1000" && String(parts[1]) === "1000" && String(parts[2]) === "700";
             }
         }
-    } catch (e) {}
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     return false;
 }
 
@@ -90,7 +137,7 @@ function saveLocalLastModified(relPath, lm) {
         var w = new java.io.FileWriter(f, false);
         w.write(String(lm || ""));
         w.close();
-    } catch (e) {}
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 }
 
 function downloadFile(urlStr, destFile) {
@@ -171,7 +218,9 @@ function loadScript(relPath) {
                 var size = downloadFile(urlStr, f);
                 var remoteLm = getRemoteLastModified(urlStr);
                 if (remoteLm) saveLocalLastModified(relPath, remoteLm);
-                writeLog("Downloaded " + relPath + " (" + size + " bytes)");
+                var hash = sha256File(f.getAbsolutePath());
+                if (hash) saveSha256(relPath, hash);
+                writeLog("Downloaded " + relPath + " (" + size + " bytes, sha256=" + (hash || "null") + ")");
                 // 记录更新信息
                 __moduleUpdates.push({ module: relPath, isNew: isNew, size: size });
             } catch (dlErr) {
@@ -185,6 +234,15 @@ function loadScript(relPath) {
         var fileSize = f.length();
         if (fileSize > 200 * 1024) {
             writeLog("WARN: " + relPath + " is " + (fileSize / 1024) + "KB, consider splitting");
+        }
+
+        var actualHash = sha256File(f.getAbsolutePath());
+        var cachedHash = getLocalSha256(relPath);
+        if (cachedHash && actualHash && actualHash !== cachedHash) {
+            throw "SHA256 mismatch for " + relPath + ": expected=" + cachedHash + ", actual=" + actualHash;
+        }
+        if (actualHash && !cachedHash) {
+            saveSha256(relPath, actualHash);
         }
 
         var r = new java.io.BufferedReader(new java.io.InputStreamReader(
@@ -270,7 +328,7 @@ var __out = (function() {
   try {
     startRet = app.startAsync(entryInfo, closeRule);
   } catch (eTop) {
-    try { logger.fatal("TOP startAsync crash err=" + String(eTop)); } catch (eLog) {}
+    try { logger.fatal("TOP startAsync crash err=" + String(eTop));  } catch(eLog) { safeLog(null, 'e', "catch " + String(eLog)); }
     startRet = { ok: false, err: String(eTop) };
   }
   var syncInfo = summarizeModuleUpdates(__moduleUpdates);

@@ -63,7 +63,7 @@ FloatBallAppWM.prototype.rebuildBallForNewSize = function(keepPanels) {
     this.state.ballLp = lp;
     this.state.addedBall = true;
   } catch (eAdd) {
-    try { this.toast("重建悬浮球失败: " + String(eAdd)); } catch (eT) {}
+    try { this.toast("重建悬浮球失败: " + String(eAdd));  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
     safeLog(this.L, 'e',  "rebuildBall add fail err=" + String(eAdd));
     return false;
   }

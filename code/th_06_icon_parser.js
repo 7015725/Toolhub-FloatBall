@@ -51,7 +51,7 @@ FloatBallAppWM.prototype.resolveIconDrawable = function(btn) {
                  var dr = this.loadBallIconDrawableFromFile(path, this.dp(sizeDp), 1048576, 1024);
                  if (dr) return dr;
              }
-        } catch (ePath) {}
+         } catch(ePath) { safeLog(null, 'e', "catch " + String(ePath)); }
     }
 
 
@@ -74,7 +74,7 @@ try {
       }
     }
   }
-} catch (eApp) {}
+ } catch(eApp) { safeLog(null, 'e', "catch " + String(eApp)); }
 
 
     // # 1.5) type=shortcut：尝试取 Shortcuts 快捷方式图标（显示与 shortcuts.js 页面一致）
@@ -100,13 +100,13 @@ try {
                     try {
                       var sk0 = pkg2 + "@" + sid2 + "@" + (btn.userId != null ? String(btn.userId) : "");
                       this._iconLruPut("sc|" + sk0, dr0);
-                    } catch (eSc0) {}
+                     } catch(eSc0) { safeLog(null, 'e', "catch " + String(eSc0)); }
                     return dr0;
                   }
                 }
-              } catch(eF0) {}
+               } catch(eF0) { safeLog(null, 'e', "catch " + String(eF0)); }
             }
-          } catch(eFile0) {}
+           } catch(eFile0) { safeLog(null, 'e', "catch " + String(eFile0)); }
 var skey = pkg2 + "@" + sid2 + "@" + (btn.userId != null ? String(btn.userId) : "");
           var kSc = "sc|" + skey;
           var hitSc = this._iconLruGet(kSc);
@@ -145,7 +145,7 @@ var skey = pkg2 + "@" + sid2 + "@" + (btn.userId != null ? String(btn.userId) : 
                   var tmpUid2 = parseInt(String(buid2), 10);
                   if (!isNaN(tmpUid2)) userIdIntForSvc = tmpUid2;
                 }
-              } catch(eUidSvc) {}
+               } catch(eUidSvc) { safeLog(null, 'e', "catch " + String(eUidSvc)); }
 
               var sm2 = android.os.ServiceManager;
               var shortcutSvc = null;
@@ -160,23 +160,23 @@ var skey = pkg2 + "@" + sid2 + "@" + (btn.userId != null ? String(btn.userId) : 
                   if (listObj2) list = listObj2;
                 }
               }
-            } catch(eSvc2) {}
+             } catch(eSvc2) { safeLog(null, 'e', "catch " + String(eSvc2)); }
 
             // # 2) LauncherApps 回退（当 shortcut service 不可用或返回空时）
             if (list == null) {
               var q = new android.content.pm.LauncherApps.ShortcutQuery();
-              try { q.setPackage(pkg2); } catch(eSP) {}
+              try { q.setPackage(pkg2);  } catch(eSP) { safeLog(null, 'e', "catch " + String(eSP)); }
 
               // # 重要：必须设置 QueryFlags，否则 getShortcuts 可能返回空（默认 flags=0）
               // # 兼容性：不同 Android/ROM 可能缺少部分 FLAG，逐个 try 叠加
               try {
                 var qFlags = 0;
-                try { qFlags = qFlags | android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC; } catch(eF1) {}
-                try { qFlags = qFlags | android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED; } catch(eF2) {}
-                try { qFlags = qFlags | android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST; } catch(eF3) {}
-                try { qFlags = qFlags | android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_CACHED; } catch(eF4) {}
-                try { q.setQueryFlags(qFlags); } catch(eSF) {}
-              } catch(eQF) {}
+                try { qFlags = qFlags | android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC;  } catch(eF1) { safeLog(null, 'e', "catch " + String(eF1)); }
+                try { qFlags = qFlags | android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED;  } catch(eF2) { safeLog(null, 'e', "catch " + String(eF2)); }
+                try { qFlags = qFlags | android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST;  } catch(eF3) { safeLog(null, 'e', "catch " + String(eF3)); }
+                try { qFlags = qFlags | android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_CACHED;  } catch(eF4) { safeLog(null, 'e', "catch " + String(eF4)); }
+                try { q.setQueryFlags(qFlags);  } catch(eSF) { safeLog(null, 'e', "catch " + String(eSF)); }
+               } catch(eQF) { safeLog(null, 'e', "catch " + String(eQF)); }
 
               // # 重要：用户句柄优先用按钮携带的 userId（如有），否则使用当前用户
               var uh = android.os.Process.myUserHandle();
@@ -190,7 +190,7 @@ var skey = pkg2 + "@" + sid2 + "@" + (btn.userId != null ? String(btn.userId) : 
                     uh = android.os.UserHandle.of(uidInt);
                   }
                 }
-              } catch(eUH) {}
+               } catch(eUH) { safeLog(null, 'e', "catch " + String(eUH)); }
 
               try { list = la.getShortcuts(q, uh); } catch(eGS) { list = null; }
             }
@@ -219,10 +219,10 @@ if (si != null) {
                       var d2 = ic.loadDrawable(context);
                       if (d2 != null) drSc = d2;
                     }
-                  } catch(eIcon1) {}
+                   } catch(eIcon1) { safeLog(null, 'e', "catch " + String(eIcon1)); }
                 }
                 if (drSc != null) {
-                  try { this._iconLruPut("sc|" + skey, drSc); } catch (eSc1) {}
+                  try { this._iconLruPut("sc|" + skey, drSc);  } catch(eSc1) { safeLog(null, 'e', "catch " + String(eSc1)); }
                   return drSc;
                 }
               }
@@ -235,7 +235,7 @@ if (si != null) {
             try {
               if (nowTs > 0) this._shortcutIconFailTs[skey] = nowTs;
               else this._shortcutIconFailTs[skey] = new Date().getTime();
-            } catch(eFT) {}
+             } catch(eFT) { safeLog(null, 'e', "catch " + String(eFT)); }
           }
 
 
@@ -244,10 +244,10 @@ if (si != null) {
             var pm2 = context.getPackageManager();
             var drApp2 = pm2.getApplicationIcon(pkg2);
             if (drApp2 != null) return drApp2;
-          } catch(eFall) {}
+           } catch(eFall) { safeLog(null, 'e', "catch " + String(eFall)); }
         }
       }
-    } catch (eSc) {}
+     } catch(eSc) { safeLog(null, 'e', "catch " + String(eSc)); }
     // # 2) 显式指定 iconResName (String) 或 iconResId (int)
     try {
       if (btn.iconResName) {
@@ -259,11 +259,11 @@ if (si != null) {
         if (id > 0) return context.getResources().getDrawable(id, null);
       }
       if (btn.iconResId) return context.getResources().getDrawable(btn.iconResId, null);
-    } catch (e1) {}
+     } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
 
     // # 3) 兜底
     return context.getResources().getDrawable(android.R.drawable.ic_menu_help, null);
-  } catch (e2) {}
+   } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
   return null;
 };
 
@@ -302,7 +302,7 @@ FloatBallAppWM.prototype.normalizeShortXIconName = function(name, keepPrefix) {
       return s;
     }
     return keepPrefix ? ("ic_remix_" + s) : s;
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   return "";
 };
 
@@ -320,20 +320,20 @@ FloatBallAppWM.prototype.getShortXApkPaths = function() {
         p = String(p || "");
         if (!p) return;
         if (out.indexOf(p) < 0) out.push(p);
-      } catch (eP) {}
+       } catch(eP) { safeLog(null, 'e', "catch " + String(eP)); }
     }
     if (ai) {
-      try { pushPath(ai.sourceDir); } catch (e0) {}
-      try { pushPath(ai.publicSourceDir); } catch (e1) {}
+      try { pushPath(ai.sourceDir);  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
+      try { pushPath(ai.publicSourceDir);  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
       try {
         var ss = ai.splitSourceDirs;
         if (ss) {
           var i;
           for (i = 0; i < ss.length; i++) pushPath(ss[i]);
         }
-      } catch (e2) {}
+       } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
     }
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   return out;
 };
 
@@ -371,7 +371,7 @@ FloatBallAppWM.prototype.scanShortXIconsFromApk = function() {
     } catch (eZip) {
       lastErr = String(eZip);
     } finally {
-      try { if (zip) zip.close(); } catch (eClose) {}
+      try { if (zip) zip.close();  } catch(eClose) { safeLog(null, 'e', "catch " + String(eClose)); }
     }
   }
   if ((!out || out.length === 0) && lastErr) this._shortxIconCatalogError = "APK扫描: " + lastErr + " (路径数=" + paths.length + ", 文件数=" + totalFiles + ")";
@@ -399,7 +399,7 @@ FloatBallAppWM.prototype.getShortXIconLookupNames = function(name) {
       add("ic_remix_" + s);
       add("ic_" + s);
     }
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   return out;
 };
 
@@ -414,7 +414,7 @@ FloatBallAppWM.prototype.resolveShortXDrawableResId = function(name) {
       try { resId = handle.res.getIdentifier(String(cands[i]), "drawable", handle.pkg); } catch (e1) { resId = 0; }
       if (resId > 0) return resId;
     }
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   return 0;
 };
 
@@ -429,10 +429,10 @@ FloatBallAppWM.prototype.resolveShortXDrawable = function(name, tintHex) {
       try {
         dr = dr.mutate();
         dr.setColorFilter(android.graphics.Color.parseColor(String(tintHex)), android.graphics.PorterDuff.Mode.SRC_IN);
-      } catch (eTint) {}
+       } catch(eTint) { safeLog(null, 'e', "catch " + String(eTint)); }
     }
     return dr;
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   return null;
 };
 
@@ -467,7 +467,7 @@ FloatBallAppWM.prototype.getShortXIconCatalog = function(forceReload) {
               shortName: (fname.indexOf("ic_remix_") === 0) ? fname.substring("ic_remix_".length) : fname,
               id: f.getInt(null)
             });
-          } catch (eField) {}
+           } catch(eField) { safeLog(null, 'e', "catch " + String(eField)); }
         }
       } catch (eClz) {
         this._shortxIconCatalogError = "R$drawable reflect: " + String(eClz);

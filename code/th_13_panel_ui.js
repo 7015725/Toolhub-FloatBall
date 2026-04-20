@@ -48,7 +48,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
       var outValue = new android.util.TypedValue();
       context.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
       row.setBackgroundResource(outValue.resourceId);
-  } catch(e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
   row.setPadding(padH, padV, padH, padV);
 
@@ -70,7 +70,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     row.addView(tv);
 
     var sw = new android.widget.Switch(context);
-    try { sw.setTextOn(""); sw.setTextOff(""); } catch (eT) {}
+    try { sw.setTextOn(""); sw.setTextOff("");  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
 
     // 优化开关颜色
     try {
@@ -86,7 +86,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
 
         sw.setThumbTintList(thumbList);
         sw.setTrackTintList(trackList);
-    } catch(eColor) {}
+     } catch(eColor) { safeLog(null, 'e', "catch " + String(eColor)); }
 
     var cur = !!self.getPendingValue(item.key);
     sw.setChecked(cur);
@@ -98,7 +98,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
           self.touchActivity();
           self.setPendingValue(item.key, !!checked);
           if (self.L) self.L.d("pending " + String(item.key) + "=" + String(!!checked));
-        } catch (e0) {}
+         } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
       }
     }));
 
@@ -154,7 +154,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     try {
         sb.getThumb().setTint(primary);
         sb.getProgressDrawable().setTint(primary);
-    } catch(eColor) {}
+     } catch(eColor) { safeLog(null, 'e', "catch " + String(eColor)); }
 
     // 配置 SeekBar
     var min = (item.min !== undefined) ? Number(item.min) : 0;
@@ -197,10 +197,10 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
           if (fromUser) {
             self.setPendingValue(item.key, v);
           }
-        } catch (e1) {}
+         } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
       },
-      onStartTrackingTouch: function() { try { self.touchActivity(); } catch (e2) {} },
-      onStopTrackingTouch: function() { try { self.touchActivity(); } catch (e3) {} }
+      onStartTrackingTouch: function() { try { self.touchActivity();  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); } },
+      onStopTrackingTouch: function() { try { self.touchActivity();  } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); } }
     }));
 
     row.addView(sb);
@@ -239,7 +239,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
               if (item.action === "open_btn_mgr") {
                 self.showPanelAvoidBall("btn_editor");
               }
-            } catch(e) {}
+             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
     }));
     row.addView(btn);
@@ -252,7 +252,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
           if (item.action === "open_btn_mgr") {
             self.showPanelAvoidBall("btn_editor");
           }
-        } catch(e) {}
+         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
     }));
 
@@ -289,7 +289,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
                 v.requestFocus();
                 var imm = context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
                 imm.showSoftInput(v, 0);
-            } catch(e) {}
+             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
     }));
 
@@ -300,7 +300,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
             try {
                 self.touchActivity();
                 self.setPendingValue(item.key, String(s));
-            } catch (e) {}
+             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
     }));
 
@@ -338,7 +338,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
                 var states = [[android.R.attr.state_checked], [-android.R.attr.state_checked]];
                 var colors = [primary, secColor];
                 rb.setButtonTintList(new android.content.res.ColorStateList(states, colors));
-            } catch(eC){}
+             } catch(eC) { safeLog(null, 'e', "catch " + String(eC)); }
 
             rb.setId(android.view.View.generateViewId ? android.view.View.generateViewId() : i);
 
@@ -353,7 +353,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
                         try {
                             self.touchActivity();
                             self.setPendingValue(item.key, String(opt.value));
-                        } catch(e){}
+                         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
                     }
                 }
             }));
@@ -403,7 +403,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
         } else {
           previewIv.setImageDrawable(null);
         }
-      } catch(ePreview0) {}
+       } catch(ePreview0) { safeLog(null, 'e', "catch " + String(ePreview0)); }
     }
     refreshBallShortXPreview();
 
@@ -435,7 +435,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
       try {
         self.setPendingValue(item.key, "");
         refreshBallShortXPreview();
-      } catch(eClearBallIcon) {}
+       } catch(eClearBallIcon) { safeLog(null, 'e', "catch " + String(eClearBallIcon)); }
     });
     iconRow.addView(btnClear);
     row.addView(iconRow);
@@ -478,7 +478,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
           colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14)));
         }
       } catch(eDot0) {
-        try { colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14))); } catch(eDot1) {}
+        try { colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14)));  } catch(eDot1) { safeLog(null, 'e', "catch " + String(eDot1)); }
         colorValueTv.setText("默认");
       }
     }
@@ -510,7 +510,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
       try {
         self.setPendingValue(item.key, "");
         refreshBallColorPreview();
-      } catch(eClearBallColor) {}
+       } catch(eClearBallColor) { safeLog(null, 'e', "catch " + String(eClearBallColor)); }
     });
     colorRow.addView(btnClearColor);
     row.addView(colorRow);

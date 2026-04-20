@@ -15,7 +15,7 @@ FloatBallAppWM.prototype.animateBallLayout = function(toX, toY, toW, durMs, endC
         // 0.7 的张力适中，不会过于夸张
         va.setInterpolator(new android.view.animation.OvershootInterpolator(0.7));
     } catch (eI) {
-        try { va.setInterpolator(new android.view.animation.DecelerateInterpolator()); } catch (eI2) {}
+        try { va.setInterpolator(new android.view.animation.DecelerateInterpolator());  } catch(eI2) { safeLog(null, 'e', "catch " + String(eI2)); }
     }
 
     var self = this;
@@ -41,15 +41,18 @@ FloatBallAppWM.prototype.animateBallLayout = function(toX, toY, toW, durMs, endC
                 self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);
               }, true, self.L);
           }
-        } catch (e) {}
+         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
     }));
 
     va.addListener(new android.animation.Animator.AnimatorListener({
       onAnimationStart: function() {},
       onAnimationRepeat: function() {},
-      onAnimationCancel: function() {},
+      onAnimationCancel: function() {
+        try { self.state.ballAnimator = null;  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+      },
       onAnimationEnd: function() {
+        try { self.state.ballAnimator = null;  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         try {
           if (!self.state.closing && self.state.addedBall) {
             self.state.ballLp.x = toX;
@@ -58,11 +61,12 @@ FloatBallAppWM.prototype.animateBallLayout = function(toX, toY, toW, durMs, endC
             self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);
             self.savePos(self.state.ballLp.x, self.state.ballLp.y);
           }
-        } catch (e2) {}
-        try { if (endCb) endCb(); } catch (eCb) { try { if (self && self.L && self.L.e) self.L.e("animateBallLayout endCb err=" + String(eCb)); } catch (eLog) {} }
+         } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
+        try { if (endCb) endCb(); } catch (eCb) { try { if (self && self.L && self.L.e) self.L.e("animateBallLayout endCb err=" + String(eCb));  } catch(eLog) { safeLog(null, 'e', "catch " + String(eLog)); } }
       }
     }));
 
+    this.state.ballAnimator = va;
     va.start();
   } catch (e0) {
     try {
@@ -71,8 +75,8 @@ FloatBallAppWM.prototype.animateBallLayout = function(toX, toY, toW, durMs, endC
       st.ballLp.width = toW;
       st.wm.updateViewLayout(st.ballRoot, st.ballLp);
       this.savePos(st.ballLp.x, st.ballLp.y);
-    } catch (e1) {}
-    try { if (endCb) endCb(); } catch (eCb2) { try { if (this && this.L && this.L.e) this.L.e("animateBallLayout endCb err=" + String(eCb2)); } catch (eLog2) {} }
+     } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
+    try { if (endCb) endCb(); } catch (eCb2) { try { if (this && this.L && this.L.e) this.L.e("animateBallLayout endCb err=" + String(eCb2));  } catch(eLog2) { safeLog(null, 'e', "catch " + String(eLog2)); } }
   }
 };
 
@@ -80,7 +84,7 @@ FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
 
-  try { v.animate().cancel(); } catch (e0) {}
+  try { v.animate().cancel();  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
 
   var self = this;
   var i = 0;
@@ -89,7 +93,7 @@ FloatBallAppWM.prototype.playBounce = function(v) {
     if (self.state.closing) return;
 
     if (i >= self.config.BOUNCE_TIMES) {
-      try { v.setScaleX(1); v.setScaleY(1); } catch (e2) {}
+      try { v.setScaleX(1); v.setScaleY(1);  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
       return;
     }
 
@@ -202,12 +206,12 @@ FloatBallAppWM.prototype.clearHeavyCaches = function(reason) {
   }
   this.state[cacheKey] = now;
   
-  try { this._iconLru = null; } catch (eLruClr) {}
-  try { this._shortcutIconFailTs = {}; } catch (e2) {}
+  try { this._iconLru = null;  } catch(eLruClr) { safeLog(null, 'e', "catch " + String(eLruClr)); }
+  try { this._shortcutIconFailTs = {};  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
 
   // # Shortcuts 相关全局缓存（按钮编辑页/快捷方式选择器可能会创建）
-  try { if (typeof __scIconCache !== "undefined") __scIconCache = {}; } catch (e3) {}
-  try { if (typeof __scAppLabelCache !== "undefined") __scAppLabelCache = {}; } catch (e4) {}
+  try { if (typeof __scIconCache !== "undefined") __scIconCache = {};  } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); }
+  try { if (typeof __scAppLabelCache !== "undefined") __scAppLabelCache = {};  } catch(e4) { safeLog(null, 'e', "catch " + String(e4)); }
 
   // # 记录一次清理日志（精简：只记录关键 reason，且 5秒防抖）
   var keyReasons = ["memory_pressure", "screen_changed", "close"];
@@ -216,7 +220,7 @@ FloatBallAppWM.prototype.clearHeavyCaches = function(reason) {
     if (isKeyReason && this.L && this.L.i) {
       this.L.i("clearHeavyCaches reason=" + String(reason));
     }
-  } catch (e5) {}
+   } catch(e5) { safeLog(null, 'e', "catch " + String(e5)); }
 };
 
 FloatBallAppWM.prototype._clearHeavyCachesIfAllHidden = function(reason) {
@@ -225,7 +229,7 @@ FloatBallAppWM.prototype._clearHeavyCachesIfAllHidden = function(reason) {
     if (!this.state.addedPanel && !this.state.addedSettings && !this.state.addedViewer) {
       this.clearHeavyCaches(reason || "all_hidden");
     }
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 };
 
 FloatBallAppWM.prototype.hideAllPanels = function() {
@@ -287,7 +291,7 @@ FloatBallAppWM.prototype.showMask = function() {
         } else {
             mask.setAlpha(1);
         }
-    } catch(eAnim){}
+     } catch(eAnim) { safeLog(null, 'e', "catch " + String(eAnim)); }
 
   } catch (e1) {
     safeLog(this.L, 'e',  "add mask fail err=" + String(e1));
@@ -322,7 +326,7 @@ FloatBallAppWM.prototype.snapToEdgeDocked = function(withAnim, forceSide) {
     this.state.dockSide = "left";
     this.state.docked = true;
 
-    try { this.state.ballContent.setX(-hidden); } catch (eL) {}
+    try { this.state.ballContent.setX(-hidden);  } catch(eL) { safeLog(null, 'e', "catch " + String(eL)); }
 
     if (withAnim) {
       this.animateBallLayout(0, targetY, targetW, this.config.DOCK_ANIM_MS, null);
@@ -330,7 +334,7 @@ FloatBallAppWM.prototype.snapToEdgeDocked = function(withAnim, forceSide) {
       this.state.ballLp.x = 0;
       this.state.ballLp.y = targetY;
       this.state.ballLp.width = targetW;
-      try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp); } catch (eU1) {}
+      try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU1) { safeLog(null, 'e', "catch " + String(eU1)); }
       this.savePos(this.state.ballLp.x, this.state.ballLp.y);
     }
 
@@ -343,7 +347,7 @@ FloatBallAppWM.prototype.snapToEdgeDocked = function(withAnim, forceSide) {
          } else {
              this.state.ballContent.setAlpha(this.config.BALL_IDLE_ALPHA);
          }
-    } catch(eA) {}
+     } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
 
     return;
   }
@@ -351,7 +355,7 @@ FloatBallAppWM.prototype.snapToEdgeDocked = function(withAnim, forceSide) {
   this.state.dockSide = "right";
   this.state.docked = true;
 
-  try { this.state.ballContent.setX(0); } catch (eR) {}
+  try { this.state.ballContent.setX(0);  } catch(eR) { safeLog(null, 'e', "catch " + String(eR)); }
 
   var x2 = this.state.screen.w - visible;
 
@@ -361,7 +365,7 @@ FloatBallAppWM.prototype.snapToEdgeDocked = function(withAnim, forceSide) {
     this.state.ballLp.x = x2;
     this.state.ballLp.y = targetY;
     this.state.ballLp.width = targetW;
-    try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp); } catch (eU2) {}
+    try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU2) { safeLog(null, 'e', "catch " + String(eU2)); }
     this.savePos(this.state.ballLp.x, this.state.ballLp.y);
   }
 
@@ -380,7 +384,7 @@ FloatBallAppWM.prototype.snapToEdgeDocked = function(withAnim, forceSide) {
      } else {
          this.state.ballContent.setAlpha(this.config.BALL_IDLE_ALPHA);
      }
-  } catch(eA) {}
+   } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
 };
 
 FloatBallAppWM.prototype.undockToFull = function(withAnim, endCb) {
@@ -393,7 +397,7 @@ FloatBallAppWM.prototype.undockToFull = function(withAnim, endCb) {
   var targetW = ballSize;
   var targetY = this.clamp(this.state.ballLp.y, 0, this.state.screen.h - ballSize);
 
-  try { this.state.ballContent.setX(0); } catch (e0) {}
+  try { this.state.ballContent.setX(0);  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
 
   if (this.state.dockSide === "left") {
     this.state.docked = false;
@@ -404,7 +408,7 @@ FloatBallAppWM.prototype.undockToFull = function(withAnim, endCb) {
       this.state.ballLp.x = 0;
       this.state.ballLp.y = targetY;
       this.state.ballLp.width = targetW;
-      try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp); } catch (eU1) {}
+      try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU1) { safeLog(null, 'e', "catch " + String(eU1)); }
       this.savePos(this.state.ballLp.x, this.state.ballLp.y);
       if (endCb) endCb();
     }
@@ -416,7 +420,7 @@ FloatBallAppWM.prototype.undockToFull = function(withAnim, endCb) {
          } else {
              this.state.ballContent.setAlpha(1.0);
          }
-    } catch(eA) {}
+     } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
 
     safeLog(this.L, 'i', "undock from left");
     return;
@@ -432,7 +436,7 @@ FloatBallAppWM.prototype.undockToFull = function(withAnim, endCb) {
     this.state.ballLp.x = x;
     this.state.ballLp.y = targetY;
     this.state.ballLp.width = targetW;
-    try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp); } catch (eU2) {}
+    try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU2) { safeLog(null, 'e', "catch " + String(eU2)); }
     this.savePos(this.state.ballLp.x, this.state.ballLp.y);
     if (endCb) endCb();
   }
@@ -444,7 +448,7 @@ FloatBallAppWM.prototype.undockToFull = function(withAnim, endCb) {
      } else {
          this.state.ballContent.setAlpha(1.0);
      }
-  } catch(eA) {}
+   } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
 
   // # 日志精简：undock 事件改为 INFO 级别，且记录方向
   var undockSide = this.state.dockSide || "right";
@@ -452,7 +456,7 @@ FloatBallAppWM.prototype.undockToFull = function(withAnim, endCb) {
 };
 
 FloatBallAppWM.prototype.cancelDockTimer = function() {
-  try { if (this.state.idleDockRunnable && this.state.h) this.state.h.removeCallbacks(this.state.idleDockRunnable); } catch (e) {}
+  try { if (this.state.idleDockRunnable && this.state.h) this.state.h.removeCallbacks(this.state.idleDockRunnable);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   this.state.idleDockRunnable = null;
 };
 
@@ -518,7 +522,7 @@ FloatBallAppWM.prototype.guardClick = function(key, cooldownMs, fn) {
     return true;
   } catch (e0) {
     // 兜底：绝不让点击回调异常冒泡到 system_server
-    try { fn && fn(); } catch (e2) {}
+    try { fn && fn();  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
     return true;
   }
 };
@@ -576,22 +580,22 @@ FloatBallAppWM.prototype.onScreenChangedReflow = function() {
 
     if (this.state.dockSide === "left") {
       this.state.ballLp.x = 0;
-      try { this.state.ballContent.setX(-hidden); } catch (eL) {}
+      try { this.state.ballContent.setX(-hidden);  } catch(eL) { safeLog(null, 'e', "catch " + String(eL)); }
     } else {
       this.state.ballLp.x = newW - visible;
-      try { this.state.ballContent.setX(0); } catch (eR) {}
+      try { this.state.ballContent.setX(0);  } catch(eR) { safeLog(null, 'e', "catch " + String(eR)); }
     }
     // 重新进入闲置变暗逻辑（如果需要）
-    try { this.state.ballContent.setAlpha(this.config.BALL_IDLE_ALPHA); } catch(eA) {}
+    try { this.state.ballContent.setAlpha(this.config.BALL_IDLE_ALPHA);  } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
   } else {
     this.state.ballLp.x = mappedX;
     this.state.ballLp.y = mappedY;
     this.state.ballLp.width = ballSize;
-    try { this.state.ballContent.setX(0); } catch (e0) {}
-    try { this.state.ballContent.setAlpha(1.0); } catch(eA) {}
+    try { this.state.ballContent.setX(0);  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
+    try { this.state.ballContent.setAlpha(1.0);  } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
   }
 
-  try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp); } catch (eU) {}
+  try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU) { safeLog(null, 'e', "catch " + String(eU)); }
   this.savePos(this.state.ballLp.x, this.state.ballLp.y);
 
   safeLog(this.L, 'i',  "screen reflow w=" + String(newW) + " h=" + String(newH) + " x=" + String(this.state.ballLp.x) + " y=" + String(this.state.ballLp.y));
@@ -642,7 +646,7 @@ FloatBallAppWM.prototype.setupDisplayMonitor = function() {
               }
             }
           }));
-        } catch (e0) {}
+         } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
       }
     });
 
@@ -655,7 +659,7 @@ FloatBallAppWM.prototype.setupDisplayMonitor = function() {
 };
 
 FloatBallAppWM.prototype.stopDisplayMonitor = function() {
-  try { if (this.state.dm && this.state.displayListener) this.state.dm.unregisterDisplayListener(this.state.displayListener); } catch (e) {}
+  try { if (this.state.dm && this.state.displayListener) this.state.dm.unregisterDisplayListener(this.state.displayListener);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   this.state.displayListener = null;
   this.state.dm = null;
 };

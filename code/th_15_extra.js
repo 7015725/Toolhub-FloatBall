@@ -16,7 +16,7 @@ FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   bgDr.setColor(bgColor);
   bgDr.setCornerRadius(this.dp(16));
   panel.setBackground(bgDr);
-  try { panel.setElevation(this.dp(8)); } catch(e){}
+  try { panel.setElevation(this.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
   panel.setPadding(
     this.dp(16),
@@ -39,8 +39,8 @@ FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   panel.addView(sep);
 
   var scroll = new android.widget.ScrollView(context);
-  try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch (eOS) {}
-  try { scroll.setVerticalScrollBarEnabled(true); } catch (eSB) {}
+  try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(eOS) { safeLog(null, 'e', "catch " + String(eOS)); }
+  try { scroll.setVerticalScrollBarEnabled(true);  } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
 
   // 给内容加一点边距
   var contentBox = new android.widget.LinearLayout(context);
@@ -53,11 +53,11 @@ FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   tv.setTextColor(codeColor);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, Number(this.config.CONTENT_VIEWER_TEXT_SP || 12));
   // 增加行距优化阅读
-  try { tv.setLineSpacing(this.dp(4), 1.0); } catch(eLS) {}
+  try { tv.setLineSpacing(this.dp(4), 1.0);  } catch(eLS) { safeLog(null, 'e', "catch " + String(eLS)); }
   // 使用等宽字体显示代码/日志
-  try { tv.setTypeface(android.graphics.Typeface.MONOSPACE); } catch(eTF) {}
+  try { tv.setTypeface(android.graphics.Typeface.MONOSPACE);  } catch(eTF) { safeLog(null, 'e', "catch " + String(eTF)); }
   // WindowManager 环境下禁用文本选择，否则长按/选择会因缺少 Token 崩溃
-  try { tv.setTextIsSelectable(false); } catch (eSel) {}
+  try { tv.setTextIsSelectable(false);  } catch(eSel) { safeLog(null, 'e', "catch " + String(eSel)); }
 
   contentBox.addView(tv);
 
@@ -96,7 +96,7 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
   bgDr.setColor(this.withAlpha(bgColor, this.config.PANEL_BG_ALPHA));
   bgDr.setCornerRadius(this.dp(16));
   panel.setBackground(bgDr);
-  try { panel.setElevation(this.dp(8)); } catch(e){}
+  try { panel.setElevation(this.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
   var padDp = this.config.PANEL_PADDING_DP;
   panel.setPadding(
@@ -149,9 +149,9 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
   }
 
   var scroll = new android.widget.ScrollView(context);
-  try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch (eOS) {}
-  try { scroll.setVerticalScrollBarEnabled(false); } catch (eSB) {}
-  try { scroll.setFillViewport(true); } catch (eFV) {}
+  try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(eOS) { safeLog(null, 'e', "catch " + String(eOS)); }
+  try { scroll.setVerticalScrollBarEnabled(false);  } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
+  try { scroll.setFillViewport(true);  } catch(eFV) { safeLog(null, 'e', "catch " + String(eFV)); }
 
   var scrollLp = new android.widget.LinearLayout.LayoutParams(contentW, scrollH);
   scroll.setLayoutParams(scrollLp);
@@ -170,7 +170,7 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
   // var totalCells = totalBtns > minCells ? totalBtns : minCells;
 
   var rowCount = Math.ceil(totalCells / cols2);
-  try { grid.setRowCount(rowCount); } catch (eRC) {}
+  try { grid.setRowCount(rowCount);  } catch(eRC) { safeLog(null, 'e', "catch " + String(eRC)); }
 
   grid.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
     onTouch: function(v, e) { self.touchActivity(); return false; }
@@ -193,7 +193,7 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
     // 单元格背景：如果是有功能的按钮，给个卡片背景；否则透明
     if (btnCfg) {
          cell.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(12)));
-         try { cell.setElevation(self.dp(2)); } catch(e){}
+         try { cell.setElevation(self.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     } else {
          // 空格子占位
     }
@@ -206,7 +206,7 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
         // 但 resolveIconDrawable 逻辑比较复杂，这里暂时不强制染色，除非用户配置了 TINT
         if (!isDark && btnCfg && !btnCfg.type && !btnCfg.pkg) {
              // 简单的系统图标在亮色模式下可能看不清，染成深色
-             try { iv.setColorFilter(C.textPriLight, android.graphics.PorterDuff.Mode.SRC_IN); } catch(eCF){}
+             try { iv.setColorFilter(C.textPriLight, android.graphics.PorterDuff.Mode.SRC_IN);  } catch(eCF) { safeLog(null, 'e', "catch " + String(eCF)); }
         }
     }
 
@@ -224,7 +224,7 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
       tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, this.config.PANEL_LABEL_TEXT_SIZE_SP);
       tv.setTextColor(textColor);
       tv.setGravity(android.view.Gravity.CENTER);
-      try { tv.setLines(1); tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eL){}
+      try { tv.setLines(1); tv.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(eL) { safeLog(null, 'e', "catch " + String(eL)); }
 
       var tvLp = new android.widget.LinearLayout.LayoutParams(
         android.widget.LinearLayout.LayoutParams.MATCH_PARENT, // 宽度填满，方便居中
@@ -251,8 +251,8 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
         }));
       })(i, btnCfg);
     } else {
-      try { iv.setAlpha(0); } catch (eA0) {}
-      try { cell.setClickable(false); } catch (eC0) {}
+      try { iv.setAlpha(0);  } catch(eA0) { safeLog(null, 'e', "catch " + String(eA0)); }
+      try { cell.setClickable(false);  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
     }
 
     grid.addView(cell);
@@ -460,7 +460,7 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
         panel.setScaleY(1);
         panel.setAlpha(1);
     }
-  } catch (eA) {}
+   } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
 
   // # 日志防抖：5秒内相同面板类型不重复记录
   var now = Date.now();
@@ -516,8 +516,8 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
                // 需要处理 newPanel 的 LayoutParams
                var contentLp = new android.widget.LinearLayout.LayoutParams(-1, 0);
                contentLp.weight = 1;
-               try { newPanel.setBackground(null); } catch(e){} // 移除背景，使用 Container 背景
-               try { newPanel.setElevation(0); } catch(e){}
+               try { newPanel.setBackground(null);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } // 移除背景，使用 Container 背景
+               try { newPanel.setElevation(0);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
                newPanel.setLayoutParams(contentLp);
 
                container.addView(newPanel);
@@ -651,7 +651,7 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
       self.touchActivity();
     } catch (e) {
       if (self.L) self.L.e("showPanelAvoidBall callback err=" + String(e));
-      try { self.toast("面板显示失败: " + String(e)); } catch (et) {}
+      try { self.toast("面板显示失败: " + String(e));  } catch(et) { safeLog(null, 'e', "catch " + String(et)); }
     }
   };
 
@@ -691,7 +691,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
     bgDr.setColor(isDark ? C.bgDark : C.bgLight);
     bgDr.setCornerRadius(this.dp(12));
     container.setBackground(bgDr);
-    try { container.setElevation(this.dp(8)); } catch(e){}
+    try { container.setElevation(this.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
     // Header
     var header = new android.widget.LinearLayout(context);
@@ -717,7 +717,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
         else self.hideAllPanels();
     });
     btnClose.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(4));
-    try { btnClose.setElevation(this.dp(25)); } catch(e){} // Ensure on top of resize handles
+    try { btnClose.setElevation(this.dp(25));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } // Ensure on top of resize handles
     header.addView(btnClose);
 
     // Spacer to avoid overlap with Top-Right resize handle
@@ -733,8 +733,8 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
 
     // Add Content
     // 移除 content 原有的背景和 elevation，避免重复
-    try { contentView.setBackground(null); } catch(e){}
-    try { contentView.setElevation(0); } catch(e){}
+    try { contentView.setBackground(null);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+    try { contentView.setElevation(0);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
     var contentLp = new android.widget.LinearLayout.LayoutParams(-1, 0);
     contentLp.weight = 1;
@@ -746,7 +746,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
 
     // Resize Handle (Bottom-Right Corner) - Invisible
     var handleBR = new android.view.View(context);
-    try { handleBR.setElevation(this.dp(20)); } catch(e){}
+    try { handleBR.setElevation(this.dp(20));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     var handleBRLp = new android.widget.FrameLayout.LayoutParams(this.dp(30), this.dp(30));
     handleBRLp.gravity = android.view.Gravity.BOTTOM | android.view.Gravity.END;
     handleBRLp.rightMargin = 0;
@@ -755,7 +755,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
 
     // Resize Handle (Bottom-Left Corner) - Invisible
     var handleBL = new android.view.View(context);
-    try { handleBL.setElevation(this.dp(20)); } catch(e){}
+    try { handleBL.setElevation(this.dp(20));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     var handleBLLp = new android.widget.FrameLayout.LayoutParams(this.dp(30), this.dp(30));
     handleBLLp.gravity = android.view.Gravity.BOTTOM | android.view.Gravity.START;
     handleBLLp.bottomMargin = 0;
@@ -764,7 +764,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
 
     // Resize Handle (Top-Left Corner) - Invisible
     var handleTL = new android.view.View(context);
-    try { handleTL.setElevation(this.dp(20)); } catch(e){}
+    try { handleTL.setElevation(this.dp(20));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     var handleTLLp = new android.widget.FrameLayout.LayoutParams(this.dp(30), this.dp(30));
     handleTLLp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
     handleTLLp.topMargin = 0;
@@ -773,7 +773,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
 
     // Resize Handle (Top-Right Corner) - Invisible
     var handleTR = new android.view.View(context);
-    try { handleTR.setElevation(this.dp(20)); } catch(e){}
+    try { handleTR.setElevation(this.dp(20));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     var handleTRLp = new android.widget.FrameLayout.LayoutParams(this.dp(30), this.dp(30));
     handleTRLp.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
     handleTRLp.topMargin = 0;
@@ -867,7 +867,7 @@ FloatBallAppWM.prototype.attachDragResizeListeners = function(rootView, headerVi
 
                             lp.x = targetX;
                             lp.y = targetY;
-                            try { wm.updateViewLayout(rootView, lp); } catch(e){}
+                            try { wm.updateViewLayout(rootView, lp);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
                         }
                     }
                     return true;
@@ -938,10 +938,10 @@ FloatBallAppWM.prototype.attachDragResizeListeners = function(rootView, headerVi
                                             lpCur.height = initialH;
                                             lpCur.x = initialX;
                                             lpCur.y = initialY;
-                                            try { wm.updateViewLayout(rootView, lpCur); } catch(e){}
+                                            try { wm.updateViewLayout(rootView, lpCur);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
                                         }
                                         resizing = true;
-                                    } catch(e) {}
+                                     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
                                 }
                             });
                             self.state.h.postDelayed(longPressRunnable, 300); // 300ms hold to activate resize
@@ -1022,7 +1022,7 @@ FloatBallAppWM.prototype.attachDragResizeListeners = function(rootView, headerVi
                                     lp.y = Math.round(newY);
                                 }
 
-                                try { wm.updateViewLayout(rootView, lp); } catch(e){}
+                                try { wm.updateViewLayout(rootView, lp);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
                             }
                         }
                         return true;
@@ -1138,7 +1138,7 @@ FloatBallAppWM.prototype.showViewerPanel = function(title, text) {
 };
 
 FloatBallAppWM.prototype.cancelLongPressTimer = function() {
-  try { if (this.state.longPressRunnable && this.state.h) this.state.h.removeCallbacks(this.state.longPressRunnable); } catch (e) {}
+  try { if (this.state.longPressRunnable && this.state.h) this.state.h.removeCallbacks(this.state.longPressRunnable);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   this.state.longPressArmed = false;
   this.state.longPressRunnable = null;
 };
@@ -1208,7 +1208,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         self.touchActivity();
 
         // 恢复不透明度
-        try { v.setAlpha(1.0); } catch(eA) {}
+        try { v.setAlpha(1.0);  } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
 
         if (self.state.docked) {
           self.undockToFull(false, null);
@@ -1224,14 +1224,14 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         lastTouchX = e.getRawX();
         lastTouchY = e.getRawY();
 
-        try { v.setPressed(true); } catch (eP) {}
-        try { v.drawableHotspotChanged(e.getX(), e.getY()); } catch (eH) {}
+        try { v.setPressed(true);  } catch(eP) { safeLog(null, 'e', "catch " + String(eP)); }
+        try { v.drawableHotspotChanged(e.getX(), e.getY());  } catch(eH) { safeLog(null, 'e', "catch " + String(eH)); }
 
         // 按下缩小反馈
         if (self.config.ENABLE_ANIMATIONS) {
             try {
                 v.animate().scaleX(0.9).scaleY(0.9).setDuration(100).start();
-            } catch(eS){}
+             } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
         }
 
         self.armLongPress();
@@ -1268,11 +1268,11 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
           self.state.ballLp.y = self.clamp(self.state.ballLp.y, 0, self.state.screen.h - di.ballSize);
 
           self.state.ballLp.width = di.ballSize;
-          try { self.state.ballContent.setX(0); } catch (e0) {}
+          try { self.state.ballContent.setX(0);  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
 
           var now = java.lang.System.currentTimeMillis();
           if (now - lastUpdateTs > 10) { // 10ms 节流
-             try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp); } catch (eU) {}
+             try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);  } catch(eU) { safeLog(null, 'e', "catch " + String(eU)); }
              lastUpdateTs = now;
           }
 
@@ -1286,16 +1286,16 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
       if (a === android.view.MotionEvent.ACTION_UP || a === android.view.MotionEvent.ACTION_CANCEL) {
         self.touchActivity();
 
-        try { v.setPressed(false); } catch (eP2) {}
+        try { v.setPressed(false);  } catch(eP2) { safeLog(null, 'e', "catch " + String(eP2)); }
         self.cancelLongPressTimer();
 
         // 恢复缩放
         if (self.config.ENABLE_ANIMATIONS) {
             try {
                 v.animate().scaleX(1.0).scaleY(1.0).setDuration(150).start();
-            } catch(eS){}
+             } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
         } else {
-             try { v.setScaleX(1); v.setScaleY(1); } catch(eS){}
+             try { v.setScaleX(1); v.setScaleY(1);  } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
         }
 
         if (self.state.longPressTriggered) {
@@ -1305,7 +1305,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         }
 
         if (!self.state.dragging && a === android.view.MotionEvent.ACTION_UP) {
-          try { self.playBounce(v); } catch (eB) {}
+          try { self.playBounce(v);  } catch(eB) { safeLog(null, 'e', "catch " + String(eB)); }
 
           if (self.state.addedPanel) self.hideMainPanel();
           else self.showPanelAvoidBall("main");
@@ -1315,7 +1315,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         } else {
           // 拖拽结束
           // 确保最后位置被更新
-          try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp); } catch (eU) {}
+          try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);  } catch(eU) { safeLog(null, 'e', "catch " + String(eU)); }
 
           var forceSide = null;
           // 计算速度
@@ -1360,7 +1360,7 @@ FloatBallAppWM.prototype.createBallViews = function() {
   var root = new android.widget.FrameLayout(context);
   root.setClipToPadding(true);
   root.setClipChildren(true);
-  try { root.setElevation(this.dp(6)); } catch(e){}
+  try { root.setElevation(this.dp(6));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
   var content = new android.widget.FrameLayout(context);
   var lp = new android.widget.FrameLayout.LayoutParams(di.ballSize, di.ballSize);
@@ -1419,7 +1419,7 @@ try {
           } else {
             safeLog(this.L, 'w',  "Ball icon file load failed: " + iconFilePath);
           }
-        } catch (eF) {}
+         } catch(eF) { safeLog(null, 'e', "catch " + String(eF)); }
       }
 
       // # 2) app：加载应用图标 (file 失败也会尝试 app)
@@ -1434,7 +1434,7 @@ try {
               usedKind = "app";
             }
           }
-        } catch (eA) {}
+         } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
       }
 
       // # 2.5) shortx：专门加载 ShortX 内置图标（也作为 file 模式的兜底）
@@ -1455,7 +1455,7 @@ try {
               safeLog(this.L, 'i', "File icon failed, fallback to shortx icon");
             }
           }
-        } catch (eShortx2) {}
+         } catch(eShortx2) { safeLog(null, 'e', "catch " + String(eShortx2)); }
       }
 
       // # 3) android：或所有兜底，走资源 id（优先尝试 ShortX 内置图标）
@@ -1469,13 +1469,13 @@ try {
           if (usedDrawable != null) {
             usedKind = "shortx";
           }
-        } catch (eShortx) {}
+         } catch(eShortx) { safeLog(null, 'e', "catch " + String(eShortx)); }
       }
 
       if (usedDrawable != null) {
         iv.setImageDrawable(usedDrawable);
       } else if (iconResId > 0) {
-        try { iv.setImageResource(iconResId); usedKind = "android"; } catch (eR) {}
+        try { iv.setImageResource(iconResId); usedKind = "android";  } catch(eR) { safeLog(null, 'e', "catch " + String(eR)); }
       } else {
         // # 没有任何可用图标，直接不加到布局
         usedKind = "none";
@@ -1505,11 +1505,11 @@ try {
           try {
             var tintColor2 = android.graphics.Color.parseColor(tintHex);
             iv.setColorFilter(tintColor2, android.graphics.PorterDuff.Mode.SRC_IN);
-          } catch (eTint2) {}
+           } catch(eTint2) { safeLog(null, 'e', "catch " + String(eTint2)); }
         } else if (usedKind === "android") {
-          try { iv.setColorFilter(android.graphics.Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN); } catch (eCF) {}
+          try { iv.setColorFilter(android.graphics.Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN);  } catch(eCF) { safeLog(null, 'e', "catch " + String(eCF)); }
         } else {
-          try { iv.clearColorFilter(); } catch (eCL) {}
+          try { iv.clearColorFilter();  } catch(eCL) { safeLog(null, 'e', "catch " + String(eCL)); }
         }
 
         box.addView(iv);
@@ -1518,7 +1518,7 @@ try {
 
     content.addView(box);
   }
-} catch (eBallInner) {}
+ } catch(eBallInner) { safeLog(null, 'e', "catch " + String(eBallInner)); }
 
 
   this.updateBallContentBackground(content);
@@ -1526,7 +1526,7 @@ try {
   // # 阴影控制：file/app 模式下不加阴影（避免透明背景带黑框）
   var _uk = this.state.usedIconKind;
   if (_uk !== "file" && _uk !== "app") {
-    try { root.setElevation(this.dp(6)); } catch(e){}
+    try { root.setElevation(this.dp(6));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   }
 
   content.setClickable(true);

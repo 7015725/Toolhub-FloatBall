@@ -76,14 +76,14 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
   previewBox.addView(tvPreview);
 
   var switchPreview = new android.widget.Switch(context);
-  try { switchPreview.setTextOn(""); switchPreview.setTextOff(""); } catch (eT) {}
+  try { switchPreview.setTextOn(""); switchPreview.setTextOff("");  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
   try {
       var states = [[android.R.attr.state_checked], [-android.R.attr.state_checked]];
       var thumbColors = [C.accent, isDark ? (0xFF555555 | 0) : (0xFFCCCCCC | 0)];
       var trackColors = [self.withAlpha(C.accent, 0.5), self.withAlpha(isDark ? (0xFF555555 | 0) : (0xFFCCCCCC | 0), 0.5)];
       switchPreview.setThumbTintList(new android.content.res.ColorStateList(states, thumbColors));
       switchPreview.setTrackTintList(new android.content.res.ColorStateList(states, trackColors));
-  } catch(e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
   switchPreview.setChecked(!!self.state.previewMode);
   switchPreview.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener({
@@ -123,7 +123,7 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
         if (r && r.ok) self.toast("已确认并生效");
         else self.toast("确认失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")));
       } catch (e0) {
-        try { self.toast("确认异常: " + String(e0)); } catch (eT) {}
+        try { self.toast("确认异常: " + String(e0));  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
         if (self.L) self.L.e("settings confirm err=" + String(e0));
       }
   });
@@ -136,8 +136,8 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
   panel.addView(header);
 
   var scroll = new android.widget.ScrollView(context);
-  try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch (eOS) {}
-  try { scroll.setVerticalScrollBarEnabled(false); } catch (eSB) {}
+  try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(eOS) { safeLog(null, 'e', "catch " + String(eOS)); }
+  try { scroll.setVerticalScrollBarEnabled(false);  } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
 
   var box = new android.widget.LinearLayout(context);
   box.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -155,8 +155,8 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
       var c = new android.widget.LinearLayout(context);
       c.setOrientation(android.widget.LinearLayout.VERTICAL);
       c.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(12)));
-      try { c.setElevation(self.dp(2)); } catch(e){}
-      try { c.setClipToOutline(true); } catch(e){}
+      try { c.setElevation(self.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+      try { c.setClipToOutline(true);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
       lp.setMargins(self.dp(2), self.dp(6), self.dp(2), self.dp(6));
       c.setLayoutParams(lp);
@@ -188,6 +188,157 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
 };
 
 // =======================【按钮编辑面板】======================
+
+    function normalizeTintColorValue(v, allowEmpty) {
+        var s = (v === undefined || v === null) ? "" : String(v);
+        s = s.replace(/^\s+|\s+$/g, "").toUpperCase();
+        if (!s) return allowEmpty ? "" : null;
+        if (s.charAt(0) !== "#") s = "#" + s;
+        if (/^#[0-9A-F]{6}$/.test(s)) return "#FF" + s.substring(1);
+        if (/^#[0-9A-F]{8}$/.test(s)) return s;
+        return null;
+    }
+
+    function extractTintAlphaByte(hex) {
+        var n = normalizeTintColorValue(hex, false);
+        if (!n) return 255;
+        return parseInt(n.substring(1, 3), 16);
+    }
+
+    function extractTintRgbHex(hex) {
+        var n = normalizeTintColorValue(hex, false);
+        if (!n) return "#FFFFFF";
+        return "#" + n.substring(3);
+    }
+
+    function buildArgbHex(alphaByte, rgbHex) {
+        var a = Number(alphaByte);
+        if (isNaN(a) || a < 0) a = 0;
+        if (a > 255) a = 255;
+        var rgb = String(rgbHex || "#FFFFFF").toUpperCase();
+        if (rgb.charAt(0) !== "#") rgb = "#" + rgb;
+        if (!/^#[0-9A-F]{6}$/.test(rgb)) rgb = "#FFFFFF";
+        var aHex = java.lang.Integer.toHexString(a & 255).toUpperCase();
+        if (aHex.length < 2) aHex = "0" + aHex;
+        return "#" + aHex + rgb.substring(1);
+    }
+
+function __scStr(v) { try { return String(v == null ? "" : v); } catch(e) { return ""; } }
+
+function __scLower(v) { try { return __scStr(v).toLowerCase(); } catch(e) { return ""; } }
+
+function __scEnsureShortcutIconFile(item) {
+    // 这段代码的主要内容/用途：把 Launcher Shortcuts 的图标在"可见时"持久化为 PNG，后续按钮页直接读文件显示，避免桌面移除后图标退化/缺失。
+    try {
+        if (!item) return "";
+        var pkg = __scStr(item.pkg);
+        var sid = __scStr(item.shortcutId);
+        var uid = (item.userId != null) ? __scStr(item.userId) : "0";
+        if (!pkg || !sid) return "";
+
+        var dir = String(APP_ROOT_DIR) + "/shortcut_icons";
+        try {
+            var d = new java.io.File(dir);
+            if (!d.exists()) d.mkdirs();
+         } catch(eMk) { safeLog(null, 'e', "catch " + String(eMk)); }
+
+        // # 与主程序同名规则：pkg__sid__u{uid}.png
+        var fn = __scSanitizeFileName(pkg) + "__" + __scSanitizeFileName(sid) + "__u" + __scSanitizeFileName(uid) + ".png";
+        var outPath = dir + "/" + fn;
+
+        // # 已存在则直接复用
+        try {
+            var f = new java.io.File(outPath);
+            if (f.exists() && f.isFile() && f.length() > 0) return outPath;
+         } catch(eEx) { safeLog(null, 'e', "catch " + String(eEx)); }
+
+        // # 获取 Drawable（优先 shortcut icon，失败则回退 app icon）
+        var dr = null;
+        try {
+            if (__scLauncherApps && item.shortcutInfo) {
+                try { dr = __scLauncherApps.getShortcutIconDrawable(item.shortcutInfo, 0); } catch(eD0) { dr = null; }
+            }
+        } catch(eLA) { dr = null; }
+        if (!dr) {
+            try {
+                var pm = context.getPackageManager();
+                dr = pm.getApplicationIcon(pkg);
+            } catch(eApp) { dr = null; }
+        }
+        if (!dr) return "";
+
+        // # Drawable -> Bitmap -> PNG
+        var bmp = null;
+        try { bmp = __scDrawableToBitmap(dr, 192); } catch(eBmp) { bmp = null; }
+        if (!bmp) return "";
+
+        var fos = null;
+        try {
+            fos = new java.io.FileOutputStream(outPath);
+            bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, fos);
+            try { fos.flush();  } catch(eFl) { safeLog(null, 'e', "catch " + String(eFl)); }
+            try { fos.close();  } catch(eCl) { safeLog(null, 'e', "catch " + String(eCl)); }
+            fos = null;
+        } catch(eW) {
+            try { if (fos) fos.close();  } catch(eCl2) { safeLog(null, 'e', "catch " + String(eCl2)); }
+            fos = null;
+            return "";
+        }
+
+        return outPath;
+    } catch(eAll) {
+        return "";
+    }
+}
+
+function __scSanitizeFileName(s) {
+    try {
+        var t = __scStr(s);
+        t = t.replace(/[^a-zA-Z0-9._-]+/g, "_");
+        if (t.length > 120) t = t.substring(0, 120);
+        return t;
+    } catch(e) { return ""; }
+}
+
+function __scDrawableToBitmap(drawable, targetPx) {
+    // 这段代码的主要内容/用途：把任意 Drawable 安全绘制成 Bitmap，便于持久化保存 PNG。
+    try {
+        if (!drawable) return null;
+
+        // BitmapDrawable 直接取
+        try {
+            if (drawable instanceof android.graphics.drawable.BitmapDrawable) {
+                var b = drawable.getBitmap();
+                if (b) return b;
+            }
+         } catch(eBD) { safeLog(null, 'e', "catch " + String(eBD)); }
+
+        var w = 0, h = 0;
+        try { w = drawable.getIntrinsicWidth(); } catch(eW) { w = 0; }
+        try { h = drawable.getIntrinsicHeight(); } catch(eH) { h = 0; }
+
+        if (w <= 0 || h <= 0) {
+            w = targetPx || 192;
+            h = targetPx || 192;
+        }
+
+        // # 过大的直接缩到 targetPx 附近，避免 PNG 体积过大
+        var maxSide = targetPx || 192;
+        var side = Math.max(w, h);
+        var scale = side > maxSide ? (maxSide / side) : 1.0;
+        var bw = Math.max(1, Math.round(w * scale));
+        var bh = Math.max(1, Math.round(h * scale));
+
+        var bmp = android.graphics.Bitmap.createBitmap(bw, bh, android.graphics.Bitmap.Config.ARGB_8888);
+        var canvas = new android.graphics.Canvas(bmp);
+        drawable.setBounds(0, 0, bw, bh);
+        drawable.draw(canvas);
+        return bmp;
+    } catch(eAll) {
+        return null;
+    }
+}
+
 FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   var self = this;
   // # 状态管理：editingIndex (null=列表, -1=新增, >=0=编辑)
@@ -233,7 +384,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     // # 列表滚动位置保持：刷新前记录当前 ScrollView 的 scrollY，避免操作后回到第一页
     try {
       if (__btnEditorListScroll) self.state.btnEditorListScrollY = __btnEditorListScroll.getScrollY();
-    } catch(eSY) {}
+     } catch(eSY) { safeLog(null, 'e', "catch " + String(eSY)); }
 
     // 标记为刷新操作，保留 tempButtons 状态
     self.state.keepBtnEditorState = true;
@@ -274,7 +425,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     // 列表区域
     var scroll = new android.widget.ScrollView(context);
     __btnEditorListScroll = scroll; // # 列表滚动位置保持：让 refreshPanel 能拿到当前列表的滚动位置
-    try { scroll.setVerticalScrollBarEnabled(false); } catch(e){}
+    try { scroll.setVerticalScrollBarEnabled(false);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     var list = new android.widget.LinearLayout(context);
     list.setOrientation(android.widget.LinearLayout.VERTICAL);
     list.setPadding(0, self.dp(2), 0, self.dp(2));
@@ -294,7 +445,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         // 使用稍微不同的背景色以突出卡片
         var cardBgColor = isDark ? self.withAlpha(C.cardDark, 0.8) : self.withAlpha(C.cardLight, 0.8);
         card.setBackground(self.ui.createRoundDrawable(cardBgColor, self.dp(16)));
-        try { card.setElevation(self.dp(4)); } catch(e){}
+        try { card.setElevation(self.dp(4));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
         var cardLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
         cardLp.setMargins(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
@@ -303,9 +454,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
         // # 视觉提示：禁用项整体变淡，方便一眼区分
         if (!__enabled) {
-            try { card.setAlpha(0.55); } catch(eA) {}
+            try { card.setAlpha(0.55);  } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
         } else {
-            try { card.setAlpha(1.0); } catch(eA2) {}
+            try { card.setAlpha(1.0);  } catch(eA2) { safeLog(null, 'e', "catch " + String(eA2)); }
         }
 
         // 点击编辑
@@ -322,10 +473,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try {
             var dr0 = self.resolveIconDrawable(btnCfg);
             if (dr0) iconIv.setImageDrawable(dr0);
-        } catch(eIcon0) {}
-        try { iconIv.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE); } catch(eScale){}
+         } catch(eIcon0) { safeLog(null, 'e', "catch " + String(eIcon0)); }
+        try { iconIv.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);  } catch(eScale) { safeLog(null, 'e', "catch " + String(eScale)); }
         var iconSizeDp = 24;
-        try { iconSizeDp = Number(self.config.PANEL_ICON_SIZE_DP || 24); } catch(eSz){}
+        try { iconSizeDp = Number(self.config.PANEL_ICON_SIZE_DP || 24);  } catch(eSz) { safeLog(null, 'e', "catch " + String(eSz)); }
         // # 管理页行高更紧凑：限制 icon 尺寸，避免挤占文字区域
         if (!iconSizeDp || iconSizeDp < 18) iconSizeDp = 24;
         if (iconSizeDp > 32) iconSizeDp = 32;
@@ -391,7 +542,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 bg.setCornerRadius(self.dp(8)); // # 小一点圆角更紧凑
                 bg.setStroke(self.dp(1), self.withAlpha(subTextColor, 0.22));
                 tv.setBackground(bg);
-            } catch (eBg) {}
+             } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
 
             if (!enabled) {
                 tv.setEnabled(false);
@@ -401,7 +552,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 tv.setTextColor(subTextColor);
                 tv.setOnClickListener(new android.view.View.OnClickListener({
                     onClick: function() {
-                        try { onClickFn(); } catch (eSort) {}
+                        try { onClickFn();  } catch(eSort) { safeLog(null, 'e', "catch " + String(eSort)); }
                     }
                 }));
             }
@@ -434,7 +585,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             );
             lpD.leftMargin = self.dp(6); // # 横向排列：用左间距代替上间距
             d.setLayoutParams(lpD);
-        } catch (eLp) {}
+         } catch(eLp) { safeLog(null, 'e', "catch " + String(eLp)); }
         sortBox.addView(d);
 
         actions.addView(sortBox);
@@ -453,7 +604,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             tgBg.setCornerRadius(self.dp(8));
             tgBg.setStroke(self.dp(1), self.withAlpha(subTextColor, 0.22));
             btnToggle.setBackground(tgBg);
-        } catch (eTgBg) {}
+         } catch(eTgBg) { safeLog(null, 'e', "catch " + String(eTgBg)); }
         btnToggle.setTextColor(__enabled ? self.withAlpha(subTextColor, 0.9) : self.withAlpha(C.success, 0.9));
         try {
             var lpTg = new android.widget.LinearLayout.LayoutParams(
@@ -462,14 +613,14 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             );
             lpTg.leftMargin = self.dp(6);
             btnToggle.setLayoutParams(lpTg);
-        } catch(eLpTg) {}
+         } catch(eLpTg) { safeLog(null, 'e', "catch " + String(eLpTg)); }
         btnToggle.setOnClickListener(new android.view.View.OnClickListener({
             onClick: function() {
                 try {
                     btnCfg.enabled = (btnCfg.enabled === false) ? true : false;
                     // # 立即持久化，避免面板关闭后丢失
                     ConfigManager.saveButtons(buttons);
-                } catch(eTg) {}
+                 } catch(eTg) { safeLog(null, 'e', "catch " + String(eTg)); }
                 refreshPanel();
             }
         }));
@@ -544,11 +695,11 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         if (_y > 0) {
             scroll.post(new java.lang.Runnable({
                 run: function() {
-                    try { scroll.scrollTo(0, _y); } catch(eSY2) {}
+                    try { scroll.scrollTo(0, _y);  } catch(eSY2) { safeLog(null, 'e', "catch " + String(eSY2)); }
                 }
             }));
         }
-    } catch(eSY3) {}
+     } catch(eSY3) { safeLog(null, 'e', "catch " + String(eSY3)); }
 
     // 底部按钮栏
     var bottomBar = new android.widget.LinearLayout(context);
@@ -590,7 +741,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var targetBtn = (editIdx === -1) ? { type: "shell", title: "", cmd: "", iconResId: 0 } : JSON.parse(JSON.stringify(buttons[editIdx]));
 
     var scroll = new android.widget.ScrollView(context);
-    try { scroll.setVerticalScrollBarEnabled(false); } catch(e){}
+    try { scroll.setVerticalScrollBarEnabled(false);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     var form = new android.widget.LinearLayout(context);
     form.setOrientation(android.widget.LinearLayout.VERTICAL);
     form.setPadding(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
@@ -736,39 +887,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         return "收起调色板";
     }
 
-    function normalizeTintColorValue(v, allowEmpty) {
-        var s = (v === undefined || v === null) ? "" : String(v);
-        s = s.replace(/^\s+|\s+$/g, "").toUpperCase();
-        if (!s) return allowEmpty ? "" : null;
-        if (s.charAt(0) !== "#") s = "#" + s;
-        if (/^#[0-9A-F]{6}$/.test(s)) return "#FF" + s.substring(1);
-        if (/^#[0-9A-F]{8}$/.test(s)) return s;
-        return null;
-    }
 
-    function extractTintAlphaByte(hex) {
-        var n = normalizeTintColorValue(hex, false);
-        if (!n) return 255;
-        return parseInt(n.substring(1, 3), 16);
-    }
 
-    function extractTintRgbHex(hex) {
-        var n = normalizeTintColorValue(hex, false);
-        if (!n) return "#FFFFFF";
-        return "#" + n.substring(3);
-    }
 
-    function buildArgbHex(alphaByte, rgbHex) {
-        var a = Number(alphaByte);
-        if (isNaN(a) || a < 0) a = 0;
-        if (a > 255) a = 255;
-        var rgb = String(rgbHex || "#FFFFFF").toUpperCase();
-        if (rgb.charAt(0) !== "#") rgb = "#" + rgb;
-        if (!/^#[0-9A-F]{6}$/.test(rgb)) rgb = "#FFFFFF";
-        var aHex = java.lang.Integer.toHexString(a & 255).toUpperCase();
-        if (aHex.length < 2) aHex = "0" + aHex;
-        return "#" + aHex + rgb.substring(1);
-    }
 
     function getThemeTintHex() {
         try {
@@ -784,7 +905,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 expanded: !!tintPaletteState.expanded,
                 recentColors: tintPaletteState.recentColors || []
             });
-        } catch(eTintSave0) {}
+         } catch(eTintSave0) { safeLog(null, 'e', "catch " + String(eTintSave0)); }
     }
 
     function pushRecentTintColor(hex) {
@@ -809,12 +930,12 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             if (shortxPickerState.gridScroll) {
                 shortxPickerState.gridScroll.post(new java.lang.Runnable({
                     run: function() {
-                        try { shortxPickerState.gridScroll.fullScroll(android.view.View.FOCUS_UP); } catch(eScroll0) {}
-                        try { shortxPickerState.gridScroll.scrollTo(0, 0); } catch(eScroll1) {}
+                        try { shortxPickerState.gridScroll.fullScroll(android.view.View.FOCUS_UP);  } catch(eScroll0) { safeLog(null, 'e', "catch " + String(eScroll0)); }
+                        try { shortxPickerState.gridScroll.scrollTo(0, 0);  } catch(eScroll1) { safeLog(null, 'e', "catch " + String(eScroll1)); }
                     }
                 }));
             }
-        } catch(eScrollWrap) {}
+         } catch(eScrollWrap) { safeLog(null, 'e', "catch " + String(eScrollWrap)); }
     }
 
     function resolveShortXPickerPageSize() {
@@ -822,8 +943,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         var fallbackHeight = self.dp(520);
         var rawWidth = 0;
         var rawHeight = 0;
-        try { if (shortxPickerState.gridScroll) rawWidth = Number(shortxPickerState.gridScroll.getWidth() || 0); } catch(eW0) {}
-        try { if (shortxPickerState.gridScroll) rawHeight = Number(shortxPickerState.gridScroll.getHeight() || 0); } catch(eH0) {}
+        try { if (shortxPickerState.gridScroll) rawWidth = Number(shortxPickerState.gridScroll.getWidth() || 0);  } catch(eW0) { safeLog(null, 'e', "catch " + String(eW0)); }
+        try { if (shortxPickerState.gridScroll) rawHeight = Number(shortxPickerState.gridScroll.getHeight() || 0);  } catch(eH0) { safeLog(null, 'e', "catch " + String(eH0)); }
         if (rawWidth <= 0) rawWidth = fallbackWidth;
         if (rawHeight <= 0) rawHeight = fallbackHeight;
         var marginPx = self.dp(Number(shortxPickerState.cellMarginDp || 4));
@@ -855,7 +976,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         }
         try {
             if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(shortxPickerState.expanded ? getShortXPickerOpenedLabel() : getShortXPickerClosedLabel());
-        } catch(eToggleTxt) {}
+         } catch(eToggleTxt) { safeLog(null, 'e', "catch " + String(eToggleTxt)); }
         if (shortxPickerState.expanded && doRender !== false) {
             resolveShortXPickerPageSize();
             renderShortXIconGrid();
@@ -887,7 +1008,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var shortxPreviewNameTv = new android.widget.TextView(context);
     shortxPreviewNameTv.setTextColor(textColor);
     shortxPreviewNameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-    try { shortxPreviewNameTv.setSingleLine(true); shortxPreviewNameTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eEL0) {}
+    try { shortxPreviewNameTv.setSingleLine(true); shortxPreviewNameTv.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(eEL0) { safeLog(null, 'e', "catch " + String(eEL0)); }
     shortxPreviewCard.addView(shortxPreviewNameTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
     shortxPickerState.previewNameTv = shortxPreviewNameTv;
 
@@ -903,10 +1024,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             onSelect: function(name) {
                 currentShortXIconName = name;
                 updateShortXIconPreview();
-                try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(name || "\u9009\u62e9\u56fe\u6807"); } catch(e) {}
+                try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(name || "\u9009\u62e9\u56fe\u6807");  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
                 // # 选中 ShortX 图标后自动切换到 ShortX 图标模式，避免保存时走 file 分支导致颜色丢失
-                try { rbIconShortX.setChecked(true); } catch(eRb) {}
-                try { updateIconInputs("shortx"); } catch(eUp) {}
+                try { rbIconShortX.setChecked(true);  } catch(eRb) { safeLog(null, 'e', "catch " + String(eRb)); }
+                try { updateIconInputs("shortx");  } catch(eUp) { safeLog(null, 'e', "catch " + String(eUp)); }
             }
         });
     });
@@ -965,7 +1086,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var shortxSearchEt = new android.widget.EditText(context);
     shortxSearchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
     shortxSearchEt.setTextColor(textColor);
-    try { shortxSearchEt.setHintTextColor(subTextColor); } catch(eHintColor) {}
+    try { shortxSearchEt.setHintTextColor(subTextColor);  } catch(eHintColor) { safeLog(null, 'e', "catch " + String(eHintColor)); }
     shortxSearchEt.setHint("搜索图标名，如 share / home / save");
     shortxSearchEt.setSingleLine(true);
     shortxSearchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
@@ -983,8 +1104,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxPickerState.statusTv = shortxStatusTv;
 
     var shortxTabsScroll = new android.widget.HorizontalScrollView(context);
-    try { shortxTabsScroll.setHorizontalScrollBarEnabled(false); } catch(eTabSb) {}
-    try { shortxTabsScroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch(eTabOs) {}
+    try { shortxTabsScroll.setHorizontalScrollBarEnabled(false);  } catch(eTabSb) { safeLog(null, 'e', "catch " + String(eTabSb)); }
+    try { shortxTabsScroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(eTabOs) { safeLog(null, 'e', "catch " + String(eTabOs)); }
     var shortxTabsLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     shortxTabsLp.setMargins(self.dp(8), 0, self.dp(8), self.dp(6));
     shortxPickerWrap.addView(shortxTabsScroll, shortxTabsLp);
@@ -1031,7 +1152,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             try {
                 btn.setTextColor(active ? android.graphics.Color.WHITE : textColor);
                 btn.setBackground(self.ui.createRoundDrawable(active ? C.primary : self.withAlpha(cardColor, 0.96), self.dp(16)));
-            } catch(eTabStyle) {}
+             } catch(eTabStyle) { safeLog(null, 'e', "catch " + String(eTabStyle)); }
         }
     }
 
@@ -1084,15 +1205,15 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     applyShortXTabStyles();
 
     var shortxGridScroll = new android.widget.ScrollView(context);
-    try { shortxGridScroll.setVerticalScrollBarEnabled(false); } catch(eSG0) {}
-    try { shortxGridScroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch(eSG1) {}
+    try { shortxGridScroll.setVerticalScrollBarEnabled(false);  } catch(eSG0) { safeLog(null, 'e', "catch " + String(eSG0)); }
+    try { shortxGridScroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(eSG1) { safeLog(null, 'e', "catch " + String(eSG1)); }
     var shortxGridScrollLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(520));
     shortxGridScrollLp.setMargins(self.dp(8), 0, self.dp(8), self.dp(8));
     shortxPickerWrap.addView(shortxGridScroll, shortxGridScrollLp);
     shortxPickerState.gridScroll = shortxGridScroll;
 
     var shortxGrid = new android.widget.GridLayout(context);
-    try { shortxGrid.setColumnCount(Math.max(1, Number(shortxPickerState.pageCols || 1))); } catch(eGC0) {}
+    try { shortxGrid.setColumnCount(Math.max(1, Number(shortxPickerState.pageCols || 1)));  } catch(eGC0) { safeLog(null, 'e', "catch " + String(eGC0)); }
     shortxGrid.setPadding(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
     shortxGridScroll.addView(shortxGrid);
     shortxPickerState.grid = shortxGrid;
@@ -1108,10 +1229,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 var drPreview = normalizedShort ? self.resolveShortXDrawable(normalizedShort, tintHex) : null;
                 if (drPreview) {
                     shortxPickerState.previewIv.setImageDrawable(drPreview);
-                    try { shortxPickerState.previewIv.setAlpha(1.0); } catch(eA1) {}
+                    try { shortxPickerState.previewIv.setAlpha(1.0);  } catch(eA1) { safeLog(null, 'e', "catch " + String(eA1)); }
                 } else {
                     shortxPickerState.previewIv.setImageDrawable(null);
-                    try { shortxPickerState.previewIv.setAlpha(0.35); } catch(eA2) {}
+                    try { shortxPickerState.previewIv.setAlpha(0.35);  } catch(eA2) { safeLog(null, 'e', "catch " + String(eA2)); }
                 }
             }
         } catch(ePreview) {
@@ -1123,11 +1244,11 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try {
             if (!shortxPickerState.grid) return;
             shortxPickerState.grid.removeAllViews();
-            try { shortxPickerState.grid.setColumnCount(Math.max(1, Number(shortxPickerState.pageCols || 1))); } catch(eColSet) {}
+            try { shortxPickerState.grid.setColumnCount(Math.max(1, Number(shortxPickerState.pageCols || 1)));  } catch(eColSet) { safeLog(null, 'e', "catch " + String(eColSet)); }
             var icons = self.getShortXIconCatalog();
             shortxPickerState.iconList = icons;
             var query = "";
-            try { query = String(shortxPickerState.searchEt.getText() || "").replace(/^\s+|\s+$/g, "").toLowerCase(); } catch(eQ0) {}
+            try { query = String(shortxPickerState.searchEt.getText() || "").replace(/^\s+|\s+$/g, "").toLowerCase();  } catch(eQ0) { safeLog(null, 'e', "catch " + String(eQ0)); }
             shortxPickerState.lastQuery = query;
             var filtered = [];
             var totalMatch = 0;
@@ -1164,8 +1285,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             if (shortxPickerState.pageInfoTv) {
                 shortxPickerState.pageInfoTv.setText((filtered.length > 0 ? (shortxPickerState.currentPage + 1) : 0) + " / " + totalPages + " · " + filtered.length + "项 · " + shortxPickerState.pageCols + "列 · 每页" + pageSize + "个");
             }
-            try { shortxPickerState.prevBtn.setEnabled(shortxPickerState.currentPage > 0); } catch(ePrev) {}
-            try { shortxPickerState.nextBtn.setEnabled(shortxPickerState.currentPage < totalPages - 1); } catch(eNext) {}
+            try { shortxPickerState.prevBtn.setEnabled(shortxPickerState.currentPage > 0);  } catch(ePrev) { safeLog(null, 'e', "catch " + String(ePrev)); }
+            try { shortxPickerState.nextBtn.setEnabled(shortxPickerState.currentPage < totalPages - 1);  } catch(eNext) { safeLog(null, 'e', "catch " + String(eNext)); }
             applyShortXTabStyles();
             var tintHex = currentShortXIconTint || "";
             var selectedShort = currentShortXIconName ? self.normalizeShortXIconName(currentShortXIconName, false) : "";
@@ -1190,7 +1311,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     try {
                         var drIcon = self.resolveShortXDrawable(entry.name, tintHex);
                         if (drIcon) iv.setImageDrawable(drIcon);
-                    } catch(eIconDraw) {}
+                     } catch(eIconDraw) { safeLog(null, 'e', "catch " + String(eIconDraw)); }
                     cell.addView(iv);
 
                     var tv = new android.widget.TextView(context);
@@ -1198,7 +1319,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     tv.setTextColor(isSelected ? C.primary : textColor);
                     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
                     tv.setGravity(android.view.Gravity.CENTER);
-                    try { tv.setLines(2); tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eLines0) {}
+                    try { tv.setLines(2); tv.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(eLines0) { safeLog(null, 'e', "catch " + String(eLines0)); }
                     cell.addView(tv, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
 
                     cell.setClickable(true);
@@ -1215,7 +1336,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 })(result[i]);
             }
         } catch(eRenderIcons) {
-            try { if (shortxPickerState.statusTv) shortxPickerState.statusTv.setText("图标库加载失败: " + eRenderIcons); } catch(eStatus0) {}
+            try { if (shortxPickerState.statusTv) shortxPickerState.statusTv.setText("图标库加载失败: " + eRenderIcons);  } catch(eStatus0) { safeLog(null, 'e', "catch " + String(eStatus0)); }
         }
     }
 
@@ -1229,7 +1350,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             beforeTextChanged: function(s, st, c, a) {},
             onTextChanged: function(s, st, b, c) {}
         }));
-    } catch(eTwIcon0) {}
+     } catch(eTwIcon0) { safeLog(null, 'e', "catch " + String(eTwIcon0)); }
 
     try {
         shortxGridScroll.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener({
@@ -1245,7 +1366,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 }
             }
         }));
-    } catch(eGridLayoutWatch) {}
+     } catch(eGridLayoutWatch) { safeLog(null, 'e', "catch " + String(eGridLayoutWatch)); }
 
     // # ShortX 图标颜色（留空跟随主题）
     var defaultTint = targetBtn.iconTint ? String(targetBtn.iconTint) : "";
@@ -1258,14 +1379,14 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     function updateTintPaletteToggleText() {
         try {
             if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(tintPaletteState.expanded ? getTintPaletteOpenedLabel() : getTintPaletteClosedLabel());
-        } catch(eTintToggle0) {}
+         } catch(eTintToggle0) { safeLog(null, 'e', "catch " + String(eTintToggle0)); }
     }
 
     function setTintPaletteExpanded(expanded) {
         tintPaletteState.expanded = !!expanded;
         try {
             if (tintPaletteState.body) tintPaletteState.body.setVisibility(tintPaletteState.expanded ? android.view.View.VISIBLE : android.view.View.GONE);
-        } catch(eTintBody0) {}
+         } catch(eTintBody0) { safeLog(null, 'e', "catch " + String(eTintBody0)); }
         updateTintPaletteToggleText();
         saveTintPaletteState();
     }
@@ -1273,7 +1394,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     function setTintSeekProgress(progress) {
         try {
             if (tintPaletteState.alphaSeek) tintPaletteState.alphaSeek.setProgress(Number(progress || 0));
-        } catch(eTintSeek0) {}
+         } catch(eTintSeek0) { safeLog(null, 'e', "catch " + String(eTintSeek0)); }
     }
 
     function setRgbSeekProgress(which, value) {
@@ -1284,7 +1405,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             if (which === "r" && tintPaletteState.redSeek) tintPaletteState.redSeek.setProgress(v);
             if (which === "g" && tintPaletteState.greenSeek) tintPaletteState.greenSeek.setProgress(v);
             if (which === "b" && tintPaletteState.blueSeek) tintPaletteState.blueSeek.setProgress(v);
-        } catch(eTintRgbSeek0) {}
+         } catch(eTintRgbSeek0) { safeLog(null, 'e', "catch " + String(eTintRgbSeek0)); }
     }
 
     function updateTintAlphaLabel(alphaByte) {
@@ -1294,7 +1415,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         var pct = Math.round((a / 255) * 100);
         try {
             if (tintPaletteState.alphaValueTv) tintPaletteState.alphaValueTv.setText("透明度 " + pct + "%（" + a + "/255）");
-        } catch(eTintAlpha0) {}
+         } catch(eTintAlpha0) { safeLog(null, 'e', "catch " + String(eTintAlpha0)); }
     }
 
     function updateRgbValueLabel(which, value) {
@@ -1305,7 +1426,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             if (which === "r" && tintPaletteState.redValueTv) tintPaletteState.redValueTv.setText("R " + v);
             if (which === "g" && tintPaletteState.greenValueTv) tintPaletteState.greenValueTv.setText("G " + v);
             if (which === "b" && tintPaletteState.blueValueTv) tintPaletteState.blueValueTv.setText("B " + v);
-        } catch(eTintRgbLbl0) {}
+         } catch(eTintRgbLbl0) { safeLog(null, 'e', "catch " + String(eTintRgbLbl0)); }
     }
 
     function updateRgbLabelsFromHex(rgbHex) {
@@ -1323,7 +1444,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try { colorInt = android.graphics.Color.parseColor(effectiveHex); } catch(eColor0) { colorInt = C.primary; }
         try {
             if (tintPaletteState.previewDot) tintPaletteState.previewDot.setBackground(self.ui.createRoundDrawable(colorInt, self.dp(12)));
-        } catch(eTintPrevDot0) {}
+         } catch(eTintPrevDot0) { safeLog(null, 'e', "catch " + String(eTintPrevDot0)); }
         var msg = "";
         if (invalidRaw) {
             msg = "当前：" + invalidRaw + "（格式无效）";
@@ -1335,12 +1456,12 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         }
         try {
             if (tintPaletteState.previewTextTv) tintPaletteState.previewTextTv.setText(msg);
-        } catch(eTintPrevTv0) {}
+         } catch(eTintPrevTv0) { safeLog(null, 'e', "catch " + String(eTintPrevTv0)); }
     }
 
     function syncTintUiFromInput(pushRecent) {
         var raw = "";
-        try { raw = String(inputShortXIconTint.getValue() || "").replace(/^\s+|\s+$/g, ""); } catch(eTintRaw0) {}
+        try { raw = String(inputShortXIconTint.getValue() || "").replace(/^\s+|\s+$/g, "");  } catch(eTintRaw0) { safeLog(null, 'e', "catch " + String(eTintRaw0)); }
         var normalized = normalizeTintColorValue(raw, true);
         if (raw && !normalized) {
             currentShortXIconTint = raw;
@@ -1373,7 +1494,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try {
             tintPaletteState.syncing = true;
             inputShortXIconTint.input.setText(currentShortXIconTint);
-        } catch(eSetTint0) {}
+         } catch(eSetTint0) { safeLog(null, 'e', "catch " + String(eSetTint0)); }
         tintPaletteState.syncing = false;
         syncTintUiFromInput(!!pushRecent);
     }
@@ -1388,30 +1509,30 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             tintPaletteState.syncing = true;
             if (inputShortXIconTint && inputShortXIconTint.input) {
                 inputShortXIconTint.input.setText(safeColor);
-                try { inputShortXIconTint.input.setSelection(String(safeColor).length); } catch(eSelTint0) {}
-                try { inputShortXIconTint.input.invalidate(); } catch(eInvTint0) {}
-                try { inputShortXIconTint.input.requestLayout(); } catch(eReqTint0) {}
+                try { inputShortXIconTint.input.setSelection(String(safeColor).length);  } catch(eSelTint0) { safeLog(null, 'e', "catch " + String(eSelTint0)); }
+                try { inputShortXIconTint.input.invalidate();  } catch(eInvTint0) { safeLog(null, 'e', "catch " + String(eInvTint0)); }
+                try { inputShortXIconTint.input.requestLayout();  } catch(eReqTint0) { safeLog(null, 'e', "catch " + String(eReqTint0)); }
             }
         } catch(eSetTint1) {
             safeLog(self.L, 'e', "applyTintSelectionFromPopup setText err=" + String(eSetTint1));
         }
         tintPaletteState.syncing = false;
         try { syncTintUiFromInput(!!safeColor); } catch(eSyncTint1) { safeLog(self.L, 'e', "applyTintSelectionFromPopup sync err=" + String(eSyncTint1)); }
-        try { if (rbIconShortX) rbIconShortX.setChecked(true); } catch(eRbTint0) {}
-        try { updateIconInputs("shortx"); } catch(eIconInputTint0) {}
-        try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272"); } catch(eTintPopupBtn0) {}
+        try { if (rbIconShortX) rbIconShortX.setChecked(true);  } catch(eRbTint0) { safeLog(null, 'e', "catch " + String(eRbTint0)); }
+        try { updateIconInputs("shortx");  } catch(eIconInputTint0) { safeLog(null, 'e', "catch " + String(eIconInputTint0)); }
+        try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272");  } catch(eTintPopupBtn0) { safeLog(null, 'e', "catch " + String(eTintPopupBtn0)); }
         try {
             if (shortxPickerState.previewIv) {
                 var normalizedShort = currentShortXIconName ? self.normalizeShortXIconName(currentShortXIconName, false) : "";
                 var drDirect = normalizedShort ? self.resolveShortXDrawable(normalizedShort, currentShortXIconTint || "") : null;
                 shortxPickerState.previewIv.setImageDrawable(drDirect);
-                try { shortxPickerState.previewIv.invalidate(); } catch(ePrevInv0) {}
+                try { shortxPickerState.previewIv.invalidate();  } catch(ePrevInv0) { safeLog(null, 'e', "catch " + String(ePrevInv0)); }
             }
         } catch(eTintDirect0) {
             safeLog(self.L, 'e', "applyTintSelectionFromPopup directPreview err=" + String(eTintDirect0));
         }
         try { updateShortXIconPreview(); } catch(eTintPopupPreview0) { safeLog(self.L, 'e', "applyTintSelectionFromPopup preview err=" + String(eTintPopupPreview0)); }
-        try { if (shortxPickerState.expanded) renderShortXIconGrid(); } catch(eTintGrid0) {}
+        try { if (shortxPickerState.expanded) renderShortXIconGrid();  } catch(eTintGrid0) { safeLog(null, 'e', "catch " + String(eTintGrid0)); }
         safeLog(self.L, 'i', "applyTintSelectionFromPopup color=" + String(safeColor) + ", icon=" + String(currentShortXIconName || ""));
     }
 
@@ -1451,7 +1572,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         if (cellWidthPx && Number(cellWidthPx) > 0) lp.width = Number(cellWidthPx);
         lp.setMargins(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
         wrap.setLayoutParams(lp);
-        try { wrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.96), self.dp(10))); } catch(eTintSwBg0) {}
+        try { wrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.96), self.dp(10)));  } catch(eTintSwBg0) { safeLog(null, 'e', "catch " + String(eTintSwBg0)); }
 
         var effectiveHex = isFollowTheme ? getThemeTintHex() : normalizeTintColorValue(hexValue, false);
         var dot = new android.view.View(context);
@@ -1460,7 +1581,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try {
             var dotColorInt = effectiveHex ? android.graphics.Color.parseColor(effectiveHex) : self.withAlpha(C.primary, 0.18);
             dot.setBackground(self.ui.createRoundDrawable(dotColorInt, self.dp(12)));
-        } catch(eTintSwDot0) {}
+         } catch(eTintSwDot0) { safeLog(null, 'e', "catch " + String(eTintSwDot0)); }
         wrap.addView(dot, dotLp);
 
         var tv = new android.widget.TextView(context);
@@ -1489,14 +1610,14 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     function renderRecentTintGrid() {
         if (!tintPaletteState.recentGrid) return;
-        try { tintPaletteState.recentGrid.removeAllViews(); } catch(eTintRecent0) {}
+        try { tintPaletteState.recentGrid.removeAllViews();  } catch(eTintRecent0) { safeLog(null, 'e', "catch " + String(eTintRecent0)); }
         var list = tintPaletteState.recentColors || [];
         var i;
         if (!list.length) {
-            try { if (tintPaletteState.recentEmptyTv) tintPaletteState.recentEmptyTv.setVisibility(android.view.View.VISIBLE); } catch(eTintRecent1) {}
+            try { if (tintPaletteState.recentEmptyTv) tintPaletteState.recentEmptyTv.setVisibility(android.view.View.VISIBLE);  } catch(eTintRecent1) { safeLog(null, 'e', "catch " + String(eTintRecent1)); }
             return;
         }
-        try { if (tintPaletteState.recentEmptyTv) tintPaletteState.recentEmptyTv.setVisibility(android.view.View.GONE); } catch(eTintRecent2) {}
+        try { if (tintPaletteState.recentEmptyTv) tintPaletteState.recentEmptyTv.setVisibility(android.view.View.GONE);  } catch(eTintRecent2) { safeLog(null, 'e', "catch " + String(eTintRecent2)); }
         for (i = 0; i < list.length && i < 5; i++) {
             tintPaletteState.recentGrid.addView(createTintSwatchCell("最近" + (i + 1), list[i], false, 0));
         }
@@ -1559,7 +1680,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPreviewCard.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     tintPreviewCard.setGravity(android.view.Gravity.CENTER_VERTICAL);
     tintPreviewCard.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
-    try { tintPreviewCard.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.08), self.dp(12))); } catch(eTintPrevCard0) {}
+    try { tintPreviewCard.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.08), self.dp(12)));  } catch(eTintPrevCard0) { safeLog(null, 'e', "catch " + String(eTintPrevCard0)); }
     tintPaletteBody.addView(tintPreviewCard);
 
     var tintPalettePreviewDot = new android.view.View(context);
@@ -1594,7 +1715,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPaletteState.alphaValueTv = tintAlphaValue;
 
     var tintSeek = new android.widget.SeekBar(context);
-    try { tintSeek.setMax(255); } catch(eTintSeekMax0) {}
+    try { tintSeek.setMax(255);  } catch(eTintSeekMax0) { safeLog(null, 'e', "catch " + String(eTintSeekMax0)); }
     var tintSeekLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     tintSeekLp.setMargins(0, 0, 0, self.dp(8));
     tintPaletteBody.addView(tintSeek, tintSeekLp);
@@ -1613,7 +1734,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 applyTintFromCurrentBase(true);
             }
         }));
-    } catch(eTintSeekListener0) {}
+     } catch(eTintSeekListener0) { safeLog(null, 'e', "catch " + String(eTintSeekListener0)); }
 
     function createRgbControlRow(label, key, accentHex) {
         var row = new android.widget.LinearLayout(context);
@@ -1635,7 +1756,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         row.addView(valueTv);
 
         var seek = new android.widget.SeekBar(context);
-        try { seek.setMax(255); } catch(eTintRgbMax0) {}
+        try { seek.setMax(255);  } catch(eTintRgbMax0) { safeLog(null, 'e', "catch " + String(eTintRgbMax0)); }
         row.addView(seek, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         if (key === "r") { tintPaletteState.redSeek = seek; tintPaletteState.redValueTv = valueTv; }
@@ -1657,7 +1778,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     applyTintFromRgbSeekbars(true);
                 }
             }));
-        } catch(eTintRgbListener0) {}
+         } catch(eTintRgbListener0) { safeLog(null, 'e', "catch " + String(eTintRgbListener0)); }
         return row;
     }
 
@@ -1687,7 +1808,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPaletteState.recentEmptyTv = tintRecentEmptyTv;
 
     var tintRecentGrid = new android.widget.GridLayout(context);
-    try { tintRecentGrid.setColumnCount(5); } catch(eTintRecentCols0) {}
+    try { tintRecentGrid.setColumnCount(5);  } catch(eTintRecentCols0) { safeLog(null, 'e', "catch " + String(eTintRecentCols0)); }
     tintPaletteBody.addView(tintRecentGrid);
     tintPaletteState.recentGrid = tintRecentGrid;
 
@@ -1699,15 +1820,15 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPaletteBody.addView(tintCommonTitle);
 
     var tintCommonGrid = new android.widget.GridLayout(context);
-    try { tintCommonGrid.setColumnCount(1); } catch(eTintCommonCols0) {}
+    try { tintCommonGrid.setColumnCount(1);  } catch(eTintCommonCols0) { safeLog(null, 'e', "catch " + String(eTintCommonCols0)); }
     tintPaletteBody.addView(tintCommonGrid);
     tintPaletteState.commonGrid = tintCommonGrid;
 
     function resolveTintCommonGridLayout() {
         var rawWidth = 0;
-        try { if (tintPaletteState.commonGrid) rawWidth = Number(tintPaletteState.commonGrid.getWidth() || 0); } catch(eTintCommonW0) {}
+        try { if (tintPaletteState.commonGrid) rawWidth = Number(tintPaletteState.commonGrid.getWidth() || 0);  } catch(eTintCommonW0) { safeLog(null, 'e', "catch " + String(eTintCommonW0)); }
         if (rawWidth <= 0) {
-            try { if (tintPaletteState.body) rawWidth = Number(tintPaletteState.body.getWidth() || 0); } catch(eTintCommonW1) {}
+            try { if (tintPaletteState.body) rawWidth = Number(tintPaletteState.body.getWidth() || 0);  } catch(eTintCommonW1) { safeLog(null, 'e', "catch " + String(eTintCommonW1)); }
         }
         if (rawWidth <= 0) rawWidth = self.dp(320);
         var marginPx = self.dp(4);
@@ -1806,7 +1927,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try {
             tintPaletteState.commonGrid.removeAllViews();
             tintPaletteState.commonGrid.setColumnCount(Math.max(1, Number(layoutInfo.cols || 1)));
-        } catch(eTintCommonRender0) {}
+         } catch(eTintCommonRender0) { safeLog(null, 'e', "catch " + String(eTintCommonRender0)); }
         var tintCi;
         for (tintCi = 0; tintCi < tintCommonDefs.length; tintCi++) {
             tintPaletteState.commonGrid.addView(createTintSwatchCell(tintCommonDefs[tintCi].label, tintCommonDefs[tintCi].hex, !!tintCommonDefs[tintCi].followTheme, layoutInfo.cellWidthPx));
@@ -1827,7 +1948,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             beforeTextChanged: function(s, st, c, a) {},
             onTextChanged: function(s, st, b, c) {}
         }));
-    } catch(eTwIcon2) {}
+     } catch(eTwIcon2) { safeLog(null, 'e', "catch " + String(eTwIcon2)); }
     try {
         tintCommonGrid.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener({
             onGlobalLayout: function() {
@@ -1840,7 +1961,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 }
             }
         }));
-    } catch(eTintCommonLayout0) {}
+     } catch(eTintCommonLayout0) { safeLog(null, 'e', "catch " + String(eTintCommonLayout0)); }
     // 图标类型切换函数
     function updateIconInputs(type) {
         if (type === "file") {
@@ -1850,7 +1971,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             inputShortXIconTint.view.setVisibility(android.view.View.GONE);
             tintPaletteWrap.setVisibility(android.view.View.GONE);
             shortxPickerState.expanded = false;
-            try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(getShortXPickerClosedLabel()); } catch(eBt0) {}
+            try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(getShortXPickerClosedLabel());  } catch(eBt0) { safeLog(null, 'e', "catch " + String(eBt0)); }
             currentShortXIconName = "";
             inputShortXIconTint.input.setText("");
         } else if (type === "shortx") {
@@ -1904,7 +2025,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
         );
         typeWrap.setLayoutParams(_lpTW);
-    } catch (eLpTW) {}
+     } catch(eLpTW) { safeLog(null, 'e', "catch " + String(eLpTW)); }
 
     var typeLbl = new android.widget.TextView(context);
     typeLbl.setText("动作类型 (Action Type)");
@@ -1916,14 +2037,14 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var typeGrid = new android.widget.GridLayout(context);
     try {
         typeGrid.setOrientation(android.widget.GridLayout.HORIZONTAL);
-    } catch (eOri) {}
+     } catch(eOri) { safeLog(null, 'e', "catch " + String(eOri)); }
     try {
         var _lpTG = new android.widget.LinearLayout.LayoutParams(
             android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
             android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
         );
         typeGrid.setLayoutParams(_lpTG);
-    } catch (eLpTG) {}
+     } catch(eLpTG) { safeLog(null, 'e', "catch " + String(eLpTG)); }
     typeGrid.setPadding(0, self.dp(6), 0, 0);
     typeWrap.addView(typeGrid);
 
@@ -1947,7 +2068,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 break;
             }
         }
-    } catch (eSel0) {}
+     } catch(eSel0) { safeLog(null, 'e', "catch " + String(eSel0)); }
 
     function applySelectedType(val) {
         // 这段代码的主要内容/用途：更新选中值并刷新动态输入区可见性。
@@ -1955,7 +2076,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             if (!val) val = "shell";
             selectedTypeVal = String(val);
             updateVisibility(selectedTypeVal);
-        } catch (e) {}
+         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     }
 
     // 创建 RadioButton（只创建一次）
@@ -1964,11 +2085,11 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         rb.setText(types[i].txt);
         rb.setTextColor(textColor);
         rb.setTag(types[i].val);
-        try { rb.setChecked(types[i].val === selectedTypeVal); } catch (eC0) {}
-        try { rb.setSingleLine(true); } catch (eSL) {}
-        try { rb.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch (eEl) {}
-        try { rb.setMinWidth(0); } catch (eMW) {}
-        try { rb.setMinHeight(self.dp(40)); } catch (eMH) {}
+        try { rb.setChecked(types[i].val === selectedTypeVal);  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
+        try { rb.setSingleLine(true);  } catch(eSL) { safeLog(null, 'e', "catch " + String(eSL)); }
+        try { rb.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(eEl) { safeLog(null, 'e', "catch " + String(eEl)); }
+        try { rb.setMinWidth(0);  } catch(eMW) { safeLog(null, 'e', "catch " + String(eMW)); }
+        try { rb.setMinHeight(self.dp(40));  } catch(eMH) { safeLog(null, 'e', "catch " + String(eMH)); }
         rb.setPadding(self.dp(8), self.dp(6), self.dp(8), self.dp(6));
 
         // 互斥选择
@@ -1988,7 +2109,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                         for (var k = 0; k < typeRbList.length; k++) {
                             var other = typeRbList[k];
                             if (other && other !== buttonView) {
-                                try { other.setChecked(false); } catch (eOff) {}
+                                try { other.setChecked(false);  } catch(eOff) { safeLog(null, 'e', "catch " + String(eOff)); }
                             }
                         }
 
@@ -2008,7 +2129,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     function rebuildTypeGrid() {
         // 这段代码的主要内容/用途：按当前宽度计算列数(1~3)，重建 GridLayout，实现自动换行。
-        try { typeGrid.removeAllViews(); } catch (e0) {}
+        try { typeGrid.removeAllViews();  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
 
         var availW = 0;
         try { availW = typeWrap.getWidth() - self.dp(8); } catch (e1) { availW = 0; }
@@ -2032,7 +2153,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             if (cols < 1) cols = 1;
             if (cols > 3) cols = 3;
         }
-        try { typeGrid.setColumnCount(cols); } catch (eC) {}
+        try { typeGrid.setColumnCount(cols);  } catch(eC) { safeLog(null, 'e', "catch " + String(eC)); }
 
         // 单元宽度：按列数均分
         var cellW = 0;
@@ -2054,14 +2175,14 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 lp.height = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
                 lp.setMargins(0, self.dp(6), self.dp(8), 0);
                 rb.setLayoutParams(lp);
-            } catch (eLP) {}
+             } catch(eLP) { safeLog(null, 'e', "catch " + String(eLP)); }
 
-            try { typeGrid.addView(rb); } catch (eAdd) {}
+            try { typeGrid.addView(rb);  } catch(eAdd) { safeLog(null, 'e', "catch " + String(eAdd)); }
         }
     }
 
     // 首次：先渲染一次（保证立即可见）
-    try { rebuildTypeGrid(); } catch (eR0) {}
+    try { rebuildTypeGrid();  } catch(eR0) { safeLog(null, 'e', "catch " + String(eR0)); }
 
     // 布局变化时：重新计算列数（旋转/宽度变化/首次测量完成）
     try {
@@ -2071,10 +2192,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     if ((r - l) !== (orr - ol)) {
                         rebuildTypeGrid();
                     }
-                } catch (eL) {}
+                 } catch(eL) { safeLog(null, 'e', "catch " + String(eL)); }
             }
         }));
-    } catch (eLC) {}
+     } catch(eLC) { safeLog(null, 'e', "catch " + String(eLC)); }
     form.addView(typeWrap);
 
     // 3. 动态输入区
@@ -2136,8 +2257,8 @@ appWrap.addView(inputAppLaunchUser.view);
     // # UI 优化：快捷方式类型下，包名与 shortcutId 属于"内部字段"，不再在界面上占空间显示
     // # 需求：当按钮类型选中快捷方式时，UI 不显示包名/ID，改为显示快捷方式的启动命令（am start intent）
     // # 说明：仍然保留 pkg/shortcutId 用于数据保存与图标解析，但将输入框隐藏。
-    try { inputScPkg.view.setVisibility(android.view.View.GONE); } catch(eHidePkg) {}
-    try { inputScId.view.setVisibility(android.view.View.GONE); } catch(eHideId) {}
+    try { inputScPkg.view.setVisibility(android.view.View.GONE);  } catch(eHidePkg) { safeLog(null, 'e', "catch " + String(eHidePkg)); }
+    try { inputScId.view.setVisibility(android.view.View.GONE);  } catch(eHideId) { safeLog(null, 'e', "catch " + String(eHideId)); }
 
     // # 显示：快捷方式启动命令（只读展示，方便复制/核对）
     function __scBuildLaunchCmd() {
@@ -2156,18 +2277,18 @@ appWrap.addView(inputAppLaunchUser.view);
     var inputScCmd = self.ui.createInputGroup(self, "快捷方式启动命令 (am start)", __scBuildLaunchCmd(), false, "选择快捷方式后自动生成，可复制到 Termux 验证");
     shortcutWrap.addView(inputScCmd.view);
     // # 需求：快捷方式只使用 JavaScript 执行，取消 Shell，因此隐藏 am start 命令框
-    try { inputScCmd.view.setVisibility(android.view.View.GONE); } catch(eHideScCmd) {}
+    try { inputScCmd.view.setVisibility(android.view.View.GONE);  } catch(eHideScCmd) { safeLog(null, 'e', "catch " + String(eHideScCmd)); }
     try {
         // # 命令框可编辑：允许你在配置时手动指定/微调启动命令（例如锁定分身/主微信）
         // # 注意：选择快捷方式后仍会自动刷新该字段；如需保留手动内容，可在选择后再修改。
         inputScCmd.input.setEnabled(true);
         inputScCmd.input.setFocusable(true);
         inputScCmd.input.setFocusableInTouchMode(true);
-        try { inputScCmd.input.setSingleLine(false); } catch(eSL) {}
-        try { inputScCmd.input.setMinLines(2); } catch(eML) {}
-        try { inputScCmd.input.setHorizontallyScrolling(false); } catch(eHS) {}
-        try { inputScCmd.input.setTextIsSelectable(true); } catch(eSel) {}
-    } catch(eRO) {}
+        try { inputScCmd.input.setSingleLine(false);  } catch(eSL) { safeLog(null, 'e', "catch " + String(eSL)); }
+        try { inputScCmd.input.setMinLines(2);  } catch(eML) { safeLog(null, 'e', "catch " + String(eML)); }
+        try { inputScCmd.input.setHorizontallyScrolling(false);  } catch(eHS) { safeLog(null, 'e', "catch " + String(eHS)); }
+        try { inputScCmd.input.setTextIsSelectable(true);  } catch(eSel) { safeLog(null, 'e', "catch " + String(eSel)); }
+     } catch(eRO) { safeLog(null, 'e', "catch " + String(eRO)); }
 
 // # 快捷方式 JS 启动代码（自动生成，可手动微调）
     // 这段代码的主要内容/用途：为"快捷方式按钮"提供可执行的 JS 启动脚本（默认走 startIntentAsUserByUri），用于精确指定主/分身 userId 并避免弹选择器。
@@ -2187,7 +2308,7 @@ appWrap.addView(inputAppLaunchUser.view);
                     var lu = parseInt(String(targetBtn.launchUserId), 10);
                     if (!isNaN(lu)) u0 = lu;
                 }
-            } catch (eLuSc) {}
+             } catch(eLuSc) { safeLog(null, 'e', "catch " + String(eLuSc)); }
 
             var iu0 = scSelectedIntentUri ? String(scSelectedIntentUri) : "";
             if (!iu0 || iu0.length === 0) {
@@ -2226,7 +2347,7 @@ appWrap.addView(inputAppLaunchUser.view);
             if (inputScJsCode && inputScJsCode.input) {
                 inputScJsCode.input.setText(String(__scBuildDefaultJsCode()));
             }
-        } catch(eUpJs) {}
+         } catch(eUpJs) { safeLog(null, 'e', "catch " + String(eUpJs)); }
     }
 
     var inputScJsCode = self.ui.createInputGroup(self, "快捷方式 JS 启动代码 (startActivityAsUser)", (targetBtn.shortcutJsCode ? String(targetBtn.shortcutJsCode) : ""), false, "选择快捷方式后自动生成；你也可以手动改 userId 或其他参数");
@@ -2237,12 +2358,12 @@ appWrap.addView(inputAppLaunchUser.view);
         inputScJsCode.input.setEnabled(true);
         inputScJsCode.input.setFocusable(true);
         inputScJsCode.input.setFocusableInTouchMode(true);
-        try { inputScJsCode.input.setSingleLine(false); } catch(eJsSL) {}
-        try { inputScJsCode.input.setMinLines(2); } catch(eJsML) {}
-        try { inputScJsCode.input.setMaxLines(4); } catch(eJsMXL) {}
-        try { inputScJsCode.input.setHorizontallyScrolling(false); } catch(eJsHS) {}
-        try { inputScJsCode.input.setTextIsSelectable(true); } catch(eJsSel) {}
-    } catch(eJsBox) {}
+        try { inputScJsCode.input.setSingleLine(false);  } catch(eJsSL) { safeLog(null, 'e', "catch " + String(eJsSL)); }
+        try { inputScJsCode.input.setMinLines(2);  } catch(eJsML) { safeLog(null, 'e', "catch " + String(eJsML)); }
+        try { inputScJsCode.input.setMaxLines(4);  } catch(eJsMXL) { safeLog(null, 'e', "catch " + String(eJsMXL)); }
+        try { inputScJsCode.input.setHorizontallyScrolling(false);  } catch(eJsHS) { safeLog(null, 'e', "catch " + String(eJsHS)); }
+        try { inputScJsCode.input.setTextIsSelectable(true);  } catch(eJsSel) { safeLog(null, 'e', "catch " + String(eJsSel)); }
+     } catch(eJsBox) { safeLog(null, 'e', "catch " + String(eJsBox)); }
 
 // # 快捷方式选择器（内联折叠版）：在"新增/编辑按钮页"内部展开/收起列表，并回填 pkg/shortcutId
 // 这段代码的主要内容/用途：把原先"弹出选择器窗口"的方式改为"折叠展开在本页下方显示"，避免上下层遮挡问题。
@@ -2281,13 +2402,13 @@ function __scLoadIconForItem(it) {
                     var dr = la.getShortcutIconDrawable(it.shortcutInfo, 0);
                     if (dr) return dr;
                 }
-            } catch(eS0) {}
+             } catch(eS0) { safeLog(null, 'e', "catch " + String(eS0)); }
         }
         try {
             var pm = context.getPackageManager();
             return pm.getApplicationIcon(__scStr(it.pkg));
-        } catch(eA0) {}
-    } catch(eAll0) {}
+         } catch(eA0) { safeLog(null, 'e', "catch " + String(eA0)); }
+     } catch(eAll0) { safeLog(null, 'e', "catch " + String(eAll0)); }
     return null;
 }
 function __scEnqueueIconLoad(it, iv) {
@@ -2295,11 +2416,11 @@ function __scEnqueueIconLoad(it, iv) {
         var key = __scIconKey(it);
         if (!key) return;
         if (scIconCache[key]) {
-            try { iv.setImageDrawable(scIconCache[key]); } catch(eSet0) {}
+            try { iv.setImageDrawable(scIconCache[key]);  } catch(eSet0) { safeLog(null, 'e', "catch " + String(eSet0)); }
             return;
         }
         // # 记录 tag：防止滚动/重绘后错位
-        try { iv.setTag(key); } catch(eTag0) {}
+        try { iv.setTag(key);  } catch(eTag0) { safeLog(null, 'e', "catch " + String(eTag0)); }
         scIconQueue.push({ key: key, it: it, iv: iv });
         if (!scIconWorkerRunning) {
             scIconWorkerRunning = true;
@@ -2323,15 +2444,15 @@ function __scEnqueueIconLoad(it, iv) {
                                     if (cur && String(cur) === String(job.key) && dr) {
                                         job.iv.setImageDrawable(dr);
                                     }
-                                } catch(eUi0) {}
+                                 } catch(eUi0) { safeLog(null, 'e', "catch " + String(eUi0)); }
                             });
-                        } catch(ePost0) {}
+                         } catch(ePost0) { safeLog(null, 'e', "catch " + String(ePost0)); }
                     }
                     scIconWorkerRunning = false;
                 }
             })).start();
         }
-    } catch(eEnq0) {}
+     } catch(eEnq0) { safeLog(null, 'e', "catch " + String(eEnq0)); }
 }
 
 // # 折叠头部（点击展开/收起）
@@ -2362,12 +2483,12 @@ scRefreshTv.setOnClickListener(new android.view.View.OnClickListener({
             scInlineState.forceReload = true;
             scInlineState.loaded = false;
             // 清空 icon 缓存，避免旧图标占用内存且影响新列表显示
-            try { scIconCache = {}; } catch(eC0) {}
-            try { scIconQueue = []; } catch(eC1) {}
-            try { scIconWorkerRunning = false; } catch(eC2) {}
+            try { scIconCache = {};  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
+            try { scIconQueue = [];  } catch(eC1) { safeLog(null, 'e', "catch " + String(eC1)); }
+            try { scIconWorkerRunning = false;  } catch(eC2) { safeLog(null, 'e', "catch " + String(eC2)); }
             // 若当前已展开，立即触发重新加载与渲染
             if (scInlineState.expanded) __scEnsureLoadedAndRender();
-        } catch(eR) {}
+         } catch(eR) { safeLog(null, 'e', "catch " + String(eR)); }
     }
 }));
 scHeader.addView(scRefreshTv);
@@ -2411,7 +2532,7 @@ try {
     if (targetPx > maxPx) targetPx = maxPx;
     var lpBox = new android.widget.LinearLayout.LayoutParams(-1, targetPx);
     scListBox.setLayoutParams(lpBox);
-} catch(eH0) {}
+ } catch(eH0) { safeLog(null, 'e', "catch " + String(eH0)); }
 try {
     // # 列表框描边+圆角
     var gdBox = new android.graphics.drawable.GradientDrawable();
@@ -2422,14 +2543,14 @@ try {
     gdBox.setStroke(self.dp(1), _isDark0 ? C.dividerDark : C.dividerLight);
     scListBox.setBackground(gdBox);
     scListBox.setPadding(self.dp(6), self.dp(6), self.dp(6), self.dp(6));
-} catch(eBg0) {}
+ } catch(eBg0) { safeLog(null, 'e', "catch " + String(eBg0)); }
 
 // # ListView：真正的列表控件（支持框内纵向滚动）
 var scList = new android.widget.ListView(context);
-try { scList.setDivider(null); } catch(eDiv0) {}
-try { scList.setVerticalScrollBarEnabled(true); } catch(eSb0) {}
-try { scList.setOverScrollMode(android.view.View.OVER_SCROLL_IF_CONTENT_SCROLLS); } catch(eOver0) {}
-try { scList.setCacheColorHint(android.graphics.Color.TRANSPARENT); } catch(eCch0) {}
+try { scList.setDivider(null);  } catch(eDiv0) { safeLog(null, 'e', "catch " + String(eDiv0)); }
+try { scList.setVerticalScrollBarEnabled(true);  } catch(eSb0) { safeLog(null, 'e', "catch " + String(eSb0)); }
+try { scList.setOverScrollMode(android.view.View.OVER_SCROLL_IF_CONTENT_SCROLLS);  } catch(eOver0) { safeLog(null, 'e', "catch " + String(eOver0)); }
+try { scList.setCacheColorHint(android.graphics.Color.TRANSPARENT);  } catch(eCch0) { safeLog(null, 'e', "catch " + String(eCch0)); }
 try {
     // # 关键：列表内滑动时，禁止父容器拦截触摸事件（DOWN/MOVE 都做）
     scList.setOnTouchListener(new android.view.View.OnTouchListener({
@@ -2441,17 +2562,17 @@ try {
                         // # 向上递归，避免多层父布局抢事件
                         var p = v.getParent();
                         while (p != null) {
-                            try { p.requestDisallowInterceptTouchEvent(true); } catch(eReq) {}
+                            try { p.requestDisallowInterceptTouchEvent(true);  } catch(eReq) { safeLog(null, 'e', "catch " + String(eReq)); }
                             try { p = p.getParent(); } catch(eUp) { p = null; }
                         }
-                    } catch(ePar0) {}
+                     } catch(ePar0) { safeLog(null, 'e', "catch " + String(ePar0)); }
                 }
-            } catch(eTouch0) {}
+             } catch(eTouch0) { safeLog(null, 'e', "catch " + String(eTouch0)); }
             // # 返回 false：让 ListView 自己处理滚动
             return false;
         }
     }));
-} catch(eT0) {}
+ } catch(eT0) { safeLog(null, 'e', "catch " + String(eT0)); }
 
 scListBox.addView(scList, new android.widget.FrameLayout.LayoutParams(-1, -1));
 
@@ -2469,7 +2590,7 @@ var __scIconInFlight = {};
 var __scIconLoader = (function() {
     try {
         if (self.__scIconLoaderSingleton) return self.__scIconLoaderSingleton;
-    } catch(eS) {}
+     } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
 
     var obj = { ht: null, h: null };
     try {
@@ -2483,17 +2604,17 @@ var __scIconLoader = (function() {
         obj.h = null;
     }
 
-    try { self.__scIconLoaderSingleton = obj; } catch(eSet) {}
+    try { self.__scIconLoaderSingleton = obj;  } catch(eSet) { safeLog(null, 'e', "catch " + String(eSet)); }
     return obj;
 })();
 
 function __scPostIconLoad(fn) {
     try {
         if (__scIconLoader && __scIconLoader.h) {
-            __scIconLoader.h.post(new java.lang.Runnable({ run: function() { try { fn(); } catch(e) {} } }));
+            __scIconLoader.h.post(new java.lang.Runnable({ run: function() { try { fn();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } } }));
             return true;
         }
-    } catch(eP) {}
+     } catch(eP) { safeLog(null, 'e', "catch " + String(eP)); }
     return false;
 }
 
@@ -2503,12 +2624,12 @@ function __scRequestIcon(it, imageView) {
         var key = String(it.pkg) + "|" + String(it.shortcutId);
 
         // 绑定 tag：后续回调时校验，避免复用行导致串图
-        try { imageView.setTag(key); } catch(eTag0) {}
+        try { imageView.setTag(key);  } catch(eTag0) { safeLog(null, 'e', "catch " + String(eTag0)); }
 
         // 命中缓存：直接显示
         var hit = __scGetIcon(key);
         if (hit) {
-            try { imageView.setImageDrawable(hit); } catch(eSet0) {}
+            try { imageView.setImageDrawable(hit);  } catch(eSet0) { safeLog(null, 'e', "catch " + String(eSet0)); }
             return;
         }
 
@@ -2517,10 +2638,10 @@ function __scRequestIcon(it, imageView) {
             if (__scPm) {
                 var appDr = __scPm.getApplicationIcon(String(it.pkg));
                 if (appDr) {
-                    try { imageView.setImageDrawable(appDr); } catch(eSet1) {}
+                    try { imageView.setImageDrawable(appDr);  } catch(eSet1) { safeLog(null, 'e', "catch " + String(eSet1)); }
                 }
             }
-        } catch(eApp0) {}
+         } catch(eApp0) { safeLog(null, 'e', "catch " + String(eApp0)); }
 
         // 已在加载中：不重复排队
         if (__scIconInFlight[key]) return;
@@ -2537,7 +2658,7 @@ function __scRequestIcon(it, imageView) {
 
             if (dr) __scPutIcon(key, dr);
 
-            try { delete __scIconInFlight[key]; } catch(eDel0) {}
+            try { delete __scIconInFlight[key];  } catch(eDel0) { safeLog(null, 'e', "catch " + String(eDel0)); }
 
             try {
                 // 回到 UI：只更新 tag 仍然匹配的行
@@ -2547,13 +2668,13 @@ function __scRequestIcon(it, imageView) {
                         var tag = null;
                         try { tag = imageView.getTag(); } catch(eTg) { tag = null; }
                         if (String(tag) === String(key)) {
-                            try { imageView.setImageDrawable(dr); } catch(eSet2) {}
+                            try { imageView.setImageDrawable(dr);  } catch(eSet2) { safeLog(null, 'e', "catch " + String(eSet2)); }
                         }
-                    } catch(eUi0) {}
+                     } catch(eUi0) { safeLog(null, 'e', "catch " + String(eUi0)); }
                 }}));
-            } catch(eUi1) {}
+             } catch(eUi1) { safeLog(null, 'e', "catch " + String(eUi1)); }
         });
-    } catch(eR) {}
+     } catch(eR) { safeLog(null, 'e', "catch " + String(eR)); }
 }
 function __scPutIcon(k, d) {
     try {
@@ -2563,9 +2684,9 @@ function __scPutIcon(k, d) {
         __scIconKeys.push(k);
         if (__scIconKeys.length > __scIconMax) {
             var old = __scIconKeys.shift();
-            try { delete __scIconCache[old]; } catch(eDel) {}
+            try { delete __scIconCache[old];  } catch(eDel) { safeLog(null, 'e', "catch " + String(eDel)); }
         }
-    } catch(ePut) {}
+     } catch(ePut) { safeLog(null, 'e', "catch " + String(ePut)); }
 }
 function __scGetIcon(k) {
     try { return __scIconCache[k] || null; } catch(eGet) { return null; }
@@ -2575,8 +2696,8 @@ function __scGetIcon(k) {
 var __scData = [];
 var __scLauncherApps = null;
 var __scPm = null;
-try { __scLauncherApps = context.getSystemService(android.content.Context.LAUNCHER_APPS_SERVICE); } catch(eLa0) {}
-try { __scPm = context.getPackageManager(); } catch(ePm0) {}
+try { __scLauncherApps = context.getSystemService(android.content.Context.LAUNCHER_APPS_SERVICE);  } catch(eLa0) { safeLog(null, 'e', "catch " + String(eLa0)); }
+try { __scPm = context.getPackageManager();  } catch(ePm0) { safeLog(null, 'e', "catch " + String(ePm0)); }
 
 // # 新增：应用名缓存
 // 这段代码的主要内容/用途：把包名解析成应用名（ApplicationLabel），并做缓存，避免列表滚动时频繁调用 PackageManager。
@@ -2608,7 +2729,7 @@ function __scGetAppLabel(pkg) {
         __scAppLabelCacheKeys.push(p);
         if (__scAppLabelCacheKeys.length > __scAppLabelCacheMax) {
             var old = __scAppLabelCacheKeys.shift();
-            try { delete __scAppLabelCache[old]; } catch(eDel) {}
+            try { delete __scAppLabelCache[old];  } catch(eDel) { safeLog(null, 'e', "catch " + String(eDel)); }
         }
         
         return lb;
@@ -2634,7 +2755,7 @@ var __scAdapter = new android.widget.BaseAdapter({
                     var _isDark1 = self.isDarkTheme();
                     var bg = self.ui.createRoundDrawable(_isDark1 ? C.cardDark : C.cardLight, self.dp(10));
                     row.setBackground(bg);
-                } catch(eBg1) {}
+                 } catch(eBg1) { safeLog(null, 'e', "catch " + String(eBg1)); }
 
                 var iv = new android.widget.ImageView(context);
                 var lpIv = new android.widget.LinearLayout.LayoutParams(self.dp(36), self.dp(36));
@@ -2666,7 +2787,7 @@ var __scAdapter = new android.widget.BaseAdapter({
             } else {
                 holder = row.getTag();
             }
-        } catch(eRow0) {}
+         } catch(eRow0) { safeLog(null, 'e', "catch " + String(eRow0)); }
 
         try {
             var it = __scData[pos];
@@ -2682,14 +2803,14 @@ var __scAdapter = new android.widget.BaseAdapter({
 
                 // # icon：异步加载 shortcut icon，UI 线程先回退 app icon，避免滚动/渲染卡顿
 // 这段代码的主要内容/用途：把耗时的 shortcut icon 获取移到后台线程，列表滚动更顺滑、system_server 占用更稳。
-try { __scRequestIcon(it, holder.iv); } catch(eIconReq) {}
+try { __scRequestIcon(it, holder.iv);  } catch(eIconReq) { safeLog(null, 'e', "catch " + String(eIconReq)); }
             }
-        } catch(eBind) {}
+         } catch(eBind) { safeLog(null, 'e', "catch " + String(eBind)); }
 
         return row;
     }
 });
-try { scList.setAdapter(__scAdapter); } catch(eAd0) {}
+try { scList.setAdapter(__scAdapter);  } catch(eAd0) { safeLog(null, 'e', "catch " + String(eAd0)); }
 
 try {
     scList.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener({
@@ -2698,14 +2819,14 @@ try {
                 var obj = __scData[position];
                 if (!obj) return;
 
-                try { inputScPkg.input.setText(String(obj.pkg)); } catch(eSet1) {}
-                try { inputScId.input.setText(String(obj.shortcutId)); } catch(eSet2) {}
+                try { inputScPkg.input.setText(String(obj.pkg));  } catch(eSet1) { safeLog(null, 'e', "catch " + String(eSet1)); }
+                try { inputScId.input.setText(String(obj.shortcutId));  } catch(eSet2) { safeLog(null, 'e', "catch " + String(eSet2)); }
                 // # 回填：用于"Shell am start"启动的 intentUri + userId（桌面移除后仍可启动）
                 try { scSelectedIntentUri = obj.intentUri ? String(obj.intentUri) : ""; } catch(eSetIU) { scSelectedIntentUri = ""; }
                 try { scSelectedUserId = (obj.userId != null) ? parseInt(String(obj.userId), 10) : 0; } catch(eSetUID) { scSelectedUserId = 0; }
 
                 // # 同步刷新：启动命令展示框
-                try { if (inputScCmd && inputScCmd.input) inputScCmd.input.setText(String(__scBuildLaunchCmd())); } catch(eUpCmd) {}
+                try { if (inputScCmd && inputScCmd.input) inputScCmd.input.setText(String(__scBuildLaunchCmd()));  } catch(eUpCmd) { safeLog(null, 'e', "catch " + String(eUpCmd)); }
 
                 // # 同步刷新：JS 启动代码（选择快捷方式后自动生成并回填）
                 __scUpdateJsCodeSafe();
@@ -2715,9 +2836,9 @@ try {
                 try {
                     var __scIconPath = __scEnsureShortcutIconFile(obj);
                     if (__scIconPath) {
-                        try { inputIconPath.input.setText(String(__scIconPath)); } catch(eSetIP) {}
+                        try { inputIconPath.input.setText(String(__scIconPath));  } catch(eSetIP) { safeLog(null, 'e', "catch " + String(eSetIP)); }
                     }
-                } catch(eExp0) {}
+                 } catch(eExp0) { safeLog(null, 'e', "catch " + String(eExp0)); }
 
                 // 可选：标题为空时自动填 label
                 try {
@@ -2725,9 +2846,9 @@ try {
                     if ((!curTitle || curTitle.trim().length === 0) && obj.label) {
                         inputTitle.input.setText(String(obj.label));
                     }
-                } catch(eSet3) {}
+                 } catch(eSet3) { safeLog(null, 'e', "catch " + String(eSet3)); }
 
-                try { self.state.pendingDirty = true; } catch(eDirty) {}
+                try { self.state.pendingDirty = true;  } catch(eDirty) { safeLog(null, 'e', "catch " + String(eDirty)); }
 
                 // # 收起列表
                 try {
@@ -2741,130 +2862,19 @@ try {
                     var _nm = String(obj.label || obj.shortcutId || "快捷方式");
                     if (_app && _app.length > 0) scHeaderTv.setText("已选择：" + String(_app) + "/" + _nm + "（点击展开）");
                     else scHeaderTv.setText("已选择：" + _nm + "（点击展开）");
-                } catch(eFold) {}
+                 } catch(eFold) { safeLog(null, 'e', "catch " + String(eFold)); }
             } catch(eCb) {
-                try { self.toast("回填失败: " + eCb); } catch(eT) {}
+                try { self.toast("回填失败: " + eCb);  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
             }
         }
     }));
-} catch(eClk0) {}
+ } catch(eClk0) { safeLog(null, 'e', "catch " + String(eClk0)); }
 
 // # 工具函数：安全字符串
-function __scStr(v) { try { return String(v == null ? "" : v); } catch(e) { return ""; } }
-function __scLower(v) { try { return __scStr(v).toLowerCase(); } catch(e) { return ""; } }
 
 // # 工具函数：导出快捷方式图标到 shortcut_icons 并返回路径
-function __scEnsureShortcutIconFile(item) {
-    // 这段代码的主要内容/用途：把 Launcher Shortcuts 的图标在"可见时"持久化为 PNG，后续按钮页直接读文件显示，避免桌面移除后图标退化/缺失。
-    try {
-        if (!item) return "";
-        var pkg = __scStr(item.pkg);
-        var sid = __scStr(item.shortcutId);
-        var uid = (item.userId != null) ? __scStr(item.userId) : "0";
-        if (!pkg || !sid) return "";
 
-        var dir = String(APP_ROOT_DIR) + "/shortcut_icons";
-        try {
-            var d = new java.io.File(dir);
-            if (!d.exists()) d.mkdirs();
-        } catch(eMk) {}
 
-        // # 与主程序同名规则：pkg__sid__u{uid}.png
-        var fn = __scSanitizeFileName(pkg) + "__" + __scSanitizeFileName(sid) + "__u" + __scSanitizeFileName(uid) + ".png";
-        var outPath = dir + "/" + fn;
-
-        // # 已存在则直接复用
-        try {
-            var f = new java.io.File(outPath);
-            if (f.exists() && f.isFile() && f.length() > 0) return outPath;
-        } catch(eEx) {}
-
-        // # 获取 Drawable（优先 shortcut icon，失败则回退 app icon）
-        var dr = null;
-        try {
-            if (__scLauncherApps && item.shortcutInfo) {
-                try { dr = __scLauncherApps.getShortcutIconDrawable(item.shortcutInfo, 0); } catch(eD0) { dr = null; }
-            }
-        } catch(eLA) { dr = null; }
-        if (!dr) {
-            try {
-                var pm = context.getPackageManager();
-                dr = pm.getApplicationIcon(pkg);
-            } catch(eApp) { dr = null; }
-        }
-        if (!dr) return "";
-
-        // # Drawable -> Bitmap -> PNG
-        var bmp = null;
-        try { bmp = __scDrawableToBitmap(dr, 192); } catch(eBmp) { bmp = null; }
-        if (!bmp) return "";
-
-        var fos = null;
-        try {
-            fos = new java.io.FileOutputStream(outPath);
-            bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, fos);
-            try { fos.flush(); } catch(eFl) {}
-            try { fos.close(); } catch(eCl) {}
-            fos = null;
-        } catch(eW) {
-            try { if (fos) fos.close(); } catch(eCl2) {}
-            fos = null;
-            return "";
-        }
-
-        return outPath;
-    } catch(eAll) {
-        return "";
-    }
-}
-
-function __scSanitizeFileName(s) {
-    try {
-        var t = __scStr(s);
-        t = t.replace(/[^a-zA-Z0-9._-]+/g, "_");
-        if (t.length > 120) t = t.substring(0, 120);
-        return t;
-    } catch(e) { return ""; }
-}
-
-function __scDrawableToBitmap(drawable, targetPx) {
-    // 这段代码的主要内容/用途：把任意 Drawable 安全绘制成 Bitmap，便于持久化保存 PNG。
-    try {
-        if (!drawable) return null;
-
-        // BitmapDrawable 直接取
-        try {
-            if (drawable instanceof android.graphics.drawable.BitmapDrawable) {
-                var b = drawable.getBitmap();
-                if (b) return b;
-            }
-        } catch(eBD) {}
-
-        var w = 0, h = 0;
-        try { w = drawable.getIntrinsicWidth(); } catch(eW) { w = 0; }
-        try { h = drawable.getIntrinsicHeight(); } catch(eH) { h = 0; }
-
-        if (w <= 0 || h <= 0) {
-            w = targetPx || 192;
-            h = targetPx || 192;
-        }
-
-        // # 过大的直接缩到 targetPx 附近，避免 PNG 体积过大
-        var maxSide = targetPx || 192;
-        var side = Math.max(w, h);
-        var scale = side > maxSide ? (maxSide / side) : 1.0;
-        var bw = Math.max(1, Math.round(w * scale));
-        var bh = Math.max(1, Math.round(h * scale));
-
-        var bmp = android.graphics.Bitmap.createBitmap(bw, bh, android.graphics.Bitmap.Config.ARGB_8888);
-        var canvas = new android.graphics.Canvas(bmp);
-        drawable.setBounds(0, 0, bw, bh);
-        drawable.draw(canvas);
-        return bmp;
-    } catch(eAll) {
-        return null;
-    }
-}
 
 // # 数据拉取：枚举 userId + packages + LauncherApps.getShortcuts
 function __scLoadAllItems() {
@@ -2881,7 +2891,7 @@ function __scLoadAllItems() {
                 if (typeof getSystemUserDir === "function") {
                     basePath = getSystemUserDir();
                 }
-            } catch(eGSD) {}
+             } catch(eGSD) { safeLog(null, 'e', "catch " + String(eGSD)); }
 
             var base = new java.io.File(basePath);
             if (base.exists() && base.isDirectory()) {
@@ -2901,7 +2911,7 @@ function __scLoadAllItems() {
                     }
                 }
             }
-        } catch(eU0) {}
+         } catch(eU0) { safeLog(null, 'e', "catch " + String(eU0)); }
         if (users.length === 0) users.push(0);
         // # 修复：与 shortcuts.js 一致，优先使用 shortcut 系统服务直连获取（可见性更全，能覆盖"微信小程序添加到桌面"这类入口）
         // # 说明：LauncherApps.getShortcuts 在部分 ROM/桌面上返回不全，因此这里先走 IShortcutService.getShortcuts。
@@ -2926,7 +2936,7 @@ function __scLoadAllItems() {
                     if (typeof getSystemUserDir === "function") {
                         basePath2 = getSystemUserDir();
                     }
-                } catch(eGSD3) {}
+                 } catch(eGSD3) { safeLog(null, 'e', "catch " + String(eGSD3)); }
 
                 var dir = new java.io.File(basePath2 + "/" + String(uid) + "/shortcut_service/packages");
                 if (dir.exists() && dir.isDirectory()) {
@@ -2943,7 +2953,7 @@ function __scLoadAllItems() {
                         }
                     }
                 }
-            } catch(eP0) {}
+             } catch(eP0) { safeLog(null, 'e', "catch " + String(eP0)); }
 
             for (var p = 0; p < pkgs.length; p++) {
                 var pkgName = pkgs[p];
@@ -2992,7 +3002,7 @@ function __scLoadAllItems() {
                                         // # 安全阈值：避免极端情况下数据量过大导致 UI/内存压力
                                         if (items.length > 5000) return items;
                                     }
-                                } catch(eS3) {}
+                                 } catch(eS3) { safeLog(null, 'e', "catch " + String(eS3)); }
                                 // # 已拿到则直接处理下一个包，避免重复从 LauncherApps 再取一遍
                                 continue;
                             }
@@ -3004,16 +3014,16 @@ function __scLoadAllItems() {
                 // # 兜底：若没有 LauncherApps 服务，则无法走 fallback，直接跳过（上面 shortcutSvc 已尽力）
                 if (!la) continue;
                 var q = new ShortcutQuery();
-                try { q.setPackage(pkgName); } catch(eQ0) {}
+                try { q.setPackage(pkgName);  } catch(eQ0) { safeLog(null, 'e', "catch " + String(eQ0)); }
                 // # QueryFlags：尽量全拿（逐个 try，避免 ROM 缺字段）
                 try {
                     var qFlags = 0;
-                    try { qFlags = qFlags | ShortcutQuery.FLAG_MATCH_DYNAMIC; } catch(eF1) {}
-                    try { qFlags = qFlags | ShortcutQuery.FLAG_MATCH_PINNED; } catch(eF2) {}
-                    try { qFlags = qFlags | ShortcutQuery.FLAG_MATCH_MANIFEST; } catch(eF3) {}
-                    try { qFlags = qFlags | ShortcutQuery.FLAG_MATCH_CACHED; } catch(eF4) {}
-                    try { q.setQueryFlags(qFlags); } catch(eF5) {}
-                } catch(eF0) {}
+                    try { qFlags = qFlags | ShortcutQuery.FLAG_MATCH_DYNAMIC;  } catch(eF1) { safeLog(null, 'e', "catch " + String(eF1)); }
+                    try { qFlags = qFlags | ShortcutQuery.FLAG_MATCH_PINNED;  } catch(eF2) { safeLog(null, 'e', "catch " + String(eF2)); }
+                    try { qFlags = qFlags | ShortcutQuery.FLAG_MATCH_MANIFEST;  } catch(eF3) { safeLog(null, 'e', "catch " + String(eF3)); }
+                    try { qFlags = qFlags | ShortcutQuery.FLAG_MATCH_CACHED;  } catch(eF4) { safeLog(null, 'e', "catch " + String(eF4)); }
+                    try { q.setQueryFlags(qFlags);  } catch(eF5) { safeLog(null, 'e', "catch " + String(eF5)); }
+                 } catch(eF0) { safeLog(null, 'e', "catch " + String(eF0)); }
 
                 var uh = null;
                 try { uh = UserHandle.of(parseInt(String(uid), 10)); } catch(eUH) { uh = null; }
@@ -3056,7 +3066,7 @@ function __scLoadAllItems() {
                 }
             }
         }
-    } catch(eAll) {}
+     } catch(eAll) { safeLog(null, 'e', "catch " + String(eAll)); }
     return items;
 }
 
@@ -3080,7 +3090,7 @@ function __scRenderListNow(query) {
             if (hasRendered && scInlineState.__scLastQuery === q && scInlineState.__scLastSrcSize === ((scInlineState.allItems || []).length)) {
                 return;
             }
-        } catch(eSame0) {}
+         } catch(eSame0) { safeLog(null, 'e', "catch " + String(eSame0)); }
         scInlineState.__scLastQuery = q;
         try { scInlineState.__scLastSrcSize = (scInlineState.allItems || []).length; } catch(eSz0) { scInlineState.__scLastSrcSize = 0; }
 
@@ -3098,7 +3108,7 @@ function __scRenderListNow(query) {
                     else if (__scLower(it.pkg).indexOf(q) >= 0) hit = true;
                     else if (__scLower(__scGetAppLabel(it.pkg)).indexOf(q) >= 0) hit = true;
                     else if (__scLower(it.shortcutId).indexOf(q) >= 0) hit = true;
-                } catch(eM) {}
+                 } catch(eM) { safeLog(null, 'e', "catch " + String(eM)); }
                 if (hit) out.push(it);
                 // # 性能保护：搜索时最多显示 300 条，避免 system_server 过载
                 if (out.length >= 300) break;
@@ -3107,34 +3117,34 @@ function __scRenderListNow(query) {
 
         // 更新适配器数据
         __scData = out;
-        try { __scAdapter.notifyDataSetChanged(); } catch(eN0) {}
+        try { __scAdapter.notifyDataSetChanged();  } catch(eN0) { safeLog(null, 'e', "catch " + String(eN0)); }
 
         // # 修复：确保首次展开时 ListView 立即刷新布局，不依赖用户触摸触发重绘
-        try { scInlineState.__scHasRendered = true; } catch(eHr1) {}
+        try { scInlineState.__scHasRendered = true;  } catch(eHr1) { safeLog(null, 'e', "catch " + String(eHr1)); }
         try {
             scList.post(new java.lang.Runnable({
                 run: function() {
-                    try { scList.invalidateViews(); } catch(eInv0) {}
-                    try { scList.requestLayout(); } catch(eReq0) {}
+                    try { scList.invalidateViews();  } catch(eInv0) { safeLog(null, 'e', "catch " + String(eInv0)); }
+                    try { scList.requestLayout();  } catch(eReq0) { safeLog(null, 'e', "catch " + String(eReq0)); }
                 }
             }));
         } catch(ePostInv0) {
-            try { scList.invalidateViews(); } catch(eInv1) {}
+            try { scList.invalidateViews();  } catch(eInv1) { safeLog(null, 'e', "catch " + String(eInv1)); }
         }
 
         // 提示信息
         try {
             if (out.length === 0) scHint.setText("无匹配结果（共 " + src.length + " 条）");
             else scHint.setText("共 " + src.length + " 条，显示 " + out.length + " 条（在框内滑动）");
-        } catch(eH1) {}
+         } catch(eH1) { safeLog(null, 'e', "catch " + String(eH1)); }
     } catch(e0) {
-        try { scHint.setText("渲染失败: " + e0); } catch(e1) {}
+        try { scHint.setText("渲染失败: " + e0);  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
     }
 }
 
 function __scRenderList(query) {
     // # 这段代码的主要内容/用途：渲染去抖入口（合并 50ms 内的多次刷新请求）
-    try { scInlineState.__scPendingQuery = query; } catch(ePQ0) {}
+    try { scInlineState.__scPendingQuery = query;  } catch(ePQ0) { safeLog(null, 'e', "catch " + String(ePQ0)); }
 
     // # 初始化 Handler（主线程）
     try {
@@ -3148,7 +3158,7 @@ function __scRenderList(query) {
         if (__scRenderHandler && __scRenderRunnable) {
             __scRenderHandler.removeCallbacks(__scRenderRunnable);
         }
-    } catch(eRm0) {}
+     } catch(eRm0) { safeLog(null, 'e', "catch " + String(eRm0)); }
 
     // # 创建新的 runnable（始终使用最新 query）
     __scRenderRunnable = new java.lang.Runnable({
@@ -3193,7 +3203,7 @@ function __scEnsureLoadedAndRender() {
     }
 
     scInlineState.loading = true;
-    try { scHint.setText("正在加载快捷方式列表..."); } catch(eH0) {}
+    try { scHint.setText("正在加载快捷方式列表...");  } catch(eH0) { safeLog(null, 'e', "catch " + String(eH0)); }
 
     new java.lang.Thread(new java.lang.Runnable({
         run: function() {
@@ -3216,19 +3226,19 @@ function __scEnsureLoadedAndRender() {
                     scInlineState.loading = false;
                     scInlineState.loaded = true;
                     scInlineState.allItems = arr || [];
-                } catch(eUi2) {}
+                 } catch(eUi2) { safeLog(null, 'e', "catch " + String(eUi2)); }
 
                 // # 关键修复：首次展开时也要触发渲染，否则会一直停留在"正在加载..."
                 try {
                     // 优先用 ListView.post：保证在拥有 Looper 的 UI 线程执行
                     scList.post(new java.lang.Runnable({
                         run: function() {
-                            try { __scRenderListNow(scSearchWrap.getValue()); } catch(eR0) {}
+                            try { __scRenderListNow(scSearchWrap.getValue());  } catch(eR0) { safeLog(null, 'e', "catch " + String(eR0)); }
                         }
                     }));
                 } catch(ePost0) {
                     // 再兜底：直接调用（若当前线程本就有 Looper 也能工作）
-                    try { __scRenderList(scSearchWrap.getValue()); } catch(eR1) {}
+                    try { __scRenderList(scSearchWrap.getValue());  } catch(eR1) { safeLog(null, 'e', "catch " + String(eR1)); }
                 }
             }
         }
@@ -3247,18 +3257,18 @@ scHeader.setOnClickListener(new android.view.View.OnClickListener({
                 try {
                     scList.post(new java.lang.Runnable({
                         run: function() {
-                            try { scList.requestLayout(); } catch(eRq0) {}
-                            try { scList.invalidateViews(); } catch(eIv0) {}
+                            try { scList.requestLayout();  } catch(eRq0) { safeLog(null, 'e', "catch " + String(eRq0)); }
+                            try { scList.invalidateViews();  } catch(eIv0) { safeLog(null, 'e', "catch " + String(eIv0)); }
                         }
                     }));
-                } catch(ePostRq0) {}
+                 } catch(ePostRq0) { safeLog(null, 'e', "catch " + String(ePostRq0)); }
                 scArrowTv.setText("▲");
                 __scEnsureLoadedAndRender();
             } else {
                 scBody.setVisibility(android.view.View.GONE);
                 scArrowTv.setText("▼");
             }
-        } catch(eTg) {}
+         } catch(eTg) { safeLog(null, 'e', "catch " + String(eTg)); }
     }
 }));
 
@@ -3278,23 +3288,23 @@ try {
                     if (scInlineState.__scSearchRunnable) {
                         scList.removeCallbacks(scInlineState.__scSearchRunnable);
                     }
-                } catch(eRm) {}
+                 } catch(eRm) { safeLog(null, 'e', "catch " + String(eRm)); }
 
                 scInlineState.__scSearchRunnable = new java.lang.Runnable({
                     run: function() {
                         try {
                             // # 再次确认当前查询未变化（防抖期间用户继续输入）
                             __scRenderList(q);
-                        } catch(eRun) {}
+                         } catch(eRun) { safeLog(null, 'e', "catch " + String(eRun)); }
                     }
                 });
 
                 // # 180ms 防抖：既跟手又不抖 CPU
                 try { scList.postDelayed(scInlineState.__scSearchRunnable, 180); } catch(ePost) { __scRenderList(q); }
-            } catch(eW) {}
+             } catch(eW) { safeLog(null, 'e', "catch " + String(eW)); }
         }
     }));
-} catch(eTw) {}
+ } catch(eTw) { safeLog(null, 'e', "catch " + String(eTw)); }
 
 // # 组装到 shortcutWrap
 shortcutWrap.addView(scHeader);
@@ -3352,7 +3362,7 @@ shortcutWrap.addView(scBody);
                 // # 保存 ShortX 图标颜色：优先使用 targetBtn.iconTint（颜色选择器已更新），回退到输入框
                 var sxTint = currentShortXIconTint || targetBtn.iconTint || "";
                 if (!sxTint) {
-                    try { sxTint = inputShortXIconTint.getValue(); } catch(eGetTint) {}
+                    try { sxTint = inputShortXIconTint.getValue();  } catch(eGetTint) { safeLog(null, 'e', "catch " + String(eGetTint)); }
                 }
                 if (sxTint && sxTint.length > 0) newBtn.iconTint = sxTint; else delete newBtn.iconTint;
                 delete newBtn.iconPath; // 清除文件路径
@@ -3385,7 +3395,7 @@ try {
         var aui = parseInt(au, 10);
         if (!isNaN(aui)) newBtn.launchUserId = aui;
     }
-} catch(eAU) {}
+ } catch(eAU) { safeLog(null, 'e', "catch " + String(eAU)); }
 
             } else if (newBtn.type === "broadcast") {
                 var a = inputAction.getValue();
@@ -3405,10 +3415,10 @@ try {
                 if (!sid) { inputScId.setError("请输入 shortcutId"); isValid=false; }
                 else { inputScId.setError(null); newBtn.shortcutId = sid; }
                 // # 保存：同时保存 intentUri/userId，供 JavaScript(startActivityAsUser) 脚本使用（锁定主/分身）
-                try { if (scSelectedIntentUri && scSelectedIntentUri.length > 0) newBtn.intentUri = String(scSelectedIntentUri); } catch(eSIU2) {}
+                try { if (scSelectedIntentUri && scSelectedIntentUri.length > 0) newBtn.intentUri = String(scSelectedIntentUri);  } catch(eSIU2) { safeLog(null, 'e', "catch " + String(eSIU2)); }
                 try { newBtn.userId = scSelectedUserId; } catch(eSUID2) { newBtn.userId = 0; }
                 // # 保存：快捷方式 JS 启动代码（自动生成/可手动编辑）
-                try { if (inputScJsCode) newBtn.shortcutJsCode = String(inputScJsCode.getValue()); } catch(eSaveJs) {}
+                try { if (inputScJsCode) newBtn.shortcutJsCode = String(inputScJsCode.getValue());  } catch(eSaveJs) { safeLog(null, 'e', "catch " + String(eSaveJs)); }
             }
                 // # 保存：快捷方式仅使用 JavaScript 执行（取消 Shell/兜底）
                 newBtn.shortcutRunMode = "js";
@@ -3526,7 +3536,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
 
     // List
     var scroll = new android.widget.ScrollView(context);
-    try { scroll.setVerticalScrollBarEnabled(false); } catch(e){}
+    try { scroll.setVerticalScrollBarEnabled(false);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     var list = new android.widget.LinearLayout(context);
     list.setOrientation(android.widget.LinearLayout.VERTICAL);
     list.setPadding(0, self.dp(4), 0, self.dp(4));
@@ -3539,7 +3549,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
         card.setOrientation(android.widget.LinearLayout.HORIZONTAL);
         card.setGravity(android.view.Gravity.CENTER_VERTICAL);
         card.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(8)));
-        try { card.setElevation(self.dp(2)); } catch(e){}
+        try { card.setElevation(self.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
         var cardLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
         cardLp.setMargins(self.dp(2), self.dp(4), self.dp(2), self.dp(4));
@@ -3815,9 +3825,9 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   try { wm.addView(root, lp); } catch(eAdd) { safeLog(self.L, 'e', "popup addView fail: " + String(eAdd)); return null; }
 
   function closePopup() {
-    try { wm.removeView(root); } catch(e) {}
+    try { wm.removeView(root);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     if (typeof onDismiss === "function") {
-      try { onDismiss(); } catch(eD) {}
+      try { onDismiss();  } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }
     }
   }
 
@@ -3836,9 +3846,9 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var onDismissCb = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
 
   var catalog = [];
-  try { catalog = self.getShortXIconCatalog() || []; } catch(e) {}
+  try { catalog = self.getShortXIconCatalog() || [];  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   if (!catalog.length) {
-    try { catalog = self.getShortXIconCatalog(true) || []; } catch(e) {}
+    try { catalog = self.getShortXIconCatalog(true) || [];  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   }
   if (!catalog.length) {
     self.toast("\u56fe\u6807\u5e93\u672a\u52a0\u8f7d");
@@ -3949,9 +3959,9 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   function dismiss() {
     if (isDismissed) return;
     isDismissed = true;
-    try { wm.removeView(rootOverlay); } catch(e) {}
+    try { wm.removeView(rootOverlay);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     if (typeof onDismissCb === "function") {
-      try { onDismissCb(); } catch(eD) {}
+      try { onDismissCb();  } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }
     }
   }
   rootOverlay.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { dismiss(); } }));
@@ -3976,7 +3986,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var searchEt = new android.widget.EditText(context);
   searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
   searchEt.setTextColor(textColor);
-  try { searchEt.setHintTextColor(subTextColor); } catch(e) {}
+  try { searchEt.setHintTextColor(subTextColor);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   searchEt.setHint("\u641c\u7d22\u56fe\u6807\u540d\uff0c\u5982 share / home");
   searchEt.setSingleLine(true);
   searchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
@@ -4025,7 +4035,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
       btn.setTextColor(active ? C.primary : subTextColor);
       try {
         btn.setBackground(active ? self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.15), self.dp(16)) : null);
-      } catch(e) {}
+       } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     }
   }
   refreshTabs();
@@ -4099,7 +4109,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   selectConfirm.setGravity(android.view.Gravity.CENTER);
   var pressedColor = self.withAlpha(C.primary, 0.8);
   selectConfirm.setBackground(self.ui.createRippleDrawable(C.primary, pressedColor, self.dp(24)));
-  try { selectConfirm.setElevation(self.dp(2)); } catch(e){}
+  try { selectConfirm.setElevation(self.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   selectConfirm.setOnClickListener(new android.view.View.OnClickListener({
     onClick: function(v) {
       self.touchActivity();
@@ -4119,14 +4129,14 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
       if (selectedName) {
         selectNameTv.setText(selectedName);
         var dr = null;
-        try { dr = self.getShortXIconDrawable(selectedName); } catch(e) {}
+        try { dr = self.getShortXIconDrawable(selectedName);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         if (dr) selectPreview.setImageDrawable(dr);
         else selectPreview.setImageDrawable(null);
       } else {
         selectNameTv.setText("\u672a\u9009\u62e9");
         selectPreview.setImageDrawable(null);
       }
-    } catch(e) {}
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   }
   updateSelectPreview();
 
@@ -4169,7 +4179,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           cell.setClickable(true);
 
           var bgColor = cardColor;
-          try { bgColor = self.withAlpha(cardColor, 0.96); } catch(e) {}
+          try { bgColor = self.withAlpha(cardColor, 0.96);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           cell.setBackground(self.ui.createRoundDrawable(bgColor, self.dp(10)));
 
           var iv = new android.widget.ImageView(context);
@@ -4178,7 +4188,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           try {
             var dr = self.getShortXIconDrawable(item.name);
             if (dr) { iv.setImageDrawable(dr); }
-          } catch(e) {}
+           } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           cell.addView(iv);
 
           var tv = new android.widget.TextView(context);
@@ -4186,15 +4196,15 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
           tv.setGravity(android.view.Gravity.CENTER);
           tv.setMaxLines(1);
-          try { tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(e) {}
+          try { tv.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           tv.setPadding(self.dp(2), self.dp(2), self.dp(2), 0);
           cell.addView(tv);
 
           if (selectedName === item.name) {
-            try { cell.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.2), self.dp(10))); } catch(e) {}
-            try { tv.setTextColor(C.primary); } catch(e) {}
+            try { cell.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.2), self.dp(10)));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+            try { tv.setTextColor(C.primary);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           } else {
-            try { tv.setTextColor(subTextColor); } catch(e) {}
+            try { tv.setTextColor(subTextColor);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           }
 
           cell.setOnClickListener(new android.view.View.OnClickListener({
@@ -4257,7 +4267,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         var c = self.ui.colors.accent;
         return "#" + ("00000000" + (c >>> 0).toString(16)).slice(-8);
       }
-    } catch(e) {}
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     return "#FF4081";
   }
 
@@ -4317,12 +4327,12 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         if (rn) recentColors.push(rn);
       }
     }
-  } catch(eRecentLoad) {}
+   } catch(eRecentLoad) { safeLog(null, 'e', "catch " + String(eRecentLoad)); }
 
   function saveRecentColors() {
     try {
       self.savePanelState(RECENT_COLORS_KEY, { colors: recentColors.slice(0, MAX_RECENT_COLORS) });
-    } catch(eRecentSave) {}
+     } catch(eRecentSave) { safeLog(null, 'e', "catch " + String(eRecentSave)); }
   }
 
   function pushRecentColor(hex) {
@@ -4373,22 +4383,22 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         try {
           var dr = null;
           if (currentIconName) {
-            try { dr = self.getShortXIconDrawable(currentIconName); } catch(e) {}
+            try { dr = self.getShortXIconDrawable(currentIconName);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           }
           if (dr) {
             if (!isFollowTheme && selectedColor) {
               try {
                 var parsed = android.graphics.Color.parseColor(selectedColor);
                 dr.setColorFilter(parsed, android.graphics.PorterDuff.Mode.SRC_IN);
-              } catch(e) {}
+               } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
             } else {
-              try { dr.clearColorFilter(); } catch(e) {}
+              try { dr.clearColorFilter();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
             }
             previewIv.setImageDrawable(dr);
           } else {
             previewIv.setImageDrawable(null);
           }
-        } catch(e) {}
+         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
       updatePreview();
 
@@ -4432,7 +4442,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
                 lp.height = self.dp(28);
                 lp.setMargins(margin, margin, margin, margin);
                 cell.setLayoutParams(lp);
-              } catch(e) {}
+               } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
               var swatch = new android.view.View(context);
               swatch.setLayoutParams(new android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
@@ -4441,7 +4451,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
                 bg.setColor(android.graphics.Color.parseColor(hex));
                 bg.setCornerRadius(self.dp(5));
                 swatch.setBackground(bg);
-              } catch(e) {}
+               } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
               cell.addView(swatch);
 
               if (selectedColor === hex) {
@@ -4451,7 +4461,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
                   border.setCornerRadius(self.dp(5));
                   border.setStroke(self.dp(2), C.primary);
                   cell.setForeground(border);
-                } catch(e) {}
+                 } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
               }
 
               cell.setOnClickListener(new android.view.View.OnClickListener({
@@ -4471,7 +4481,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               recentGrid.addView(cell);
             })(recentColors[ri]);
           }
-        } catch(e) {}
+         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
       refreshRecentGrid();
 
@@ -4497,7 +4507,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
             lp.height = self.dp(32);
             lp.setMargins(margin, margin, margin, margin);
             cell.setLayoutParams(lp);
-          } catch(e) {}
+           } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
           var swatch = new android.view.View(context);
           swatch.setLayoutParams(new android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
@@ -4506,7 +4516,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
             bg.setColor(android.graphics.Color.parseColor(hex));
             bg.setCornerRadius(self.dp(6));
             swatch.setBackground(bg);
-          } catch(e) {}
+           } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           cell.addView(swatch);
 
           if (selectedColor === hex) {
@@ -4516,7 +4526,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               border.setCornerRadius(self.dp(6));
               border.setStroke(self.dp(3), C.primary);
               cell.setForeground(border);
-            } catch(e) {}
+             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           }
 
           cell.setOnClickListener(new android.view.View.OnClickListener({
@@ -4545,7 +4555,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           for (i = 0; i < count; i++) {
             var cell = commonGrid.getChildAt(i);
             if (!cell) continue;
-            try { cell.setForeground(null); } catch(e) {}
+            try { cell.setForeground(null);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           }
           var idx = commonTintHexValues.indexOf(selectedColor);
           if (idx >= 0 && idx < count) {
@@ -4557,10 +4567,10 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
                 border.setCornerRadius(self.dp(6));
                 border.setStroke(self.dp(3), C.primary);
                 matchedCell.setForeground(border);
-              } catch(e) {}
+               } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
             }
           }
-        } catch(e) {}
+         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
 
       // 颜色值显示
@@ -4644,7 +4654,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           rgbValTvs[0].setText(String(initR));
           rgbValTvs[1].setText(String(initG));
           rgbValTvs[2].setText(String(initB));
-        } catch(e) {}
+         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
       syncRgbSeeks();
 

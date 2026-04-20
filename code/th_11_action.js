@@ -37,7 +37,7 @@ FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
         if (lines.length > 1) {
              content = lines.reverse().join("\n");
         }
-    } catch(eRev) {}
+     } catch(eRev) { safeLog(null, 'e', "catch " + String(eRev)); }
 
     this.showViewerPanel("今日日志 (倒序)", content);
     return;
@@ -80,7 +80,7 @@ try {
   }
 } catch (eA) {
   // # 兜底：某些 ROM/权限限制下 startActivityAsUser 可能抛异常，回退普通启动
-  try { context.startActivity(it); } catch (eA2) {}
+  try { context.startActivity(it);  } catch(eA2) { safeLog(null, 'e', "catch " + String(eA2)); }
   this.toast("启动失败");
   safeLog(this.L, 'e',  "start app fail pkg=" + pkg + " uid=" + String(launchUid) + " err=" + String(eA));
 }
@@ -98,7 +98,7 @@ return;
       try {
         var b64x = encodeBase64Utf8(cmdPlain);
         if (b64x && b64x.length > 0) cmdB64 = String(b64x);
-      } catch (eB64a) {}
+       } catch(eB64a) { safeLog(null, 'e', "catch " + String(eB64a)); }
     }
 
     // # 2) cmd_b64 非空但无法解码：把它当作"明文命令"重新编码（保证广播桥/Action 都能吃到正确命令）
@@ -110,13 +110,13 @@ return;
           cmdPlain = String(cmdB64);
           cmdB64 = "";
         }
-      } catch (eB64b) {}
+       } catch(eB64b) { safeLog(null, 'e', "catch " + String(eB64b)); }
     }
     if ((!cmdB64 || cmdB64.length === 0) && cmdPlain && cmdPlain.length > 0) {
       try {
         var b64y = encodeBase64Utf8(cmdPlain);
         if (b64y && b64y.length > 0) cmdB64 = String(b64y);
-      } catch (eB64c) {}
+       } catch(eB64c) { safeLog(null, 'e', "catch " + String(eB64c)); }
     }
 
     if (!cmdB64 || cmdB64.length === 0) {
@@ -162,7 +162,7 @@ return;
           else if (typeof v === "boolean") it2.putExtra(String(k), !!v);
           else it2.putExtra(String(k), String(v));
         }
-      } catch (eE) {}
+       } catch(eE) { safeLog(null, 'e', "catch " + String(eE)); }
     }
 
     // # 3) 对"Shell 广播桥"做额外兼容：
@@ -189,7 +189,7 @@ return;
               cmdB64 = b64x;
               it2.putExtra(kCmdB64, String(cmdB64));
             }
-          } catch (eC2) {}
+           } catch(eC2) { safeLog(null, 'e', "catch " + String(eC2)); }
         }
 
         // # 有 b64 但没明文：也补一份明文（便于外部规则验证；真正执行仍建议用 cmd_b64）
@@ -200,7 +200,7 @@ return;
               cmdPlain = decoded;
               it2.putExtra("cmd", String(cmdPlain));
             }
-          } catch (eC3) {}
+           } catch(eC3) { safeLog(null, 'e', "catch " + String(eC3)); }
         }
 
         // # root：广播桥接收端默认以 root 执行，强制传递 true
@@ -211,7 +211,7 @@ return;
         } catch (eR0) {
           try {
             it2.putExtra(kRoot, true);
-          } catch (eR1) {}
+           } catch(eR1) { safeLog(null, 'e', "catch " + String(eR1)); }
         }
 
 
@@ -230,21 +230,21 @@ return;
               }
             }
           }
-        } catch (eRB) {}
+         } catch(eRB) { safeLog(null, 'e', "catch " + String(eRB)); }
 
         // # from：标识来源（便于外部执行器做白名单/审计）
         try {
           if (!it2.hasExtra(kFrom)) it2.putExtra(kFrom, "ToolHub@system_server");
-        } catch (eF0) { try { it2.putExtra(kFrom, "ToolHub@system_server"); } catch (eF1) {} }
+        } catch (eF0) { try { it2.putExtra(kFrom, "ToolHub@system_server");  } catch(eF1) { safeLog(null, 'e', "catch " + String(eF1)); } }
 
         if (this.L) {
           try {
             this.L.i("broadcast(shell_bridge) action=" + action + " cmd_len=" + String(cmdPlain ? cmdPlain.length : 0) +
               " cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " root=" + String(it2.getBooleanExtra(kRoot, false)));
-          } catch (eLg) {}
+           } catch(eLg) { safeLog(null, 'e', "catch " + String(eLg)); }
         }
       }
-    } catch (eSB) {}
+     } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
 
     try { context.sendBroadcast(it2); } catch (eB) { this.toast("广播失败"); safeLog(this.L, 'e',  "broadcast fail action=" + action + " err=" + String(eB)); }
     return;
@@ -271,7 +271,7 @@ return;
       var lu0 = parseInt(String(btn.launchUserId), 10);
       if (!isNaN(lu0)) uid = lu0;
     }
-  } catch(eLu0) {}
+   } catch(eLu0) { safeLog(null, 'e', "catch " + String(eLu0)); }
 
   if (!spkg) { this.toast("按钮#" + idx + " 缺少 pkg"); return; }
   if (!sid) { this.toast("按钮#" + idx + " 缺少 shortcutId"); return; }
@@ -312,7 +312,7 @@ return;
   this.toast("未知 type=" + t);
   safeLog(this.L, 'w',  "unknown btn type=" + t);
   } catch (eBtn) {
-    try { this.toast("按钮执行异常"); } catch (e0) {}
+    try { this.toast("按钮执行异常");  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
     safeLog(this.L, 'e',  "execButtonAction crash idx=" + String(idx) + " err=" + String(eBtn));
   }
 

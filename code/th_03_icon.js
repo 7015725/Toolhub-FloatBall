@@ -44,7 +44,7 @@ FloatBallAppWM.prototype._iconCache = {
           var bmp = item.dr.getBitmap();
           if (bmp && !bmp.isRecycled()) bmp.recycle();
         }
-      } catch(e) {}
+       } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       delete this.map[key];
     }
   },
@@ -77,7 +77,7 @@ FloatBallAppWM.prototype._iconLruPut = function(key, val) {
         if (ord[i] === k) { ord.splice(i, 1); break; }
       }
       ord.push(k);
-    } catch (eLru3) {}
+     } catch(eLru3) { safeLog(null, 'e', "catch " + String(eLru3)); }
 
     this._iconLru.map[k] = val;
 
@@ -88,11 +88,11 @@ FloatBallAppWM.prototype._iconLruPut = function(key, val) {
       while (ord2.length > maxN) {
         var oldK = ord2.shift();
         if (oldK != null) {
-          try { delete this._iconLru.map[oldK]; } catch (eDel) {}
+          try { delete this._iconLru.map[oldK];  } catch(eDel) { safeLog(null, 'e', "catch " + String(eDel)); }
         }
       }
-    } catch (eLru4) {}
-  } catch (eLru5) {}
+     } catch(eLru4) { safeLog(null, 'e', "catch " + String(eLru4)); }
+   } catch(eLru5) { safeLog(null, 'e', "catch " + String(eLru5)); }
 };
 
 
@@ -112,7 +112,7 @@ FloatBallAppWM.prototype.loadBallIconDrawableFromFile = function(path, targetPx,
       ckLru = "file|" + p + "@" + String(targetPx == null ? "" : targetPx) + "@" + String(f.lastModified()) + "@" + String(f.length());
       var hitLru = this._iconLruGet(ckLru);
       if (hitLru) return hitLru;
-    } catch (eLruF0) {}
+     } catch(eLruF0) { safeLog(null, 'e', "catch " + String(eLruF0)); }
 
     // # 文件大小限制（字节）
     var limitBytes = Math.max(0, Math.floor(Number(maxBytes || 0)));
@@ -161,7 +161,7 @@ FloatBallAppWM.prototype.loadBallIconDrawableFromFile = function(path, targetPx,
     // # 写入统一 LRU 缓存
     try {
       if (ckLru) this._iconLruPut(ckLru, d);
-    } catch (eLruF1) {}
+     } catch(eLruF1) { safeLog(null, 'e', "catch " + String(eLruF1)); }
     return d;
   } catch (e0) {
     return null;

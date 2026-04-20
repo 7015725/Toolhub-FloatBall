@@ -5,11 +5,11 @@ FloatBallAppWM.prototype.getScreenSizePx = function() {
   try { this.state.wm.getDefaultDisplay().getRealMetrics(m); } catch (e) { this.state.wm.getDefaultDisplay().getMetrics(m); }
   return { w: m.widthPixels, h: m.heightPixels };
 };
-FloatBallAppWM.prototype.getRotation = function() { try { return this.state.wm.getDefaultDisplay().getRotation(); } catch (e) {} return -1; };
+FloatBallAppWM.prototype.getRotation = function() { try { return this.state.wm.getDefaultDisplay().getRotation();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } return -1; };
 
 // =======================【工具：alpha/toast/vibrate】======================
 FloatBallAppWM.prototype.withAlpha = function(colorInt, alpha01) { var a = Math.floor(Number(alpha01) * 255); return (colorInt & 0x00FFFFFF) | (a << 24); };
-FloatBallAppWM.prototype.toast = function(msg) { try { android.widget.Toast.makeText(context, String(msg), 0).show(); } catch (e) {} };
+FloatBallAppWM.prototype.toast = function(msg) { try { android.widget.Toast.makeText(context, String(msg), 0).show();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } };
 FloatBallAppWM.prototype.vibrateOnce = function(ms) {
   if (!this.config.LONG_PRESS_HAPTIC_ENABLE) return;
   try {
@@ -22,7 +22,7 @@ FloatBallAppWM.prototype.vibrateOnce = function(ms) {
     } else {
       vib.vibrate(dur);
     }
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 };
 
 // =======================【工具：UI样式辅助】======================
@@ -133,7 +133,7 @@ FloatBallAppWM.prototype.ui = {
         btn.setGravity(android.view.Gravity.CENTER);
         var pressedColor = app.withAlpha ? app.withAlpha(bgColor, 0.8) : bgColor;
         btn.setBackground(this.createRippleDrawable(bgColor, pressedColor, app.dp(24)));
-        try { btn.setElevation(app.dp(2)); } catch(e){}
+        try { btn.setElevation(app.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         btn.setOnClickListener(new android.view.View.OnClickListener({
             onClick: function(v) { app.touchActivity(); app.guardClick("ui_btn", INTERACTION_CONSTANTS.CLICK_COOLDOWN_MS, function(){ if(onClick) onClick(v); }); }
         }));
@@ -154,7 +154,7 @@ FloatBallAppWM.prototype.ui = {
         var lb = new android.widget.TextView(context);
         lb.setText(label);
         lb.setTextColor(this.colors.textSecLight); // 默认用浅色主题副文本色，外部可覆盖
-        try { if (app.isDarkTheme && app.isDarkTheme()) lb.setTextColor(this.colors.textSecDark); } catch(e){}
+        try { if (app.isDarkTheme && app.isDarkTheme()) lb.setTextColor(this.colors.textSecDark);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         lb.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
         var lpLb = new android.widget.LinearLayout.LayoutParams(0, -2);
         lpLb.weight = 1;
@@ -164,14 +164,14 @@ FloatBallAppWM.prototype.ui = {
         et.setText(initVal ? String(initVal) : "");
         et.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         et.setTextColor(this.colors.textPriLight);
-        try { if (app.isDarkTheme && app.isDarkTheme()) et.setTextColor(this.colors.textPriDark); } catch(e){}
+        try { if (app.isDarkTheme && app.isDarkTheme()) et.setTextColor(this.colors.textPriDark);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
         // 输入框背景优化
         var strokeColor = this.colors.dividerLight;
-        try { if (app.isDarkTheme && app.isDarkTheme()) strokeColor = this.colors.dividerDark; } catch(e){}
+        try { if (app.isDarkTheme && app.isDarkTheme()) strokeColor = this.colors.dividerDark;  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
         var bg = this.createStrokeDrawable(this.colors.inputBgLight, strokeColor, app.dp(1), app.dp(8));
-        try { if (app.isDarkTheme && app.isDarkTheme()) bg = this.createStrokeDrawable(this.colors.inputBgDark, strokeColor, app.dp(1), app.dp(8)); } catch(e){}
+        try { if (app.isDarkTheme && app.isDarkTheme()) bg = this.createStrokeDrawable(this.colors.inputBgDark, strokeColor, app.dp(1), app.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         et.setBackground(bg);
 
         et.setPadding(app.dp(8), app.dp(8), app.dp(8), app.dp(8));
@@ -234,10 +234,10 @@ FloatBallAppWM.prototype.ui = {
                 } else {
                     errTv.setVisibility(android.view.View.GONE);
                     var strokeColor = self.colors.dividerLight;
-                    try { if (app.isDarkTheme && app.isDarkTheme()) strokeColor = self.colors.dividerDark; } catch(e){}
+                    try { if (app.isDarkTheme && app.isDarkTheme()) strokeColor = self.colors.dividerDark;  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
                     var normalBg = self.createStrokeDrawable(self.colors.inputBgLight, strokeColor, app.dp(1), app.dp(8));
-                    try { if (app.isDarkTheme && app.isDarkTheme()) normalBg = self.createStrokeDrawable(self.colors.inputBgDark, strokeColor, app.dp(1), app.dp(8)); } catch(e){}
+                    try { if (app.isDarkTheme && app.isDarkTheme()) normalBg = self.createStrokeDrawable(self.colors.inputBgDark, strokeColor, app.dp(1), app.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
                     et.setBackground(normalBg);
                 }
             }
@@ -256,7 +256,7 @@ FloatBallAppWM.prototype.ui = {
         bgDr.setColor(bgColor);
         bgDr.setCornerRadius(app.dp(16));
         panel.setBackground(bgDr);
-        try { panel.setElevation(app.dp(8)); } catch(e){}
+        try { panel.setElevation(app.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
         var p = (paddingDp !== undefined) ? app.dp(paddingDp) : app.dp(16);
         panel.setPadding(p, p, p, p);
@@ -315,7 +315,7 @@ function _th_log(L, level, msg) {
     if (level === "w" && L.w) { L.w(msg); return; }
     if (level === "i" && L.i) { L.i(msg); return; }
     if (L.d) { L.d(msg); return; }
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 }
 
 // =======================【莫奈动态取色工具】======================
@@ -328,7 +328,7 @@ var MonetColorProvider = {
       var res = android.content.res.Resources.getSystem();
       var id = res.getIdentifier(resName, "color", "android");
       if (id > 0) return res.getColor(id, null);
-    } catch (e) {}
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     try { return android.graphics.Color.parseColor(fallbackHex); } catch (e) { return 0; }
   },
 
@@ -418,9 +418,9 @@ var MonetColorProvider = {
         try {
           var id = res.getIdentifier(map[name], "color", "android");
           if (id > 0) c[name] = res.getColor(id, null);
-        } catch (e) {}
+         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
-    } catch (e) {}
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     return c;
   },
 
@@ -487,14 +487,14 @@ function startActivityAsUserSafe(ctx, intent, userId) {
     // 降级到普通启动
     try {
       ctx.startActivity(intent);
-    } catch (e2) {}
+     } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
   }
 }
 
 FloatBallAppWM.prototype.isDarkTheme = function() {
   // 0) 优先检查用户强制设置 (0=跟随系统, 1=白天, 2=黑夜)
   var mode = 0;
-  try { mode = Math.floor(Number(this.config.THEME_MODE || 0)); } catch(e){}
+  try { mode = Math.floor(Number(this.config.THEME_MODE || 0));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
   if (mode === 2) return true;
   if (mode === 1) return false;
@@ -511,7 +511,7 @@ FloatBallAppWM.prototype.isDarkTheme = function() {
     var nightMask = (uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK);
     if (nightMask === android.content.res.Configuration.UI_MODE_NIGHT_YES) { result = true; from = "Configuration(UI_MODE_NIGHT_YES)"; }
     else if (nightMask === android.content.res.Configuration.UI_MODE_NIGHT_NO) { result = false; from = "Configuration(UI_MODE_NIGHT_NO)"; }
-  } catch (e1) {}
+   } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
 
   if (from === "unknown") {
     try {
@@ -523,7 +523,7 @@ FloatBallAppWM.prototype.isDarkTheme = function() {
         else if (nm === android.app.UiModeManager.MODE_NIGHT_NO) { result = false; from = "UiModeManager(MODE_NIGHT_NO)"; }
         else { from = "UiModeManager(mode=" + String(nm) + ")"; }
       }
-    } catch (e2) {}
+     } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
   }
 
   // # 3) 实在判断不了，就按"非暗色"处理，避免自动主题背景黑成一片
@@ -533,14 +533,14 @@ FloatBallAppWM.prototype.isDarkTheme = function() {
   var logKey = String(result) + "|" + from + "|" + mode;
   if (this._lastDarkThemeLog !== logKey) {
       this._lastDarkThemeLog = logKey;
-      try { _th_log(this.L, "d", "[theme] isDarkTheme=" + String(result) + " via=" + from + " mode=" + mode); } catch (e3) {}
+      try { _th_log(this.L, "d", "[theme] isDarkTheme=" + String(result) + " via=" + from + " mode=" + mode);  } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); }
   }
 
   // # 主题切换时刷新莫奈配色（传入 result 避免递归）
   // 注：构造函数中会初始化，这里只在构造完成后的切换时触发
   if (this._lastDarkResult !== undefined && this._lastDarkResult !== result) {
     this._lastDarkResult = result;
-    try { this.refreshMonetColors(result); } catch (eM) {}
+    try { this.refreshMonetColors(result);  } catch(eM) { safeLog(null, 'e', "catch " + String(eM)); }
   } else if (this._lastDarkResult === undefined) {
     this._lastDarkResult = result;
   }
@@ -592,9 +592,9 @@ FloatBallAppWM.prototype.refreshMonetColors = function(forceDark) {
     c._monetSecondary = m.secondary;
     c._monetTertiary = m.tertiary;
 
-    try { _th_log(this.L, "d", "[monet] refreshed isDark=" + isDark + " primary=" + _th_hex(c.primary) + " primaryDark=" + _th_hex(c.primaryDark) + " accent=" + _th_hex(c.accent)); } catch (e) {}
+    try { _th_log(this.L, "d", "[monet] refreshed isDark=" + isDark + " primary=" + _th_hex(c.primary) + " primaryDark=" + _th_hex(c.primaryDark) + " accent=" + _th_hex(c.accent));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   } catch (e) {
-    try { _th_log(this.L, "e", "[monet] refresh err=" + String(e)); } catch (e2) {}
+    try { _th_log(this.L, "e", "[monet] refresh err=" + String(e));  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
   }
 };
 
@@ -618,12 +618,12 @@ FloatBallAppWM.prototype.getMonetAccentForBall = function() {
         var logKey = "hit|" + names[i] + "|" + c;
         if (this._lastAccentLog !== logKey) {
             this._lastAccentLog = logKey;
-            try { _th_log(this.L, "d", "[theme] hit accent=" + names[i] + " id=" + String(id) + " c=" + _th_hex(c) + " " + _th_argb(c)); } catch (eL0) {}
+            try { _th_log(this.L, "d", "[theme] hit accent=" + names[i] + " id=" + String(id) + " c=" + _th_hex(c) + " " + _th_argb(c));  } catch(eL0) { safeLog(null, 'e', "catch " + String(eL0)); }
         }
         return c;
       }
     } catch (e) {
-      try { _th_log(this.L, "w", "[theme] err accent=" + names[i] + " e=" + String(e)); } catch (eL2) {}
+      try { _th_log(this.L, "w", "[theme] err accent=" + names[i] + " e=" + String(e));  } catch(eL2) { safeLog(null, 'e', "catch " + String(eL2)); }
     }
   }
 
@@ -634,7 +634,7 @@ FloatBallAppWM.prototype.getMonetAccentForBall = function() {
   var logKeyFb = "miss_all|" + fb;
   if (this._lastAccentLog !== logKeyFb) {
       this._lastAccentLog = logKeyFb;
-      try { _th_log(this.L, "w", "[theme] accent miss all, fallback=" + _th_hex(fb) + " " + _th_argb(fb)); } catch (eL3) {}
+      try { _th_log(this.L, "w", "[theme] accent miss all, fallback=" + _th_hex(fb) + " " + _th_argb(fb));  } catch(eL3) { safeLog(null, 'e', "catch " + String(eL3)); }
   }
   return fb;
 };
@@ -649,14 +649,14 @@ FloatBallAppWM.prototype.updateBallContentBackground = function(contentView) {
     // # 自定义 PNG/APP 模式下：背景透明
     var fillColor = ballColor;
     var _usedKind = "none";
-    try { _usedKind = this.state.usedIconKind || "none"; } catch(eK){}
+    try { _usedKind = this.state.usedIconKind || "none";  } catch(eK) { safeLog(null, 'e', "catch " + String(eK)); }
 
     try {
       var _pngModeBg = Number(this.config.BALL_PNG_MODE || 0);
       if ((_pngModeBg === 1 && _usedKind === "file") || _usedKind === "app") {
         fillColor = android.graphics.Color.TRANSPARENT;
       }
-    } catch (eBg) {}
+     } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
 
     var content = new android.graphics.drawable.GradientDrawable();
     content.setShape(android.graphics.drawable.GradientDrawable.OVAL);
@@ -671,7 +671,7 @@ FloatBallAppWM.prototype.updateBallContentBackground = function(contentView) {
           ? Color.parseColor("#33000000")   // 浅球用半透明黑边
           : Color.parseColor("#55FFFFFF");  // 深球用半透明白边
         content.setStroke(this.dp(1), strokeInt);
-      } catch(eS){}
+       } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
     }
 
     var mask = new android.graphics.drawable.GradientDrawable();
@@ -683,7 +683,7 @@ FloatBallAppWM.prototype.updateBallContentBackground = function(contentView) {
       content,
       mask
     ));
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 };
 
 
@@ -720,7 +720,7 @@ FloatBallAppWM.prototype.getPanelBgColorInt = function() {
 
   var out = this.withAlpha(base, a);
 
-  try { _th_log(this.L, "d", "[t]bg isDark=" + isDark + " o=" + _th_hex(out)); } catch (e2) {}
+  try { _th_log(this.L, "d", "[t]bg isDark=" + isDark + " o=" + _th_hex(out));  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
 
   return out;
 };
@@ -757,7 +757,7 @@ FloatBallAppWM.prototype.applyTextColorRecursive = function(v, colorInt) {
         this.applyTextColorRecursive(v.getChildAt(i), colorInt);
       }
     }
-  } catch (e0) {}
+   } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
 };
 
 FloatBallAppWM.prototype.updatePanelBackground = function(panelView) {
@@ -774,15 +774,15 @@ FloatBallAppWM.prototype.updatePanelBackground = function(panelView) {
     var isDark = this.isDarkTheme();
     var outlineColor = this.ui.colors._monetOutline || (isDark ? android.graphics.Color.parseColor("#8E918F") : android.graphics.Color.parseColor("#747775"));
     var stroke = this.withAlpha(outlineColor, isDark ? 0.26 : 0.20);
-    try { bg.setStroke(sw, stroke); } catch (eS) {}
+    try { bg.setStroke(sw, stroke);  } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
 
     panelView.setBackground(bg);
 
     var tc = this.getPanelTextColorInt(bgInt);
-    try { themeBgInt = bgInt; themeTextInt = tc; } catch (eT) {}
+    try { themeBgInt = bgInt; themeTextInt = tc;  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
     this.applyTextColorRecursive(panelView, tc);
 
-    try { _th_log(this.L, "d", "[t]apply bg=" + _th_hex(bgInt) + " tx=" + _th_hex(tc)); } catch (e) {}
+    try { _th_log(this.L, "d", "[t]apply bg=" + _th_hex(bgInt) + " tx=" + _th_hex(tc));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
 
     try {
@@ -792,9 +792,9 @@ FloatBallAppWM.prototype.updatePanelBackground = function(panelView) {
         " text=" + _th_hex(tc) + " " + _th_argb(tc) +
         " stroke=" + _th_hex(stroke)
       );
-    } catch (eL0) {}
+     } catch(eL0) { safeLog(null, 'e', "catch " + String(eL0)); }
   } catch (e) {
-    try { _th_log(this.L, "e", "[theme:apply] err=" + String(e)); } catch (eL1) {}
+    try { _th_log(this.L, "e", "[theme:apply] err=" + String(e));  } catch(eL1) { safeLog(null, 'e', "catch " + String(eL1)); }
   }
 };
 

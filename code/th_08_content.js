@@ -114,7 +114,7 @@ FloatBallAppWM.prototype.contentQueryToText = function(uriStr, projection, selec
     out.err = String(e);
     return out;
   } finally {
-    try { if (cur) cur.close(); } catch (eC) {}
+    try { if (cur) cur.close();  } catch(eC) { safeLog(null, 'e', "catch " + String(eC)); }
   }
 };
 

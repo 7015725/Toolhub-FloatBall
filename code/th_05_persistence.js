@@ -8,7 +8,7 @@ FloatBallAppWM.prototype.savePanelState = function(key, state) {
     // 节流或立即保存? 面板拖动结束通常不频繁，立即保存即可
     // 但为了避免连续事件，还是可以复用 savePos 的节流逻辑，或者直接保存
     ConfigManager.saveSettings(this.config);
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 };
 
 FloatBallAppWM.prototype.loadPanelState = function(key) {
@@ -174,7 +174,7 @@ FloatBallAppWM.prototype._refreshPreviewInternal = function(changedKey) {
 
             // 移除旧面板
             if (oldAdded && oldPanel) {
-                try { this.state.wm.removeView(oldPanel); } catch(e) {}
+                try { this.state.wm.removeView(oldPanel);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
             }
         }
 
@@ -208,7 +208,7 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
           this.L.cfg.LOG_ENABLE = !!this.config.LOG_ENABLE;
           this.L.i("apply LOG_ENABLE=" + String(this.config.LOG_ENABLE));
         }
-      } catch (eLE) {}
+       } catch(eLE) { safeLog(null, 'e', "catch " + String(eLE)); }
       return;
     }
     if (k === "LOG_DEBUG") {
@@ -218,7 +218,7 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
           this.L.cfg.LOG_DEBUG = !!this.config.LOG_DEBUG;
           this.L.i("apply LOG_DEBUG=" + String(this.config.LOG_DEBUG));
         }
-      } catch (eLD) {}
+       } catch(eLD) { safeLog(null, 'e', "catch " + String(eLD)); }
       return;
     }
     if (k === "LOG_KEEP_DAYS") {
@@ -231,7 +231,7 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
           this.L.i("apply LOG_KEEP_DAYS=" + String(n));
           this.L.cleanupOldFiles();
         }
-      } catch (eLK) {}
+       } catch(eLK) { safeLog(null, 'e', "catch " + String(eLK)); }
       return;
     }
     if (k === "BALL_SIZE_DP" || k === "BALL_PNG_MODE" || k === "BALL_ICON_TYPE" || k === "BALL_ICON_FILE_PATH" || k === "BALL_ICON_RES_ID" || k === "BALL_ICON_RES_NAME" || k === "BALL_ICON_SIZE_DP" || k === "BALL_ICON_TINT_HEX") { this.rebuildBallForNewSize(); return; }
@@ -255,7 +255,7 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
       }
       return;
     }
-  } catch (e0) {}
+   } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
 };
 
 FloatBallAppWM.prototype.commitPendingUserCfg = function() {

@@ -20,7 +20,7 @@
 // 统一的空日志写入（避免到处写 if (this.L) this.L.xxx）
 function safeLog(logger, level, msg) {
   if (!logger || !logger[level]) return;
-  try { logger[level](msg); } catch(e) {}
+  try { logger[level](msg);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 }
 
 // # 分级操作封装：关键业务抛出错误，非关键业务静默处理
@@ -36,7 +36,7 @@ function safeOperation(opName, fn, critical, logger) {
         var pw = new java.io.PrintWriter(sw);
         e.printStackTrace(pw);
         stack = String(sw.toString());
-      } catch(e2) {}
+       } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
       safeLog(logger, 'e', opName + " CRITICAL: " + String(e) + "\n" + stack);
       throw e;
     } else {
@@ -55,7 +55,7 @@ function parseBooleanLike(value) {
     var s = String(value).replace(/^\s+|\s+$/g, "").toLowerCase();
     if (s === "" || s === "0" || s === "false" || s === "no" || s === "off" || s === "null" || s === "undefined") return false;
     if (s === "1" || s === "true" || s === "yes" || s === "on") return true;
-  } catch (e) {}
+   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   return !!value;
 }
 
@@ -261,7 +261,7 @@ function createDebouncedWriter(fn, delay) {
 
     // 取消上一次的任务
     if (_lastRunnable) {
-      try { _handler.removeCallbacks(_lastRunnable); } catch(e) {}
+      try { _handler.removeCallbacks(_lastRunnable);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       _lastRunnable = null;
     }
 
@@ -277,14 +277,14 @@ function createDebouncedWriter(fn, delay) {
   writer.dispose = function() {
     try {
       if (_handler && _lastRunnable) _handler.removeCallbacks(_lastRunnable);
-    } catch (e0) {}
+     } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
     _lastRunnable = null;
     try {
       if (_ht) {
         if (android.os.Build.VERSION.SDK_INT >= 18) _ht.quitSafely();
         else _ht.quit();
       }
-    } catch (e1) {}
+     } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
     _ht = null;
     _handler = null;
   };
@@ -298,7 +298,7 @@ function resolveToolHubRootDir() {
       var shortxDir = String(shortx.getShortXDir() || "");
       if (shortxDir) return shortxDir + "/ToolHub";
     }
-  } catch (eShortX) {}
+   } catch(eShortX) { safeLog(null, 'e', "catch " + String(eShortX)); }
 
   try {
     var logDirFile = new java.io.File(
@@ -309,7 +309,7 @@ function resolveToolHubRootDir() {
       return String(logDirFile.getAbsolutePath()) + "/ToolHub";
     }
     return String(parent.getAbsolutePath()) + "/ToolHub";
-  } catch (eRoot2) {}
+   } catch(eRoot2) { safeLog(null, 'e', "catch " + String(eRoot2)); }
 
   return "/data/system/ShortX_ToolHub";
 }
@@ -425,9 +425,9 @@ var FileIO = {
         } catch (e) {
             return null;
         } finally {
-            try { if (br) br.close(); } catch (e1) {}
-            try { if (isr) isr.close(); } catch (e2) {}
-            try { if (fis) fis.close(); } catch (e3) {}
+            try { if (br) br.close();  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
+            try { if (isr) isr.close();  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
+            try { if (fis) fis.close();  } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); }
         }
     },
     writeText: function(path, content) {
@@ -446,8 +446,8 @@ var FileIO = {
         } catch (e) {
             return false;
         } finally {
-            try { if (osw) osw.close(); } catch (e1) {}
-            try { if (fos) fos.close(); } catch (e2) {}
+            try { if (osw) osw.close();  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
+            try { if (fos) fos.close();  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
         }
     },
 
@@ -475,7 +475,11 @@ var FileIO = {
         try {
             var target = new java.io.File(String(path));
             var dir = target.getParentFile();
-            if (dir && !dir.exists()) dir.mkdirs();
+            if (!dir) {
+                // # 目标位于根目录，无法做原子写，回退普通写
+                return this.writeText(path, content);
+            }
+            if (!dir.exists()) dir.mkdirs();
 
             var tmpName = target.getName() + ".tmp." + String(java.lang.System.nanoTime());
             tmpFile = new java.io.File(dir, tmpName);
@@ -484,22 +488,22 @@ var FileIO = {
             osw = new java.io.OutputStreamWriter(fos, "UTF-8");
             osw.write(String(content));
             osw.flush();
-            try { fos.getFD().sync(); } catch (eSync) {}
+            try { fos.getFD().sync();  } catch(eSync) { safeLog(null, 'e', "catch " + String(eSync)); }
 
-            try { if (osw) osw.close(); } catch (eC1) {}
-            try { if (fos) fos.close(); } catch (eC2) {}
+            try { if (osw) osw.close();  } catch(eC1) { safeLog(null, 'e', "catch " + String(eC1)); }
+            try { if (fos) fos.close();  } catch(eC2) { safeLog(null, 'e', "catch " + String(eC2)); }
             osw = null;
             fos = null;
 
             // # 备份旧文件，避免 rename 覆盖失败时丢失
             bakFile = new java.io.File(dir, target.getName() + ".bak");
-            try { if (bakFile.exists()) bakFile["delete"](); } catch (eDelBak0) {}
+            try { if (bakFile.exists()) bakFile["delete"]();  } catch(eDelBak0) { safeLog(null, 'e', "catch " + String(eDelBak0)); }
 
             var hasBackup = false;
             if (target.exists()) {
                 try { hasBackup = target.renameTo(bakFile); } catch (eMv0) { hasBackup = false; }
                 if (!hasBackup) {
-                    try { if (tmpFile && tmpFile.exists()) tmpFile["delete"](); } catch (eDel0) {}
+                    try { if (tmpFile && tmpFile.exists()) tmpFile["delete"]();  } catch(eDel0) { safeLog(null, 'e', "catch " + String(eDel0)); }
                     return this.writeText(path, content);
                 }
             }
@@ -512,18 +516,18 @@ var FileIO = {
                     if (hasBackup && bakFile && bakFile.exists() && !target.exists()) {
                         bakFile.renameTo(target);
                     }
-                } catch (eRv0) {}
-                try { if (tmpFile && tmpFile.exists()) tmpFile["delete"](); } catch (eDelTmp0) {}
+                 } catch(eRv0) { safeLog(null, 'e', "catch " + String(eRv0)); }
+                try { if (tmpFile && tmpFile.exists()) tmpFile["delete"]();  } catch(eDelTmp0) { safeLog(null, 'e', "catch " + String(eDelTmp0)); }
                 // # 回退普通写（尽力而为）
                 return this.writeText(path, content);
             }
 
-            try { if (bakFile && bakFile.exists()) bakFile["delete"](); } catch (eDelBak1) {}
+            try { if (bakFile && bakFile.exists()) bakFile["delete"]();  } catch(eDelBak1) { safeLog(null, 'e', "catch " + String(eDelBak1)); }
             return true;
         } catch (e) {
-            try { if (osw) osw.close(); } catch (e1) {}
-            try { if (fos) fos.close(); } catch (e2) {}
-            try { if (tmpFile && tmpFile.exists()) tmpFile["delete"](); } catch (e3) {}
+            try { if (osw) osw.close();  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
+            try { if (fos) fos.close();  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
+            try { if (tmpFile && tmpFile.exists()) tmpFile["delete"]();  } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); }
             // # 原子写失败则回退普通写
             return this.writeText(path, content);
         }
@@ -539,7 +543,7 @@ var FileIO = {
 
         var old = this._debounceJobs[p];
         if (old && old.task) {
-            try { old.task.cancel(); } catch (eC0) {}
+            try { old.task.cancel();  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
         }
 
         var self = this;
@@ -556,7 +560,7 @@ var FileIO = {
                     var liveJob = null;
                     try { liveJob = self._debounceJobs[p]; } catch (eR0) { liveJob = null; }
                     if (!liveJob || liveJob.version !== version) return;
-                    try { self.writeTextAtomic(p, payload); } catch (eW0) { try { self.writeText(p, payload); } catch (eW0b) {} }
+                    try { self.writeTextAtomic(p, payload); } catch (eW0) { try { self.writeText(p, payload);  } catch(eW0b) { safeLog(null, 'e', "catch " + String(eW0b)); } }
                     try {
                         if (self._debounceJobs[p] && self._debounceJobs[p].version === version) delete self._debounceJobs[p];
                     } catch (eW1) { self._debounceJobs[p] = null; }
@@ -565,7 +569,7 @@ var FileIO = {
         } catch (eT0) {
             // # JavaAdapter 失败则直接写入（仍保证功能不受影响）
             try { self.writeTextAtomic(p, payload); } catch (eT1) { self.writeText(p, payload); }
-            try { delete self._debounceJobs[p]; } catch (eT2) {}
+            try { delete self._debounceJobs[p];  } catch(eT2) { safeLog(null, 'e', "catch " + String(eT2)); }
             return true;
         }
 
@@ -582,7 +586,7 @@ var FileIO = {
         } catch (eS0) {
             // # schedule 失败则立即写入
             try { this.writeTextAtomic(p, payload); } catch (eS1) { this.writeText(p, payload); }
-            try { delete this._debounceJobs[p]; } catch (eS2) {}
+            try { delete this._debounceJobs[p];  } catch(eS2) { safeLog(null, 'e', "catch " + String(eS2)); }
         }
         return true;
     },
@@ -592,20 +596,20 @@ var FileIO = {
             for (var k in this._debounceJobs) {
                 var job = this._debounceJobs[k];
                 if (!job) continue;
-                try { if (job.task) job.task.cancel(); } catch (eC0) {}
+                try { if (job.task) job.task.cancel();  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
                 try {
                     if (job.payload != null) this.writeTextAtomic(k, job.payload);
                 } catch (eW0) {
-                    try { this.writeText(k, job.payload); } catch (eW1) {}
+                    try { this.writeText(k, job.payload);  } catch(eW1) { safeLog(null, 'e', "catch " + String(eW1)); }
                 }
                 try { delete this._debounceJobs[k]; } catch (eD0) { this._debounceJobs[k] = null; }
             }
             if (this._debounceTimer) {
-                try { this._debounceTimer.cancel(); } catch (eC1) {}
-                try { this._debounceTimer.purge(); } catch (eP0) {}
+                try { this._debounceTimer.cancel();  } catch(eC1) { safeLog(null, 'e', "catch " + String(eC1)); }
+                try { this._debounceTimer.purge();  } catch(eP0) { safeLog(null, 'e', "catch " + String(eP0)); }
                 this._debounceTimer = null;
             }
-        } catch (e) {}
+         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     },
     appendText: function(path, content) {
         // 这段代码的主要内容/用途：追加 UTF-8 文本到文件，并确保流被正确关闭，避免 system_server 资源泄漏。
@@ -623,8 +627,8 @@ var FileIO = {
         } catch (e) {
             return false;
         } finally {
-            try { if (osw) osw.close(); } catch (e1) {}
-            try { if (fos) fos.close(); } catch (e2) {}
+            try { if (osw) osw.close();  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
+            try { if (fos) fos.close();  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
         }
     }
 };
@@ -845,12 +849,12 @@ var ConfigManager = {
                     java.lang.Thread.sleep(200);
                     txt = FileIO.readText(PATH_SCHEMA);
                 }
-            } catch(e) {}
+             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
 
         var s = null;
         if (txt) {
-            try { s = JSON.parse(txt); } catch (e) {}
+            try { s = JSON.parse(txt);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
 
         // 检查 Schema 完整性：如果缺少新添加的关键字段，则强制更新
@@ -900,7 +904,7 @@ var ConfigManager = {
                     java.lang.Thread.sleep(200);
                     txt = FileIO.readText(PATH_SETTINGS);
                 }
-            } catch(e) {}
+             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
 
         var merged = JSON.parse(JSON.stringify(this.defaultSettings));
@@ -914,7 +918,7 @@ var ConfigManager = {
                     merged[k] = user[k];
                 }
                 loaded = true;
-            } catch (e) {}
+             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
 
         // # 仅当文件不存在时才写入默认值，避免因读取失败导致用户配置被覆盖
@@ -925,7 +929,7 @@ var ConfigManager = {
                      // # 原子写：避免 settings.json 写一半导致配置损坏
                      FileIO.writeTextAtomic(PATH_SETTINGS, JSON.stringify(merged, null, 2));
                  }
-             } catch(e) {}
+              } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
 
         this._settingsCache = ConfigValidator.sanitizeConfig(merged);
@@ -955,12 +959,12 @@ var ConfigManager = {
                     java.lang.Thread.sleep(200);
                     txt = FileIO.readText(PATH_BUTTONS);
                 }
-            } catch(e) {}
+             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
 
         var btns = null;
         if (txt) {
-            try { btns = JSON.parse(txt); } catch (e) {}
+            try { btns = JSON.parse(txt);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
 
         var dirty = false;
@@ -972,7 +976,7 @@ var ConfigManager = {
                     btns = JSON.parse(JSON.stringify(this.defaultButtons));
                     dirty = true;
                 }
-            } catch(e) {}
+             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
             // # 如果 btns 仍为空（读取失败且文件存在），则暂时返回默认值但不回写 dirty
             if (!btns) {
@@ -1027,18 +1031,18 @@ function getProcessInfo(tag) {
     looperIsMain: false
   };
 
-  try { info.uid = android.os.Process.myUid(); } catch (e0) {}
-  try { info.pid = android.os.Process.myPid(); } catch (e1) {}
-  try { info.tid = android.os.Process.myTid(); } catch (e2) {}
+  try { info.uid = android.os.Process.myUid();  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
+  try { info.pid = android.os.Process.myPid();  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
+  try { info.tid = android.os.Process.myTid();  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
 
-  try { info.packageName = String(context.getPackageName()); } catch (e3) {}
-  try { info.threadName = String(java.lang.Thread.currentThread().getName()); } catch (e4) {}
-  try { info.hasMyLooper = (android.os.Looper.myLooper() !== null); } catch (e5) {}
+  try { info.packageName = String(context.getPackageName());  } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); }
+  try { info.threadName = String(java.lang.Thread.currentThread().getName());  } catch(e4) { safeLog(null, 'e', "catch " + String(e4)); }
+  try { info.hasMyLooper = (android.os.Looper.myLooper() !== null);  } catch(e5) { safeLog(null, 'e', "catch " + String(e5)); }
   try {
     var mainLooper = android.os.Looper.getMainLooper();
     var myLooper = android.os.Looper.myLooper();
     info.looperIsMain = (myLooper !== null && mainLooper !== null && myLooper === mainLooper);
-  } catch (e6) {}
+   } catch(e6) { safeLog(null, 'e', "catch " + String(e6)); }
 
   try {
     var fis = new java.io.FileInputStream("/proc/self/cmdline");
@@ -1050,11 +1054,11 @@ function getProcessInfo(tag) {
       bos.write(buf, 0, n);
       if (bos.size() >= 4096) break;
     }
-    try { fis.close(); } catch (eC) {}
+    try { fis.close();  } catch(eC) { safeLog(null, 'e', "catch " + String(eC)); }
     var raw = new java.lang.String(bos.toByteArray());
     var p = String(raw).split("\u0000")[0];
     if (p && p.length > 0) info.processName = p;
-  } catch (e7) {}
+   } catch(e7) { safeLog(null, 'e', "catch " + String(e7)); }
 
   if (!info.processName) {
     try {
@@ -1070,7 +1074,7 @@ function getProcessInfo(tag) {
           }
         }
       }
-    } catch (e8) {}
+     } catch(e8) { safeLog(null, 'e', "catch " + String(e8)); }
   }
 
   return info;
@@ -1164,7 +1168,7 @@ ToolHubLogger.prototype._line = function(level, msg) {
 };
 
 ToolHubLogger.prototype._scheduleFlush = function() {
-  if (this._flushTimer) try { this._flushTimer.cancel(); } catch(e) {}
+  if (this._flushTimer) try { this._flushTimer.cancel();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   var self = this;
   this._flushTimer = new java.util.Timer();
   this._flushTimer.schedule(new java.util.TimerTask({
@@ -1228,72 +1232,6 @@ ToolHubLogger.prototype._filePathForToday = function() {
   var name = this.prefix + "_" + this._ymd(this._now()) + ".log";
   return this.dir + "/" + name;
 };
-ToolHubLogger.prototype._initOnce = function() {
-  try {
-    // # 尝试创建目录
-    if (FileIO.ensureDir(this.dir)) {
-      this.initOk = true;
-      // # 清理旧日志
-      this.cleanupOldFiles();
-    } else {
-      this.initOk = false;
-      this.lastInitErr = "Mkdirs failed: " + this.dir;
-    }
-  } catch (e) {
-    this.initOk = false;
-    this.lastInitErr = String(e);
-  }
-};
-ToolHubLogger.prototype.updateConfig = function(cfg) {
-  if (!cfg) return;
-  if (typeof cfg.LOG_KEEP_DAYS === "number") this.keepDays = cfg.LOG_KEEP_DAYS;
-  if (typeof cfg.LOG_ENABLE !== "undefined") this.enable = !!cfg.LOG_ENABLE;
-  if (typeof cfg.LOG_DEBUG !== "undefined") this.debug = !!cfg.LOG_DEBUG;
-};
-ToolHubLogger.prototype._line = function(level, msg) {
-  var ts = this._now();
-  var d = new Date(ts);
-  function pad2(x) { return (x < 10 ? "0" : "") + x; }
-  var t = d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
-    " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
-  var proc = "";
-  try {
-    proc = " uid=" + String(this.proc.uid) + " pid=" + String(this.proc.pid) + " tid=" + String(this.proc.tid) +
-      " th=" + String(this.proc.threadName) + " proc=" + String(this.proc.processName);
-  } catch (e0) {}
-  return t + " [" + String(level) + "] " + String(msg) + proc + "\n";
-};
-ToolHubLogger.prototype._writeRaw = function(level, msg) {
-  if (!this.initOk) return false;
-  var p = this._filePathForToday();
-  return FileIO.appendText(p, this._line(level, msg));
-};
-ToolHubLogger.prototype._write = function(level, msg) {
-  if (!this.enable) return false;
-  return this._writeRaw(level, msg);
-};
-ToolHubLogger.prototype.d = function(msg) { if (this.debug) this._write("D", msg); };
-ToolHubLogger.prototype.i = function(msg) { this._write("I", msg); };
-ToolHubLogger.prototype.w = function(msg) { this._write("W", msg); };
-ToolHubLogger.prototype.e = function(msg) { this._write("E", msg); };
-ToolHubLogger.prototype.fatal = function(msg) { this._writeRaw("F", msg); };
-ToolHubLogger.prototype.cleanupOldFiles = function() {
-  try {
-    if (!this.initOk) return false;
-    var dirF = new java.io.File(this.dir);
-    var files = dirF.listFiles();
-    if (!files) return false;
-    var now = this._now();
-    var cutoff = now - this.keepDays * 24 * 60 * 60 * 1000;
-    for (var i = 0; i < files.length; i++) {
-      var f = files[i];
-      if (f && f.isFile() && f.getName().indexOf(this.prefix) === 0 && f.lastModified() < cutoff) {
-        f["delete"]();
-      }
-    }
-    return true;
-  } catch (e) { return false; }
-};
 
 // =======================【崩溃兜底：线程 UncaughtExceptionHandler】=======================
 function installCrashHandler(logger) {
@@ -1304,9 +1242,9 @@ function installCrashHandler(logger) {
       uncaughtException: function(t, e) {
         try {
           var tn = "";
-          try { tn = (t ? String(t.getName()) : ""); } catch (eT) {}
+          try { tn = (t ? String(t.getName()) : "");  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
           var es = "";
-          try { es = (e ? String(e) : ""); } catch (eE) {}
+          try { es = (e ? String(e) : "");  } catch(eE) { safeLog(null, 'e', "catch " + String(eE)); }
           logger.fatal("UNCAUGHT thread=" + tn + " err=" + es);
           try {
             var sw = new java.io.StringWriter();
@@ -1314,9 +1252,9 @@ function installCrashHandler(logger) {
             e.printStackTrace(pw);
             pw.flush();
             logger.fatal("STACKTRACE " + String(sw.toString()));
-          } catch (eST) {}
-        } catch (e0) {}
-        try { if (old) old.uncaughtException(t, e); } catch (e1) {}
+           } catch(eST) { safeLog(null, 'e', "catch " + String(eST)); }
+         } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
+        try { if (old) old.uncaughtException(t, e);  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
       }
     });
     java.lang.Thread.setDefaultUncaughtExceptionHandler(h);
