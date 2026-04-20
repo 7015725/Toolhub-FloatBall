@@ -1446,9 +1446,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var tintPaletteWrap = new android.widget.LinearLayout(context);
     tintPaletteWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
     tintPaletteWrap.setPadding(0, 0, 0, self.dp(12));
-    try { tintPaletteWrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.94), self.dp(14))); } catch(eTintWrapBg0) {}
-    form.addView(tintPaletteWrap);
-    tintPaletteState.wrap = tintPaletteWrap;
+    tintPaletteWrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.92), self.dp(14)));
+    // [Popup] tint palette moved to showColorPickerPopup() — no longer embedded
+    // form.addView(tintPaletteWrap);
+    tintPaletteState.pickerWrap = tintPaletteWrap;
 
     var tintPaletteHead = new android.widget.LinearLayout(context);
     tintPaletteHead.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -1462,9 +1463,19 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintHeadTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
     tintPaletteHead.addView(tintHeadTitle, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-    var tintToggleBtn = self.ui.createFlatButton(self, getTintPaletteClosedLabel(), C.primary, function() {
+    var tintToggleBtn = self.ui.createFlatButton(self, "\u9009\u62e9\u989c\u8272", C.primary, function() {
         self.touchActivity();
-        setTintPaletteExpanded(!tintPaletteState.expanded);
+        var currentTint = (inputShortXIconTint && inputShortXIconTint.input) ? String(inputShortXIconTint.input.getText() || "") : "";
+        self.showColorPickerPopup({
+            currentColor: currentTint,
+            currentIconName: currentShortXIconName,
+            onSelect: function(colorHex) {
+                if (inputShortXIconTint && inputShortXIconTint.input) {
+                    inputShortXIconTint.input.setText(colorHex);
+                }
+                try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(colorHex || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
+            }
+        });
     });
     tintPaletteHead.addView(tintToggleBtn);
     tintPaletteState.toggleBtn = tintToggleBtn;
@@ -4100,6 +4111,360 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           } catch(ePost) { safeLog(self.L, 'e', "iconPicker post err=" + String(ePost)); }
         }
       }));
+    }
+  });
+
+  return popupResult;
+};
+
+
+
+FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
+  var self = this;
+  var opt = opts || {};
+  var currentColor = String(opt.currentColor || "");
+  var currentIconName = String(opt.currentIconName || "");
+  var onSelect = (typeof opt.onSelect === "function") ? opt.onSelect : null;
+  var onDismiss = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
+
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var textColor = isDark ? C.textPriDark : C.textPriLight;
+  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+
+  function getThemeTintHex() {
+    try {
+      if (self.ui.colors && self.ui.colors.accent) {
+        var c = self.ui.colors.accent;
+        return "#" + ("00000000" + (c >>> 0).toString(16)).slice(-8);
+      }
+    } catch(e) {}
+    return "#FF4081";
+  }
+
+  function buildArgbHex(alphaByte, rgbHex) {
+    var a = ("00" + (Math.max(0, Math.min(255, Number(alphaByte || 0))) >>> 0).toString(16)).slice(-2);
+    var rgb = String(rgbHex || "000000").replace(/^#/, "");
+    if (rgb.length === 3) rgb = rgb.split("").map(function(c){ return c+c; }).join("");
+    if (rgb.length > 6) rgb = rgb.slice(-6);
+    while (rgb.length < 6) rgb = "0" + rgb;
+    return "#" + a + rgb;
+  }
+
+  function extractTintRgbHex(hex) {
+    var h = String(hex || "").replace(/^#/, "");
+    if (h.length >= 8) return h.slice(-6);
+    if (h.length === 6) return h;
+    if (h.length === 3) return h.split("").map(function(c){ return c+c; }).join("");
+    return "000000";
+  }
+
+  function extractTintAlphaByte(hex) {
+    var h = String(hex || "").replace(/^#/, "");
+    if (h.length >= 8) return parseInt(h.slice(0, 2), 16);
+    return 255;
+  }
+
+  function normalizeTintColorValue(val) {
+    var s = String(val || "").trim();
+    if (!s) return "";
+    if (s.charAt(0) === "#") s = s.substring(1);
+    if (/^[0-9A-Fa-f]{1,8}$/.test(s)) {
+      while (s.length < 6) s = "0" + s;
+      if (s.length === 6) s = "FF" + s;
+      else if (s.length > 8) s = s.substring(0, 8);
+      return "#" + s.toUpperCase();
+    }
+    return "";
+  }
+
+  var commonTintHexValues = [
+    "#FFFF0000", "#FFFF5722", "#FFFF9800", "#FFFFC107", "#FFFFEB3B",
+    "#FFCDDC39", "#FF8BC34A", "#FF4CAF50", "#FF009688", "#FF00BCD4",
+    "#FF03A9F4", "#FF2196F3", "#FF3F51B5", "#FF673AB7", "#FF9C27B0",
+    "#FFE91E63", "#FF795548", "#FF9E9E9E", "#FF607D8B", "#FF000000", "#FFFFFFFF"
+  ];
+
+  var selectedColor = currentColor;
+  var isFollowTheme = !currentColor;
+  var currentBaseRgbHex = extractTintRgbHex(currentColor);
+  var currentAlphaByte = extractTintAlphaByte(currentColor);
+
+  var popupResult = self.showPopupOverlay({
+    title: "选择颜色",
+    onDismiss: onDismiss,
+    builder: function(content, closePopup) {
+      // 图标预览区
+      var previewRow = new android.widget.LinearLayout(context);
+      previewRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      previewRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+      previewRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+
+      var previewIv = new android.widget.ImageView(context);
+      previewIv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(48), self.dp(48)));
+      previewIv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+      previewRow.addView(previewIv);
+
+      var previewLabel = new android.widget.TextView(context);
+      previewLabel.setText("图标预览");
+      previewLabel.setTextColor(subTextColor);
+      previewLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      previewLabel.setPadding(self.dp(12), 0, 0, 0);
+      previewRow.addView(previewLabel);
+
+      content.addView(previewRow);
+
+      function updatePreview() {
+        try {
+          var dr = null;
+          if (currentIconName) {
+            try { dr = self.getShortXIconDrawable(currentIconName); } catch(e) {}
+          }
+          if (dr) {
+            if (!isFollowTheme && selectedColor) {
+              try {
+                var parsed = android.graphics.Color.parseColor(selectedColor);
+                dr.setColorFilter(parsed, android.graphics.PorterDuff.Mode.SRC_IN);
+              } catch(e) {}
+            } else {
+              try { dr.clearColorFilter(); } catch(e) {}
+            }
+            previewIv.setImageDrawable(dr);
+          } else {
+            previewIv.setImageDrawable(null);
+          }
+        } catch(e) {}
+      }
+      updatePreview();
+
+      // 21 色快捷网格
+      var commonGrid = new android.widget.GridLayout(context);
+      commonGrid.setColumnCount(7);
+      commonGrid.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(8));
+      var ci;
+      for (ci = 0; ci < commonTintHexValues.length; ci++) {
+        (function(hex) {
+          var cell = new android.widget.FrameLayout(context);
+          cell.setLayoutParams(new android.widget.GridLayout.LayoutParams(self.dp(32), self.dp(32)));
+          var margin = self.dp(4);
+          try {
+            var lp = new android.widget.GridLayout.LayoutParams();
+            lp.width = self.dp(32);
+            lp.height = self.dp(32);
+            lp.setMargins(margin, margin, margin, margin);
+            cell.setLayoutParams(lp);
+          } catch(e) {}
+
+          var swatch = new android.view.View(context);
+          swatch.setLayoutParams(new android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
+          try {
+            var bg = new android.graphics.drawable.GradientDrawable();
+            bg.setColor(android.graphics.Color.parseColor(hex));
+            bg.setCornerRadius(self.dp(6));
+            swatch.setBackground(bg);
+          } catch(e) {}
+          cell.addView(swatch);
+
+          if (selectedColor === hex) {
+            try {
+              var border = new android.graphics.drawable.GradientDrawable();
+              border.setColor(android.graphics.Color.TRANSPARENT);
+              border.setCornerRadius(self.dp(6));
+              border.setStroke(self.dp(3), C.primary);
+              cell.setForeground(border);
+            } catch(e) {}
+          }
+
+          cell.setOnClickListener(new android.view.View.OnClickListener({
+            onClick: function() {
+              self.touchActivity();
+              isFollowTheme = false;
+              selectedColor = hex;
+              currentBaseRgbHex = extractTintRgbHex(hex);
+              currentAlphaByte = extractTintAlphaByte(hex);
+              updatePreview();
+              updateValueTv();
+              refreshCommonGrid();
+            }
+          }));
+          commonGrid.addView(cell);
+        })(commonTintHexValues[ci]);
+      }
+      content.addView(commonGrid);
+
+      function refreshCommonGrid() {
+        try {
+          var count = commonGrid.getChildCount();
+          var i;
+          for (i = 0; i < count; i++) {
+            var cell = commonGrid.getChildAt(i);
+            if (!cell) continue;
+            try { cell.setForeground(null); } catch(e) {}
+          }
+          // 找到匹配的子项设置边框
+          var idx = commonTintHexValues.indexOf(selectedColor);
+          if (idx >= 0 && idx < count) {
+            var matchedCell = commonGrid.getChildAt(idx);
+            if (matchedCell) {
+              try {
+                var border = new android.graphics.drawable.GradientDrawable();
+                border.setColor(android.graphics.Color.TRANSPARENT);
+                border.setCornerRadius(self.dp(6));
+                border.setStroke(self.dp(3), C.primary);
+                matchedCell.setForeground(border);
+              } catch(e) {}
+            }
+          }
+        } catch(e) {}
+      }
+
+      // 颜色值显示
+      var valueTv = new android.widget.TextView(context);
+      valueTv.setTextColor(textColor);
+      valueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+      valueTv.setPadding(self.dp(12), self.dp(4), self.dp(12), self.dp(4));
+      content.addView(valueTv);
+
+      function updateValueTv() {
+        valueTv.setText(isFollowTheme ? "当前：跟随主题" : ("当前：" + (selectedColor || "无")));
+      }
+      updateValueTv();
+
+      // RGB 滑块
+      var rgbLabels = ["R", "G", "B"];
+      var rgbSeeks = [];
+      var ri;
+      for (ri = 0; ri < 3; ri++) {
+        (function(idx) {
+          var row = new android.widget.LinearLayout(context);
+          row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+          row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+          row.setPadding(self.dp(12), self.dp(4), self.dp(12), self.dp(4));
+
+          var label = new android.widget.TextView(context);
+          label.setText(rgbLabels[idx]);
+          label.setTextColor(textColor);
+          label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+          label.setMinWidth(self.dp(20));
+          row.addView(label);
+
+          var seek = new android.widget.SeekBar(context);
+          seek.setMax(255);
+          var seekLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+          seekLp.setMargins(self.dp(8), 0, self.dp(8), 0);
+          seek.setLayoutParams(seekLp);
+          row.addView(seek);
+          rgbSeeks.push(seek);
+
+          var valTv = new android.widget.TextView(context);
+          valTv.setTextColor(subTextColor);
+          valTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+          valTv.setMinWidth(self.dp(28));
+          row.addView(valTv);
+
+          seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener({
+            onProgressChanged: function(s, progress, fromUser) {
+              if (!fromUser) return;
+              valTv.setText(String(progress));
+              var r = rgbSeeks[0].getProgress();
+              var g = rgbSeeks[1].getProgress();
+              var b = rgbSeeks[2].getProgress();
+              var hex = ("00" + (r >>> 0).toString(16)).slice(-2) + ("00" + (g >>> 0).toString(16)).slice(-2) + ("00" + (b >>> 0).toString(16)).slice(-2);
+              currentBaseRgbHex = hex;
+              isFollowTheme = false;
+              selectedColor = buildArgbHex(currentAlphaByte, currentBaseRgbHex);
+              updatePreview();
+              updateValueTv();
+              refreshCommonGrid();
+            },
+            onStartTrackingTouch: function() {},
+            onStopTrackingTouch: function() {}
+          }));
+
+          content.addView(row);
+        })(ri);
+      }
+
+      // 初始化 RGB 滑块值
+      try {
+        var initR = parseInt(currentBaseRgbHex.slice(0, 2), 16) || 0;
+        var initG = parseInt(currentBaseRgbHex.slice(2, 4), 16) || 0;
+        var initB = parseInt(currentBaseRgbHex.slice(4, 6), 16) || 0;
+        rgbSeeks[0].setProgress(initR);
+        rgbSeeks[1].setProgress(initG);
+        rgbSeeks[2].setProgress(initB);
+      } catch(e) {}
+
+      // 透明度滑块
+      var alphaRow = new android.widget.LinearLayout(context);
+      alphaRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      alphaRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+      alphaRow.setPadding(self.dp(12), self.dp(4), self.dp(12), self.dp(8));
+
+      var alphaLabel = new android.widget.TextView(context);
+      alphaLabel.setText("A");
+      alphaLabel.setTextColor(textColor);
+      alphaLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      alphaLabel.setMinWidth(self.dp(20));
+      alphaRow.addView(alphaLabel);
+
+      var alphaSeek = new android.widget.SeekBar(context);
+      alphaSeek.setMax(255);
+      var alphaSeekLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+      alphaSeekLp.setMargins(self.dp(8), 0, self.dp(8), 0);
+      alphaSeek.setLayoutParams(alphaSeekLp);
+      alphaRow.addView(alphaSeek);
+
+      var alphaValTv = new android.widget.TextView(context);
+      alphaValTv.setTextColor(subTextColor);
+      alphaValTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+      alphaValTv.setMinWidth(self.dp(28));
+      alphaRow.addView(alphaValTv);
+
+      alphaSeek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener({
+        onProgressChanged: function(s, progress, fromUser) {
+          if (!fromUser) return;
+          alphaValTv.setText(String(progress));
+          currentAlphaByte = progress;
+          isFollowTheme = false;
+          selectedColor = buildArgbHex(currentAlphaByte, currentBaseRgbHex);
+          updatePreview();
+          updateValueTv();
+          refreshCommonGrid();
+        },
+        onStartTrackingTouch: function() {},
+        onStopTrackingTouch: function() {}
+      }));
+
+      alphaSeek.setProgress(currentAlphaByte);
+      alphaValTv.setText(String(currentAlphaByte));
+      content.addView(alphaRow);
+
+      // 操作按钮
+      var actionRow = new android.widget.LinearLayout(context);
+      actionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      actionRow.setGravity(android.view.Gravity.CENTER);
+      actionRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+
+      var btnClear = self.ui.createFlatButton(self, "清空", subTextColor, function() {
+        self.touchActivity();
+        isFollowTheme = true;
+        selectedColor = "";
+        updatePreview();
+        updateValueTv();
+        refreshCommonGrid();
+      });
+      actionRow.addView(btnClear);
+
+      var btnOk = self.ui.createSolidButton(self, "确定", C.primary, android.graphics.Color.WHITE, function() {
+        self.touchActivity();
+        var finalColor = isFollowTheme ? "" : selectedColor;
+        if (typeof onSelect === "function") onSelect(finalColor);
+        closePopup();
+      });
+      actionRow.addView(btnOk);
+
+      content.addView(actionRow);
     }
   });
 
