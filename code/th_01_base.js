@@ -86,6 +86,7 @@ var ConfigValidator = {
     BALL_ICON_RES_ID: { type: "int", min: 0, max: 999999, default: 0 },
     BALL_ICON_SIZE_DP: { type: "int", min: 16, max: 64, default: 22 },
     BALL_PNG_MODE: { type: "int", min: 0, max: 2, default: 1 },
+    BALL_IDLE_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.6 },
 
     // 交互配置
     LONG_PRESS_MS: { type: "int", min: 200, max: 2000, default: 600 },
@@ -114,7 +115,6 @@ var ConfigValidator = {
 
     // 内容查看器配置
     CONTENT_MAX_ROWS: { type: "int", min: 5, max: 100, default: 20 },
-    CONTENT_VIEWER_TEXT_SP: { type: "int", min: 8, max: 24, default: 12 },
 
     // ========== 以下配置在 Schema 中但原 ConfigValidator 中缺失 ==========
     // 图标文件配置
@@ -123,12 +123,6 @@ var ConfigValidator = {
     BALL_ICON_PKG: { type: "string", default: "" },
     BALL_ICON_RES_NAME: { type: "string", default: "" },
     BALL_ICON_TINT_HEX: { type: "string", default: "" },
-
-    // 悬浮球外观
-    BALL_IDLE_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.6 },
-    BALL_TEXT: { type: "string", default: "" },
-    BALL_TEXT_COLOR_HEX: { type: "string", default: "" },
-    BALL_TEXT_SIZE_SP: { type: "int", min: 6, max: 20, default: 10 },
 
     // 回弹动画配置
     BOUNCE_DECAY: { type: "float", min: 0.3, max: 0.95, default: 0.72 },
@@ -741,9 +735,6 @@ var ConfigManager = {
         BALL_ICON_RES_NAME: "",
         BALL_ICON_SIZE_DP: 22,
         BALL_ICON_TINT_HEX: "",
-        BALL_TEXT: "",
-        BALL_TEXT_SIZE_SP: 10,
-        BALL_TEXT_COLOR_HEX: "",
         BALL_IDLE_ALPHA: 0.6,
         PANEL_POS_GRAVITY: "bottom",
         PANEL_CUSTOM_OFFSET_Y: 0,
@@ -766,8 +757,7 @@ var ConfigManager = {
         BALL_PANEL_GAP_DP: 10,
         LOG_ENABLE: true,
         LOG_DEBUG: true,
-        LOG_KEEP_DAYS: 3,
-CONTENT_VIEWER_TEXT_SP: 12
+        LOG_KEEP_DAYS: 3
     },
     defaultButtons: [
         // # 默认按钮已迁移至 buttons.json
@@ -785,20 +775,16 @@ CONTENT_VIEWER_TEXT_SP: 12
         { type: "section", name: "悬浮球" },
         { key: "BALL_SIZE_DP", name: "悬浮球大小(dp)", type: "int", min: 28, max: 120, step: 1 },
         { key: "BALL_PANEL_GAP_DP", name: "球与面板间距(dp)", type: "int", min: 0, max: 60, step: 1 },
-        { key: "BALL_ICON_TYPE", name: "图标类型(app/file/android/shortx)", type: "single_choice", options: [
+        { key: "BALL_ICON_TYPE", name: "图标类型", type: "single_choice", options: [
             { label: "应用图标 (app)", value: "app" },
             { label: "文件图标 (file)", value: "file" },
             { label: "系统图标 (android)", value: "android" },
             { label: "ShortX内置 (shortx)", value: "shortx" }
         ]},
-        { key: "BALL_ICON_PKG", name: "图标包名(app模式)", type: "text" },
         { key: "BALL_ICON_FILE_PATH", name: "图标路径(file模式)", type: "text" },
-        { key: "BALL_ICON_RES_NAME", name: "ShortX图标名(file/shortx模式兜底)", type: "text" },
-        { key: "BALL_ICON_TINT_HEX", name: "图标着色(#RRGGBB, 空不着色)", type: "text" },
+        { key: "BALL_ICON_RES_NAME", name: "ShortX图标", type: "ball_shortx_icon" },
+        { key: "BALL_ICON_TINT_HEX", name: "图标颜色", type: "ball_color" },
         { key: "BALL_IDLE_ALPHA", name: "闲置不透明度(0.1~1.0)", type: "float", min: 0.1, max: 1.0, step: 0.05 },
-        { key: "BALL_TEXT", name: "悬浮球文字", type: "text" },
-        { key: "BALL_TEXT_SIZE_SP", name: "文字大小(sp)", type: "int", min: 6, max: 20, step: 1 },
-        { key: "BALL_TEXT_COLOR_HEX", name: "文字颜色(#RRGGBB)", type: "text" },
 
         { type: "section", name: "面板布局" },
         { key: "PANEL_ROWS", name: "面板可视行数(超出滚动)", type: "int", min: 1, max: 12, step: 1 },
@@ -843,9 +829,6 @@ CONTENT_VIEWER_TEXT_SP: 12
         { key: "LONG_PRESS_HAPTIC_ENABLE", name: "长按震动反馈", type: "bool" },
         { key: "LONG_PRESS_VIBRATE_MS", name: "震动时长(ms)", type: "int", min: 1, max: 120, step: 1 },
 
-        { type: "section", name: "执行与查看器" },
-{ key: "CONTENT_VIEWER_TEXT_SP", name: "查看器文字大小(sp)", type: "int", min: 9, max: 18, step: 1 },
-
         { type: "section", name: "日志" },
         { key: "LOG_ENABLE", name: "写文件日志", type: "bool" },
         { key: "LOG_DEBUG", name: "详细日志（DEBUG）", type: "bool" },
@@ -877,7 +860,7 @@ CONTENT_VIEWER_TEXT_SP: 12
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0) {
             needReset = true;
         }
     } else {

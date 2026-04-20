@@ -363,6 +363,265 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
 
     row.addView(rg);
     parent.addView(row);
+  } else if (item.type === "ball_shortx_icon") {
+    // === 悬浮球 ShortX 图标选择器 ===
+    row.setOrientation(android.widget.LinearLayout.VERTICAL);
+    var tv = new android.widget.TextView(context);
+    tv.setText(String(item.name));
+    tv.setTextColor(textColor);
+    tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+    row.addView(tv);
+
+    var iconRow = new android.widget.LinearLayout(context);
+    iconRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    iconRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    iconRow.setPadding(0, self.dp(8), 0, 0);
+
+    var previewIv = new android.widget.ImageView(context);
+    var previewIvLp = new android.widget.LinearLayout.LayoutParams(self.dp(36), self.dp(36));
+    previewIvLp.rightMargin = self.dp(10);
+    previewIv.setLayoutParams(previewIvLp);
+    previewIv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+    try {
+        var curIconName = String(self.getPendingValue(item.key) || "");
+        var curTint = String(self.getPendingValue("BALL_ICON_TINT_HEX") || "");
+        if (curIconName) {
+            var dr = self.resolveShortXDrawable(curIconName, curTint);
+            if (dr) previewIv.setImageDrawable(dr);
+        }
+    } catch(ePreview) {}
+    iconRow.addView(previewIv);
+
+    var nameTv = new android.widget.TextView(context);
+    nameTv.setTextColor(secColor);
+    nameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+    nameTv.setText(String(self.getPendingValue(item.key) || "未选择"));
+    var nameTvLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+    nameTv.setLayoutParams(nameTvLp);
+    iconRow.addView(nameTv);
+
+    var btnPick = self.ui.createFlatButton(self, "选择", primary, function() {
+        self.touchActivity();
+        try {
+            var catalog = self.getShortXIconCatalog();
+            if (!catalog || catalog.length === 0) {
+                self.toast("图标库未加载，请检查 ShortX 是否安装");
+                return;
+            }
+
+            var dialogView = new android.widget.LinearLayout(context);
+            dialogView.setOrientation(android.widget.LinearLayout.VERTICAL);
+            dialogView.setPadding(self.dp(16), self.dp(16), self.dp(16), self.dp(16));
+
+            var searchEt = new android.widget.EditText(context);
+            searchEt.setHint("搜索图标...");
+            searchEt.setTextColor(textColor);
+            searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+            searchEt.setBackground(self.ui.createRoundDrawable(isDark ? C.inputBgDark : C.inputBgLight, self.dp(6)));
+            searchEt.setPadding(self.dp(8), self.dp(8), self.dp(8), self.dp(8));
+            searchEt.setSingleLine(true);
+            dialogView.addView(searchEt);
+
+            var listView = new android.widget.ListView(context);
+            var listLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(360));
+            listLp.topMargin = self.dp(8);
+            listView.setLayoutParams(listLp);
+            dialogView.addView(listView);
+
+            var adapterData = [];
+            var i;
+            for (i = 0; i < catalog.length; i++) {
+                adapterData.push(String(catalog[i].shortName || catalog[i].name));
+            }
+
+            var adapter = new android.widget.ArrayAdapter(context, android.R.layout.simple_list_item_1, adapterData);
+            listView.setAdapter(adapter);
+
+            var dialog = new android.app.AlertDialog.Builder(context)
+                .setTitle("选择 ShortX 图标")
+                .setView(dialogView)
+                .setNegativeButton("取消", null)
+                .create();
+
+            listView.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener({
+                onItemClick: function(parent, view, position, id) {
+                    try {
+                        var selectedName = String(adapter.getItem(position));
+                        self.setPendingValue(item.key, selectedName);
+                        nameTv.setText(selectedName);
+                        try {
+                            var tint = String(self.getPendingValue("BALL_ICON_TINT_HEX") || "");
+                            var dr = self.resolveShortXDrawable(selectedName, tint);
+                            if (dr) previewIv.setImageDrawable(dr);
+                            else previewIv.setImageDrawable(null);
+                        } catch(eDr) {}
+                        dialog.dismiss();
+                        if (self.state.previewMode) self.rebuildBallForNewSize(true);
+                    } catch(eClick) {}
+                }
+            }));
+
+            searchEt.addTextChangedListener(new android.text.TextWatcher({
+                beforeTextChanged: function(s, start, count, after) {},
+                onTextChanged: function(s, start, before, count) {},
+                afterTextChanged: function(s) {
+                    try {
+                        var q = String(s).toLowerCase();
+                        var filtered = [];
+                        var j;
+                        for (j = 0; j < catalog.length; j++) {
+                            var n = String(catalog[j].shortName || catalog[j].name).toLowerCase();
+                            if (n.indexOf(q) >= 0) filtered.push(String(catalog[j].shortName || catalog[j].name));
+                        }
+                        var newAdapter = new android.widget.ArrayAdapter(context, android.R.layout.simple_list_item_1, filtered);
+                        listView.setAdapter(newAdapter);
+                    } catch(eFilter) {}
+                }
+            }));
+
+            dialog.show();
+        } catch(eDialog) {
+            self.toast("打开图标选择器失败: " + String(eDialog));
+        }
+    });
+    iconRow.addView(btnPick);
+    row.addView(iconRow);
+    parent.addView(row);
+
+  } else if (item.type === "ball_color") {
+    // === 悬浮球图标颜色选择器 ===
+    row.setOrientation(android.widget.LinearLayout.VERTICAL);
+    var tv = new android.widget.TextView(context);
+    tv.setText(String(item.name));
+    tv.setTextColor(textColor);
+    tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+    row.addView(tv);
+
+    var colorRow = new android.widget.LinearLayout(context);
+    colorRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    colorRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    colorRow.setPadding(0, self.dp(8), 0, 0);
+
+    var colorDot = new android.view.View(context);
+    var colorDotLp = new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28));
+    colorDotLp.rightMargin = self.dp(10);
+    colorDot.setLayoutParams(colorDotLp);
+    try {
+        var curHex = String(self.getPendingValue(item.key) || "");
+        if (curHex) {
+            colorDot.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(curHex), self.dp(14)));
+        } else {
+            colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14)));
+        }
+    } catch(eDot) {
+        colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14)));
+    }
+    colorRow.addView(colorDot);
+
+    var colorValueTv = new android.widget.TextView(context);
+    colorValueTv.setTextColor(secColor);
+    colorValueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+    colorValueTv.setText(String(self.getPendingValue(item.key) || "默认"));
+    var colorValueLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+    colorValueTv.setLayoutParams(colorValueLp);
+    colorRow.addView(colorValueTv);
+
+    var commonColors = [
+        "#F44336", "#E91E63", "#9C27B0", "#673AB7", "#3F51B5",
+        "#2196F3", "#03A9F4", "#00BCD4", "#009688", "#4CAF50",
+        "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800",
+        "#FF5722", "#795548", "#9E9E9E", "#607D8B", "#000000", "#FFFFFF"
+    ];
+
+    var btnColor = self.ui.createFlatButton(self, "调色板", primary, function() {
+        self.touchActivity();
+        try {
+            var dialogView = new android.widget.LinearLayout(context);
+            dialogView.setOrientation(android.widget.LinearLayout.VERTICAL);
+            dialogView.setPadding(self.dp(16), self.dp(16), self.dp(16), self.dp(16));
+
+            var scroll = new android.widget.ScrollView(context);
+            var scrollBox = new android.widget.LinearLayout(context);
+            scrollBox.setOrientation(android.widget.LinearLayout.VERTICAL);
+            scroll.addView(scrollBox);
+            dialogView.addView(scroll);
+
+            var grid = new android.widget.GridLayout(context);
+            try { grid.setColumnCount(5); } catch(e){}
+            var gridLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            grid.setLayoutParams(gridLp);
+            scrollBox.addView(grid);
+
+            var ci;
+            for (ci = 0; ci < commonColors.length; ci++) {
+                (function(hex) {
+                    var colorBtn = new android.widget.TextView(context);
+                    colorBtn.setLayoutParams(new android.widget.GridLayout.LayoutParams(self.dp(44), self.dp(44)));
+                    try {
+                        colorBtn.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(hex), self.dp(8)));
+                    } catch(eBg) {}
+                    colorBtn.setOnClickListener(new android.view.View.OnClickListener({
+                        onClick: function(v) {
+                            try {
+                                self.setPendingValue(item.key, hex);
+                                colorValueTv.setText(hex);
+                                try { colorDot.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(hex), self.dp(14))); } catch(eDot2) {}
+                                if (self.state.previewMode) self.rebuildBallForNewSize(true);
+                            } catch(eSet) {}
+                        }
+                    }));
+                    grid.addView(colorBtn);
+                })(commonColors[ci]);
+            }
+
+            var inputEt = new android.widget.EditText(context);
+            inputEt.setHint("手动输入 #RRGGBB");
+            inputEt.setTextColor(textColor);
+            inputEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+            inputEt.setBackground(self.ui.createRoundDrawable(isDark ? C.inputBgDark : C.inputBgLight, self.dp(6)));
+            inputEt.setPadding(self.dp(8), self.dp(8), self.dp(8), self.dp(8));
+            inputEt.setSingleLine(true);
+            inputEt.setText(String(self.getPendingValue(item.key) || ""));
+            var inputLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            inputLp.topMargin = self.dp(12);
+            inputEt.setLayoutParams(inputLp);
+            scrollBox.addView(inputEt);
+
+            var dialog = new android.app.AlertDialog.Builder(context)
+                .setTitle("选择图标颜色")
+                .setView(dialogView)
+                .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener({
+                    onClick: function(dlg, which) {
+                        try {
+                            var val = String(inputEt.getText() || "").replace(/^\s+|\s+$/g, "");
+                            if (val) {
+                                if (val.indexOf("#") !== 0) val = "#" + val;
+                                android.graphics.Color.parseColor(val);
+                                self.setPendingValue(item.key, val);
+                                colorValueTv.setText(val);
+                                try { colorDot.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(val), self.dp(14))); } catch(eDot3) {}
+                            } else {
+                                self.setPendingValue(item.key, "");
+                                colorValueTv.setText("默认");
+                                try { colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14))); } catch(eDot4) {}
+                            }
+                            if (self.state.previewMode) self.rebuildBallForNewSize(true);
+                        } catch(eOk) {
+                            self.toast("颜色格式无效");
+                        }
+                    }
+                }))
+                .setNegativeButton("取消", null)
+                .create();
+            dialog.show();
+        } catch(eDialog) {
+            self.toast("打开调色板失败: " + String(eDialog));
+        }
+    });
+    colorRow.addView(btnColor);
+    row.addView(colorRow);
+    parent.addView(row);
+
   } else {
      // 兜底文本
      var tv = new android.widget.TextView(context);

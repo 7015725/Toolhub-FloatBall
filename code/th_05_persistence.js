@@ -234,7 +234,7 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
       } catch (eLK) {}
       return;
     }
-    if (k === "BALL_SIZE_DP" || k === "BALL_PNG_MODE" || k === "BALL_ICON_TYPE" || k === "BALL_ICON_PKG" || k === "BALL_ICON_FILE_PATH" || k === "BALL_ICON_RES_ID" || k === "BALL_ICON_RES_NAME" || k === "BALL_ICON_SIZE_DP" || k === "BALL_ICON_TINT_HEX" || k === "BALL_TEXT" || k === "BALL_TEXT_SIZE_SP" || k === "BALL_TEXT_COLOR_HEX" || k === "BALL_ICON_TEXT_GAP_DP") { this.rebuildBallForNewSize(); return; }
+    if (k === "BALL_SIZE_DP" || k === "BALL_PNG_MODE" || k === "BALL_ICON_TYPE" || k === "BALL_ICON_FILE_PATH" || k === "BALL_ICON_RES_ID" || k === "BALL_ICON_RES_NAME" || k === "BALL_ICON_SIZE_DP" || k === "BALL_ICON_TINT_HEX" || k === "BALL_ICON_TEXT_GAP_DP") { this.rebuildBallForNewSize(); return; }
 
     if (k === "PANEL_ROWS" || k === "PANEL_COLS" ||
         k === "PANEL_ITEM_SIZE_DP" || k === "PANEL_GAP_DP" ||
