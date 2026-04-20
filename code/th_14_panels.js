@@ -931,7 +931,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     var btnColorShortX = self.ui.createFlatButton(self, "\u989c\u8272", C.primary, function() {
         self.touchActivity();
-        var currentTint = (inputShortXIconTint && inputShortXIconTint.input) ? String(inputShortXIconTint.input.getText() || "") : "";
+        var currentTint = currentShortXIconTint || "";
         self.showColorPickerPopup({
             currentColor: currentTint,
             currentIconName: currentShortXIconName,
@@ -1104,8 +1104,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 shortxPickerState.previewNameTv.setText(normalizedShort ? ("\u5df2\u9009: " + normalizedShort) : "\u672a\u9009\u62e9\u56fe\u6807");
             }
             if (shortxPickerState.previewIv) {
-                var tintHex = "";
-                try { tintHex = String(inputShortXIconTint.getValue() || ""); } catch(eTint) {}
+                var tintHex = currentShortXIconTint || "";
                 var drPreview = normalizedShort ? self.resolveShortXDrawable(normalizedShort, tintHex) : null;
                 if (drPreview) {
                     shortxPickerState.previewIv.setImageDrawable(drPreview);
@@ -1168,7 +1167,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             try { shortxPickerState.prevBtn.setEnabled(shortxPickerState.currentPage > 0); } catch(ePrev) {}
             try { shortxPickerState.nextBtn.setEnabled(shortxPickerState.currentPage < totalPages - 1); } catch(eNext) {}
             applyShortXTabStyles();
-            var tintHex = String(inputShortXIconTint.getValue() || "");
+            var tintHex = currentShortXIconTint || "";
             var selectedShort = currentShortXIconName ? self.normalizeShortXIconName(currentShortXIconName, false) : "";
             for (i = 0; i < result.length; i++) {
                 (function(entry) {
@@ -1250,6 +1249,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     // # ShortX 图标颜色（留空跟随主题）
     var defaultTint = targetBtn.iconTint ? String(targetBtn.iconTint) : "";
+    var currentShortXIconTint = defaultTint;
     var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空跟随主题)", defaultTint, false, "支持 #RRGGBB / #AARRGGBB；下方可展开完整调色板");
     form.addView(inputShortXIconTint.view);
     // # 避免 Rhino 闭包问题：将输入框引用存储到 self.state，供颜色选择器回调使用
@@ -1343,12 +1343,14 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try { raw = String(inputShortXIconTint.getValue() || "").replace(/^\s+|\s+$/g, ""); } catch(eTintRaw0) {}
         var normalized = normalizeTintColorValue(raw, true);
         if (raw && !normalized) {
+            currentShortXIconTint = raw;
             updateTintAlphaLabel(0);
             updateTintPalettePreviewText("", false, raw);
             updateShortXIconPreview();
             if (shortxPickerState.expanded) renderShortXIconGrid();
             return;
         }
+        currentShortXIconTint = normalized || "";
         var effectiveHex = normalized || getThemeTintHex();
         var alphaByte = extractTintAlphaByte(effectiveHex);
         tintPaletteState.currentBaseRgbHex = extractTintRgbHex(effectiveHex);
@@ -1367,9 +1369,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     }
 
     function applyTintHexValue(hexValue, pushRecent) {
+        currentShortXIconTint = String(hexValue || "");
         try {
             tintPaletteState.syncing = true;
-            inputShortXIconTint.input.setText(String(hexValue || ""));
+            inputShortXIconTint.input.setText(currentShortXIconTint);
         } catch(eSetTint0) {}
         tintPaletteState.syncing = false;
         syncTintUiFromInput(!!pushRecent);
@@ -1502,7 +1505,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     var tintToggleBtn = self.ui.createFlatButton(self, "\u9009\u62e9\u989c\u8272", C.primary, function() {
         self.touchActivity();
-        var currentTint = (inputShortXIconTint && inputShortXIconTint.input) ? String(inputShortXIconTint.input.getText() || "") : "";
+        var currentTint = currentShortXIconTint || "";
         self.showColorPickerPopup({
             currentColor: currentTint,
             currentIconName: currentShortXIconName,
@@ -3320,7 +3323,7 @@ shortcutWrap.addView(scBody);
                 var sxIcon = self.normalizeShortXIconName(currentShortXIconName, false);
                 if (sxIcon) newBtn.iconResName = sxIcon; else delete newBtn.iconResName;
                 // # 保存 ShortX 图标颜色：优先使用 targetBtn.iconTint（颜色选择器已更新），回退到输入框
-                var sxTint = targetBtn.iconTint || "";
+                var sxTint = currentShortXIconTint || targetBtn.iconTint || "";
                 if (!sxTint) {
                     try { sxTint = inputShortXIconTint.getValue(); } catch(eGetTint) {}
                 }
