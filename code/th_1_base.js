@@ -1,3 +1,4 @@
+// @version 1.0.0
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //

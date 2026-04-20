@@ -1,3 +1,4 @@
+// @version 1.0.0
 function runOnMainSync(fn, timeoutMs) {
   if (!fn) return { ok: false, error: "empty-fn" };
   try {

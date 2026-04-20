@@ -1,3 +1,4 @@
+// @version 1.0.0
 FloatBallAppWM.prototype.buildSettingsPanelView = function() {
   this.beginEditConfig();
 
