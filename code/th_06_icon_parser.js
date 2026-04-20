@@ -341,7 +341,8 @@ FloatBallAppWM.prototype.scanShortXIconsFromApk = function() {
   var out = [];
   var seen = {};
   var paths = this.getShortXApkPaths();
-  var regex = /^res\/drawable[^\/]*\/(ic_remix_[a-z0-9_]+|ic_shortx|ic_launcher|ic_menu_preferences)\.(xml|png|webp|jpg|jpeg)$/;
+  // 宽松匹配：匹配 res/drawable* 下所有以 ic_ 开头的图标，不限于 ic_remix_
+  var regex = /^res\/drawable[^\/]*\/(ic_[a-z0-9_]+)\.(xml|png|webp|jpg|jpeg)$/;
   var lastErr = "";
   var pi;
   for (pi = 0; pi < paths.length; pi++) {
@@ -355,6 +356,8 @@ FloatBallAppWM.prototype.scanShortXIconsFromApk = function() {
         var m = regex.exec(name);
         if (!m) continue;
         var fullName = String(m[1]);
+        // 过\u6ee4\u6389\u7cfb\u7edf\u56fe\u6807，只\u4fdd\u7559 ShortX 自\u5b9a\u4e49\u56fe\u6807
+        if (fullName.indexOf("ic_launcher") === 0 || fullName.indexOf("ic_menu_") === 0) continue;
         if (seen[fullName]) continue;
         seen[fullName] = true;
         out.push({
@@ -439,6 +442,7 @@ FloatBallAppWM.prototype.getShortXIconCatalog = function(forceReload) {
     var handle = this.getShortXResHandle();
     if (handle && handle.cl) {
       try {
+        // 尝试反射获取 R$drawable 类（未混淆时可用）
         var clz = handle.cl.loadClass(CONST_SHORTX_PACKAGE + ".R$drawable");
         var fields = clz.getFields();
         var i;
@@ -446,7 +450,7 @@ FloatBallAppWM.prototype.getShortXIconCatalog = function(forceReload) {
           try {
             var f = fields[i];
             var fname = String(f.getName());
-            if (fname.indexOf("ic_remix_") !== 0 && fname !== "ic_shortx" && fname !== "ic_launcher" && fname !== "ic_menu_preferences") continue;
+            if (fname.indexOf("ic_remix_") !== 0 && fname.indexOf("ic_") !== 0) continue;
             out.push({
               name: fname,
               shortName: (fname.indexOf("ic_remix_") === 0) ? fname.substring("ic_remix_".length) : fname,
@@ -455,7 +459,7 @@ FloatBallAppWM.prototype.getShortXIconCatalog = function(forceReload) {
           } catch (eField) {}
         }
       } catch (eClz) {
-        this._shortxIconCatalogError = String(eClz);
+        this._shortxIconCatalogError = "reflect: " + String(eClz);
         safeLog(this.L, 'w', "getShortXIconCatalog reflect failed: " + String(eClz));
       }
     }

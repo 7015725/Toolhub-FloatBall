@@ -3769,8 +3769,20 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var catalog = [];
   try { catalog = self.getShortXIconCatalog() || []; } catch(e) {}
   if (!catalog.length) {
-    self.toast("图标库未加载，请检查 ShortX 是否安装");
-    return null;
+    var errMsg = "\u56fe\u6807\u5e93\u672a\u52a0\u8f7d";
+    try { errMsg = self._shortxIconCatalogError || errMsg; } catch(e) {}
+    self.toast("\u56fe\u6807\u5e93\u672a\u52a0\u8f7d: " + errMsg);
+    // 尝试强\u5236\u91cd\u65b0\u52a0\u8f7d
+    try {
+      catalog = self.getShortXIconCatalog(true) || [];
+      if (!catalog.length) {
+        try { errMsg = self._shortxIconCatalogError || "\u91cd\u8bd5\u4ecd\u5931\u8d25"; } catch(e) {}
+        self.toast("\u56fe\u6807\u5e93\u91cd\u8bd5\u5931\u8d25: " + errMsg);
+        return null;
+      }
+    } catch(eRetry) {
+      return null;
+    }
   }
 
   var selectedName = currentName;
