@@ -2,7 +2,7 @@
 // 将本文件放入 ShortX 任务，th_*.js 放入 ShortX 数据根目录/ToolHub/code/ 文件夹
 
 var MODULE_MANIFEST = {
-    "th_01_base.js": "1.0.0",
+    "th_01_base.js": "1.0.1",
     "th_02_core.js": "1.0.0",
     "th_03_icon.js": "1.0.0",
     "th_04_theme.js": "1.0.0",
@@ -11,8 +11,8 @@ var MODULE_MANIFEST = {
     "th_07_shortcut.js": "1.0.0",
     "th_08_content.js": "1.0.0",
     "th_09_animation.js": "1.0.0",
-    "th_10_shell.js": "1.0.0",
-    "th_11_action.js": "1.0.0",
+    "th_10_shell.js": "1.0.1",
+    "th_11_action.js": "1.0.1",
     "th_12_rebuild.js": "1.0.0",
     "th_13_panel_ui.js": "1.0.0",
     "th_14_panels.js": "1.0.0",

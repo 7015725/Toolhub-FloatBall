@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // =======================【WM 线程：按钮动作执行】======================
 FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
   // # 点击防抖
