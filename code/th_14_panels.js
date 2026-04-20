@@ -1077,11 +1077,12 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     function updateShortXIconPreview() {
         try {
             var normalizedShort = currentShortXIconName ? self.normalizeShortXIconName(currentShortXIconName, false) : "";
-            var tintHex = String(inputShortXIconTint.getValue() || "");
             if (shortxPickerState.previewNameTv) {
-                shortxPickerState.previewNameTv.setText(normalizedShort ? ("已选: " + normalizedShort) : "未选择图标");
+                shortxPickerState.previewNameTv.setText(normalizedShort ? ("\u5df2\u9009: " + normalizedShort) : "\u672a\u9009\u62e9\u56fe\u6807");
             }
             if (shortxPickerState.previewIv) {
+                var tintHex = "";
+                try { tintHex = String(inputShortXIconTint.getValue() || ""); } catch(eTint) {}
                 var drPreview = normalizedShort ? self.resolveShortXDrawable(normalizedShort, tintHex) : null;
                 if (drPreview) {
                     shortxPickerState.previewIv.setImageDrawable(drPreview);
@@ -1091,7 +1092,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     try { shortxPickerState.previewIv.setAlpha(0.35); } catch(eA2) {}
                 }
             }
-        } catch(ePreview) {}
+        } catch(ePreview) {
+            safeLog(self.L, 'e', "updateShortXIconPreview err=" + String(ePreview));
+        }
     }
 
     function renderShortXIconGrid() {
