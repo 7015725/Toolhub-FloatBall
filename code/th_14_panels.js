@@ -1381,11 +1381,38 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     function applyTintSelectionFromPopup(colorHex) {
         var safeColor = normalizeTintColorValue(colorHex, true);
         if (safeColor === null) safeColor = "";
-        applyTintHexValue(safeColor, !!safeColor);
+        currentShortXIconTint = safeColor;
         if (safeColor) targetBtn.iconTint = safeColor;
         else delete targetBtn.iconTint;
+        try {
+            tintPaletteState.syncing = true;
+            if (inputShortXIconTint && inputShortXIconTint.input) {
+                inputShortXIconTint.input.setText(safeColor);
+                try { inputShortXIconTint.input.setSelection(String(safeColor).length); } catch(eSelTint0) {}
+                try { inputShortXIconTint.input.invalidate(); } catch(eInvTint0) {}
+                try { inputShortXIconTint.input.requestLayout(); } catch(eReqTint0) {}
+            }
+        } catch(eSetTint1) {
+            safeLog(self.L, 'e', "applyTintSelectionFromPopup setText err=" + String(eSetTint1));
+        }
+        tintPaletteState.syncing = false;
+        try { syncTintUiFromInput(!!safeColor); } catch(eSyncTint1) { safeLog(self.L, 'e', "applyTintSelectionFromPopup sync err=" + String(eSyncTint1)); }
+        try { if (rbIconShortX) rbIconShortX.setChecked(true); } catch(eRbTint0) {}
+        try { updateIconInputs("shortx"); } catch(eIconInputTint0) {}
         try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272"); } catch(eTintPopupBtn0) {}
-        try { updateShortXIconPreview(); } catch(eTintPopupPreview0) {}
+        try {
+            if (shortxPickerState.previewIv) {
+                var normalizedShort = currentShortXIconName ? self.normalizeShortXIconName(currentShortXIconName, false) : "";
+                var drDirect = normalizedShort ? self.resolveShortXDrawable(normalizedShort, currentShortXIconTint || "") : null;
+                shortxPickerState.previewIv.setImageDrawable(drDirect);
+                try { shortxPickerState.previewIv.invalidate(); } catch(ePrevInv0) {}
+            }
+        } catch(eTintDirect0) {
+            safeLog(self.L, 'e', "applyTintSelectionFromPopup directPreview err=" + String(eTintDirect0));
+        }
+        try { updateShortXIconPreview(); } catch(eTintPopupPreview0) { safeLog(self.L, 'e', "applyTintSelectionFromPopup preview err=" + String(eTintPopupPreview0)); }
+        try { if (shortxPickerState.expanded) renderShortXIconGrid(); } catch(eTintGrid0) {}
+        safeLog(self.L, 'i', "applyTintSelectionFromPopup color=" + String(safeColor) + ", icon=" + String(currentShortXIconName || ""));
     }
 
     function applyTintFromCurrentBase(pushRecent) {
