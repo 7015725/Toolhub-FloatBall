@@ -671,17 +671,78 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         statusTv: null,
         searchEt: null,
         grid: null,
+        gridScroll: null,
         pickerWrap: null,
         toggleBtn: null,
         clearBtn: null,
-        pageSize: 20,
+        pageSize: 0,
         currentPage: 0,
         activeTab: "all",
         tabButtons: {},
         pageInfoTv: null,
         prevBtn: null,
-        nextBtn: null
+        nextBtn: null,
+        pageCols: 4,
+        pageRows: 0,
+        cellWidthDp: 76,
+        cellHeightDp: 92,
+        cellMarginDp: 4,
+        lastMeasuredGridHeight: 0
     };
+
+    function getShortXPickerClosedLabel() {
+        return "展开图标库";
+    }
+
+    function getShortXPickerOpenedLabel() {
+        return "收起图标库";
+    }
+
+    function scrollShortXGridToTop() {
+        try {
+            if (shortxPickerState.gridScroll) {
+                shortxPickerState.gridScroll.post(new java.lang.Runnable({
+                    run: function() {
+                        try { shortxPickerState.gridScroll.fullScroll(android.view.View.FOCUS_UP); } catch(eScroll0) {}
+                        try { shortxPickerState.gridScroll.scrollTo(0, 0); } catch(eScroll1) {}
+                    }
+                }));
+            }
+        } catch(eScrollWrap) {}
+    }
+
+    function resolveShortXPickerPageSize() {
+        var cols = Number(shortxPickerState.pageCols || 4);
+        if (cols < 1) cols = 4;
+        var fallbackHeight = self.dp(520);
+        var rawHeight = 0;
+        try {
+            if (shortxPickerState.gridScroll) rawHeight = Number(shortxPickerState.gridScroll.getHeight() || 0);
+        } catch(eH0) {}
+        if (rawHeight <= 0) rawHeight = fallbackHeight;
+        var cellOuterHeight = self.dp(Number(shortxPickerState.cellHeightDp || 92) + Number(shortxPickerState.cellMarginDp || 4) * 2);
+        if (cellOuterHeight <= 0) cellOuterHeight = self.dp(100);
+        var rows = Math.max(1, Math.floor(rawHeight / cellOuterHeight));
+        var size = Math.max(cols, rows * cols);
+        shortxPickerState.pageRows = rows;
+        shortxPickerState.lastMeasuredGridHeight = rawHeight;
+        shortxPickerState.pageSize = size;
+        return size;
+    }
+
+    function setShortXPickerExpanded(expanded, doRender) {
+        shortxPickerState.expanded = !!expanded;
+        if (shortxPickerState.pickerWrap) {
+            shortxPickerState.pickerWrap.setVisibility(shortxPickerState.expanded ? android.view.View.VISIBLE : android.view.View.GONE);
+        }
+        try {
+            if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(shortxPickerState.expanded ? getShortXPickerOpenedLabel() : getShortXPickerClosedLabel());
+        } catch(eToggleTxt) {}
+        if (shortxPickerState.expanded && doRender !== false) {
+            resolveShortXPickerPageSize();
+            renderShortXIconGrid();
+        }
+    }
 
     var shortxQuickRow = new android.widget.LinearLayout(context);
     shortxQuickRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -716,17 +777,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxBtnGap.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
     shortxQuickRow.addView(shortxBtnGap);
 
-    var btnBrowseShortXIcon = self.ui.createFlatButton(self, "选择图标", C.primary, function() {
+    var btnBrowseShortXIcon = self.ui.createFlatButton(self, getShortXPickerClosedLabel(), C.primary, function() {
         self.touchActivity();
-        self.showIconPicker({
-            onPick: function(iconName) {
-                try {
-                    var shortName = self.normalizeShortXIconName(iconName, false);
-                    inputShortXIcon.input.setText(shortName);
-                    updateShortXIconPreview();
-                } catch(ePick) {}
-            }
-        });
+        setShortXPickerExpanded(!shortxPickerState.expanded, true);
     });
     shortxPickerState.toggleBtn = btnBrowseShortXIcon;
     shortxQuickRow.addView(btnBrowseShortXIcon);
@@ -752,7 +805,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxPickerState.pickerWrap = shortxPickerWrap;
 
     var shortxPickerHead = new android.widget.TextView(context);
-    shortxPickerHead.setText("ShortX 图标库（支持搜索，点击即回填）");
+    shortxPickerHead.setText("ShortX 图标库（分页模式，支持搜索 / 分类 / 点击即回填）");
     shortxPickerHead.setTextColor(subTextColor);
     shortxPickerHead.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     shortxPickerHead.setPadding(self.dp(12), self.dp(10), self.dp(12), self.dp(6));
@@ -833,6 +886,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     function goShortXPage(delta) {
         shortxPickerState.currentPage = Math.max(0, Number(shortxPickerState.currentPage || 0) + Number(delta || 0));
+        scrollShortXGridToTop();
         renderShortXIconGrid();
     }
 
@@ -866,6 +920,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 shortxPickerState.activeTab = def.key;
                 shortxPickerState.currentPage = 0;
                 applyShortXTabStyles();
+                scrollShortXGridToTop();
                 renderShortXIconGrid();
             });
             tabBtn.setPadding(self.dp(10), self.dp(4), self.dp(10), self.dp(4));
@@ -883,6 +938,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var shortxGridScrollLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(520));
     shortxGridScrollLp.setMargins(self.dp(8), 0, self.dp(8), self.dp(8));
     shortxPickerWrap.addView(shortxGridScroll, shortxGridScrollLp);
+    shortxPickerState.gridScroll = shortxGridScroll;
 
     var shortxGrid = new android.widget.GridLayout(context);
     try { shortxGrid.setColumnCount(4); } catch(eGC0) {}
@@ -915,7 +971,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try {
             if (!shortxPickerState.grid) return;
             shortxPickerState.grid.removeAllViews();
-            try { shortxPickerState.grid.setColumnCount(4); } catch(eColSet) {}
+            try { shortxPickerState.grid.setColumnCount(Number(shortxPickerState.pageCols || 4)); } catch(eColSet) {}
             var icons = self.getShortXIconCatalog();
             shortxPickerState.iconList = icons;
             var query = "";
@@ -935,7 +991,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     filtered.push(item);
                 }
             }
-            var pageSize = Number(shortxPickerState.pageSize || 20);
+            var pageSize = resolveShortXPickerPageSize();
             if (pageSize < 1) pageSize = 20;
             var totalPages = filtered.length > 0 ? Math.ceil(filtered.length / pageSize) : 1;
             if (shortxPickerState.currentPage >= totalPages) shortxPickerState.currentPage = totalPages - 1;
@@ -948,13 +1004,13 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     var errMsg = self._shortxIconCatalogError ? String(self._shortxIconCatalogError) : "未知原因";
                     shortxPickerState.statusTv.setText("ShortX 图标反射失败/为空：" + errMsg);
                 } else if (!query) {
-                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 共 " + filtered.length + " 个，当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
+                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 共 " + filtered.length + " 个，每页 " + pageSize + " 个（" + shortxPickerState.pageRows + " 行 × " + shortxPickerState.pageCols + " 列），当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
                 } else {
-                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 搜索 [" + query + "] 命中 " + totalMatch + " 个，当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
+                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 搜索 [" + query + "] 命中 " + totalMatch + " 个，每页 " + pageSize + " 个，当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
                 }
             }
             if (shortxPickerState.pageInfoTv) {
-                shortxPickerState.pageInfoTv.setText((filtered.length > 0 ? (shortxPickerState.currentPage + 1) : 0) + " / " + totalPages + " · " + filtered.length + "项");
+                shortxPickerState.pageInfoTv.setText((filtered.length > 0 ? (shortxPickerState.currentPage + 1) : 0) + " / " + totalPages + " · " + filtered.length + "项 · 每页" + pageSize + "个");
             }
             try { shortxPickerState.prevBtn.setEnabled(shortxPickerState.currentPage > 0); } catch(ePrev) {}
             try { shortxPickerState.nextBtn.setEnabled(shortxPickerState.currentPage < totalPages - 1); } catch(eNext) {}
@@ -968,9 +1024,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     cell.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
                     cell.setPadding(self.dp(8), self.dp(8), self.dp(8), self.dp(8));
                     var lp = new android.widget.GridLayout.LayoutParams();
-                    lp.width = self.dp(76);
-                    lp.height = self.dp(92);
-                    lp.setMargins(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
+                    lp.width = self.dp(Number(shortxPickerState.cellWidthDp || 76));
+                    lp.height = self.dp(Number(shortxPickerState.cellHeightDp || 92));
+                    lp.setMargins(self.dp(Number(shortxPickerState.cellMarginDp || 4)), self.dp(Number(shortxPickerState.cellMarginDp || 4)), self.dp(Number(shortxPickerState.cellMarginDp || 4)), self.dp(Number(shortxPickerState.cellMarginDp || 4)));
                     cell.setLayoutParams(lp);
                     var isSelected = selectedShort && selectedShort === String(entry.shortName);
                     cell.setBackground(self.ui.createRoundDrawable(self.withAlpha(isSelected ? C.primary : cardColor, isSelected ? 0.18 : 0.96), self.dp(12)));
@@ -999,9 +1055,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                             self.touchActivity();
                             try { inputShortXIcon.input.setText(String(entry.shortName)); } catch(eSetI) {}
                             updateShortXIconPreview();
-                            shortxPickerState.expanded = false;
-                            if (shortxPickerState.pickerWrap) shortxPickerState.pickerWrap.setVisibility(android.view.View.GONE);
-                            try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText("图标库"); } catch(eSetT) {}
+                            scrollShortXGridToTop();
+                            setShortXPickerExpanded(false, false);
                         }
                     }));
                     shortxPickerState.grid.addView(cell);
@@ -1016,6 +1071,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         shortxSearchEt.addTextChangedListener(new JavaAdapter(android.text.TextWatcher, {
             afterTextChanged: function(s) {
                 shortxPickerState.currentPage = 0;
+                scrollShortXGridToTop();
                 renderShortXIconGrid();
             },
             beforeTextChanged: function(s, st, c, a) {},
@@ -1031,6 +1087,19 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         }));
     } catch(eTwIcon1) {}
 
+    try {
+        shortxGridScroll.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener({
+            onGlobalLayout: function() {
+                if (!shortxPickerState.expanded) return;
+                var oldSize = Number(shortxPickerState.pageSize || 0);
+                var newSize = resolveShortXPickerPageSize();
+                if (newSize > 0 && newSize !== oldSize) {
+                    shortxPickerState.currentPage = 0;
+                    renderShortXIconGrid();
+                }
+            }
+        }));
+    } catch(eGridLayoutWatch) {}
     // # ShortX 图标颜色（默认跟随主题）
     var defaultTint = targetBtn.iconTint || "";
     if (!defaultTint) {
@@ -1063,7 +1132,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             shortxPickerWrap.setVisibility(android.view.View.GONE);
             inputShortXIconTint.view.setVisibility(android.view.View.GONE);
             shortxPickerState.expanded = false;
-            try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText("图标库"); } catch(eBt0) {}
+            try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(getShortXPickerClosedLabel()); } catch(eBt0) {}
             // 清空另一种方式的值
             inputShortXIcon.input.setText("");
             inputShortXIconTint.input.setText("");
@@ -1072,10 +1141,6 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             inputShortXIcon.view.setVisibility(android.view.View.VISIBLE);
             shortxQuickRow.setVisibility(android.view.View.VISIBLE);
             inputShortXIconTint.view.setVisibility(android.view.View.VISIBLE);
-            // 不再展开内联面板
-            shortxPickerState.expanded = false;
-            if (shortxPickerState.pickerWrap) shortxPickerWrap.setVisibility(android.view.View.GONE);
-            try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText("选择图标"); } catch(eBt1) {}
             // 清空另一种方式的值
             inputIconPath.input.setText("");
             // # ShortX 图标颜色默认跟随主题
@@ -1087,7 +1152,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 }
             } catch(e) {}
             updateShortXIconPreview();
-            renderShortXIconGrid();
+            setShortXPickerExpanded(true, true);
         }
     }
 

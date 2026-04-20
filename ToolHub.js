@@ -6729,17 +6729,78 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         statusTv: null,
         searchEt: null,
         grid: null,
+        gridScroll: null,
         pickerWrap: null,
         toggleBtn: null,
         clearBtn: null,
-        pageSize: 20,
+        pageSize: 0,
         currentPage: 0,
         activeTab: "all",
         tabButtons: {},
         pageInfoTv: null,
         prevBtn: null,
-        nextBtn: null
+        nextBtn: null,
+        pageCols: 4,
+        pageRows: 0,
+        cellWidthDp: 76,
+        cellHeightDp: 92,
+        cellMarginDp: 4,
+        lastMeasuredGridHeight: 0
     };
+
+    function getShortXPickerClosedLabel() {
+        return "展开图标库";
+    }
+
+    function getShortXPickerOpenedLabel() {
+        return "收起图标库";
+    }
+
+    function scrollShortXGridToTop() {
+        try {
+            if (shortxPickerState.gridScroll) {
+                shortxPickerState.gridScroll.post(new java.lang.Runnable({
+                    run: function() {
+                        try { shortxPickerState.gridScroll.fullScroll(android.view.View.FOCUS_UP); } catch(eScroll0) {}
+                        try { shortxPickerState.gridScroll.scrollTo(0, 0); } catch(eScroll1) {}
+                    }
+                }));
+            }
+        } catch(eScrollWrap) {}
+    }
+
+    function resolveShortXPickerPageSize() {
+        var cols = Number(shortxPickerState.pageCols || 4);
+        if (cols < 1) cols = 4;
+        var fallbackHeight = self.dp(520);
+        var rawHeight = 0;
+        try {
+            if (shortxPickerState.gridScroll) rawHeight = Number(shortxPickerState.gridScroll.getHeight() || 0);
+        } catch(eH0) {}
+        if (rawHeight <= 0) rawHeight = fallbackHeight;
+        var cellOuterHeight = self.dp(Number(shortxPickerState.cellHeightDp || 92) + Number(shortxPickerState.cellMarginDp || 4) * 2);
+        if (cellOuterHeight <= 0) cellOuterHeight = self.dp(100);
+        var rows = Math.max(1, Math.floor(rawHeight / cellOuterHeight));
+        var size = Math.max(cols, rows * cols);
+        shortxPickerState.pageRows = rows;
+        shortxPickerState.lastMeasuredGridHeight = rawHeight;
+        shortxPickerState.pageSize = size;
+        return size;
+    }
+
+    function setShortXPickerExpanded(expanded, doRender) {
+        shortxPickerState.expanded = !!expanded;
+        if (shortxPickerState.pickerWrap) {
+            shortxPickerState.pickerWrap.setVisibility(shortxPickerState.expanded ? android.view.View.VISIBLE : android.view.View.GONE);
+        }
+        try {
+            if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(shortxPickerState.expanded ? getShortXPickerOpenedLabel() : getShortXPickerClosedLabel());
+        } catch(eToggleTxt) {}
+        if (shortxPickerState.expanded && doRender !== false) {
+            resolveShortXPickerPageSize();
+            renderShortXIconGrid();
+        }
+    }
 
     var shortxQuickRow = new android.widget.LinearLayout(context);
     shortxQuickRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -6774,14 +6835,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxBtnGap.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
     shortxQuickRow.addView(shortxBtnGap);
 
-    var btnBrowseShortXIcon = self.ui.createFlatButton(self, "图标库", C.primary, function() {
+    var btnBrowseShortXIcon = self.ui.createFlatButton(self, getShortXPickerClosedLabel(), C.primary, function() {
         self.touchActivity();
-        shortxPickerState.expanded = !shortxPickerState.expanded;
-        if (shortxPickerState.pickerWrap) {
-            shortxPickerState.pickerWrap.setVisibility(shortxPickerState.expanded ? android.view.View.VISIBLE : android.view.View.GONE);
-        }
-        try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(shortxPickerState.expanded ? "收起" : "图标库"); } catch(eT1) {}
-        if (shortxPickerState.expanded) renderShortXIconGrid();
+        setShortXPickerExpanded(!shortxPickerState.expanded, true);
     });
     shortxPickerState.toggleBtn = btnBrowseShortXIcon;
     shortxQuickRow.addView(btnBrowseShortXIcon);
@@ -10935,85 +10991,80 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
 
 // =======================【执行（入口线程）】======================
 var __out = (function() {
+  function optStr(v) {
+    return (v === undefined || v === null) ? "" : String(v);
+  }
+  function summarizeModuleUpdates(list) {
+    var names = [];
+    var created = 0;
+    var overwritten = 0;
+    var i;
+    for (i = 0; i < list.length; i++) {
+      var item = list[i] || {};
+      var name = optStr(item.module);
+      if (name) names.push(name);
+      if (item.isNew) created++; else overwritten++;
+    }
+    if (names.length === 0) {
+      return {
+        count: 0,
+        modules: [],
+        msg: "子模块已是最新，本次未覆盖更新。"
+      };
+    }
+    return {
+      count: names.length,
+      modules: names,
+      msg: "本次已覆盖更新 " + names.length + " 个子模块（新增 " + created + " / 覆盖 " + overwritten + "）：" + names.join("、")
+    };
+  }
+  function summarizeLoadErrors(list) {
+    var names = [];
+    var i;
+    for (i = 0; i < list.length; i++) {
+      var item = list[i] || {};
+      var name = optStr(item.module);
+      if (name) names.push(name);
+    }
+    return {
+      count: names.length,
+      modules: names,
+      msg: names.length ? ("有 " + names.length + " 个子模块加载失败：" + names.join("、")) : "所有子模块加载正常。"
+    };
+  }
+
   var entryInfo = getProcessInfo("entry");
-
-  // # 初始化 logger
   var logger = new ToolHubLogger(entryInfo);
-  // # 安装崩溃处理
-  var crashHandlerInstalled = installCrashHandler(logger);
-
-  // # 启动 app
+  installCrashHandler(logger);
   var app = new FloatBallAppWM(logger);
-
-  // # 计算广播 action（支持规则）
   var closeRule = String(app.config.ACTION_CLOSE_ALL_RULE || "shortx.wm.floatball.CLOSE");
-
   var startRet = null;
-
   try {
     startRet = app.startAsync(entryInfo, closeRule);
   } catch (eTop) {
     try { logger.fatal("TOP startAsync crash err=" + String(eTop)); } catch (eLog) {}
     startRet = { ok: false, err: String(eTop) };
   }
-
-  // # 中文摘要（方便 ShortX 日志/结果中快速识别）
-  var _btnCount = (startRet && startRet.buttons != null) ? startRet.buttons : 0;
-  var _layout = (startRet && startRet.layout) ? startRet.layout : { cols: app.config.PANEL_COLS, rows: app.config.PANEL_ROWS };
-  var _closeAction = String(startRet && startRet.closeAction ? startRet.closeAction : "shortx.wm.floatball.CLOSE");
-  var _logEnabled = !!app.config.LOG_ENABLE;
-  var _logDays = Math.max(1, Math.floor(Number(app.config.LOG_KEEP_DAYS || 3)));
-
-  // # 返回信息
-  return {
-    ok: true,
-    result: startRet,
-    process: entryInfo,
-    crashHandlerInstalled: !!crashHandlerInstalled,
-    log: {
-      enable: _logEnabled,
-      debug: !!app.config.LOG_DEBUG,
-      keepDays: _logDays,
-      dirActive: String(logger.dir || ""),
-      prefix: String(app.config.LOG_PREFIX || "ShortX_ToolHub"),
-      lastInitErr: String(logger.lastInitErr || "")
-    },
-    shell: {
-      useActionFirstDefault: false,
-      hasShellCommandClass: false,
-      bridge: {
-        action: String(app.config.SHELL_BRIDGE_ACTION),
-        extraCmd: String(app.config.SHELL_BRIDGE_EXTRA_CMD),
-        extraFrom: String(app.config.SHELL_BRIDGE_EXTRA_FROM),
-        extraRoot: String(app.config.SHELL_BRIDGE_EXTRA_ROOT),
-        defaultRoot: !!app.config.SHELL_BRIDGE_DEFAULT_ROOT
-      }
-    },
-    content: {
-      maxRows: Number(app.config.CONTENT_MAX_ROWS || 20),
-      viewerTextSp: Number(app.config.CONTENT_VIEWER_TEXT_SP || 12)
-    },
-    suggestCloseShell: "am broadcast -a " + _closeAction,
-    suggestTaskerProfile: {
-      event: "Intent Received",
-      action: String(app.config.SHELL_BRIDGE_ACTION),
-      readExtras: [
-        { key: String(app.config.SHELL_BRIDGE_EXTRA_CMD), var: "%cmd" },
-        { key: String(app.config.SHELL_BRIDGE_EXTRA_ROOT), var: "%root" }
-      ],
-      exec: "Run Shell (root=%root)  cmd=%cmd"
-    },
-    // ========== 中文摘要（供 ShortX 结果查看）==========
-    状态: (startRet && startRet.ok) ? "✅ 启动成功" : "❌ 启动失败",
-    悬浮球: (startRet && startRet.ok) ? "已显示" : "未显示",
-    关闭指令: "am broadcast -a " + _closeAction,
-    按钮数量: String(_btnCount) + " 个",
-    面板布局: String(_layout.cols) + " 列 × " + String(_layout.rows) + " 行",
-    日志: (_logEnabled ? "📝 已启用" : "📝 已禁用") + " · 保留 " + String(_logDays) + " 天",
-    崩溃处理: !!crashHandlerInstalled ? "🛡️ 已安装" : "⚠️ 未安装",
-    线程模型: "HandlerThread（WM 专属）",
-    消息: (startRet && startRet.msg) ? String(startRet.msg) : ""
+  var syncInfo = summarizeModuleUpdates(__moduleUpdates);
+  var loadInfo = summarizeLoadErrors(loadErrors);
+  var started = !!(startRet && startRet.ok);
+  var rawMsg = optStr(startRet && startRet.msg);
+  var out = {
+    ok: started,
+    started: started,
+    msg: started ? (rawMsg ? ("ToolHub 启动成功：" + rawMsg) : "ToolHub 启动成功") : "ToolHub 启动失败",
+    syncMsg: syncInfo.msg,
+    updatedCount: syncInfo.count,
+    updatedModules: syncInfo.modules,
+    closeAction: optStr(startRet && startRet.closeAction),
+    layout: startRet && startRet.layout || null
   };
+  if (loadInfo.count > 0) {
+    out.loadMsg = loadInfo.msg;
+    out.loadErrors = loadInfo.modules;
+  }
+  if (!started) out.err = optStr(startRet && startRet.err) || "未知错误";
+  return out;
 })();
 
 JSON.stringify(__out);
