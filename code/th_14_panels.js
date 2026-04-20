@@ -694,7 +694,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var tintSavedState = null;
     try { tintSavedState = self.loadPanelState(tintPalettePanelKey); } catch(eTintState0) { tintSavedState = null; }
     var tintPaletteState = {
-        expanded: !!(tintSavedState && tintSavedState.expanded),
+        expanded: false,
         recentColors: [],
         syncing: false,
         currentBaseRgbHex: "",
@@ -1464,6 +1464,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPaletteBody.setPadding(self.dp(12), 0, self.dp(12), self.dp(12));
     tintPaletteWrap.addView(tintPaletteBody);
     tintPaletteState.body = tintPaletteBody;
+    tintPaletteBody.setVisibility(android.view.View.GONE);
 
     var tintPreviewCard = new android.widget.LinearLayout(context);
     tintPreviewCard.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -1771,7 +1772,6 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             inputIconPath.input.setText("");
             syncTintUiFromInput(false);
             updateShortXIconPreview();
-            setShortXPickerExpanded(true, true);
         }
     }
 
