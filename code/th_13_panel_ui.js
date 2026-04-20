@@ -574,7 +574,10 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     for (ci = 0; ci < commonColors.length; ci++) {
         (function(hex) {
             var colorBtn = new android.widget.TextView(context);
-            colorBtn.setLayoutParams(new android.widget.GridLayout.LayoutParams(self.dp(44), self.dp(44)));
+            var colorBtnLp = new android.widget.GridLayout.LayoutParams();
+            colorBtnLp.width = self.dp(44);
+            colorBtnLp.height = self.dp(44);
+            colorBtn.setLayoutParams(colorBtnLp);
             try {
                 colorBtn.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(hex), self.dp(8)));
             } catch(eBg) {}
