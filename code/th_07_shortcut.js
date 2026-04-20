@@ -1190,7 +1190,7 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     return true;
   }
 
-  // # 单例复用
+  // # 单例复用（关键修复：跳过已销毁的实例）
   try {
     if (self.__iconPickerSingleton && typeof self.__iconPickerSingleton.show === "function") {
       self.__iconPickerSingleton.show(opts);
@@ -1214,7 +1214,7 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
   var Context = android.content.Context;
   var wm = context.getSystemService(Context.WINDOW_SERVICE);
 
-  // # 状态
+  // # 状态（新增分页状态）
   var state = {
     destroyed: false,
     hidden: false,
@@ -1227,8 +1227,14 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     etSearch: null,
     tvStat: null,
     scrollView: null,
+    pagerBar: null,     // 分页栏
+    tvPager: null,      // 页码显示
     onDismiss: onDismiss,
-    onDismissCalled: false
+    onDismissCalled: false,
+    // 分页
+    currentPage: 0,
+    itemsPerPage: 24,   // 动态计算，这里是默认
+    totalPages: 1
   };
 
   function Li(msg) { try { if (self.L) self.L.i("[iconPicker] " + msg); } catch(e) {} }
@@ -1240,12 +1246,10 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
       var sw = self.state.screen.w;
       var sh = self.state.screen.h;
       var isLandscape = sw > sh;
-      // 每个格子最小宽度（dp）：图标 + 文字 + 边距
       var cellMinDp = isLandscape ? 60 : 68;
-      var paddingTotalDp = 32; // 左右 16dp
+      var paddingTotalDp = 32;
       var availablePx = sw - self.dp(paddingTotalDp);
       var cols = Math.floor(availablePx / self.dp(cellMinDp));
-      // 限制范围
       if (isLandscape) {
         cols = Math.max(6, Math.min(12, cols));
       } else {
@@ -1253,6 +1257,36 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
       }
       return cols;
     } catch(e) { return 4; }
+  }
+
+  // # 计算每页图标数（根据屏幕高度动态计算行数）
+  function computePageSize() {
+    try {
+      var sh = self.state.screen.h;
+      var maxPanelH = Math.floor(sh * 0.75);
+      var cols = computeColumns();
+
+      // 估算各部分占用的 dp 数
+      var headerH     = 48;  // 标题栏
+      var sepH        = 1;   // 分隔线
+      var searchH     = 72;  // 搜索框（含边距）
+      var footerH     = 30;  // 状态栏
+      var pagerH      = 44;  // 分页栏
+      var panelPad    = 24;  // 面板内边距 top+bottom
+      var scrollPad   = 16;  // 滚动区域内边距
+      var fixedDp     = headerH + sepH + searchH + footerH + pagerH + panelPad + scrollPad;
+
+      var density = self.state.density || 2.75;
+      var availableDp = (maxPanelH / density) - fixedDp;
+      var cellH = 72; // 每个格子大约 72dp（图标+文字+边距）
+      var rows = Math.max(3, Math.floor(availableDp / cellH));
+
+      var pageSize = cols * rows;
+      Li("pageSize calc cols=" + cols + " rows=" + rows + " → " + pageSize + " per page");
+      return Math.max(12, pageSize);
+    } catch(e) {
+      return 24;
+    }
   }
 
   // # 过滤
@@ -1271,16 +1305,54 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     return out;
   }
 
-  // # 更新统计
+  // # 分页：跳到指定页
+  function goPage(page) {
+    try {
+      if (state.totalPages <= 1) return;
+      if (page < 0) page = 0;
+      if (page >= state.totalPages) page = state.totalPages - 1;
+      state.currentPage = page;
+      buildGrid();
+      // 滚回顶部
+      try {
+        if (state.scrollView) state.scrollView.scrollTo(0, 0);
+      } catch(eScroll) {}
+    } catch(e) {}
+  }
+
+  // # 更新统计/页码显示
   function updateStat() {
     try {
       if (state.tvStat) {
         state.tvStat.setText("共 " + String(allIcons.length) + " 个 · 当前 " + String(state.filteredIcons.length) + " 个");
       }
+      if (state.tvPager) {
+        state.tvPager.setText(String(state.currentPage + 1) + " / " + String(state.totalPages));
+      }
+      // 更新分页按钮状态
+      try {
+        if (state.pagerBar) {
+          var childCount = state.pagerBar.getChildCount();
+          for (var i = 0; i < childCount; i++) {
+            var child = state.pagerBar.getChildAt(i);
+            if (!child) continue;
+            try {
+              var tag = String(child.getTag() || "");
+              if (tag === "btnPrev") {
+                child.setEnabled(state.currentPage > 0);
+                child.setAlpha(state.currentPage > 0 ? 1.0 : 0.35);
+              } else if (tag === "btnNext") {
+                child.setEnabled(state.currentPage < state.totalPages - 1);
+                child.setAlpha(state.currentPage < state.totalPages - 1 ? 1.0 : 0.35);
+              }
+            } catch(eTag) {}
+          }
+        }
+      } catch(eBar) {}
     } catch(e) {}
   }
 
-  // # 构建网格
+  // # 构建网格（只渲染当前页）
   function buildGrid() {
     try {
       if (!state.grid) return;
@@ -1294,11 +1366,19 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
       var cardColor = isDark ? C.cardDark : C.cardLight;
       var textColor = isDark ? C.textPriDark : C.textPriLight;
 
-      var cellSizeDp = 56; // 图标大小
-      var labelSizeSp = 9; // 文字大小
+      var cellSizeDp = 56;
+      var labelSizeSp = 9;
       var cellPadDp = 4;
 
-      for (var i = 0; i < state.filteredIcons.length; i++) {
+      // 计算当前页要显示的图标范围
+      var startIdx = state.currentPage * state.itemsPerPage;
+      var endIdx = Math.min(startIdx + state.itemsPerPage, state.filteredIcons.length);
+      var pageIcons = [];
+      for (var pi = startIdx; pi < endIdx; pi++) {
+        pageIcons.push(state.filteredIcons[pi]);
+      }
+
+      for (var i = 0; i < pageIcons.length; i++) {
         (function(idx, iconInfo) {
           var cell = new android.widget.LinearLayout(context);
           cell.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -1327,7 +1407,6 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
           var tv = new android.widget.TextView(context);
           var label = "";
           try { label = String(iconInfo.shortName || iconInfo.name || ""); } catch(e) {}
-          // 超长截断
           if (label.length > 10) label = label.substring(0, 9) + "…";
           tv.setText(label);
           tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, labelSizeSp);
@@ -1362,7 +1441,7 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
           }));
 
           state.grid.addView(cell);
-        })(i, state.filteredIcons[i]);
+        })(i, pageIcons[i]);
       }
 
       updateStat();
@@ -1371,10 +1450,14 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     }
   }
 
-  // # 重新渲染
+  // # 重新渲染（过滤 + 重置到第1页）
   function rebuild() {
     try {
       state.filteredIcons = filterIcons(state.query);
+      // 重新计算分页
+      state.itemsPerPage = computePageSize();
+      state.totalPages = Math.max(1, Math.ceil(state.filteredIcons.length / state.itemsPerPage));
+      state.currentPage = 0;
       buildGrid();
     } catch(e) {}
   }
@@ -1438,24 +1521,39 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     } catch(eDes) {}
   }
 
-  // # 显示
+  // # 显示（关键修复：正确处理隐藏后重新显示）
   function show() {
     if (!checkSession()) return;
     if (state.destroyed) return;
 
-    // 如果已隐藏，只需显示
-    if (state.hidden && state.root) {
-      try {
-        state.hidden = false;
-        state.root.setVisibility(android.view.View.VISIBLE);
-        // 刷新列数（可能旋转了屏幕）
-        rebuild();
-        Li("icon picker re-shown");
+    // 如果已有实例
+    if (state.root && state.isAdded) {
+      if (state.hidden) {
+        // 之前被隐藏了，重新显示
+        try {
+          state.hidden = false;
+          state.onDismissCalled = false; // 重置 dismiss 标志
+          state.root.setVisibility(android.view.View.VISIBLE);
+          // 刷新列数（可能旋转了屏幕）和内容
+          rebuild();
+          Li("icon picker re-shown (from hidden)");
+          return;
+        } catch(eShow) {
+          Le("re-show failed: " + String(eShow));
+        }
+      } else {
+        // 已经是显示状态，什么都不做
+        Li("icon picker already visible");
         return;
-      } catch(eShow) {}
+      }
     }
 
-    // 新建
+    // 如果 root 存在但未添加（不应该发生），清掉重建
+    if (state.root && !state.isAdded) {
+      try { state.root = null; } catch(e) {}
+    }
+
+    // ========== 新建面板 ==========
     var isDark = self.isDarkTheme();
     var C = self.ui.colors;
     var bgColor = isDark ? C.bgDark : C.bgLight;
@@ -1467,9 +1565,7 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     var sw = self.state.screen.w;
     var sh = self.state.screen.h;
 
-    // 面板宽度：屏幕宽度减去边距
     var panelW = sw - self.dp(32);
-    // 面板高度：最多 75% 屏幕高
     var maxPanelH = Math.floor(sh * 0.75);
 
     // --- Root ---
@@ -1478,10 +1574,8 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     root.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
       onTouch: function(v, e) {
         self.touchActivity();
-        // 点击空白处关闭
         if (e.getAction() === android.view.MotionEvent.ACTION_DOWN) {
           try {
-            // 检查点击是否在面板外
             var rect = new android.graphics.Rect();
             if (state.root) {
               state.root.getGlobalVisibleRect(rect);
@@ -1523,12 +1617,10 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
     header.addView(tvTitle);
 
-    // Spacer
     var spacer = new android.widget.LinearLayout(context);
     spacer.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, 0, 1));
     header.addView(spacer);
 
-    // 关闭按钮
     var btnClose = new android.widget.TextView(context);
     btnClose.setText("✕");
     btnClose.setTextColor(subTextColor);
@@ -1572,7 +1664,6 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     var etLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
     et.setLayoutParams(etLp);
 
-    // 实时搜索
     et.addTextChangedListener(new JavaAdapter(android.text.TextWatcher, {
       beforeTextChanged: function(s, start, count, after) {},
       onTextChanged: function(s, start, before, count) {},
@@ -1587,7 +1678,6 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     searchBox.addView(et);
     state.etSearch = et;
 
-    // 清空按钮
     var btnClear = new android.widget.TextView(context);
     btnClear.setText("✕");
     btnClear.setTextColor(subTextColor);
@@ -1623,11 +1713,12 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     panel.addView(scroll);
     state.scrollView = scroll;
 
-    // --- 底部状态栏 ---
+    // --- 底部：状态栏 + 分页栏 ---
+    // 状态栏
     var footer = new android.widget.LinearLayout(context);
     footer.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     footer.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    footer.setPadding(0, self.dp(4), 0, 0);
+    footer.setPadding(0, self.dp(4), 0, self.dp(4));
 
     var tvStat = new android.widget.TextView(context);
     tvStat.setTextColor(subTextColor);
@@ -1636,6 +1727,65 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
     state.tvStat = tvStat;
 
     panel.addView(footer);
+
+    // 分页栏
+    var pagerBar = new android.widget.LinearLayout(context);
+    pagerBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    pagerBar.setGravity(android.view.Gravity.CENTER);
+    pagerBar.setPadding(0, self.dp(2), 0, 0);
+    var pagerLp = new android.widget.LinearLayout.LayoutParams(
+      android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+      android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+    );
+    pagerBar.setLayoutParams(pagerLp);
+
+    // 分页按钮工厂
+    function makePagerBtn(text, tag, onClick) {
+      var btn = new android.widget.TextView(context);
+      btn.setText(text);
+      btn.setTag(tag);
+      btn.setTextColor(C.primary);
+      btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+      btn.setTypeface(null, android.graphics.Typeface.BOLD);
+      btn.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
+      try {
+        var btnBg = self.ui.createRoundDrawable(
+          self.withAlpha(C.primary, 0.08),
+          self.dp(6)
+        );
+        btn.setBackground(btnBg);
+      } catch(e) {}
+      btn.setClickable(true);
+      btn.setOnClickListener(new android.view.View.OnClickListener({
+        onClick: function() {
+          try { self.touchActivity(); } catch(e) {}
+          onClick();
+        }
+      }));
+      return btn;
+    }
+
+    var btnPrev = makePagerBtn("◀ 上一页", "btnPrev", function() {
+      goPage(state.currentPage - 1);
+    });
+    pagerBar.addView(btnPrev);
+
+    // 页码
+    var tvPager = new android.widget.TextView(context);
+    tvPager.setText("1 / 1");
+    tvPager.setTextColor(subTextColor);
+    tvPager.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    tvPager.setPadding(self.dp(16), self.dp(4), self.dp(16), self.dp(4));
+    pagerBar.addView(tvPager);
+    state.tvPager = tvPager;
+
+    var btnNext = makePagerBtn("下一页 ▶", "btnNext", function() {
+      goPage(state.currentPage + 1);
+    });
+    pagerBar.addView(btnNext);
+
+    panel.addView(pagerBar);
+    state.pagerBar = pagerBar;
 
     // --- 添加到 WM ---
     var lp = new android.view.WindowManager.LayoutParams(
@@ -1677,13 +1827,13 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
         .start();
     } catch(eA) {}
 
-    // 初始渲染
+    // 初始渲染（会计算分页）
     rebuild();
 
     Li("icon picker shown icons=" + String(allIcons.length));
   }
 
-  // 入口
+  // 入口（关键修复：不在 api.show 中提前设置 state.hidden，让 show() 自己判断）
   var api = {
     show: function(newOpts) {
       try {
@@ -1693,7 +1843,7 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
         state.onDismiss = onDismiss;
         state.onDismissCalled = false;
       } catch(eOpt) {}
-      try { state.hidden = false; } catch(eH) {}
+      // 不在这里设置 state.hidden = false！让内部 show() 自己判断是隐藏重显还是新建
       show();
     },
     hide: hide,
