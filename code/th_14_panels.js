@@ -933,10 +933,16 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             currentColor: currentTint,
             currentIconName: currentShortXIconName,
             onSelect: function(colorHex) {
-                if (inputShortXIconTint && inputShortXIconTint.input) {
-                    inputShortXIconTint.input.setText(colorHex);
+                try {
+                    var safeColor = String(colorHex || "");
+                    if (inputShortXIconTint && inputShortXIconTint.input) {
+                        inputShortXIconTint.input.setText(safeColor);
+                        try { inputShortXIconTint.input.invalidate(); } catch(e) {}
+                    }
+                    try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
+                } catch(eSelect) {
+                    safeLog(self.L, 'e', "colorPicker callback err=" + String(eSelect));
                 }
-                try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(colorHex || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
             }
         });
     });
@@ -1491,10 +1497,16 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             currentColor: currentTint,
             currentIconName: currentShortXIconName,
             onSelect: function(colorHex) {
-                if (inputShortXIconTint && inputShortXIconTint.input) {
-                    inputShortXIconTint.input.setText(colorHex);
+                try {
+                    var safeColor = String(colorHex || "");
+                    if (inputShortXIconTint && inputShortXIconTint.input) {
+                        inputShortXIconTint.input.setText(safeColor);
+                        try { inputShortXIconTint.input.invalidate(); } catch(e) {}
+                    }
+                    try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
+                } catch(eSelect) {
+                    safeLog(self.L, 'e', "colorPicker callback err=" + String(eSelect));
                 }
-                try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(colorHex || "\u9009\u62e9\u989c\u8272"); } catch(e) {}
             }
         });
     });
@@ -4665,11 +4677,19 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
 
       var btnOk = self.ui.createSolidButton(self, "确定", C.primary, android.graphics.Color.WHITE, function() {
         self.touchActivity();
-        var finalColor = isFollowTheme ? "" : selectedColor;
-        if (!isFollowTheme && selectedColor) {
-          pushRecentColor(selectedColor);
+        try {
+          var finalColor = isFollowTheme ? "" : String(selectedColor || "");
+          if (!isFollowTheme && selectedColor) {
+            pushRecentColor(selectedColor);
+          }
+          if (typeof onSelect === "function") {
+            try { onSelect(finalColor); } catch(eOnSelect) {
+              safeLog(self.L, 'e', "colorPicker onSelect err=" + String(eOnSelect));
+            }
+          }
+        } catch(e) {
+          safeLog(self.L, 'e', "colorPicker confirm err=" + String(e));
         }
-        if (typeof onSelect === "function") onSelect(finalColor);
         closePopup();
       });
       actionRow.addView(btnOk);
