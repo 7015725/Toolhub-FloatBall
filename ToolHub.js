@@ -266,6 +266,7 @@ var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.j
                "th_14_panels.js", "th_15_extra.js", "th_16_entry.js"];
 var __moduleUpdates = [];
 var loadErrors = [];
+var criticalModules = { "th_01_base.js": true, "th_16_entry.js": true };
 for (var i = 0; i < modules.length; i++) {
     try {
         loadScript(modules[i]);
@@ -274,11 +275,38 @@ for (var i = 0; i < modules.length; i++) {
         writeLog(modErr);
         try { android.util.Log.e("ToolHub", modErr); } catch(eLog) {}
         loadErrors.push({ module: modules[i], err: String(e) });
-        // # 关键模块失败也记录到 loadErrors，由 __out 统一返回错误信息，不再直接 throw
+        if (criticalModules[modules[i]]) {
+            throw "Critical module failed: " + modules[i] + " (" + String(e) + ")";
+        }
     }
 }
 
 var __out = (function() {
+  // 关键函数未加载成功时提前返回友好错误，避免 ReferenceError
+  if (typeof getProcessInfo !== "function") {
+    return {
+      ok: false,
+      started: false,
+      msg: "ToolHub 启动失败",
+      err: "核心函数 getProcessInfo 未定义，请检查 th_01_base.js 是否加载成功（网络下载失败或文件缺失）"
+    };
+  }
+  if (typeof ToolHubLogger !== "function") {
+    return {
+      ok: false,
+      started: false,
+      msg: "ToolHub 启动失败",
+      err: "核心类 ToolHubLogger 未定义，请检查 th_01_base.js 是否加载成功"
+    };
+  }
+  if (typeof FloatBallAppWM !== "function") {
+    return {
+      ok: false,
+      started: false,
+      msg: "ToolHub 启动失败",
+      err: "核心类 FloatBallAppWM 未定义，请检查 th_02_core.js / th_16_entry.js 是否加载成功"
+    };
+  }
   function optStr(v) {
     return (v === undefined || v === null) ? "" : String(v);
   }
