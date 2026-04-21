@@ -254,7 +254,9 @@ function loadScript(relPath) {
         var geval = eval;
         geval(String(sb.toString()));
     } catch(e) {
-        throw "loadScript(" + relPath + ") failed: " + e;
+        var errMsg = "loadScript(" + relPath + ") failed: " + e;
+        try { android.util.Log.e("ToolHub", errMsg); } catch(eLog) {}
+        throw errMsg;
     }
 }
 
@@ -268,7 +270,9 @@ for (var i = 0; i < modules.length; i++) {
     try {
         loadScript(modules[i]);
     } catch (e) {
-        writeLog("Module load failed: " + modules[i] + " -> " + String(e));
+        var modErr = "Module load failed: " + modules[i] + " -> " + String(e);
+        writeLog(modErr);
+        try { android.util.Log.e("ToolHub", modErr); } catch(eLog) {}
         loadErrors.push({ module: modules[i], err: String(e) });
         if (modules[i] === "th_16_entry.js") {
             throw "Critical module failed: " + modules[i];
