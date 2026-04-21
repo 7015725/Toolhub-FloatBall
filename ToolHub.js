@@ -274,9 +274,7 @@ for (var i = 0; i < modules.length; i++) {
         writeLog(modErr);
         try { android.util.Log.e("ToolHub", modErr); } catch(eLog) {}
         loadErrors.push({ module: modules[i], err: String(e) });
-        if (modules[i] === "th_16_entry.js") {
-            throw "Critical module failed: " + modules[i];
-        }
+        // # 关键模块失败也记录到 loadErrors，由 __out 统一返回错误信息，不再直接 throw
     }
 }
 
@@ -352,8 +350,11 @@ var __out = (function() {
   if (loadInfo.count > 0) {
     out.loadMsg = loadInfo.msg;
     out.loadErrors = loadInfo.modules;
+    if (!started) {
+      out.err = loadInfo.modules.join(", ");
+    }
   }
-  if (!started) out.err = optStr(startRet && startRet.err) || "未知错误";
+  if (!started && !out.err) out.err = optStr(startRet && startRet.err) || "未知错误";
   return out;
 })();
 
