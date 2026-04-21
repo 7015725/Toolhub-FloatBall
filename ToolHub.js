@@ -34,7 +34,7 @@ function sha256File(path) {
             if (hex.length() === 1) sb.append("0");
             sb.append(hex);
         }
-        return sb.toString();
+        return String(sb.toString());
     } catch (e) {
         return null;
     }
