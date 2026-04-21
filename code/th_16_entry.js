@@ -7,7 +7,7 @@ function runOnMainSync(fn, timeoutMs) {
     if (mainLooper !== null && myLooper !== null && myLooper === mainLooper) {
       return { ok: true, value: fn() };
     }
-   } catch(eLoop) { safeLog(null, 'e', "catch " + String(eLoop)); }
+  } catch (eLoop) {}
 
   try {
     var box = { ok: false, value: null, error: null };
@@ -76,17 +76,9 @@ FloatBallAppWM.prototype.close = function() {
   this.cancelDockTimer();
   this.stopDisplayMonitor();
 
-  // # 取消正在进行的球体动画
-  try {
-    if (this.state.ballAnimator) {
-      this.state.ballAnimator.cancel();
-      this.state.ballAnimator = null;
-    }
-  } catch(eAnim) { safeLog(null, 'e', "catch " + String(eAnim)); }
-
   try {
     if (this.state.addedBall && this.state.ballLp) this.savePos(this.state.ballLp.x, this.state.ballLp.y);
-   } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
+  } catch (eS) {}
   try { FileIO.flushDebouncedWrites(); } catch (eFlushCfg) { safeLog(this.L, 'e', "flushDebouncedWrites fail: " + String(eFlushCfg)); }
 
   this.hideAllPanels();
@@ -117,7 +109,7 @@ FloatBallAppWM.prototype.close = function() {
       if (android.os.Build.VERSION.SDK_INT >= 18) this.state.ht.quitSafely();
       else this.state.ht.quit();
     }
-   } catch(eQ) { safeLog(null, 'e', "catch " + String(eQ)); }
+  } catch (eQ) {}
 
   // # 清理图标加载线程
   try {
@@ -125,14 +117,14 @@ FloatBallAppWM.prototype.close = function() {
       if (android.os.Build.VERSION.SDK_INT >= 18) this._iconLoader.ht.quitSafely();
       else this._iconLoader.ht.quit();
     }
-   } catch(eIcon) { safeLog(null, 'e', "catch " + String(eIcon)); }
+  } catch (eIcon) {}
   try {
     if (self.__scIconLoaderSingleton && self.__scIconLoaderSingleton.ht) {
       if (android.os.Build.VERSION.SDK_INT >= 18) self.__scIconLoaderSingleton.ht.quitSafely();
       else self.__scIconLoaderSingleton.ht.quit();
     }
-   } catch(eScIcon) { safeLog(null, 'e', "catch " + String(eScIcon)); }
-  try { self.__scIconLoaderSingleton = null;  } catch(eScIcon2) { safeLog(null, 'e', "catch " + String(eScIcon2)); }
+  } catch (eScIcon) {}
+  try { self.__scIconLoaderSingleton = null; } catch (eScIcon2) {}
 
   safeLog(this.L, 'i',  "close done");
 
@@ -145,7 +137,7 @@ FloatBallAppWM.prototype.close = function() {
         this.L._flushTimer = null;
       }
     }
-   } catch(eLog) { safeLog(null, 'e', "catch " + String(eLog)); }
+  } catch (eLog) {}
 
   // # 清空缓存
   try {
@@ -153,7 +145,7 @@ FloatBallAppWM.prototype.close = function() {
     this._shortcutIconFailTs = {};
     if (typeof __scIconCache !== "undefined") __scIconCache = {};
     if (typeof __scAppLabelCache !== "undefined") __scAppLabelCache = {};
-   } catch(eCache) { safeLog(null, 'e', "catch " + String(eCache)); }
+  } catch (eCache) {}
 };
 
 /**
@@ -169,7 +161,7 @@ FloatBallAppWM.prototype.dispose = function() {
     if (self.__shortcutPickerSingleton === this.__shortcutPickerSingleton) {
       self.__shortcutPickerSingleton = null;
     }
-   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+  } catch (e) {}
   
   // # 清理配置缓存
   this._settingsCache = null;
@@ -204,17 +196,7 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
         shell("am broadcast -a " + String(this.config.ACTION_CLOSE_ALL));
         preCloseSent = true;
       }
-     } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
-  }
-
-  // # 清理旧的 HandlerThread，防止重复启动导致线程泄漏
-  if (this.state.ht) {
-    try {
-      if (android.os.Build.VERSION.SDK_INT >= 18) this.state.ht.quitSafely();
-      else this.state.ht.quit();
-    } catch(eOldHt) { safeLog(null, 'e', "catch " + String(eOldHt)); }
-    this.state.ht = null;
-    this.state.h = null;
+    } catch (e1) {}
   }
 
   var ht = new android.os.HandlerThread(String(this.config.WM_THREAD_NAME));
@@ -229,9 +211,9 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
   var closeRcv = registerReceiverOnMain(this.config.ACTION_CLOSE_ALL, function(ctx, it) {
     try {
       h.post(new JavaAdapter(java.lang.Runnable, {
-        run: function() { try { self.close();  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); } }
+        run: function() { try { self.close(); } catch (e1) {} }
       }));
-     } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
+    } catch (e2) {}
   });
   if (closeRcv) this.state.receivers.push(closeRcv);
 
@@ -255,10 +237,10 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
               if (self.state.panel) self.updatePanelBackground(self.state.panel);
               if (self.state.settingsPanel) self.updatePanelBackground(self.state.settingsPanel);
               if (self.state.viewerPanel) self.updatePanelBackground(self.state.viewerPanel);
-             } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
+            } catch (e1) {}
           }
         }));
-       } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
+      } catch (e0) {}
     }
   );
   if (cfgRcv) this.state.receivers.push(cfgRcv);
@@ -283,10 +265,10 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
           self.state.wm.addView(self.state.ballRoot, self.state.ballLp);
           self.state.addedBall = true;
         } catch (eAdd) {
-          try { self.toast("悬浮球 addView 失败: " + String(eAdd));  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
+          try { self.toast("悬浮球 addView 失败: " + String(eAdd)); } catch (eT) {}
           if (self.L) self.L.fatal("addView ball fail err=" + String(eAdd));
           self.state.addedBall = false;
-          try { self.close();  } catch(eC) { safeLog(null, 'e', "catch " + String(eC)); }
+          try { self.close(); } catch (eC) {}
           return;
         }
 
@@ -298,9 +280,9 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
           self.L.i("ball x=" + String(self.state.ballLp.x) + " y=" + String(self.state.ballLp.y) + " sizeDp=" + String(self.config.BALL_SIZE_DP));
         }
       } catch (eAll) {
-        try { self.toast("启动异常: " + String(eAll));  } catch(eTT2) { safeLog(null, 'e', "catch " + String(eTT2)); }
+        try { self.toast("启动异常: " + String(eAll)); } catch (eTT2) {}
         if (self.L) self.L.fatal("start runnable err=" + String(eAll));
-        try { self.close();  } catch(eC2) { safeLog(null, 'e', "catch " + String(eC2)); }
+        try { self.close(); } catch (eC2) {}
       }
     }
   }));
