@@ -826,8 +826,6 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         clearBtn: null,
         pageSize: 0,
         currentPage: 0,
-        activeTab: "all",
-        tabButtons: {},
         pageInfoTv: null,
         prevBtn: null,
         nextBtn: null,
@@ -1103,58 +1101,11 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxPickerWrap.addView(shortxStatusTv);
     shortxPickerState.statusTv = shortxStatusTv;
 
-    var shortxTabsScroll = new android.widget.HorizontalScrollView(context);
-    try { shortxTabsScroll.setHorizontalScrollBarEnabled(false);  } catch(eTabSb) { safeLog(null, 'e', "catch " + String(eTabSb)); }
-    try { shortxTabsScroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(eTabOs) { safeLog(null, 'e', "catch " + String(eTabOs)); }
-    var shortxTabsLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-    shortxTabsLp.setMargins(self.dp(8), 0, self.dp(8), self.dp(6));
-    shortxPickerWrap.addView(shortxTabsScroll, shortxTabsLp);
-
-    var shortxTabsRow = new android.widget.LinearLayout(context);
-    shortxTabsRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-    shortxTabsRow.setPadding(self.dp(4), 0, self.dp(4), 0);
-    shortxTabsScroll.addView(shortxTabsRow);
-
     var shortxPageBar = new android.widget.LinearLayout(context);
     shortxPageBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     shortxPageBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
     shortxPageBar.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
     shortxPickerWrap.addView(shortxPageBar);
-
-    function getShortXIconCategory(item) {
-        var name = String((item && item.shortName) ? item.shortName : "").toLowerCase();
-        if (!name) return "other";
-        if (name.indexOf("arrow") >= 0 || name.indexOf("left") >= 0 || name.indexOf("right") >= 0 || name.indexOf("up") >= 0 || name.indexOf("down") >= 0) return "direction";
-        if (name.indexOf("play") >= 0 || name.indexOf("pause") >= 0 || name.indexOf("music") >= 0 || name.indexOf("video") >= 0 || name.indexOf("sound") >= 0 || name.indexOf("volume") >= 0 || name.indexOf("camera") >= 0 || name.indexOf("image") >= 0) return "media";
-        if (name.indexOf("home") >= 0 || name.indexOf("setting") >= 0 || name.indexOf("search") >= 0 || name.indexOf("user") >= 0 || name.indexOf("app") >= 0 || name.indexOf("menu") >= 0 || name.indexOf("notification") >= 0) return "system";
-        if (name.indexOf("edit") >= 0 || name.indexOf("delete") >= 0 || name.indexOf("add") >= 0 || name.indexOf("save") >= 0 || name.indexOf("copy") >= 0 || name.indexOf("share") >= 0 || name.indexOf("download") >= 0 || name.indexOf("upload") >= 0) return "action";
-        if (name.indexOf("wechat") >= 0 || name.indexOf("qq") >= 0 || name.indexOf("weibo") >= 0 || name.indexOf("douyin") >= 0 || name.indexOf("tiktok") >= 0 || name.indexOf("alipay") >= 0 || name.indexOf("github") >= 0 || name.indexOf("telegram") >= 0 || name.indexOf("youtube") >= 0 || name.indexOf("google") >= 0) return "brand";
-        return "other";
-    }
-
-    var shortxTabDefs = [
-        { key: "all", label: "全部" },
-        { key: "system", label: "系统" },
-        { key: "action", label: "操作" },
-        { key: "direction", label: "方向" },
-        { key: "media", label: "媒体" },
-        { key: "brand", label: "品牌" },
-        { key: "other", label: "其他" }
-    ];
-
-    function applyShortXTabStyles() {
-        var i;
-        for (i = 0; i < shortxTabDefs.length; i++) {
-            var def = shortxTabDefs[i];
-            var btn = shortxPickerState.tabButtons[def.key];
-            if (!btn) continue;
-            var active = shortxPickerState.activeTab === def.key;
-            try {
-                btn.setTextColor(active ? android.graphics.Color.WHITE : textColor);
-                btn.setBackground(self.ui.createRoundDrawable(active ? C.primary : self.withAlpha(cardColor, 0.96), self.dp(16)));
-             } catch(eTabStyle) { safeLog(null, 'e', "catch " + String(eTabStyle)); }
-        }
-    }
 
     function goShortXPage(delta) {
         shortxPickerState.currentPage = Math.max(0, Number(shortxPickerState.currentPage || 0) + Number(delta || 0));
@@ -1162,7 +1113,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         renderShortXIconGrid();
     }
 
-    var btnPrevPage = self.ui.createFlatButton(self, "上一页", subTextColor, function() {
+    var btnPrevPage = self.ui.createFlatButton(self, "\u4e0a\u4e00\u9875", subTextColor, function() {
         self.touchActivity();
         goShortXPage(-1);
     });
@@ -1177,32 +1128,12 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxPageBar.addView(shortxPageInfo, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
     shortxPickerState.pageInfoTv = shortxPageInfo;
 
-    var btnNextPage = self.ui.createFlatButton(self, "下一页", C.primary, function() {
+    var btnNextPage = self.ui.createFlatButton(self, "\u4e0b\u4e00\u9875", C.primary, function() {
         self.touchActivity();
         goShortXPage(1);
     });
     shortxPageBar.addView(btnNextPage);
     shortxPickerState.nextBtn = btnNextPage;
-
-    var iTab;
-    for (iTab = 0; iTab < shortxTabDefs.length; iTab++) {
-        (function(def) {
-            var tabBtn = self.ui.createFlatButton(self, def.label, textColor, function() {
-                self.touchActivity();
-                shortxPickerState.activeTab = def.key;
-                shortxPickerState.currentPage = 0;
-                applyShortXTabStyles();
-                scrollShortXGridToTop();
-                renderShortXIconGrid();
-            });
-            tabBtn.setPadding(self.dp(10), self.dp(4), self.dp(10), self.dp(4));
-            var lpTab = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-            lpTab.rightMargin = self.dp(6);
-            shortxTabsRow.addView(tabBtn, lpTab);
-            shortxPickerState.tabButtons[def.key] = tabBtn;
-        })(shortxTabDefs[iTab]);
-    }
-    applyShortXTabStyles();
 
     var shortxGridScroll = new android.widget.ScrollView(context);
     try { shortxGridScroll.setVerticalScrollBarEnabled(false);  } catch(eSG0) { safeLog(null, 'e', "catch " + String(eSG0)); }
@@ -1255,8 +1186,6 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             var i;
             for (i = 0; i < icons.length; i++) {
                 var item = icons[i];
-                var tabOk = (shortxPickerState.activeTab === "all") || (getShortXIconCategory(item) === shortxPickerState.activeTab);
-                if (!tabOk) continue;
                 var n1 = String(item.shortName || "").toLowerCase();
                 var n2 = String(item.name || "").toLowerCase();
                 if (!query || n1.indexOf(query) >= 0 || n2.indexOf(query) >= 0) {
@@ -1277,17 +1206,16 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                     var errMsg = self._shortxIconCatalogError ? String(self._shortxIconCatalogError) : "未知原因";
                     shortxPickerState.statusTv.setText("ShortX 图标反射失败/为空：" + errMsg);
                 } else if (!query) {
-                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 共 " + filtered.length + " 个，按宽度自动排成 " + shortxPickerState.pageCols + " 列，每页 " + pageSize + " 个（" + shortxPickerState.pageRows + " 行），当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
+                    shortxPickerState.statusTv.setText("\u5171 " + filtered.length + " \u4e2a\uff0c\u6309\u5bbd\u5ea6\u81ea\u52a8\u6392\u6210 " + shortxPickerState.pageCols + " \u5217\uff0c\u6bcf\u9875 " + pageSize + " \u4e2a\uff08" + shortxPickerState.pageRows + " \u884c\uff09\uff0c\u5f53\u524d\u7b2c " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " \u9875\u3002");
                 } else {
-                    shortxPickerState.statusTv.setText("分类[" + shortxPickerState.activeTab + "] 搜索 [" + query + "] 命中 " + totalMatch + " 个，当前按宽度自动排成 " + shortxPickerState.pageCols + " 列，每页 " + pageSize + " 个，当前第 " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " 页。");
+                    shortxPickerState.statusTv.setText("\u641c\u7d22 [" + query + "] \u547d\u4e2d " + totalMatch + " \u4e2a\uff0c\u5f53\u524d\u6309\u5bbd\u5ea6\u81ea\u52a8\u6392\u6210 " + shortxPickerState.pageCols + " \u5217\uff0c\u6bcf\u9875 " + pageSize + " \u4e2a\uff0c\u5f53\u524d\u7b2c " + (shortxPickerState.currentPage + 1) + "/" + totalPages + " \u9875\u3002");
                 }
             }
             if (shortxPickerState.pageInfoTv) {
-                shortxPickerState.pageInfoTv.setText((filtered.length > 0 ? (shortxPickerState.currentPage + 1) : 0) + " / " + totalPages + " · " + filtered.length + "项 · " + shortxPickerState.pageCols + "列 · 每页" + pageSize + "个");
+                shortxPickerState.pageInfoTv.setText((filtered.length > 0 ? (shortxPickerState.currentPage + 1) : 0) + " / " + totalPages + " \u00b7 " + filtered.length + "\u9879 \u00b7 " + shortxPickerState.pageCols + "\u5217 \u00b7 \u6bcf\u9875" + pageSize + "\u4e2a");
             }
             try { shortxPickerState.prevBtn.setEnabled(shortxPickerState.currentPage > 0);  } catch(ePrev) { safeLog(null, 'e', "catch " + String(ePrev)); }
             try { shortxPickerState.nextBtn.setEnabled(shortxPickerState.currentPage < totalPages - 1);  } catch(eNext) { safeLog(null, 'e', "catch " + String(eNext)); }
-            applyShortXTabStyles();
             var tintHex = currentShortXIconTint || "";
             var selectedShort = currentShortXIconName ? self.normalizeShortXIconName(currentShortXIconName, false) : "";
             for (i = 0; i < result.length; i++) {
@@ -3856,7 +3784,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   }
 
   var selectedName = currentName;
-  var popupState = { currentPage: 0, activeTab: "all" };
+  var popupState = { currentPage: 0 };
   var isDark = self.isDarkTheme();
   var C = self.ui.colors;
   var textColor = isDark ? C.textPriDark : C.textPriLight;
@@ -3865,17 +3793,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var bgColor = isDark ? C.bgDark : C.bgLight;
   var wm = self.state.wm;
 
-  var tabDefs = [
-    { key: "all", label: "\u5168\u90e8" },
-    { key: "system", label: "\u7cfb\u7edf" },
-    { key: "common", label: "\u5e38\u7528" },
-    { key: "media", label: "\u5a92\u4f53" },
-    { key: "comm", label: "\u901a\u8baf" },
-    { key: "device", label: "\u8bbe\u5907" },
-    { key: "action", label: "\u52a8\u4f5c" }
-  ];
-
-  function filterCatalog(q, tab) {
+  function filterCatalog(q) {
     var qLower = String(q || "").toLowerCase();
     var out = [];
     for (var i = 0; i < catalog.length; i++) {
@@ -3884,10 +3802,6 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
       if (qLower) {
         var n = String(entry.shortName || entry.name).toLowerCase();
         if (n.indexOf(qLower) < 0) continue;
-      }
-      if (tab && tab !== "all") {
-        var t = String(entry.category || "all").toLowerCase();
-        if (t !== tab) continue;
       }
       out.push(entry);
     }
@@ -3901,7 +3815,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var density = dm.density;
 
   var panelWidth = Math.round(sw * 0.92);
-  if (panelWidth > self.dp(420)) panelWidth = self.dp(420);
+  if (panelWidth > self.dp(520)) panelWidth = self.dp(520);
   if (panelWidth < self.dp(300)) panelWidth = self.dp(300);
 
   var padH = self.dp(14);
@@ -3909,7 +3823,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var gap = self.dp(8);
 
   // \u8ba1\u7b97\u5217\u6570\u548c\u5355\u5143\u683c\u5bbd\u5ea6
-  var minCellW = self.dp(64);
+  var minCellW = self.dp(52);
   var availW = panelWidth - padH * 2 - gap * 2;
   var colCount = Math.max(3, Math.floor(availW / (minCellW + gap)));
   var cellW = Math.floor((availW - gap * (colCount - 1)) / colCount);
@@ -3920,12 +3834,10 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   if (iconSize < self.dp(22)) iconSize = self.dp(22);
   if (iconSize > self.dp(32)) iconSize = self.dp(32);
   var cellH = self.dp(6) * 2 + iconSize + self.dp(14); // padding + icon + text
-  var headerH = self.dp(160); // header + search + tabs + status + pageBar \u7ea6\u5360\u9ad8\u5ea6
-  var maxGridH = Math.round(sh * 0.55);
+  var headerH = self.dp(110); // header + search + status + pageBar 约占高度（已去掉 tabs）
+  var maxGridH = Math.round(sh * 0.78);
   var rowCount = Math.max(3, Math.floor((maxGridH - headerH) / (cellH + gap)));
   var pageSize = colCount * rowCount;
-  if (pageSize < 12) pageSize = 12;
-  if (pageSize > 40) pageSize = 40;
 
   var rootOverlay = new android.widget.FrameLayout(context);
   rootOverlay.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, 0.55));
@@ -3936,7 +3848,8 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   card.setPadding(padH, padV, padH, padV);
   card.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(16)));
 
-  var cardLp = new android.widget.FrameLayout.LayoutParams(panelWidth, android.widget.FrameLayout.LayoutParams.WRAP_CONTENT);
+  var cardHeight = Math.round(sh * 0.88);
+  var cardLp = new android.widget.FrameLayout.LayoutParams(panelWidth, cardHeight);
   cardLp.gravity = android.view.Gravity.CENTER;
   card.setLayoutParams(cardLp);
 
@@ -3993,54 +3906,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   searchEt.setBackground(self.ui.createStrokeDrawable(isDark ? self.ui.colors.inputBgDark : self.ui.colors.inputBgLight, isDark ? self.ui.colors.dividerDark : self.ui.colors.dividerLight, self.dp(1), self.dp(10)));
   card.addView(searchEt);
 
-  // Tabs
-  var tabsScroll = new android.widget.HorizontalScrollView(context);
-  tabsScroll.setHorizontalScrollBarEnabled(false);
-  var tabsRow = new android.widget.LinearLayout(context);
-  tabsRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-  tabsRow.setPadding(self.dp(8), self.dp(8), self.dp(8), self.dp(8));
-  tabsScroll.addView(tabsRow);
-  card.addView(tabsScroll);
-
-  var tabButtons = {};
-  for (var ti = 0; ti < tabDefs.length; ti++) {
-    (function(def) {
-      var btn = new android.widget.TextView(context);
-      btn.setText(String(def.label));
-      btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-      btn.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
-      var btnLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-      btnLp.setMargins(0, 0, self.dp(6), 0);
-      btn.setLayoutParams(btnLp);
-      btn.setClickable(true);
-      btn.setOnClickListener(new android.view.View.OnClickListener({
-        onClick: function() {
-          self.touchActivity();
-          popupState.activeTab = def.key;
-          popupState.currentPage = 0;
-          refreshTabs();
-          renderGrid();
-        }
-      }));
-      tabsRow.addView(btn);
-      tabButtons[def.key] = btn;
-    })(tabDefs[ti]);
-  }
-
-  function refreshTabs() {
-    for (var k in tabButtons) {
-      if (!tabButtons.hasOwnProperty(k)) continue;
-      var btn = tabButtons[k];
-      var active = popupState.activeTab === k;
-      btn.setTextColor(active ? C.primary : subTextColor);
-      try {
-        btn.setBackground(active ? self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.15), self.dp(16)) : null);
-       } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-    }
-  }
-  refreshTabs();
-
-  // \u72b6\u6001\u680f
+  // 状态栏
   var statusTv = new android.widget.TextView(context);
   statusTv.setTextColor(subTextColor);
   statusTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
@@ -4076,7 +3942,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var gridScroll = new android.widget.ScrollView(context);
   gridScroll.setVerticalScrollBarEnabled(false);
   gridScroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);
-  gridScroll.setLayoutParams(new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, maxGridH));
+  gridScroll.setLayoutParams(new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
   card.addView(gridScroll);
 
   var grid = new android.widget.GridLayout(context);
@@ -4144,7 +4010,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     try {
       grid.removeAllViews();
       var q = String(searchEt.getText() || "");
-      var matched = filterCatalog(q, popupState.activeTab);
+      var matched = filterCatalog(q);
 
       var totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
       if (popupState.currentPage >= totalPages) popupState.currentPage = totalPages - 1;
