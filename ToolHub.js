@@ -5,6 +5,11 @@
 var GIT_BASE = "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/code/";
 var __dirChecked = false;
 
+function buildNoCacheUrl(urlStr) {
+    var sep = String(urlStr).indexOf("?") >= 0 ? "&" : "?";
+    return String(urlStr) + sep + "_toolhub_ts=" + java.lang.System.currentTimeMillis();
+}
+
 function getLogPath() {
     return shortx.getShortXDir() + "/ToolHub/logs/init.log";
 }
@@ -105,12 +110,15 @@ function setDirPerms(path) {
 
 function getRemoteLastModified(urlStr) {
     try {
-        var url = new java.net.URL(urlStr);
+        var url = new java.net.URL(buildNoCacheUrl(urlStr));
         var conn = url.openConnection();
+        conn.setUseCaches(false);
         conn.setRequestMethod("HEAD");
         conn.setConnectTimeout(5000);
         conn.setReadTimeout(10000);
         conn.setRequestProperty("User-Agent", "ShortX-ToolHub/1.0");
+        conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
+        conn.setRequestProperty("Pragma", "no-cache");
         var code = conn.getResponseCode();
         if (code !== 200) return null;
         var lm = conn.getHeaderField("Last-Modified");
@@ -141,11 +149,14 @@ function saveLocalLastModified(relPath, lm) {
 }
 
 function downloadFile(urlStr, destFile) {
-    var url = new java.net.URL(urlStr);
+    var url = new java.net.URL(buildNoCacheUrl(urlStr));
     var conn = url.openConnection();
+    conn.setUseCaches(false);
     conn.setConnectTimeout(10000);
     conn.setReadTimeout(30000);
     conn.setRequestProperty("User-Agent", "ShortX-ToolHub/1.0");
+    conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
+    conn.setRequestProperty("Pragma", "no-cache");
     var code = conn.getResponseCode();
     if (code !== 200) throw "HTTP " + code;
     var expectedLen = conn.getContentLength();
