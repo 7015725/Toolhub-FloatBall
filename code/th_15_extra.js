@@ -1192,6 +1192,13 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
   // 限制 WM 更新频率，避免过热/卡顿
   var lastUpdateTs = 0;
 
+  // 吸边状态下按住拖拽：不要在 DOWN 里立即 undock + savePos，
+  // 否则 ColorOS 上容易出现一次明显卡顿，随后第一帧从边缘闪到手指位置。
+  // 改为：DOWN 只记录逻辑起点；真正超过 slop 开始拖拽时再展开为完整球。
+  var dockedAtDown = false;
+  var downDockSide = null;
+  var dockDragExpanded = false;
+
   return new JavaAdapter(android.view.View.OnTouchListener, {
     onTouch: function(v, e) {
       if (self.state.closing) return false;
@@ -1210,19 +1217,26 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         // 恢复不透明度
         try { v.setAlpha(1.0);  } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
 
-        if (self.state.docked) {
-          self.undockToFull(false, null);
-          self.touchActivity();
-        }
+        dockedAtDown = !!self.state.docked;
+        downDockSide = self.state.dockSide;
+        dockDragExpanded = false;
 
         self.state.rawX = e.getRawX();
         self.state.rawY = e.getRawY();
-        self.state.downX = self.state.ballLp.x;
+        if (dockedAtDown) {
+          // 记录“完整球”的逻辑起点：左边为 0，右边为 screenW-ballSize。
+          // 当前吸边 lp.x/lp.width 是裁剪后的可见条，不能直接作为拖拽起点。
+          if (downDockSide === "right") self.state.downX = self.state.screen.w - di.ballSize;
+          else self.state.downX = 0;
+        } else {
+          self.state.downX = self.state.ballLp.x;
+        }
         self.state.downY = self.state.ballLp.y;
         self.state.dragging = false;
 
         lastTouchX = e.getRawX();
         lastTouchY = e.getRawY();
+        lastUpdateTs = 0;
 
         try { v.setPressed(true);  } catch(eP) { safeLog(null, 'e', "catch " + String(eP)); }
         try { v.drawableHotspotChanged(e.getX(), e.getY());  } catch(eH) { safeLog(null, 'e', "catch " + String(eH)); }
@@ -1255,12 +1269,25 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
           if (Math.abs(dx) > slop || Math.abs(dy) > slop) {
             self.state.dragging = true;
             self.cancelLongPressTimer();
+            try { self.hideAllPanels();  } catch(eHideStart) { safeLog(null, 'e', "catch " + String(eHideStart)); }
             // # 日志精简：drag start 只在 DEBUG 时记录
             // if (self.L) self.L.d("drag start dx=" + String(dx) + " dy=" + String(dy));
           }
         }
 
         if (self.state.dragging) {
+          if (dockedAtDown && !dockDragExpanded) {
+            // 第一次进入拖拽时再从吸边态展开，避免 DOWN 阶段卡顿/写盘。
+            try { if (self.state.ballAnimator) self.state.ballAnimator.cancel();  } catch(eAnimCancel) { safeLog(null, 'e', "catch " + String(eAnimCancel)); }
+            self.state.docked = false;
+            self.state.dockSide = null;
+            self.state.ballLp.width = di.ballSize;
+            try { self.state.ballContent.setX(0);  } catch(eDx0) { safeLog(null, 'e', "catch " + String(eDx0)); }
+            try { self.state.ballContent.setAlpha(1.0);  } catch(eDa0) { safeLog(null, 'e', "catch " + String(eDa0)); }
+            dockDragExpanded = true;
+            lastUpdateTs = 0;
+          }
+
           self.state.ballLp.x = self.state.downX + dx;
           self.state.ballLp.y = self.state.downY + dy;
 
@@ -1271,12 +1298,11 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
           try { self.state.ballContent.setX(0);  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
 
           var now = java.lang.System.currentTimeMillis();
-          if (now - lastUpdateTs > 10) { // 10ms 节流
+          if (lastUpdateTs === 0 || now - lastUpdateTs > 10) { // 10ms 节流；拖拽首帧必须立即刷新
              try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);  } catch(eU) { safeLog(null, 'e', "catch " + String(eU)); }
              lastUpdateTs = now;
           }
 
-          self.hideAllPanels();
           // 拖拽中不频繁保存位置，只在 UP 时保存
         }
 
@@ -1305,6 +1331,10 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         }
 
         if (!self.state.dragging && a === android.view.MotionEvent.ACTION_UP) {
+          // 只是点击吸边球时，拖拽逻辑没有展开；这里再恢复完整球，保证面板从完整球位置弹出。
+          if (dockedAtDown && self.state.docked) {
+            try { self.undockToFull(false, null);  } catch(eUndockClick) { safeLog(null, 'e', "catch " + String(eUndockClick)); }
+          }
           try { self.playBounce(v);  } catch(eB) { safeLog(null, 'e', "catch " + String(eB)); }
 
           if (self.state.addedPanel) self.hideMainPanel();
