@@ -3859,9 +3859,11 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     android.view.WindowManager.LayoutParams.MATCH_PARENT,
     android.view.WindowManager.LayoutParams.MATCH_PARENT,
     android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-    android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+    android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
     android.graphics.PixelFormat.TRANSLUCENT
   );
+  overlayLp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+    | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 
   try { wm.addView(rootOverlay, overlayLp); } catch(eAdd) {
     safeLog(self.L, 'e', "icon picker addView fail: " + String(eAdd));
@@ -3902,8 +3904,20 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   try { searchEt.setHintTextColor(subTextColor);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   searchEt.setHint("\u641c\u7d22\u56fe\u6807\u540d\uff0c\u5982 share / home");
   searchEt.setSingleLine(true);
+  searchEt.setFocusable(true);
+  searchEt.setFocusableInTouchMode(true);
   searchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
   searchEt.setBackground(self.ui.createStrokeDrawable(isDark ? self.ui.colors.inputBgDark : self.ui.colors.inputBgLight, isDark ? self.ui.colors.dividerDark : self.ui.colors.dividerLight, self.dp(1), self.dp(10)));
+  searchEt.setOnClickListener(new android.view.View.OnClickListener({
+    onClick: function(v) {
+      self.touchActivity();
+      try {
+        v.requestFocus();
+        var imm = context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+        if (imm) imm.showSoftInput(v, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+      } catch(eIme) { safeLog(null, 'e', "catch " + String(eIme)); }
+    }
+  }));
   card.addView(searchEt);
 
   // 状态栏
