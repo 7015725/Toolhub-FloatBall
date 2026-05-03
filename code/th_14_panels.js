@@ -3862,7 +3862,8 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
     android.graphics.PixelFormat.TRANSLUCENT
   );
-  overlayLp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+  // 输入法弹出时保持 overlay 原位，不让系统 resize/pan 导致弹窗整体上移、界面被割裂。
+  overlayLp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
     | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 
   try { wm.addView(rootOverlay, overlayLp); } catch(eAdd) {
