@@ -3848,9 +3848,14 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   card.setPadding(padH, padV, padH, padV);
   card.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(16)));
 
-  var cardHeight = Math.round(sh * 0.88);
-  var cardLp = new android.widget.FrameLayout.LayoutParams(panelWidth, cardHeight);
-  cardLp.gravity = android.view.Gravity.CENTER;
+  // 使用顶部锚定 + MATCH_PARENT 高度，避免输入法触发窗口 resize 后，居中卡片被上下裁切。
+  // 之前 0.88 屏高 + CENTER 在 IME 弹出时会被压缩窗口居中裁剪，导致标题/搜索框移出屏幕。
+  var cardLp = new android.widget.FrameLayout.LayoutParams(
+    panelWidth,
+    android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+  );
+  cardLp.gravity = android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL;
+  try { cardLp.setMargins(0, self.dp(12), 0, self.dp(12));  } catch(eCardMargin) { safeLog(null, 'e', "catch " + String(eCardMargin)); }
   card.setLayoutParams(cardLp);
 
   rootOverlay.addView(card);
