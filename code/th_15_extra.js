@@ -1192,9 +1192,9 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
   // 限制 WM 更新频率，避免过热/卡顿
   var lastUpdateTs = 0;
 
-  // 吸边状态下按住拖拽：不要在 DOWN 里立即 undock + savePos，
-  // 否则 ColorOS 上容易出现一次明显卡顿，随后第一帧从边缘闪到手指位置。
-  // 改为：DOWN 只记录逻辑起点；真正超过 slop 开始拖拽时再展开为完整球。
+  // 吸边状态下按住拖拽：不要在 DOWN 里立即 undock + savePos。
+  // 采用“滑出吸边”过渡：先按手指拉动距离逐步展开可见宽度，完整露出后再跟手移动。
+  // 这样不会从边缘直接闪现到手指位置。
   var dockedAtDown = false;
   var downDockSide = null;
   var dockDragExpanded = false;
@@ -1276,26 +1276,63 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         }
 
         if (self.state.dragging) {
+          var hiddenPx = di.hiddenPx;
+          var targetY = self.clamp(self.state.downY + dy, 0, self.state.screen.h - di.ballSize);
+
           if (dockedAtDown && !dockDragExpanded) {
-            // 第一次进入拖拽时再从吸边态展开，避免 DOWN 阶段卡顿/写盘。
+            // 丝滑滑出：先扩展裁剪窗口，不立刻把完整球跳到手指位置。
             try { if (self.state.ballAnimator) self.state.ballAnimator.cancel();  } catch(eAnimCancel) { safeLog(null, 'e', "catch " + String(eAnimCancel)); }
-            self.state.docked = false;
-            self.state.dockSide = null;
-            self.state.ballLp.width = di.ballSize;
-            try { self.state.ballContent.setX(0);  } catch(eDx0) { safeLog(null, 'e', "catch " + String(eDx0)); }
+
+            if (downDockSide === "right") {
+              var pullR = Math.max(0, -dx);
+              var revealR = self.clamp(pullR, 0, hiddenPx);
+              var revealWR = di.visiblePx + revealR;
+              self.state.ballLp.width = revealWR;
+              self.state.ballLp.x = self.state.screen.w - revealWR;
+              self.state.ballLp.y = targetY;
+              try { self.state.ballContent.setX(0);  } catch(eRx) { safeLog(null, 'e', "catch " + String(eRx)); }
+
+              if (pullR >= hiddenPx) {
+                dockDragExpanded = true;
+                self.state.docked = false;
+                self.state.dockSide = null;
+                self.state.ballLp.width = di.ballSize;
+                self.state.ballLp.x = (self.state.screen.w - di.ballSize) + (dx + hiddenPx);
+              }
+            } else {
+              var pullL = Math.max(0, dx);
+              var revealL = self.clamp(pullL, 0, hiddenPx);
+              var revealWL = di.visiblePx + revealL;
+              self.state.ballLp.width = revealWL;
+              self.state.ballLp.x = 0;
+              self.state.ballLp.y = targetY;
+              try { self.state.ballContent.setX(-hiddenPx + revealL);  } catch(eLx) { safeLog(null, 'e', "catch " + String(eLx)); }
+
+              if (pullL >= hiddenPx) {
+                dockDragExpanded = true;
+                self.state.docked = false;
+                self.state.dockSide = null;
+                self.state.ballLp.width = di.ballSize;
+                self.state.ballLp.x = dx - hiddenPx;
+                try { self.state.ballContent.setX(0);  } catch(eLx2) { safeLog(null, 'e', "catch " + String(eLx2)); }
+              }
+            }
+
             try { self.state.ballContent.setAlpha(1.0);  } catch(eDa0) { safeLog(null, 'e', "catch " + String(eDa0)); }
-            dockDragExpanded = true;
-            lastUpdateTs = 0;
+          } else {
+            if (dockedAtDown && dockDragExpanded) {
+              if (downDockSide === "right") self.state.ballLp.x = (self.state.screen.w - di.ballSize) + (dx + hiddenPx);
+              else self.state.ballLp.x = dx - hiddenPx;
+            } else {
+              self.state.ballLp.x = self.state.downX + dx;
+            }
+            self.state.ballLp.y = targetY;
+            self.state.ballLp.width = di.ballSize;
+            try { self.state.ballContent.setX(0);  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
           }
 
-          self.state.ballLp.x = self.state.downX + dx;
-          self.state.ballLp.y = self.state.downY + dy;
-
-          self.state.ballLp.x = self.clamp(self.state.ballLp.x, 0, self.state.screen.w - di.ballSize);
+          self.state.ballLp.x = self.clamp(self.state.ballLp.x, 0, self.state.screen.w - self.state.ballLp.width);
           self.state.ballLp.y = self.clamp(self.state.ballLp.y, 0, self.state.screen.h - di.ballSize);
-
-          self.state.ballLp.width = di.ballSize;
-          try { self.state.ballContent.setX(0);  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
 
           var now = java.lang.System.currentTimeMillis();
           if (lastUpdateTs === 0 || now - lastUpdateTs > 10) { // 10ms 节流；拖拽首帧必须立即刷新
@@ -1361,6 +1398,8 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
           }
 
           if (self.config.ENABLE_SNAP_TO_EDGE) {
+              // snapToEdgeDocked 内部会保护 dragging，所以这里先清掉拖拽态。
+              self.state.dragging = false;
               // 立即吸附，带动画，支持 fling 方向
               self.snapToEdgeDocked(true, forceSide);
           } else {
