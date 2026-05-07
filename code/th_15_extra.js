@@ -1222,18 +1222,6 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
     } catch (e) { return 0; }
   }
 
-  function prepareFullBallAt(x, y, di) {
-    try {
-      self.state.docked = false;
-      self.state.dockSide = null;
-      self.state.ballLp.width = di.ballSize;
-      self.state.ballLp.x = self.clamp(Math.round(x), 0, self.state.screen.w - di.ballSize);
-      self.state.ballLp.y = self.clamp(Math.round(y), 0, self.state.screen.h - di.ballSize);
-      try { self.state.ballContent.setX(0); } catch (eX) {}
-      try { self.state.ballContent.setAlpha(1.0); } catch (eA) {}
-      try { self.state.ballContent.setScaleX(1.0); self.state.ballContent.setScaleY(1.0); } catch (eS) {}
-    } catch (e) { safeLog(null, "e", "prepareFullBallAt fail: " + String(e)); }
-  }
 
   return new JavaAdapter(android.view.View.OnTouchListener, {
     onTouch: function(v, e) {
@@ -1297,20 +1285,36 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
             self.cancelLongPressTimer();
             try { self.hideAllPanels(); } catch (eHide) {}
             cancelBallAnimator();
-            if (downDocked) prepareFullBallAt(logicalDownX, logicalDownY, di);
+            // 吸边态拖拽不再弹出完整球；先保持可见条沿边移动，彻底避免“弹到手指处”的首帧闪现。
           }
         }
 
         if (self.state.dragging) {
-          var targetX = Math.round(curRawX - grabOffsetX);
-          var targetY = Math.round(curRawY - grabOffsetY);
-          self.state.docked = false;
-          self.state.dockSide = null;
-          self.state.ballLp.width = di.ballSize;
-          self.state.ballLp.x = self.clamp(targetX, 0, self.state.screen.w - di.ballSize);
-          self.state.ballLp.y = self.clamp(targetY, 0, self.state.screen.h - di.ballSize);
-          try { self.state.ballContent.setX(0); } catch (eX2) {}
-          try { self.state.ballContent.setAlpha(1.0); } catch (eA2) {}
+          if (downDocked) {
+            var edgeY = self.clamp(logicalDownY + dy, 0, self.state.screen.h - di.ballSize);
+            self.state.docked = true;
+            self.state.dockSide = downDockSide || self.state.dockSide || "right";
+            self.state.ballLp.width = di.visiblePx;
+            self.state.ballLp.y = edgeY;
+            if (self.state.dockSide === "left") {
+              self.state.ballLp.x = 0;
+              try { self.state.ballContent.setX(-di.hiddenPx); } catch (eLX) {}
+            } else {
+              self.state.ballLp.x = self.state.screen.w - di.visiblePx;
+              try { self.state.ballContent.setX(0); } catch (eRX) {}
+            }
+            try { self.state.ballContent.setAlpha(1.0); } catch (eAEdge) {}
+          } else {
+            var targetX = Math.round(curRawX - grabOffsetX);
+            var targetY = Math.round(curRawY - grabOffsetY);
+            self.state.docked = false;
+            self.state.dockSide = null;
+            self.state.ballLp.width = di.ballSize;
+            self.state.ballLp.x = self.clamp(targetX, 0, self.state.screen.w - di.ballSize);
+            self.state.ballLp.y = self.clamp(targetY, 0, self.state.screen.h - di.ballSize);
+            try { self.state.ballContent.setX(0); } catch (eX2) {}
+            try { self.state.ballContent.setAlpha(1.0); } catch (eA2) {}
+          }
 
           var now = java.lang.System.currentTimeMillis();
           if (lastUpdateTs === 0 || now - lastUpdateTs > 10) {
