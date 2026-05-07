@@ -1183,21 +1183,53 @@ FloatBallAppWM.prototype.armLongPress = function() {
 FloatBallAppWM.prototype.setupTouchListener = function() {
   var slop = this.dp(this.config.CLICK_SLOP_DP);
   var self = this;
-
-  // 速度追踪
   var velocityTracker = null;
-  var lastTouchX = 0;
-  var lastTouchY = 0;
-
-  // 限制 WM 更新频率，避免过热/卡顿
   var lastUpdateTs = 0;
-
-  // 吸边状态下按住拖拽：不要在 DOWN 里立即 undock + savePos。
-  // 采用“滑出吸边”过渡：先按手指拉动距离逐步展开可见宽度，完整露出后再跟手移动。
-  // 这样不会从边缘直接闪现到手指位置。
-  var dockedAtDown = false;
+  var downDocked = false;
   var downDockSide = null;
-  var dockDragExpanded = false;
+  var startRawX = 0;
+  var startRawY = 0;
+  var logicalDownX = 0;
+  var logicalDownY = 0;
+  var grabOffsetX = 0;
+  var grabOffsetY = 0;
+
+  function recycleVelocityTracker() {
+    try { if (velocityTracker) velocityTracker.recycle(); } catch (e) { safeLog(null, "e", "velocityTracker recycle fail: " + String(e)); }
+    velocityTracker = null;
+  }
+
+  function cancelBallAnimator() {
+    try {
+      if (self.state.ballAnimator) {
+        self.state.ballAnimator.cancel();
+        self.state.ballAnimator = null;
+      }
+    } catch (e) { safeLog(null, "e", "cancelBallAnimator fail: " + String(e)); }
+  }
+
+  function getLogicalBallX(di) {
+    try {
+      if (self.state.docked) {
+        if (self.state.dockSide === "right") return self.state.screen.w - di.ballSize;
+        return 0;
+      }
+      return self.state.ballLp.x;
+    } catch (e) { return 0; }
+  }
+
+  function forceFullBallAt(x, y, di) {
+    try {
+      self.state.docked = false;
+      self.state.dockSide = null;
+      self.state.ballLp.width = di.ballSize;
+      self.state.ballLp.x = self.clamp(Math.round(x), 0, self.state.screen.w - di.ballSize);
+      self.state.ballLp.y = self.clamp(Math.round(y), 0, self.state.screen.h - di.ballSize);
+      try { self.state.ballContent.setX(0); } catch (eX) {}
+      try { self.state.ballContent.setAlpha(1.0); } catch (eA) {}
+      self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);
+    } catch (e) { safeLog(null, "e", "forceFullBallAt fail: " + String(e)); }
+  }
 
   return new JavaAdapter(android.view.View.OnTouchListener, {
     onTouch: function(v, e) {
@@ -1206,214 +1238,129 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
       var a = e.getAction();
       var di = self.getDockInfo();
 
-      if (velocityTracker == null) {
-          velocityTracker = android.view.VelocityTracker.obtain();
-      }
-      velocityTracker.addMovement(e);
-
       if (a === android.view.MotionEvent.ACTION_DOWN) {
+        recycleVelocityTracker();
+        try {
+          velocityTracker = android.view.VelocityTracker.obtain();
+          velocityTracker.addMovement(e);
+        } catch (eVT) { velocityTracker = null; }
+
         self.touchActivity();
+        cancelBallAnimator();
+        try { v.setAlpha(1.0); } catch (eA0) {}
+        try { v.setPressed(true); } catch (eP0) {}
+        try { v.drawableHotspotChanged(e.getX(), e.getY()); } catch (eH0) {}
 
-        // 恢复不透明度
-        try { v.setAlpha(1.0);  } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
-
-        dockedAtDown = !!self.state.docked;
+        downDocked = !!self.state.docked;
         downDockSide = self.state.dockSide;
-        dockDragExpanded = false;
+        startRawX = e.getRawX();
+        startRawY = e.getRawY();
+        logicalDownX = getLogicalBallX(di);
+        logicalDownY = self.state.ballLp.y;
+        grabOffsetX = startRawX - logicalDownX;
+        grabOffsetY = startRawY - logicalDownY;
 
-        self.state.rawX = e.getRawX();
-        self.state.rawY = e.getRawY();
-        if (dockedAtDown) {
-          // 记录“完整球”的逻辑起点：左边为 0，右边为 screenW-ballSize。
-          // 当前吸边 lp.x/lp.width 是裁剪后的可见条，不能直接作为拖拽起点。
-          if (downDockSide === "right") self.state.downX = self.state.screen.w - di.ballSize;
-          else self.state.downX = 0;
-        } else {
-          self.state.downX = self.state.ballLp.x;
-        }
-        self.state.downY = self.state.ballLp.y;
+        self.state.rawX = startRawX;
+        self.state.rawY = startRawY;
+        self.state.downX = logicalDownX;
+        self.state.downY = logicalDownY;
         self.state.dragging = false;
-
-        lastTouchX = e.getRawX();
-        lastTouchY = e.getRawY();
         lastUpdateTs = 0;
 
-        try { v.setPressed(true);  } catch(eP) { safeLog(null, 'e', "catch " + String(eP)); }
-        try { v.drawableHotspotChanged(e.getX(), e.getY());  } catch(eH) { safeLog(null, 'e', "catch " + String(eH)); }
-
-        // 按下缩小反馈
         if (self.config.ENABLE_ANIMATIONS) {
-            try {
-                v.animate().scaleX(0.9).scaleY(0.9).setDuration(100).start();
-             } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
+          try { v.animate().cancel(); v.animate().scaleX(0.9).scaleY(0.9).setDuration(100).start(); }
+          catch (eS0) { safeLog(null, "e", "press scale fail: " + String(eS0)); }
         }
 
         self.armLongPress();
-        // # 日志精简：touch DOWN 只在 DEBUG 且非频繁触发时记录
-        // if (self.L) self.L.d("touch DOWN rawX=" + String(self.state.rawX) + " rawY=" + String(self.state.rawY));
         return true;
       }
 
+      try { if (velocityTracker) velocityTracker.addMovement(e); } catch (eVT2) {}
+
       if (a === android.view.MotionEvent.ACTION_MOVE) {
         self.touchActivity();
-
         var curRawX = e.getRawX();
         var curRawY = e.getRawY();
-        var dx = Math.round(curRawX - self.state.rawX);
-        var dy = Math.round(curRawY - self.state.rawY);
-
-        lastTouchX = curRawX;
-        lastTouchY = curRawY;
+        var dx = Math.round(curRawX - startRawX);
+        var dy = Math.round(curRawY - startRawY);
 
         if (!self.state.dragging) {
           if (Math.abs(dx) > slop || Math.abs(dy) > slop) {
             self.state.dragging = true;
             self.cancelLongPressTimer();
-            try { self.hideAllPanels();  } catch(eHideStart) { safeLog(null, 'e', "catch " + String(eHideStart)); }
-            // # 日志精简：drag start 只在 DEBUG 时记录
-            // if (self.L) self.L.d("drag start dx=" + String(dx) + " dy=" + String(dy));
+            try { self.hideAllPanels(); } catch (eHide) {}
+            cancelBallAnimator();
+            if (downDocked) forceFullBallAt(logicalDownX, logicalDownY, di);
           }
         }
 
         if (self.state.dragging) {
-          var hiddenPx = di.hiddenPx;
-          var targetY = self.clamp(self.state.downY + dy, 0, self.state.screen.h - di.ballSize);
-
-          if (dockedAtDown && !dockDragExpanded) {
-            // 丝滑滑出：先扩展裁剪窗口，不立刻把完整球跳到手指位置。
-            try { if (self.state.ballAnimator) self.state.ballAnimator.cancel();  } catch(eAnimCancel) { safeLog(null, 'e', "catch " + String(eAnimCancel)); }
-
-            if (downDockSide === "right") {
-              var pullR = Math.max(0, -dx);
-              var revealR = self.clamp(pullR, 0, hiddenPx);
-              var revealWR = di.visiblePx + revealR;
-              self.state.ballLp.width = revealWR;
-              self.state.ballLp.x = self.state.screen.w - revealWR;
-              self.state.ballLp.y = targetY;
-              try { self.state.ballContent.setX(0);  } catch(eRx) { safeLog(null, 'e', "catch " + String(eRx)); }
-
-              if (pullR >= hiddenPx) {
-                dockDragExpanded = true;
-                self.state.docked = false;
-                self.state.dockSide = null;
-                self.state.ballLp.width = di.ballSize;
-                self.state.ballLp.x = (self.state.screen.w - di.ballSize) + (dx + hiddenPx);
-              }
-            } else {
-              var pullL = Math.max(0, dx);
-              var revealL = self.clamp(pullL, 0, hiddenPx);
-              var revealWL = di.visiblePx + revealL;
-              self.state.ballLp.width = revealWL;
-              self.state.ballLp.x = 0;
-              self.state.ballLp.y = targetY;
-              try { self.state.ballContent.setX(-hiddenPx + revealL);  } catch(eLx) { safeLog(null, 'e', "catch " + String(eLx)); }
-
-              if (pullL >= hiddenPx) {
-                dockDragExpanded = true;
-                self.state.docked = false;
-                self.state.dockSide = null;
-                self.state.ballLp.width = di.ballSize;
-                self.state.ballLp.x = dx - hiddenPx;
-                try { self.state.ballContent.setX(0);  } catch(eLx2) { safeLog(null, 'e', "catch " + String(eLx2)); }
-              }
-            }
-
-            try { self.state.ballContent.setAlpha(1.0);  } catch(eDa0) { safeLog(null, 'e', "catch " + String(eDa0)); }
-          } else {
-            if (dockedAtDown && dockDragExpanded) {
-              if (downDockSide === "right") self.state.ballLp.x = (self.state.screen.w - di.ballSize) + (dx + hiddenPx);
-              else self.state.ballLp.x = dx - hiddenPx;
-            } else {
-              self.state.ballLp.x = self.state.downX + dx;
-            }
-            self.state.ballLp.y = targetY;
-            self.state.ballLp.width = di.ballSize;
-            try { self.state.ballContent.setX(0);  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
-          }
-
-          self.state.ballLp.x = self.clamp(self.state.ballLp.x, 0, self.state.screen.w - self.state.ballLp.width);
-          self.state.ballLp.y = self.clamp(self.state.ballLp.y, 0, self.state.screen.h - di.ballSize);
+          var targetX = Math.round(curRawX - grabOffsetX);
+          var targetY = Math.round(curRawY - grabOffsetY);
+          self.state.docked = false;
+          self.state.dockSide = null;
+          self.state.ballLp.width = di.ballSize;
+          self.state.ballLp.x = self.clamp(targetX, 0, self.state.screen.w - di.ballSize);
+          self.state.ballLp.y = self.clamp(targetY, 0, self.state.screen.h - di.ballSize);
+          try { self.state.ballContent.setX(0); } catch (eX2) {}
+          try { self.state.ballContent.setAlpha(1.0); } catch (eA2) {}
 
           var now = java.lang.System.currentTimeMillis();
-          if (lastUpdateTs === 0 || now - lastUpdateTs > 10) { // 10ms 节流；拖拽首帧必须立即刷新
-             try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);  } catch(eU) { safeLog(null, 'e', "catch " + String(eU)); }
-             lastUpdateTs = now;
+          if (lastUpdateTs === 0 || now - lastUpdateTs > 10) {
+            try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp); }
+            catch (eU) { safeLog(null, "e", "drag updateViewLayout fail: " + String(eU)); }
+            lastUpdateTs = now;
           }
-
-          // 拖拽中不频繁保存位置，只在 UP 时保存
         }
-
         return true;
       }
 
       if (a === android.view.MotionEvent.ACTION_UP || a === android.view.MotionEvent.ACTION_CANCEL) {
         self.touchActivity();
-
-        try { v.setPressed(false);  } catch(eP2) { safeLog(null, 'e', "catch " + String(eP2)); }
+        try { v.setPressed(false); } catch (eP2) {}
         self.cancelLongPressTimer();
 
-        // 恢复缩放
         if (self.config.ENABLE_ANIMATIONS) {
-            try {
-                v.animate().scaleX(1.0).scaleY(1.0).setDuration(150).start();
-             } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
+          try { v.animate().cancel(); v.animate().scaleX(1.0).scaleY(1.0).setDuration(150).start(); }
+          catch (eS2) { safeLog(null, "e", "release scale fail: " + String(eS2)); }
         } else {
-             try { v.setScaleX(1); v.setScaleY(1);  } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
+          try { v.setScaleX(1); v.setScaleY(1); } catch (eS3) {}
         }
 
         if (self.state.longPressTriggered) {
-            self.resetLongPressState();
-            if (velocityTracker) { velocityTracker.recycle(); velocityTracker = null; }
-            return true;
+          self.resetLongPressState();
+          recycleVelocityTracker();
+          return true;
         }
 
         if (!self.state.dragging && a === android.view.MotionEvent.ACTION_UP) {
-          // 只是点击吸边球时，拖拽逻辑没有展开；这里再恢复完整球，保证面板从完整球位置弹出。
-          if (dockedAtDown && self.state.docked) {
-            try { self.undockToFull(false, null);  } catch(eUndockClick) { safeLog(null, 'e', "catch " + String(eUndockClick)); }
+          if (downDocked && self.state.docked) {
+            try { self.undockToFull(false, null); } catch (eUndock) {}
           }
-          try { self.playBounce(v);  } catch(eB) { safeLog(null, 'e', "catch " + String(eB)); }
-
+          try { self.playBounce(v); } catch (eB) {}
           if (self.state.addedPanel) self.hideMainPanel();
           else self.showPanelAvoidBall("main");
-
-          // # 日志精简：click 事件记录为 INFO 级别（关键操作）
           if (self.L) self.L.i("click -> toggle main");
-        } else {
-          // 拖拽结束
-          // 确保最后位置被更新
-          try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);  } catch(eU) { safeLog(null, 'e', "catch " + String(eU)); }
-
+        } else if (self.state.dragging) {
+          try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp); } catch (eU2) {}
           var forceSide = null;
-          // 计算速度
-          if (velocityTracker) {
+          try {
+            if (velocityTracker) {
               velocityTracker.computeCurrentVelocity(1000);
               var vx = velocityTracker.getXVelocity();
-              // 简单的 fling 判定
               if (vx > 1000) forceSide = "right";
               else if (vx < -1000) forceSide = "left";
+            }
+          } catch (eV) {}
 
-          // # 日志精简：drag end 只在 DEBUG 时记录
-              // if (self.L) self.L.d("drag end vx=" + vx);
-          }
-
-          if (self.config.ENABLE_SNAP_TO_EDGE) {
-              // snapToEdgeDocked 内部会保护 dragging，所以这里先清掉拖拽态。
-              self.state.dragging = false;
-              // 立即吸附，带动画，支持 fling 方向
-              self.snapToEdgeDocked(true, forceSide);
-          } else {
-              self.savePos(self.state.ballLp.x, self.state.ballLp.y);
-          }
+          self.state.dragging = false;
+          if (self.config.ENABLE_SNAP_TO_EDGE) self.snapToEdgeDocked(true, forceSide);
+          else self.savePos(self.state.ballLp.x, self.state.ballLp.y);
         }
 
-        if (velocityTracker) {
-            velocityTracker.recycle();
-            velocityTracker = null;
-        }
-
+        recycleVelocityTracker();
         self.state.dragging = false;
-        self.touchActivity();
         self.resetLongPressState();
         return true;
       }
