@@ -4,7 +4,11 @@
 
 var GIT_ROOT = "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/";
 var GIT_BASE = GIT_ROOT + "code/";
-var TRUSTED_PUBLIC_KEY_B64 = "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEApiyhtMDJce7dVCxH1/oDu8kbiECYoT5XXmXvR/XNYuJ/5FuL83SbpCQ3QmUnqkbfNyOFqnxac/qlbXJtx6eeSotLP1HmrKI0LGymgxG6b1FfGHBfIKNZfBLIvzVDQob+HJfshlsS1JRlW5Jhm25TMh8dJCQQQZWW/ZItbtOvPYbLwG8cnqEdX8gqyB304+r2l35GPTfxZIGEK/9PcE3AMuqwTolMJsBHtG61hmMdz3dzTTEZQoOcciGWuwr2ZW8XkF6f5SgWkC29ZxZqAxceK4FJ8BsYirpFQxVKyZ6eiYlpNiYz+pHLP2U7JTO6ImmT1rlYSS6xw2tlWf0xq72nuOPC+VzEivuEhnC4y9WBSvauRa/ViIDgQ3yXl2MajuAvGSVWRfZ5Gz5Up8PQD7vxmHT2r0fA4xq4GIvUvGCqOG/d1FRrlVyEuNhCZ7KgpEKPno7fLnC6/ftnYcN5ZNOSWwjWH/e4fBxM5s6RRIYzIY2N0f/fqsRH42lWAhX5stujAgMBAAE=";
+var TRUSTED_PUBLIC_KEYS = {
+  "toolhub-targets-2026-rsa3072": "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEApiyhtMDJce7dVCxH1/oDu8kbiECYoT5XXmXvR/XNYuJ/5FuL83SbpCQ3QmUnqkbfNyOFqnxac/qlbXJtx6eeSotLP1HmrKI0LGymgxG6b1FfGHBfIKNZfBLIvzVDQob+HJfshlsS1JRlW5Jhm25TMh8dJCQQQZWW/ZItbtOvPYbLwG8cnqEdX8gqyB304+r2l35GPTfxZIGEK/9PcE3AMuqwTolMJsBHtG61hmMdz3dzTTEZQoOcciGWuwr2ZW8XkF6f5SgWkC29ZxZqAxceK4FJ8BsYirpFQxVKyZ6eiYlpNiYz+pHLP2U7JTO6ImmT1rlYSS6xw2tlWf0xq72nuOPC+VzEivuEhnC4y9WBSvauRa/ViIDgQ3yXl2MajuAvGSVWRfZ5Gz5Up8PQD7vxmHT2r0fA4xq4GIvUvGCqOG/d1FRrlVyEuNhCZ7KgpEKPno7fLnC6/ftnYcN5ZNOSWwjWH/e4fBxM5s6RRIYzIY2N0f/fqsRH42lWAhX5stujAgMBAAE="
+};
+var DEFAULT_TRUSTED_KEY_ID = "toolhub-targets-2026-rsa3072";
+var MIN_TRUSTED_MANIFEST_VERSION = 20260507152251;
 var __dirChecked = false;
 var __trustedManifest = null;
 var __securityStatus = { ok: false, msg: "安全清单尚未校验" };
@@ -194,9 +198,17 @@ function base64Decode(s) {
     return android.util.Base64.decode(String(s).replace(/\s+/g, ""), android.util.Base64.DEFAULT);
 }
 
-function verifyManifestSignature(manifestText, sigText) {
+function getTrustedPublicKeyB64(keyId) {
+    var kid = keyId ? String(keyId) : DEFAULT_TRUSTED_KEY_ID;
+    if (TRUSTED_PUBLIC_KEYS.hasOwnProperty(kid)) return TRUSTED_PUBLIC_KEYS[kid];
+    return null;
+}
+
+function verifyManifestSignature(manifestText, sigText, keyId) {
     try {
-        var pubBytes = base64Decode(TRUSTED_PUBLIC_KEY_B64);
+        var pubB64 = getTrustedPublicKeyB64(keyId);
+        if (!pubB64) throw "unknown manifest keyId: " + String(keyId);
+        var pubBytes = base64Decode(pubB64);
         var sigBytes = base64Decode(sigText);
         var spec = new java.security.spec.X509EncodedKeySpec(pubBytes);
         var pubKey = java.security.KeyFactory.getInstance("RSA").generatePublic(spec);
@@ -215,16 +227,19 @@ function fetchTrustedManifest() {
         ensureCodeDir();
         var manifestText = downloadText(GIT_ROOT + "manifest.json");
         var sigText = downloadText(GIT_ROOT + "manifest.sig");
-        if (!verifyManifestSignature(manifestText, sigText)) throw "manifest signature invalid";
         var manifest = JSON.parse(String(manifestText));
         if (!manifest || !manifest.files) throw "manifest files missing";
         if (String(manifest.alg || "") !== "SHA256withRSA") throw "unsupported manifest alg: " + String(manifest.alg);
+        var keyId = String(manifest.keyId || DEFAULT_TRUSTED_KEY_ID);
+        if (!getTrustedPublicKeyB64(keyId)) throw "untrusted manifest keyId: " + keyId;
+        if (!verifyManifestSignature(manifestText, sigText, keyId)) throw "manifest signature invalid";
         var version = parseInt(String(manifest.version || "0"), 10);
         if (isNaN(version) || version <= 0) throw "invalid manifest version";
+        if (version < MIN_TRUSTED_MANIFEST_VERSION) throw "manifest below minimum trusted version: remote=" + version + ", min=" + MIN_TRUSTED_MANIFEST_VERSION;
         var localVersion = getTrustedVersion();
         if (localVersion > 0 && version < localVersion) throw "manifest rollback: remote=" + version + ", local=" + localVersion;
         __trustedManifest = manifest;
-        __securityStatus = { ok: true, msg: "安全清单验签通过，version=" + version, version: version };
+        __securityStatus = { ok: true, msg: "安全清单验签通过，version=" + version + ", keyId=" + keyId, version: version, keyId: keyId };
         writeLog(__securityStatus.msg);
         return manifest;
     } catch (e) {
@@ -393,6 +408,8 @@ var __out = (function() {
     msg: started ? (rawMsg ? ("ToolHub 启动成功：" + rawMsg) : "ToolHub 启动成功") : "ToolHub 启动失败",
     securityMsg: __securityStatus.msg,
     manifestVersion: __securityStatus.version || 0,
+    manifestKeyId: __securityStatus.keyId || "",
+    minManifestVersion: MIN_TRUSTED_MANIFEST_VERSION,
     syncMsg: syncInfo.msg,
     updatedCount: syncInfo.count,
     updatedModules: syncInfo.modules,

@@ -66,6 +66,7 @@
       "size": 11125
     }
   },
-  "schema": 1,
-  "version": 20260507152251
+  "keyId": "toolhub-targets-2026-rsa3072",
+  "schema": 2,
+  "version": 20260507154625
 }
