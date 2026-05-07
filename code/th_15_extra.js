@@ -1205,6 +1205,10 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         self.state.ballAnimator.cancel();
         self.state.ballAnimator = null;
       }
+      if (self.state.ballContent) {
+        try { self.state.ballContent.animate().cancel(); } catch (eAnim) {}
+        try { self.state.ballContent.setScaleX(1.0); self.state.ballContent.setScaleY(1.0); } catch (eScale) {}
+      }
     } catch (e) { safeLog(null, "e", "cancelBallAnimator fail: " + String(e)); }
   }
 
@@ -1218,7 +1222,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
     } catch (e) { return 0; }
   }
 
-  function forceFullBallAt(x, y, di) {
+  function prepareFullBallAt(x, y, di) {
     try {
       self.state.docked = false;
       self.state.dockSide = null;
@@ -1227,8 +1231,8 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
       self.state.ballLp.y = self.clamp(Math.round(y), 0, self.state.screen.h - di.ballSize);
       try { self.state.ballContent.setX(0); } catch (eX) {}
       try { self.state.ballContent.setAlpha(1.0); } catch (eA) {}
-      self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);
-    } catch (e) { safeLog(null, "e", "forceFullBallAt fail: " + String(e)); }
+      try { self.state.ballContent.setScaleX(1.0); self.state.ballContent.setScaleY(1.0); } catch (eS) {}
+    } catch (e) { safeLog(null, "e", "prepareFullBallAt fail: " + String(e)); }
   }
 
   return new JavaAdapter(android.view.View.OnTouchListener, {
@@ -1267,9 +1271,11 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         self.state.dragging = false;
         lastUpdateTs = 0;
 
-        if (self.config.ENABLE_ANIMATIONS) {
+        if (self.config.ENABLE_ANIMATIONS && !downDocked) {
           try { v.animate().cancel(); v.animate().scaleX(0.9).scaleY(0.9).setDuration(100).start(); }
           catch (eS0) { safeLog(null, "e", "press scale fail: " + String(eS0)); }
+        } else {
+          try { v.animate().cancel(); v.setScaleX(1.0); v.setScaleY(1.0); } catch (eS1) {}
         }
 
         self.armLongPress();
@@ -1291,7 +1297,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
             self.cancelLongPressTimer();
             try { self.hideAllPanels(); } catch (eHide) {}
             cancelBallAnimator();
-            if (downDocked) forceFullBallAt(logicalDownX, logicalDownY, di);
+            if (downDocked) prepareFullBallAt(logicalDownX, logicalDownY, di);
           }
         }
 
