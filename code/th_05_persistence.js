@@ -19,17 +19,84 @@ FloatBallAppWM.prototype.loadPanelState = function(key) {
 // =======================【工具：位置持久化】======================
 FloatBallAppWM.prototype.savePos = function(x, y) {
   try {
-    this.config.BALL_INIT_X = Math.floor(x);
-    this.config.BALL_INIT_Y_DP = Math.floor(y / this.state.density);
-    // # 节流保存
+    var di = this.getDockInfo ? this.getDockInfo() : { ballSize: this.dp(this.config.BALL_SIZE_DP || 45) };
+    var sw = (this.state && this.state.screen) ? Number(this.state.screen.w || 0) : 0;
+    var sh = (this.state && this.state.screen) ? Number(this.state.screen.h || 0) : 0;
+    var ballSize = Number(di.ballSize || this.dp(this.config.BALL_SIZE_DP || 45));
+    var maxX = Math.max(0, sw - ballSize);
+    var maxY = Math.max(0, sh - ballSize);
+
+    var persistX = Math.floor(Number(x || 0));
+    var persistY = Math.floor(Number(y || 0));
+    var dockSide = "";
+    var docked = !!(this.state && this.state.docked);
+
+    // 吸边裁剪态下 Window x 可能是 screenW - visiblePx；持久化时改存“完整球”的逻辑坐标。
+    if (docked) {
+      dockSide = String(this.state.dockSide || "");
+      if (dockSide === "right" && sw > 0) persistX = maxX;
+      else if (dockSide === "left") persistX = 0;
+    } else if (sw > 0) {
+      persistX = this.clamp(persistX, 0, maxX);
+    }
+    if (sh > 0) persistY = this.clamp(persistY, 0, maxY);
+
+    this.config.BALL_INIT_X = persistX;
+    this.config.BALL_INIT_Y_DP = Math.floor(persistY / this.state.density);
+
+    // 新增位置元数据：用于不同分辨率/横竖屏之间按比例或按吸边侧恢复，避免横屏落在屏幕中间。
+    this.config.BALL_POS_SCREEN_W = sw;
+    this.config.BALL_POS_SCREEN_H = sh;
+    this.config.BALL_POS_X_RATIO = maxX > 0 ? (persistX / maxX) : 0;
+    this.config.BALL_POS_Y_RATIO = maxY > 0 ? (persistY / maxY) : 0;
+    this.config.BALL_POS_DOCKED = docked;
+    this.config.BALL_POS_DOCK_SIDE = dockSide;
+
     return ConfigManager.saveSettings(this.config);
   } catch (e) { return false; }
 };
 
 FloatBallAppWM.prototype.loadSavedPos = function() {
-  // # 直接从 config 返回，因为 config 已经是持久化的
+  var di = this.getDockInfo ? this.getDockInfo() : { ballSize: this.dp(this.config.BALL_SIZE_DP || 45) };
+  var ballSize = Number(di.ballSize || this.dp(this.config.BALL_SIZE_DP || 45));
+  var sw = (this.state && this.state.screen) ? Number(this.state.screen.w || 0) : 0;
+  var sh = (this.state && this.state.screen) ? Number(this.state.screen.h || 0) : 0;
+  var maxX = Math.max(0, sw - ballSize);
+  var maxY = Math.max(0, sh - ballSize);
+
   var x = Number(this.config.BALL_INIT_X || 0);
   var y = this.dp(Number(this.config.BALL_INIT_Y_DP || 100));
+
+  try {
+    var savedW = Number(this.config.BALL_POS_SCREEN_W || 0);
+    var savedH = Number(this.config.BALL_POS_SCREEN_H || 0);
+    var hasMeta = savedW > 0 && savedH > 0;
+    var docked = (typeof parseBooleanLike === "function") ? parseBooleanLike(this.config.BALL_POS_DOCKED, false) : !!this.config.BALL_POS_DOCKED;
+    var side = String(this.config.BALL_POS_DOCK_SIDE || "");
+
+    if (hasMeta && (savedW !== sw || savedH !== sh)) {
+      var xr = Number(this.config.BALL_POS_X_RATIO);
+      var yr = Number(this.config.BALL_POS_Y_RATIO);
+      if (isNaN(xr)) xr = 0;
+      if (isNaN(yr)) yr = 0;
+      x = Math.round(this.clamp(xr, 0, 1) * maxX);
+      y = Math.round(this.clamp(yr, 0, 1) * maxY);
+    }
+
+    if (docked || side === "left" || side === "right") {
+      if (side === "right") x = maxX;
+      else if (side === "left") x = 0;
+    } else if (!hasMeta && sw > sh && sw > 0) {
+      // 兼容旧版：只存了竖屏像素 x。横屏启动时旧的“右侧 x”会落在屏幕中部，这里按短边推断并贴回右边。
+      var portraitMaxXGuess = Math.max(0, Math.min(sw, sh) - ballSize);
+      if (x > Math.round(portraitMaxXGuess * 0.55) && x < Math.round(maxX * 0.85)) {
+        x = maxX;
+      }
+    }
+  } catch (e) {}
+
+  x = this.clamp(Math.floor(x), 0, maxX);
+  y = this.clamp(Math.floor(y), 0, maxY);
   return { x: x, y: y };
 };
 

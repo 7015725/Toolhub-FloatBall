@@ -253,10 +253,9 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
 
         if (self.L) self.L.updateConfig(self.config);
 
-        self.state.loadedPos = self.loadSavedPos();
-
         self.state.screen = self.getScreenSizePx();
         self.state.lastRotation = self.getRotation();
+        self.state.loadedPos = self.loadSavedPos();
 
         self.createBallViews();
         self.state.ballLp = self.createBallLayoutParams();

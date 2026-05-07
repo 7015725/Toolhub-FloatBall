@@ -64,8 +64,14 @@ var ConfigValidator = {
   schemas: {
     // 悬浮球核心配置
     BALL_SIZE_DP: { type: "int", min: 20, max: 200, default: 45 },
-    BALL_INIT_X: { type: "int", min: 0, max: 2000, default: 0 },
-    BALL_INIT_Y_DP: { type: "int", min: 0, max: 1000, default: 220 },
+    BALL_INIT_X: { type: "int", min: 0, max: 10000, default: 0 },
+    BALL_INIT_Y_DP: { type: "int", min: 0, max: 2000, default: 220 },
+    BALL_POS_SCREEN_W: { type: "int", min: 0, max: 10000, default: 0 },
+    BALL_POS_SCREEN_H: { type: "int", min: 0, max: 10000, default: 0 },
+    BALL_POS_X_RATIO: { type: "float", min: 0, max: 1, default: 0 },
+    BALL_POS_Y_RATIO: { type: "float", min: 0, max: 1, default: 0 },
+    BALL_POS_DOCKED: { type: "bool", default: false },
+    BALL_POS_DOCK_SIDE: { type: "enum", values: ["", "left", "right"], default: "" },
 
     // 面板布局配置
     PANEL_COLS: { type: "int", min: 1, max: 6, default: 1 },
