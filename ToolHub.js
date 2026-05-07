@@ -401,28 +401,27 @@ var __out = (function() {
   var syncInfo = summarizeModuleUpdates(__moduleUpdates);
   var loadInfo = summarizeLoadErrors(loadErrors);
   var started = !!(startRet && startRet.ok);
-  var rawMsg = optStr(startRet && startRet.msg);
+  var layoutObj = startRet && startRet.layout || null;
+  var layoutText = layoutObj ? (String(layoutObj.cols || "?") + "×" + String(layoutObj.rows || "?")) : "未知";
+  var securityText = __securityStatus.ok
+    ? ("✓ 已验签 v" + String(__securityStatus.version || 0) + " / " + optStr(__securityStatus.keyId))
+    : ("✗ " + optStr(__securityStatus.msg));
+  var syncText = syncInfo.count > 0
+    ? ("✓ 已更新 " + syncInfo.count + " 个模块：" + syncInfo.modules.join("、"))
+    : "✓ 子模块已是最新";
+
   var out = {
     ok: started,
-    started: started,
-    msg: started ? (rawMsg ? ("ToolHub 启动成功：" + rawMsg) : "ToolHub 启动成功") : "ToolHub 启动失败",
-    securityMsg: __securityStatus.msg,
-    manifestVersion: __securityStatus.version || 0,
-    manifestKeyId: __securityStatus.keyId || "",
-    minManifestVersion: MIN_TRUSTED_MANIFEST_VERSION,
-    syncMsg: syncInfo.msg,
-    updatedCount: syncInfo.count,
-    updatedModules: syncInfo.modules,
-    closeAction: optStr(startRet && startRet.closeAction),
-    layout: startRet && startRet.layout || null
+    状态: started ? "ToolHub 启动成功" : "ToolHub 启动失败",
+    安全: securityText,
+    同步: syncText,
+    布局: layoutText,
+    关闭广播: optStr(startRet && startRet.closeAction)
   };
-  if (loadInfo.count > 0) {
-    out.loadMsg = loadInfo.msg;
-    out.loadErrors = loadInfo.modules;
-    if (!started) out.err = loadInfo.modules.join(", ");
-  }
-  if (!started && !out.err) out.err = optStr(startRet && startRet.err) || "未知错误";
+  if (syncInfo.count > 0) out.更新模块 = syncInfo.modules;
+  if (loadInfo.count > 0) out.加载异常 = loadInfo.modules;
+  if (!started) out.错误 = optStr(startRet && startRet.err) || (loadInfo.modules && loadInfo.modules.join(", ")) || "未知错误";
   return out;
 })();
 
-JSON.stringify(__out);
+JSON.stringify(__out, null, 2);
