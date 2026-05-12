@@ -2311,78 +2311,7 @@ var scInlineState = {
     lastQuery: ""
 };
 
-// # 图标缓存与队列（避免每次重渲染都重复取 icon，减少卡顿）
-// 这段代码的主要内容/用途：为内联列表提供轻量级 icon 缓存与串行加载队列，避免一次性开太多线程。
-var scIconCache = {};
-var scIconQueue = [];
-var scIconWorkerRunning = false;
-function __scIconKey(it) {
-    try { return __scStr(it.pkg) + '|' + __scStr(it.shortcutId) + '|' + __scStr(it.userId); } catch(e) { return ''; }
-}
-function __scLoadIconForItem(it) {
-    // 这段代码的主要内容/用途：优先取快捷方式图标，失败则回退到应用图标。
-    try {
-        if (!it) return null;
-        if (it.shortcutInfo) {
-            try {
-                var la = context.getSystemService(android.content.Context.LAUNCHER_APPS_SERVICE);
-                if (la) {
-                    var dr = la.getShortcutIconDrawable(it.shortcutInfo, 0);
-                    if (dr) return dr;
-                }
-             } catch(eS0) { safeLog(null, 'e', "catch " + String(eS0)); }
-        }
-        try {
-            var pm = context.getPackageManager();
-            return pm.getApplicationIcon(__scStr(it.pkg));
-         } catch(eA0) { safeLog(null, 'e', "catch " + String(eA0)); }
-     } catch(eAll0) { safeLog(null, 'e', "catch " + String(eAll0)); }
-    return null;
-}
-function __scEnqueueIconLoad(it, iv) {
-    try {
-        var key = __scIconKey(it);
-        if (!key) return;
-        if (scIconCache[key]) {
-            try { iv.setImageDrawable(scIconCache[key]);  } catch(eSet0) { safeLog(null, 'e', "catch " + String(eSet0)); }
-            return;
-        }
-        // # 记录 tag：防止滚动/重绘后错位
-        try { iv.setTag(key);  } catch(eTag0) { safeLog(null, 'e', "catch " + String(eTag0)); }
-        scIconQueue.push({ key: key, it: it, iv: iv });
-        if (!scIconWorkerRunning) {
-            scIconWorkerRunning = true;
-            new java.lang.Thread(new java.lang.Runnable({
-                run: function() {
-                    while (true) {
-                        var job = null;
-                        try { if (scIconQueue.length > 0) job = scIconQueue.shift(); } catch(eQ0) { job = null; }
-                        if (!job) break;
-
-                        var dr = null;
-                        try { dr = __scLoadIconForItem(job.it); } catch(eLd0) { dr = null; }
-                        if (dr) scIconCache[job.key] = dr;
-
-                        try {
-                            self.runOnUiThreadSafe(function() {
-                                try {
-                                    if (!job || !job.iv) return;
-                                    var cur = null;
-                                    try { cur = job.iv.getTag(); } catch(eTg0) { cur = null; }
-                                    if (cur && String(cur) === String(job.key) && dr) {
-                                        job.iv.setImageDrawable(dr);
-                                    }
-                                 } catch(eUi0) { safeLog(null, 'e', "catch " + String(eUi0)); }
-                            });
-                         } catch(ePost0) { safeLog(null, 'e', "catch " + String(ePost0)); }
-                    }
-                    scIconWorkerRunning = false;
-                }
-            })).start();
-        }
-     } catch(eEnq0) { safeLog(null, 'e', "catch " + String(eEnq0)); }
-}
-
+// # 图标缓存与加载已统一使用下方 __scIconLoader / __scRequestIcon，避免维护两套后台线程队列。
 // # 折叠头部（点击展开/收起）
 var scHeader = new android.widget.LinearLayout(context);
 scHeader.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -2410,10 +2339,10 @@ scRefreshTv.setOnClickListener(new android.view.View.OnClickListener({
         try {
             scInlineState.forceReload = true;
             scInlineState.loaded = false;
-            // 清空 icon 缓存，避免旧图标占用内存且影响新列表显示
-            try { scIconCache = {};  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
-            try { scIconQueue = [];  } catch(eC1) { safeLog(null, 'e', "catch " + String(eC1)); }
-            try { scIconWorkerRunning = false;  } catch(eC2) { safeLog(null, 'e', "catch " + String(eC2)); }
+            // 清空当前内联列表的图标缓存，避免旧图标占用内存且影响新列表显示
+            try { __scIconCache = {};  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
+            try { __scIconKeys = [];  } catch(eC1) { safeLog(null, 'e', "catch " + String(eC1)); }
+            try { __scIconInFlight = {};  } catch(eC2) { safeLog(null, 'e', "catch " + String(eC2)); }
             // 若当前已展开，立即触发重新加载与渲染
             if (scInlineState.expanded) __scEnsureLoadedAndRender();
          } catch(eR) { safeLog(null, 'e', "catch " + String(eR)); }

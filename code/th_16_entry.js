@@ -119,12 +119,12 @@ FloatBallAppWM.prototype.close = function() {
     }
   } catch (eIcon) {}
   try {
-    if (self.__scIconLoaderSingleton && self.__scIconLoaderSingleton.ht) {
-      if (android.os.Build.VERSION.SDK_INT >= 18) self.__scIconLoaderSingleton.ht.quitSafely();
-      else self.__scIconLoaderSingleton.ht.quit();
+    if (this.__scIconLoaderSingleton && this.__scIconLoaderSingleton.ht) {
+      if (android.os.Build.VERSION.SDK_INT >= 18) this.__scIconLoaderSingleton.ht.quitSafely();
+      else this.__scIconLoaderSingleton.ht.quit();
     }
   } catch (eScIcon) {}
-  try { self.__scIconLoaderSingleton = null; } catch (eScIcon2) {}
+  try { this.__scIconLoaderSingleton = null; } catch (eScIcon2) {}
 
   safeLog(this.L, 'i',  "close done");
 
@@ -158,8 +158,8 @@ FloatBallAppWM.prototype.dispose = function() {
   
   // # 清理单例引用
   try {
-    if (self.__shortcutPickerSingleton === this.__shortcutPickerSingleton) {
-      self.__shortcutPickerSingleton = null;
+    if (this.__shortcutPickerSingleton) {
+      this.__shortcutPickerSingleton = null;
     }
   } catch (e) {}
   
@@ -245,50 +245,83 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
   );
   if (cfgRcv) this.state.receivers.push(cfgRcv);
 
-  h.post(new JavaAdapter(java.lang.Runnable, {
-    run: function() {
-      try {
-        self.state.wm = context.getSystemService(android.content.Context.WINDOW_SERVICE);
-        self.state.density = context.getResources().getDisplayMetrics().density;
-
-        if (self.L) self.L.updateConfig(self.config);
-
-        self.state.screen = self.getScreenSizePx();
-        self.state.lastRotation = self.getRotation();
-        self.state.loadedPos = self.loadSavedPos();
-
-        self.createBallViews();
-        self.state.ballLp = self.createBallLayoutParams();
-
+  var startBox = { ok: false, err: "启动确认超时", added: false };
+  var startLatch = new java.util.concurrent.CountDownLatch(1);
+  var posted = false;
+  try {
+    posted = h.post(new JavaAdapter(java.lang.Runnable, {
+      run: function() {
         try {
-          self.state.wm.addView(self.state.ballRoot, self.state.ballLp);
-          self.state.addedBall = true;
-        } catch (eAdd) {
-          try { self.toast("悬浮球 addView 失败: " + String(eAdd)); } catch (eT) {}
-          if (self.L) self.L.fatal("addView ball fail err=" + String(eAdd));
-          self.state.addedBall = false;
-          try { self.close(); } catch (eC) {}
-          return;
-        }
+          self.state.wm = context.getSystemService(android.content.Context.WINDOW_SERVICE);
+          self.state.density = context.getResources().getDisplayMetrics().density;
 
-        self.setupDisplayMonitor();
-        self.touchActivity();
+          if (self.L) self.L.updateConfig(self.config);
 
-        if (self.L) {
-          self.L.i("start ok actionClose=" + String(self.config.ACTION_CLOSE_ALL));
-          self.L.i("ball x=" + String(self.state.ballLp.x) + " y=" + String(self.state.ballLp.y) + " sizeDp=" + String(self.config.BALL_SIZE_DP));
+          self.state.screen = self.getScreenSizePx();
+          self.state.lastRotation = self.getRotation();
+          self.state.loadedPos = self.loadSavedPos();
+
+          self.createBallViews();
+          self.state.ballLp = self.createBallLayoutParams();
+
+          try {
+            self.state.wm.addView(self.state.ballRoot, self.state.ballLp);
+            self.state.addedBall = true;
+            startBox.added = true;
+          } catch (eAdd) {
+            startBox.ok = false;
+            startBox.err = "悬浮球 addView 失败: " + String(eAdd);
+            try { self.toast(startBox.err); } catch (eT) {}
+            if (self.L) self.L.fatal("addView ball fail err=" + String(eAdd));
+            self.state.addedBall = false;
+            try { self.close(); } catch (eC) {}
+            return;
+          }
+
+          self.setupDisplayMonitor();
+          self.touchActivity();
+
+          startBox.ok = true;
+          startBox.err = "";
+          if (self.L) {
+            self.L.i("start ok actionClose=" + String(self.config.ACTION_CLOSE_ALL));
+            self.L.i("ball x=" + String(self.state.ballLp.x) + " y=" + String(self.state.ballLp.y) + " sizeDp=" + String(self.config.BALL_SIZE_DP));
+          }
+        } catch (eAll) {
+          startBox.ok = false;
+          startBox.err = "启动异常: " + String(eAll);
+          try { self.toast(startBox.err); } catch (eTT2) {}
+          if (self.L) self.L.fatal("start runnable err=" + String(eAll));
+          try { self.close(); } catch (eC2) {}
+        } finally {
+          try { startLatch.countDown(); } catch (eLatch) {}
         }
-      } catch (eAll) {
-        try { self.toast("启动异常: " + String(eAll)); } catch (eTT2) {}
-        if (self.L) self.L.fatal("start runnable err=" + String(eAll));
-        try { self.close(); } catch (eC2) {}
       }
+    }));
+  } catch (ePost) {
+    posted = false;
+    startBox.ok = false;
+    startBox.err = "启动任务投递失败: " + String(ePost);
+    try { startLatch.countDown(); } catch (eLatch2) {}
+  }
+
+  if (!posted) {
+    startBox.ok = false;
+    if (!startBox.err) startBox.err = "启动任务投递失败";
+  } else {
+    try {
+      var done = startLatch.await(2500, java.util.concurrent.TimeUnit.MILLISECONDS);
+      if (!done && self.L) self.L.e("start confirm timeout; addView result unknown");
+    } catch (eWait) {
+      startBox.ok = false;
+      startBox.err = "启动确认等待异常: " + String(eWait);
     }
-  }));
+  }
 
   return {
-    ok: true,
-    msg: "已按 WM 专属 HandlerThread 模型启动（Shell 默认 Action，失败广播桥兜底；Content URI 已启用）",
+    ok: !!startBox.ok,
+    err: String(startBox.err || ""),
+    msg: startBox.ok ? "悬浮球 addView 已确认成功" : String(startBox.err || "启动失败"),
     preCloseBroadcastSent: preCloseSent,
     closeAction: String(this.config.ACTION_CLOSE_ALL),
     receiverRegisteredOnMain: {
