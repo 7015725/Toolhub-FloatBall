@@ -418,9 +418,14 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
     // }
   }
 
+  var panelLp0 = null;
+  try { panelLp0 = panel.getLayoutParams(); } catch (ePanelLp) { panelLp0 = null; }
+  var panelW = (panelLp0 && Number(panelLp0.width) > 0) ? Number(panelLp0.width) : android.view.WindowManager.LayoutParams.WRAP_CONTENT;
+  var panelH = (panelLp0 && Number(panelLp0.height) > 0) ? Number(panelLp0.height) : android.view.WindowManager.LayoutParams.WRAP_CONTENT;
+
   var lp = new android.view.WindowManager.LayoutParams(
-    android.view.WindowManager.LayoutParams.WRAP_CONTENT,
-    android.view.WindowManager.LayoutParams.WRAP_CONTENT,
+    panelW,
+    panelH,
     android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
     flags,
     android.graphics.PixelFormat.TRANSLUCENT
@@ -607,6 +612,65 @@ FloatBallAppWM.prototype.setToolAppContent = function(contentView) {
   return false;
 };
 
+FloatBallAppWM.prototype.calculateToolAppLayout = function(shell) {
+  var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
+  var sh = Math.max(1, Number(this.state.screen && this.state.screen.h || 0));
+  if (sw <= 1 || sh <= 1) {
+    try { var ss = this.getScreenSizePx(); sw = ss.w; sh = ss.h; } catch (eScreen) {}
+  }
+  var shortSide = Math.min(sw, sh);
+  var longSide = Math.max(sw, sh);
+  var isLandscape = sw > sh;
+
+  var marginX = this.dp(12);
+  var marginTop = this.dp(14);
+  var marginBottom = this.dp(14);
+  var targetW;
+  var targetH;
+
+  if (shortSide < this.dp(420)) {
+    // 小屏/分屏：接近全屏，避免内容被裁剪。
+    marginX = this.dp(8);
+    marginTop = this.dp(8);
+    marginBottom = this.dp(8);
+    targetW = sw - marginX * 2;
+    targetH = sh - marginTop - marginBottom;
+  } else if (shortSide >= this.dp(720)) {
+    // 平板/大屏：不要铺满，保持卡片阅读宽度。
+    marginX = this.dp(28);
+    marginTop = this.dp(28);
+    marginBottom = this.dp(28);
+    targetW = Math.min(this.dp(680), Math.floor(sw * (isLandscape ? 0.56 : 0.72)));
+    targetH = Math.min(this.dp(780), sh - marginTop - marginBottom);
+  } else if (isLandscape) {
+    // 手机横屏：高度优先，宽度适当收窄。
+    marginX = this.dp(18);
+    marginTop = this.dp(12);
+    marginBottom = this.dp(12);
+    targetW = Math.min(this.dp(620), Math.floor(sw * 0.68));
+    targetH = sh - marginTop - marginBottom;
+  } else {
+    // 手机竖屏：左右留少量边距，高度随屏幕增长。
+    marginX = this.dp(12);
+    marginTop = this.dp(18);
+    marginBottom = this.dp(18);
+    targetW = Math.min(this.dp(560), sw - marginX * 2);
+    targetH = Math.min(Math.floor(sh * 0.90), sh - marginTop - marginBottom);
+  }
+
+  targetW = Math.max(this.dp(300), Math.min(targetW, sw - marginX * 2));
+  targetH = Math.max(this.dp(360), Math.min(targetH, sh - marginTop - marginBottom));
+
+  var x = Math.floor((sw - targetW) / 2);
+  var y = Math.floor((sh - targetH) / 2);
+  if (x < marginX) x = marginX;
+  if (y < marginTop) y = marginTop;
+  if (x + targetW > sw - marginX) x = Math.max(0, sw - marginX - targetW);
+  if (y + targetH > sh - marginBottom) y = Math.max(0, sh - marginBottom - targetH);
+
+  return { width: targetW, height: targetH, x: x, y: y, marginX: marginX, marginTop: marginTop, marginBottom: marginBottom, isLandscape: isLandscape, shortSide: shortSide, longSide: longSide };
+};
+
 FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
   if (this.state.closing) return;
   var r = this.isToolAppRoute(route) ? String(route) : "settings";
@@ -635,27 +699,21 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
     this.updateToolAppShellChrome(this.getToolAppTitle(r), this.state.toolAppNavStack.length > 1);
     this.setToolAppContent(raw);
 
-    var maxW = Math.floor(this.state.screen.w * 0.92);
-    var maxH = Math.floor(this.state.screen.h * 0.82);
-    shell.measure(
-      android.view.View.MeasureSpec.makeMeasureSpec(maxW, android.view.View.MeasureSpec.AT_MOST),
-      android.view.View.MeasureSpec.makeMeasureSpec(maxH, android.view.View.MeasureSpec.AT_MOST)
-    );
-    var pw = Math.max(this.dp(300), Math.min(maxW, shell.getMeasuredWidth()));
-    var ph = Math.max(this.dp(380), Math.min(maxH, shell.getMeasuredHeight()));
+    var layout = this.calculateToolAppLayout(shell);
     var lp0 = shell.getLayoutParams();
-    if (!lp0) lp0 = new android.view.ViewGroup.LayoutParams(pw, ph);
-    lp0.width = pw; lp0.height = ph;
+    if (!lp0) lp0 = new android.view.ViewGroup.LayoutParams(layout.width, layout.height);
+    lp0.width = layout.width; lp0.height = layout.height;
     shell.setLayoutParams(lp0);
 
     if (!this.state.addedViewer || this.state.viewerPanel !== shell) {
-      var pos = this.getBestPanelPosition(pw, ph, this.state.ballLp.x, this.state.ballLp.y, this.getDockInfo().ballSize);
-      this.addPanel(shell, pos.x, pos.y, "tool_app");
+      this.addPanel(shell, layout.x, layout.y, "tool_app");
     } else {
       try {
         if (this.state.viewerPanelLp) {
-          this.state.viewerPanelLp.width = pw;
-          this.state.viewerPanelLp.height = ph;
+          this.state.viewerPanelLp.width = layout.width;
+          this.state.viewerPanelLp.height = layout.height;
+          this.state.viewerPanelLp.x = layout.x;
+          this.state.viewerPanelLp.y = layout.y;
           this.state.wm.updateViewLayout(shell, this.state.viewerPanelLp);
         }
       } catch (eUpd) { safeLog(this.L, 'w', "tool_app update layout fail: " + String(eUpd)); }
