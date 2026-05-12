@@ -6,8 +6,8 @@
       "size": 52546
     },
     "th_02_core.js": {
-      "sha256": "3ccdff641f8cd1e185812f24df0baf65c7749a320d29549340f884575ac4fa9d",
-      "size": 4127
+      "sha256": "24363adc7156feda5c2f1fcbb84c96a4378ffec4b40251bd27d0123329acf054",
+      "size": 4203
     },
     "th_03_icon.js": {
       "sha256": "717f7f37474d3616c2cd944581455f600020a850ec8812100d0546ec1302c987",
@@ -54,8 +54,8 @@
       "size": 20386
     },
     "th_14_panels.js": {
-      "sha256": "c65a2ac74f69f3763f5effd8533a27d1e1bd47660c9f2beb8961ad60d012058a",
-      "size": 226409
+      "sha256": "5ed0c2ece79efe2d67e3c0b6f85e8e2b24980d4a46de3fafc7a461940801a936",
+      "size": 231980
     },
     "th_15_extra.js": {
       "sha256": "b48c16ea5cbe5b9033d593eb18ef3028c0d661c65cbf2ad8f3f650ee55bbe2e4",
@@ -68,5 +68,5 @@
   },
   "keyId": "toolhub-targets-2026-rsa3072",
   "schema": 2,
-  "version": 20260512093034
+  "version": 20260512111055
 }

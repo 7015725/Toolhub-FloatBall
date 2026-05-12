@@ -77,6 +77,9 @@ function FloatBallAppWM(logger) {
     pendingUserCfg: null,
     pendingDirty: false,
 
+    // 按钮管理首页：搜索过滤状态
+    buttonManagerQuery: "",
+
     closing: false
   };
 

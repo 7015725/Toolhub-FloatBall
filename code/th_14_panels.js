@@ -494,6 +494,72 @@ function __scDrawableToBitmap(drawable, targetPx) {
     }
 }
 
+
+FloatBallAppWM.prototype.matchesButtonManagerQuery = function(btnCfg, query) {
+  try {
+    var q = String(query || "").replace(/^\s+|\s+$/g, "").toLowerCase();
+    if (!q) return true;
+    var b = btnCfg || {};
+    var hay = String(b.title || "") + " " + String(b.type || "") + " " + String(b.cmd || "") + " " + String(b.pkg || "") + " " + String(b.action || "") + " " + String(b.intent || "") + " " + String(b.shortcutName || "") + " " + String(b.iconResName || "");
+    return hay.toLowerCase().indexOf(q) >= 0;
+  } catch(e) { return true; }
+};
+
+FloatBallAppWM.prototype.createButtonManagerSummaryCard = function(parent, totalCount, enabledCount, disabledCount) {
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var card = new android.widget.LinearLayout(context);
+  card.setOrientation(android.widget.LinearLayout.VERTICAL);
+  card.setPadding(this.dp(14), this.dp(10), this.dp(14), this.dp(10));
+  card.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.88) : this.withAlpha(C.cardLight, 0.92), this.dp(14)));
+  try { card.setElevation(this.dp(2)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+
+  var title = new android.widget.TextView(context);
+  title.setText("按钮管理首页");
+  title.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
+  title.setTypeface(null, android.graphics.Typeface.BOLD);
+  card.addView(title);
+
+  var sub = new android.widget.TextView(context);
+  sub.setText("共 " + totalCount + " 个 · 已启用 " + enabledCount + " · 已禁用 " + disabledCount);
+  sub.setTextColor(isDark ? C.textSecDark : C.textSecLight);
+  sub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  sub.setPadding(0, this.dp(4), 0, 0);
+  card.addView(sub);
+
+  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  lp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
+  parent.addView(card, lp);
+};
+
+FloatBallAppWM.prototype.createButtonEditorSectionCard = function(parent, title, desc) {
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var box = new android.widget.LinearLayout(context);
+  box.setOrientation(android.widget.LinearLayout.VERTICAL);
+  box.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
+  box.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.72) : this.withAlpha(C.cardLight, 0.78), this.dp(14)));
+  var tv = new android.widget.TextView(context);
+  tv.setText(String(title || ""));
+  tv.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+  tv.setTypeface(null, android.graphics.Typeface.BOLD);
+  box.addView(tv);
+  if (desc) {
+    var dv = new android.widget.TextView(context);
+    dv.setText(String(desc));
+    dv.setTextColor(isDark ? C.textSecDark : C.textSecLight);
+    dv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+    dv.setPadding(0, this.dp(3), 0, 0);
+    box.addView(dv);
+  }
+  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  lp.setMargins(0, this.dp(8), 0, this.dp(8));
+  parent.addView(box, lp);
+  return box;
+};
+
 FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   var self = this;
   // # 状态管理：editingIndex (null=列表, -1=新增, >=0=编辑)
@@ -578,6 +644,41 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     // 暴露 Header 给 DragListener
     panel.setTag(header);
 
+    var enabledCount = 0;
+    var disabledCount = 0;
+    try {
+      for (var ci = 0; ci < buttons.length; ci++) {
+        if (buttons[ci] && buttons[ci].enabled === false) disabledCount++;
+        else enabledCount++;
+      }
+    } catch(eCnt) { safeLog(null, 'e', "catch " + String(eCnt)); }
+    self.createButtonManagerSummaryCard(panel, buttons.length, enabledCount, disabledCount);
+
+    var searchRow = new android.widget.LinearLayout(context);
+    searchRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    searchRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    searchRow.setPadding(0, 0, 0, self.dp(8));
+    var searchInput = self.ui.createInputGroup(self, "搜索按钮", self.state.buttonManagerQuery || "", false, "标题 / 类型 / 包名 / 命令");
+    var searchInputLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    searchInputLp.weight = 1;
+    searchRow.addView(searchInput.view, searchInputLp);
+    var btnSearch = self.ui.createFlatButton(self, "搜索", C.primary, function() {
+      try { self.state.buttonManagerQuery = String(searchInput.getValue ? searchInput.getValue() : ""); } catch(eQ) { self.state.buttonManagerQuery = ""; }
+      self.state.btnEditorListScrollY = 0;
+      refreshPanel();
+    });
+    searchRow.addView(btnSearch);
+    var btnClearSearch = self.ui.createFlatButton(self, "清空", subTextColor, function() {
+      self.state.buttonManagerQuery = "";
+      self.state.btnEditorListScrollY = 0;
+      refreshPanel();
+    });
+    searchRow.addView(btnClearSearch);
+    panel.addView(searchRow);
+
+    var activeQuery = String(self.state.buttonManagerQuery || "");
+    var visibleCount = 0;
+
     // 列表区域
     var scroll = new android.widget.ScrollView(context);
     __btnEditorListScroll = scroll; // # 列表滚动位置保持：让 refreshPanel 能拿到当前列表的滚动位置
@@ -589,6 +690,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     for (var i = 0; i < buttons.length; i++) {
       (function(idx) {
         var btnCfg = buttons[idx];
+        if (!self.matchesButtonManagerQuery(btnCfg, activeQuery)) return;
+        visibleCount++;
 
         // # 启用/禁用状态：禁用项在按钮页不显示，但在管理页需要标识出来
         var __enabled = true;
@@ -805,7 +908,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     }
 
     // 空状态提示
-    if (buttons.length === 0) {
+    if (visibleCount === 0) {
         var emptyBox = new android.widget.LinearLayout(context);
         emptyBox.setOrientation(android.widget.LinearLayout.VERTICAL);
         emptyBox.setGravity(android.view.Gravity.CENTER);
@@ -819,7 +922,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         emptyBox.addView(emptyIcon);
 
         var emptyTv = new android.widget.TextView(context);
-        emptyTv.setText("暂无按钮，点击右上角新增");
+        emptyTv.setText(activeQuery ? "没有匹配的按钮，点清空查看全部" : "暂无按钮，点击右上角新增");
         emptyTv.setTextColor(subTextColor);
         emptyTv.setPadding(0, self.dp(16), 0, 0);
         emptyBox.addView(emptyTv);
@@ -911,6 +1014,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     editHint.setPadding(self.dp(4), 0, 0, self.dp(16));
     form.addView(editHint);
 
+    self.createButtonEditorSectionCard(form, "基础信息", "按钮名称与基础标识");
+
     // 1. 标题 (Title)
     var topArea = new android.widget.LinearLayout(context);
     topArea.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -929,6 +1034,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     topArea.addView(titleArea);
 
     form.addView(topArea);
+
+    self.createButtonEditorSectionCard(form, "图标外观", "选择图标来源、ShortX 图标和颜色");
 
     // 1.5 图标选择（文件路径 或 ShortX 内置图标 二选一）
     var iconSelectWrap = new android.widget.LinearLayout(context);
@@ -2096,6 +2203,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         }
     }));
 
+
+    self.createButtonEditorSectionCard(form, "动作设置", "选择点击后执行的动作类型与参数");
 
     // 2. 动作类型（自动换行：用 GridLayout 稳定实现）
     // 这段代码的主要内容/用途：把「Shell/App/广播/Intent/快捷方式」做成会自动换行的单选框区域。
