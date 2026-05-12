@@ -1115,17 +1115,29 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     iconRadioGroup.setPadding(0, self.dp(4), 0, self.dp(8));
 
     var rbIconFile = new android.widget.RadioButton(context);
-    rbIconFile.setText("文件路径");
+    rbIconFile.setText("本地图片\nPNG/JPG 绝对路径");
     rbIconFile.setTextColor(textColor);
+    rbIconFile.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     rbIconFile.setTag("file");
+    rbIconFile.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
+    try { rbIconFile.setButtonDrawable(null);  } catch(eRbFileStyle0) { safeLog(null, 'e', "catch " + String(eRbFileStyle0)); }
 
     var rbIconShortX = new android.widget.RadioButton(context);
-    rbIconShortX.setText("ShortX图标");
+    rbIconShortX.setText("ShortX 内置\n可点选图标 + 调色");
     rbIconShortX.setTextColor(textColor);
+    rbIconShortX.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     rbIconShortX.setTag("shortx");
+    rbIconShortX.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
+    try { rbIconShortX.setButtonDrawable(null);  } catch(eRbShortStyle0) { safeLog(null, 'e', "catch " + String(eRbShortStyle0)); }
 
-    iconRadioGroup.addView(rbIconFile);
-    iconRadioGroup.addView(rbIconShortX);
+    var iconSourceOptionLp1 = new android.widget.RadioGroup.LayoutParams(0, android.widget.RadioGroup.LayoutParams.WRAP_CONTENT);
+    iconSourceOptionLp1.weight = 1;
+    iconSourceOptionLp1.rightMargin = self.dp(6);
+    var iconSourceOptionLp2 = new android.widget.RadioGroup.LayoutParams(0, android.widget.RadioGroup.LayoutParams.WRAP_CONTENT);
+    iconSourceOptionLp2.weight = 1;
+    iconSourceOptionLp2.leftMargin = self.dp(6);
+    iconRadioGroup.addView(rbIconFile, iconSourceOptionLp1);
+    iconRadioGroup.addView(rbIconShortX, iconSourceOptionLp2);
     iconSelectWrap.addView(iconRadioGroup);
     iconSectionBody.addView(iconSelectWrap);
 
@@ -1323,8 +1335,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxQuickRow.addView(shortxPreviewCard, shortxPreviewLp);
 
     var shortxPreviewIv = new android.widget.ImageView(context);
-    var shortxPreviewIvLp = new android.widget.LinearLayout.LayoutParams(self.dp(20), self.dp(20));
-    shortxPreviewIvLp.rightMargin = self.dp(8);
+    var shortxPreviewIvLp = new android.widget.LinearLayout.LayoutParams(self.dp(34), self.dp(34));
+    shortxPreviewIvLp.rightMargin = self.dp(10);
     shortxPreviewIv.setLayoutParams(shortxPreviewIvLp);
     shortxPreviewCard.addView(shortxPreviewIv);
     shortxPickerState.previewIv = shortxPreviewIv;
@@ -1362,10 +1374,14 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxBtnGap2.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
     shortxQuickRow.addView(shortxBtnGap2);
 
-    var btnClearShortXIcon = self.ui.createFlatButton(self, "\u6e05\u7a7a", subTextColor, function() {
-        self.touchActivity();
+    function clearShortXIconOnly() {
         currentShortXIconName = "";
         updateShortXIconPreview();
+    }
+
+    var btnClearShortXIcon = self.ui.createFlatButton(self, "\u6e05\u7a7a", subTextColor, function() {
+        self.touchActivity();
+        clearShortXIconOnly();
     });
     shortxPickerState.clearBtn = btnClearShortXIcon;
     shortxQuickRow.addView(btnClearShortXIcon);
@@ -1625,7 +1641,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     // # ShortX 图标颜色（留空跟随主题）
     var defaultTint = targetBtn.iconTint ? String(targetBtn.iconTint) : "";
     var currentShortXIconTint = defaultTint;
-    var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空跟随主题)", defaultTint, false, "支持 #RRGGBB / #AARRGGBB；下方可展开完整调色板");
+    var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空 = 跟随主题色)", defaultTint, false, "支持 #RRGGBB / #AARRGGBB；下方可展开完整调色板");
     iconSectionBody.addView(inputShortXIconTint.view);
     // # 避免 Rhino 闭包问题：将输入框引用存储到 self.state，供颜色选择器回调使用
     self.state._btnEditorTintInput = inputShortXIconTint;
@@ -2216,8 +2232,20 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             }
         }));
      } catch(eTintCommonLayout0) { safeLog(null, 'e', "catch " + String(eTintCommonLayout0)); }
+    function setIconSourceCardSelected(type) {
+        try {
+            var fileSelected = (type === "file");
+            var shortxSelected = (type === "shortx");
+            rbIconFile.setTextColor(fileSelected ? C.primary : textColor);
+            rbIconShortX.setTextColor(shortxSelected ? C.primary : textColor);
+            rbIconFile.setBackground(self.ui.createStrokeDrawable(self.withAlpha(fileSelected ? C.primary : cardColor, fileSelected ? 0.16 : 0.80), fileSelected ? C.primary : dividerColor, self.dp(1), self.dp(12)));
+            rbIconShortX.setBackground(self.ui.createStrokeDrawable(self.withAlpha(shortxSelected ? C.primary : cardColor, shortxSelected ? 0.16 : 0.80), shortxSelected ? C.primary : dividerColor, self.dp(1), self.dp(12)));
+        } catch(eIconSourceStyle0) { safeLog(null, 'e', "catch " + String(eIconSourceStyle0)); }
+    }
+
     // 图标类型切换函数
     function updateIconInputs(type) {
+        setIconSourceCardSelected(type);
         if (type === "file") {
             inputIconPath.view.setVisibility(android.view.View.VISIBLE);
             shortxQuickRow.setVisibility(android.view.View.GONE);
