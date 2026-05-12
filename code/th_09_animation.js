@@ -205,6 +205,9 @@ FloatBallAppWM.prototype.handlePanelBack = function(which, reason) {
 
     if (this.state.addedViewer) {
       var vt = String(this.state.viewerPanelType || w || "viewer");
+      if (vt === "tool_app" && this.state.toolAppActive && this.popToolAppPage) {
+        return this.popToolAppPage(reason || "back_key");
+      }
       if (vt === "btn_editor") {
         if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
           this.state.editingButtonIndex = null;
@@ -328,6 +331,9 @@ FloatBallAppWM.prototype.hideAllPanels = function() {
   this.hideMainPanel();
   this.hideSettingsPanel();
   this.hideViewerPanel();
+  this.state.toolAppActive = false;
+  this.state.toolAppRoute = null;
+  this.state.toolAppNavStack = [];
   this.hideMask();
 
   this._clearHeavyCachesIfAllHidden("hideAllPanels");

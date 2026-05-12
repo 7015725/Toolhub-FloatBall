@@ -402,7 +402,7 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
   if (this.state.closing) return;
 
   // Determine if this panel should be modal (blocking background touches, better for IME)
-  var isModal = (which === "settings" || which === "btn_editor" || which === "schema_editor");
+  var isModal = (which === "settings" || which === "btn_editor" || which === "schema_editor" || which === "tool_app");
 
   var flags;
   if (isModal) {
@@ -477,8 +477,178 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
   }
 };
 
+// =======================【设置类 UI：App 页面栈实验框架】======================
+FloatBallAppWM.prototype.isToolAppRoute = function(route) {
+  var r = String(route || "");
+  return r === "settings" || r === "btn_editor" || r === "schema_editor";
+};
+
+FloatBallAppWM.prototype.getToolAppTitle = function(route) {
+  var r = String(route || "settings");
+  if (r === "settings") return "ToolHub 设置";
+  if (r === "btn_editor") {
+    if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
+      return (this.state.editingButtonIndex === -1) ? "新增按钮" : "编辑按钮";
+    }
+    return "按钮管理";
+  }
+  if (r === "schema_editor") {
+    if (this.state.editingSchemaIndex !== null && this.state.editingSchemaIndex !== undefined) {
+      return (this.state.editingSchemaIndex === -1) ? "新增布局项" : "编辑布局项";
+    }
+    return "布局管理";
+  }
+  return "ToolHub";
+};
+
+FloatBallAppWM.prototype.closeToolApp = function() {
+  try {
+    this.state.toolAppActive = false;
+    this.state.toolAppRoute = null;
+    this.state.toolAppNavStack = [];
+    this.hideViewerPanel();
+  } catch (e) { safeLog(this.L, 'e', "closeToolApp fail: " + String(e)); }
+};
+
+FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBack) {
+  var self = this;
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var root = new android.widget.LinearLayout(context);
+  root.setOrientation(android.widget.LinearLayout.VERTICAL);
+  root.setBackground(this.ui.createRoundDrawable(isDark ? C.bgDark : C.bgLight, this.dp(18)));
+  try { root.setElevation(this.dp(10)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+
+  var bar = new android.widget.LinearLayout(context);
+  bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  bar.setPadding(this.dp(8), this.dp(8), this.dp(8), this.dp(6));
+
+  var btnBack = this.ui.createFlatButton(this, canBack ? "‹" : "", C.primary, function() {
+    if (canBack) self.popToolAppPage("topbar");
+  });
+  btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
+  btnBack.setPadding(this.dp(8), 0, this.dp(8), 0);
+  if (!canBack) btnBack.setVisibility(android.view.View.INVISIBLE);
+  bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
+
+  var tvTitle = new android.widget.TextView(context);
+  tvTitle.setText(String(title || "ToolHub"));
+  tvTitle.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+  tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+  tvTitle.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  var titleLp = new android.widget.LinearLayout.LayoutParams(0, -1);
+  titleLp.weight = 1;
+  bar.addView(tvTitle, titleLp);
+
+  var btnClose = this.ui.createFlatButton(this, "✕", isDark ? C.textSecDark : C.textSecLight, function() {
+    self.closeToolApp();
+  });
+  btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+  btnClose.setPadding(this.dp(8), 0, this.dp(8), 0);
+  bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
+  root.addView(bar, new android.widget.LinearLayout.LayoutParams(-1, this.dp(52)));
+
+  try { contentView.setBackground(null); } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
+  try { contentView.setElevation(0); } catch(eEl) { safeLog(null, 'e', "catch " + String(eEl)); }
+  root.addView(contentView, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+  return root;
+};
+
+FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
+  if (this.state.closing) return;
+  var r = this.isToolAppRoute(route) ? String(route) : "settings";
+  try {
+    this.touchActivity();
+    this.hideMainPanel();
+    this.hideSettingsPanel();
+    this.hideViewerPanel();
+    this.showMask();
+    this.state.toolAppActive = true;
+    this.state.toolAppRoute = r;
+    if (resetStack || !this.state.toolAppNavStack || !this.state.toolAppNavStack.length) {
+      this.state.toolAppNavStack = [{ route: r }];
+    } else {
+      this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = { route: r };
+    }
+
+    var raw = this.buildPanelView(r);
+    var shell = this.buildToolAppShell(raw, this.getToolAppTitle(r), this.state.toolAppNavStack.length > 1);
+    var maxW = Math.floor(this.state.screen.w * 0.92);
+    var maxH = Math.floor(this.state.screen.h * 0.82);
+    shell.measure(
+      android.view.View.MeasureSpec.makeMeasureSpec(maxW, android.view.View.MeasureSpec.AT_MOST),
+      android.view.View.MeasureSpec.makeMeasureSpec(maxH, android.view.View.MeasureSpec.AT_MOST)
+    );
+    var pw = Math.max(this.dp(300), Math.min(maxW, shell.getMeasuredWidth()));
+    var ph = Math.max(this.dp(380), Math.min(maxH, shell.getMeasuredHeight()));
+    var lp0 = shell.getLayoutParams();
+    if (!lp0) lp0 = new android.view.ViewGroup.LayoutParams(pw, ph);
+    lp0.width = pw; lp0.height = ph;
+    shell.setLayoutParams(lp0);
+    var pos = this.getBestPanelPosition(pw, ph, this.state.ballLp.x, this.state.ballLp.y, this.getDockInfo().ballSize);
+    this.addPanel(shell, pos.x, pos.y, "tool_app");
+  } catch (e) {
+    this.state.toolAppActive = false;
+    safeLog(this.L, 'e', "showToolApp fail route=" + r + " err=" + String(e));
+    try { this.toast("设置页面显示失败: " + String(e)); } catch(et) {}
+  }
+};
+
+FloatBallAppWM.prototype.pushToolAppPage = function(route) {
+  if (!this.isToolAppRoute(route)) return;
+  if (!this.state.toolAppNavStack) this.state.toolAppNavStack = [];
+  this.state.toolAppNavStack.push({ route: String(route) });
+  this.showToolApp(route, false);
+};
+
+FloatBallAppWM.prototype.replaceToolAppPage = function(route) {
+  if (!this.isToolAppRoute(route)) return;
+  if (!this.state.toolAppNavStack || !this.state.toolAppNavStack.length) this.state.toolAppNavStack = [{ route: String(route) }];
+  else this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = { route: String(route) };
+  this.showToolApp(route, false);
+};
+
+FloatBallAppWM.prototype.popToolAppPage = function(reason) {
+  try {
+    var curRoute = this.state.toolAppRoute ? String(this.state.toolAppRoute) : "";
+    if (curRoute === "btn_editor" && this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
+      this.state.editingButtonIndex = null;
+      this.state.keepBtnEditorState = true;
+    }
+    if (curRoute === "schema_editor" && this.state.editingSchemaIndex !== null && this.state.editingSchemaIndex !== undefined) {
+      this.state.editingSchemaIndex = null;
+      this.state.keepSchemaEditorState = true;
+    }
+    if (!this.state.toolAppNavStack || this.state.toolAppNavStack.length <= 1) {
+      this.closeToolApp();
+      return true;
+    }
+    this.state.toolAppNavStack.pop();
+    var top = this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1];
+    this.showToolApp(top && top.route ? top.route : "settings", false);
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'e', "popToolAppPage fail reason=" + String(reason || "") + " err=" + String(e));
+  }
+  return false;
+};
+
 FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
   if (this.state.closing) return;
+
+  // 设置入口先走 AppShell + 页面栈；子页面在 AppShell 内刷新，逐步替换旧多浮窗模式。
+  if (this.isToolAppRoute && this.isToolAppRoute(which)) {
+    if (which === "settings" && !this.state.toolAppActive) {
+      this.showToolApp("settings", true);
+      return;
+    }
+    if (this.state.toolAppActive) {
+      this.replaceToolAppPage(which);
+      return;
+    }
+  }
 
   // 优化：如果是刷新编辑器面板（btn_editor/schema_editor），且面板已存在，则直接更新内容，避免闪烁
   if ((which === "btn_editor" || which === "schema_editor") && this.state.addedViewer && this.state.viewerPanel) {

@@ -54,8 +54,12 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
 
   // [恢复] 按钮管理
   var btnMgr = this.ui.createFlatButton(this, "按钮管理", C.primary, function() {
-      self.hideSettingsPanel();
-      self.showPanelAvoidBall("btn_editor");
+      if (self.state.toolAppActive && self.pushToolAppPage) {
+        self.pushToolAppPage("btn_editor");
+      } else {
+        self.hideSettingsPanel();
+        self.showPanelAvoidBall("btn_editor");
+      }
   });
   btnMgr.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
   header.addView(btnMgr);
@@ -118,7 +122,8 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
         self.state.previewMode = false;
         if (self.state.addedPanel) self.hideMainPanel();
 
-        self.hideSettingsPanel();
+        if (self.state.toolAppActive && self.closeToolApp) self.closeToolApp();
+        else self.hideSettingsPanel();
 
         if (r && r.ok) self.toast("已确认并生效");
         else self.toast("确认失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")));
@@ -410,7 +415,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     // 新增按钮 (右侧)
     var btnAdd = self.ui.createSolidButton(self, "新增", C.primary, android.graphics.Color.WHITE, function() {
         self.state.editingButtonIndex = -1;
-        refreshPanel();
+        if (self.state.toolAppActive && self.pushToolAppPage) self.pushToolAppPage("btn_editor");
+        else refreshPanel();
     });
     // 调整新增按钮样式，使其更紧凑
     btnAdd.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
@@ -463,7 +469,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         card.setOnClickListener(new android.view.View.OnClickListener({
             onClick: function() {
                 self.state.editingButtonIndex = idx;
-                refreshPanel();
+                if (self.state.toolAppActive && self.pushToolAppPage) self.pushToolAppPage("btn_editor");
+                else refreshPanel();
             }
         }));
 

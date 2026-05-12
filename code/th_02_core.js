@@ -43,6 +43,11 @@ function FloatBallAppWM(logger) {
     viewerPanelLp: null,
     viewerPanelType: null,
 
+    // 设置类 UI App 化：单窗口页面栈（settings -> 子页面 -> 编辑页）
+    toolAppActive: false,
+    toolAppNavStack: [],
+    toolAppRoute: null,
+
     mask: null,
     maskLp: null,
 
