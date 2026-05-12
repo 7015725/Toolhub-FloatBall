@@ -54,8 +54,8 @@
       "size": 20386
     },
     "th_14_panels.js": {
-      "sha256": "1356191b8d4da5cc668282c4d3aeb9d0a016ceb2fae0baf2d6b691606b571733",
-      "size": 217779
+      "sha256": "69840e0f00fe0b049217ed7a4b5db8bff648d2f4c4ea2dcaff3bb1eb15c06263",
+      "size": 218924
     },
     "th_15_extra.js": {
       "sha256": "ffcdc8f8e4dda94658b1e32e4c4ed61e58d4525306a4a1697cccf3635b942d28",
@@ -68,5 +68,5 @@
   },
   "keyId": "toolhub-targets-2026-rsa3072",
   "schema": 2,
-  "version": 20260512024621
+  "version": 20260512030604
 }

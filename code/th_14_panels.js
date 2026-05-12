@@ -3201,7 +3201,10 @@ shortcutWrap.addView(scBody);
 
     var btnCancel = self.ui.createFlatButton(self, "取消", subTextColor, function() {
         self.state.editingButtonIndex = null;
-        refreshPanel();
+        if (self.state.toolAppActive && self.popToolAppPage) {
+            self.state.keepBtnEditorState = true;
+            self.popToolAppPage("button_edit_cancel");
+        } else refreshPanel();
     });
     bottomBar.addView(btnCancel);
 
@@ -3301,7 +3304,10 @@ try {
             ConfigManager.saveButtons(buttons);
 
             self.state.editingButtonIndex = null;
-            refreshPanel();
+            if (self.state.toolAppActive && self.popToolAppPage) {
+                self.state.keepBtnEditorState = true;
+                self.popToolAppPage("button_edit_save");
+            } else refreshPanel();
             self.toast("已暂存，请在列表页点击保存");
         } catch (e) {
             self.toast("暂存失败: " + e);
@@ -3375,7 +3381,8 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
 
     header.addView(self.ui.createFlatButton(self, "新增", C.primary, function() {
         self.state.editingSchemaIndex = -1;
-        refreshPanel();
+        if (self.state.toolAppActive && self.pushToolAppPage) self.pushToolAppPage("schema_editor");
+        else refreshPanel();
     }));
 
     var btnClose = self.ui.createFlatButton(self, "✕", C.textSecLight, function() {
@@ -3391,8 +3398,13 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
          ConfigManager.saveSchema(schema);
          self.state.tempSchema = null;
          self.toast("布局已保存");
-         self.hideAllPanels();
-         self.showPanelAvoidBall("settings");
+         if (self.state.toolAppActive && self.popToolAppPage) {
+             self.state.editingSchemaIndex = null;
+             self.popToolAppPage("schema_save_all");
+         } else {
+             self.hideAllPanels();
+             self.showPanelAvoidBall("settings");
+         }
     });
     var saveLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     saveLp.setMargins(0, 0, 0, self.dp(8));
@@ -3467,7 +3479,8 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
         }
         actions.addView(self.ui.createFlatButton(self, "✎", C.primary, function() {
             self.state.editingSchemaIndex = idx;
-            refreshPanel();
+            if (self.state.toolAppActive && self.pushToolAppPage) self.pushToolAppPage("schema_editor");
+            else refreshPanel();
         }));
         actions.addView(self.ui.createFlatButton(self, "✕", C.danger, function() {
             schema.splice(idx, 1);
@@ -3488,7 +3501,10 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
 
     var btnBack = self.ui.createFlatButton(self, "返回", C.textSecLight, function() {
         self.state.editingSchemaIndex = null;
-        refreshPanel();
+        if (self.state.toolAppActive && self.popToolAppPage) {
+            self.state.keepSchemaEditorState = true;
+            self.popToolAppPage("schema_edit_back");
+        } else refreshPanel();
     });
     header.addView(btnBack);
     panel.addView(header);
@@ -3595,7 +3611,10 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
             }
 
             self.state.editingSchemaIndex = null;
-            refreshPanel();
+            if (self.state.toolAppActive && self.popToolAppPage) {
+                self.state.keepSchemaEditorState = true;
+                self.popToolAppPage("schema_edit_save");
+            } else refreshPanel();
             self.toast("已暂存，请在列表页点击保存生效");
         } catch (e) {
             self.toast("暂存失败: " + e);
