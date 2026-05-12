@@ -127,6 +127,7 @@ FloatBallAppWM.prototype.playBounce = function(v) {
 FloatBallAppWM.prototype.safeRemoveView = function(v, whichName) {
   try {
     if (!v) return { ok: true, skipped: true };
+    try { if (this.unregisterPanelPredictiveBack) this.unregisterPanelPredictiveBack(v); } catch (eBack) {}
     this.state.wm.removeView(v);
     return { ok: true };
   } catch (e) {
@@ -265,6 +266,109 @@ FloatBallAppWM.prototype.handleSystemUiDismiss = function(reason) {
   return false;
 };
 
+FloatBallAppWM.prototype.resetPanelPredictiveBackVisual = function(panel) {
+  try {
+    if (!panel) return;
+    panel.setAlpha(1.0);
+    panel.setTranslationX(0);
+    panel.setScaleX(1.0);
+    panel.setScaleY(1.0);
+  } catch (e) {}
+};
+
+FloatBallAppWM.prototype.applyPanelPredictiveBackProgress = function(panel, event) {
+  try {
+    if (!panel || !event) return;
+    var p = 0;
+    try { p = Number(event.getProgress()); } catch (eP) { p = 0; }
+    if (isNaN(p)) p = 0;
+    if (p < 0) p = 0;
+    if (p > 1) p = 1;
+    var edge = 0;
+    try { edge = Number(event.getSwipeEdge()); } catch (eE) { edge = 0; }
+    var dir = edge === 1 ? -1 : 1;
+    panel.setAlpha(1.0 - 0.18 * p);
+    panel.setTranslationX(dir * this.dp(36) * p);
+    var s = 1.0 - 0.025 * p;
+    panel.setScaleX(s);
+    panel.setScaleY(s);
+  } catch (e) {}
+};
+
+FloatBallAppWM.prototype.unregisterPanelPredictiveBack = function(panel) {
+  try {
+    var entries = this.state.panelBackCallbackEntries || [];
+    var kept = [];
+    for (var i = 0; i < entries.length; i++) {
+      var it = entries[i];
+      if (!it || it.view === panel) {
+        try { if (it && it.dispatcher && it.callback) it.dispatcher.unregisterOnBackInvokedCallback(it.callback); } catch (eUnreg) {}
+      } else {
+        kept.push(it);
+      }
+    }
+    this.state.panelBackCallbackEntries = kept;
+    this.resetPanelPredictiveBackVisual(panel);
+  } catch (e) {
+    safeLog(this.L, 'w', "unregister predictive back fail: " + String(e));
+  }
+};
+
+FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
+  // Android 13+：注册 OnBackInvokedCallback；Android 14+ 优先使用 OnBackAnimationCallback，实现预测性返回手势进度动画。
+  try {
+    if (!panel) return false;
+    if (android.os.Build.VERSION.SDK_INT < 33) return false;
+    this.unregisterPanelPredictiveBack(panel);
+    var dispatcher = null;
+    try { dispatcher = panel.findOnBackInvokedDispatcher(); } catch (eFind) { dispatcher = null; }
+    if (!dispatcher) return false;
+
+    var self = this;
+    var cb = null;
+    var usedAnimation = false;
+    if (android.os.Build.VERSION.SDK_INT >= 34) {
+      try {
+        var animCls = java.lang.Class.forName("android.window.OnBackAnimationCallback");
+        cb = new JavaAdapter(animCls, {
+          onBackStarted: function(event) { self.applyPanelPredictiveBackProgress(panel, event); },
+          onBackProgressed: function(event) { self.applyPanelPredictiveBackProgress(panel, event); },
+          onBackCancelled: function() { self.resetPanelPredictiveBackVisual(panel); },
+          onBackInvoked: function() {
+            self.resetPanelPredictiveBackVisual(panel);
+            self.handlePanelBack(which, "predictive_back");
+          }
+        });
+        usedAnimation = true;
+      } catch (eAnim) {
+        cb = null;
+      }
+    }
+    if (!cb) {
+      try {
+        var cbCls = java.lang.Class.forName("android.window.OnBackInvokedCallback");
+        cb = new JavaAdapter(cbCls, {
+          onBackInvoked: function() { self.handlePanelBack(which, "on_back_invoked"); }
+        });
+      } catch (eCb) {
+        cb = null;
+      }
+    }
+    if (!cb) return false;
+
+    var priority = 0;
+    try { priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT; } catch (ePri) { priority = 0; }
+    dispatcher.registerOnBackInvokedCallback(priority, cb);
+    if (!this.state.panelBackCallbackEntries) this.state.panelBackCallbackEntries = [];
+    this.state.panelBackCallbackEntries.push({ view: panel, dispatcher: dispatcher, callback: cb, which: String(which || ""), animation: usedAnimation });
+    safeLog(this.L, 'i', "predictive back registered which=" + String(which || "") + " animation=" + String(usedAnimation));
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', "register predictive back fail which=" + String(which || "") + " err=" + String(e));
+  }
+  return false;
+};
+
 FloatBallAppWM.prototype.attachPanelSystemKeyHandler = function(panel, which) {
   try {
     if (!panel) return;
@@ -282,7 +386,10 @@ FloatBallAppWM.prototype.attachPanelSystemKeyHandler = function(panel, which) {
         return false;
       }
     }));
-    panel.post(new java.lang.Runnable({ run: function() { try { panel.requestFocus(); } catch(eFocus) {} } }));
+    panel.post(new java.lang.Runnable({ run: function() {
+      try { panel.requestFocus(); } catch(eFocus) {}
+      try { self.registerPanelPredictiveBack(panel, which); } catch(eBack) {}
+    } }));
   } catch (e) {
     safeLog(this.L, 'e', "attachPanelSystemKeyHandler fail which=" + String(which || "") + " err=" + String(e));
   }
