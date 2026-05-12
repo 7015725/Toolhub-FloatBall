@@ -489,6 +489,8 @@ FloatBallAppWM.prototype.getToolAppTitle = function(route) {
   if (r === "settings_group") return this.getSettingsGroupTitle ? this.getSettingsGroupTitle(this.state.settingsGroupKey) : "设置分组";
   if (r === "btn_editor") {
     if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
+      if (this.state.buttonEditorSubPage === "basic") return "基础信息"; // button_editor_basic
+      if (this.state.buttonEditorSubPage === "legacy") return "完整编辑"; // button_editor_legacy
       return (this.state.editingButtonIndex === -1) ? "新增按钮" : "编辑按钮";
     }
     return "按钮管理";
@@ -626,9 +628,20 @@ FloatBallAppWM.prototype.replaceToolAppPage = function(route) {
 FloatBallAppWM.prototype.popToolAppPage = function(reason) {
   try {
     var curRoute = this.state.toolAppRoute ? String(this.state.toolAppRoute) : "";
-    if (curRoute === "btn_editor" && this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
-      this.state.editingButtonIndex = null;
-      this.state.keepBtnEditorState = true;
+    if (curRoute === "btn_editor") {
+      if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
+        if (this.state.buttonEditorSubPage !== null && this.state.buttonEditorSubPage !== undefined) {
+          this.state.buttonEditorSubPage = null;
+          this.state.keepBtnEditorState = true;
+        } else {
+          this.state.editingButtonIndex = null;
+          this.state.buttonEditorDraft = null;
+          this.state.keepBtnEditorState = true;
+        }
+      } else {
+        this.state.buttonEditorSubPage = null;
+        this.state.buttonEditorDraft = null;
+      }
     }
     if (curRoute === "schema_editor" && this.state.editingSchemaIndex !== null && this.state.editingSchemaIndex !== undefined) {
       this.state.editingSchemaIndex = null;
@@ -639,6 +652,11 @@ FloatBallAppWM.prototype.popToolAppPage = function(reason) {
       return true;
     }
     this.state.toolAppNavStack.pop();
+    var rr = String(reason || "");
+    if (curRoute === "btn_editor" && rr.indexOf("button_edit_") === 0 && this.state.editingButtonIndex === null && this.state.toolAppNavStack.length > 1) {
+      var prevTop = this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1];
+      if (prevTop && String(prevTop.route || "") === "btn_editor") this.state.toolAppNavStack.pop();
+    }
     var top = this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1];
     var nextRoute = top && top.route ? String(top.route) : "settings";
     if (nextRoute !== "settings_group") this.state.settingsGroupKey = null;

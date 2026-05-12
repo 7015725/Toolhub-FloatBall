@@ -80,6 +80,10 @@ function FloatBallAppWM(logger) {
     // 按钮管理首页：搜索过滤状态
     buttonManagerQuery: "",
 
+    // 按钮编辑 App 化：编辑首页 / 基础信息子页 / 完整编辑页
+    buttonEditorSubPage: null,
+    buttonEditorDraft: null,
+
     closing: false
   };
 

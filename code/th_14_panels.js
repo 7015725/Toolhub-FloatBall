@@ -560,6 +560,178 @@ FloatBallAppWM.prototype.createButtonEditorSectionCard = function(parent, title,
   return box;
 };
 
+
+FloatBallAppWM.prototype.createButtonEditorHomeEntry = function(parent, title, desc, actionText, onClick) {
+  var self = this;
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var row = new android.widget.LinearLayout(context);
+  row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  row.setPadding(this.dp(14), this.dp(12), this.dp(12), this.dp(12));
+  row.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.82) : this.withAlpha(C.cardLight, 0.92), this.dp(14)));
+  try { row.setElevation(this.dp(2)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  var texts = new android.widget.LinearLayout(context);
+  texts.setOrientation(android.widget.LinearLayout.VERTICAL);
+  var tvTitle = new android.widget.TextView(context);
+  tvTitle.setText(String(title || ""));
+  tvTitle.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
+  tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+  texts.addView(tvTitle);
+  var tvDesc = new android.widget.TextView(context);
+  tvDesc.setText(String(desc || ""));
+  tvDesc.setTextColor(isDark ? C.textSecDark : C.textSecLight);
+  tvDesc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  tvDesc.setPadding(0, this.dp(3), this.dp(8), 0);
+  texts.addView(tvDesc);
+  var textLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  textLp.weight = 1;
+  row.addView(texts, textLp);
+  var go = new android.widget.TextView(context);
+  go.setText(String(actionText || "进入") + " ›");
+  go.setTextColor(C.primary);
+  go.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+  go.setTypeface(null, android.graphics.Typeface.BOLD);
+  row.addView(go);
+  row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+    try { self.touchActivity(); } catch(eT) {}
+    try { if (onClick) onClick(); } catch(eC) { try { self.toast("打开失败: " + String(eC)); } catch(eToast) {} }
+  }}));
+  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  lp.setMargins(this.dp(2), this.dp(6), this.dp(2), this.dp(6));
+  parent.addView(row, lp);
+};
+
+FloatBallAppWM.prototype.buildButtonEditorHomeView = function(buttons, editIdx, targetBtn) {
+  var self = this;
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+  var panel = this.ui.createStyledPanel(this, 16);
+  var box = new android.widget.LinearLayout(context);
+  box.setOrientation(android.widget.LinearLayout.VERTICAL);
+  box.setPadding(0, this.dp(2), 0, this.dp(8));
+
+  var summary = new android.widget.TextView(context);
+  summary.setText((editIdx === -1 ? "新增按钮" : "编辑按钮") + "：" + String(targetBtn && targetBtn.title ? targetBtn.title : "未命名") + "\n先进入子页调整内容，或打开完整编辑页使用原有全部选项。");
+  summary.setTextColor(subTextColor);
+  summary.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  summary.setPadding(this.dp(4), 0, this.dp(4), this.dp(8));
+  box.addView(summary);
+
+  this.createButtonEditorHomeEntry(box, "基础信息", "编辑标题、启用状态等基础字段", "编辑", function() {
+    self.state.buttonEditorSubPage = "basic"; // button_editor_basic
+    self.state.keepBtnEditorState = true;
+    if (self.pushToolAppPage) self.pushToolAppPage("btn_editor");
+    else self.showPanelAvoidBall("btn_editor");
+  });
+  this.createButtonEditorHomeEntry(box, "图标外观", "图标来源、ShortX 图标与调色板（下一步拆分）", "稍后", function() {
+    self.toast("下一步拆分图标外观页");
+  });
+  this.createButtonEditorHomeEntry(box, "动作设置", "Shell / App / 广播 / Intent / 快捷方式（完整编辑可用）", "完整编辑", function() {
+    self.state.buttonEditorSubPage = "legacy"; // button_editor_legacy
+    self.state.keepBtnEditorState = true;
+    if (self.pushToolAppPage) self.pushToolAppPage("btn_editor");
+    else self.showPanelAvoidBall("btn_editor");
+  });
+  this.createButtonEditorHomeEntry(box, "完整编辑", "保留旧版完整表单，确保所有高级选项可继续编辑", "打开", function() {
+    self.state.buttonEditorSubPage = "legacy"; // button_editor_legacy
+    self.state.keepBtnEditorState = true;
+    if (self.pushToolAppPage) self.pushToolAppPage("btn_editor");
+    else self.showPanelAvoidBall("btn_editor");
+  });
+
+  panel.addView(box);
+
+  var bottom = new android.widget.LinearLayout(context);
+  bottom.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  bottom.setGravity(android.view.Gravity.END | android.view.Gravity.CENTER_VERTICAL);
+  bottom.setPadding(0, this.dp(10), 0, 0);
+  var btnCancel = this.ui.createFlatButton(this, "取消", subTextColor, function() {
+    self.state.editingButtonIndex = null;
+    self.state.buttonEditorSubPage = null;
+    self.state.buttonEditorDraft = null;
+    if (self.state.toolAppActive && self.popToolAppPage) {
+      self.state.keepBtnEditorState = true;
+      self.popToolAppPage("button_edit_home_cancel");
+    } else self.showPanelAvoidBall("btn_editor");
+  });
+  bottom.addView(btnCancel);
+  panel.addView(bottom);
+  return panel;
+};
+
+FloatBallAppWM.prototype.buildButtonBasicInfoPage = function(buttons, editIdx, targetBtn) {
+  var self = this;
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+  var panel = this.ui.createStyledPanel(this, 16);
+  var form = new android.widget.LinearLayout(context);
+  form.setOrientation(android.widget.LinearLayout.VERTICAL);
+  form.setPadding(this.dp(4), this.dp(4), this.dp(4), this.dp(4));
+
+  self.createButtonEditorSectionCard(form, "基础信息子页", "这里只改标题和启用状态；完整动作参数仍可进入完整编辑页调整。");
+  var inputTitle = self.ui.createInputGroup(self, "标题 (Title)", targetBtn.title, false, "按钮上显示的文字");
+  form.addView(inputTitle.view);
+
+  var enabledRow = new android.widget.LinearLayout(context);
+  enabledRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  enabledRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  enabledRow.setPadding(0, self.dp(8), 0, self.dp(12));
+  var enabledTv = new android.widget.TextView(context);
+  enabledTv.setText("启用按钮");
+  enabledTv.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  enabledTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+  var enabledTvLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  enabledTvLp.weight = 1;
+  enabledRow.addView(enabledTv, enabledTvLp);
+  var enabledSwitch = new android.widget.Switch(context);
+  enabledSwitch.setChecked(targetBtn.enabled === false ? false : true);
+  enabledRow.addView(enabledSwitch);
+  form.addView(enabledRow);
+
+  panel.addView(form);
+
+  var bottom = new android.widget.LinearLayout(context);
+  bottom.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  bottom.setGravity(android.view.Gravity.END | android.view.Gravity.CENTER_VERTICAL);
+  bottom.setPadding(0, self.dp(10), 0, 0);
+  var btnBack = self.ui.createFlatButton(self, "返回", subTextColor, function() {
+    if (self.state.toolAppActive && self.popToolAppPage) {
+      self.state.keepBtnEditorState = true;
+      self.popToolAppPage("button_basic_back");
+    } else self.showPanelAvoidBall("btn_editor");
+  });
+  bottom.addView(btnBack);
+  var spacer = new android.view.View(context);
+  spacer.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(12), 1));
+  bottom.addView(spacer);
+  var btnSave = self.ui.createSolidButton(self, "保存基础信息", C.primary, android.graphics.Color.WHITE, function() {
+    try {
+      var newTitle = String(inputTitle.getValue ? inputTitle.getValue() : "").replace(/^\s+|\s+$/g, "");
+      if (!newTitle) { inputTitle.setError("标题不能为空"); return; }
+      targetBtn.title = newTitle;
+      targetBtn.enabled = !!enabledSwitch.isChecked();
+      if (editIdx === -1) {
+        buttons.push(targetBtn);
+        self.state.editingButtonIndex = buttons.length - 1;
+      } else {
+        buttons[editIdx] = targetBtn;
+      }
+      self.state.buttonEditorDraft = JSON.parse(JSON.stringify(targetBtn));
+      self.state.keepBtnEditorState = true;
+      self.toast("基础信息已暂存");
+      if (self.state.toolAppActive && self.popToolAppPage) self.popToolAppPage("button_basic_save");
+      else self.showPanelAvoidBall("btn_editor");
+    } catch(eSave) { self.toast("暂存失败: " + String(eSave)); }
+  });
+  bottom.addView(btnSave);
+  panel.addView(bottom);
+  return panel;
+};
+
 FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   var self = this;
   // # 状态管理：editingIndex (null=列表, -1=新增, >=0=编辑)
@@ -631,6 +803,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     // 新增按钮 (右侧)
     var btnAdd = self.ui.createSolidButton(self, "新增", C.primary, android.graphics.Color.WHITE, function() {
         self.state.editingButtonIndex = -1;
+        self.state.buttonEditorSubPage = null;
+        self.state.buttonEditorDraft = null;
         if (self.state.toolAppActive && self.pushToolAppPage) self.pushToolAppPage("btn_editor");
         else refreshPanel();
     });
@@ -722,6 +896,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         card.setOnClickListener(new android.view.View.OnClickListener({
             onClick: function() {
                 self.state.editingButtonIndex = idx;
+                self.state.buttonEditorSubPage = null;
+                self.state.buttonEditorDraft = null;
                 if (self.state.toolAppActive && self.pushToolAppPage) self.pushToolAppPage("btn_editor");
                 else refreshPanel();
             }
@@ -998,7 +1174,18 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     panel.setTag(header); // 暴露 Header
 
     var editIdx = this.state.editingButtonIndex;
-    var targetBtn = (editIdx === -1) ? { type: "shell", title: "", cmd: "", iconResId: 0 } : JSON.parse(JSON.stringify(buttons[editIdx]));
+    var targetBtn = (editIdx === -1) ? { type: "shell", title: "", cmd: "", iconResId: 0, enabled: true } : JSON.parse(JSON.stringify(buttons[editIdx]));
+    try {
+        if (this.state.buttonEditorDraft) {
+            var draftObj = JSON.parse(JSON.stringify(this.state.buttonEditorDraft));
+            if (draftObj) targetBtn = draftObj;
+        }
+    } catch(eDraft) { safeLog(null, 'e', "catch " + String(eDraft)); }
+
+    if (this.state.buttonEditorSubPage === "basic") return this.buildButtonBasicInfoPage(buttons, editIdx, targetBtn);
+    if (this.state.buttonEditorSubPage === "legacy") {
+      // 继续向下渲染旧版完整编辑表单
+    } else return this.buildButtonEditorHomeView(buttons, editIdx, targetBtn);
 
     var scroll = new android.widget.ScrollView(context);
     try { scroll.setVerticalScrollBarEnabled(false);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
