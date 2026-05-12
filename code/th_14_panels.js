@@ -560,6 +560,68 @@ FloatBallAppWM.prototype.createButtonEditorSectionCard = function(parent, title,
   return box;
 };
 
+
+FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent, title, desc, defaultExpanded) {
+  var self = this;
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var expanded = defaultExpanded !== false;
+  var card = new android.widget.LinearLayout(context);
+  card.setOrientation(android.widget.LinearLayout.VERTICAL);
+  card.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
+  card.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.72) : this.withAlpha(C.cardLight, 0.78), this.dp(14)));
+
+  var header = new android.widget.LinearLayout(context);
+  header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  header.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  var titleBox = new android.widget.LinearLayout(context);
+  titleBox.setOrientation(android.widget.LinearLayout.VERTICAL);
+  var tv = new android.widget.TextView(context);
+  tv.setText(String(title || ""));
+  tv.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+  tv.setTypeface(null, android.graphics.Typeface.BOLD);
+  titleBox.addView(tv);
+  if (desc) {
+    var dv = new android.widget.TextView(context);
+    dv.setText(String(desc));
+    dv.setTextColor(isDark ? C.textSecDark : C.textSecLight);
+    dv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+    dv.setPadding(0, this.dp(3), this.dp(8), 0);
+    titleBox.addView(dv);
+  }
+  var titleLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  titleLp.weight = 1;
+  header.addView(titleBox, titleLp);
+  var toggleTv = new android.widget.TextView(context);
+  toggleTv.setText(expanded ? "折叠 ▲" : "展开 ▼");
+  toggleTv.setTextColor(C.primary);
+  toggleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  toggleTv.setTypeface(null, android.graphics.Typeface.BOLD);
+  header.addView(toggleTv);
+  card.addView(header);
+
+  var body = new android.widget.LinearLayout(context);
+  body.setOrientation(android.widget.LinearLayout.VERTICAL);
+  body.setPadding(0, this.dp(8), 0, 0);
+  if (!expanded) body.setVisibility(android.view.View.GONE);
+  card.addView(body);
+
+  header.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+    try {
+      expanded = !expanded;
+      body.setVisibility(expanded ? android.view.View.VISIBLE : android.view.View.GONE);
+      toggleTv.setText(expanded ? "折叠 ▲" : "展开 ▼");
+      self.touchActivity();
+    } catch(eToggle) { safeLog(null, 'e', "catch " + String(eToggle)); }
+  }}));
+
+  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  lp.setMargins(0, this.dp(8), 0, this.dp(8));
+  parent.addView(card, lp);
+  return body;
+};
+
 FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   var self = this;
   // # 状态管理：editingIndex (null=列表, -1=新增, >=0=编辑)
@@ -1014,7 +1076,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     editHint.setPadding(self.dp(4), 0, 0, self.dp(16));
     form.addView(editHint);
 
-    self.createButtonEditorSectionCard(form, "基础信息", "按钮名称与基础标识");
+    var basicSectionBody = self.createButtonEditorCollapsibleSection(form, "基础信息", "按钮名称与基础标识", true);
 
     // 1. 标题 (Title)
     var topArea = new android.widget.LinearLayout(context);
@@ -1033,9 +1095,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     titleArea.addView(inputTitle.view);
     topArea.addView(titleArea);
 
-    form.addView(topArea);
+    basicSectionBody.addView(topArea);
 
-    self.createButtonEditorSectionCard(form, "图标外观", "选择图标来源、ShortX 图标和颜色");
+    var iconSectionBody = self.createButtonEditorCollapsibleSection(form, "图标外观", "选择图标来源、ShortX 图标和颜色", false);
 
     // 1.5 图标选择（文件路径 或 ShortX 内置图标 二选一）
     var iconSelectWrap = new android.widget.LinearLayout(context);
@@ -1065,11 +1127,11 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     iconRadioGroup.addView(rbIconFile);
     iconRadioGroup.addView(rbIconShortX);
     iconSelectWrap.addView(iconRadioGroup);
-    form.addView(iconSelectWrap);
+    iconSectionBody.addView(iconSelectWrap);
 
     // 1.5a 图标路径（文件方式）
     var inputIconPath = self.ui.createInputGroup(self, "图标路径 (绝对地址)", targetBtn.iconPath, false, "支持 PNG/JPG 绝对路径，自动安全加载");
-    form.addView(inputIconPath.view);
+    iconSectionBody.addView(inputIconPath.view);
 
     // 1.5b ShortX 内置图标选择（取消手动名称输入，改为预览 + 图标库选择）
     var normalizedInitShortX = self.normalizeShortXIconName(targetBtn.iconResName, false);
@@ -1249,7 +1311,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shortxQuickRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     shortxQuickRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
     shortxQuickRow.setPadding(0, 0, 0, self.dp(8));
-    form.addView(shortxQuickRow);
+    iconSectionBody.addView(shortxQuickRow);
 
     var shortxPreviewCard = new android.widget.LinearLayout(context);
     shortxPreviewCard.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -1564,7 +1626,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var defaultTint = targetBtn.iconTint ? String(targetBtn.iconTint) : "";
     var currentShortXIconTint = defaultTint;
     var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空跟随主题)", defaultTint, false, "支持 #RRGGBB / #AARRGGBB；下方可展开完整调色板");
-    form.addView(inputShortXIconTint.view);
+    iconSectionBody.addView(inputShortXIconTint.view);
     // # 避免 Rhino 闭包问题：将输入框引用存储到 self.state，供颜色选择器回调使用
     self.state._btnEditorTintInput = inputShortXIconTint;
 
@@ -1828,7 +1890,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPaletteWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
     tintPaletteWrap.setPadding(0, 0, 0, self.dp(12));
     tintPaletteWrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.92), self.dp(14)));
-    form.addView(tintPaletteWrap);
+    iconSectionBody.addView(tintPaletteWrap);
     tintPaletteState.pickerWrap = tintPaletteWrap;
 
     var tintPaletteHead = new android.widget.LinearLayout(context);
@@ -2204,7 +2266,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     }));
 
 
-    self.createButtonEditorSectionCard(form, "动作设置", "选择点击后执行的动作类型与参数");
+    var actionSectionBody = self.createButtonEditorCollapsibleSection(form, "动作设置", "选择点击后执行的动作类型与参数", true);
 
     // 2. 动作类型（自动换行：用 GridLayout 稳定实现）
     // 这段代码的主要内容/用途：把「Shell/App/广播/Intent/快捷方式」做成会自动换行的单选框区域。
@@ -2390,12 +2452,12 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             }
         }));
      } catch(eLC) { safeLog(null, 'e', "catch " + String(eLC)); }
-    form.addView(typeWrap);
+    actionSectionBody.addView(typeWrap);
 
     // 3. 动态输入区
     var dynamicContainer = new android.widget.LinearLayout(context);
     dynamicContainer.setOrientation(android.widget.LinearLayout.VERTICAL);
-    form.addView(dynamicContainer);
+    actionSectionBody.addView(dynamicContainer);
 
     // --- Shell ---
     var shellWrap = new android.widget.LinearLayout(context);
