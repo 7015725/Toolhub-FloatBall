@@ -77,7 +77,7 @@ FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
 
 // =======================【面板构建：主面板 / 设置面板】======================
 FloatBallAppWM.prototype.buildPanelView = function(panelType) {
-  if (panelType === "settings") return this.buildSettingsPanelView();
+  if (panelType === "settings" || panelType === "settings_group") return this.buildSettingsPanelView();
   if (panelType === "btn_editor") return this.buildButtonEditorPanelView();
   if (panelType === "schema_editor") return this.buildSchemaEditorPanelView();
 
@@ -480,12 +480,13 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
 // =======================【设置类 UI：App 页面栈实验框架】======================
 FloatBallAppWM.prototype.isToolAppRoute = function(route) {
   var r = String(route || "");
-  return r === "settings" || r === "btn_editor" || r === "schema_editor";
+  return r === "settings" || r === "settings_group" || r === "btn_editor" || r === "schema_editor";
 };
 
 FloatBallAppWM.prototype.getToolAppTitle = function(route) {
   var r = String(route || "settings");
   if (r === "settings") return "ToolHub 设置";
+  if (r === "settings_group") return this.getSettingsGroupTitle ? this.getSettingsGroupTitle(this.state.settingsGroupKey) : "设置分组";
   if (r === "btn_editor") {
     if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
       return (this.state.editingButtonIndex === -1) ? "新增按钮" : "编辑按钮";
@@ -506,6 +507,7 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.toolAppActive = false;
     this.state.toolAppRoute = null;
     this.state.toolAppNavStack = [];
+    this.state.settingsGroupKey = null;
     this.hideViewerPanel();
   } catch (e) { safeLog(this.L, 'e', "closeToolApp fail: " + String(e)); }
 };
@@ -567,6 +569,12 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
     this.showMask();
     this.state.toolAppActive = true;
     this.state.toolAppRoute = r;
+    if (r === "settings") this.state.settingsGroupKey = null;
+    if (resetStack && r === "settings") {
+      this.state.pendingUserCfg = null;
+      this.state.pendingDirty = false;
+      this.state.previewMode = false;
+    }
     if (resetStack || !this.state.toolAppNavStack || !this.state.toolAppNavStack.length) {
       this.state.toolAppNavStack = [{ route: r }];
     } else {
@@ -603,6 +611,11 @@ FloatBallAppWM.prototype.pushToolAppPage = function(route) {
   this.showToolApp(route, false);
 };
 
+FloatBallAppWM.prototype.pushToolAppSettingsGroup = function(groupKey) {
+  this.state.settingsGroupKey = String(groupKey || "");
+  this.pushToolAppPage("settings_group");
+};
+
 FloatBallAppWM.prototype.replaceToolAppPage = function(route) {
   if (!this.isToolAppRoute(route)) return;
   if (!this.state.toolAppNavStack || !this.state.toolAppNavStack.length) this.state.toolAppNavStack = [{ route: String(route) }];
@@ -627,7 +640,9 @@ FloatBallAppWM.prototype.popToolAppPage = function(reason) {
     }
     this.state.toolAppNavStack.pop();
     var top = this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1];
-    this.showToolApp(top && top.route ? top.route : "settings", false);
+    var nextRoute = top && top.route ? String(top.route) : "settings";
+    if (nextRoute !== "settings_group") this.state.settingsGroupKey = null;
+    this.showToolApp(nextRoute, false);
     return true;
   } catch (e) {
     safeLog(this.L, 'e', "popToolAppPage fail reason=" + String(reason || "") + " err=" + String(e));

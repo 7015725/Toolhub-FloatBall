@@ -334,6 +334,7 @@ FloatBallAppWM.prototype.hideAllPanels = function() {
   this.state.toolAppActive = false;
   this.state.toolAppRoute = null;
   this.state.toolAppNavStack = [];
+  this.state.settingsGroupKey = null;
   this.hideMask();
 
   this._clearHeavyCachesIfAllHidden("hideAllPanels");

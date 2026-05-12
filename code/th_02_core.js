@@ -47,6 +47,7 @@ function FloatBallAppWM(logger) {
     toolAppActive: false,
     toolAppNavStack: [],
     toolAppRoute: null,
+    settingsGroupKey: null,
 
     mask: null,
     maskLp: null,

@@ -1,6 +1,175 @@
 // @version 1.0.0
+FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
+  return [
+    { key: "ball", title: "悬浮球", desc: "大小、图标、透明度、球与面板间距", sections: ["悬浮球"] },
+    { key: "panel", title: "面板", desc: "行列、间距、文字、位置与吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
+    { key: "theme", title: "主题与外观", desc: "明暗主题、文字色、背景与透明度", sections: ["外观"] },
+    { key: "motion", title: "动画与手势", desc: "吸边动画、回弹、点击/长按手势", sections: ["动画", "触摸与手势"] },
+    { key: "debug", title: "日志与调试", desc: "日志开关、DEBUG 与保留天数", sections: ["日志"] }
+  ];
+};
+
+FloatBallAppWM.prototype.getSettingsGroupDef = function(key) {
+  var defs = this.getSettingsGroupDefs();
+  var k = String(key || "");
+  for (var i = 0; i < defs.length; i++) {
+    if (defs[i] && String(defs[i].key) === k) return defs[i];
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.getSettingsGroupTitle = function(key) {
+  var d = this.getSettingsGroupDef(key);
+  return d ? d.title : "设置分组";
+};
+
+FloatBallAppWM.prototype.isSchemaSectionInSettingsGroup = function(sectionName, groupKey) {
+  var d = this.getSettingsGroupDef(groupKey);
+  if (!d || !d.sections) return false;
+  var n = String(sectionName || "");
+  for (var i = 0; i < d.sections.length; i++) {
+    if (String(d.sections[i]) === n) return true;
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc, actionText, onClick) {
+  var self = this;
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var cardColor = isDark ? C.cardDark : C.cardLight;
+  var textColor = isDark ? C.textPriDark : C.textPriLight;
+  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+  var row = new android.widget.LinearLayout(context);
+  row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  row.setPadding(this.dp(14), this.dp(12), this.dp(12), this.dp(12));
+  row.setBackground(this.ui.createRoundDrawable(cardColor, this.dp(14)));
+  try { row.setElevation(this.dp(2)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+
+  var texts = new android.widget.LinearLayout(context);
+  texts.setOrientation(android.widget.LinearLayout.VERTICAL);
+  var tvTitle = new android.widget.TextView(context);
+  tvTitle.setText(String(title || ""));
+  tvTitle.setTextColor(textColor);
+  tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
+  tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+  texts.addView(tvTitle);
+  var tvDesc = new android.widget.TextView(context);
+  tvDesc.setText(String(desc || ""));
+  tvDesc.setTextColor(subTextColor);
+  tvDesc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  tvDesc.setPadding(0, this.dp(3), this.dp(8), 0);
+  try { tvDesc.setSingleLine(false); } catch(eSL) { safeLog(null, 'e', "catch " + String(eSL)); }
+  texts.addView(tvDesc);
+  var textLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  textLp.weight = 1;
+  row.addView(texts, textLp);
+
+  var tvGo = new android.widget.TextView(context);
+  tvGo.setText(String(actionText || "进入") + " ›");
+  tvGo.setTextColor(C.primary);
+  tvGo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+  tvGo.setTypeface(null, android.graphics.Typeface.BOLD);
+  row.addView(tvGo);
+  row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+    try { self.touchActivity(); } catch(eT) {}
+    try { if (onClick) onClick(); } catch(eC) { try { self.toast("打开失败: " + String(eC)); } catch(eToast) {} }
+  }}));
+  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  lp.setMargins(this.dp(2), this.dp(6), this.dp(2), this.dp(6));
+  parent.addView(row, lp);
+};
+
+FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
+  if (!this.state.pendingUserCfg) this.beginEditConfig();
+  var self = this;
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var bgColor = isDark ? C.bgDark : C.bgLight;
+  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+  var panel = this.ui.createStyledPanel(this, 16);
+
+  var quick = new android.widget.LinearLayout(context);
+  quick.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  quick.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  quick.setPadding(0, 0, 0, this.dp(6));
+
+  var memTv = new android.widget.TextView(context);
+  memTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
+  memTv.setTextColor(subTextColor);
+  function updateMem() {
+    try {
+      var rt = java.lang.Runtime.getRuntime();
+      var total = rt.totalMemory() / 1024 / 1024;
+      var free = rt.freeMemory() / 1024 / 1024;
+      var used = total - free;
+      var max = rt.maxMemory() / 1024 / 1024;
+      memTv.setText("Mem " + used.toFixed(0) + "/" + max.toFixed(0) + "M");
+    } catch(e) { memTv.setText("Mem ?"); }
+  }
+  updateMem();
+  memTv.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { updateMem(); self.toast("内存已刷新"); }}));
+  quick.addView(memTv);
+  quick.addView(this.ui.createSpacer(this));
+
+  var btnDoc = this.ui.createFlatButton(this, "文档", C.primary, function() {
+    try {
+      var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+      intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
+      intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+      context.startActivity(intent);
+    } catch(e) { self.toast("无法打开文档链接"); }
+  });
+  quick.addView(btnDoc);
+
+  var btnSave = this.ui.createSolidButton(this, "保存", C.primary, android.graphics.Color.WHITE, function() {
+    try {
+      self.touchActivity();
+      var r = self.commitPendingUserCfg();
+      self.state.previewMode = false;
+      if (self.state.addedPanel) self.hideMainPanel();
+      if (self.state.toolAppActive && self.closeToolApp) self.closeToolApp();
+      else self.hideSettingsPanel();
+      if (r && r.ok) self.toast("已确认并生效");
+      else self.toast("确认失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")));
+    } catch(e0) { try { self.toast("确认异常: " + String(e0)); } catch(eT) {} }
+  });
+  btnSave.setPadding(this.dp(12), this.dp(6), this.dp(12), this.dp(6));
+  quick.addView(btnSave);
+  panel.addView(quick);
+
+  var scroll = new android.widget.ScrollView(context);
+  try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch(eOS) { safeLog(null, 'e', "catch " + String(eOS)); }
+  try { scroll.setVerticalScrollBarEnabled(false); } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
+  var box = new android.widget.LinearLayout(context);
+  box.setOrientation(android.widget.LinearLayout.VERTICAL);
+  box.setPadding(0, this.dp(2), 0, this.dp(8));
+  scroll.addView(box);
+  scroll.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, { onTouch: function(v, e) { self.touchActivity(); return false; }}));
+
+  this.createSettingsHomeEntry(box, "按钮管理", "新增、编辑、排序、启用/禁用工具按钮", "管理", function() { self.pushToolAppPage("btn_editor"); });
+  this.createSettingsHomeEntry(box, "布局管理", "自定义设置项 schema，适合高级调整", "管理", function() { self.pushToolAppPage("schema_editor"); });
+  var defs = this.getSettingsGroupDefs();
+  for (var i = 0; i < defs.length; i++) {
+    (function(d) {
+      self.createSettingsHomeEntry(box, d.title, d.desc, "设置", function() {
+        if (self.pushToolAppSettingsGroup) self.pushToolAppSettingsGroup(d.key);
+      });
+    })(defs[i]);
+  }
+
+  panel.addView(scroll);
+  return panel;
+};
+
 FloatBallAppWM.prototype.buildSettingsPanelView = function() {
-  this.beginEditConfig();
+  if (!this.state.settingsGroupKey) return this.buildSettingsHomePanelView();
+  return this.buildSettingsGroupPanelView();
+};
+
+FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
+  if (!this.state.pendingUserCfg) this.beginEditConfig();
 
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
@@ -38,31 +207,7 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
 
   var self = this;
 
-  // # 固定按钮：项目文档（放在第一位）
-  var btnDoc = this.ui.createFlatButton(this, "📖 文档", C.primary, function() {
-      try {
-          var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
-          intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
-          intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
-          context.startActivity(intent);
-      } catch(e) {
-          self.toast("无法打开文档链接");
-      }
-  });
-  btnDoc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-  header.addView(btnDoc);
-
-  // [恢复] 按钮管理
-  var btnMgr = this.ui.createFlatButton(this, "按钮管理", C.primary, function() {
-      if (self.state.toolAppActive && self.pushToolAppPage) {
-        self.pushToolAppPage("btn_editor");
-      } else {
-        self.hideSettingsPanel();
-        self.showPanelAvoidBall("btn_editor");
-      }
-  });
-  btnMgr.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-  header.addView(btnMgr);
+  // 分组页顶部只保留预览与保存，文档/按钮管理已移动到设置首页入口。
 
   // 预览模式开关
   var previewBox = new android.widget.LinearLayout(context);
@@ -154,7 +299,9 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
   }));
 
   var schema = this.getConfigSchema();
+  var activeGroupKey = String(this.state.settingsGroupKey || "");
   var currentCard = null;
+  var includeSection = false;
 
   function createCard() {
       var c = new android.widget.LinearLayout(context);
@@ -173,10 +320,13 @@ FloatBallAppWM.prototype.buildSettingsPanelView = function() {
   for (var i = 0; i < schema.length; i++) {
     (function(item) {
       if (item && String(item.type) === "section") {
+        includeSection = self.isSchemaSectionInSettingsGroup(String(item.name || ""), activeGroupKey);
+        if (!includeSection) { currentCard = null; return; }
         currentCard = createCard();
         box.addView(currentCard);
         self.createSectionHeader(item, currentCard);
       } else {
+        if (!includeSection) return;
         if (!currentCard) {
             currentCard = createCard();
             box.addView(currentCard);
