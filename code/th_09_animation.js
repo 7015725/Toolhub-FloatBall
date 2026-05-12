@@ -183,10 +183,17 @@ FloatBallAppWM.prototype.hideViewerPanel = function() {
   if (!this.state.addedViewer) return;
   if (!this.state.viewerPanel) return;
 
+  var oldViewerType = String(this.state.viewerPanelType || "");
   this.safeRemoveView(this.state.viewerPanel, "viewerPanel");
   this.state.viewerPanel = null;
   this.state.viewerPanelLp = null;
   this.state.viewerPanelType = null;
+  if (oldViewerType === "tool_app") {
+    this.state.toolAppRoot = null;
+    this.state.toolAppContentHost = null;
+    this.state.toolAppTitleView = null;
+    this.state.toolAppBackButton = null;
+  }
   this.state.addedViewer = false;
 
   this.hideMask();

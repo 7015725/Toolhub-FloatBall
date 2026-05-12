@@ -50,6 +50,10 @@ function FloatBallAppWM(logger) {
     toolAppActive: false,
     toolAppNavStack: [],
     toolAppRoute: null,
+    toolAppRoot: null,
+    toolAppContentHost: null,
+    toolAppTitleView: null,
+    toolAppBackButton: null,
     settingsGroupKey: null,
 
     mask: null,

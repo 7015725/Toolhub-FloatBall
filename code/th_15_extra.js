@@ -509,6 +509,10 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.toolAppNavStack = [];
     this.state.settingsGroupKey = null;
     this.hideViewerPanel();
+    this.state.toolAppRoot = null;
+    this.state.toolAppContentHost = null;
+    this.state.toolAppTitleView = null;
+    this.state.toolAppBackButton = null;
   } catch (e) { safeLog(this.L, 'e', "closeToolApp fail: " + String(e)); }
 };
 
@@ -527,11 +531,10 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   bar.setPadding(this.dp(8), this.dp(8), this.dp(8), this.dp(6));
 
   var btnBack = this.ui.createFlatButton(this, canBack ? "‹" : "", C.primary, function() {
-    if (canBack) self.popToolAppPage("topbar");
+    self.popToolAppPage("topbar");
   });
   btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
   btnBack.setPadding(this.dp(8), 0, this.dp(8), 0);
-  if (!canBack) btnBack.setVisibility(android.view.View.INVISIBLE);
   bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
 
   var tvTitle = new android.widget.TextView(context);
@@ -552,10 +555,56 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
   root.addView(bar, new android.widget.LinearLayout.LayoutParams(-1, this.dp(52)));
 
-  try { contentView.setBackground(null); } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
-  try { contentView.setElevation(0); } catch(eEl) { safeLog(null, 'e', "catch " + String(eEl)); }
-  root.addView(contentView, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+  var host = new android.widget.FrameLayout(context);
+  if (contentView) {
+    try { contentView.setBackground(null); } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
+    try { contentView.setElevation(0); } catch(eEl) { safeLog(null, 'e', "catch " + String(eEl)); }
+    host.addView(contentView, new android.widget.FrameLayout.LayoutParams(-1, -1));
+  }
+  root.addView(host, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+
+  this.state.toolAppRoot = root;
+  this.state.toolAppContentHost = host;
+  this.state.toolAppTitleView = tvTitle;
+  this.state.toolAppBackButton = btnBack;
+  this.updateToolAppShellChrome(title, canBack);
   return root;
+};
+
+FloatBallAppWM.prototype.ensureToolAppShell = function() {
+  try {
+    if (this.state.toolAppRoot && this.state.toolAppContentHost) return this.state.toolAppRoot;
+    return this.buildToolAppShell(null, "ToolHub", false);
+  } catch (e) {
+    safeLog(this.L, 'e', "ensureToolAppShell fail: " + String(e));
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.updateToolAppShellChrome = function(title, canBack) {
+  try {
+    if (this.state.toolAppTitleView) this.state.toolAppTitleView.setText(String(title || "ToolHub"));
+    if (this.state.toolAppBackButton) {
+      this.state.toolAppBackButton.setText(canBack ? "‹" : "");
+      this.state.toolAppBackButton.setVisibility(canBack ? android.view.View.VISIBLE : android.view.View.INVISIBLE);
+      this.state.toolAppBackButton.setEnabled(!!canBack);
+    }
+  } catch (e) { safeLog(this.L, 'w', "updateToolAppShellChrome fail: " + String(e)); }
+};
+
+FloatBallAppWM.prototype.setToolAppContent = function(contentView) {
+  try {
+    var host = this.state.toolAppContentHost;
+    if (!host || !contentView) return false;
+    host.removeAllViews();
+    try { contentView.setBackground(null); } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
+    try { contentView.setElevation(0); } catch(eEl) { safeLog(null, 'e', "catch " + String(eEl)); }
+    host.addView(contentView, new android.widget.FrameLayout.LayoutParams(-1, -1));
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'e', "setToolAppContent fail: " + String(e));
+  }
+  return false;
 };
 
 FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
@@ -565,7 +614,6 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
     this.touchActivity();
     this.hideMainPanel();
     this.hideSettingsPanel();
-    this.hideViewerPanel();
     this.showMask();
     this.state.toolAppActive = true;
     this.state.toolAppRoute = r;
@@ -582,7 +630,11 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
     }
 
     var raw = this.buildPanelView(r);
-    var shell = this.buildToolAppShell(raw, this.getToolAppTitle(r), this.state.toolAppNavStack.length > 1);
+    var shell = this.ensureToolAppShell();
+    if (!shell) throw "ToolApp shell missing";
+    this.updateToolAppShellChrome(this.getToolAppTitle(r), this.state.toolAppNavStack.length > 1);
+    this.setToolAppContent(raw);
+
     var maxW = Math.floor(this.state.screen.w * 0.92);
     var maxH = Math.floor(this.state.screen.h * 0.82);
     shell.measure(
@@ -595,8 +647,20 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
     if (!lp0) lp0 = new android.view.ViewGroup.LayoutParams(pw, ph);
     lp0.width = pw; lp0.height = ph;
     shell.setLayoutParams(lp0);
-    var pos = this.getBestPanelPosition(pw, ph, this.state.ballLp.x, this.state.ballLp.y, this.getDockInfo().ballSize);
-    this.addPanel(shell, pos.x, pos.y, "tool_app");
+
+    if (!this.state.addedViewer || this.state.viewerPanel !== shell) {
+      var pos = this.getBestPanelPosition(pw, ph, this.state.ballLp.x, this.state.ballLp.y, this.getDockInfo().ballSize);
+      this.addPanel(shell, pos.x, pos.y, "tool_app");
+    } else {
+      try {
+        if (this.state.viewerPanelLp) {
+          this.state.viewerPanelLp.width = pw;
+          this.state.viewerPanelLp.height = ph;
+          this.state.wm.updateViewLayout(shell, this.state.viewerPanelLp);
+        }
+      } catch (eUpd) { safeLog(this.L, 'w', "tool_app update layout fail: " + String(eUpd)); }
+      try { shell.requestFocus(); } catch (eFocus) {}
+    }
   } catch (e) {
     this.state.toolAppActive = false;
     safeLog(this.L, 'e', "showToolApp fail route=" + r + " err=" + String(e));
