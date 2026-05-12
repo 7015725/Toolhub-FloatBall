@@ -533,6 +533,100 @@ FloatBallAppWM.prototype.createButtonManagerSummaryCard = function(parent, total
   parent.addView(card, lp);
 };
 
+FloatBallAppWM.prototype.createButtonManagerActionChip = function(text, textColor, strokeColor, onClickFn) {
+  var tv = new android.widget.TextView(context);
+  tv.setText(String(text || ""));
+  tv.setGravity(android.view.Gravity.CENTER);
+  tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  tv.setTypeface(null, android.graphics.Typeface.BOLD);
+  tv.setTextColor(textColor);
+  tv.setMinHeight(this.dp(34));
+  tv.setPadding(this.dp(10), 0, this.dp(10), 0);
+  try {
+    var bg = new android.graphics.drawable.GradientDrawable();
+    bg.setColor(android.graphics.Color.TRANSPARENT);
+    bg.setCornerRadius(this.dp(12));
+    bg.setStroke(this.dp(1), strokeColor);
+    tv.setBackground(bg);
+  } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
+  if (onClickFn) {
+    tv.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
+      try { onClickFn(); } catch(eClick) { safeLog(null, 'e', "catch " + String(eClick)); }
+    }}));
+  }
+  return tv;
+};
+
+FloatBallAppWM.prototype.createButtonManagerPolishedCard = function(parent, title, subtitle, statText) {
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var card = new android.widget.LinearLayout(context);
+  card.setOrientation(android.widget.LinearLayout.VERTICAL);
+  card.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(12));
+  card.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.74) : this.withAlpha(C.cardLight, 0.78), this.dp(18)));
+  try { card.setElevation(this.dp(2)); } catch(eElev) {}
+  var tv = new android.widget.TextView(context);
+  tv.setText(String(title || ""));
+  tv.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
+  tv.setTypeface(null, android.graphics.Typeface.BOLD);
+  card.addView(tv);
+  var sub = new android.widget.TextView(context);
+  sub.setText(String(subtitle || ""));
+  sub.setTextColor(isDark ? C.textSecDark : C.textSecLight);
+  sub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  sub.setPadding(0, this.dp(4), 0, 0);
+  card.addView(sub);
+  if (statText) {
+    var chip = this.createButtonManagerActionChip(String(statText), C.primary, this.withAlpha(C.primary, 0.32), null);
+    var chipLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    chipLp.setMargins(0, this.dp(10), 0, 0);
+    card.addView(chip, chipLp);
+  }
+  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  lp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
+  parent.addView(card, lp);
+  return card;
+};
+
+FloatBallAppWM.prototype.createButtonEditorHeroCard = function(parent, modeText, subtitle) {
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var card = new android.widget.LinearLayout(context);
+  card.setOrientation(android.widget.LinearLayout.VERTICAL);
+  card.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(12));
+  card.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.70) : this.withAlpha(C.cardLight, 0.72), this.dp(18)));
+  try { card.setElevation(this.dp(2)); } catch(eElev) {}
+  var title = new android.widget.TextView(context);
+  title.setText("按钮编辑工作台");
+  title.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+  title.setTypeface(null, android.graphics.Typeface.BOLD);
+  card.addView(title);
+  var sub = new android.widget.TextView(context);
+  sub.setText(String(subtitle || "常用内容默认展开，低频配置可折叠"));
+  sub.setTextColor(isDark ? C.textSecDark : C.textSecLight);
+  sub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  sub.setPadding(0, this.dp(4), 0, this.dp(8));
+  card.addView(sub);
+  var chip = this.createButtonManagerActionChip(String(modeText || "编辑按钮"), C.primary, this.withAlpha(C.primary, 0.32), null);
+  card.addView(chip);
+  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  lp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(10));
+  parent.addView(card, lp);
+  return card;
+};
+
+FloatBallAppWM.prototype.addButtonEditorField = function(parent, view) {
+  try {
+    var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    lp.setMargins(0, this.dp(4), 0, this.dp(8));
+    parent.addView(view, lp);
+  } catch (e) {
+    try { parent.addView(view); } catch(e2) {}
+  }
+};
+
 FloatBallAppWM.prototype.createButtonEditorSectionCard = function(parent, title, desc) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
@@ -714,29 +808,40 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         else enabledCount++;
       }
     } catch(eCnt) { safeLog(null, 'e', "catch " + String(eCnt)); }
-    self.createButtonManagerSummaryCard(panel, buttons.length, enabledCount, disabledCount);
+    self.createButtonManagerPolishedCard(panel, "按钮管理首页", "点卡片编辑；下方操作区负责排序、启用和删除", "共 " + buttons.length + " 个 · 已启用 " + enabledCount + " · 已禁用 " + disabledCount);
 
+    // 按钮管理搜索卡片：搜索输入与操作按钮收在同一张卡片里，避免顶部显得零散。
+    var searchSurface = new android.widget.LinearLayout(context);
+    searchSurface.setOrientation(android.widget.LinearLayout.VERTICAL);
+    searchSurface.setPadding(self.dp(12), self.dp(10), self.dp(12), self.dp(10));
+    searchSurface.setBackground(self.ui.createRoundDrawable(isDark ? self.withAlpha(C.cardDark, 0.58) : self.withAlpha(C.cardLight, 0.62), self.dp(16)));
     var searchRow = new android.widget.LinearLayout(context);
     searchRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     searchRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    searchRow.setPadding(0, 0, 0, self.dp(8));
     var searchInput = self.ui.createInputGroup(self, "搜索按钮", self.state.buttonManagerQuery || "", false, "标题 / 类型 / 包名 / 命令");
     var searchInputLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     searchInputLp.weight = 1;
     searchRow.addView(searchInput.view, searchInputLp);
-    var btnSearch = self.ui.createFlatButton(self, "搜索", C.primary, function() {
+    var btnSearch = self.createButtonManagerActionChip("搜索", C.primary, self.withAlpha(C.primary, 0.32), function() {
       try { self.state.buttonManagerQuery = String(searchInput.getValue ? searchInput.getValue() : ""); } catch(eQ) { self.state.buttonManagerQuery = ""; }
       self.state.btnEditorListScrollY = 0;
       refreshPanel();
     });
-    searchRow.addView(btnSearch);
-    var btnClearSearch = self.ui.createFlatButton(self, "清空", subTextColor, function() {
+    var btnSearchLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    btnSearchLp.leftMargin = self.dp(8);
+    searchRow.addView(btnSearch, btnSearchLp);
+    var btnClearSearch = self.createButtonManagerActionChip("清空", subTextColor, self.withAlpha(subTextColor, 0.24), function() {
       self.state.buttonManagerQuery = "";
       self.state.btnEditorListScrollY = 0;
       refreshPanel();
     });
-    searchRow.addView(btnClearSearch);
-    panel.addView(searchRow);
+    var btnClearLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    btnClearLp.leftMargin = self.dp(6);
+    searchRow.addView(btnClearSearch, btnClearLp);
+    searchSurface.addView(searchRow);
+    var searchSurfaceLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    searchSurfaceLp.setMargins(self.dp(2), 0, self.dp(2), self.dp(8));
+    panel.addView(searchSurface, searchSurfaceLp);
 
     var activeQuery = String(self.state.buttonManagerQuery || "");
     var visibleCount = 0;
@@ -759,9 +864,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         var __enabled = true;
         try { __enabled = (btnCfg && btnCfg.enabled === false) ? false : true; } catch(eEn) { __enabled = true; }
 
-        // 卡片容器
+        // 按钮管理列表卡片：上信息、下操作；避免图标、标题、排序、删除全部挤在同一条线上。
         var card = new android.widget.LinearLayout(context);
-        card.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        card.setOrientation(android.widget.LinearLayout.VERTICAL);
         card.setGravity(android.view.Gravity.CENTER_VERTICAL);
         // 使用稍微不同的背景色以突出卡片
         var cardBgColor = isDark ? self.withAlpha(C.cardDark, 0.8) : self.withAlpha(C.cardLight, 0.8);
@@ -771,7 +876,12 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         var cardLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
         cardLp.setMargins(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
         card.setLayoutParams(cardLp);
-        card.setPadding(self.dp(14), self.dp(10), self.dp(10), self.dp(10)); // # 行高优化：降低上下内边距，避免"按钮管理列表"单行过高
+        card.setPadding(self.dp(14), self.dp(10), self.dp(10), self.dp(10));
+
+        var mainRow = new android.widget.LinearLayout(context);
+        mainRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        mainRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        mainRow.setPadding(0, 0, 0, self.dp(8));
 
         // # 视觉提示：禁用项整体变淡，方便一眼区分
         if (!__enabled) {
@@ -805,7 +915,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         var iconLp = new android.widget.LinearLayout.LayoutParams(self.dp(iconSizeDp), self.dp(iconSizeDp));
         iconLp.rightMargin = self.dp(10);
         iconIv.setLayoutParams(iconLp);
-        card.addView(iconIv);
+        mainRow.addView(iconIv);
 
         // 中间文本信息
         var textContainer = new android.widget.LinearLayout(context);
@@ -836,12 +946,13 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         detailTv.setEllipsize(android.text.TextUtils.TruncateAt.END);
         textContainer.addView(detailTv);
 
-        card.addView(textContainer);
+        mainRow.addView(textContainer);
 
         // 右侧操作区
         var actions = new android.widget.LinearLayout(context);
         actions.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-        actions.setGravity(android.view.Gravity.CENTER_VERTICAL);        // 上移/下移（排序按钮布局优化：扩大点击面积，顶部/底部也占位，避免难点）
+        actions.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        actions.setPadding(self.dp(42), 0, 0, 0);        // 上移/下移（排序按钮布局优化：扩大点击面积，顶部/底部也占位，避免难点）
         // 说明：原先 ▲▼ 太小且只有可用时才出现，手指很难点中；这里改为固定 2 个大按钮（44dp），不可用则置灰禁用。
         var sortBox = new android.widget.LinearLayout(context);
         sortBox.setOrientation(android.widget.LinearLayout.HORIZONTAL); // # 排序按钮改为横向排列，减少占高
@@ -963,6 +1074,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         }));
         actions.addView(btnDel);
 
+        card.addView(mainRow);
         card.addView(actions);
         list.addView(card);
 
@@ -1068,15 +1180,13 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     form.setOrientation(android.widget.LinearLayout.VERTICAL);
     form.setPadding(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
 
-    // 操作提示
-    var editHint = new android.widget.TextView(context);
-    editHint.setText("提示：选择动作类型并填写相应参数，完成后点击底部暂存");
-    editHint.setTextColor(subTextColor);
-    editHint.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-    editHint.setPadding(self.dp(4), 0, 0, self.dp(16));
-    form.addView(editHint);
+    // 顶部说明卡：比散落的一行提示更清晰，强调一页式编辑的操作路径。
+    self.createButtonEditorHeroCard(form,
+      (editIdx === -1 ? "新增按钮" : "编辑按钮"),
+      "常用内容默认展开，低频配置可折叠；底部统一暂存。"
+    );
 
-    var basicSectionBody = self.createButtonEditorCollapsibleSection(form, "基础信息", "按钮名称与基础标识", true);
+    var basicSectionBody = self.createButtonEditorCollapsibleSection(form, "基础信息", "先填写名称，便于在按钮管理列表中识别", true);
 
     // 1. 标题 (Title)
     var topArea = new android.widget.LinearLayout(context);
@@ -1092,7 +1202,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     titleArea.setLayoutParams(titleLp);
 
     var inputTitle = self.ui.createInputGroup(self, "标题 (Title)", targetBtn.title, false, "按钮上显示的文字");
-    titleArea.addView(inputTitle.view);
+    self.addButtonEditorField(titleArea, inputTitle.view);
     topArea.addView(titleArea);
 
     basicSectionBody.addView(topArea);
