@@ -266,13 +266,77 @@ FloatBallAppWM.prototype.handleSystemUiDismiss = function(reason) {
   return false;
 };
 
+FloatBallAppWM.prototype.hidePanelPredictiveBackIndicator = function() {
+  try {
+    var v = this.state.predictiveBackIndicatorView;
+    if (v && this.state.wm) {
+      try { this.state.wm.removeView(v); } catch (eRm) {}
+    }
+    this.state.predictiveBackIndicatorView = null;
+    this.state.predictiveBackIndicatorLp = null;
+  } catch (e) {}
+};
+
+FloatBallAppWM.prototype.showPanelPredictiveBackIndicator = function(edge) {
+  try {
+    if (!this.state.wm) return null;
+    var v = this.state.predictiveBackIndicatorView;
+    var lp = this.state.predictiveBackIndicatorLp;
+    var size = this.dp(46);
+    var edgeLeft = Number(edge) !== 1;
+    if (!v) {
+      v = new android.widget.TextView(context);
+      v.setText(edgeLeft ? "‹" : "›");
+      v.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 30);
+      v.setTypeface(null, android.graphics.Typeface.BOLD);
+      v.setGravity(android.view.Gravity.CENTER);
+      v.setTextColor(android.graphics.Color.WHITE);
+      try {
+        var bg = new android.graphics.drawable.GradientDrawable();
+        bg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        var c = (this.ui && this.ui.colors && this.ui.colors.primary) ? this.ui.colors.primary : android.graphics.Color.parseColor("#005BC0");
+        bg.setColor(this.withAlpha ? this.withAlpha(c, 0.92) : c);
+        v.setBackground(bg);
+        v.setElevation(this.dp(12));
+      } catch (eBg) {}
+      lp = new android.view.WindowManager.LayoutParams(
+        size,
+        size,
+        android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+          android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE |
+          android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+        android.graphics.PixelFormat.TRANSLUCENT
+      );
+      lp.gravity = (edgeLeft ? android.view.Gravity.START : android.view.Gravity.END) | android.view.Gravity.CENTER_VERTICAL;
+      lp.x = this.dp(6);
+      lp.y = 0;
+      v.setAlpha(0);
+      try { this.state.wm.addView(v, lp); } catch (eAdd) { return null; }
+      this.state.predictiveBackIndicatorView = v;
+      this.state.predictiveBackIndicatorLp = lp;
+    } else {
+      try { v.setText(edgeLeft ? "‹" : "›"); } catch (eTxt) {}
+      if (lp) {
+        lp.gravity = (edgeLeft ? android.view.Gravity.START : android.view.Gravity.END) | android.view.Gravity.CENTER_VERTICAL;
+      }
+    }
+    return v;
+  } catch (e) {
+    safeLog(this.L, 'w', "show predictive back indicator fail: " + String(e));
+  }
+  return null;
+};
+
 FloatBallAppWM.prototype.resetPanelPredictiveBackVisual = function(panel) {
   try {
-    if (!panel) return;
-    panel.setAlpha(1.0);
-    panel.setTranslationX(0);
-    panel.setScaleX(1.0);
-    panel.setScaleY(1.0);
+    if (panel) {
+      panel.setAlpha(1.0);
+      panel.setTranslationX(0);
+      panel.setScaleX(1.0);
+      panel.setScaleY(1.0);
+    }
+    this.hidePanelPredictiveBackIndicator();
   } catch (e) {}
 };
 
@@ -292,6 +356,15 @@ FloatBallAppWM.prototype.applyPanelPredictiveBackProgress = function(panel, even
     var s = 1.0 - 0.025 * p;
     panel.setScaleX(s);
     panel.setScaleY(s);
+
+    // overlay 窗口下系统自己的预测性返回箭头在部分 ColorOS 版本不可见，额外绘制一个轻量边缘提示。
+    var ind = this.showPanelPredictiveBackIndicator(edge);
+    if (ind) {
+      ind.setAlpha(Math.min(1.0, 0.20 + 0.80 * p));
+      ind.setScaleX(0.82 + 0.22 * p);
+      ind.setScaleY(0.82 + 0.22 * p);
+      ind.setTranslationX(dir * this.dp(18) * p);
+    }
   } catch (e) {}
 };
 
