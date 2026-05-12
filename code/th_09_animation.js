@@ -185,12 +185,104 @@ FloatBallAppWM.prototype.hideViewerPanel = function() {
   this.safeRemoveView(this.state.viewerPanel, "viewerPanel");
   this.state.viewerPanel = null;
   this.state.viewerPanelLp = null;
+  this.state.viewerPanelType = null;
   this.state.addedViewer = false;
 
   this.hideMask();
   this.touchActivity();
 
   this._clearHeavyCachesIfAllHidden("hideViewerPanel");
+};
+
+FloatBallAppWM.prototype.handlePanelBack = function(which, reason) {
+  // 这段代码的主要内容/用途：适配全面屏系统返回手势/返回键，让 ToolHub 设置类 UI 能按“上一级 -> 关闭”退出。
+  try {
+    if (this.state.closing) return false;
+    var w = which ? String(which) : "";
+    if (!w && this.state.addedViewer) w = String(this.state.viewerPanelType || "viewer");
+    if (!w && this.state.addedSettings) w = "settings";
+    if (!w && this.state.addedPanel) w = "main";
+
+    if (this.state.addedViewer) {
+      var vt = String(this.state.viewerPanelType || w || "viewer");
+      if (vt === "btn_editor") {
+        if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
+          this.state.editingButtonIndex = null;
+          this.state.keepBtnEditorState = true;
+          this.showPanelAvoidBall("btn_editor");
+          return true;
+        }
+        this.hideViewerPanel();
+        this.showPanelAvoidBall("settings");
+        return true;
+      }
+      if (vt === "schema_editor") {
+        if (this.state.editingSchemaIndex !== null && this.state.editingSchemaIndex !== undefined) {
+          this.state.editingSchemaIndex = null;
+          this.state.keepSchemaEditorState = true;
+          this.showPanelAvoidBall("schema_editor");
+          return true;
+        }
+        this.hideViewerPanel();
+        this.showPanelAvoidBall("settings");
+        return true;
+      }
+      this.hideViewerPanel();
+      return true;
+    }
+
+    if (this.state.addedSettings) {
+      this.state.previewMode = false;
+      if (this.state.addedPanel) this.hideMainPanel();
+      this.hideSettingsPanel();
+      return true;
+    }
+
+    if (this.state.addedPanel) {
+      this.hideMainPanel();
+      return true;
+    }
+  } catch (e) {
+    safeLog(this.L, 'e', "handlePanelBack fail reason=" + String(reason || "") + " err=" + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.handleSystemUiDismiss = function(reason) {
+  // 这段代码的主要内容/用途：系统 Home/最近任务手势发生时关闭 ToolHub 面板，只保留悬浮球，避免 overlay 残留在桌面/多任务上。
+  try {
+    var r = String(reason || "");
+    if (r === "homekey" || r === "recentapps" || r === "fs_gesture" || r === "gestureNav") {
+      this.hideAllPanels();
+      return true;
+    }
+  } catch (e) {
+    safeLog(this.L, 'e', "handleSystemUiDismiss fail: " + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.attachPanelSystemKeyHandler = function(panel, which) {
+  try {
+    if (!panel) return;
+    var self = this;
+    panel.setFocusable(true);
+    panel.setFocusableInTouchMode(true);
+    panel.setOnKeyListener(new android.view.View.OnKeyListener({
+      onKey: function(v, keyCode, event) {
+        try {
+          if (!event) return false;
+          if (event.getAction() !== android.view.KeyEvent.ACTION_UP) return false;
+          if (keyCode === android.view.KeyEvent.KEYCODE_BACK) return self.handlePanelBack(which, "back_key");
+          if (keyCode === android.view.KeyEvent.KEYCODE_ESCAPE) return self.handlePanelBack(which, "escape_key");
+        } catch (e) { safeLog(self.L, 'e', "panel key handler fail: " + String(e)); }
+        return false;
+      }
+    }));
+    panel.post(new java.lang.Runnable({ run: function() { try { panel.requestFocus(); } catch(eFocus) {} } }));
+  } catch (e) {
+    safeLog(this.L, 'e', "attachPanelSystemKeyHandler fail which=" + String(which || "") + " err=" + String(e));
+  }
 };
 
 FloatBallAppWM.prototype.clearHeavyCaches = function(reason) {

@@ -41,6 +41,7 @@ function FloatBallAppWM(logger) {
 
     viewerPanel: null,
     viewerPanelLp: null,
+    viewerPanelType: null,
 
     mask: null,
     maskLp: null,

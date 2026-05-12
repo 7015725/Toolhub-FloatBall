@@ -437,11 +437,15 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
   lp.x = x;
   lp.y = y;
 
+  try { if (this.attachPanelSystemKeyHandler) this.attachPanelSystemKeyHandler(panel, which); } catch (eKeyAttach) { safeLog(this.L, 'e', "attach panel key fail which=" + String(which) + " err=" + String(eKeyAttach)); }
+
   try { this.state.wm.addView(panel, lp); } catch (eAdd) { safeLog(this.L, 'e',  "addPanel fail which=" + String(which) + " err=" + String(eAdd)); return; }
 
   if (which === "main") { this.state.panel = panel; this.state.panelLp = lp; this.state.addedPanel = true; }
   else if (which === "settings") { this.state.settingsPanel = panel; this.state.settingsPanelLp = lp; this.state.addedSettings = true; }
-  else { this.state.viewerPanel = panel; this.state.viewerPanelLp = lp; this.state.addedViewer = true; }
+  else { this.state.viewerPanel = panel; this.state.viewerPanelLp = lp; this.state.viewerPanelType = which; this.state.addedViewer = true; }
+
+  try { panel.requestFocus(); } catch (eReqFocus) {}
 
   try {
     if (this.config.ENABLE_ANIMATIONS) {

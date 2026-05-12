@@ -506,13 +506,6 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         if(btnCfg.type === "app") desc = "应用: " + (btnCfg.pkg||"");
         else if(btnCfg.type === "broadcast") desc = "广播: " + (btnCfg.action||"");
         else if(btnCfg.type === "shortcut") desc = "快捷方式";
-        else if(btnCfg.type === "nav") {
-            var na = String(btnCfg.navAction || btnCfg.key || "");
-            if (na === "back") desc = "系统导航: 返回";
-            else if (na === "home") desc = "系统导航: 主页";
-            else if (na === "recents") desc = "系统导航: 最近任务";
-            else desc = "系统导航";
-        }
         else desc = "命令: " + (btnCfg.cmd || "").substring(0, 20) + "...";
         detailTv.setText(desc);
         detailTv.setTextColor(subTextColor);
@@ -1992,8 +1985,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         { id: 1, val: "shell", txt: "Shell" },
         { id: 2, val: "app", txt: "App" },
         { id: 3, val: "broadcast", txt: "发送广播" },
-        { id: 4, val: "shortcut", txt: "快捷方式" },
-        { id: 5, val: "nav", txt: "系统导航" }
+        { id: 4, val: "shortcut", txt: "快捷方式" }
     ];
 
     // 初始化选中值
@@ -2174,51 +2166,6 @@ appWrap.addView(inputAppLaunchUser.view);
     var inputExtras = self.ui.createInputGroup(self, "Extras (JSON, 选填)", initExtras, true, "例如: {\"key\": \"value\"}");
     bcWrap.addView(inputExtras.view);
     dynamicContainer.addView(bcWrap);
-
-    // --- System Navigation ---
-    // 这段代码的主要内容/用途：为全面屏手势场景提供虚拟返回/主页/最近任务按钮，不依赖屏幕底部导航栏。
-    var navWrap = new android.widget.LinearLayout(context);
-    navWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
-    navWrap.setPadding(0, self.dp(4), 0, self.dp(8));
-    var navLbl = new android.widget.TextView(context);
-    navLbl.setText("导航键功能");
-    navLbl.setTextColor(subTextColor);
-    navLbl.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-    navWrap.addView(navLbl);
-    var navGroup = new android.widget.RadioGroup(context);
-    navGroup.setOrientation(android.widget.RadioGroup.VERTICAL);
-    var selectedNavAction = targetBtn.navAction ? String(targetBtn.navAction) : (targetBtn.key ? String(targetBtn.key) : "back");
-    var navItems = [
-        { id: 101, val: "back", txt: "返回键（Back）" },
-        { id: 102, val: "home", txt: "主页键（Home）" },
-        { id: 103, val: "recents", txt: "最近任务键（Recents）" }
-    ];
-    for (var ni = 0; ni < navItems.length; ni++) {
-        var nr = new android.widget.RadioButton(context);
-        nr.setId(navItems[ni].id);
-        nr.setText(navItems[ni].txt);
-        nr.setTextColor(textColor);
-        nr.setTag(navItems[ni].val);
-        nr.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(4));
-        navGroup.addView(nr);
-        if (navItems[ni].val === selectedNavAction) navGroup.check(navItems[ni].id);
-    }
-    navGroup.setOnCheckedChangeListener(new android.widget.RadioGroup.OnCheckedChangeListener({
-        onCheckedChanged: function(group, checkedId) {
-            try {
-                var rb = group.findViewById(checkedId);
-                if (rb) selectedNavAction = String(rb.getTag());
-            } catch(eNavChg) { safeLog(null, 'e', "catch " + String(eNavChg)); }
-        }
-    }));
-    navWrap.addView(navGroup);
-    var navHint = new android.widget.TextView(context);
-    navHint.setText("优先用 InputManager 注入按键；失败时自动回退到 Shell 广播桥 input keyevent。");
-    navHint.setTextColor(subTextColor);
-    navHint.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-    navHint.setPadding(self.dp(8), self.dp(4), self.dp(8), 0);
-    navWrap.addView(navHint);
-    dynamicContainer.addView(navWrap);
 
     // --- Shortcut ---
     // 新增：启动系统/应用快捷方式（Launcher Shortcuts）
@@ -3227,7 +3174,6 @@ shortcutWrap.addView(scBody);
         shellWrap.setVisibility(typeVal === "shell" ? android.view.View.VISIBLE : android.view.View.GONE);
         appWrap.setVisibility(typeVal === "app" ? android.view.View.VISIBLE : android.view.View.GONE);
         bcWrap.setVisibility(typeVal === "broadcast" ? android.view.View.VISIBLE : android.view.View.GONE);
-        navWrap.setVisibility(typeVal === "nav" ? android.view.View.VISIBLE : android.view.View.GONE);
         shortcutWrap.setVisibility(typeVal === "shortcut" ? android.view.View.VISIBLE : android.view.View.GONE);
     }
 
@@ -3288,7 +3234,6 @@ shortcutWrap.addView(scBody);
             delete newBtn.uri;
             delete newBtn.shortcutId;
             delete newBtn.shortcutRunMode;
-            delete newBtn.navAction; delete newBtn.key;
             delete newBtn.launchUserId;
 
             var isValid = true;
@@ -3319,15 +3264,6 @@ try {
                 if (ex) {
                     try { newBtn.extras = JSON.parse(ex); inputExtras.setError(null); }
                     catch(e) { inputExtras.setError("JSON 格式错误"); isValid=false; }
-                }
-            } else if (newBtn.type === "nav") {
-                var nv = selectedNavAction ? String(selectedNavAction) : "back";
-                if (nv !== "back" && nv !== "home" && nv !== "recents") nv = "back";
-                newBtn.navAction = nv;
-                if (!newBtn.title || String(newBtn.title).trim().length === 0) {
-                    if (nv === "back") newBtn.title = "返回";
-                    else if (nv === "home") newBtn.title = "主页";
-                    else newBtn.title = "最近任务";
                 }
             } else if (newBtn.type === "shortcut") {
                 var sp = inputScPkg.getValue();

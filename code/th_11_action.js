@@ -1,50 +1,5 @@
 // @version 1.0.1
 // =======================【WM 线程：按钮动作执行】======================
-FloatBallAppWM.prototype.execSystemNavigation = function(navAction) {
-  var ret = { ok: false, method: "", action: String(navAction || ""), err: "" };
-  var a = ret.action;
-  var keyCode = 0;
-  if (a === "back") keyCode = android.view.KeyEvent.KEYCODE_BACK;
-  else if (a === "home") keyCode = android.view.KeyEvent.KEYCODE_HOME;
-  else if (a === "recents") keyCode = android.view.KeyEvent.KEYCODE_APP_SWITCH;
-  else { ret.err = "unknown nav action: " + a; return ret; }
-
-  try {
-    var now = android.os.SystemClock.uptimeMillis();
-    var KeyEvent = android.view.KeyEvent;
-    var InputDevice = android.view.InputDevice;
-    var InputManager = android.hardware.input.InputManager;
-    var down = new KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, 0, KeyEvent.KEYCODE_UNKNOWN, 0, KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD);
-    var up = new KeyEvent(now, android.os.SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, keyCode, 0, 0, KeyEvent.KEYCODE_UNKNOWN, 0, KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD);
-    var im = InputManager.getInstance();
-    var mode = InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH;
-    var ok1 = im.injectInputEvent(down, mode);
-    var ok2 = im.injectInputEvent(up, mode);
-    ret.ok = !!(ok1 && ok2);
-    ret.method = "InputManager.keyevent";
-    if (!ret.ok) ret.err = "injectInputEvent returned false";
-    return ret;
-  } catch (eKey) {
-    ret.err = String(eKey);
-  }
-
-  try {
-    var cmd = "input keyevent " + String(keyCode);
-    var b64 = encodeBase64Utf8(cmd);
-    var r = this.execShellSmart(b64, true);
-    if (r && r.ok) {
-      ret.ok = true;
-      ret.method = "BroadcastBridge.input_keyevent";
-      ret.err = "";
-      return ret;
-    }
-    ret.err = ret.err + "; shell fallback failed: " + JSON.stringify(r || {});
-  } catch (eShell) {
-    ret.err = ret.err + "; shell fallback exception: " + String(eShell);
-  }
-  return ret;
-};
-
 FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
   // # 点击防抖
   // 这段代码的主要内容/用途：防止在按钮面板上连续/乱点导致重复执行与 UI 状态机冲突（可能触发 system_server 异常重启）。
@@ -94,21 +49,6 @@ FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
     else if (btn.title) msg = String(btn.title);
     else msg = "按钮#" + idx;
     this.toast(msg);
-    return;
-  }
-
-  if (t === "nav") {
-    var navAction = btn.navAction ? String(btn.navAction) : "";
-    if (!navAction && btn.key) navAction = String(btn.key);
-    if (!navAction) { this.toast("按钮#" + idx + " 缺少导航动作"); return; }
-    try { this.hideAllPanels(); } catch (eHideNav) {}
-    var rn = this.execSystemNavigation(navAction);
-    if (rn && rn.ok) {
-      safeLog(this.L, 'i', "nav ok action=" + navAction + " via=" + String(rn.method || ""));
-      return;
-    }
-    this.toast("导航键执行失败: " + navAction);
-    safeLog(this.L, 'e', "nav fail action=" + navAction + " ret=" + JSON.stringify(rn || {}));
     return;
   }
 

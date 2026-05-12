@@ -245,6 +245,17 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
   );
   if (cfgRcv) this.state.receivers.push(cfgRcv);
 
+  var sysDlgRcv = registerReceiverOnMain("android.intent.action.CLOSE_SYSTEM_DIALOGS", function(ctx, intent) {
+    try {
+      var reason = "";
+      try { reason = String(intent.getStringExtra("reason") || ""); } catch (eReason) { reason = ""; }
+      h.post(new JavaAdapter(java.lang.Runnable, {
+        run: function() { try { self.handleSystemUiDismiss(reason); } catch (eSysDlg) {} }
+      }));
+    } catch (eSysDlgOuter) {}
+  });
+  if (sysDlgRcv) this.state.receivers.push(sysDlgRcv);
+
   var startBox = { ok: false, err: "启动确认超时", added: false };
   var startLatch = new java.util.concurrent.CountDownLatch(1);
   var posted = false;
