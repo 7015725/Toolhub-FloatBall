@@ -515,7 +515,7 @@ FloatBallAppWM.prototype.createButtonManagerSummaryCard = function(parent, total
   try { card.setElevation(this.dp(2)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
 
   var title = new android.widget.TextView(context);
-  title.setText("按钮管理首页");
+  title.setText("按钮统计");
   title.setTextColor(isDark ? C.textPriDark : C.textPriLight);
   title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
   title.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -776,7 +776,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     // 提示文字 (左侧)
     var hintTv = new android.widget.TextView(context);
-    hintTv.setText("长按卡片排序");
+    hintTv.setText("点卡片编辑");
     hintTv.setTextColor(subTextColor);
     hintTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     header.addView(hintTv);
@@ -808,7 +808,25 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         else enabledCount++;
       }
     } catch(eCnt) { safeLog(null, 'e', "catch " + String(eCnt)); }
-    self.createButtonManagerPolishedCard(panel, "按钮管理首页", "点卡片编辑；下方操作区负责排序、启用和删除", "共 " + buttons.length + " 个 · 已启用 " + enabledCount + " · 已禁用 " + disabledCount);
+    var statsStrip = new android.widget.LinearLayout(context);
+    statsStrip.setOrientation(android.widget.LinearLayout.VERTICAL);
+    statsStrip.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+    statsStrip.setBackground(self.ui.createRoundDrawable(isDark ? self.withAlpha(C.cardDark, 0.42) : self.withAlpha(C.cardLight, 0.48), self.dp(14)));
+    var statsTv = new android.widget.TextView(context);
+    statsTv.setText("共 " + buttons.length + " 个 · 已启用 " + enabledCount + " · 已禁用 " + disabledCount);
+    statsTv.setTextColor(textColor);
+    statsTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+    statsTv.setTypeface(null, android.graphics.Typeface.BOLD);
+    statsStrip.addView(statsTv);
+    var statsHint = new android.widget.TextView(context);
+    statsHint.setText("点卡片进入编辑；用上移/下移调整顺序");
+    statsHint.setTextColor(subTextColor);
+    statsHint.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+    statsHint.setPadding(0, self.dp(3), 0, 0);
+    statsStrip.addView(statsHint);
+    var statsLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    statsLp.setMargins(self.dp(2), 0, self.dp(2), self.dp(8));
+    panel.addView(statsStrip, statsLp);
 
     // 按钮管理搜索卡片：搜索输入与操作按钮收在同一张卡片里，避免顶部显得零散。
     var searchSurface = new android.widget.LinearLayout(context);
@@ -948,130 +966,60 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
         mainRow.addView(textContainer);
 
-        // 右侧操作区
+        // 操作区：文字 chip 横排，替代孤立箭头，降低别扭感。
         var actions = new android.widget.LinearLayout(context);
         actions.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-        actions.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        actions.setPadding(self.dp(42), 0, 0, 0);        // 上移/下移（排序按钮布局优化：扩大点击面积，顶部/底部也占位，避免难点）
-        // 说明：原先 ▲▼ 太小且只有可用时才出现，手指很难点中；这里改为固定 2 个大按钮（44dp），不可用则置灰禁用。
-        var sortBox = new android.widget.LinearLayout(context);
-        sortBox.setOrientation(android.widget.LinearLayout.HORIZONTAL); // # 排序按钮改为横向排列，减少占高
-        sortBox.setGravity(android.view.Gravity.CENTER);
+        actions.setGravity(android.view.Gravity.RIGHT | android.view.Gravity.CENTER_VERTICAL);
+        actions.setPadding(self.dp(42), 0, 0, 0);
 
-        // 按钮公共样式
-        var mkSortBtn = function(txt, enabled, onClickFn) {
-            var tv = new android.widget.TextView(context);
-            tv.setText(txt);
-            tv.setGravity(android.view.Gravity.CENTER);
-            tv.setTextSize(12); // # 排序按钮适量缩小字号
-            tv.setMinWidth(self.dp(36)); // # 排序按钮适量缩小点击块
-            tv.setMinHeight(self.dp(36)); // # 排序按钮适量缩小点击块
-            tv.setPadding(0, 0, 0, 0);
-
-            // 轻量边框+圆角，提升"可点击"视觉
-            try {
-                var bg = new android.graphics.drawable.GradientDrawable();
-                bg.setColor(android.graphics.Color.TRANSPARENT);
-                bg.setCornerRadius(self.dp(8)); // # 小一点圆角更紧凑
-                bg.setStroke(self.dp(1), self.withAlpha(subTextColor, 0.22));
-                tv.setBackground(bg);
-             } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
-
-            if (!enabled) {
-                tv.setEnabled(false);
-                tv.setTextColor(self.withAlpha(subTextColor, 0.25));
-            } else {
-                tv.setEnabled(true);
-                tv.setTextColor(subTextColor);
-                tv.setOnClickListener(new android.view.View.OnClickListener({
-                    onClick: function() {
-                        try { onClickFn();  } catch(eSort) { safeLog(null, 'e', "catch " + String(eSort)); }
-                    }
-                }));
-            }
-            return tv;
-        };
-
-        // 上移按钮（顶部也占位）
         var canUp = (idx > 0);
-        var u = mkSortBtn("▲", canUp, function() {
+        var btnUp = self.createButtonManagerActionChip("上移", canUp ? subTextColor : self.withAlpha(subTextColor, 0.25), self.withAlpha(subTextColor, canUp ? 0.24 : 0.12), canUp ? function() {
             var temp = buttons[idx];
             buttons[idx] = buttons[idx - 1];
             buttons[idx - 1] = temp;
             refreshPanel();
-        });
-        sortBox.addView(u);
+        } : null);
+        try { btnUp.setEnabled(canUp); } catch(eUpEn) {}
+        actions.addView(btnUp);
 
-        // 下移按钮（底部也占位）
         var canDown = (idx < buttons.length - 1);
-        var d = mkSortBtn("▼", canDown, function() {
+        var btnDown = self.createButtonManagerActionChip("下移", canDown ? subTextColor : self.withAlpha(subTextColor, 0.25), self.withAlpha(subTextColor, canDown ? 0.24 : 0.12), canDown ? function() {
             var temp = buttons[idx];
             buttons[idx] = buttons[idx + 1];
             buttons[idx + 1] = temp;
             refreshPanel();
+        } : null);
+        try {
+            var lpDown = new android.widget.LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            lpDown.leftMargin = self.dp(6);
+            btnDown.setLayoutParams(lpDown);
+            btnDown.setEnabled(canDown);
+        } catch(eDownLp) {}
+        actions.addView(btnDown);
+
+        var btnToggle = self.createButtonManagerActionChip(__enabled ? "禁用" : "启用", __enabled ? self.withAlpha(subTextColor, 0.9) : self.withAlpha(C.success, 0.9), self.withAlpha(__enabled ? subTextColor : C.success, 0.24), function() {
+            try {
+                btnCfg.enabled = (btnCfg.enabled === false) ? true : false;
+                ConfigManager.saveButtons(buttons);
+            } catch(eTg) { safeLog(null, 'e', "catch " + String(eTg)); }
+            refreshPanel();
         });
-        // 两按钮之间留一点间距，避免误触
         try {
-            var lpD = new android.widget.LinearLayout.LayoutParams(
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-            lpD.leftMargin = self.dp(6); // # 横向排列：用左间距代替上间距
-            d.setLayoutParams(lpD);
-         } catch(eLp) { safeLog(null, 'e', "catch " + String(eLp)); }
-        sortBox.addView(d);
-
-        actions.addView(sortBox);
-
-        // # 禁用/启用：管理页直接切换显示状态（禁用后按钮页不显示该按钮）
-        var btnToggle = new android.widget.TextView(context);
-        btnToggle.setText(__enabled ? "禁用" : "启用");
-        btnToggle.setGravity(android.view.Gravity.CENTER);
-        btnToggle.setTextSize(12);
-        btnToggle.setMinWidth(self.dp(44));
-        btnToggle.setMinHeight(self.dp(36));
-        btnToggle.setPadding(self.dp(6), 0, self.dp(6), 0);
-        try {
-            var tgBg = new android.graphics.drawable.GradientDrawable();
-            tgBg.setColor(android.graphics.Color.TRANSPARENT);
-            tgBg.setCornerRadius(self.dp(8));
-            tgBg.setStroke(self.dp(1), self.withAlpha(subTextColor, 0.22));
-            btnToggle.setBackground(tgBg);
-         } catch(eTgBg) { safeLog(null, 'e', "catch " + String(eTgBg)); }
-        btnToggle.setTextColor(__enabled ? self.withAlpha(subTextColor, 0.9) : self.withAlpha(C.success, 0.9));
-        try {
-            var lpTg = new android.widget.LinearLayout.LayoutParams(
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            );
+            var lpTg = new android.widget.LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
             lpTg.leftMargin = self.dp(6);
             btnToggle.setLayoutParams(lpTg);
-         } catch(eLpTg) { safeLog(null, 'e', "catch " + String(eLpTg)); }
-        btnToggle.setOnClickListener(new android.view.View.OnClickListener({
-            onClick: function() {
-                try {
-                    btnCfg.enabled = (btnCfg.enabled === false) ? true : false;
-                    // # 立即持久化，避免面板关闭后丢失
-                    ConfigManager.saveButtons(buttons);
-                 } catch(eTg) { safeLog(null, 'e', "catch " + String(eTg)); }
-                refreshPanel();
-            }
-        }));
+        } catch(eLpTg) {}
         actions.addView(btnToggle);
 
-        // 删除按钮
-        var btnDel = new android.widget.TextView(context);
-        btnDel.setText("✕"); // 垃圾桶图标更好，但这里用X
-        btnDel.setTextColor(self.withAlpha(C.danger, 0.7));
-        btnDel.setTextSize(16);
-        btnDel.setPadding(self.dp(10), self.dp(10), self.dp(4), self.dp(10));
-        btnDel.setOnClickListener(new android.view.View.OnClickListener({
-            onClick: function() {
-                 // 确认删除
-                 buttons.splice(idx, 1);
-                 refreshPanel();
-            }
-        }));
+        var btnDel = self.createButtonManagerActionChip("删除", self.withAlpha(C.danger, 0.85), self.withAlpha(C.danger, 0.28), function() {
+            buttons.splice(idx, 1);
+            refreshPanel();
+        });
+        try {
+            var lpDel = new android.widget.LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            lpDel.leftMargin = self.dp(6);
+            btnDel.setLayoutParams(lpDel);
+        } catch(eLpDel) {}
         actions.addView(btnDel);
 
         card.addView(mainRow);
