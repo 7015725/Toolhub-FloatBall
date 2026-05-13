@@ -18,6 +18,7 @@ checks = [
     ("editor no useless workbench", "按钮编辑工作台" not in text and "createButtonEditorHeroCard" not in text),
     ("editor has field spacing helper", "addButtonEditorField" in text),
     ("editor fixed footer has equal buttons", "btnCancelLp.weight = 1" in text and "btnSaveLp.weight = 1" in text and "self.dp(44)" in text),
+    ("editor section descriptions are concise", "按钮名称" in text and "图标和颜色" in text and "点击后做什么" in text and "先填写名称，便于在按钮管理列表中识别" not in text and "选择点击后执行的动作类型与参数" not in text),
 ]
 failed = [name for name, ok in checks if not ok]
 if failed:

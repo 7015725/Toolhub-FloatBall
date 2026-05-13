@@ -1088,7 +1088,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     form.setOrientation(android.widget.LinearLayout.VERTICAL);
     form.setPadding(self.dp(4), self.dp(4), self.dp(4), self.dp(18));
 
-    var basicSectionBody = self.createButtonEditorCollapsibleSection(form, "基础信息", "先填写名称，便于在按钮管理列表中识别", true);
+    var basicSectionBody = self.createButtonEditorCollapsibleSection(form, "基础信息", "按钮名称", true);
 
     // 1. 标题 (Title)
     var topArea = new android.widget.LinearLayout(context);
@@ -1109,7 +1109,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     basicSectionBody.addView(topArea);
 
-    var iconSectionBody = self.createButtonEditorCollapsibleSection(form, "图标外观", "选择图标来源、ShortX 图标和颜色", false);
+    var iconSectionBody = self.createButtonEditorCollapsibleSection(form, "图标外观", "图标和颜色", false);
 
     // 1.5 图标选择（文件路径 或 ShortX 内置图标 二选一）
     var iconSelectWrap = new android.widget.LinearLayout(context);
@@ -2306,7 +2306,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     }));
 
 
-    var actionSectionBody = self.createButtonEditorCollapsibleSection(form, "动作设置", "选择点击后执行的动作类型与参数", true);
+    var actionSectionBody = self.createButtonEditorCollapsibleSection(form, "动作设置", "点击后做什么", true);
 
     // 2. 动作类型（自动换行：用 GridLayout 稳定实现）
     // 这段代码的主要内容/用途：把「Shell/App/广播/Intent/快捷方式」做成会自动换行的单选框区域。
