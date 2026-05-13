@@ -1071,7 +1071,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     bottomBar.addView(btnListSave, btnListSaveLp);
 
     var listBottomLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-    listBottomLp.setMargins(0, self.dp(6), 0, 0);
+    listBottomLp.setMargins(0, self.dp(6), 0, self.dp(12));
     panel.addView(bottomBar, listBottomLp);
 
   } else {
@@ -3679,7 +3679,7 @@ try {
     bottomBar.addView(btnSave, btnSaveLp);
 
     var bottomLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-    bottomLp.setMargins(0, self.dp(6), 0, 0);
+    bottomLp.setMargins(0, self.dp(6), 0, self.dp(12));
     panel.addView(bottomBar, bottomLp);
   }
 
