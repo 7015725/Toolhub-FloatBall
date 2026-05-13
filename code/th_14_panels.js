@@ -1653,7 +1653,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     // # ShortX 图标颜色（留空跟随主题）
     var defaultTint = targetBtn.iconTint ? String(targetBtn.iconTint) : "";
     var currentShortXIconTint = defaultTint;
-    var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空 = 跟随主题色)", defaultTint, false, "支持 #RRGGBB / #AARRGGBB；下方可展开完整调色板");
+    var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空 = 跟随主题色)", defaultTint, false, "支持 #RRGGBB / #AARRGGBB；也可点右侧“颜色”选择");
     iconSectionBody.addView(inputShortXIconTint.view);
     // # 避免 Rhino 闭包问题：将输入框引用存储到 self.state，供颜色选择器回调使用
     self.state._btnEditorTintInput = inputShortXIconTint;
@@ -1918,7 +1918,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     tintPaletteWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
     tintPaletteWrap.setPadding(0, 0, 0, self.dp(12));
     tintPaletteWrap.setBackground(self.ui.createRoundDrawable(self.withAlpha(cardColor, 0.92), self.dp(14)));
-    iconSectionBody.addView(tintPaletteWrap);
+    // 旧版内嵌“完整调色板”与上方“颜色”按钮功能重复；保留逻辑用于状态同步，但不再挂载到图标外观区块。
+    // iconSectionBody.addView(tintPaletteWrap);
     tintPaletteState.pickerWrap = tintPaletteWrap;
 
     var tintPaletteHead = new android.widget.LinearLayout(context);
@@ -2263,7 +2264,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             shortxQuickRow.setVisibility(android.view.View.GONE);
             shortxPickerWrap.setVisibility(android.view.View.GONE);
             inputShortXIconTint.view.setVisibility(android.view.View.GONE);
-            tintPaletteWrap.setVisibility(android.view.View.GONE);
+            if (tintPaletteWrap) tintPaletteWrap.setVisibility(android.view.View.GONE);
             shortxPickerState.expanded = false;
             try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(getShortXPickerClosedLabel());  } catch(eBt0) { safeLog(null, 'e', "catch " + String(eBt0)); }
             currentShortXIconName = "";
@@ -2272,7 +2273,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             inputIconPath.view.setVisibility(android.view.View.GONE);
             shortxQuickRow.setVisibility(android.view.View.VISIBLE);
             inputShortXIconTint.view.setVisibility(android.view.View.VISIBLE);
-            tintPaletteWrap.setVisibility(android.view.View.VISIBLE);
+            if (tintPaletteWrap) tintPaletteWrap.setVisibility(android.view.View.GONE);
             inputIconPath.input.setText("");
             syncTintUiFromInput(false);
             updateShortXIconPreview();
