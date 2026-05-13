@@ -4136,8 +4136,18 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var density = dm.density;
 
   var panelWidth = Math.round(sw * 0.92);
-  if (panelWidth > self.dp(520)) panelWidth = self.dp(520);
+  var panelHeight = Math.round(sh * 0.90);
+  try {
+    if (self.calculateToolAppLayout) {
+      var toolLayout = self.calculateToolAppLayout(null);
+      if (toolLayout && toolLayout.width > 0) panelWidth = toolLayout.width;
+      if (toolLayout && toolLayout.height > 0) panelHeight = toolLayout.height;
+    }
+  } catch(eLayout) { safeLog(null, 'e', "catch " + String(eLayout)); }
+  if (panelWidth > self.dp(560)) panelWidth = self.dp(560);
   if (panelWidth < self.dp(300)) panelWidth = self.dp(300);
+  if (panelHeight > sh - self.dp(24)) panelHeight = sh - self.dp(24);
+  if (panelHeight < self.dp(420)) panelHeight = Math.min(sh - self.dp(16), self.dp(420));
 
   var padH = self.dp(14);
   var padV = self.dp(12);
@@ -4155,28 +4165,28 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   if (iconSize < self.dp(22)) iconSize = self.dp(22);
   if (iconSize > self.dp(32)) iconSize = self.dp(32);
   var cellH = self.dp(6) * 2 + iconSize + self.dp(14); // padding + icon + text
-  var headerH = self.dp(110); // header + search + status + pageBar 约占高度（已去掉 tabs）
-  var maxGridH = Math.round(sh * 0.78);
-  var rowCount = Math.max(3, Math.floor((maxGridH - headerH) / (cellH + gap)));
+  var headerH = self.dp(132); // 标题 + 搜索 + 状态 + 分页 + 底部栏
+  var maxGridH = Math.max(self.dp(220), panelHeight - headerH);
+  var rowCount = Math.max(3, Math.floor(maxGridH / (cellH + gap)));
   var pageSize = colCount * rowCount;
 
   var rootOverlay = new android.widget.FrameLayout(context);
-  rootOverlay.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, 0.55));
+  try { rootOverlay.setBackgroundColor(android.graphics.Color.parseColor("#33000000")); }
+  catch(eOverlayBg) { rootOverlay.setBackgroundColor(0x33000000); }
   rootOverlay.setClickable(true);
 
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
   card.setPadding(padH, padV, padH, padV);
-  card.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(16)));
+  card.setBackground(self.ui.createRoundDrawable(bgColor, self.dp(18)));
+  try { card.setElevation(self.dp(10)); } catch(eCardElev) { safeLog(null, 'e', "catch " + String(eCardElev)); }
 
-  // 使用顶部锚定 + MATCH_PARENT 高度，避免输入法触发窗口 resize 后，居中卡片被上下裁切。
-  // 之前 0.88 屏高 + CENTER 在 IME 弹出时会被压缩窗口居中裁剪，导致标题/搜索框移出屏幕。
+  // 与 ToolHub 设置页外壳保持同款宽高、圆角、居中方式。
   var cardLp = new android.widget.FrameLayout.LayoutParams(
     panelWidth,
-    android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+    panelHeight
   );
-  cardLp.gravity = android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL;
-  try { cardLp.setMargins(0, self.dp(12), 0, self.dp(12));  } catch(eCardMargin) { safeLog(null, 'e', "catch " + String(eCardMargin)); }
+  cardLp.gravity = android.view.Gravity.CENTER;
   card.setLayoutParams(cardLp);
 
   rootOverlay.addView(card);
@@ -4220,8 +4230,10 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
   header.addView(titleTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-  var closeBtn = self.ui.createFlatButton(self, "\u5173\u95ed", C.primary, function() { dismiss(); });
-  header.addView(closeBtn);
+  var closeBtn = self.ui.createFlatButton(self, "✕", subTextColor, function() { dismiss(); });
+  closeBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+  closeBtn.setPadding(self.dp(8), 0, self.dp(8), 0);
+  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(42), self.dp(38)));
   card.addView(header);
 
   // \u641c\u7d22\u6846
@@ -4234,7 +4246,10 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   searchEt.setFocusable(true);
   searchEt.setFocusableInTouchMode(true);
   searchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
-  searchEt.setBackground(self.ui.createStrokeDrawable(isDark ? self.ui.colors.inputBgDark : self.ui.colors.inputBgLight, isDark ? self.ui.colors.dividerDark : self.ui.colors.dividerLight, self.dp(1), self.dp(10)));
+  searchEt.setBackground(self.ui.createStrokeDrawable(isDark ? C.inputBgDark : C.inputBgLight, isDark ? C.dividerDark : C.dividerLight, self.dp(1), self.dp(8)));
+  var searchLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+  searchLp.setMargins(0, self.dp(8), 0, self.dp(6));
+  searchEt.setLayoutParams(searchLp);
   searchEt.setOnClickListener(new android.view.View.OnClickListener({
     onClick: function(v) {
       self.touchActivity();
@@ -4305,29 +4320,18 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   selectNameTv.setTextColor(textColor);
   selectNameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
   selectNameTv.setPadding(self.dp(8), 0, 0, 0);
+  selectNameTv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
   selectRow.addView(selectNameTv);
 
-  var selectConfirm = new android.widget.TextView(context);
-  selectConfirm.setText("\u786e\u5b9a");
-  selectConfirm.setTextColor(android.graphics.Color.WHITE);
-  selectConfirm.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-  selectConfirm.setTypeface(null, android.graphics.Typeface.BOLD);
-  selectConfirm.setPadding(self.dp(16), self.dp(8), self.dp(16), self.dp(8));
-  selectConfirm.setGravity(android.view.Gravity.CENTER);
-  var pressedColor = self.withAlpha(C.primary, 0.8);
-  selectConfirm.setBackground(self.ui.createRippleDrawable(C.primary, pressedColor, self.dp(24)));
-  try { selectConfirm.setElevation(self.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-  selectConfirm.setOnClickListener(new android.view.View.OnClickListener({
-    onClick: function(v) {
-      self.touchActivity();
-      try {
-        if (typeof onSelect === "function") onSelect(selectedName);
-      } catch(eSelect) {
-        safeLog(self.L, 'e', "icon onSelect err=" + String(eSelect));
-      }
-      dismiss();
+  var selectConfirm = self.ui.createSolidButton(self, "\u786e\u5b9a", C.primary, android.graphics.Color.WHITE, function() {
+    self.touchActivity();
+    try {
+      if (typeof onSelect === "function") onSelect(selectedName);
+    } catch(eSelect) {
+      safeLog(self.L, 'e', "icon onSelect err=" + String(eSelect));
     }
-  }));
+    dismiss();
+  });
   selectRow.addView(selectConfirm);
   card.addView(selectRow);
 
