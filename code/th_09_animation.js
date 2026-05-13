@@ -425,8 +425,12 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
     var usedAnimation = false;
     if (android.os.Build.VERSION.SDK_INT >= 34) {
       try {
+        // 关键：不要只把 Class.forName() 的 Class 对象传给 JavaAdapter。
+        // 在部分 ColorOS/Rhino 组合里这样会被系统识别成普通 OnBackInvokedCallback，log 里表现为 mIsAnimationCallback=false。
+        // 先 forName 预热，再用 Packages.android.window.OnBackAnimationCallback 这个接口对象创建代理，确保 instanceof 命中。
         var animCls = java.lang.Class.forName("android.window.OnBackAnimationCallback");
-        cb = new JavaAdapter(animCls, {
+        var animIface = Packages.android.window.OnBackAnimationCallback;
+        cb = new JavaAdapter(animIface, {
           onBackStarted: function(event) { self.applyPanelPredictiveBackProgress(panel, event); },
           onBackProgressed: function(event) { self.applyPanelPredictiveBackProgress(panel, event); },
           onBackCancelled: function() { self.resetPanelPredictiveBackVisual(panel); },
@@ -441,8 +445,12 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
             self.handlePanelBack(which, "predictive_back");
           }
         });
-        usedAnimation = true;
+        usedAnimation = !!animCls.isInstance(cb);
+        if (!usedAnimation) {
+          safeLog(self.L, 'w', "OnBackAnimationCallback proxy not instance; fallback may show mIsAnimationCallback=false");
+        }
       } catch (eAnim) {
+        safeLog(self.L, 'w', "create OnBackAnimationCallback fail: " + String(eAnim));
         cb = null;
       }
     }
@@ -459,7 +467,13 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
     if (!cb) return false;
 
     var priority = 0;
-    try { priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT; } catch (ePri) { priority = 0; }
+    try {
+      if (String(which || "") === "tool_app" && android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY !== undefined) {
+        priority = android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY;
+      } else {
+        priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
+      }
+    } catch (ePri) { priority = 0; }
     dispatcher.registerOnBackInvokedCallback(priority, cb);
     if (!this.state.panelBackCallbackEntries) this.state.panelBackCallbackEntries = [];
     this.state.panelBackCallbackEntries.push({ view: panel, dispatcher: dispatcher, callback: cb, which: String(which || ""), animation: usedAnimation });
