@@ -190,7 +190,11 @@ FloatBallAppWM.prototype.hideViewerPanel = function() {
   this.state.viewerPanelType = null;
   if (oldViewerType === "tool_app") {
     this.state.toolAppRoot = null;
+    this.state.toolAppBody = null;
     this.state.toolAppContentHost = null;
+    this.state.toolAppBackPreviewView = null;
+    this.state.toolAppBackPreviewRoute = null;
+    this.state.toolAppBackPreviewReady = false;
     this.state.toolAppTitleView = null;
     this.state.toolAppBackButton = null;
   }

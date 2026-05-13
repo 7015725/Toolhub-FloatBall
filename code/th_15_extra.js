@@ -515,10 +515,197 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.settingsGroupKey = null;
     this.hideViewerPanel();
     this.state.toolAppRoot = null;
+    this.state.toolAppBody = null;
     this.state.toolAppContentHost = null;
+    this.state.toolAppBackPreviewView = null;
+    this.state.toolAppBackPreviewRoute = null;
+    this.state.toolAppBackPreviewReady = false;
     this.state.toolAppTitleView = null;
     this.state.toolAppBackButton = null;
   } catch (e) { safeLog(this.L, 'e', "closeToolApp fail: " + String(e)); }
+};
+
+FloatBallAppWM.prototype.clearToolAppBackPreview = function(resetCurrent) {
+  try {
+    var prev = this.state.toolAppBackPreviewView;
+    var root = this.state.toolAppRoot;
+    if (prev && root) {
+      try { root.removeView(prev); } catch (eRm) {}
+    }
+    this.state.toolAppBackPreviewView = null;
+    this.state.toolAppBackPreviewRoute = null;
+    this.state.toolAppBackPreviewReady = false;
+    var body = this.state.toolAppBody;
+    if (resetCurrent && body) {
+      try { body.animate().cancel(); } catch (eCancel) {}
+      try { body.setTranslationX(0); body.setAlpha(1); body.setScaleX(1); body.setScaleY(1); } catch (eBody) {}
+    }
+  } catch (e) { safeLog(this.L, 'w', "clear tool app back preview fail: " + String(e)); }
+};
+
+FloatBallAppWM.prototype.getToolAppPreviousStackEntry = function() {
+  try {
+    var st = this.state.toolAppNavStack || [];
+    if (!st || st.length <= 1) return null;
+    return st[st.length - 2];
+  } catch (e) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.makeToolAppStackEntry = function(route) {
+  return {
+    route: String(route || "settings"),
+    settingsGroupKey: String(this.state.settingsGroupKey || "")
+  };
+};
+
+FloatBallAppWM.prototype.buildToolAppPreviewBody = function(route) {
+  try {
+    var r = this.isToolAppRoute(route) ? String(route) : "settings";
+    var isDark = this.isDarkTheme();
+    var C = this.ui.colors;
+    var body = new android.widget.LinearLayout(context);
+    body.setOrientation(android.widget.LinearLayout.VERTICAL);
+    body.setBackground(this.ui.createRoundDrawable(isDark ? C.bgDark : C.bgLight, this.dp(18)));
+    try { body.setElevation(this.dp(6)); } catch (eElev) {}
+
+    var bar = new android.widget.LinearLayout(context);
+    bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    bar.setPadding(this.dp(8), this.dp(8), this.dp(8), this.dp(6));
+
+    var btnBack = this.ui.createFlatButton(this, "‹", C.primary, function() {});
+    btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
+    btnBack.setEnabled(false);
+    bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
+
+    var tvTitle = new android.widget.TextView(context);
+    tvTitle.setText(String(this.getToolAppTitle(r) || "ToolHub"));
+    tvTitle.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+    tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+    tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+    tvTitle.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    var titleLp = new android.widget.LinearLayout.LayoutParams(0, -1);
+    titleLp.weight = 1;
+    bar.addView(tvTitle, titleLp);
+
+    var btnClose = this.ui.createFlatButton(this, "✕", isDark ? C.textSecDark : C.textSecLight, function() {});
+    btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+    btnClose.setEnabled(false);
+    bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
+    body.addView(bar, new android.widget.LinearLayout.LayoutParams(-1, this.dp(52)));
+
+    var host = new android.widget.FrameLayout(context);
+    var raw = this.buildPanelView(r);
+    try { raw.setBackground(null); } catch (eBg) {}
+    try { raw.setElevation(0); } catch (eEl) {}
+    host.addView(raw, new android.widget.FrameLayout.LayoutParams(-1, -1));
+    body.addView(host, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+    return body;
+  } catch (e) {
+    safeLog(this.L, 'w', "build tool app preview body fail route=" + String(route || "") + " err=" + String(e));
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.prepareToolAppBackPreview = function(edge) {
+  try {
+    if (this.state.toolAppBackPreviewReady) return true;
+    var root = this.state.toolAppRoot;
+    var body = this.state.toolAppBody;
+    var prevEntry = this.getToolAppPreviousStackEntry();
+    if (!root || !body || !prevEntry || !prevEntry.route) return false;
+    var prevRoute = String(prevEntry.route || "settings");
+    var oldGroupKey = String(this.state.settingsGroupKey || "");
+    if (prevRoute === "settings_group" && prevEntry.settingsGroupKey) this.state.settingsGroupKey = String(prevEntry.settingsGroupKey);
+    var prevBody = this.buildToolAppPreviewBody(prevRoute);
+    this.state.settingsGroupKey = oldGroupKey;
+    if (!prevBody) return false;
+    var lp = new android.widget.FrameLayout.LayoutParams(-1, -1);
+    prevBody.setAlpha(0.65);
+    prevBody.setScaleX(0.985);
+    prevBody.setScaleY(0.985);
+    prevBody.setTranslationX((Number(edge) === 1 ? 1 : -1) * this.dp(18));
+    try {
+      root.addView(prevBody, 0, lp);
+    } catch (eAddIdx) {
+      try { root.addView(prevBody, lp); } catch (eAdd) { return false; }
+      try { prevBody.bringToFront(); body.bringToFront(); } catch (eFront) {}
+    }
+    try { body.bringToFront(); } catch (eBodyFront) {}
+    this.state.toolAppBackPreviewView = prevBody;
+    this.state.toolAppBackPreviewRoute = prevRoute;
+    this.state.toolAppBackPreviewReady = true;
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', "prepare tool app back preview fail: " + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progress) {
+  try {
+    var p = Number(progress || 0);
+    if (isNaN(p)) p = 0;
+    if (p < 0) p = 0;
+    if (p > 1) p = 1;
+    if (!this.prepareToolAppBackPreview(edge)) return false;
+    var body = this.state.toolAppBody;
+    var prev = this.state.toolAppBackPreviewView;
+    var dir = Number(edge) === 1 ? -1 : 1;
+    var w = 0;
+    try { w = Number((this.state.viewerPanelLp && this.state.viewerPanelLp.width) || 0); } catch (eW0) {}
+    if (!w || w < this.dp(120)) {
+      try { w = Number((this.state.toolAppRoot && this.state.toolAppRoot.getWidth && this.state.toolAppRoot.getWidth()) || 0); } catch (eW1) {}
+    }
+    if (!w || w < this.dp(120)) w = this.dp(320);
+    if (body) {
+      body.setTranslationX(dir * w * p);
+      body.setAlpha(1.0 - 0.16 * p);
+      var s = 1.0 - 0.025 * p;
+      body.setScaleX(s);
+      body.setScaleY(s);
+    }
+    if (prev) {
+      prev.setAlpha(0.65 + 0.35 * p);
+      prev.setTranslationX(-dir * this.dp(18) * (1.0 - p));
+      var ps = 0.985 + 0.015 * p;
+      prev.setScaleX(ps);
+      prev.setScaleY(ps);
+    }
+    return true;
+  } catch (e) { safeLog(this.L, 'w', "apply tool app back preview fail: " + String(e)); }
+  return false;
+};
+
+FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
+  try {
+    var self = this;
+    var body = this.state.toolAppBody;
+    var dir = Number(edge) === 1 ? -1 : 1;
+    if (complete && body) {
+      var w = 0;
+      try { w = Number((this.state.viewerPanelLp && this.state.viewerPanelLp.width) || 0); } catch (eW0) {}
+      if (!w || w < this.dp(120)) w = this.dp(320);
+      body.animate().translationX(dir * w).alpha(0.78).setDuration(120).withEndAction(new java.lang.Runnable({
+        run: function() {
+          try { self.clearToolAppBackPreview(true); } catch (eClear) {}
+          try { self.popToolAppPage("edge_swipe_back"); } catch (ePop) {}
+        }
+      })).start();
+      return;
+    }
+    if (body) {
+      body.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(140).withEndAction(new java.lang.Runnable({
+        run: function() { try { self.clearToolAppBackPreview(true); } catch (eClear2) {} }
+      })).start();
+    } else {
+      this.clearToolAppBackPreview(true);
+    }
+  } catch (e) {
+    this.clearToolAppBackPreview(true);
+    safeLog(this.L, 'w', "finish tool app back preview fail: " + String(e));
+  }
 };
 
 FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
@@ -537,8 +724,9 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
         if (action === android.view.MotionEvent.ACTION_DOWN) {
           downX = event.getRawX();
           downY = event.getRawY();
-          active = !!(self.state && self.state.toolAppActive);
+          active = !!(self.state && self.state.toolAppActive && self.getToolAppPreviousStackEntry());
           moved = false;
+          if (active) self.prepareToolAppBackPreview(edge);
           return active;
         }
         if (!active) return false;
@@ -546,33 +734,24 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
           var mx = event.getRawX() - downX;
           var my = event.getRawY() - downY;
           var validDir = (edge === 0 && mx > 0) || (edge === 1 && mx < 0);
-          if (validDir && Math.abs(mx) > self.dp(8) && Math.abs(mx) > Math.abs(my)) {
+          if (validDir && Math.abs(mx) > self.dp(4) && Math.abs(mx) > Math.abs(my)) {
             moved = true;
-            var p = Math.min(1, Math.abs(mx) / self.dp(120));
-            var panel = self.state ? self.state.toolAppRoot : null;
-            if (panel) {
-              try {
-                panel.setTranslationX((edge === 0 ? 1 : -1) * self.dp(28) * p);
-                panel.setAlpha(1.0 - 0.10 * p);
-              } catch (eAnim) {}
-            }
+            var p = Math.min(1, Math.abs(mx) / self.dp(180));
+            self.applyToolAppBackPreviewProgress(edge, p);
           }
           return true;
         }
         if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
           var ux = event.getRawX() - downX;
           var uy = event.getRawY() - downY;
-          var okDir = (edge === 0 && ux > self.dp(56)) || (edge === 1 && ux < -self.dp(56));
-          var ok = moved && okDir && Math.abs(ux) > Math.abs(uy) * 1.2;
-          try { self.resetPanelPredictiveBackVisual(self.state ? self.state.toolAppRoot : null); } catch (eReset) {}
+          var okDir = (edge === 0 && ux > self.dp(72)) || (edge === 1 && ux < -self.dp(72));
+          var ok = (action === android.view.MotionEvent.ACTION_UP) && moved && okDir && Math.abs(ux) > Math.abs(uy) * 1.2;
           active = false;
-          if (ok) {
-            try { self.popToolAppPage("edge_swipe_back"); } catch (ePop) {}
-            return true;
-          }
+          self.finishToolAppBackPreview(edge, ok);
           return true;
         }
       } catch (e) {
+        try { self.clearToolAppBackPreview(true); } catch (eClear) {}
         try { safeLog(self.L, 'w', "tool app edge back fail: " + String(e)); } catch(eLog) {}
       }
       return false;
@@ -643,6 +822,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   } catch (eStrip) { safeLog(this.L, 'w', "add edge back strip fail: " + String(eStrip)); }
 
   this.state.toolAppRoot = root;
+  this.state.toolAppBody = body;
   this.state.toolAppContentHost = host;
   this.state.toolAppTitleView = tvTitle;
   this.state.toolAppBackButton = btnBack;
@@ -762,9 +942,9 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
       this.state.previewMode = false;
     }
     if (resetStack || !this.state.toolAppNavStack || !this.state.toolAppNavStack.length) {
-      this.state.toolAppNavStack = [{ route: r }];
+      this.state.toolAppNavStack = [this.makeToolAppStackEntry(r)];
     } else {
-      this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = { route: r };
+      this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = this.makeToolAppStackEntry(r);
     }
 
     var raw = this.buildPanelView(r);
@@ -803,7 +983,7 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
 FloatBallAppWM.prototype.pushToolAppPage = function(route) {
   if (!this.isToolAppRoute(route)) return;
   if (!this.state.toolAppNavStack) this.state.toolAppNavStack = [];
-  this.state.toolAppNavStack.push({ route: String(route) });
+  this.state.toolAppNavStack.push(this.makeToolAppStackEntry(route));
   this.showToolApp(route, false);
 };
 
@@ -814,8 +994,8 @@ FloatBallAppWM.prototype.pushToolAppSettingsGroup = function(groupKey) {
 
 FloatBallAppWM.prototype.replaceToolAppPage = function(route) {
   if (!this.isToolAppRoute(route)) return;
-  if (!this.state.toolAppNavStack || !this.state.toolAppNavStack.length) this.state.toolAppNavStack = [{ route: String(route) }];
-  else this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = { route: String(route) };
+  if (!this.state.toolAppNavStack || !this.state.toolAppNavStack.length) this.state.toolAppNavStack = [this.makeToolAppStackEntry(route)];
+  else this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = this.makeToolAppStackEntry(route);
   this.showToolApp(route, false);
 };
 
@@ -837,7 +1017,8 @@ FloatBallAppWM.prototype.popToolAppPage = function(reason) {
     this.state.toolAppNavStack.pop();
     var top = this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1];
     var nextRoute = top && top.route ? String(top.route) : "settings";
-    if (nextRoute !== "settings_group") this.state.settingsGroupKey = null;
+    if (nextRoute === "settings_group") this.state.settingsGroupKey = String((top && top.settingsGroupKey) ? top.settingsGroupKey : (this.state.settingsGroupKey || ""));
+    else this.state.settingsGroupKey = null;
     this.showToolApp(nextRoute, false);
     return true;
   } catch (e) {
