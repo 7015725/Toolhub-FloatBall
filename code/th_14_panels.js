@@ -1022,21 +1022,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     }
 
     scroll.addView(list);
-    // # 列表高度优化：限制"按钮管理列表"高度，避免列表区域过高导致底部操作区被顶到很下面
-    // # 说明：原先使用 weight=1 会占满剩余空间，在不同机型上会显得"列表太高"；这里改为按屏幕高度自适应，并限制上下界
-    var scrollLp;
-    try {
-        var dm2 = context.getResources().getDisplayMetrics();
-        var hPx2 = dm2 ? dm2.heightPixels : 0;
-        var targetPx2 = hPx2 > 0 ? Math.floor(hPx2 * 0.55) : self.dp(360);
-        var minPx2 = self.dp(220);
-        var maxPx2 = self.dp(520);
-        if (targetPx2 < minPx2) targetPx2 = minPx2;
-        if (targetPx2 > maxPx2) targetPx2 = maxPx2;
-        scrollLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, targetPx2);
-    } catch(eScrollH) {
-        scrollLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(360));
-    }
+    // 列表页采用固定底栏：滚动区吃掉剩余高度，避免“取消更改/保存所有”被挤到屏幕外。
+    var scrollLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0);
+    scrollLp.weight = 1;
     scroll.setLayoutParams(scrollLp);
     panel.addView(scroll);
 
@@ -1064,12 +1052,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         self.toast("已取消更改");
         self.hideAllPanels();
     });
-    bottomBar.addView(btnListCancel);
-
-    // 间隔
-    var space = new android.view.View(context);
-    space.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(12), 1));
-    bottomBar.addView(space);
+    var btnListCancelLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+    btnListCancelLp.weight = 1;
+    btnListCancelLp.rightMargin = self.dp(8);
+    bottomBar.addView(btnListCancel, btnListCancelLp);
 
     var btnListSave = self.ui.createSolidButton(self, "保存所有", C.primary, android.graphics.Color.WHITE, function() {
         try {
@@ -1080,9 +1066,13 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             refreshPanel();
         } catch(e) { self.toast("保存失败:" + e); }
     });
-    bottomBar.addView(btnListSave);
+    var btnListSaveLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+    btnListSaveLp.weight = 1;
+    bottomBar.addView(btnListSave, btnListSaveLp);
 
-    panel.addView(bottomBar);
+    var listBottomLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    listBottomLp.setMargins(0, self.dp(6), 0, 0);
+    panel.addView(bottomBar, listBottomLp);
 
   } else {
     // --- 编辑模式 ---
