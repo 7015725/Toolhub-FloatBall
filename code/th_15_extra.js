@@ -520,6 +520,7 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.toolAppBackPreviewView = null;
     this.state.toolAppBackPreviewRoute = null;
     this.state.toolAppBackPreviewReady = false;
+    try { if (this.hideToolAppScreenBackStrips) this.hideToolAppScreenBackStrips(); } catch (eStrip) {}
     this.state.toolAppTitleView = null;
     this.state.toolAppBackButton = null;
   } catch (e) { safeLog(this.L, 'e', "closeToolApp fail: " + String(e)); }
@@ -760,6 +761,69 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
   return strip;
 };
 
+FloatBallAppWM.prototype.hideToolAppScreenBackStrips = function() {
+  try {
+    var arr = this.state.toolAppScreenBackStrips || [];
+    for (var i = 0; i < arr.length; i++) {
+      try { if (arr[i] && this.state.wm) this.state.wm.removeView(arr[i]); } catch (eRm) {}
+    }
+    this.state.toolAppScreenBackStrips = [];
+  } catch (e) { safeLog(this.L, 'w', "hide tool app screen back strips fail: " + String(e)); }
+};
+
+FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
+  try {
+    if (!this.state.wm || !this.state.toolAppActive) return false;
+    if (!this.getToolAppPreviousStackEntry || !this.getToolAppPreviousStackEntry()) {
+      this.hideToolAppScreenBackStrips();
+      return false;
+    }
+    if (this.state.toolAppScreenBackStrips && this.state.toolAppScreenBackStrips.length === 2) return true;
+    this.hideToolAppScreenBackStrips();
+
+    var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
+    if (sw <= 1) {
+      try { var ss = this.getScreenSizePx(); sw = ss.w; } catch (eScreen) {}
+    }
+    var stripW = this.dp(22);
+    var flags = android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+      android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+
+    var left = this.createToolAppEdgeBackStrip(0);
+    var lpL = new android.view.WindowManager.LayoutParams(
+      stripW,
+      android.view.WindowManager.LayoutParams.MATCH_PARENT,
+      android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+      flags,
+      android.graphics.PixelFormat.TRANSLUCENT
+    );
+    lpL.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
+    lpL.x = 0;
+    lpL.y = 0;
+
+    var right = this.createToolAppEdgeBackStrip(1);
+    var lpR = new android.view.WindowManager.LayoutParams(
+      stripW,
+      android.view.WindowManager.LayoutParams.MATCH_PARENT,
+      android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+      flags,
+      android.graphics.PixelFormat.TRANSLUCENT
+    );
+    lpR.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
+    lpR.x = Math.max(0, sw - stripW);
+    lpR.y = 0;
+
+    this.state.wm.addView(left, lpL);
+    this.state.wm.addView(right, lpR);
+    this.state.toolAppScreenBackStrips = [left, right];
+    return true;
+  } catch (e) {
+    this.hideToolAppScreenBackStrips();
+    safeLog(this.L, 'w', "show tool app screen back strips fail: " + String(e));
+  }
+  return false;
+};
+
 FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBack) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -973,6 +1037,7 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
       } catch (eUpd) { safeLog(this.L, 'w', "tool_app update layout fail: " + String(eUpd)); }
       try { shell.requestFocus(); } catch (eFocus) {}
     }
+    try { this.showToolAppScreenBackStrips(); } catch (eScreenBack) { safeLog(this.L, 'w', "show screen edge back fail: " + String(eScreenBack)); }
   } catch (e) {
     this.state.toolAppActive = false;
     safeLog(this.L, 'e', "showToolApp fail route=" + r + " err=" + String(e));

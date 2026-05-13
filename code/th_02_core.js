@@ -56,6 +56,7 @@ function FloatBallAppWM(logger) {
     toolAppBackPreviewView: null,
     toolAppBackPreviewRoute: null,
     toolAppBackPreviewReady: false,
+    toolAppScreenBackStrips: [],
     toolAppTitleView: null,
     toolAppBackButton: null,
     settingsGroupKey: null,
