@@ -521,14 +521,76 @@ FloatBallAppWM.prototype.closeToolApp = function() {
   } catch (e) { safeLog(this.L, 'e', "closeToolApp fail: " + String(e)); }
 };
 
+FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
+  var self = this;
+  var strip = new android.view.View(context);
+  strip.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+  var downX = 0;
+  var downY = 0;
+  var active = false;
+  var moved = false;
+  strip.setOnTouchListener(new android.view.View.OnTouchListener({
+    onTouch: function(v, event) {
+      try {
+        if (!event) return false;
+        var action = event.getActionMasked();
+        if (action === android.view.MotionEvent.ACTION_DOWN) {
+          downX = event.getRawX();
+          downY = event.getRawY();
+          active = !!(self.state && self.state.toolAppActive);
+          moved = false;
+          return active;
+        }
+        if (!active) return false;
+        if (action === android.view.MotionEvent.ACTION_MOVE) {
+          var mx = event.getRawX() - downX;
+          var my = event.getRawY() - downY;
+          var validDir = (edge === 0 && mx > 0) || (edge === 1 && mx < 0);
+          if (validDir && Math.abs(mx) > self.dp(8) && Math.abs(mx) > Math.abs(my)) {
+            moved = true;
+            var p = Math.min(1, Math.abs(mx) / self.dp(120));
+            var panel = self.state ? self.state.toolAppRoot : null;
+            if (panel) {
+              try {
+                panel.setTranslationX((edge === 0 ? 1 : -1) * self.dp(28) * p);
+                panel.setAlpha(1.0 - 0.10 * p);
+              } catch (eAnim) {}
+            }
+          }
+          return true;
+        }
+        if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
+          var ux = event.getRawX() - downX;
+          var uy = event.getRawY() - downY;
+          var okDir = (edge === 0 && ux > self.dp(56)) || (edge === 1 && ux < -self.dp(56));
+          var ok = moved && okDir && Math.abs(ux) > Math.abs(uy) * 1.2;
+          try { self.resetPanelPredictiveBackVisual(self.state ? self.state.toolAppRoot : null); } catch (eReset) {}
+          active = false;
+          if (ok) {
+            try { self.popToolAppPage("edge_swipe_back"); } catch (ePop) {}
+            return true;
+          }
+          return true;
+        }
+      } catch (e) {
+        try { safeLog(self.L, 'w', "tool app edge back fail: " + String(e)); } catch(eLog) {}
+      }
+      return false;
+    }
+  }));
+  return strip;
+};
+
 FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBack) {
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var root = new android.widget.LinearLayout(context);
-  root.setOrientation(android.widget.LinearLayout.VERTICAL);
-  root.setBackground(this.ui.createRoundDrawable(isDark ? C.bgDark : C.bgLight, this.dp(18)));
-  try { root.setElevation(this.dp(10)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  var root = new android.widget.FrameLayout(context);
+  var body = new android.widget.LinearLayout(context);
+  body.setOrientation(android.widget.LinearLayout.VERTICAL);
+  body.setBackground(this.ui.createRoundDrawable(isDark ? C.bgDark : C.bgLight, this.dp(18)));
+  try { body.setElevation(this.dp(10)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  root.addView(body, new android.widget.FrameLayout.LayoutParams(-1, -1));
 
   var bar = new android.widget.LinearLayout(context);
   bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -558,7 +620,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   btnClose.setPadding(this.dp(8), 0, this.dp(8), 0);
   bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
-  root.addView(bar, new android.widget.LinearLayout.LayoutParams(-1, this.dp(52)));
+  body.addView(bar, new android.widget.LinearLayout.LayoutParams(-1, this.dp(52)));
 
   var host = new android.widget.FrameLayout(context);
   if (contentView) {
@@ -566,7 +628,19 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
     try { contentView.setElevation(0); } catch(eEl) { safeLog(null, 'e', "catch " + String(eEl)); }
     host.addView(contentView, new android.widget.FrameLayout.LayoutParams(-1, -1));
   }
-  root.addView(host, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+  body.addView(host, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+
+  try {
+    var stripW = this.dp(24);
+    var leftStrip = this.createToolAppEdgeBackStrip(0);
+    var leftLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
+    leftLp.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
+    root.addView(leftStrip, leftLp);
+    var rightStrip = this.createToolAppEdgeBackStrip(1);
+    var rightLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
+    rightLp.gravity = android.view.Gravity.END | android.view.Gravity.TOP;
+    root.addView(rightStrip, rightLp);
+  } catch (eStrip) { safeLog(this.L, 'w', "add edge back strip fail: " + String(eStrip)); }
 
   this.state.toolAppRoot = root;
   this.state.toolAppContentHost = host;
