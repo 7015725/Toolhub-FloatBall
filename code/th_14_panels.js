@@ -254,34 +254,14 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
 
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var bgColor = isDark ? C.bgDark : C.bgLight;
-  var cardColor = isDark ? C.cardDark : C.cardLight;
-  var textColor = isDark ? C.textPriDark : C.textPriLight;
+  var T = this.getAnimalIslandTheme();
+  var bgColor = T.bg;
+  var cardColor = T.card;
+  var textColor = T.text;
 
   var panel = this.ui.createStyledPanel(this, 16);
+  try { panel.setBackground(this.ui.createRoundDrawable(T.bg, this.dp(18))); } catch(ePanelBg) {}
   var header = this.ui.createStyledHeader(this, 8);
-
-  // 内存显示
-  var memTv = new android.widget.TextView(context);
-  memTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
-  memTv.setTextColor(isDark ? C.textSecDark : C.textSecLight);
-  memTv.setPadding(0, 0, this.dp(8), 0);
-
-  function updateMem() {
-      try {
-          var rt = java.lang.Runtime.getRuntime();
-          var total = rt.totalMemory() / 1024 / 1024;
-          var free = rt.freeMemory() / 1024 / 1024;
-          var used = total - free;
-          var max = rt.maxMemory() / 1024 / 1024;
-          memTv.setText("Mem: " + used.toFixed(0) + "/" + max.toFixed(0) + "M");
-      } catch(e) { memTv.setText("Mem: ?"); }
-  }
-  updateMem();
-  memTv.setOnClickListener(new android.view.View.OnClickListener({
-      onClick: function() { updateMem(); self.toast("内存已刷新"); }
-  }));
-  header.addView(memTv);
 
   // 占位 View 顶替标题位置，让右侧按钮靠右
   header.addView(this.ui.createSpacer(this));
@@ -295,11 +275,11 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   previewBox.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   previewBox.setGravity(android.view.Gravity.CENTER_VERTICAL);
   previewBox.setPadding(this.dp(8), this.dp(2), this.dp(4), this.dp(2));
-  previewBox.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.accent, 0.1), self.dp(16))); // 浅色背景提示
+  previewBox.setBackground(self.ui.createRoundDrawable(self.withAlpha(T.primarySoft, isDark ? 0.70 : 0.95), self.dp(16))); // 浅色背景提示
 
   var tvPreview = new android.widget.TextView(context);
-  tvPreview.setText("实时预览");
-  tvPreview.setTextColor(C.accent);
+  tvPreview.setText("边调边看");
+  tvPreview.setTextColor(T.primaryDeep);
   tvPreview.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tvPreview.setTypeface(null, android.graphics.Typeface.BOLD);
   tvPreview.setPadding(0, 0, this.dp(4), 0);
@@ -309,8 +289,8 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   try { switchPreview.setTextOn(""); switchPreview.setTextOff("");  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
   try {
       var states = [[android.R.attr.state_checked], [-android.R.attr.state_checked]];
-      var thumbColors = [C.accent, isDark ? (0xFF555555 | 0) : (0xFFCCCCCC | 0)];
-      var trackColors = [self.withAlpha(C.accent, 0.5), self.withAlpha(isDark ? (0xFF555555 | 0) : (0xFFCCCCCC | 0), 0.5)];
+      var thumbColors = [T.primary, isDark ? T.card2 : (0xFFCCCCCC | 0)];
+      var trackColors = [self.withAlpha(T.primary, 0.5), self.withAlpha(isDark ? T.card2 : (0xFFCCCCCC | 0), 0.5)];
       switchPreview.setThumbTintList(new android.content.res.ColorStateList(states, thumbColors));
       switchPreview.setTrackTintList(new android.content.res.ColorStateList(states, trackColors));
    } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -321,9 +301,9 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
           self.touchActivity();
           self.state.previewMode = !!checked;
           if (checked) {
-              self.toast("预览模式已开启：修改配置实时生效");
-              tvPreview.setTextColor(C.accent);
-              previewBox.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.accent, 0.1), self.dp(16)));
+              self.toast("边调边看已开启");
+              tvPreview.setTextColor(T.primaryDeep);
+              previewBox.setBackground(self.ui.createRoundDrawable(self.withAlpha(T.primarySoft, isDark ? 0.70 : 0.95), self.dp(16)));
               self.refreshPreview();
           } else {
               self.toast("预览模式已关闭");
@@ -339,7 +319,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   header.addView(previewBox);
 
   // [恢复] 保存按钮（放在最后一位）
-  var btnOk = this.ui.createSolidButton(this, "保存", C.primary, android.graphics.Color.WHITE, function() {
+  var btnOk = this.ui.createSolidButton(this, "保存装扮", T.primary, T.onPrimary, function() {
       try {
         self.touchActivity();
         if (self.L) self.L.i("settings confirm click");
@@ -387,7 +367,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   function createCard() {
       var c = new android.widget.LinearLayout(context);
       c.setOrientation(android.widget.LinearLayout.VERTICAL);
-      c.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(12)));
+      c.setBackground(self.ui.createStrokeDrawable(cardColor, self.withAlpha(T.stroke, isDark ? 0.28 : 0.46), self.dp(1), self.dp(16)));
       try { c.setElevation(self.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       try { c.setClipToOutline(true);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);

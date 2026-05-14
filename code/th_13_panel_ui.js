@@ -407,7 +407,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     }
     refreshBallShortXPreview();
 
-    var btnPick = self.ui.createFlatButton(self, "选择图标", primary, function() {
+    var btnPick = self.ui.createFlatButton(self, "换一个", primary, function() {
       self.touchActivity();
       self.showShortXIconPickerPopup({
         currentName: String(self.getPendingValue(item.key) || ""),
@@ -430,7 +430,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     gapView.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
     iconRow.addView(gapView);
 
-    var btnClear = self.ui.createFlatButton(self, "清空", secColor, function() {
+    var btnClear = self.ui.createFlatButton(self, "不用图标", secColor, function() {
       self.touchActivity();
       try {
         self.setPendingValue(item.key, "");
@@ -484,7 +484,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     }
     refreshBallColorPreview();
 
-    var btnColor = self.ui.createFlatButton(self, "选择颜色", primary, function() {
+    var btnColor = self.ui.createFlatButton(self, "换颜色", primary, function() {
       self.touchActivity();
       self.showColorPickerPopup({
         currentColor: String(self.getPendingValue(item.key) || ""),
@@ -505,7 +505,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     gapColorView.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
     colorRow.addView(gapColorView);
 
-    var btnClearColor = self.ui.createFlatButton(self, "清空", secColor, function() {
+    var btnClearColor = self.ui.createFlatButton(self, "恢复默认", secColor, function() {
       self.touchActivity();
       try {
         self.setPendingValue(item.key, "");

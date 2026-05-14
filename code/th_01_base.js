@@ -778,17 +778,17 @@ var ConfigManager = {
         { key: "PANEL_BG_ALPHA", name: "面板背景透明度(0.1~1.0)", type: "float", min: 0.1, max: 1.0, step: 0.05 },
 
         { type: "section", name: "悬浮球" },
-        { key: "BALL_SIZE_DP", name: "悬浮球大小(dp)", type: "int", min: 28, max: 120, step: 1 },
-        { key: "BALL_PANEL_GAP_DP", name: "球与面板间距(dp)", type: "int", min: 0, max: 60, step: 1 },
-        { key: "BALL_ICON_TYPE", name: "图标类型", type: "single_choice", options: [
-            { label: "应用图标 (app)", value: "app" },
-            { label: "文件图标 (file)", value: "file" },
-            { label: "ShortX内置 (shortx)", value: "shortx" }
+        { key: "BALL_SIZE_DP", name: "气球大小", type: "int", min: 28, max: 120, step: 1 },
+        { key: "BALL_PANEL_GAP_DP", name: "离小屋的距离", type: "int", min: 0, max: 60, step: 1 },
+        { key: "BALL_ICON_TYPE", name: "气球徽章", type: "single_choice", options: [
+            { label: "应用头像", value: "app" },
+            { label: "从文件选择", value: "file" },
+            { label: "岛上图标库", value: "shortx" }
         ]},
-        { key: "BALL_ICON_FILE_PATH", name: "图标路径(file模式)", type: "text" },
-        { key: "BALL_ICON_RES_NAME", name: "ShortX图标", type: "ball_shortx_icon" },
-        { key: "BALL_ICON_TINT_HEX", name: "图标颜色", type: "ball_color" },
-        { key: "BALL_IDLE_ALPHA", name: "闲置不透明度(0.1~1.0)", type: "float", min: 0.1, max: 1.0, step: 0.05 },
+        { key: "BALL_ICON_FILE_PATH", name: "已选择的图标文件", type: "text" },
+        { key: "BALL_ICON_RES_NAME", name: "岛上图标", type: "ball_shortx_icon" },
+        { key: "BALL_ICON_TINT_HEX", name: "气球颜色", type: "ball_color" },
+        { key: "BALL_IDLE_ALPHA", name: "安静时透明度", type: "float", min: 0.1, max: 1.0, step: 0.05 },
 
         { type: "section", name: "面板布局" },
         { key: "PANEL_ROWS", name: "面板可视行数(超出滚动)", type: "int", min: 1, max: 12, step: 1 },
