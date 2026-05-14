@@ -762,30 +762,31 @@ FloatBallAppWM.prototype.getThemeTemplate = function(name) {
   return tplMap[name] || tplMap.system;
 };
 
-// 应用主题模板：如果配置中的 4 个颜色值为空/null 且模板非 system，则用模板值填充。
-// 手动覆盖的值保持优先。
-FloatBallAppWM.prototype.applyThemeTemplate = function() {
+// 应用主题模板：如果选择非 system 模板且那4个颜色未手动覆盖，用模板值填充。
+// preview=true 时从 pendingUserCfg 读/写（预览态），否则从 this.config 读/写。
+FloatBallAppWM.prototype.applyThemeTemplate = function(preview) {
   try {
-    var tpl = String(this.config.THEME_TEMPLATE || "system");
+    var cfg = preview && this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+    var tpl = String(cfg.THEME_TEMPLATE || "system");
     if (tpl === "system") return; // system 走 Monet，不填充
 
     var t = this.getThemeTemplate(tpl);
-    var Color = android.graphics.Color;
+    var _isNull = function(v) { return v == null || String(v) === "" || String(v) === "null"; };
 
-    if (t.dayBg != null && (this.config.THEME_DAY_BG_HEX == null || String(this.config.THEME_DAY_BG_HEX) === "" || String(this.config.THEME_DAY_BG_HEX) === "null")) {
-      this.config.THEME_DAY_BG_HEX = String(t.dayBg);
+    if (t.dayBg != null && _isNull(cfg.THEME_DAY_BG_HEX)) {
+      cfg.THEME_DAY_BG_HEX = String(t.dayBg);
     }
-    if (t.dayText != null && (this.config.THEME_DAY_TEXT_HEX == null || String(this.config.THEME_DAY_TEXT_HEX) === "" || String(this.config.THEME_DAY_TEXT_HEX) === "null")) {
-      this.config.THEME_DAY_TEXT_HEX = String(t.dayText);
+    if (t.dayText != null && _isNull(cfg.THEME_DAY_TEXT_HEX)) {
+      cfg.THEME_DAY_TEXT_HEX = String(t.dayText);
     }
-    if (t.nightBg != null && (this.config.THEME_NIGHT_BG_HEX == null || String(this.config.THEME_NIGHT_BG_HEX) === "" || String(this.config.THEME_NIGHT_BG_HEX) === "null")) {
-      this.config.THEME_NIGHT_BG_HEX = String(t.nightBg);
+    if (t.nightBg != null && _isNull(cfg.THEME_NIGHT_BG_HEX)) {
+      cfg.THEME_NIGHT_BG_HEX = String(t.nightBg);
     }
-    if (t.nightText != null && (this.config.THEME_NIGHT_TEXT_HEX == null || String(this.config.THEME_NIGHT_TEXT_HEX) === "" || String(this.config.THEME_NIGHT_TEXT_HEX) === "null")) {
-      this.config.THEME_NIGHT_TEXT_HEX = String(t.nightText);
+    if (t.nightText != null && _isNull(cfg.THEME_NIGHT_TEXT_HEX)) {
+      cfg.THEME_NIGHT_TEXT_HEX = String(t.nightText);
     }
 
-    try { _th_log(this.L, "d", "[theme:template] applied " + tpl + " dayBg=" + String(t.dayBg) + " nightBg=" + String(t.nightBg)); } catch(eL) {}
+    try { _th_log(this.L, "d", "[theme:template] applied " + tpl + " dayBg=" + String(t.dayBg) + " preview=" + !!preview); } catch(eL) {}
   } catch(e) {
     try { _th_log(this.L, "e", "[theme:template] apply err=" + String(e)); } catch(eL2) {}
   }
@@ -797,12 +798,16 @@ FloatBallAppWM.prototype.getPanelBgColorInt = function() {
   // 这段代码的主要内容/用途：配合"白天/夜晚"两档主题，返回统一的背景颜色（不再依赖自动亮度推断）。
 
   // 应用主题模板（如果选择模板且用户未手动覆盖）
-  try { this.applyThemeTemplate(); } catch(eAT) {}
+  // 预览态从 pendingUserCfg 读模板值并填充 pendingUserCfg 的颜色字段
+  var inPreview = this.state.pendingUserCfg != null;
+  try { this.applyThemeTemplate(inPreview); } catch(eAT) {}
 
   var isDark = this.isDarkTheme();
 
-  var dayBgHex = (this.config.THEME_DAY_BG_HEX != null) ? String(this.config.THEME_DAY_BG_HEX) : null;
-  var nightBgHex = (this.config.THEME_NIGHT_BG_HEX != null) ? String(this.config.THEME_NIGHT_BG_HEX) : null;
+  // 预览态优先从 pendingUserCfg 读颜色值
+  var cfg = inPreview && this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+  var dayBgHex = (cfg.THEME_DAY_BG_HEX != null) ? String(cfg.THEME_DAY_BG_HEX) : null;
+  var nightBgHex = (cfg.THEME_NIGHT_BG_HEX != null) ? String(cfg.THEME_NIGHT_BG_HEX) : null;
 
   // # 兼容旧版默认配色：若仍为旧默认值，自动回退到莫奈色
   if (dayBgHex === "#FAF4E3") dayBgHex = null;
@@ -832,12 +837,16 @@ FloatBallAppWM.prototype.getPanelTextColorInt = function(bgInt) {
   // 这段代码的主要内容/用途：配合"白天/夜晚"两档主题，返回统一的文字颜色（不再依赖自动亮度推断）。
 
   // 应用主题模板（如果选择模板且用户未手动覆盖）
-  try { this.applyThemeTemplate(); } catch(eAT) {}
+  // 预览态从 pendingUserCfg 读模板值并填充 pendingUserCfg 的颜色字段
+  var inPreviewText = this.state.pendingUserCfg != null;
+  try { this.applyThemeTemplate(inPreviewText); } catch(eAT) {}
 
   var isDark = this.isDarkTheme();
 
-  var dayTextHex = (this.config.THEME_DAY_TEXT_HEX != null) ? String(this.config.THEME_DAY_TEXT_HEX) : null;
-  var nightTextHex = (this.config.THEME_NIGHT_TEXT_HEX != null) ? String(this.config.THEME_NIGHT_TEXT_HEX) : null;
+  // 预览态优先从 pendingUserCfg 读颜色值
+  var cfgT = inPreviewText && this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+  var dayTextHex = (cfgT.THEME_DAY_TEXT_HEX != null) ? String(cfgT.THEME_DAY_TEXT_HEX) : null;
+  var nightTextHex = (cfgT.THEME_NIGHT_TEXT_HEX != null) ? String(cfgT.THEME_NIGHT_TEXT_HEX) : null;
 
   // # 兼容旧版默认配色：若仍为旧默认值，自动回退到莫奈色
   if (dayTextHex === "#333333") dayTextHex = null;
