@@ -153,24 +153,23 @@ FloatBallAppWM.prototype.setPendingValue = function(k, v) {
   if (!this.state.pendingUserCfg) this.beginEditConfig();
   this.state.pendingUserCfg[k] = v;
   this.state.pendingDirty = true;
-  if (this.state.previewMode) {
-      // 设置页主题切换需要重建整个设置页 UI（配色来自 buildSettingsGroupPanelView）
-      if (String(k) === "SETTINGS_THEME") {
-          try {
-              if (this.state.toolAppActive && this.replaceToolAppPage) {
-                  this.replaceToolAppPage("settings_group");
-              } else {
-                  // 非 ToolApp 模式：销毁旧设置面板重建
-                  if (this.state.settingsPanel) {
-                      this.safeRemoveView(this.state.settingsPanel, "settingsPanel");
-                      this.state.settingsPanel = null;
-                      this.state.settingsPanelLp = null;
-                      this.state.addedSettings = false;
-                  }
-                  this.replaceToolAppPage("settings_group");
+
+  // 设置页主题切换：不论 previewMode 都重建设置页 UI
+  if (String(k) === "SETTINGS_THEME") {
+      try {
+          if (this.state.toolAppActive && this.replaceToolAppPage) {
+              this.replaceToolAppPage("settings_group");
+          } else {
+              if (this.state.settingsPanel) {
+                  this.safeRemoveView(this.state.settingsPanel, "settingsPanel");
+                  this.state.settingsPanel = null;
+                  this.state.settingsPanelLp = null;
+                  this.state.addedSettings = false;
               }
-          } catch(eReb) { safeLog(null, 'e', "catch " + String(eReb)); }
-      }
+              this.replaceToolAppPage("settings_group");
+          }
+      } catch(eReb) { safeLog(null, 'e', "catch " + String(eReb)); }
+  } else if (this.state.previewMode) {
       this.refreshPreview(k);
   }
 };
