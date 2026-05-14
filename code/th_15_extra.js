@@ -490,7 +490,7 @@ FloatBallAppWM.prototype.isToolAppRoute = function(route) {
 
 FloatBallAppWM.prototype.getToolAppTitle = function(route) {
   var r = String(route || "settings");
-  if (r === "settings") return "ToolHub 岛屿设置";
+  if (r === "settings") return "岛屿设置";
   if (r === "settings_group") return this.getSettingsGroupTitle ? this.getSettingsGroupTitle(this.state.settingsGroupKey) : "岛屿分区";
   if (r === "btn_editor") {
     if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
