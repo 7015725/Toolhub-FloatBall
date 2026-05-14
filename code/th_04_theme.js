@@ -9,6 +9,61 @@ FloatBallAppWM.prototype.getRotation = function() { try { return this.state.wm.g
 
 // =======================【工具：alpha/toast/vibrate】======================
 FloatBallAppWM.prototype.withAlpha = function(colorInt, alpha01) { var a = Math.floor(Number(alpha01) * 255); return (colorInt & 0x00FFFFFF) | (a << 24); };
+
+// Animal Island Lite：ToolApp 专用视觉主题。只供设置/按钮管理/编辑页调用，避免覆盖悬浮球 Monet 取色。
+FloatBallAppWM.prototype.getAnimalIslandTheme = function() {
+  var isDark = false;
+  try { isDark = this.isDarkTheme(); } catch(eDark) { isDark = false; }
+  var Color = android.graphics.Color;
+  if (isDark) {
+    return {
+      bg: Color.parseColor("#1F2E29"),
+      bg2: Color.parseColor("#263A33"),
+      leaf: Color.parseColor("#31564A"),
+      card: Color.parseColor("#2F4037"),
+      card2: Color.parseColor("#3A4B40"),
+      cream: Color.parseColor("#FFF4D8"),
+      text: Color.parseColor("#FFF4D8"),
+      sub: Color.parseColor("#D8C6A6"),
+      brown: Color.parseColor("#A9855E"),
+      primary: Color.parseColor("#62D7C6"),
+      primaryDeep: Color.parseColor("#19A89A"),
+      primarySoft: Color.parseColor("#2C5C55"),
+      danger: Color.parseColor("#F08A86"),
+      dangerSoft: Color.parseColor("#5A3432"),
+      stroke: Color.parseColor("#66563F"),
+      onPrimary: Color.parseColor("#17352F")
+    };
+  }
+  return {
+    bg: Color.parseColor("#A8DDB4"),
+    bg2: Color.parseColor("#DDF3D8"),
+    leaf: Color.parseColor("#7DC395"),
+    card: Color.parseColor("#FFF9E6"),
+    card2: Color.parseColor("#FFFFFF"),
+    cream: Color.parseColor("#FFF9E6"),
+    text: Color.parseColor("#5E472D"),
+    sub: Color.parseColor("#7C5734"),
+    brown: Color.parseColor("#8B643D"),
+    primary: Color.parseColor("#19C8B9"),
+    primaryDeep: Color.parseColor("#0E9E91"),
+    primarySoft: Color.parseColor("#DDF7F2"),
+    danger: Color.parseColor("#D86962"),
+    dangerSoft: Color.parseColor("#FFE7E2"),
+    stroke: Color.parseColor("#E0C79E"),
+    onPrimary: Color.parseColor("#FFFFFF")
+  };
+};
+
+FloatBallAppWM.prototype.createAnimalCardDrawable = function(fillColor, radiusDp) {
+  var T = this.getAnimalIslandTheme();
+  return this.ui.createStrokeDrawable(fillColor || T.card, this.withAlpha(T.stroke, this.isDarkTheme() ? 0.36 : 0.55), this.dp(1), this.dp(radiusDp || 18));
+};
+
+FloatBallAppWM.prototype.createAnimalButtonDrawable = function(normalColor, pressedColor, radiusDp) {
+  return this.ui.createRippleDrawable(normalColor, pressedColor, this.dp(radiusDp || 18));
+};
+
 FloatBallAppWM.prototype.toast = function(msg) { try { android.widget.Toast.makeText(context, String(msg), 0).show();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } };
 FloatBallAppWM.prototype.vibrateOnce = function(ms) {
   if (!this.config.LONG_PRESS_HAPTIC_ENABLE) return;

@@ -834,23 +834,24 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
+  var T = this.getAnimalIslandTheme();
   var root = new android.widget.FrameLayout(context);
   var body = new android.widget.LinearLayout(context);
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
-  var shellBg = isDark ? C.bgDark : C.bgLight;
-  var shellStroke = isDark ? C.dividerDark : C.dividerLight;
-  body.setBackground(this.ui.createStrokeDrawable(shellBg, this.withAlpha(shellStroke, 0.18), this.dp(1), this.dp(22)));
+  body.setPadding(this.dp(2), this.dp(2), this.dp(2), this.dp(2));
+  body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.42 : 0.70), this.dp(1), this.dp(24)));
   try { body.setClipToOutline(true); } catch(eClip) {}
-  try { body.setElevation(this.dp(14)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  try { body.setElevation(this.dp(16)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   root.addView(body, new android.widget.FrameLayout.LayoutParams(-1, -1));
 
   var bar = new android.widget.LinearLayout(context);
   bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
   bar.setPadding(this.dp(10), this.dp(10), this.dp(10), this.dp(6));
-  bar.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.45) : this.withAlpha(C.cardLight, 0.55), this.dp(18)));
+  bar.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
+  try { bar.setElevation(this.dp(3)); } catch(eBarElev) {}
 
-  var btnBack = this.ui.createFlatButton(this, canBack ? "‹" : "", C.primary, function() {
+  var btnBack = this.ui.createFlatButton(this, canBack ? "‹" : "", T.brown, function() {
     self.popToolAppPage("topbar");
   });
   btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
@@ -859,15 +860,15 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
 
   var tvTitle = new android.widget.TextView(context);
   tvTitle.setText(String(title || "ToolHub"));
-  tvTitle.setTextColor(isDark ? C.textPriDark : C.textPriLight);
-  tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+  tvTitle.setTextColor(T.text);
+  tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
   tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
   tvTitle.setGravity(android.view.Gravity.CENTER_VERTICAL);
   var titleLp = new android.widget.LinearLayout.LayoutParams(0, -1);
   titleLp.weight = 1;
   bar.addView(tvTitle, titleLp);
 
-  var btnClose = this.ui.createFlatButton(this, "✕", isDark ? C.textSecDark : C.textSecLight, function() {
+  var btnClose = this.ui.createFlatButton(this, "✕", T.sub, function() {
     self.closeToolApp();
   });
   btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
