@@ -468,11 +468,9 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
 
     var priority = 0;
     try {
-      if (String(which || "") === "tool_app" && android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY !== undefined) {
-        priority = android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY;
-      } else {
-        priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
-      }
+      // ColorOS overlay 窗口用 PRIORITY_OVERLAY 时可能只触发最终返回，不给 CoreBackPreview 进度。
+      // 这里对 ToolApp 也统一用 DEFAULT(0)，与已验证规则文件实现一致，优先换取系统预测返回动画回调。
+      priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
     } catch (ePri) { priority = 0; }
     dispatcher.registerOnBackInvokedCallback(priority, cb);
     if (!this.state.panelBackCallbackEntries) this.state.panelBackCallbackEntries = [];
@@ -502,10 +500,25 @@ FloatBallAppWM.prototype.attachPanelSystemKeyHandler = function(panel, which) {
         return false;
       }
     }));
-    panel.post(new java.lang.Runnable({ run: function() {
+    var registerAfterAttach = function() {
       try { panel.requestFocus(); } catch(eFocus) {}
-      try { self.registerPanelPredictiveBack(panel, which); } catch(eBack) {}
-    } }));
+      try { self.registerPanelPredictiveBack(panel, which); } catch(eBack) {
+        try { safeLog(self.L, 'w', "panel predictive register after attach fail: " + String(eBack)); } catch(eLog) {}
+      }
+    };
+    try {
+      panel.addOnAttachStateChangeListener(new android.view.View.OnAttachStateChangeListener({
+        onViewAttachedToWindow: function(v) {
+          try { v.post(new java.lang.Runnable({ run: registerAfterAttach })); } catch(ePost) { registerAfterAttach(); }
+        },
+        onViewDetachedFromWindow: function(v) {
+          try { self.unregisterPanelPredictiveBack(v); } catch(eUnreg) {}
+        }
+      }));
+    } catch (eAttach) {
+      safeLog(self.L, 'w', "add attach listener fail: " + String(eAttach));
+    }
+    panel.post(new java.lang.Runnable({ run: registerAfterAttach }));
   } catch (e) {
     safeLog(this.L, 'e', "attachPanelSystemKeyHandler fail which=" + String(which || "") + " err=" + String(e));
   }
