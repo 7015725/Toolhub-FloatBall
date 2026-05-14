@@ -609,6 +609,7 @@ FloatBallAppWM.prototype.createButtonManagerSummaryCard = function(parent, total
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
+  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
   card.setPadding(this.dp(14), this.dp(10), this.dp(14), this.dp(10));
@@ -636,6 +637,7 @@ FloatBallAppWM.prototype.createButtonManagerSummaryCard = function(parent, total
 
 FloatBallAppWM.prototype.createButtonManagerActionChip = function(text, textColor, strokeColor, onClickFn) {
   var T = this.getAnimalIslandTheme();
+  this.applySettingsTheme(T, this.isDarkTheme(), this.ui.colors, this.state.pendingUserCfg || this.config);
   var tv = new android.widget.TextView(context);
   tv.setText(String(text || ""));
   tv.setGravity(android.view.Gravity.CENTER);
@@ -681,6 +683,7 @@ FloatBallAppWM.prototype.createButtonManagerPolishedCard = function(parent, titl
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
+  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
   card.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(12));
@@ -724,6 +727,7 @@ FloatBallAppWM.prototype.createButtonEditorSectionCard = function(parent, title,
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
+  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
   var box = new android.widget.LinearLayout(context);
   box.setOrientation(android.widget.LinearLayout.VERTICAL);
   box.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
@@ -754,6 +758,7 @@ FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent,
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
+  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
   var expanded = defaultExpanded !== false;
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -832,6 +837,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
+  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
 
   // 颜色配置
   var bgColor = T.bg;
