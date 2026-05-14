@@ -567,13 +567,17 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(route) {
     var C = this.ui.colors;
     var body = new android.widget.LinearLayout(context);
     body.setOrientation(android.widget.LinearLayout.VERTICAL);
-    body.setBackground(this.ui.createRoundDrawable(isDark ? C.bgDark : C.bgLight, this.dp(18)));
-    try { body.setElevation(this.dp(6)); } catch (eElev) {}
+    var bodyBg = isDark ? C.bgDark : C.bgLight;
+    var bodyStroke = isDark ? C.dividerDark : C.dividerLight;
+    body.setBackground(this.ui.createStrokeDrawable(bodyBg, this.withAlpha(bodyStroke, 0.18), this.dp(1), this.dp(22)));
+    try { body.setClipToOutline(true); } catch(eClip) {}
+    try { body.setElevation(this.dp(8)); } catch (eElev) {}
 
     var bar = new android.widget.LinearLayout(context);
     bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    bar.setPadding(this.dp(8), this.dp(8), this.dp(8), this.dp(6));
+    bar.setPadding(this.dp(10), this.dp(10), this.dp(10), this.dp(6));
+    bar.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.45) : this.withAlpha(C.cardLight, 0.55), this.dp(18)));
 
     var btnBack = this.ui.createFlatButton(this, "‹", C.primary, function() {});
     btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
@@ -594,7 +598,9 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(route) {
     btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
     btnClose.setEnabled(false);
     bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
-    body.addView(bar, new android.widget.LinearLayout.LayoutParams(-1, this.dp(52)));
+    var barLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(56));
+    barLp.setMargins(this.dp(8), this.dp(8), this.dp(8), this.dp(4));
+    body.addView(bar, barLp);
 
     var host = new android.widget.FrameLayout(context);
     var raw = this.buildPanelView(r);
@@ -831,14 +837,18 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var root = new android.widget.FrameLayout(context);
   var body = new android.widget.LinearLayout(context);
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
-  body.setBackground(this.ui.createRoundDrawable(isDark ? C.bgDark : C.bgLight, this.dp(18)));
-  try { body.setElevation(this.dp(10)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  var shellBg = isDark ? C.bgDark : C.bgLight;
+  var shellStroke = isDark ? C.dividerDark : C.dividerLight;
+  body.setBackground(this.ui.createStrokeDrawable(shellBg, this.withAlpha(shellStroke, 0.18), this.dp(1), this.dp(22)));
+  try { body.setClipToOutline(true); } catch(eClip) {}
+  try { body.setElevation(this.dp(14)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   root.addView(body, new android.widget.FrameLayout.LayoutParams(-1, -1));
 
   var bar = new android.widget.LinearLayout(context);
   bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  bar.setPadding(this.dp(8), this.dp(8), this.dp(8), this.dp(6));
+  bar.setPadding(this.dp(10), this.dp(10), this.dp(10), this.dp(6));
+  bar.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.45) : this.withAlpha(C.cardLight, 0.55), this.dp(18)));
 
   var btnBack = this.ui.createFlatButton(this, canBack ? "‹" : "", C.primary, function() {
     self.popToolAppPage("topbar");
@@ -863,7 +873,9 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   btnClose.setPadding(this.dp(8), 0, this.dp(8), 0);
   bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
-  body.addView(bar, new android.widget.LinearLayout.LayoutParams(-1, this.dp(52)));
+  var barLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(56));
+  barLp.setMargins(this.dp(8), this.dp(8), this.dp(8), this.dp(4));
+  body.addView(bar, barLp);
 
   var host = new android.widget.FrameLayout(context);
   if (contentView) {

@@ -37,15 +37,34 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var cardColor = isDark ? C.cardDark : C.cardLight;
+  var cardColor = isDark ? C.cardDark : android.graphics.Color.WHITE;
   var textColor = isDark ? C.textPriDark : C.textPriLight;
   var subTextColor = isDark ? C.textSecDark : C.textSecLight;
   var row = new android.widget.LinearLayout(context);
   row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  row.setPadding(this.dp(14), this.dp(12), this.dp(12), this.dp(12));
-  row.setBackground(this.ui.createRoundDrawable(cardColor, this.dp(14)));
-  try { row.setElevation(this.dp(2)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  row.setPadding(this.dp(16), this.dp(14), this.dp(14), this.dp(14));
+  row.setBackground(this.ui.createRippleDrawable(cardColor, isDark ? this.withAlpha(C.primary, 0.16) : this.withAlpha(C.primary, 0.10), this.dp(18)));
+  try { row.setElevation(this.dp(3)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+
+  var badge = new android.widget.TextView(context);
+  var icon = "⚙";
+  if (String(title).indexOf("按钮") >= 0) icon = "☷";
+  else if (String(title).indexOf("布局") >= 0) icon = "▦";
+  else if (String(title).indexOf("悬浮") >= 0) icon = "●";
+  else if (String(title).indexOf("面板") >= 0) icon = "▣";
+  else if (String(title).indexOf("主题") >= 0) icon = "◐";
+  else if (String(title).indexOf("动画") >= 0) icon = "↝";
+  else if (String(title).indexOf("日志") >= 0) icon = "⌁";
+  badge.setText(icon);
+  badge.setTextColor(C.primary);
+  badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 19);
+  badge.setGravity(android.view.Gravity.CENTER);
+  badge.setTypeface(null, android.graphics.Typeface.BOLD);
+  badge.setBackground(this.ui.createRoundDrawable(this.withAlpha(C.primary, isDark ? 0.18 : 0.12), this.dp(15)));
+  var badgeLp = new android.widget.LinearLayout.LayoutParams(this.dp(46), this.dp(46));
+  badgeLp.setMargins(0, 0, this.dp(14), 0);
+  row.addView(badge, badgeLp);
 
   var texts = new android.widget.LinearLayout(context);
   texts.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -67,10 +86,13 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   row.addView(texts, textLp);
 
   var tvGo = new android.widget.TextView(context);
-  tvGo.setText(String(actionText || "进入") + " ›");
+  tvGo.setText(String(actionText || "进入") + "  ›");
   tvGo.setTextColor(C.primary);
   tvGo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
   tvGo.setTypeface(null, android.graphics.Typeface.BOLD);
+  tvGo.setGravity(android.view.Gravity.CENTER);
+  tvGo.setPadding(this.dp(10), this.dp(5), this.dp(10), this.dp(5));
+  tvGo.setBackground(this.ui.createRoundDrawable(this.withAlpha(C.primary, isDark ? 0.16 : 0.10), this.dp(14)));
   row.addView(tvGo);
   row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
     try { self.touchActivity(); } catch(eT) {}
@@ -139,6 +161,65 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   quick.addView(btnSave);
   panel.addView(quick);
 
+  var dash = new android.widget.LinearLayout(context);
+  dash.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  dash.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  var dashLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(92));
+  dashLp.setMargins(0, this.dp(6), 0, this.dp(12));
+
+  var totalButtons = 0;
+  var enabledButtons = 0;
+  try {
+    var btns = (this.state.pendingUserCfg && this.state.pendingUserCfg.buttons) || this.config.buttons || [];
+    totalButtons = btns.length || 0;
+    for (var bi = 0; bi < totalButtons; bi++) { if (!btns[bi] || btns[bi].enabled !== false) enabledButtons++; }
+  } catch(eCount) {}
+
+  var titleCard = new android.widget.LinearLayout(context);
+  titleCard.setOrientation(android.widget.LinearLayout.VERTICAL);
+  titleCard.setGravity(android.view.Gravity.CENTER);
+  titleCard.setPadding(this.dp(12), 0, this.dp(12), 0);
+  titleCard.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.primary, 0.20) : this.withAlpha(C.primary, 0.14), this.dp(18)));
+  var titleMain = new android.widget.TextView(context);
+  titleMain.setText("ToolHub");
+  titleMain.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  titleMain.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
+  titleMain.setTypeface(null, android.graphics.Typeface.BOLD);
+  titleMain.setGravity(android.view.Gravity.CENTER);
+  titleCard.addView(titleMain, new android.widget.LinearLayout.LayoutParams(-1, -2));
+  var titleSub = new android.widget.TextView(context);
+  titleSub.setText("悬浮球控制中心");
+  titleSub.setTextColor(subTextColor);
+  titleSub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  titleSub.setGravity(android.view.Gravity.CENTER);
+  titleCard.addView(titleSub, new android.widget.LinearLayout.LayoutParams(-1, -2));
+  var titleCardLp = new android.widget.LinearLayout.LayoutParams(0, -1, 1.25);
+  titleCardLp.setMargins(0, 0, this.dp(8), 0);
+  dash.addView(titleCard, titleCardLp);
+
+  var statCard = new android.widget.LinearLayout(context);
+  statCard.setOrientation(android.widget.LinearLayout.VERTICAL);
+  statCard.setGravity(android.view.Gravity.CENTER);
+  statCard.setPadding(this.dp(10), 0, this.dp(10), 0);
+  statCard.setBackground(this.ui.createRoundDrawable(isDark ? C.cardDark : android.graphics.Color.WHITE, this.dp(18)));
+  var statLabel = new android.widget.TextView(context);
+  statLabel.setText("按钮启用");
+  statLabel.setTextColor(subTextColor);
+  statLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  statLabel.setGravity(android.view.Gravity.CENTER);
+  statCard.addView(statLabel, new android.widget.LinearLayout.LayoutParams(-1, -2));
+  var statVal = new android.widget.TextView(context);
+  statVal.setText(String(enabledButtons) + " / " + String(totalButtons));
+  statVal.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  statVal.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 25);
+  statVal.setTypeface(null, android.graphics.Typeface.BOLD);
+  statVal.setGravity(android.view.Gravity.CENTER);
+  statCard.addView(statVal, new android.widget.LinearLayout.LayoutParams(-1, -2));
+  var statLp = new android.widget.LinearLayout.LayoutParams(0, -1, 0.85);
+  statLp.setMargins(this.dp(8), 0, 0, 0);
+  dash.addView(statCard, statLp);
+  panel.addView(dash, dashLp);
+
   var scroll = new android.widget.ScrollView(context);
   try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch(eOS) { safeLog(null, 'e', "catch " + String(eOS)); }
   try { scroll.setVerticalScrollBarEnabled(false); } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
@@ -159,7 +240,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
     })(defs[i]);
   }
 
-  panel.addView(scroll);
+  panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
   return panel;
 };
 
@@ -338,7 +419,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
     })(schema[i]);
   }
 
-  panel.addView(scroll);
+  panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
   return panel;
 };
 
