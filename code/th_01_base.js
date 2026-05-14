@@ -83,6 +83,7 @@ var ConfigValidator = {
     PANEL_PADDING_DP: { type: "int", min: 8, max: 32, default: 12 },
 
     // 主题配置
+    THEME_TEMPLATE: { type: "enum", values: ["system", "animal", "ocean", "sunset", "forest", "mono"], default: "system" },
     THEME_MODE: { type: "enum", values: [0, 1, 2], default: 1 },
     THEME_ACCENT_LIGHT: { type: "string", default: "#FF3A86FF" },
     THEME_ACCENT_DARK: { type: "string", default: "#FF90CAF9" },
@@ -754,6 +755,7 @@ var ConfigManager = {
         PANEL_LABEL_TOP_MARGIN_DP: 4,
         PANEL_BG_FALLBACK_HEX: "#EE1E1E1E",
         PANEL_BG_ALPHA: 0.85,
+        THEME_TEMPLATE: "system",
         THEME_MODE: 1,
         THEME_DAY_BG_HEX: null,
         THEME_DAY_TEXT_HEX: null,
@@ -770,6 +772,14 @@ var ConfigManager = {
     ],
     defaultSchema: [
         { type: "section", name: "外观" },
+        { key: "THEME_TEMPLATE", name: "主题模板", type: "single_choice", options: [
+            { label: "系统莫奈色", value: "system" },
+            { label: "动物岛(绿)", value: "animal" },
+            { label: "海洋(蓝)", value: "ocean" },
+            { label: "日落(橙)", value: "sunset" },
+            { label: "森林(绿)", value: "forest" },
+            { label: "黑白(极简)", value: "mono" }
+        ]},
         { key: "THEME_MODE", name: "主题(0跟随/1白/2黑)", type: "int", min: 0, max: 2, step: 1 },
         { key: "THEME_DAY_BG_HEX", name: "日间背景色(#RRGGBB)", type: "text" },
         { key: "THEME_DAY_TEXT_HEX", name: "日间文字色(#RRGGBB)", type: "text" },

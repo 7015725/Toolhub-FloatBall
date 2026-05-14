@@ -747,10 +747,58 @@ FloatBallAppWM.prototype.safeParseColor = function(hex, fallbackInt) {
   try { return android.graphics.Color.parseColor(String(hex)); } catch (e) { return fallbackInt; }
 };
 
+// =======================【主题模板：一键切换配色预设】======================
+// 每个模板定义日间/夜间 背景+文字色。选择模板后如果用户没单独覆盖那4个颜色配置，
+// 就在 getPanelBgColorInt/getPanelTextColorInt 中自动填充模板值。
+FloatBallAppWM.prototype.getThemeTemplate = function(name) {
+  var tplMap = {
+    system: { dayBg: null,  dayText: null,  nightBg: null,  nightText: null },
+    animal: { dayBg: "#A8DDB4", dayText: "#5E472D", nightBg: "#2F4034", nightText: "#FFF1D2" },
+    ocean:  { dayBg: "#B3E5FC", dayText: "#1A237E", nightBg: "#1A237E", nightText: "#B3E5FC" },
+    sunset: { dayBg: "#FFE0B2", dayText: "#4E342E", nightBg: "#3E2723", nightText: "#FFCCBC" },
+    forest: { dayBg: "#C8E6C9", dayText: "#1B5E20", nightBg: "#1B5E20", nightText: "#C8E6C9" },
+    mono:   { dayBg: "#F5F5F5", dayText: "#212121", nightBg: "#212121", nightText: "#F5F5F5" }
+  };
+  return tplMap[name] || tplMap.system;
+};
+
+// 应用主题模板：如果配置中的 4 个颜色值为空/null 且模板非 system，则用模板值填充。
+// 手动覆盖的值保持优先。
+FloatBallAppWM.prototype.applyThemeTemplate = function() {
+  try {
+    var tpl = String(this.config.THEME_TEMPLATE || "system");
+    if (tpl === "system") return; // system 走 Monet，不填充
+
+    var t = this.getThemeTemplate(tpl);
+    var Color = android.graphics.Color;
+
+    if (t.dayBg != null && (this.config.THEME_DAY_BG_HEX == null || String(this.config.THEME_DAY_BG_HEX) === "" || String(this.config.THEME_DAY_BG_HEX) === "null")) {
+      this.config.THEME_DAY_BG_HEX = String(t.dayBg);
+    }
+    if (t.dayText != null && (this.config.THEME_DAY_TEXT_HEX == null || String(this.config.THEME_DAY_TEXT_HEX) === "" || String(this.config.THEME_DAY_TEXT_HEX) === "null")) {
+      this.config.THEME_DAY_TEXT_HEX = String(t.dayText);
+    }
+    if (t.nightBg != null && (this.config.THEME_NIGHT_BG_HEX == null || String(this.config.THEME_NIGHT_BG_HEX) === "" || String(this.config.THEME_NIGHT_BG_HEX) === "null")) {
+      this.config.THEME_NIGHT_BG_HEX = String(t.nightBg);
+    }
+    if (t.nightText != null && (this.config.THEME_NIGHT_TEXT_HEX == null || String(this.config.THEME_NIGHT_TEXT_HEX) === "" || String(this.config.THEME_NIGHT_TEXT_HEX) === "null")) {
+      this.config.THEME_NIGHT_TEXT_HEX = String(t.nightText);
+    }
+
+    try { _th_log(this.L, "d", "[theme:template] applied " + tpl + " dayBg=" + String(t.dayBg) + " nightBg=" + String(t.nightBg)); } catch(eL) {}
+  } catch(e) {
+    try { _th_log(this.L, "e", "[theme:template] apply err=" + String(e)); } catch(eL2) {}
+  }
+};
+
 
 
 FloatBallAppWM.prototype.getPanelBgColorInt = function() {
   // 这段代码的主要内容/用途：配合"白天/夜晚"两档主题，返回统一的背景颜色（不再依赖自动亮度推断）。
+
+  // 应用主题模板（如果选择模板且用户未手动覆盖）
+  try { this.applyThemeTemplate(); } catch(eAT) {}
+
   var isDark = this.isDarkTheme();
 
   var dayBgHex = (this.config.THEME_DAY_BG_HEX != null) ? String(this.config.THEME_DAY_BG_HEX) : null;
@@ -782,6 +830,10 @@ FloatBallAppWM.prototype.getPanelBgColorInt = function() {
 
 FloatBallAppWM.prototype.getPanelTextColorInt = function(bgInt) {
   // 这段代码的主要内容/用途：配合"白天/夜晚"两档主题，返回统一的文字颜色（不再依赖自动亮度推断）。
+
+  // 应用主题模板（如果选择模板且用户未手动覆盖）
+  try { this.applyThemeTemplate(); } catch(eAT) {}
+
   var isDark = this.isDarkTheme();
 
   var dayTextHex = (this.config.THEME_DAY_TEXT_HEX != null) ? String(this.config.THEME_DAY_TEXT_HEX) : null;
