@@ -154,8 +154,8 @@ FloatBallAppWM.prototype.setPendingValue = function(k, v) {
   this.state.pendingUserCfg[k] = v;
   this.state.pendingDirty = true;
   if (this.state.previewMode) {
-      // 主题模板切换需要重建整个设置页 UI（配色来自 buildSettingsGroupPanelView）
-      if (String(k) === "THEME_TEMPLATE") {
+      // 设置页主题切换需要重建整个设置页 UI（配色来自 buildSettingsGroupPanelView）
+      if (String(k) === "SETTINGS_THEME") {
           try {
               if (this.state.toolAppActive && this.replaceToolAppPage) {
                   this.replaceToolAppPage("settings_group");
