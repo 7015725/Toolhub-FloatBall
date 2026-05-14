@@ -1,11 +1,11 @@
 // @version 1.0.0
 FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
   return [
-    { key: "ball", title: "悬浮球", desc: "大小、图标、透明度、球与面板间距", sections: ["悬浮球"] },
-    { key: "panel", title: "面板", desc: "行列、间距、文字、位置与吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
-    { key: "theme", title: "主题与外观", desc: "明暗主题、文字色、背景与透明度", sections: ["外观"] },
-    { key: "motion", title: "动画与手势", desc: "吸边动画、回弹、点击/长按手势", sections: ["动画", "触摸与手势"] },
-    { key: "debug", title: "日志与调试", desc: "日志开关、DEBUG 与保留天数", sections: ["日志"] }
+    { key: "ball", title: "漂浮气球", desc: "设置小球伙伴的大小、图标和跟随距离", sections: ["悬浮球"] },
+    { key: "panel", title: "工具小屋", desc: "调整面板排列、文字、位置和吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
+    { key: "theme", title: "换装与装饰", desc: "更换明暗主题、文字色、背景和透明度", sections: ["外观"] },
+    { key: "motion", title: "动作与手势", desc: "设置点击、长按、回弹和吸边动画", sections: ["动画", "触摸与手势"] },
+    { key: "debug", title: "岛务记录", desc: "查看运行记录和高级调试选项", sections: ["日志"] }
   ];
 };
 
@@ -133,12 +133,9 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
       memTv.setText("Mem " + used.toFixed(0) + "/" + max.toFixed(0) + "M");
     } catch(e) { memTv.setText("Mem ?"); }
   }
-  updateMem();
-  memTv.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { updateMem(); self.toast("内存已刷新"); }}));
-  quick.addView(memTv);
   quick.addView(this.ui.createSpacer(this));
 
-  var btnDoc = this.ui.createFlatButton(this, "文档", T.brown, function() {
+  var btnDoc = this.ui.createFlatButton(this, "岛务手册", T.brown, function() {
     try {
       var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
       intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
@@ -148,7 +145,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   });
   quick.addView(btnDoc);
 
-  var btnSave = this.ui.createSolidButton(this, "保存", T.primary, T.onPrimary, function() {
+  var btnSave = this.ui.createSolidButton(this, "保存布置", T.primary, T.onPrimary, function() {
     try {
       self.touchActivity();
       var r = self.commitPendingUserCfg();
@@ -191,7 +188,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   titleMain.setGravity(android.view.Gravity.CENTER);
   titleCard.addView(titleMain, new android.widget.LinearLayout.LayoutParams(-1, -2));
   var titleSub = new android.widget.TextView(context);
-  titleSub.setText("温暖风格控制中心");
+  titleSub.setText("今天也来整理你的小工具吧");
   titleSub.setTextColor(T.sub);
   titleSub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   titleSub.setGravity(android.view.Gravity.CENTER);
@@ -206,7 +203,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   statCard.setPadding(this.dp(10), 0, this.dp(10), 0);
   statCard.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.24), this.dp(1), this.dp(20)));
   var statLabel = new android.widget.TextView(context);
-  statLabel.setText("按钮启用");
+  statLabel.setText("工具伙伴");
   statLabel.setTextColor(T.sub);
   statLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   statLabel.setGravity(android.view.Gravity.CENTER);
@@ -232,8 +229,8 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   scroll.addView(box);
   scroll.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, { onTouch: function(v, e) { self.touchActivity(); return false; }}));
 
-  this.createSettingsHomeEntry(box, "按钮管理", "新增、编辑、排序、启用/禁用工具按钮", "管理", function() { self.pushToolAppPage("btn_editor"); });
-  this.createSettingsHomeEntry(box, "布局管理", "自定义设置项 schema，适合高级调整", "管理", function() { self.pushToolAppPage("schema_editor"); });
+  this.createSettingsHomeEntry(box, "工具小屋", "添加、整理、安排你的工具伙伴", "整理", function() { self.pushToolAppPage("btn_editor"); });
+  this.createSettingsHomeEntry(box, "岛屿蓝图", "调整设置项蓝图，适合高级布置", "管理", function() { self.pushToolAppPage("schema_editor"); });
   var defs = this.getSettingsGroupDefs();
   for (var i = 0; i < defs.length; i++) {
     (function(d) {
@@ -858,7 +855,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     // 提示文字 (左侧)
     var hintTv = new android.widget.TextView(context);
-    hintTv.setText("共 " + buttons.length + " 个按钮");
+    hintTv.setText("共 " + buttons.length + " 个工具伙伴");
     hintTv.setTextColor(subTextColor);
     hintTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     header.addView(hintTv);
@@ -867,7 +864,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     header.addView(self.ui.createSpacer(self));
 
     // 新增按钮 (右侧)
-    var btnAdd = self.ui.createSolidButton(self, "新增", T.primary, T.onPrimary, function() {
+    var btnAdd = self.ui.createSolidButton(self, "添加", T.primary, T.onPrimary, function() {
         self.state.editingButtonIndex = -1;
         if (self.state.toolAppActive && self.pushToolAppPage) self.pushToolAppPage("btn_editor");
         else refreshPanel();
@@ -898,7 +895,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var searchRow = new android.widget.LinearLayout(context);
     searchRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     searchRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    var searchInput = self.ui.createInputGroup(self, "搜索按钮", self.state.buttonManagerQuery || "", false, "标题 / 类型 / 包名 / 命令");
+    var searchInput = self.ui.createInputGroup(self, "寻找工具", self.state.buttonManagerQuery || "", false, "名称 / 类型 / 包名 / 命令");
     var searchInputLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     searchInputLp.weight = 1;
     searchRow.addView(searchInput.view, searchInputLp);
@@ -910,7 +907,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var btnSearchLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     btnSearchLp.leftMargin = self.dp(8);
     searchRow.addView(btnSearch, btnSearchLp);
-    var btnClearSearch = self.createButtonManagerActionChip("清空", subTextColor, self.withAlpha(subTextColor, 0.24), function() {
+    var btnClearSearch = self.createButtonManagerActionChip("重置", subTextColor, self.withAlpha(subTextColor, 0.24), function() {
       self.state.buttonManagerQuery = "";
       self.state.btnEditorListScrollY = 0;
       refreshPanel();
@@ -1035,7 +1032,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         actions.setPadding(self.dp(42), 0, 0, 0);
 
         var canUp = (idx > 0);
-        var btnUp = self.createButtonManagerTextAction("上移", canUp ? subTextColor : self.withAlpha(subTextColor, 0.25), canUp ? function() {
+        var btnUp = self.createButtonManagerTextAction("上搬", canUp ? subTextColor : self.withAlpha(subTextColor, 0.25), canUp ? function() {
             var temp = buttons[idx];
             buttons[idx] = buttons[idx - 1];
             buttons[idx - 1] = temp;
@@ -1045,7 +1042,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         actions.addView(btnUp);
 
         var canDown = (idx < buttons.length - 1);
-        var btnDown = self.createButtonManagerTextAction("下移", canDown ? subTextColor : self.withAlpha(subTextColor, 0.25), canDown ? function() {
+        var btnDown = self.createButtonManagerTextAction("下搬", canDown ? subTextColor : self.withAlpha(subTextColor, 0.25), canDown ? function() {
             var temp = buttons[idx];
             buttons[idx] = buttons[idx + 1];
             buttons[idx + 1] = temp;
@@ -1059,7 +1056,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         } catch(eDownLp) {}
         actions.addView(btnDown);
 
-        var btnToggle = self.createButtonManagerTextAction(__enabled ? "禁用" : "启用", __enabled ? self.withAlpha(subTextColor, 0.9) : self.withAlpha(C.success, 0.9), function() {
+        var btnToggle = self.createButtonManagerTextAction(__enabled ? "暂停" : "启用", __enabled ? self.withAlpha(subTextColor, 0.9) : self.withAlpha(C.success, 0.9), function() {
             try {
                 btnCfg.enabled = (btnCfg.enabled === false) ? true : false;
                 ConfigManager.saveButtons(buttons);
@@ -1073,7 +1070,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         } catch(eLpTg) {}
         actions.addView(btnToggle);
 
-        var btnDel = self.createButtonManagerTextAction("删除", self.withAlpha(C.danger, 0.85), function() {
+        var btnDel = self.createButtonManagerTextAction("移除", self.withAlpha(C.danger, 0.85), function() {
             buttons.splice(idx, 1);
             refreshPanel();
         });
@@ -1140,7 +1137,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     bottomBar.setPadding(self.dp(4), self.dp(8), self.dp(4), self.dp(8));
     bottomBar.setBackground(self.ui.createRoundDrawable(isDark ? C.bgDark : C.bgLight, self.dp(12)));
 
-    var btnListCancel = self.ui.createFlatButton(self, "取消更改", subTextColor, function() {
+    var btnListCancel = self.ui.createFlatButton(self, "不改了", subTextColor, function() {
         self.state.tempButtons = null;
         self.toast("已取消更改");
         self.hideAllPanels();
@@ -1150,7 +1147,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     btnListCancelLp.rightMargin = self.dp(8);
     bottomBar.addView(btnListCancel, btnListCancelLp);
 
-    var btnListSave = self.ui.createSolidButton(self, "保存所有", C.primary, android.graphics.Color.WHITE, function() {
+    var btnListSave = self.ui.createSolidButton(self, "保存布置", T.primary, T.onPrimary, function() {
         try {
             ConfigManager.saveButtons(buttons);
             self.panels.main = buttons;
@@ -1196,7 +1193,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     // titleLp.rightMargin = self.dp(16); // No need for margin if no icon area
     titleArea.setLayoutParams(titleLp);
 
-    var inputTitle = self.ui.createInputGroup(self, "标题 (Title)", targetBtn.title, false, "按钮上显示的文字");
+    var inputTitle = self.ui.createInputGroup(self, "按钮名字", targetBtn.title, false, "写在按钮上的名字");
     self.addButtonEditorField(titleArea, inputTitle.view);
     topArea.addView(titleArea);
 
@@ -2418,7 +2415,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
      } catch(eLpTW) { safeLog(null, 'e', "catch " + String(eLpTW)); }
 
     var typeLbl = new android.widget.TextView(context);
-    typeLbl.setText("动作类型 (Action Type)");
+    typeLbl.setText("按下后要做什么");
     typeLbl.setTextColor(subTextColor);
     typeLbl.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     typeWrap.addView(typeLbl);
@@ -2598,7 +2595,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     shellWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
     var initCmd = targetBtn.cmd || "";
     if (targetBtn.cmd_b64) initCmd = decodeBase64Utf8(targetBtn.cmd_b64) || initCmd;
-    var inputShell = self.ui.createInputGroup(self, "Shell 命令", initCmd, true, "支持常规 Shell 命令 (input, am, pm...)");
+    var inputShell = self.ui.createInputGroup(self, "Shell 命令", initCmd, true, "input / am / pm 等命令");
     shellWrap.addView(inputShell.view);
 
     // # Root 开关已移除：广播桥接收端默认以 root 执行，开关无意义
@@ -3655,7 +3652,7 @@ shortcutWrap.addView(scBody);
     bottomBar.setPadding(self.dp(4), self.dp(8), self.dp(4), self.dp(8));
     bottomBar.setBackground(self.ui.createRoundDrawable(isDark ? C.bgDark : C.bgLight, self.dp(12)));
 
-    var btnCancel = self.ui.createFlatButton(self, "取消", subTextColor, function() {
+    var btnCancel = self.ui.createFlatButton(self, "不改了", subTextColor, function() {
         self.state.editingButtonIndex = null;
         if (self.state.toolAppActive && self.popToolAppPage) {
             self.state.keepBtnEditorState = true;
@@ -3667,7 +3664,7 @@ shortcutWrap.addView(scBody);
     btnCancelLp.rightMargin = self.dp(8);
     bottomBar.addView(btnCancel, btnCancelLp);
 
-    var btnSave = self.ui.createSolidButton(self, "暂存修改", C.primary, android.graphics.Color.WHITE, function() {
+    var btnSave = self.ui.createSolidButton(self, "先存起来", T.primary, T.onPrimary, function() {
         try {
             var newBtn = targetBtn;
             newBtn.title = inputTitle.getValue();

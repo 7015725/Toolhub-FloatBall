@@ -490,19 +490,19 @@ FloatBallAppWM.prototype.isToolAppRoute = function(route) {
 
 FloatBallAppWM.prototype.getToolAppTitle = function(route) {
   var r = String(route || "settings");
-  if (r === "settings") return "ToolHub 设置";
-  if (r === "settings_group") return this.getSettingsGroupTitle ? this.getSettingsGroupTitle(this.state.settingsGroupKey) : "设置分组";
+  if (r === "settings") return "ToolHub 岛屿设置";
+  if (r === "settings_group") return this.getSettingsGroupTitle ? this.getSettingsGroupTitle(this.state.settingsGroupKey) : "岛屿分区";
   if (r === "btn_editor") {
     if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
-      return (this.state.editingButtonIndex === -1) ? "新增按钮" : "编辑按钮";
+      return (this.state.editingButtonIndex === -1) ? "添加工具伙伴" : "整理工具伙伴";
     }
-    return "按钮管理";
+    return "工具小屋";
   }
   if (r === "schema_editor") {
     if (this.state.editingSchemaIndex !== null && this.state.editingSchemaIndex !== undefined) {
-      return (this.state.editingSchemaIndex === -1) ? "新增布局项" : "编辑布局项";
+      return (this.state.editingSchemaIndex === -1) ? "新增蓝图项" : "编辑蓝图项";
     }
-    return "布局管理";
+    return "岛屿蓝图";
   }
   return "ToolHub";
 };

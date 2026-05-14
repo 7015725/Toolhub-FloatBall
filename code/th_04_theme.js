@@ -17,22 +17,22 @@ FloatBallAppWM.prototype.getAnimalIslandTheme = function() {
   var Color = android.graphics.Color;
   if (isDark) {
     return {
-      bg: Color.parseColor("#1F2E29"),
-      bg2: Color.parseColor("#263A33"),
-      leaf: Color.parseColor("#31564A"),
-      card: Color.parseColor("#2F4037"),
-      card2: Color.parseColor("#3A4B40"),
-      cream: Color.parseColor("#FFF4D8"),
-      text: Color.parseColor("#FFF4D8"),
-      sub: Color.parseColor("#D8C6A6"),
-      brown: Color.parseColor("#A9855E"),
-      primary: Color.parseColor("#62D7C6"),
-      primaryDeep: Color.parseColor("#19A89A"),
-      primarySoft: Color.parseColor("#2C5C55"),
-      danger: Color.parseColor("#F08A86"),
-      dangerSoft: Color.parseColor("#5A3432"),
-      stroke: Color.parseColor("#66563F"),
-      onPrimary: Color.parseColor("#17352F")
+      bg: Color.parseColor("#2F4034"),
+      bg2: Color.parseColor("#3C5142"),
+      leaf: Color.parseColor("#4E6F5B"),
+      card: Color.parseColor("#405243"),
+      card2: Color.parseColor("#4A5D4E"),
+      cream: Color.parseColor("#FFF1D2"),
+      text: Color.parseColor("#FFF1D2"),
+      sub: Color.parseColor("#E3CFA8"),
+      brown: Color.parseColor("#D0AE7A"),
+      primary: Color.parseColor("#8BD7A8"),
+      primaryDeep: Color.parseColor("#5FB980"),
+      primarySoft: Color.parseColor("#3F684F"),
+      danger: Color.parseColor("#F0A08F"),
+      dangerSoft: Color.parseColor("#68453C"),
+      stroke: Color.parseColor("#8B754E"),
+      onPrimary: Color.parseColor("#173524")
     };
   }
   return {
