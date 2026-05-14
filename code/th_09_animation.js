@@ -411,56 +411,66 @@ FloatBallAppWM.prototype.unregisterPanelPredictiveBack = function(panel) {
 };
 
 FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
-  // Android 13+：注册 OnBackInvokedCallback；Android 14+ 优先使用 OnBackAnimationCallback，实现预测性返回手势进度动画。
+  // 返回注册优先级：Android 14+ OnBackAnimationCallback（有 progress）→ Android 13 OnBackInvokedCallback（仅最终返回）→ 旧系统 KEYCODE_BACK。
   try {
     if (!panel) return false;
     if (android.os.Build.VERSION.SDK_INT < 33) return false;
     this.unregisterPanelPredictiveBack(panel);
     var dispatcher = null;
     try { dispatcher = panel.findOnBackInvokedDispatcher(); } catch (eFind) { dispatcher = null; }
-    if (!dispatcher) return false;
+    if (!dispatcher) {
+      safeLog(this.L, 'w', "predictive back dispatcher missing which=" + String(which || ""));
+      return false;
+    }
 
     var self = this;
     var cb = null;
+    var mode = "none";
     var usedAnimation = false;
+
+    function finishBack(reason) {
+      if (String(which || "") === "tool_app" && self.finishToolAppBackPreview && self.getToolAppPreviousStackEntry && self.getToolAppPreviousStackEntry()) {
+        var edge = 0;
+        try { edge = Number(self.state.toolAppBackEdge || 0); } catch (eEdge) { edge = 0; }
+        self.finishToolAppBackPreview(edge, true);
+        return;
+      }
+      self.resetPanelPredictiveBackVisual(panel);
+      self.handlePanelBack(which, reason || "predictive_back");
+    }
+
     if (android.os.Build.VERSION.SDK_INT >= 34) {
       try {
-        // 关键：不要只把 Class.forName() 的 Class 对象传给 JavaAdapter。
-        // 在部分 ColorOS/Rhino 组合里这样会被系统识别成普通 OnBackInvokedCallback，log 里表现为 mIsAnimationCallback=false。
-        // 先 forName 预热，再用 Packages.android.window.OnBackAnimationCallback 这个接口对象创建代理，确保 instanceof 命中。
+        // 核心：优先创建真正的 android.window.OnBackAnimationCallback。
+        // Class.forName 只用于预热/instanceof 校验；JavaAdapter 必须使用 Packages 下的接口对象。
         var animCls = java.lang.Class.forName("android.window.OnBackAnimationCallback");
-        var animIface = Packages.android.window.OnBackAnimationCallback;
-        cb = new JavaAdapter(animIface, {
+        cb = new JavaAdapter(Packages.android.window.OnBackAnimationCallback, {
           onBackStarted: function(event) { self.applyPanelPredictiveBackProgress(panel, event); },
           onBackProgressed: function(event) { self.applyPanelPredictiveBackProgress(panel, event); },
           onBackCancelled: function() { self.resetPanelPredictiveBackVisual(panel); },
-          onBackInvoked: function() {
-            if (String(which || "") === "tool_app" && self.finishToolAppBackPreview && self.getToolAppPreviousStackEntry && self.getToolAppPreviousStackEntry()) {
-              var edge = 0;
-              try { edge = Number(self.state.toolAppBackEdge || 0); } catch (eEdge) { edge = 0; }
-              self.finishToolAppBackPreview(edge, true);
-              return;
-            }
-            self.resetPanelPredictiveBackVisual(panel);
-            self.handlePanelBack(which, "predictive_back");
-          }
+          onBackInvoked: function() { finishBack("predictive_back"); }
         });
         usedAnimation = !!animCls.isInstance(cb);
+        mode = usedAnimation ? "OnBackAnimationCallback" : "OnBackAnimationCallback-proxy-not-instance";
         if (!usedAnimation) {
-          safeLog(self.L, 'w', "OnBackAnimationCallback proxy not instance; fallback may show mIsAnimationCallback=false");
+          safeLog(self.L, 'w', "OnBackAnimationCallback proxy not instance; fallback to final-only callback");
+          cb = null;
         }
       } catch (eAnim) {
         safeLog(self.L, 'w', "create OnBackAnimationCallback fail: " + String(eAnim));
         cb = null;
       }
     }
+
     if (!cb) {
       try {
         var cbCls = java.lang.Class.forName("android.window.OnBackInvokedCallback");
         cb = new JavaAdapter(cbCls, {
-          onBackInvoked: function() { self.handlePanelBack(which, "on_back_invoked"); }
+          onBackInvoked: function() { finishBack("on_back_invoked"); }
         });
+        mode = "OnBackInvokedCallback";
       } catch (eCb) {
+        safeLog(self.L, 'w', "create OnBackInvokedCallback fail: " + String(eCb));
         cb = null;
       }
     }
@@ -468,14 +478,13 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
 
     var priority = 0;
     try {
-      // ColorOS overlay 窗口用 PRIORITY_OVERLAY 时可能只触发最终返回，不给 CoreBackPreview 进度。
-      // 这里对 ToolApp 也统一用 DEFAULT(0)，与已验证规则文件实现一致，优先换取系统预测返回动画回调。
+      // 与规则文件实现保持一致：默认优先级最容易拿到系统 back pipeline；overlay priority 在 ColorOS 上可能只给最终回调。
       priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
     } catch (ePri) { priority = 0; }
     dispatcher.registerOnBackInvokedCallback(priority, cb);
     if (!this.state.panelBackCallbackEntries) this.state.panelBackCallbackEntries = [];
-    this.state.panelBackCallbackEntries.push({ view: panel, dispatcher: dispatcher, callback: cb, which: String(which || ""), animation: usedAnimation });
-    safeLog(this.L, 'i', "predictive back registered which=" + String(which || "") + " animation=" + String(usedAnimation));
+    this.state.panelBackCallbackEntries.push({ view: panel, dispatcher: dispatcher, callback: cb, which: String(which || ""), animation: usedAnimation, mode: mode });
+    safeLog(this.L, 'i', "back callback registered which=" + String(which || "") + " mode=" + mode + " priority=" + String(priority));
     return true;
   } catch (e) {
     safeLog(this.L, 'w', "register predictive back fail which=" + String(which || "") + " err=" + String(e));
