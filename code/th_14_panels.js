@@ -1,4 +1,33 @@
 // @version 1.0.0
+
+// 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
+// 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
+// 传入 T、isDark、C(this.ui.colors)、cfgTpl(配置源)，直接修改 T 的字段。
+FloatBallAppWM.prototype.applySettingsTheme = function(T, isDark, C, cfgTpl) {
+  var settTheme = String((cfgTpl || this.config).SETTINGS_THEME || "animal");
+  if (settTheme !== "monet") return;
+  try {
+    var Color = android.graphics.Color;
+    var monetBg = isDark ? C.bgDark : C.bgLight;
+    var monetTxt = isDark ? C.textPriDark : C.textPriLight;
+    var monetCard = isDark ? C.cardDark : C.cardLight;
+    var monetSub = isDark ? C.textSecDark : C.textSecLight;
+    var monetPrimary = C.primary;
+    var monetOnP = C._monetOnPrimary || (isDark ? Color.parseColor("#062E6F") : Color.WHITE);
+    T.bg = monetBg;
+    T.card = monetCard;
+    T.card2 = monetCard;
+    T.text = monetTxt;
+    T.sub = monetSub;
+    T.primary = monetPrimary;
+    T.primaryDeep = monetPrimary;
+    T.primarySoft = isDark ? this.withAlpha(monetPrimary, 0.20) : this.withAlpha(monetPrimary, 0.10);
+    T.brown = monetSub;
+    T.stroke = isDark ? this.withAlpha(monetTxt, 0.16) : this.withAlpha(monetTxt, 0.12);
+    T.onPrimary = monetOnP;
+  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+};
+
 FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
   return [
     { key: "ball", title: "漂浮气球", desc: "调整气球大小、图标和跟随距离", sections: ["悬浮球"] },
@@ -38,6 +67,8 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
+  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var cardColor = T.card;
   var textColor = T.text;
   var subTextColor = T.sub;
@@ -111,6 +142,8 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
+  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var bgColor = T.bg;
   var subTextColor = T.sub;
   var panel = this.ui.createStyledPanel(this, 16);
@@ -259,29 +292,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
 
   // 设置页主题切换：animal（默认动物岛风）或 monet（系统莫奈色）
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  var settTheme = String(cfgTpl.SETTINGS_THEME || "animal");
-  if (settTheme === "monet") {
-    try {
-      var Color = android.graphics.Color;
-      var monetBg = isDark ? C.bgDark : C.bgLight;
-      var monetTxt = isDark ? C.textPriDark : C.textPriLight;
-      var monetCard = isDark ? C.cardDark : C.cardLight;
-      var monetSub = isDark ? C.textSecDark : C.textSecLight;
-      var monetPrimary = C.primary;
-      var monetOnP = C._monetOnPrimary || (isDark ? Color.parseColor("#062E6F") : Color.WHITE);
-      T.bg = monetBg;
-      T.card = monetCard;
-      T.card2 = monetCard;
-      T.text = monetTxt;
-      T.sub = monetSub;
-      T.primary = monetPrimary;
-      T.primaryDeep = monetPrimary;
-      T.primarySoft = isDark ? this.withAlpha(monetPrimary, 0.20) : this.withAlpha(monetPrimary, 0.10);
-      T.brown = monetSub;
-      T.stroke = isDark ? this.withAlpha(monetTxt, 0.16) : this.withAlpha(monetTxt, 0.12);
-      T.onPrimary = monetOnP;
-    } catch(eM) { safeLog(null, 'e', "catch " + String(eM)); }
-  }
+  this.applySettingsTheme(T, isDark, C, cfgTpl);
 
   var bgColor = T.bg;
   var cardColor = T.card;
