@@ -256,6 +256,57 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
+
+  // 如果用户选择了非 system 的主题模板，根据模板颜色构造设置页配色替代 Animal Island
+  // 优先从 pendingUserCfg 读模板值（预览态），其次从 this.config
+  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+  var tpl = String(cfgTpl.THEME_TEMPLATE || "system");
+  if (tpl !== "system") {
+    try {
+      var tplColors = this.getThemeTemplate(tpl);
+      var Color = android.graphics.Color;
+      var dayBg = tplColors.dayBg ? android.graphics.Color.parseColor(tplColors.dayBg) : null;
+      var dayText = tplColors.dayText ? android.graphics.Color.parseColor(tplColors.dayText) : null;
+      var nightBg = tplColors.nightBg ? android.graphics.Color.parseColor(tplColors.nightBg) : null;
+      var nightText = tplColors.nightText ? android.graphics.Color.parseColor(tplColors.nightText) : null;
+      var bg = isDark ? (nightBg || T.bg) : (dayBg || T.bg);
+      var txt = isDark ? (nightText || T.text) : (dayText || T.text);
+      // 根据主背景色推导辅助色：用调亮/调暗/混合方式生成 T 结构的其他字段
+      var r = Color.red(bg), g = Color.green(bg), b = Color.blue(bg);
+      var lum = (r*0.299 + g*0.587 + b*0.114) / 255.0;
+      var subTxt = isDark ? Color.rgb(
+        Math.min(255, Color.red(txt) + 40),
+        Math.min(255, Color.green(txt) + 40),
+        Math.min(255, Color.blue(txt) + 40)
+      ) : Color.rgb(
+        Math.max(0, Color.red(txt) - 40),
+        Math.max(0, Color.green(txt) - 40),
+        Math.max(0, Color.blue(txt) - 40)
+      );
+      var cardBg = isDark ? Color.rgb(
+        Math.min(255, r + 25), Math.min(255, g + 25), Math.min(255, b + 25)
+      ) : Color.rgb(
+        Math.max(0, r - 20), Math.max(0, g - 20), Math.max(0, b - 20)
+      );
+      var card2 = isDark ? Color.rgb(
+        Math.max(0, r + 40), Math.max(0, g + 40), Math.max(0, b + 40)
+      ) : Color.rgb(
+        Math.min(255, r - 30), Math.min(255, g - 30), Math.min(255, b - 30)
+      );
+      T.bg = bg;
+      T.card = cardBg;
+      T.card2 = card2;
+      T.text = txt;
+      T.sub = subTxt;
+      T.primary = this.ui.colors.primary;
+      T.primaryDeep = this.ui.colors.primary;
+      T.primarySoft = isDark ? this.withAlpha(this.ui.colors.primary, 0.20) : this.withAlpha(this.ui.colors.primary, 0.12);
+      T.brown = txt;
+      T.stroke = isDark ? this.withAlpha(txt, 0.25) : this.withAlpha(txt, 0.18);
+      T.onPrimary = this.ui.colors._monetOnPrimary || (isDark ? Color.parseColor("#062E6F") : Color.WHITE);
+    } catch(eTpl) { safeLog(null, 'e', "catch " + String(eTpl)); }
+  }
+
   var bgColor = T.bg;
   var cardColor = T.card;
   var textColor = T.text;

@@ -154,6 +154,23 @@ FloatBallAppWM.prototype.setPendingValue = function(k, v) {
   this.state.pendingUserCfg[k] = v;
   this.state.pendingDirty = true;
   if (this.state.previewMode) {
+      // 主题模板切换需要重建整个设置页 UI（配色来自 buildSettingsGroupPanelView）
+      if (String(k) === "THEME_TEMPLATE") {
+          try {
+              if (this.state.toolAppActive && this.replaceToolAppPage) {
+                  this.replaceToolAppPage("settings_group");
+              } else {
+                  // 非 ToolApp 模式：销毁旧设置面板重建
+                  if (this.state.settingsPanel) {
+                      this.safeRemoveView(this.state.settingsPanel, "settingsPanel");
+                      this.state.settingsPanel = null;
+                      this.state.settingsPanelLp = null;
+                      this.state.addedSettings = false;
+                  }
+                  this.replaceToolAppPage("settings_group");
+              }
+          } catch(eReb) { safeLog(null, 'e', "catch " + String(eReb)); }
+      }
       this.refreshPreview(k);
   }
 };
