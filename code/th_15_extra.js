@@ -90,12 +90,15 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
   var panel = new android.widget.LinearLayout(context);
   panel.setOrientation(android.widget.LinearLayout.VERTICAL);
 
-  // 面板背景
-  var bgDr = new android.graphics.drawable.GradientDrawable();
-  // bgDr.setColor(bgColor);
-  bgDr.setColor(this.withAlpha(bgColor, this.config.PANEL_BG_ALPHA));
-  bgDr.setCornerRadius(this.dp(16));
-  panel.setBackground(bgDr);
+  // 面板背景：走统一主题色 API（支持 Monet、模板、自定义）
+  // 先用 updatePanelBackground 垫底，后续再加按钮等内容
+  // 先设一个临时背景避免裸窗口闪烁
+  try {
+    var tmpBg = new android.graphics.drawable.GradientDrawable();
+    tmpBg.setColor(this.withAlpha(bgColor, this.config.PANEL_BG_ALPHA));
+    tmpBg.setCornerRadius(this.dp(16));
+    panel.setBackground(tmpBg);
+  } catch(eTmp) {};
   try { panel.setElevation(this.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
   var padDp = this.config.PANEL_PADDING_DP;
@@ -260,6 +263,8 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
 
   scroll.addView(grid);
   panel.addView(scroll);
+  // 对主面板/查看器面板应用统一主题色（支持 Monet、模板、自定义）
+  try { this.updatePanelBackground(panel); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
   return panel;
 };
 
