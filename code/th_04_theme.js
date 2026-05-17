@@ -113,7 +113,12 @@ FloatBallAppWM.prototype.ui = {
         // Monet 扩展字段（供面板直接使用）
         _monetSurface: android.graphics.Color.parseColor("#F8F9FA"),
         _monetOnSurface: android.graphics.Color.parseColor("#1F1F1F"),
+        _monetSurfaceVariant: android.graphics.Color.parseColor("#E1E3E1"),
+        _monetSurfaceContainerLow: android.graphics.Color.parseColor("#F1F3F4"),
+        _monetSurfaceContainer: android.graphics.Color.parseColor("#ECEEEF"),
+        _monetSurfaceContainerHigh: android.graphics.Color.parseColor("#E6E8EA"),
         _monetOutline: android.graphics.Color.parseColor("#747775"),
+        _monetOutlineVariant: android.graphics.Color.parseColor("#C4C7C5"),
         _monetOnPrimary: android.graphics.Color.parseColor("#FFFFFF"),
         _monetPrimaryContainer: android.graphics.Color.parseColor("#D3E3FD"),
         _monetOnPrimaryContainer: android.graphics.Color.parseColor("#041E49"),
@@ -400,6 +405,9 @@ var MonetColorProvider = {
       surface: android.graphics.Color.parseColor("#F8F9FA"),
       onSurface: android.graphics.Color.parseColor("#1F1F1F"),
       surfaceVariant: android.graphics.Color.parseColor("#E1E3E1"),
+      surfaceContainerLow: android.graphics.Color.parseColor("#F1F3F4"),
+      surfaceContainer: android.graphics.Color.parseColor("#ECEEEF"),
+      surfaceContainerHigh: android.graphics.Color.parseColor("#E6E8EA"),
       onSurfaceVariant: android.graphics.Color.parseColor("#5F6368"),
       outline: android.graphics.Color.parseColor("#747775"),
       outlineVariant: android.graphics.Color.parseColor("#C4C7C5"),
@@ -421,6 +429,9 @@ var MonetColorProvider = {
       surface: android.graphics.Color.parseColor("#131314"),
       onSurface: android.graphics.Color.parseColor("#E3E3E3"),
       surfaceVariant: android.graphics.Color.parseColor("#49454F"),
+      surfaceContainerLow: android.graphics.Color.parseColor("#1B1B1F"),
+      surfaceContainer: android.graphics.Color.parseColor("#202124"),
+      surfaceContainerHigh: android.graphics.Color.parseColor("#2B2C30"),
       onSurfaceVariant: android.graphics.Color.parseColor("#C4C7C5"),
       outline: android.graphics.Color.parseColor("#8E918F"),
       outlineVariant: android.graphics.Color.parseColor("#49454F"),
@@ -445,6 +456,9 @@ var MonetColorProvider = {
         surface: "system_neutral1_900",
         onSurface: "system_neutral1_100",
         surfaceVariant: "system_neutral2_700",
+        surfaceContainerLow: "system_neutral1_800",
+        surfaceContainer: "system_neutral1_800",
+        surfaceContainerHigh: "system_neutral1_700",
         onSurfaceVariant: "system_neutral2_200",
         outline: "system_neutral2_400",
         outlineVariant: "system_neutral2_700",
@@ -462,6 +476,9 @@ var MonetColorProvider = {
         surface: "system_neutral1_10",
         onSurface: "system_neutral1_900",
         surfaceVariant: "system_neutral2_100",
+        surfaceContainerLow: "system_neutral1_50",
+        surfaceContainer: "system_neutral1_100",
+        surfaceContainerHigh: "system_neutral1_200",
         onSurfaceVariant: "system_neutral2_700",
         outline: "system_neutral2_500",
         outlineVariant: "system_neutral2_200",
@@ -613,19 +630,19 @@ FloatBallAppWM.prototype.refreshMonetColors = function(forceDark) {
 
     // 浅色配色
     c.bgLight = ml.surface;
-    c.cardLight = ml.surfaceVariant;
+    c.cardLight = ml.surfaceContainerLow || ml.surfaceVariant;
     c.textPriLight = ml.onSurface;
     c.textSecLight = ml.onSurfaceVariant;
-    c.dividerLight = ml.outline;
-    c.inputBgLight = ml.surface;
+    c.dividerLight = ml.outlineVariant || ml.outline;
+    c.inputBgLight = ml.surfaceContainerHigh || ml.surface;
 
     // 深色配色
     c.bgDark = md.surface;
-    c.cardDark = md.surfaceVariant;
+    c.cardDark = md.surfaceContainerLow || md.surfaceVariant;
     c.textPriDark = md.onSurface;
     c.textSecDark = md.onSurfaceVariant;
-    c.dividerDark = md.outline;
-    c.inputBgDark = md.surface;
+    c.dividerDark = md.outlineVariant || md.outline;
+    c.inputBgDark = md.surfaceContainerHigh || md.surface;
 
     // 当前主题配色（随主题切换）
     c.primary = m.primary;
@@ -640,7 +657,12 @@ FloatBallAppWM.prototype.refreshMonetColors = function(forceDark) {
     // 扩展：完整 Monet 语义字段（供面板方法直接使用）
     c._monetSurface = m.surface;
     c._monetOnSurface = m.onSurface;
+    c._monetSurfaceVariant = m.surfaceVariant;
+    c._monetSurfaceContainerLow = m.surfaceContainerLow || m.surfaceVariant;
+    c._monetSurfaceContainer = m.surfaceContainer || m.surfaceVariant;
+    c._monetSurfaceContainerHigh = m.surfaceContainerHigh || m.surfaceVariant;
     c._monetOutline = m.outline;
+    c._monetOutlineVariant = m.outlineVariant || m.outline;
     c._monetOnPrimary = m.onPrimary;
     c._monetPrimaryContainer = m.primaryContainer;
     c._monetOnPrimaryContainer = m.onPrimaryContainer;

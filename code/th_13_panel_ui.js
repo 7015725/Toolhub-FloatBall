@@ -3,7 +3,9 @@
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var color = C.primary;
+  var T = this.getAnimalIslandTheme ? this.getAnimalIslandTheme() : null;
+  try { if (this.applySettingsTheme && T) this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
+  var color = T ? T.primary : C.primary;
 
   var h = new android.widget.TextView(context);
   h.setText(String(item.name || ""));
@@ -17,11 +19,14 @@ FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
 FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivider) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var textColor = isDark ? C.textPriDark : C.textPriLight;
-  var secColor = isDark ? C.textSecDark : C.textSecLight;
-  var dividerColor = isDark ? C.dividerDark : C.dividerLight;
-  var primary = C.primary;
-  var switchOff = isDark ? (0xFF555555 | 0) : (0xFFCCCCCC | 0);
+  var T = this.getAnimalIslandTheme ? this.getAnimalIslandTheme() : null;
+  try { if (this.applySettingsTheme && T) this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
+  var textColor = T ? T.text : (isDark ? C.textPriDark : C.textPriLight);
+  var secColor = T ? T.sub : (isDark ? C.textSecDark : C.textSecLight);
+  var dividerColor = T ? T.stroke : (isDark ? C.dividerDark : C.dividerLight);
+  var primary = T ? T.primary : C.primary;
+  var inputBgColor = T ? T.card2 : (isDark ? C.inputBgDark : C.inputBgLight);
+  var switchOff = T ? T.card2 : (isDark ? (0xFF555555 | 0) : (0xFFCCCCCC | 0));
 
   // 增加内边距
   var padH = this.dp(16);
@@ -271,7 +276,8 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     et.setText(String(curVal));
     et.setTextColor(textColor);
     et.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-    et.setBackground(self.ui.createRoundDrawable(isDark ? C.inputBgDark : C.inputBgLight, self.dp(6)));
+    try { et.setHintTextColor(secColor); } catch(eHint) { safeLog(null, 'e', "catch " + String(eHint)); }
+    et.setBackground(self.ui.createStrokeDrawable(inputBgColor, dividerColor, self.dp(1), self.dp(8)));
     et.setPadding(self.dp(8), self.dp(8), self.dp(8), self.dp(8));
     et.setSingleLine(true);
 
