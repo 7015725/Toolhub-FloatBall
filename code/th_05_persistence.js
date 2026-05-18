@@ -319,6 +319,18 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
     }
     if (k === "BALL_SIZE_DP" || k === "BALL_PNG_MODE" || k === "BALL_ICON_TYPE" || k === "BALL_ICON_FILE_PATH" || k === "BALL_ICON_RES_ID" || k === "BALL_ICON_RES_NAME" || k === "BALL_ICON_SIZE_DP" || k === "BALL_ICON_TINT_HEX" || k === "BALL_BG_COLOR_HEX") { this.rebuildBallForNewSize(); return; }
 
+    if (k === "TOOLAPP_BACK_EDGE_WIDTH_DP") {
+      try {
+        if (this.state.toolAppActive && this.hideToolAppScreenBackStrips && this.showToolAppScreenBackStrips) {
+          this.hideToolAppScreenBackStrips();
+          this.showToolAppScreenBackStrips();
+        }
+      } catch(eBackStrip) {
+        safeLog(this.L, "w", "apply back edge width fail: " + String(eBackStrip));
+      }
+      return;
+    }
+
     if (k === "PANEL_ROWS" || k === "PANEL_COLS" ||
         k === "PANEL_ITEM_SIZE_DP" || k === "PANEL_GAP_DP" ||
         k === "PANEL_PADDING_DP" || k === "PANEL_ICON_SIZE_DP" ||

@@ -507,7 +507,7 @@ FloatBallAppWM.prototype.getToolAppTitle = function(route) {
     if (this.state.editingSchemaIndex !== null && this.state.editingSchemaIndex !== undefined) {
       return (this.state.editingSchemaIndex === -1) ? "新增蓝图项" : "编辑蓝图项";
     }
-    return "岛屿蓝图";
+    return "高级蓝图";
   }
   return "ToolHub";
 };
@@ -786,15 +786,11 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
           var validDir = (edge === 0 && mx > 0) || (edge === 1 && mx < 0);
           if (validDir && Math.abs(mx) > self.dp(4) && Math.abs(mx) > Math.abs(my)) {
             moved = true;
-            var panelW = 0;
-            try { panelW = Number((self.state.viewerPanelLp && self.state.viewerPanelLp.width) || 0); } catch (ePanelW0) {}
-            if (!panelW || panelW < self.dp(120)) {
-              try { panelW = Number((self.state.toolAppRoot && self.state.toolAppRoot.getWidth && self.state.toolAppRoot.getWidth()) || 0); } catch (ePanelW1) {}
-            }
-            if (!panelW || panelW < self.dp(120)) panelW = self.dp(420);
-            var triggerDistance = panelW * 0.38;
-            if (triggerDistance < self.dp(160)) triggerDistance = self.dp(160);
-            if (triggerDistance > self.dp(260)) triggerDistance = self.dp(260);
+            var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 180);
+            if (isNaN(triggerDp)) triggerDp = 180;
+            if (triggerDp < 120) triggerDp = 120;
+            if (triggerDp > 320) triggerDp = 320;
+            var triggerDistance = self.dp(triggerDp);
             var p = Math.min(1, Math.abs(mx) / triggerDistance);
             self.applyToolAppBackPreviewProgress(edge, p);
           }
@@ -803,15 +799,11 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
         if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
           var ux = event.getRawX() - downX;
           var uy = event.getRawY() - downY;
-          var panelW2 = 0;
-          try { panelW2 = Number((self.state.viewerPanelLp && self.state.viewerPanelLp.width) || 0); } catch (ePanelW2) {}
-          if (!panelW2 || panelW2 < self.dp(120)) {
-            try { panelW2 = Number((self.state.toolAppRoot && self.state.toolAppRoot.getWidth && self.state.toolAppRoot.getWidth()) || 0); } catch (ePanelW3) {}
-          }
-          if (!panelW2 || panelW2 < self.dp(120)) panelW2 = self.dp(420);
-          var completeDistance = panelW2 * 0.18;
-          if (completeDistance < self.dp(64)) completeDistance = self.dp(64);
-          if (completeDistance > self.dp(120)) completeDistance = self.dp(120);
+          var commitDp = Number(self.config.TOOLAPP_BACK_COMMIT_DISTANCE_DP || 72);
+          if (isNaN(commitDp)) commitDp = 72;
+          if (commitDp < 48) commitDp = 48;
+          if (commitDp > 160) commitDp = 160;
+          var completeDistance = self.dp(commitDp);
           var okDir = (edge === 0 && ux > completeDistance) || (edge === 1 && ux < -completeDistance);
           var ok = (action === android.view.MotionEvent.ACTION_UP) && moved && okDir && Math.abs(ux) > Math.abs(uy) * 1.2;
           active = false;
@@ -852,7 +844,11 @@ FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
     if (sw <= 1) {
       try { var ss = this.getScreenSizePx(); sw = ss.w; } catch (eScreen) {}
     }
-    var stripW = this.dp(22);
+    var stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 22);
+    if (isNaN(stripDp)) stripDp = 22;
+    if (stripDp < 12) stripDp = 12;
+    if (stripDp > 48) stripDp = 48;
+    var stripW = this.dp(stripDp);
     var flags = android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
       android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
 
@@ -1307,7 +1303,7 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
           var titleMap = {
               "settings": "设置",
               "btn_editor": "按钮管理",
-              "schema_editor": "布局管理"
+              "schema_editor": "高级蓝图"
           };
           var title = titleMap[which] || "面板";
 

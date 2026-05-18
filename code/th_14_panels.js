@@ -332,11 +332,9 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   if (useMonetHome) {
     this.createSettingsHomeSectionHeader(box, "▦", "工具与配置");
     this.createSettingsHomeEntry(box, "工具", "添加、整理和排序工具入口", "", function() { self.pushToolAppPage("btn_editor"); });
-    this.createSettingsHomeEntry(box, "配置结构", "编辑分组、布局和高级结构", "", function() { self.pushToolAppPage("schema_editor"); });
   } else {
     this.createSettingsHomeSectionHeader(box, "🧰", "布局与管理");
     this.createSettingsHomeEntry(box, "工具伙伴", "添加、整理和安排你的工具伙伴", "", function() { self.pushToolAppPage("btn_editor"); });
-    this.createSettingsHomeEntry(box, "岛屿蓝图", "自定义岛屿布局，适合进阶布置", "", function() { self.pushToolAppPage("schema_editor"); });
     this.addSettingsHomeDashedDivider(box);
   }
   var defs = this.getSettingsGroupDefs();
@@ -370,6 +368,11 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
         });
       })(defs[k]);
     }
+    this.createSettingsHomeEntry(box, "高级蓝图", "编辑设置页结构和高级配置，适合进阶用户", "", function() { self.pushToolAppPage("schema_editor"); });
+  } else {
+    this.addSettingsHomeDashedDivider(box);
+    this.createSettingsHomeSectionHeader(box, "⚙", "高级设置");
+    this.createSettingsHomeEntry(box, "高级蓝图", "编辑设置页结构和高级配置，适合进阶用户", "", function() { self.pushToolAppPage("schema_editor"); });
   }
   contentCard.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
   panel.addView(contentCard, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));

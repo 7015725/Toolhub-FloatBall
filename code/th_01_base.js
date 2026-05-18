@@ -91,7 +91,7 @@ var ConfigValidator = {
     // 图标配置
     BALL_ICON_TYPE: { type: "enum", values: ["app", "file", "android", "shortx"], default: "app" },
     BALL_ICON_RES_ID: { type: "int", min: 0, max: 999999, default: 0 },
-    BALL_ICON_SIZE_DP: { type: "int", min: 16, max: 64, default: 22 },
+    BALL_ICON_SIZE_DP: { type: "int", min: 12, max: 80, default: 22 },
     BALL_PNG_MODE: { type: "int", min: 0, max: 2, default: 1 },
     BALL_IDLE_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.6 },
 
@@ -99,6 +99,9 @@ var ConfigValidator = {
     LONG_PRESS_MS: { type: "int", min: 200, max: 2000, default: 600 },
     LONG_PRESS_VIBRATE_MS: { type: "int", min: 10, max: 100, default: 40 },
     CLICK_SLOP_DP: { type: "int", min: 2, max: 20, default: 6 },
+    TOOLAPP_BACK_EDGE_WIDTH_DP: { type: "int", min: 12, max: 48, default: 22 },
+    TOOLAPP_BACK_COMMIT_DISTANCE_DP: { type: "int", min: 48, max: 160, default: 72 },
+    TOOLAPP_BACK_PROGRESS_DISTANCE_DP: { type: "int", min: 120, max: 320, default: 180 },
 
     // 功能开关
     ENABLE_SNAP_TO_EDGE: { type: "bool", default: true },
@@ -729,6 +732,9 @@ var ConfigManager = {
         ENABLE_LONG_PRESS: true,
         LONG_PRESS_MS: 520,
         CLICK_SLOP_DP: 6,
+        TOOLAPP_BACK_EDGE_WIDTH_DP: 22,
+        TOOLAPP_BACK_COMMIT_DISTANCE_DP: 72,
+        TOOLAPP_BACK_PROGRESS_DISTANCE_DP: 180,
         ENABLE_BOUNCE: true,
         BOUNCE_TIMES: 2,
         BOUNCE_MAX_SCALE: 0.88,
@@ -796,6 +802,7 @@ var ConfigManager = {
         { key: "BALL_ICON_FILE_PATH", name: "已选择的图标文件", type: "text" },
         { key: "BALL_ICON_RES_NAME", name: "岛上图标", type: "ball_shortx_icon" },
         { key: "BALL_ICON_TINT_HEX", name: "徽章颜色", type: "ball_color" },
+        { key: "BALL_ICON_SIZE_DP", name: "徽章大小", type: "int", min: 12, max: 80, step: 1 },
         { key: "BALL_BG_COLOR_HEX", name: "球体背景", type: "ball_color" },
         { key: "BALL_IDLE_ALPHA", name: "安静时透明度", type: "float", min: 0.1, max: 1.0, step: 0.05 },
 
@@ -837,6 +844,9 @@ var ConfigManager = {
 
         { type: "section", name: "触摸与手势" },
         { key: "CLICK_SLOP_DP", name: "点击位移阈值(dp)", type: "int", min: 1, max: 40, step: 1 },
+        { key: "TOOLAPP_BACK_EDGE_WIDTH_DP", name: "设置页返回边界宽度", type: "int", min: 12, max: 48, step: 1 },
+        { key: "TOOLAPP_BACK_COMMIT_DISTANCE_DP", name: "设置页返回触发距离", type: "int", min: 48, max: 160, step: 1 },
+        { key: "TOOLAPP_BACK_PROGRESS_DISTANCE_DP", name: "设置页返回动画距离", type: "int", min: 120, max: 320, step: 1 },
         { key: "ENABLE_LONG_PRESS", name: "启用长按", type: "bool" },
         { key: "LONG_PRESS_MS", name: "长按判定(ms)", type: "int", min: 200, max: 2000, step: 10 },
         { key: "LONG_PRESS_HAPTIC_ENABLE", name: "长按震动反馈", type: "bool" },
@@ -873,7 +883,7 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0) {
             needReset = true;
         }
     } else {
