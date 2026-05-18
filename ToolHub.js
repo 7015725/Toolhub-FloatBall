@@ -2,7 +2,16 @@
 // 安全更新机制：入口内置 RSA 公钥，先验证 manifest.json/manifest.sig，再按 SHA256 下载子模块。
 // Gitea 只负责分发；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
-var GIT_ROOT = "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/";
+var UPDATE_SOURCE = 0; // 0: Gitea, 1: GitHub
+
+var UPDATE_ROOTS = [
+    "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/",
+    "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/main/"
+];
+
+if (UPDATE_SOURCE !== 1) UPDATE_SOURCE = 0;
+
+var GIT_ROOT = UPDATE_ROOTS[UPDATE_SOURCE];
 var GIT_BASE = GIT_ROOT + "code/";
 var TRUSTED_PUBLIC_KEYS = {
   "toolhub-targets-2026-rsa3072": "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEApiyhtMDJce7dVCxH1/oDu8kbiECYoT5XXmXvR/XNYuJ/5FuL83SbpCQ3QmUnqkbfNyOFqnxac/qlbXJtx6eeSotLP1HmrKI0LGymgxG6b1FfGHBfIKNZfBLIvzVDQob+HJfshlsS1JRlW5Jhm25TMh8dJCQQQZWW/ZItbtOvPYbLwG8cnqEdX8gqyB304+r2l35GPTfxZIGEK/9PcE3AMuqwTolMJsBHtG61hmMdz3dzTTEZQoOcciGWuwr2ZW8XkF6f5SgWkC29ZxZqAxceK4FJ8BsYirpFQxVKyZ6eiYlpNiYz+pHLP2U7JTO6ImmT1rlYSS6xw2tlWf0xq72nuOPC+VzEivuEhnC4y9WBSvauRa/ViIDgQ3yXl2MajuAvGSVWRfZ5Gz5Up8PQD7vxmHT2r0fA4xq4GIvUvGCqOG/d1FRrlVyEuNhCZ7KgpEKPno7fLnC6/ftnYcN5ZNOSWwjWH/e4fBxM5s6RRIYzIY2N0f/fqsRH42lWAhX5stujAgMBAAE="
