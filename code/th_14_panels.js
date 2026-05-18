@@ -4364,6 +4364,62 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var wm = self.state.wm;
   var filterTags = ["全部", "常用", "最近", "收藏", "线框", "实心"];
   var filterViews = [];
+  var FAVORITE_ICONS_KEY = "shortx_icon_favorites";
+  var favoriteIcons = [];
+  var favoriteMap = {};
+
+  function rebuildFavoriteMap() {
+    favoriteMap = {};
+    for (var fi = 0; fi < favoriteIcons.length; fi++) {
+      var fn = String(favoriteIcons[fi] || "");
+      if (fn) favoriteMap[fn] = true;
+    }
+  }
+
+  function loadFavoriteIcons() {
+    favoriteIcons = [];
+    try {
+      var saved = self.loadPanelState ? self.loadPanelState(FAVORITE_ICONS_KEY) : null;
+      var arr = saved && saved.icons ? saved.icons : [];
+      for (var li = 0; li < arr.length && favoriteIcons.length < 300; li++) {
+        var name = String(arr[li] || "");
+        if (name && !favoriteMap[name]) {
+          favoriteIcons.push(name);
+          favoriteMap[name] = true;
+        }
+      }
+    } catch(eFavLoad) { safeLog(null, 'e', "catch " + String(eFavLoad)); }
+    rebuildFavoriteMap();
+  }
+
+  function saveFavoriteIcons() {
+    try {
+      if (self.savePanelState) self.savePanelState(FAVORITE_ICONS_KEY, { icons: favoriteIcons.slice(0, 300) });
+    } catch(eFavSave) { safeLog(null, 'e', "catch " + String(eFavSave)); }
+  }
+
+  function isFavoriteIcon(name) {
+    return !!favoriteMap[String(name || "")];
+  }
+
+  function toggleFavoriteIcon(name) {
+    name = String(name || "");
+    if (!name) return false;
+    var next = [];
+    var existed = false;
+    for (var ti = 0; ti < favoriteIcons.length; ti++) {
+      var oldName = String(favoriteIcons[ti] || "");
+      if (!oldName) continue;
+      if (oldName === name) { existed = true; continue; }
+      next.push(oldName);
+    }
+    if (!existed) next.unshift(name);
+    favoriteIcons = next.slice(0, 300);
+    rebuildFavoriteMap();
+    saveFavoriteIcons();
+    return !existed;
+  }
+  loadFavoriteIcons();
 
   function matchesFilter(entry, f) {
     if (!entry) return false;
@@ -4371,7 +4427,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     var n = String(entry.shortName || entry.name || "").toLowerCase();
     if (f === "常用") return n.indexOf("home") >= 0 || n.indexOf("share") >= 0 || n.indexOf("search") >= 0 || n.indexOf("settings") >= 0 || n.indexOf("add") >= 0 || n.indexOf("back") >= 0 || n.indexOf("close") >= 0;
     if (f === "最近") return selectedName && String(entry.name) === String(selectedName);
-    if (f === "收藏") return false;
+    if (f === "收藏") return isFavoriteIcon(entry.name);
     if (f === "线框") return n.indexOf("outline") >= 0 || n.indexOf("line") >= 0 || n.indexOf("stroke") >= 0 || n.indexOf("border") >= 0;
     if (f === "实心") return n.indexOf("fill") >= 0 || n.indexOf("solid") >= 0 || n.indexOf("round") >= 0;
     return true;
@@ -4663,7 +4719,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
 
       if (pageItems.length === 0) {
         var emptyTv = new android.widget.TextView(context);
-        emptyTv.setText(popupState.filter === "收藏" ? "收藏夹还空着" : "没有找到这枚小图标");
+        emptyTv.setText(popupState.filter === "收藏" ? "收藏夹还空着，点图标左上角 ☆ 收藏" : "没有找到这枚小图标");
         emptyTv.setTextColor(subTextColor);
         emptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         emptyTv.setGravity(android.view.Gravity.CENTER);
@@ -4706,6 +4762,28 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           tv.setPadding(self.dp(2), self.dp(5), self.dp(2), 0);
           tv.setTextColor(isSelected ? T.primaryDeep : subTextColor);
           cell.addView(tv, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+
+          var favBtn = new android.widget.TextView(context);
+          favBtn.setText(isFavoriteIcon(item.name) ? "★" : "☆");
+          favBtn.setTextColor(isFavoriteIcon(item.name) ? T.primaryDeep : self.withAlpha(T.primaryDeep, 0.52));
+          favBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+          favBtn.setGravity(android.view.Gravity.CENTER);
+          favBtn.setTypeface(null, android.graphics.Typeface.BOLD);
+          favBtn.setBackground(self.ui.createRoundDrawable(isFavoriteIcon(item.name) ? T.primarySoft : self.withAlpha(T.card, 0.88), self.dp(9)));
+          favBtn.setClickable(true);
+          favBtn.setOnClickListener(new android.view.View.OnClickListener({
+            onClick: function() {
+              self.touchActivity();
+              var added = toggleFavoriteIcon(item.name);
+              try { self.toast(added ? "已收藏到小岛" : "已取消收藏"); } catch(eFavToast) {}
+              if (popupState.filter === "收藏") popupState.currentPage = 0;
+              renderGrid();
+            }
+          }));
+          var favLp = new android.widget.FrameLayout.LayoutParams(self.dp(18), self.dp(18));
+          favLp.gravity = android.view.Gravity.TOP | android.view.Gravity.LEFT;
+          favLp.setMargins(self.dp(4), self.dp(4), 0, 0);
+          frame.addView(favBtn, favLp);
 
           if (isSelected) {
             var badge = new android.widget.TextView(context);
