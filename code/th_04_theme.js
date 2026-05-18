@@ -859,10 +859,10 @@ FloatBallAppWM.prototype.updatePanelBackground = function(panelView) {
     var radiusDp = 22;
 
     if (settTheme === "animal" && this.getAnimalIslandTheme) {
-      var T = this.getAnimalIslandTheme();
-      bgInt = this.withAlpha(isDark ? T.bg : T.bg2, isDark ? 0.96 : 0.94);
-      tc = T.text;
-      stroke = this.withAlpha(T.stroke, isDark ? 0.28 : 0.34);
+      var Color = android.graphics.Color;
+      bgInt = Color.parseColor(isDark ? "#27362E" : "#E4F1DF");
+      tc = Color.parseColor(isDark ? "#F5EBD2" : "#3F3528");
+      stroke = this.withAlpha(Color.parseColor(isDark ? "#526454" : "#E8DEC8"), isDark ? 0.50 : 0.52);
       radiusDp = 30;
     } else {
       bgInt = this.getPanelBgColorInt();
