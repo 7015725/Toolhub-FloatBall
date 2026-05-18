@@ -907,7 +907,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   body.addView(host, hostLp);
 
   try {
-    var stripW = this.dp(24);
+    var stripW = this.dp(48);
     var leftStrip = this.createToolAppEdgeBackStrip(0);
     var leftLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
     leftLp.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
