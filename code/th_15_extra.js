@@ -565,44 +565,70 @@ FloatBallAppWM.prototype.makeToolAppStackEntry = function(route) {
   };
 };
 
-FloatBallAppWM.prototype.buildToolAppPreviewBody = function(route) {
+FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
+  var oldGroupKey = null;
+  var hasOldGroupKey = false;
+  var r = "settings";
   try {
-    var r = this.isToolAppRoute(route) ? String(route) : "settings";
+    oldGroupKey = this.state.settingsGroupKey;
+    hasOldGroupKey = true;
+    var groupKey = null;
+    if (entry && typeof entry === "object") {
+      r = this.isToolAppRoute(entry.route) ? String(entry.route) : "settings";
+      if (entry.settingsGroupKey !== undefined && entry.settingsGroupKey !== null) groupKey = String(entry.settingsGroupKey);
+    } else {
+      r = this.isToolAppRoute(entry) ? String(entry) : "settings";
+    }
+    if (r === "settings") this.state.settingsGroupKey = null;
+    else if (r === "settings_group") this.state.settingsGroupKey = groupKey !== null ? groupKey : String(oldGroupKey || "");
+
     var isDark = this.isDarkTheme();
     var C = this.ui.colors;
+    var T = this.getAnimalIslandTheme();
+    var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+    try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
+
     var body = new android.widget.LinearLayout(context);
     body.setOrientation(android.widget.LinearLayout.VERTICAL);
-    var bodyBg = isDark ? C.bgDark : C.bgLight;
-    var bodyStroke = isDark ? C.dividerDark : C.dividerLight;
-    body.setBackground(this.ui.createStrokeDrawable(bodyBg, this.withAlpha(bodyStroke, 0.18), this.dp(1), this.dp(22)));
+    body.setPadding(this.dp(6), this.dp(6), this.dp(6), this.dp(8));
+    body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.42 : 0.70), this.dp(1), this.dp(26)));
     try { body.setClipToOutline(true); } catch(eClip) {}
-    try { body.setElevation(this.dp(8)); } catch (eElev) {}
+    try { body.setElevation(this.dp(12)); } catch (eElev) {}
 
     var bar = new android.widget.LinearLayout(context);
     bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
     bar.setPadding(this.dp(10), this.dp(10), this.dp(10), this.dp(6));
-    bar.setBackground(this.ui.createRoundDrawable(isDark ? this.withAlpha(C.cardDark, 0.45) : this.withAlpha(C.cardLight, 0.55), this.dp(18)));
+    bar.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
+    try { bar.setElevation(this.dp(3)); } catch(eBarElev) {}
 
-    var btnBack = this.ui.createFlatButton(this, "‹", C.primary, function() {});
+    var btnBack = this.ui.createFlatButton(this, "‹", T.brown, function() {});
     btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
-    btnBack.setEnabled(false);
+    btnBack.setPadding(this.dp(8), 0, this.dp(8), 0);
+    try { btnBack.setClickable(false); } catch(eBackClick) {}
+    try { btnBack.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eBackBg) {}
     bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
 
     var tvTitle = new android.widget.TextView(context);
-    tvTitle.setText(String(this.getToolAppTitle(r) || "ToolHub"));
-    tvTitle.setTextColor(isDark ? C.textPriDark : C.textPriLight);
-    tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+    var titleText = String(this.getToolAppTitle(r) || "ToolHub");
+    if (r === "settings") titleText = "❧ 岛屿设置 ❧";
+    tvTitle.setText(titleText);
+    tvTitle.setTextColor(T.text);
+    tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
     tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-    tvTitle.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    tvTitle.setGravity(android.view.Gravity.CENTER);
     var titleLp = new android.widget.LinearLayout.LayoutParams(0, -1);
     titleLp.weight = 1;
     bar.addView(tvTitle, titleLp);
 
-    var btnClose = this.ui.createFlatButton(this, "✕", isDark ? C.textSecDark : C.textSecLight, function() {});
-    btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
-    btnClose.setEnabled(false);
-    bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
+    var rightText = r === "settings" ? "📖 岛务手册" : "✕";
+    var btnClose = this.ui.createFlatButton(this, rightText, T.primaryDeep, function() {});
+    btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, r === "settings" ? 12 : 18);
+    btnClose.setTypeface(null, android.graphics.Typeface.BOLD);
+    btnClose.setPadding(this.dp(10), 0, this.dp(10), 0);
+    try { btnClose.setClickable(false); } catch(eRightClick) {}
+    try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
+    bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
     var barLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(56));
     barLp.setMargins(this.dp(8), this.dp(8), this.dp(8), this.dp(4));
     body.addView(bar, barLp);
@@ -612,10 +638,16 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(route) {
     try { raw.setBackground(null); } catch (eBg) {}
     try { raw.setElevation(0); } catch (eEl) {}
     host.addView(raw, new android.widget.FrameLayout.LayoutParams(-1, -1));
-    body.addView(host, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+    var hostLp = new android.widget.LinearLayout.LayoutParams(-1, 0, 1);
+    hostLp.setMargins(this.dp(6), 0, this.dp(6), this.dp(6));
+    body.addView(host, hostLp);
     return body;
   } catch (e) {
-    safeLog(this.L, 'w', "build tool app preview body fail route=" + String(route || "") + " err=" + String(e));
+    safeLog(this.L, 'w', "build tool app preview body fail route=" + String(r || "") + " err=" + String(e));
+  } finally {
+    if (hasOldGroupKey) {
+      try { this.state.settingsGroupKey = oldGroupKey; } catch (eRestore) {}
+    }
   }
   return null;
 };
@@ -628,16 +660,13 @@ FloatBallAppWM.prototype.prepareToolAppBackPreview = function(edge) {
     var prevEntry = this.getToolAppPreviousStackEntry();
     if (!root || !body || !prevEntry || !prevEntry.route) return false;
     var prevRoute = String(prevEntry.route || "settings");
-    var oldGroupKey = String(this.state.settingsGroupKey || "");
-    if (prevRoute === "settings_group" && prevEntry.settingsGroupKey) this.state.settingsGroupKey = String(prevEntry.settingsGroupKey);
-    var prevBody = this.buildToolAppPreviewBody(prevRoute);
-    this.state.settingsGroupKey = oldGroupKey;
+    var prevBody = this.buildToolAppPreviewBody(prevEntry);
     if (!prevBody) return false;
     var lp = new android.widget.FrameLayout.LayoutParams(-1, -1);
-    prevBody.setAlpha(0.65);
-    prevBody.setScaleX(0.985);
-    prevBody.setScaleY(0.985);
-    prevBody.setTranslationX((Number(edge) === 1 ? 1 : -1) * this.dp(18));
+    prevBody.setAlpha(0.88);
+    prevBody.setScaleX(0.975);
+    prevBody.setScaleY(0.975);
+    prevBody.setTranslationX((Number(edge) === 1 ? 1 : -1) * this.dp(24));
     try {
       root.addView(prevBody, 0, lp);
     } catch (eAddIdx) {
@@ -662,6 +691,7 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
     if (p < 0) p = 0;
     if (p > 1) p = 1;
     if (!this.prepareToolAppBackPreview(edge)) return false;
+    var eased = 1 - Math.pow(1 - p, 2.2);
     var body = this.state.toolAppBody;
     var prev = this.state.toolAppBackPreviewView;
     var dir = Number(edge) === 1 ? -1 : 1;
@@ -672,16 +702,16 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
     }
     if (!w || w < this.dp(120)) w = this.dp(320);
     if (body) {
-      body.setTranslationX(dir * w * p);
-      body.setAlpha(1.0 - 0.16 * p);
-      var s = 1.0 - 0.025 * p;
+      body.setTranslationX(dir * w * eased);
+      body.setAlpha(1.0 - 0.10 * eased);
+      var s = 1.0 - 0.015 * eased;
       body.setScaleX(s);
       body.setScaleY(s);
     }
     if (prev) {
-      prev.setAlpha(0.65 + 0.35 * p);
-      prev.setTranslationX(-dir * this.dp(18) * (1.0 - p));
-      var ps = 0.985 + 0.015 * p;
+      prev.setAlpha(0.88 + 0.12 * eased);
+      prev.setTranslationX(-dir * this.dp(24) * (1.0 - eased));
+      var ps = 0.975 + 0.025 * eased;
       prev.setScaleX(ps);
       prev.setScaleY(ps);
     }
@@ -694,12 +724,18 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
   try {
     var self = this;
     var body = this.state.toolAppBody;
+    var prev = this.state.toolAppBackPreviewView;
     var dir = Number(edge) === 1 ? -1 : 1;
+    var decel = new android.view.animation.DecelerateInterpolator();
     if (complete && body) {
       var w = 0;
       try { w = Number((this.state.viewerPanelLp && this.state.viewerPanelLp.width) || 0); } catch (eW0) {}
+      if (!w || w < this.dp(120)) {
+        try { w = Number((this.state.toolAppRoot && this.state.toolAppRoot.getWidth && this.state.toolAppRoot.getWidth()) || 0); } catch (eW1) {}
+      }
       if (!w || w < this.dp(120)) w = this.dp(320);
-      body.animate().translationX(dir * w).alpha(0.78).setDuration(120).withEndAction(new java.lang.Runnable({
+      try { if (prev) prev.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(180).setInterpolator(decel).start(); } catch(ePrev) {}
+      body.animate().translationX(dir * w).alpha(0.90).scaleX(0.985).scaleY(0.985).setDuration(180).setInterpolator(decel).withEndAction(new java.lang.Runnable({
         run: function() {
           try { self.clearToolAppBackPreview(true); } catch (eClear) {}
           try { self.popToolAppPage("edge_swipe_back"); } catch (ePop) {}
@@ -708,7 +744,9 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
       return;
     }
     if (body) {
-      body.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(140).withEndAction(new java.lang.Runnable({
+      var cancelInterp = new android.view.animation.AccelerateDecelerateInterpolator();
+      try { if (prev) prev.animate().translationX(-dir * self.dp(24)).alpha(0.88).scaleX(0.975).scaleY(0.975).setDuration(200).setInterpolator(cancelInterp).start(); } catch(ePrev2) {}
+      body.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(200).setInterpolator(cancelInterp).withEndAction(new java.lang.Runnable({
         run: function() { try { self.clearToolAppBackPreview(true); } catch (eClear2) {} }
       })).start();
     } else {
@@ -748,7 +786,16 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
           var validDir = (edge === 0 && mx > 0) || (edge === 1 && mx < 0);
           if (validDir && Math.abs(mx) > self.dp(4) && Math.abs(mx) > Math.abs(my)) {
             moved = true;
-            var p = Math.min(1, Math.abs(mx) / self.dp(180));
+            var panelW = 0;
+            try { panelW = Number((self.state.viewerPanelLp && self.state.viewerPanelLp.width) || 0); } catch (ePanelW0) {}
+            if (!panelW || panelW < self.dp(120)) {
+              try { panelW = Number((self.state.toolAppRoot && self.state.toolAppRoot.getWidth && self.state.toolAppRoot.getWidth()) || 0); } catch (ePanelW1) {}
+            }
+            if (!panelW || panelW < self.dp(120)) panelW = self.dp(420);
+            var triggerDistance = panelW * 0.38;
+            if (triggerDistance < self.dp(160)) triggerDistance = self.dp(160);
+            if (triggerDistance > self.dp(260)) triggerDistance = self.dp(260);
+            var p = Math.min(1, Math.abs(mx) / triggerDistance);
             self.applyToolAppBackPreviewProgress(edge, p);
           }
           return true;
@@ -756,7 +803,16 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
         if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
           var ux = event.getRawX() - downX;
           var uy = event.getRawY() - downY;
-          var okDir = (edge === 0 && ux > self.dp(72)) || (edge === 1 && ux < -self.dp(72));
+          var panelW2 = 0;
+          try { panelW2 = Number((self.state.viewerPanelLp && self.state.viewerPanelLp.width) || 0); } catch (ePanelW2) {}
+          if (!panelW2 || panelW2 < self.dp(120)) {
+            try { panelW2 = Number((self.state.toolAppRoot && self.state.toolAppRoot.getWidth && self.state.toolAppRoot.getWidth()) || 0); } catch (ePanelW3) {}
+          }
+          if (!panelW2 || panelW2 < self.dp(120)) panelW2 = self.dp(420);
+          var completeDistance = panelW2 * 0.18;
+          if (completeDistance < self.dp(64)) completeDistance = self.dp(64);
+          if (completeDistance > self.dp(120)) completeDistance = self.dp(120);
+          var okDir = (edge === 0 && ux > completeDistance) || (edge === 1 && ux < -completeDistance);
           var ok = (action === android.view.MotionEvent.ACTION_UP) && moved && okDir && Math.abs(ux) > Math.abs(uy) * 1.2;
           active = false;
           self.finishToolAppBackPreview(edge, ok);
@@ -840,6 +896,8 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
+  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+  try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
   var root = new android.widget.FrameLayout(context);
   var body = new android.widget.LinearLayout(context);
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
