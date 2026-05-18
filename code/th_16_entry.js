@@ -229,7 +229,7 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
 
               if (act === android.content.Intent.ACTION_CONFIGURATION_CHANGED) {
                 self.cancelDockTimer();
-                self.onScreenChangedReflow();
+                self.scheduleScreenReflow("configuration_changed");
                 self.touchActivity();
               }
 

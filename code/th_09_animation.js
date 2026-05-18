@@ -650,6 +650,13 @@ FloatBallAppWM.prototype.snapToEdgeDocked = function(withAnim, forceSide) {
   // 如果需要保护，调用方自己判断
   if (this.state.dragging) return;
 
+  try {
+    var freshScreen = this.getScreenSizePx();
+    if (freshScreen && freshScreen.w > 0 && freshScreen.h > 0) {
+      this.state.screen = freshScreen;
+    }
+  } catch (eScreen) {}
+
   var di = this.getDockInfo();
   var ballSize = di.ballSize;
   var visible = di.visiblePx;
@@ -882,11 +889,9 @@ FloatBallAppWM.prototype.safeUiCall = function(tag, fn) {
 
 ;
 
-FloatBallAppWM.prototype.onScreenChangedReflow = function() {
+FloatBallAppWM.prototype.onScreenChangedReflow = function(reason) {
   if (this.state.closing) return;
   if (!this.state.addedBall) return;
-
-  var di = this.getDockInfo();
 
   var oldW = this.state.screen.w;
   var oldH = this.state.screen.h;
@@ -896,10 +901,22 @@ FloatBallAppWM.prototype.onScreenChangedReflow = function() {
   var newH = newScreen.h;
 
   if (newW <= 0 || newH <= 0) return;
+  var rotNow = -1;
+  try { rotNow = this.getRotation ? this.getRotation() : -1; } catch (eRotNow) { rotNow = -1; }
+  try {
+    var rotLandscape = (rotNow === android.view.Surface.ROTATION_90 || rotNow === android.view.Surface.ROTATION_270);
+    var rotPortrait = (rotNow === android.view.Surface.ROTATION_0 || rotNow === android.view.Surface.ROTATION_180);
+    if ((rotLandscape && newW < newH) || (rotPortrait && newW > newH)) {
+      safeLog(this.L, 'w', "screen reflow skip unstable size reason=" + String(reason || "") + " new=" + newW + "x" + newH + " rot=" + String(rotNow));
+      return;
+    }
+  } catch (eStable) {}
   if (oldW <= 0) oldW = newW;
   if (oldH <= 0) oldH = newH;
 
   this.state.screen = { w: newW, h: newH };
+
+  var di = this.getDockInfo();
 
   var ballSize = di.ballSize;
   var visible = di.visiblePx;
@@ -943,7 +960,41 @@ FloatBallAppWM.prototype.onScreenChangedReflow = function() {
   try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU) { safeLog(null, 'e', "catch " + String(eU)); }
   this.savePos(this.state.ballLp.x, this.state.ballLp.y);
 
-  safeLog(this.L, 'i',  "screen reflow w=" + String(newW) + " h=" + String(newH) + " x=" + String(this.state.ballLp.x) + " y=" + String(this.state.ballLp.y));
+  safeLog(this.L, 'i',
+    "screen reflow reason=" + String(reason || "") +
+    " old=" + oldW + "x" + oldH +
+    " new=" + newW + "x" + newH +
+    " rot=" + String(rotNow) +
+    " docked=" + String(this.state.docked) +
+    " side=" + String(this.state.dockSide || "") +
+    " x=" + String(this.state.ballLp.x) +
+    " y=" + String(this.state.ballLp.y)
+  );
+};
+
+FloatBallAppWM.prototype.scheduleScreenReflow = function(reason) {
+  try {
+    var self = this;
+    if (!this.state.h) {
+      this.onScreenChangedReflow(reason);
+      return;
+    }
+
+    this.onScreenChangedReflow(reason);
+
+    this.state.h.postDelayed(new JavaAdapter(java.lang.Runnable, {
+      run: function() {
+        try {
+          if (self.state.closing) return;
+          self.onScreenChangedReflow(String(reason || "") + ":delayed");
+        } catch (e) {
+          safeLog(self.L, "w", "delayed screen reflow fail reason=" + String(reason || "") + " err=" + String(e));
+        }
+      }
+    }), 260);
+  } catch (e0) {
+    try { this.onScreenChangedReflow(reason); } catch(e1) {}
+  }
 };
 
 FloatBallAppWM.prototype.setupDisplayMonitor = function() {
@@ -983,7 +1034,7 @@ FloatBallAppWM.prototype.setupDisplayMonitor = function() {
 
                 if (changed) {
                   self.cancelDockTimer();
-                  self.onScreenChangedReflow();
+                  self.scheduleScreenReflow("display_changed");
                   self.touchActivity();
                 }
               } catch (e1) {

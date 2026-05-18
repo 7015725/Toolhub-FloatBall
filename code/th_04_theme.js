@@ -2,8 +2,41 @@
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
-  try { this.state.wm.getDefaultDisplay().getRealMetrics(m); } catch (e) { this.state.wm.getDefaultDisplay().getMetrics(m); }
-  return { w: m.widthPixels, h: m.heightPixels };
+  var w = 0;
+  var h = 0;
+
+  try {
+    this.state.wm.getDefaultDisplay().getRealMetrics(m);
+    w = Number(m.widthPixels || 0);
+    h = Number(m.heightPixels || 0);
+  } catch (e0) {
+    try {
+      this.state.wm.getDefaultDisplay().getMetrics(m);
+      w = Number(m.widthPixels || 0);
+      h = Number(m.heightPixels || 0);
+    } catch (e1) {}
+  }
+
+  try {
+    var rot = this.getRotation ? this.getRotation() : -1;
+    var isLandscape = (rot === android.view.Surface.ROTATION_90 || rot === android.view.Surface.ROTATION_270);
+    var isPortrait = (rot === android.view.Surface.ROTATION_0 || rot === android.view.Surface.ROTATION_180);
+    if (isLandscape && w > 0 && h > 0 && w < h) {
+      var t = w; w = h; h = t;
+    } else if (isPortrait && w > 0 && h > 0 && w > h) {
+      var t2 = w; w = h; h = t2;
+    }
+  } catch (eRot) {}
+
+  if (w <= 0 || h <= 0) {
+    try {
+      var dm = context.getResources().getDisplayMetrics();
+      if (w <= 0) w = Number(dm.widthPixels || 0);
+      if (h <= 0) h = Number(dm.heightPixels || 0);
+    } catch (eRes) {}
+  }
+
+  return { w: Math.max(1, Math.floor(w)), h: Math.max(1, Math.floor(h)) };
 };
 FloatBallAppWM.prototype.getRotation = function() { try { return this.state.wm.getDefaultDisplay().getRotation();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } return -1; };
 
