@@ -294,7 +294,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   this.applySettingsTheme(T, isDark, C, cfgTpl);
   var useMonetHome = this.isSettingsMonetTheme ? this.isSettingsMonetTheme(cfgTpl) : false;
   var panel = this.ui.createStyledPanel(this, 16);
-  try { panel.setBackground(this.ui.createRoundDrawable(T.bg, this.dp(18))); } catch(ePanelBg) {}
+  try { panel.setBackground(this.ui.createRoundDrawable(T.bg, this.dp(24))); } catch(ePanelBg) {}
   var statusLabel = "已保存";
   var statusValue = "当前生效";
   var statusBg = T.card;
@@ -326,7 +326,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   try { scroll.setVerticalScrollBarEnabled(false); } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
   var box = new android.widget.LinearLayout(context);
   box.setOrientation(android.widget.LinearLayout.VERTICAL);
-  box.setPadding(0, 0, 0, this.dp(4));
+  box.setPadding(0, 0, 0, this.dp(8));
   scroll.addView(box);
   scroll.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, { onTouch: function(v, e) { self.touchActivity(); return false; }}));
   if (useMonetHome) {
@@ -376,13 +376,14 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   var bottom = new android.widget.LinearLayout(context);
   bottom.setOrientation(android.widget.LinearLayout.VERTICAL);
   bottom.setGravity(android.view.Gravity.CENTER);
-  bottom.setPadding(this.dp(8), this.dp(8), this.dp(8), this.dp(4));
+  bottom.setPadding(this.dp(14), this.dp(8), this.dp(14), this.dp(14));
+  bottom.setBackground(this.ui.createRoundDrawable(this.withAlpha(T.bg, isDark ? 0.88 : 0.96), this.dp(22)));
   var deco = new android.widget.TextView(context);
-  deco.setText("🌿  ✿                         ✿  🌿");
+  deco.setText("🌿  ✿                 ✿  🌿");
   deco.setGravity(android.view.Gravity.CENTER);
-  deco.setTextColor(this.withAlpha(T.primaryDeep, isDark ? 0.44 : 0.36));
-  deco.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-  bottom.addView(deco, new android.widget.LinearLayout.LayoutParams(-1, this.dp(18)));
+  deco.setTextColor(this.withAlpha(T.primaryDeep, isDark ? 0.36 : 0.30));
+  deco.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
+  bottom.addView(deco, new android.widget.LinearLayout.LayoutParams(-1, this.dp(14)));
   var btnSave = this.ui.createSolidButton(this, useMonetHome ? "保存" : "保存布置", T.primary, T.onPrimary, function() {
     try {
       self.touchActivity();
@@ -397,8 +398,14 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   });
   btnSave.setText(useMonetHome ? "保存" : "💾  保存布置");
   btnSave.setPadding(this.dp(18), 0, this.dp(18), 0);
-  bottom.addView(btnSave, new android.widget.LinearLayout.LayoutParams(-1, this.dp(46)));
-  panel.addView(bottom, new android.widget.LinearLayout.LayoutParams(-1, -2));
+  try { btnSave.setBackground(this.ui.createStrokeDrawable(T.primary, this.withAlpha(T.primaryDeep, isDark ? 0.26 : 0.18), this.dp(1), this.dp(23))); } catch(eSaveBg) {}
+  try { btnSave.setElevation(this.dp(2)); } catch(eSaveElev) {}
+  var saveLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(44));
+  saveLp.setMargins(this.dp(34), this.dp(4), this.dp(34), 0);
+  bottom.addView(btnSave, saveLp);
+  var bottomLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+  bottomLp.setMargins(this.dp(2), this.dp(4), this.dp(2), 0);
+  panel.addView(bottom, bottomLp);
   return panel;
 };
 

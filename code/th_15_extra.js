@@ -843,10 +843,11 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var root = new android.widget.FrameLayout(context);
   var body = new android.widget.LinearLayout(context);
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
-  body.setPadding(this.dp(2), this.dp(2), this.dp(2), this.dp(2));
-  body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.42 : 0.70), this.dp(1), this.dp(24)));
+  // 外层薄荷容器本身就是整张“岛屿设置”卡片：四角统一圆角，并给底部留出完整收口。
+  body.setPadding(this.dp(6), this.dp(6), this.dp(6), this.dp(8));
+  body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.42 : 0.70), this.dp(1), this.dp(26)));
   try { body.setClipToOutline(true); } catch(eClip) {}
-  try { body.setElevation(this.dp(16)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  try { body.setElevation(this.dp(12)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   root.addView(body, new android.widget.FrameLayout.LayoutParams(-1, -1));
 
   var bar = new android.widget.LinearLayout(context);
@@ -901,7 +902,9 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
     try { contentView.setElevation(0); } catch(eEl) { safeLog(null, 'e', "catch " + String(eEl)); }
     host.addView(contentView, new android.widget.FrameLayout.LayoutParams(-1, -1));
   }
-  body.addView(host, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+  var hostLp = new android.widget.LinearLayout.LayoutParams(-1, 0, 1);
+  hostLp.setMargins(this.dp(6), 0, this.dp(6), this.dp(6));
+  body.addView(host, hostLp);
 
   try {
     var stripW = this.dp(24);
