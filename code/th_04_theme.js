@@ -846,33 +846,49 @@ FloatBallAppWM.prototype.applyTextColorRecursive = function(v, colorInt) {
 };
 
 FloatBallAppWM.prototype.updatePanelBackground = function(panelView) {
-  // 这段代码的主要内容/用途：统一为"主面板/设置面板/查看器面板"应用背景与文字颜色（自动/亮/暗三档），并输出调试日志（命中哪个颜色）。
+  // 这段代码的主要内容/用途：统一为"主面板/设置面板/查看器面板"应用背景与文字颜色；SETTINGS_THEME=animal 时使用动物岛色，monet 时保持系统莫奈。
   try {
     var bg = new android.graphics.drawable.GradientDrawable();
-    bg.setCornerRadius(this.dp(22));
+    var isDark = this.isDarkTheme();
+    var settTheme = "animal";
+    try { settTheme = String(this.config.SETTINGS_THEME || "animal"); } catch(eSetTheme) { settTheme = "animal"; }
 
-    var bgInt = this.getPanelBgColorInt();
+    var bgInt = 0;
+    var tc = 0;
+    var stroke = 0;
+    var radiusDp = 22;
+
+    if (settTheme === "animal" && this.getAnimalIslandTheme) {
+      var T = this.getAnimalIslandTheme();
+      bgInt = this.withAlpha(isDark ? T.bg : T.bg2, isDark ? 0.96 : 0.94);
+      tc = T.text;
+      stroke = this.withAlpha(T.stroke, isDark ? 0.28 : 0.34);
+      radiusDp = 30;
+    } else {
+      bgInt = this.getPanelBgColorInt();
+      tc = this.getPanelTextColorInt(bgInt);
+      var outlineColor = this.ui.colors._monetOutline || (isDark ? android.graphics.Color.parseColor("#8E918F") : android.graphics.Color.parseColor("#747775"));
+      stroke = this.withAlpha(outlineColor, isDark ? 0.26 : 0.20);
+    }
+
+    bg.setCornerRadius(this.dp(radiusDp));
     bg.setColor(bgInt);
 
     // 轻量描边：亮色时更明显，暗色时也保留一点边界（不提供自定义输入，避免设置页复杂化）
     var sw = this.dp(1);
-    var isDark = this.isDarkTheme();
-    var outlineColor = this.ui.colors._monetOutline || (isDark ? android.graphics.Color.parseColor("#8E918F") : android.graphics.Color.parseColor("#747775"));
-    var stroke = this.withAlpha(outlineColor, isDark ? 0.26 : 0.20);
     try { bg.setStroke(sw, stroke);  } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
 
     panelView.setBackground(bg);
 
-    var tc = this.getPanelTextColorInt(bgInt);
     try { themeBgInt = bgInt; themeTextInt = tc;  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
     this.applyTextColorRecursive(panelView, tc);
 
-    try { _th_log(this.L, "d", "[t]apply bg=" + _th_hex(bgInt) + " tx=" + _th_hex(tc));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-
+    try { _th_log(this.L, "d", "[t]apply theme=" + settTheme + " bg=" + _th_hex(bgInt) + " tx=" + _th_hex(tc));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
     try {
       _th_log(this.L, "d",
-        "[theme:apply] isDark=" + isDark +
+        "[theme:apply] theme=" + settTheme +
+        " isDark=" + isDark +
         " bg=" + _th_hex(bgInt) + " " + _th_argb(bgInt) +
         " text=" + _th_hex(tc) + " " + _th_argb(tc) +
         " stroke=" + _th_hex(stroke)

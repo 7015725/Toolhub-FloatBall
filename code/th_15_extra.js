@@ -83,23 +83,50 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
 
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
+  var settTheme = "animal";
+  try { settTheme = String(this.config.SETTINGS_THEME || "animal"); } catch(eSetTheme) { settTheme = "animal"; }
+  var useAnimalPanel = (settTheme === "animal" && this.getAnimalIslandTheme);
+  var TPanel = null;
+  try { if (useAnimalPanel) TPanel = this.getAnimalIslandTheme(); } catch(eTPanel) { TPanel = null; useAnimalPanel = false; }
+
   var bgColor = isDark ? C.bgDark : C.bgLight;
   var cardColor = isDark ? C.cardDark : C.cardLight;
   var textColor = isDark ? C.textPriDark : C.textPriLight;
+  var panelStrokeColor = isDark ? C.dividerDark : C.dividerLight;
+  var cardStrokeColor = isDark ? C.dividerDark : C.dividerLight;
+  var pressedCardColor = this.withAlpha(C.primary, 0.20);
+  var iconBubbleColor = pressedCardColor;
+  var iconTintColor = textColor;
+  var panelRadiusDp = 22;
+  var cardRadiusDp = 12;
+  var panelElevationDp = 8;
+  var cardElevationDp = 2;
+
+  if (useAnimalPanel && TPanel) {
+    bgColor = this.withAlpha(isDark ? TPanel.bg : TPanel.bg2, isDark ? 0.96 : 0.94);
+    cardColor = TPanel.card;
+    textColor = TPanel.text;
+    panelStrokeColor = this.withAlpha(TPanel.stroke, isDark ? 0.28 : 0.34);
+    cardStrokeColor = this.withAlpha(TPanel.stroke, isDark ? 0.26 : 0.34);
+    pressedCardColor = isDark ? this.withAlpha(TPanel.primarySoft, 0.92) : this.withAlpha(TPanel.primarySoft, 0.98);
+    iconBubbleColor = isDark ? this.withAlpha(TPanel.card2, 0.92) : TPanel.primarySoft;
+    iconTintColor = TPanel.sub;
+    panelRadiusDp = 30;
+    cardRadiusDp = 22;
+    panelElevationDp = isDark ? 2 : 3;
+    cardElevationDp = isDark ? 1 : 2;
+  }
 
   var panel = new android.widget.LinearLayout(context);
   panel.setOrientation(android.widget.LinearLayout.VERTICAL);
 
-  // 面板背景：走统一主题色 API（支持 Monet、模板、自定义）
-  // 先用 updatePanelBackground 垫底，后续再加按钮等内容
-  // 先设一个临时背景避免裸窗口闪烁
+  // 面板背景：走统一主题色 API（支持 Monet/动物岛/自定义）
+  // 先设一个柔和临时背景避免裸窗口闪烁，最后再由 updatePanelBackground 统一兜底
   try {
-    var tmpBg = new android.graphics.drawable.GradientDrawable();
-    tmpBg.setColor(this.withAlpha(bgColor, this.config.PANEL_BG_ALPHA));
-    tmpBg.setCornerRadius(this.dp(16));
+    var tmpBg = this.ui.createStrokeDrawable(bgColor, panelStrokeColor, this.dp(1), this.dp(panelRadiusDp));
     panel.setBackground(tmpBg);
   } catch(eTmp) {};
-  try { panel.setElevation(this.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+  try { panel.setElevation(this.dp(panelElevationDp));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
   var padDp = this.config.PANEL_PADDING_DP;
   panel.setPadding(
@@ -161,6 +188,25 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
 
   var self = this;
 
+  function makePanelCellDrawable(fillColor, pressColor, strokeColor, radiusDp) {
+    var sd = new android.graphics.drawable.StateListDrawable();
+    var p = self.ui.createStrokeDrawable(pressColor, strokeColor, self.dp(1), self.dp(radiusDp));
+    var n = self.ui.createStrokeDrawable(fillColor, strokeColor, self.dp(1), self.dp(radiusDp));
+    sd.addState([android.R.attr.state_pressed], p);
+    sd.addState([], n);
+    return sd;
+  }
+
+  function isAppLikeIcon(btnObj) {
+    try {
+      if (!btnObj) return false;
+      var tp = (btnObj.type == null) ? "" : String(btnObj.type);
+      var pkg = (btnObj.pkg == null) ? "" : String(btnObj.pkg);
+      if ((tp === "app" || tp === "shortcut") && pkg.length > 0) return true;
+    } catch(eAppLike) {}
+    return false;
+  }
+
   scroll.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
     onTouch: function(v, e) { self.touchActivity(); return false; }
   }));
@@ -193,10 +239,10 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
     lp.setMargins(gapPx, gapPx, gapPx, gapPx);
     cell.setLayoutParams(lp);
 
-    // 单元格背景：如果是有功能的按钮，给个卡片背景；否则透明
+    // 单元格背景：如果是有功能的按钮，给柔和卡片背景；否则透明
     if (btnCfg) {
-         cell.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(12)));
-         try { cell.setElevation(self.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+         cell.setBackground(makePanelCellDrawable(cardColor, pressedCardColor, cardStrokeColor, cardRadiusDp));
+         try { cell.setElevation(self.dp(cardElevationDp));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     } else {
          // 空格子占位
     }
@@ -207,9 +253,9 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
         iv.setImageDrawable(dr);
         // 如果图标是白色的（通常是系统图标），且我们在亮色卡片上，可能需要染色
         // 但 resolveIconDrawable 逻辑比较复杂，这里暂时不强制染色，除非用户配置了 TINT
-        if (!isDark && btnCfg && !btnCfg.type && !btnCfg.pkg) {
-             // 简单的系统图标在亮色模式下可能看不清，染成深色
-             try { iv.setColorFilter(C.textPriLight, android.graphics.PorterDuff.Mode.SRC_IN);  } catch(eCF) { safeLog(null, 'e', "catch " + String(eCF)); }
+        if (btnCfg && !isAppLikeIcon(btnCfg) && !btnCfg.iconPath) {
+             // ShortX/系统图标与问号占位走主题色，避免灰黑重阴影感
+             try { iv.setColorFilter(useAnimalPanel ? iconTintColor : (isDark ? C.textPriDark : C.textPriLight), android.graphics.PorterDuff.Mode.SRC_IN);  } catch(eCF) { safeLog(null, 'e', "catch " + String(eCF)); }
         }
     }
 
@@ -218,7 +264,23 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
       this.dp(this.config.PANEL_ICON_SIZE_DP)
     );
     iv.setLayoutParams(ivLp);
-    cell.addView(iv);
+    if (btnCfg && useAnimalPanel && !isAppLikeIcon(btnCfg)) {
+      var iconBubble = new android.widget.FrameLayout(context);
+      iconBubble.setForegroundGravity(android.view.Gravity.CENTER);
+      iconBubble.setBackground(self.ui.createStrokeDrawable(iconBubbleColor, self.withAlpha(TPanel.stroke, isDark ? 0.20 : 0.24), self.dp(1), self.dp(15)));
+      iconBubble.setPadding(self.dp(4), self.dp(4), self.dp(4), self.dp(4));
+      var bubbleLp = new android.widget.LinearLayout.LayoutParams(self.dp(38), self.dp(38));
+      iconBubble.setLayoutParams(bubbleLp);
+      var ivInBubbleLp = new android.widget.FrameLayout.LayoutParams(
+        self.dp(self.config.PANEL_ICON_SIZE_DP),
+        self.dp(self.config.PANEL_ICON_SIZE_DP),
+        android.view.Gravity.CENTER
+      );
+      iconBubble.addView(iv, ivInBubbleLp);
+      cell.addView(iconBubble);
+    } else {
+      cell.addView(iv);
+    }
 
     if (this.config.PANEL_LABEL_ENABLED) {
       var tv = new android.widget.TextView(context);
@@ -242,7 +304,7 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
       (function(index, btnObj) {
         cell.setClickable(true);
         // 使用 Ripple 效果增强点击反馈
-        var rippleDr = self.ui.createRippleDrawable(cardColor, self.withAlpha(C.primary, 0.2), self.dp(12));
+        var rippleDr = makePanelCellDrawable(cardColor, pressedCardColor, cardStrokeColor, cardRadiusDp);
         cell.setBackground(rippleDr);
 
         cell.setOnClickListener(new android.view.View.OnClickListener({
