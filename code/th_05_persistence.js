@@ -317,7 +317,7 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
        } catch(eLK) { safeLog(null, 'e', "catch " + String(eLK)); }
       return;
     }
-    if (k === "BALL_SIZE_DP" || k === "BALL_PNG_MODE" || k === "BALL_ICON_TYPE" || k === "BALL_ICON_FILE_PATH" || k === "BALL_ICON_RES_ID" || k === "BALL_ICON_RES_NAME" || k === "BALL_ICON_SIZE_DP" || k === "BALL_ICON_TINT_HEX") { this.rebuildBallForNewSize(); return; }
+    if (k === "BALL_SIZE_DP" || k === "BALL_PNG_MODE" || k === "BALL_ICON_TYPE" || k === "BALL_ICON_FILE_PATH" || k === "BALL_ICON_RES_ID" || k === "BALL_ICON_RES_NAME" || k === "BALL_ICON_SIZE_DP" || k === "BALL_ICON_TINT_HEX" || k === "BALL_BG_COLOR_HEX") { this.rebuildBallForNewSize(); return; }
 
     if (k === "PANEL_ROWS" || k === "PANEL_COLS" ||
         k === "PANEL_ITEM_SIZE_DP" || k === "PANEL_GAP_DP" ||

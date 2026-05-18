@@ -130,6 +130,7 @@ var ConfigValidator = {
     BALL_ICON_PKG: { type: "string", default: "" },
     BALL_ICON_RES_NAME: { type: "string", default: "" },
     BALL_ICON_TINT_HEX: { type: "string", default: "" },
+    BALL_BG_COLOR_HEX: { type: "string", default: "" },
 
     // 回弹动画配置
     BOUNCE_DECAY: { type: "float", min: 0.3, max: 0.95, default: 0.72 },
@@ -741,6 +742,7 @@ var ConfigManager = {
         BALL_ICON_RES_NAME: "",
         BALL_ICON_SIZE_DP: 22,
         BALL_ICON_TINT_HEX: "",
+        BALL_BG_COLOR_HEX: "",
         BALL_IDLE_ALPHA: 0.6,
         PANEL_POS_GRAVITY: "bottom",
         PANEL_CUSTOM_OFFSET_Y: 0,
@@ -793,7 +795,8 @@ var ConfigManager = {
         ]},
         { key: "BALL_ICON_FILE_PATH", name: "已选择的图标文件", type: "text" },
         { key: "BALL_ICON_RES_NAME", name: "岛上图标", type: "ball_shortx_icon" },
-        { key: "BALL_ICON_TINT_HEX", name: "气球颜色", type: "ball_color" },
+        { key: "BALL_ICON_TINT_HEX", name: "徽章颜色", type: "ball_color" },
+        { key: "BALL_BG_COLOR_HEX", name: "球体背景", type: "ball_color" },
         { key: "BALL_IDLE_ALPHA", name: "安静时透明度", type: "float", min: 0.1, max: 1.0, step: 0.05 },
 
         { type: "section", name: "面板布局" },
@@ -870,7 +873,7 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0) {
             needReset = true;
         }
     } else {

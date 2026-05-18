@@ -719,6 +719,14 @@ FloatBallAppWM.prototype.getMonetAccentForBall = function() {
 FloatBallAppWM.prototype.updateBallContentBackground = function(contentView) {
   try {
     var ballColor = this.getMonetAccentForBall();
+    try {
+      var bgHex = String(this.config.BALL_BG_COLOR_HEX || "").trim();
+      if (bgHex.length > 0) {
+        ballColor = android.graphics.Color.parseColor(bgHex);
+      }
+    } catch(eCustomBg) {
+      safeLog(this.L, 'e', "BALL_BG_COLOR_HEX parse failed, fallback Monet accent: " + String(eCustomBg));
+    }
     var dark = this.isDarkTheme();
     var alpha01 = dark ? this.config.BALL_RIPPLE_ALPHA_DARK : this.config.BALL_RIPPLE_ALPHA_LIGHT;
     var rippleColor = this.withAlpha(ballColor, alpha01);
