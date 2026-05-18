@@ -136,6 +136,31 @@ FloatBallAppWM.prototype.addSettingsHomeDashedDivider = function(parent) {
   parent.addView(line, lp);
 };
 
+
+FloatBallAppWM.prototype.getIslandPickerTheme = function() {
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var T = this.getAnimalIslandTheme();
+  var cfgTpl = null;
+  try { cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config; } catch(eCfg) { cfgTpl = this.config; }
+  try { this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) {}
+  return {
+    isDark: isDark,
+    C: C,
+    T: T,
+    bg: T.bg,
+    card: T.card,
+    card2: T.card2,
+    text: T.text,
+    sub: T.sub,
+    primary: T.primary,
+    primaryDeep: T.primaryDeep,
+    primarySoft: T.primarySoft,
+    stroke: T.stroke,
+    onPrimary: T.onPrimary
+  };
+};
+
 FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc, actionText, onClick) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -4221,12 +4246,14 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var onDismiss = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
   var builder = (typeof opt.builder === "function") ? opt.builder : null;
 
-  var isDark = this.isDarkTheme();
+  var PT = this.getIslandPickerTheme ? this.getIslandPickerTheme() : null;
+  var isDark = PT ? PT.isDark : this.isDarkTheme();
   var C = this.ui.colors;
+  var T = PT ? PT.T : this.getAnimalIslandTheme();
   var wm = this.state.wm;
 
   var root = new android.widget.FrameLayout(context);
-  root.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, 0.55));
+  root.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42));
   root.setClickable(true);
 
   var card = new android.widget.LinearLayout(context);
@@ -4236,27 +4263,32 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   );
   cardLp.gravity = android.view.Gravity.CENTER;
   card.setLayoutParams(cardLp);
-  card.setBackground(self.ui.createRoundDrawable(isDark ? C.cardDark : C.cardLight, self.dp(16)));
-  card.setPadding(self.dp(12), self.dp(12), self.dp(12), self.dp(12));
+  card.setBackground(self.ui.createStrokeDrawable(T.card, self.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.22), self.dp(1), self.dp(24)));
+  card.setPadding(self.dp(14), self.dp(12), self.dp(14), self.dp(12));
+  try { card.setElevation(self.dp(10)); } catch(eCardElev) {}
 
   var header = new android.widget.LinearLayout(context);
   header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   header.setGravity(android.view.Gravity.CENTER_VERTICAL);
   var titleTv = new android.widget.TextView(context);
-  titleTv.setText(title);
-  titleTv.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+  titleTv.setText("❧ " + title + " ❧");
+  titleTv.setTextColor(T.text);
   titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
   titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
   header.addView(titleTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-  var closeBtn = self.ui.createFlatButton(self, "关闭", C.primary, function() {
+  var closeBtn = self.ui.createFlatButton(self, "✕", T.primaryDeep, function() {
     closePopup();
   });
-  header.addView(closeBtn);
+  closeBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+  closeBtn.setTypeface(null, android.graphics.Typeface.BOLD);
+  try { closeBtn.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(18))); } catch(eCloseBg) {}
+  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(42), self.dp(38)));
   card.addView(header);
 
   var content = new android.widget.LinearLayout(context);
   content.setOrientation(android.widget.LinearLayout.VERTICAL);
+  content.setPadding(0, self.dp(8), 0, 0);
   var contentLp = new android.widget.LinearLayout.LayoutParams(
     android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
     android.widget.LinearLayout.LayoutParams.MATCH_PARENT
@@ -4280,11 +4312,12 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND,
     android.graphics.PixelFormat.TRANSLUCENT
   );
-  lp.dimAmount = 0.5;
+  lp.dimAmount = isDark ? 0.55 : 0.38;
   lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
   lp.x = 0;
   lp.y = 0;
-  lp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
+  lp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+    | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 
   try { wm.addView(root, lp); } catch(eAdd) { safeLog(self.L, 'e', "popup addView fail: " + String(eAdd)); return null; }
 
@@ -4321,12 +4354,14 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
 
   var selectedName = currentName;
   var popupState = { currentPage: 0 };
-  var isDark = self.isDarkTheme();
+  var PT = self.getIslandPickerTheme ? self.getIslandPickerTheme() : null;
+  var isDark = PT ? PT.isDark : self.isDarkTheme();
   var C = self.ui.colors;
-  var textColor = isDark ? C.textPriDark : C.textPriLight;
-  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
-  var cardColor = isDark ? C.cardDark : C.cardLight;
-  var bgColor = isDark ? C.bgDark : C.bgLight;
+  var T = PT ? PT.T : self.getAnimalIslandTheme();
+  var textColor = PT ? PT.text : (isDark ? C.textPriDark : C.textPriLight);
+  var subTextColor = PT ? PT.sub : (isDark ? C.textSecDark : C.textSecLight);
+  var cardColor = PT ? PT.card2 : (isDark ? C.cardDark : C.cardLight);
+  var bgColor = PT ? PT.bg : (isDark ? C.bgDark : C.bgLight);
   var wm = self.state.wm;
 
   function filterCatalog(q) {
@@ -4386,14 +4421,14 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var pageSize = colCount * rowCount;
 
   var rootOverlay = new android.widget.FrameLayout(context);
-  try { rootOverlay.setBackgroundColor(android.graphics.Color.parseColor("#33000000")); }
+  try { rootOverlay.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42)); }
   catch(eOverlayBg) { rootOverlay.setBackgroundColor(0x33000000); }
   rootOverlay.setClickable(true);
 
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
   card.setPadding(padH, padV, padH, padV);
-  card.setBackground(self.ui.createRoundDrawable(bgColor, self.dp(18)));
+  card.setBackground(self.ui.createStrokeDrawable(T.card, self.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.22), self.dp(1), self.dp(24)));
   try { card.setElevation(self.dp(10)); } catch(eCardElev) { safeLog(null, 'e', "catch " + String(eCardElev)); }
 
   // 与 ToolHub 设置页外壳保持同款宽高、圆角、居中方式。
@@ -4439,15 +4474,17 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   header.setGravity(android.view.Gravity.CENTER_VERTICAL);
   var titleTv = new android.widget.TextView(context);
-  titleTv.setText("\u9009\u62e9 ShortX \u56fe\u6807");
+  titleTv.setText("❧ 岛上图标库 ❧");
   titleTv.setTextColor(textColor);
   titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
   titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
   header.addView(titleTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-  var closeBtn = self.ui.createFlatButton(self, "✕", subTextColor, function() { dismiss(); });
+  var closeBtn = self.ui.createFlatButton(self, "✕", T.primaryDeep, function() { dismiss(); });
   closeBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+  closeBtn.setTypeface(null, android.graphics.Typeface.BOLD);
   closeBtn.setPadding(self.dp(8), 0, self.dp(8), 0);
+  try { closeBtn.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(18))); } catch(eCloseBg) {}
   header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(42), self.dp(38)));
   card.addView(header);
 
@@ -4456,12 +4493,12 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
   searchEt.setTextColor(textColor);
   try { searchEt.setHintTextColor(subTextColor);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-  searchEt.setHint("\u641c\u7d22\u56fe\u6807\u540d\uff0c\u5982 share / home");
+  searchEt.setHint("寻找岛上图标，如 share / home");
   searchEt.setSingleLine(true);
   searchEt.setFocusable(true);
   searchEt.setFocusableInTouchMode(true);
   searchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
-  searchEt.setBackground(self.ui.createStrokeDrawable(isDark ? C.inputBgDark : C.inputBgLight, isDark ? C.dividerDark : C.dividerLight, self.dp(1), self.dp(8)));
+  searchEt.setBackground(self.ui.createStrokeDrawable(T.card2, self.withAlpha(T.primaryDeep, isDark ? 0.24 : 0.18), self.dp(1), self.dp(16)));
   var searchLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
   searchLp.setMargins(0, self.dp(8), 0, self.dp(6));
   searchEt.setLayoutParams(searchLp);
@@ -4490,7 +4527,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   pageBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
   pageBar.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
 
-  var btnPrev = self.ui.createFlatButton(self, "\u4e0a\u4e00\u9875", subTextColor, function() {
+  var btnPrev = self.ui.createFlatButton(self, "上一页", T.primaryDeep, function() {
     if (popupState.currentPage > 0) { popupState.currentPage--; renderGrid(); }
   });
   pageBar.addView(btnPrev);
@@ -4503,7 +4540,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   pageInfo.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
   pageBar.addView(pageInfo);
 
-  var btnNext = self.ui.createFlatButton(self, "\u4e0b\u4e00\u9875", C.primary, function() {
+  var btnNext = self.ui.createFlatButton(self, "下一页", T.primaryDeep, function() {
     popupState.currentPage++; renderGrid();
   });
   pageBar.addView(btnNext);
@@ -4538,7 +4575,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   selectNameTv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
   selectRow.addView(selectNameTv);
 
-  var selectConfirm = self.ui.createSolidButton(self, "\u786e\u5b9a", C.primary, android.graphics.Color.WHITE, function() {
+  var selectConfirm = self.ui.createSolidButton(self, "带回小岛", T.primary, T.onPrimary, function() {
     self.touchActivity();
     try {
       if (typeof onSelect === "function") onSelect(selectedName);
@@ -4559,7 +4596,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
         if (dr) selectPreview.setImageDrawable(dr);
         else selectPreview.setImageDrawable(null);
       } else {
-        selectNameTv.setText("\u672a\u9009\u62e9");
+        selectNameTv.setText("还没选图标");
         selectPreview.setImageDrawable(null);
       }
      } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -4578,14 +4615,14 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
       var start = popupState.currentPage * pageSize;
       var pageItems = matched.slice(start, start + pageSize);
 
-      statusTv.setText("\u5171 " + matched.length + " \u4e2a\uff0c\u7b2c " + (popupState.currentPage + 1) + "/" + totalPages + " \u9875\uff0c\u6bcf\u9875 " + pageSize + " \u4e2a");
+      statusTv.setText("共 " + matched.length + " 个图标 · 第 " + (popupState.currentPage + 1) + "/" + totalPages + " 页");
       pageInfo.setText((popupState.currentPage + 1) + " / " + totalPages);
       btnPrev.setEnabled(popupState.currentPage > 0);
       btnNext.setEnabled(popupState.currentPage < totalPages - 1);
 
       if (pageItems.length === 0) {
         var emptyTv = new android.widget.TextView(context);
-        emptyTv.setText("\u672a\u627e\u5230\u5339\u914d\u7684\u56fe\u6807");
+        emptyTv.setText("没有找到这枚小图标");
         emptyTv.setTextColor(subTextColor);
         emptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         emptyTv.setGravity(android.view.Gravity.CENTER);
@@ -4604,9 +4641,9 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           cell.setPadding(self.dp(4), self.dp(6), self.dp(4), self.dp(6));
           cell.setClickable(true);
 
-          var bgColor = cardColor;
-          try { bgColor = self.withAlpha(cardColor, 0.96);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-          cell.setBackground(self.ui.createRoundDrawable(bgColor, self.dp(10)));
+          var cellBg = cardColor;
+          try { cellBg = self.withAlpha(cardColor, 0.96);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+          cell.setBackground(self.ui.createStrokeDrawable(cellBg, self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.12), self.dp(1), self.dp(14)));
 
           var iv = new android.widget.ImageView(context);
           iv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(iconSize, iconSize));
@@ -4627,8 +4664,8 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           cell.addView(tv);
 
           if (selectedName === item.name) {
-            try { cell.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.2), self.dp(10)));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-            try { tv.setTextColor(C.primary);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+            try { cell.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.42 : 0.34), self.dp(2), self.dp(14)));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+            try { tv.setTextColor(T.primaryDeep);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           } else {
             try { tv.setTextColor(subTextColor);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           }
@@ -4682,10 +4719,12 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
   var onSelect = (typeof opt.onSelect === "function") ? opt.onSelect : null;
   var onDismiss = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
 
-  var isDark = this.isDarkTheme();
+  var PT = this.getIslandPickerTheme ? this.getIslandPickerTheme() : null;
+  var isDark = PT ? PT.isDark : this.isDarkTheme();
   var C = this.ui.colors;
-  var textColor = isDark ? C.textPriDark : C.textPriLight;
-  var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+  var T = PT ? PT.T : this.getAnimalIslandTheme();
+  var textColor = PT ? PT.text : (isDark ? C.textPriDark : C.textPriLight);
+  var subTextColor = PT ? PT.sub : (isDark ? C.textSecDark : C.textSecLight);
 
   function getThemeTintHex() {
     try {
@@ -4782,14 +4821,15 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
   var currentAlphaByte = extractTintAlphaByte(currentColor);
 
   var popupResult = self.showPopupOverlay({
-    title: "选择颜色",
+    title: "换颜色",
     onDismiss: onDismiss,
     builder: function(content, closePopup) {
       // 图标预览区
       var previewRow = new android.widget.LinearLayout(context);
       previewRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       previewRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      previewRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+      previewRow.setPadding(self.dp(12), self.dp(10), self.dp(12), self.dp(10));
+      previewRow.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.24 : 0.18), self.dp(1), self.dp(18)));
 
       var previewIv = new android.widget.ImageView(context);
       previewIv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(48), self.dp(48)));
@@ -4797,7 +4837,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       previewRow.addView(previewIv);
 
       var previewLabel = new android.widget.TextView(context);
-      previewLabel.setText("图标预览");
+      previewLabel.setText("小图标试衣间");
       previewLabel.setTextColor(subTextColor);
       previewLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       previewLabel.setPadding(self.dp(12), 0, 0, 0);
@@ -4830,7 +4870,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
 
       // ========== 最近使用颜色 ==========
       var recentTitle = new android.widget.TextView(context);
-      recentTitle.setText("最近使用");
+      recentTitle.setText("最近用过的小颜色");
       recentTitle.setTextColor(subTextColor);
       recentTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       recentTitle.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(4));
@@ -4842,7 +4882,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       content.addView(recentGrid);
 
       var recentEmptyTv = new android.widget.TextView(context);
-      recentEmptyTv.setText("暂无最近颜色");
+      recentEmptyTv.setText("还没有最近颜色");
       recentEmptyTv.setTextColor(subTextColor);
       recentEmptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
       recentEmptyTv.setPadding(self.dp(12), self.dp(4), self.dp(12), self.dp(8));
@@ -4885,7 +4925,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
                   var border = new android.graphics.drawable.GradientDrawable();
                   border.setColor(android.graphics.Color.TRANSPARENT);
                   border.setCornerRadius(self.dp(5));
-                  border.setStroke(self.dp(2), C.primary);
+                  border.setStroke(self.dp(2), T.primaryDeep);
                   cell.setForeground(border);
                  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
               }
@@ -4913,7 +4953,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
 
       // 21 色常用颜色
       var commonTitle = new android.widget.TextView(context);
-      commonTitle.setText("常用颜色");
+      commonTitle.setText("糖果常用色");
       commonTitle.setTextColor(subTextColor);
       commonTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       commonTitle.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(4));
@@ -4950,7 +4990,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               var border = new android.graphics.drawable.GradientDrawable();
               border.setColor(android.graphics.Color.TRANSPARENT);
               border.setCornerRadius(self.dp(6));
-              border.setStroke(self.dp(3), C.primary);
+              border.setStroke(self.dp(3), T.primaryDeep);
               cell.setForeground(border);
              } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           }
@@ -4991,7 +5031,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
                 var border = new android.graphics.drawable.GradientDrawable();
                 border.setColor(android.graphics.Color.TRANSPARENT);
                 border.setCornerRadius(self.dp(6));
-                border.setStroke(self.dp(3), C.primary);
+                border.setStroke(self.dp(3), T.primaryDeep);
                 matchedCell.setForeground(border);
                } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
             }
@@ -5007,7 +5047,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       content.addView(valueTv);
 
       function updateValueTv() {
-        valueTv.setText(isFollowTheme ? "当前：跟随主题" : ("当前：" + (selectedColor || "无")));
+        valueTv.setText(isFollowTheme ? "当前：跟随岛屿主题" : ("当前：" + (selectedColor || "无")));
       }
       updateValueTv();
 
@@ -5136,7 +5176,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       actionRow.setGravity(android.view.Gravity.CENTER);
       actionRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
 
-      var btnClear = self.ui.createFlatButton(self, "清空", subTextColor, function() {
+      var btnClear = self.ui.createFlatButton(self, "恢复默认", T.primaryDeep, function() {
         self.touchActivity();
         isFollowTheme = true;
         selectedColor = "";
@@ -5151,7 +5191,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       });
       actionRow.addView(btnClear);
 
-      var btnOk = self.ui.createSolidButton(self, "确定", C.primary, android.graphics.Color.WHITE, function() {
+      var btnOk = self.ui.createSolidButton(self, "保存颜色", T.primary, T.onPrimary, function() {
         self.touchActivity();
         try {
           var finalColor = isFollowTheme ? "" : String(selectedColor || "");
