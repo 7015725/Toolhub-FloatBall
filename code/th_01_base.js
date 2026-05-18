@@ -886,6 +886,40 @@ var ConfigManager = {
         if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0) {
             needReset = true;
         }
+
+        // 旧 schema.json 可能已经含有 key，但 UI 文案/范围仍是旧值；关键字段不一致时也强制刷新
+        var findSchemaItemByKey = function(arr, key) {
+            if (!arr) return null;
+            for (var i = 0; i < arr.length; i++) {
+                var it = arr[i];
+                if (it && it.key === key) return it;
+                var child = null;
+                if (it && it.children) child = findSchemaItemByKey(it.children, key);
+                if (!child && it && it.items) child = findSchemaItemByKey(it.items, key);
+                if (child) return child;
+            }
+            return null;
+        };
+        var schemaItemDiffers = function(key, fields) {
+            var cur = findSchemaItemByKey(s, key);
+            var def = findSchemaItemByKey(ConfigManager.defaultSchema, key);
+            if (!cur || !def) return true;
+            for (var i = 0; i < fields.length; i++) {
+                var f = fields[i];
+                if (typeof def[f] !== "undefined" && String(cur[f]) !== String(def[f])) return true;
+            }
+            return false;
+        };
+        if (!needReset) {
+            if (schemaItemDiffers("BALL_ICON_TINT_HEX", ["name", "type"]) ||
+                schemaItemDiffers("BALL_ICON_SIZE_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("BALL_BG_COLOR_HEX", ["name", "type"]) ||
+                schemaItemDiffers("TOOLAPP_BACK_EDGE_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("TOOLAPP_BACK_COMMIT_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("TOOLAPP_BACK_PROGRESS_DISTANCE_DP", ["name", "type", "min", "max", "step"])) {
+                needReset = true;
+            }
+        }
     } else {
         // # 仅当文件不存在时才标记为需要重置（新建），避免因读取失败导致覆盖
         try {
