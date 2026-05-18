@@ -31,7 +31,22 @@ FloatBallAppWM.prototype.applySettingsTheme = function(T, isDark, C, cfgTpl) {
   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 };
 
+FloatBallAppWM.prototype.isSettingsMonetTheme = function(cfgTpl) {
+  try { return String((cfgTpl || this.config).SETTINGS_THEME || "animal") === "monet"; } catch(e) { return false; }
+};
+
 FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
+  var cfgTpl = null;
+  try { cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config; } catch(eCfg) { cfgTpl = this.config; }
+  if (this.isSettingsMonetTheme && this.isSettingsMonetTheme(cfgTpl)) {
+    return [
+      { key: "ball", title: "悬浮球", desc: "大小、图标、颜色和跟随距离", sections: ["悬浮球"] },
+      { key: "panel", title: "面板", desc: "排列、文字、位置和吸边行为", sections: ["面板布局", "面板文字", "吸边与位置"] },
+      { key: "theme", title: "外观", desc: "颜色、背景、透明度和动态取色", sections: ["外观"] },
+      { key: "motion", title: "动作与手势", desc: "点击、长按、动画和贴边回弹", sections: ["动画", "触摸与手势"] },
+      { key: "debug", title: "运行记录", desc: "查看日志与当前状态", sections: ["日志"] }
+    ];
+  }
   return [
     { key: "ball", title: "漂浮气球", desc: "调整气球大小、图标和跟随距离", sections: ["悬浮球"] },
     { key: "panel", title: "面板小屋", desc: "调整面板排列、文字、位置和吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
@@ -72,6 +87,7 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   var T = this.getAnimalIslandTheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
+  var useMonet = this.isSettingsMonetTheme ? this.isSettingsMonetTheme(cfgTpl) : false;
   var cardColor = T.card;
   var textColor = T.text;
   var subTextColor = T.sub;
@@ -80,18 +96,28 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   row.setGravity(android.view.Gravity.CENTER_VERTICAL);
   row.setPadding(this.dp(16), this.dp(14), this.dp(14), this.dp(14));
   row.setBackground(this.ui.createRippleDrawable(cardColor, this.withAlpha(T.primary, isDark ? 0.20 : 0.14), this.dp(20)));
-  try { row.setElevation(this.dp(4)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  try { row.setElevation(this.dp(useMonet ? 1 : 4)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
 
   var badge = new android.widget.TextView(context);
   var icon = "✦";
   var titleStr = String(title || "");
-  if (titleStr.indexOf("工具伙伴") >= 0) icon = "⌂";
-  else if (titleStr.indexOf("蓝图") >= 0) icon = "□";
-  else if (titleStr.indexOf("气球") >= 0) icon = "●";
-  else if (titleStr.indexOf("面板") >= 0 || titleStr.indexOf("小屋") >= 0) icon = "▦";
-  else if (titleStr.indexOf("换装") >= 0 || titleStr.indexOf("装饰") >= 0) icon = "◐";
-  else if (titleStr.indexOf("动作") >= 0 || titleStr.indexOf("手势") >= 0) icon = "↝";
-  else if (titleStr.indexOf("记录") >= 0) icon = "≋";
+  if (useMonet) {
+    if (titleStr.indexOf("工具") >= 0) icon = "▦";
+    else if (titleStr.indexOf("蓝图") >= 0 || titleStr.indexOf("配置") >= 0) icon = "▤";
+    else if (titleStr.indexOf("悬浮") >= 0 || titleStr.indexOf("球") >= 0) icon = "◉";
+    else if (titleStr.indexOf("面板") >= 0) icon = "▣";
+    else if (titleStr.indexOf("外观") >= 0) icon = "◌";
+    else if (titleStr.indexOf("动作") >= 0 || titleStr.indexOf("手势") >= 0) icon = "↔";
+    else if (titleStr.indexOf("记录") >= 0) icon = "≡";
+  } else {
+    if (titleStr.indexOf("工具伙伴") >= 0) icon = "⌂";
+    else if (titleStr.indexOf("蓝图") >= 0) icon = "□";
+    else if (titleStr.indexOf("气球") >= 0) icon = "●";
+    else if (titleStr.indexOf("面板") >= 0 || titleStr.indexOf("小屋") >= 0) icon = "▦";
+    else if (titleStr.indexOf("换装") >= 0 || titleStr.indexOf("装饰") >= 0) icon = "◐";
+    else if (titleStr.indexOf("动作") >= 0 || titleStr.indexOf("手势") >= 0) icon = "↝";
+    else if (titleStr.indexOf("记录") >= 0) icon = "≋";
+  }
   badge.setText(icon);
   badge.setTextColor(T.primaryDeep);
   badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 19);
@@ -147,6 +173,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   var T = this.getAnimalIslandTheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
+  var useMonetHome = this.isSettingsMonetTheme ? this.isSettingsMonetTheme(cfgTpl) : false;
   var bgColor = T.bg;
   var subTextColor = T.sub;
   var panel = this.ui.createStyledPanel(this, 16);
@@ -172,7 +199,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   }
   quick.addView(this.ui.createSpacer(this));
 
-  var btnDoc = this.ui.createFlatButton(this, "岛务手册", T.brown, function() {
+  var btnDoc = this.ui.createFlatButton(this, useMonetHome ? "文档" : "岛务手册", T.brown, function() {
     try {
       var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
       intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
@@ -182,7 +209,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   });
   quick.addView(btnDoc);
 
-  var btnSave = this.ui.createSolidButton(this, "保存布置", T.primary, T.onPrimary, function() {
+  var btnSave = this.ui.createSolidButton(this, useMonetHome ? "保存" : "保存布置", T.primary, T.onPrimary, function() {
     try {
       self.touchActivity();
       var r = self.commitPendingUserCfg();
@@ -218,14 +245,14 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   titleCard.setPadding(this.dp(12), 0, this.dp(12), 0);
   titleCard.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.34 : 0.55), this.dp(1), this.dp(20)));
   var titleMain = new android.widget.TextView(context);
-  titleMain.setText("欢迎回来，岛主");
+  titleMain.setText(useMonetHome ? "ToolHub" : "欢迎回来，岛主");
   titleMain.setTextColor(T.text);
   titleMain.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
   titleMain.setTypeface(null, android.graphics.Typeface.BOLD);
   titleMain.setGravity(android.view.Gravity.CENTER);
   titleCard.addView(titleMain, new android.widget.LinearLayout.LayoutParams(-1, -2));
   var titleSub = new android.widget.TextView(context);
-  titleSub.setText("今天也来整理你的小工具吧");
+  titleSub.setText(useMonetHome ? "管理悬浮工具与交互设置" : "今天也来整理你的小工具吧");
   titleSub.setTextColor(T.sub);
   titleSub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   titleSub.setGravity(android.view.Gravity.CENTER);
@@ -266,12 +293,17 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   scroll.addView(box);
   scroll.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, { onTouch: function(v, e) { self.touchActivity(); return false; }}));
 
-  this.createSettingsHomeEntry(box, "工具伙伴", "添加、整理和安排你的工具伙伴", "整理", function() { self.pushToolAppPage("btn_editor"); });
-  this.createSettingsHomeEntry(box, "岛屿蓝图", "自定义岛屿布局，适合进阶布置", "编辑", function() { self.pushToolAppPage("schema_editor"); });
+  if (useMonetHome) {
+    this.createSettingsHomeEntry(box, "工具", "添加、整理和排序工具入口", "管理", function() { self.pushToolAppPage("btn_editor"); });
+    this.createSettingsHomeEntry(box, "配置结构", "编辑分组、布局和高级结构", "编辑", function() { self.pushToolAppPage("schema_editor"); });
+  } else {
+    this.createSettingsHomeEntry(box, "工具伙伴", "添加、整理和安排你的工具伙伴", "整理", function() { self.pushToolAppPage("btn_editor"); });
+    this.createSettingsHomeEntry(box, "岛屿蓝图", "自定义岛屿布局，适合进阶布置", "编辑", function() { self.pushToolAppPage("schema_editor"); });
+  }
   var defs = this.getSettingsGroupDefs();
   for (var i = 0; i < defs.length; i++) {
     (function(d) {
-      self.createSettingsHomeEntry(box, d.title, d.desc, (d.key === "ball" ? "调整" : (d.key === "panel" ? "布置" : (d.key === "theme" ? "换装" : (d.key === "debug" ? "查看" : "设置")))), function() {
+      self.createSettingsHomeEntry(box, d.title, d.desc, useMonetHome ? (d.key === "debug" ? "查看" : "打开") : (d.key === "ball" ? "调整" : (d.key === "panel" ? "布置" : (d.key === "theme" ? "换装" : (d.key === "debug" ? "查看" : "设置")))), function() {
         if (self.pushToolAppSettingsGroup) self.pushToolAppSettingsGroup(d.key);
       });
     })(defs[i]);
