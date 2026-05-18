@@ -788,8 +788,8 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
             moved = true;
             var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 180);
             if (isNaN(triggerDp)) triggerDp = 180;
-            if (triggerDp < 120) triggerDp = 120;
-            if (triggerDp > 320) triggerDp = 320;
+            if (triggerDp < 1) triggerDp = 1;
+            if (triggerDp > 720) triggerDp = 720;
             var triggerDistance = self.dp(triggerDp);
             var p = Math.min(1, Math.abs(mx) / triggerDistance);
             self.applyToolAppBackPreviewProgress(edge, p);
@@ -801,8 +801,8 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
           var uy = event.getRawY() - downY;
           var commitDp = Number(self.config.TOOLAPP_BACK_COMMIT_DISTANCE_DP || 72);
           if (isNaN(commitDp)) commitDp = 72;
-          if (commitDp < 48) commitDp = 48;
-          if (commitDp > 160) commitDp = 160;
+          if (commitDp < 1) commitDp = 1;
+          if (commitDp > 480) commitDp = 480;
           var completeDistance = self.dp(commitDp);
           var okDir = (edge === 0 && ux > completeDistance) || (edge === 1 && ux < -completeDistance);
           var ok = (action === android.view.MotionEvent.ACTION_UP) && moved && okDir && Math.abs(ux) > Math.abs(uy) * 1.2;
@@ -846,8 +846,8 @@ FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
     }
     var stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 22);
     if (isNaN(stripDp)) stripDp = 22;
-    if (stripDp < 12) stripDp = 12;
-    if (stripDp > 48) stripDp = 48;
+    if (stripDp < 1) stripDp = 1;
+    if (stripDp > 120) stripDp = 120;
     var stripW = this.dp(stripDp);
     var flags = android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
       android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;

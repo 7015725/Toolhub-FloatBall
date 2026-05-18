@@ -99,9 +99,9 @@ var ConfigValidator = {
     LONG_PRESS_MS: { type: "int", min: 200, max: 2000, default: 600 },
     LONG_PRESS_VIBRATE_MS: { type: "int", min: 10, max: 100, default: 40 },
     CLICK_SLOP_DP: { type: "int", min: 2, max: 20, default: 6 },
-    TOOLAPP_BACK_EDGE_WIDTH_DP: { type: "int", min: 12, max: 48, default: 22 },
-    TOOLAPP_BACK_COMMIT_DISTANCE_DP: { type: "int", min: 48, max: 160, default: 72 },
-    TOOLAPP_BACK_PROGRESS_DISTANCE_DP: { type: "int", min: 120, max: 320, default: 180 },
+    TOOLAPP_BACK_EDGE_WIDTH_DP: { type: "int", min: 1, max: 120, default: 22 },
+    TOOLAPP_BACK_COMMIT_DISTANCE_DP: { type: "int", min: 1, max: 480, default: 72 },
+    TOOLAPP_BACK_PROGRESS_DISTANCE_DP: { type: "int", min: 1, max: 720, default: 180 },
 
     // 功能开关
     ENABLE_SNAP_TO_EDGE: { type: "bool", default: true },
@@ -844,9 +844,9 @@ var ConfigManager = {
 
         { type: "section", name: "触摸与手势" },
         { key: "CLICK_SLOP_DP", name: "点击位移阈值(dp)", type: "int", min: 1, max: 40, step: 1 },
-        { key: "TOOLAPP_BACK_EDGE_WIDTH_DP", name: "设置页返回边界宽度", type: "int", min: 12, max: 48, step: 1 },
-        { key: "TOOLAPP_BACK_COMMIT_DISTANCE_DP", name: "设置页返回触发距离", type: "int", min: 48, max: 160, step: 1 },
-        { key: "TOOLAPP_BACK_PROGRESS_DISTANCE_DP", name: "设置页返回动画距离", type: "int", min: 120, max: 320, step: 1 },
+        { key: "TOOLAPP_BACK_EDGE_WIDTH_DP", name: "设置页返回边界宽度", type: "int", min: 1, max: 120, step: 1 },
+        { key: "TOOLAPP_BACK_COMMIT_DISTANCE_DP", name: "设置页返回触发距离", type: "int", min: 1, max: 480, step: 1 },
+        { key: "TOOLAPP_BACK_PROGRESS_DISTANCE_DP", name: "设置页返回动画距离", type: "int", min: 1, max: 720, step: 1 },
         { key: "ENABLE_LONG_PRESS", name: "启用长按", type: "bool" },
         { key: "LONG_PRESS_MS", name: "长按判定(ms)", type: "int", min: 200, max: 2000, step: 10 },
         { key: "LONG_PRESS_HAPTIC_ENABLE", name: "长按震动反馈", type: "bool" },
