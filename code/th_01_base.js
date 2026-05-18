@@ -844,7 +844,7 @@ var ConfigManager = {
 
         { type: "section", name: "触摸与手势" },
         { key: "CLICK_SLOP_DP", name: "点击位移阈值(dp)", type: "int", min: 1, max: 40, step: 1 },
-        { key: "TOOLAPP_BACK_EDGE_WIDTH_DP", name: "设置页返回边界宽度", type: "int", min: 1, max: 120, step: 1 },
+        { key: "TOOLAPP_BACK_EDGE_WIDTH_DP", name: "页面内返回边界宽度", type: "int", min: 1, max: 120, step: 1 },
         { key: "TOOLAPP_BACK_COMMIT_DISTANCE_DP", name: "设置页返回触发距离", type: "int", min: 1, max: 480, step: 1 },
         { key: "TOOLAPP_BACK_PROGRESS_DISTANCE_DP", name: "设置页返回动画距离", type: "int", min: 1, max: 720, step: 1 },
         { key: "ENABLE_LONG_PRESS", name: "启用长按", type: "bool" },

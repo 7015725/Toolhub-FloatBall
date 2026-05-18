@@ -830,6 +830,19 @@ FloatBallAppWM.prototype.hideToolAppScreenBackStrips = function() {
   } catch (e) { safeLog(this.L, 'w', "hide tool app screen back strips fail: " + String(e)); }
 };
 
+FloatBallAppWM.prototype.getToolAppBackEdgeWidthPx = function() {
+  var stripDp = 48;
+  try {
+    stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 48);
+    if (isNaN(stripDp)) stripDp = 48;
+    if (stripDp < 1) stripDp = 1;
+    if (stripDp > 120) stripDp = 120;
+  } catch(e) {
+    stripDp = 48;
+  }
+  return this.dp(stripDp);
+};
+
 FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
   try {
     if (!this.state.wm || !this.state.toolAppActive) return false;
@@ -961,7 +974,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   body.addView(host, hostLp);
 
   try {
-    var stripW = this.dp(48);
+    var stripW = this.getToolAppBackEdgeWidthPx ? this.getToolAppBackEdgeWidthPx() : this.dp(48);
     var leftStrip = this.createToolAppEdgeBackStrip(0);
     var leftLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
     leftLp.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
@@ -970,6 +983,8 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
     var rightLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
     rightLp.gravity = android.view.Gravity.END | android.view.Gravity.TOP;
     root.addView(rightStrip, rightLp);
+    this.state.toolAppInnerBackLeftStrip = leftStrip;
+    this.state.toolAppInnerBackRightStrip = rightStrip;
   } catch (eStrip) { safeLog(this.L, 'w', "add edge back strip fail: " + String(eStrip)); }
 
   this.state.toolAppRoot = root;
@@ -980,6 +995,36 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   this.state.toolAppRightButton = btnClose;
   this.updateToolAppShellChrome(title, canBack);
   return root;
+};
+
+FloatBallAppWM.prototype.updateToolAppInnerBackEdgeWidth = function() {
+  try {
+    var w = this.getToolAppBackEdgeWidthPx ? this.getToolAppBackEdgeWidthPx() : this.dp(48);
+
+    var left = this.state.toolAppInnerBackLeftStrip;
+    var right = this.state.toolAppInnerBackRightStrip;
+
+    if (left) {
+      var lpL = left.getLayoutParams();
+      if (lpL) {
+        lpL.width = w;
+        left.setLayoutParams(lpL);
+      }
+    }
+
+    if (right) {
+      var lpR = right.getLayoutParams();
+      if (lpR) {
+        lpR.width = w;
+        right.setLayoutParams(lpR);
+      }
+    }
+
+    return true;
+  } catch(e) {
+    safeLog(this.L, "w", "update inner back edge width fail: " + String(e));
+  }
+  return false;
 };
 
 FloatBallAppWM.prototype.ensureToolAppShell = function() {

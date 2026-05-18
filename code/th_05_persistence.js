@@ -321,9 +321,8 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
 
     if (k === "TOOLAPP_BACK_EDGE_WIDTH_DP") {
       try {
-        if (this.state.toolAppActive && this.hideToolAppScreenBackStrips && this.showToolAppScreenBackStrips) {
-          this.hideToolAppScreenBackStrips();
-          this.showToolAppScreenBackStrips();
+        if (this.state.toolAppActive && this.updateToolAppInnerBackEdgeWidth) {
+          this.updateToolAppInnerBackEdgeWidth();
         }
       } catch(eBackStrip) {
         safeLog(this.L, "w", "apply back edge width fail: " + String(eBackStrip));
