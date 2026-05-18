@@ -231,13 +231,26 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   var dashLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(92));
   dashLp.setMargins(0, this.dp(6), 0, this.dp(12));
 
-  var totalButtons = 0;
-  var enabledButtons = 0;
+  var statusLabel = "已保存";
+  var statusValue = "当前生效";
+  var statusBg = T.card;
+  var statusStroke = T.stroke;
+  var statusValueColor = T.text;
   try {
-    var btns = (this.state.pendingUserCfg && this.state.pendingUserCfg.buttons) || this.config.buttons || [];
-    totalButtons = btns.length || 0;
-    for (var bi = 0; bi < totalButtons; bi++) { if (!btns[bi] || btns[bi].enabled !== false) enabledButtons++; }
-  } catch(eCount) {}
+    if (this.state.previewMode) {
+      statusLabel = "预览中";
+      statusValue = "未保存";
+      statusBg = T.primarySoft;
+      statusStroke = T.primaryDeep;
+      statusValueColor = T.primaryDeep;
+    } else if (this.state.pendingDirty) {
+      statusLabel = "有修改";
+      statusValue = "待保存";
+      statusBg = T.primarySoft;
+      statusStroke = T.primaryDeep;
+      statusValueColor = T.primaryDeep;
+    }
+  } catch(eStatus) {}
 
   var titleCard = new android.widget.LinearLayout(context);
   titleCard.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -265,17 +278,17 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   statCard.setOrientation(android.widget.LinearLayout.VERTICAL);
   statCard.setGravity(android.view.Gravity.CENTER);
   statCard.setPadding(this.dp(10), 0, this.dp(10), 0);
-  statCard.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.24), this.dp(1), this.dp(20)));
+  statCard.setBackground(this.ui.createStrokeDrawable(statusBg, this.withAlpha(statusStroke, isDark ? 0.34 : 0.24), this.dp(1), this.dp(20)));
   var statLabel = new android.widget.TextView(context);
-  statLabel.setText("已启用 / 全部");
+  statLabel.setText(statusLabel);
   statLabel.setTextColor(T.sub);
   statLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   statLabel.setGravity(android.view.Gravity.CENTER);
   statCard.addView(statLabel, new android.widget.LinearLayout.LayoutParams(-1, -2));
   var statVal = new android.widget.TextView(context);
-  statVal.setText(String(enabledButtons) + " / " + String(totalButtons));
-  statVal.setTextColor(T.text);
-  statVal.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 25);
+  statVal.setText(statusValue);
+  statVal.setTextColor(statusValueColor);
+  statVal.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20);
   statVal.setTypeface(null, android.graphics.Typeface.BOLD);
   statVal.setGravity(android.view.Gravity.CENTER);
   statCard.addView(statVal, new android.widget.LinearLayout.LayoutParams(-1, -2));
