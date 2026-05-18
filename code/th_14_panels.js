@@ -4345,15 +4345,15 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var catalog = [];
   try { catalog = self.getShortXIconCatalog() || [];  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   if (!catalog.length) {
-    try { catalog = self.getShortXIconCatalog(true) || [];  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+    try { catalog = self.getShortXIconCatalog(true) || [];  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
   }
   if (!catalog.length) {
-    self.toast("\u56fe\u6807\u5e93\u672a\u52a0\u8f7d");
+    self.toast("图标库未加载");
     return null;
   }
 
   var selectedName = currentName;
-  var popupState = { currentPage: 0 };
+  var popupState = { currentPage: 0, filter: "全部" };
   var PT = self.getIslandPickerTheme ? self.getIslandPickerTheme() : null;
   var isDark = PT ? PT.isDark : self.isDarkTheme();
   var C = self.ui.colors;
@@ -4361,8 +4361,21 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var textColor = PT ? PT.text : (isDark ? C.textPriDark : C.textPriLight);
   var subTextColor = PT ? PT.sub : (isDark ? C.textSecDark : C.textSecLight);
   var cardColor = PT ? PT.card2 : (isDark ? C.cardDark : C.cardLight);
-  var bgColor = PT ? PT.bg : (isDark ? C.bgDark : C.bgLight);
   var wm = self.state.wm;
+  var filterTags = ["全部", "常用", "最近", "收藏", "线框", "实心"];
+  var filterViews = [];
+
+  function matchesFilter(entry, f) {
+    if (!entry) return false;
+    if (!f || f === "全部") return true;
+    var n = String(entry.shortName || entry.name || "").toLowerCase();
+    if (f === "常用") return n.indexOf("home") >= 0 || n.indexOf("share") >= 0 || n.indexOf("search") >= 0 || n.indexOf("settings") >= 0 || n.indexOf("add") >= 0 || n.indexOf("back") >= 0 || n.indexOf("close") >= 0;
+    if (f === "最近") return selectedName && String(entry.name) === String(selectedName);
+    if (f === "收藏") return false;
+    if (f === "线框") return n.indexOf("outline") >= 0 || n.indexOf("line") >= 0 || n.indexOf("stroke") >= 0 || n.indexOf("border") >= 0;
+    if (f === "实心") return n.indexOf("fill") >= 0 || n.indexOf("solid") >= 0 || n.indexOf("round") >= 0;
+    return true;
+  }
 
   function filterCatalog(q) {
     var qLower = String(q || "").toLowerCase();
@@ -4370,6 +4383,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     for (var i = 0; i < catalog.length; i++) {
       var entry = catalog[i];
       if (!entry) continue;
+      if (!matchesFilter(entry, popupState.filter)) continue;
       if (qLower) {
         var n = String(entry.shortName || entry.name).toLowerCase();
         if (n.indexOf(qLower) < 0) continue;
@@ -4379,12 +4393,9 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     return out;
   }
 
-  // \u5f39\u7a97\u5c3a\u5bf8\u8ba1\u7b97（\u81ea\u9002\u5e94\u5c4f\u5e55\uff09
   var dm = context.getResources().getDisplayMetrics();
   var sw = dm.widthPixels;
   var sh = dm.heightPixels;
-  var density = dm.density;
-
   var panelWidth = Math.round(sw * 0.92);
   var panelHeight = Math.round(sh * 0.90);
   try {
@@ -4395,28 +4406,22 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     }
   } catch(eLayout) { safeLog(null, 'e', "catch " + String(eLayout)); }
   if (panelWidth > self.dp(560)) panelWidth = self.dp(560);
-  if (panelWidth < self.dp(300)) panelWidth = self.dp(300);
+  if (panelWidth < self.dp(320)) panelWidth = Math.min(sw - self.dp(16), self.dp(320));
   if (panelHeight > sh - self.dp(24)) panelHeight = sh - self.dp(24);
-  if (panelHeight < self.dp(420)) panelHeight = Math.min(sh - self.dp(16), self.dp(420));
+  if (panelHeight < self.dp(460)) panelHeight = Math.min(sh - self.dp(16), self.dp(460));
 
   var padH = self.dp(14);
   var padV = self.dp(12);
   var gap = self.dp(8);
-
-  // \u8ba1\u7b97\u5217\u6570\u548c\u5355\u5143\u683c\u5bbd\u5ea6
-  var minCellW = self.dp(52);
-  var availW = panelWidth - padH * 2 - gap * 2;
-  var colCount = Math.max(3, Math.floor(availW / (minCellW + gap)));
+  var colCount = 5;
+  var availW = panelWidth - padH * 2 - self.dp(10) * 2;
   var cellW = Math.floor((availW - gap * (colCount - 1)) / colCount);
-  if (cellW < minCellW) { cellW = minCellW; colCount = Math.max(3, Math.floor(availW / (cellW + gap))); }
-
-  // \u8ba1\u7b97\u884c\u6570\u548c\u6bcf\u9875\u5927\u5c0f
-  var iconSize = Math.floor(cellW * 0.5);
-  if (iconSize < self.dp(22)) iconSize = self.dp(22);
-  if (iconSize > self.dp(32)) iconSize = self.dp(32);
-  var cellH = self.dp(6) * 2 + iconSize + self.dp(14); // padding + icon + text
-  var headerH = self.dp(132); // 标题 + 搜索 + 状态 + 分页 + 底部栏
-  var maxGridH = Math.max(self.dp(220), panelHeight - headerH);
+  if (cellW < self.dp(46)) cellW = self.dp(46);
+  var iconSize = Math.max(self.dp(23), Math.min(self.dp(30), Math.floor(cellW * 0.46)));
+  var cellH = self.dp(70);
+  var headerH = self.dp(176);
+  var bottomH = self.dp(58);
+  var maxGridH = Math.max(self.dp(250), panelHeight - headerH - bottomH);
   var rowCount = Math.max(3, Math.floor(maxGridH / (cellH + gap)));
   var pageSize = colCount * rowCount;
 
@@ -4431,14 +4436,9 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   card.setBackground(self.ui.createStrokeDrawable(T.card, self.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.22), self.dp(1), self.dp(24)));
   try { card.setElevation(self.dp(10)); } catch(eCardElev) { safeLog(null, 'e', "catch " + String(eCardElev)); }
 
-  // 与 ToolHub 设置页外壳保持同款宽高、圆角、居中方式。
-  var cardLp = new android.widget.FrameLayout.LayoutParams(
-    panelWidth,
-    panelHeight
-  );
+  var cardLp = new android.widget.FrameLayout.LayoutParams(panelWidth, panelHeight);
   cardLp.gravity = android.view.Gravity.CENTER;
   card.setLayoutParams(cardLp);
-
   rootOverlay.addView(card);
 
   var overlayLp = new android.view.WindowManager.LayoutParams(
@@ -4448,7 +4448,6 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
     android.graphics.PixelFormat.TRANSLUCENT
   );
-  // 输入法弹出时保持 overlay 原位，不让系统 resize/pan 导致弹窗整体上移、界面被割裂。
   overlayLp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
     | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 
@@ -4467,18 +4466,30 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     }
   }
   rootOverlay.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { dismiss(); } }));
-  card.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { /* \u963b\u6b62\u5192\u6ce1 */ } }));
+  card.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { } }));
 
-  // \u6807\u9898\u680f
   var header = new android.widget.LinearLayout(context);
   header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   header.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
+  var titleBox = new android.widget.LinearLayout(context);
+  titleBox.setOrientation(android.widget.LinearLayout.VERTICAL);
+  titleBox.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  titleBox.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
   var titleTv = new android.widget.TextView(context);
-  titleTv.setText("❧ 岛上图标库 ❧");
+  titleTv.setText("岛上图标库");
   titleTv.setTextColor(textColor);
-  titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+  titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
   titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
-  header.addView(titleTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+  titleBox.addView(titleTv);
+
+  var countTv = new android.widget.TextView(context);
+  countTv.setText("共 " + catalog.length + " 个图标");
+  countTv.setTextColor(subTextColor);
+  countTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+  titleBox.addView(countTv);
+  header.addView(titleBox);
 
   var closeBtn = self.ui.createFlatButton(self, "✕", T.primaryDeep, function() { dismiss(); });
   closeBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
@@ -4488,20 +4499,19 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(42), self.dp(38)));
   card.addView(header);
 
-  // \u641c\u7d22\u6846
   var searchEt = new android.widget.EditText(context);
-  searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+  searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
   searchEt.setTextColor(textColor);
-  try { searchEt.setHintTextColor(subTextColor);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+  try { searchEt.setHintTextColor(subTextColor);  } catch(eHint) { safeLog(null, 'e', "catch " + String(eHint)); }
   searchEt.setHint("寻找岛上图标，如 share / home");
   searchEt.setSingleLine(true);
   searchEt.setFocusable(true);
   searchEt.setFocusableInTouchMode(true);
-  searchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
-  searchEt.setBackground(self.ui.createStrokeDrawable(T.card2, self.withAlpha(T.primaryDeep, isDark ? 0.24 : 0.18), self.dp(1), self.dp(16)));
-  var searchLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-  searchLp.setMargins(0, self.dp(8), 0, self.dp(6));
-  searchEt.setLayoutParams(searchLp);
+  searchEt.setPadding(self.dp(14), self.dp(10), self.dp(14), self.dp(10));
+  searchEt.setBackground(self.ui.createStrokeDrawable(T.card2, self.withAlpha(T.primaryDeep, isDark ? 0.24 : 0.18), self.dp(1), self.dp(20)));
+  var searchLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(46));
+  searchLp.setMargins(0, self.dp(10), 0, self.dp(8));
+  card.addView(searchEt, searchLp);
   searchEt.setOnClickListener(new android.view.View.OnClickListener({
     onClick: function(v) {
       self.touchActivity();
@@ -4512,41 +4522,82 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
       } catch(eIme) { safeLog(null, 'e', "catch " + String(eIme)); }
     }
   }));
-  card.addView(searchEt);
 
-  // 状态栏
-  var statusTv = new android.widget.TextView(context);
-  statusTv.setTextColor(subTextColor);
-  statusTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-  statusTv.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
-  card.addView(statusTv);
+  var filterScroll = new android.widget.HorizontalScrollView(context);
+  filterScroll.setHorizontalScrollBarEnabled(false);
+  var filterRow = new android.widget.LinearLayout(context);
+  filterRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  filterRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  filterRow.setPadding(0, 0, 0, 0);
+  filterScroll.addView(filterRow);
+  var filterLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(36));
+  filterLp.setMargins(0, 0, 0, self.dp(4));
+  card.addView(filterScroll, filterLp);
 
-  // \u5206\u9875\u680f
+  function refreshFilterTags() {
+    try {
+      for (var i = 0; i < filterViews.length; i++) {
+        var item = filterViews[i];
+        if (!item || !item.view) continue;
+        var active = item.name === popupState.filter;
+        item.view.setTextColor(active ? T.onPrimary : T.primaryDeep);
+        item.view.setTypeface(null, active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        item.view.setBackground(self.ui.createStrokeDrawable(active ? T.primary : T.primarySoft, self.withAlpha(T.primaryDeep, active ? 0.36 : 0.18), self.dp(1), self.dp(16)));
+      }
+    } catch(eTags) { safeLog(null, 'e', "catch " + String(eTags)); }
+  }
+
+  for (var ft = 0; ft < filterTags.length; ft++) {
+    (function(tag) {
+      var chip = new android.widget.TextView(context);
+      chip.setText(tag);
+      chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      chip.setGravity(android.view.Gravity.CENTER);
+      chip.setPadding(self.dp(12), 0, self.dp(12), 0);
+      chip.setSingleLine(true);
+      chip.setClickable(true);
+      chip.setOnClickListener(new android.view.View.OnClickListener({
+        onClick: function() {
+          self.touchActivity();
+          popupState.filter = tag;
+          popupState.currentPage = 0;
+          refreshFilterTags();
+          renderGrid();
+        }
+      }));
+      var chipLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, self.dp(30));
+      chipLp.setMargins(0, 0, self.dp(7), 0);
+      filterRow.addView(chip, chipLp);
+      filterViews.push({ name: tag, view: chip });
+    })(filterTags[ft]);
+  }
+  refreshFilterTags();
+
   var pageBar = new android.widget.LinearLayout(context);
   pageBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   pageBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  pageBar.setPadding(self.dp(8), 0, self.dp(8), self.dp(6));
+  pageBar.setPadding(self.dp(2), 0, self.dp(2), self.dp(4));
+  var pageBarLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(34));
+  card.addView(pageBar, pageBarLp);
 
-  var btnPrev = self.ui.createFlatButton(self, "上一页", T.primaryDeep, function() {
+  var btnPrev = self.ui.createFlatButton(self, "上一页", self.withAlpha(T.primaryDeep, 0.72), function() {
     if (popupState.currentPage > 0) { popupState.currentPage--; renderGrid(); }
   });
-  pageBar.addView(btnPrev);
+  pageBar.addView(btnPrev, new android.widget.LinearLayout.LayoutParams(self.dp(78), self.dp(30)));
 
   var pageInfo = new android.widget.TextView(context);
-  pageInfo.setTextColor(textColor);
+  pageInfo.setTextColor(self.withAlpha(textColor, 0.76));
   pageInfo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   pageInfo.setGravity(android.view.Gravity.CENTER);
-  pageInfo.setPadding(self.dp(8), 0, self.dp(8), 0);
   pageInfo.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
   pageBar.addView(pageInfo);
 
-  var btnNext = self.ui.createFlatButton(self, "下一页", T.primaryDeep, function() {
-    popupState.currentPage++; renderGrid();
+  var btnNext = self.ui.createFlatButton(self, "下一页", self.withAlpha(T.primaryDeep, 0.72), function() {
+    popupState.currentPage++;
+    renderGrid();
   });
-  pageBar.addView(btnNext);
-  card.addView(pageBar);
+  pageBar.addView(btnNext, new android.widget.LinearLayout.LayoutParams(self.dp(78), self.dp(30)));
 
-  // \u7f51\u683c
   var gridScroll = new android.widget.ScrollView(context);
   gridScroll.setVerticalScrollBarEnabled(false);
   gridScroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);
@@ -4554,24 +4605,24 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   card.addView(gridScroll);
 
   var grid = new android.widget.GridLayout(context);
-  grid.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(4));
+  grid.setColumnCount(colCount);
+  grid.setPadding(self.dp(10), self.dp(6), self.dp(10), self.dp(8));
   gridScroll.addView(grid);
 
-  // \u5e95\u90e8\u9009\u4e2d\u680f
   var selectRow = new android.widget.LinearLayout(context);
   selectRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   selectRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  selectRow.setPadding(self.dp(8), self.dp(8), self.dp(8), 0);
-
-  var selectPreview = new android.widget.ImageView(context);
-  selectPreview.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28)));
-  selectPreview.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-  selectRow.addView(selectPreview);
+  selectRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+  selectRow.setBackground(self.ui.createStrokeDrawable(T.card2, self.withAlpha(T.primaryDeep, isDark ? 0.22 : 0.16), self.dp(1), self.dp(22)));
+  var selectRowLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(58));
+  selectRowLp.setMargins(0, self.dp(6), 0, 0);
+  card.addView(selectRow, selectRowLp);
 
   var selectNameTv = new android.widget.TextView(context);
   selectNameTv.setTextColor(textColor);
   selectNameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-  selectNameTv.setPadding(self.dp(8), 0, 0, 0);
+  selectNameTv.setSingleLine(true);
+  try { selectNameTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eEll) {}
   selectNameTv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
   selectRow.addView(selectNameTv);
 
@@ -4584,66 +4635,58 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     }
     dismiss();
   });
-  selectRow.addView(selectConfirm);
-  card.addView(selectRow);
+  var confirmLp = new android.widget.LinearLayout.LayoutParams(self.dp(104), self.dp(42));
+  confirmLp.setMargins(self.dp(10), 0, 0, 0);
+  selectRow.addView(selectConfirm, confirmLp);
 
-  function updateSelectPreview() {
+  function updateSelectedLabel() {
     try {
-      if (selectedName) {
-        selectNameTv.setText(selectedName);
-        var dr = null;
-        try { dr = self.getShortXIconDrawable(selectedName);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-        if (dr) selectPreview.setImageDrawable(dr);
-        else selectPreview.setImageDrawable(null);
-      } else {
-        selectNameTv.setText("还没选图标");
-        selectPreview.setImageDrawable(null);
-      }
-     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+      selectNameTv.setText(selectedName ? ("已选：" + String(selectedName)) : "还没选图标");
+    } catch(eLabel) { safeLog(null, 'e', "catch " + String(eLabel)); }
   }
-  updateSelectPreview();
+  updateSelectedLabel();
 
   function renderGrid() {
     try {
       grid.removeAllViews();
       var q = String(searchEt.getText() || "");
       var matched = filterCatalog(q);
-
       var totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
       if (popupState.currentPage >= totalPages) popupState.currentPage = totalPages - 1;
       if (popupState.currentPage < 0) popupState.currentPage = 0;
       var start = popupState.currentPage * pageSize;
       var pageItems = matched.slice(start, start + pageSize);
 
-      statusTv.setText("共 " + matched.length + " 个图标 · 第 " + (popupState.currentPage + 1) + "/" + totalPages + " 页");
-      pageInfo.setText((popupState.currentPage + 1) + " / " + totalPages);
+      pageInfo.setText("第 " + (popupState.currentPage + 1) + " / " + totalPages + " 页");
       btnPrev.setEnabled(popupState.currentPage > 0);
       btnNext.setEnabled(popupState.currentPage < totalPages - 1);
 
       if (pageItems.length === 0) {
         var emptyTv = new android.widget.TextView(context);
-        emptyTv.setText("没有找到这枚小图标");
+        emptyTv.setText(popupState.filter === "收藏" ? "收藏夹还空着" : "没有找到这枚小图标");
         emptyTv.setTextColor(subTextColor);
         emptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         emptyTv.setGravity(android.view.Gravity.CENTER);
-        emptyTv.setPadding(0, self.dp(40), 0, self.dp(40));
+        emptyTv.setPadding(0, self.dp(60), 0, self.dp(60));
         grid.addView(emptyTv);
         return;
       }
 
       grid.setColumnCount(colCount);
-
       for (var idx = 0; idx < pageItems.length; idx++) {
         (function(item) {
+          var frame = new android.widget.FrameLayout(context);
+          frame.setClickable(true);
+          var isSelected = selectedName === item.name;
+          var frameBg = isSelected ? T.primarySoft : self.withAlpha(cardColor, 0.96);
+          var frameStroke = isSelected ? self.withAlpha(T.primaryDeep, isDark ? 0.50 : 0.42) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.12);
+          frame.setBackground(self.ui.createStrokeDrawable(frameBg, frameStroke, isSelected ? self.dp(2) : self.dp(1), self.dp(15)));
+
           var cell = new android.widget.LinearLayout(context);
           cell.setOrientation(android.widget.LinearLayout.VERTICAL);
-          cell.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
-          cell.setPadding(self.dp(4), self.dp(6), self.dp(4), self.dp(6));
-          cell.setClickable(true);
-
-          var cellBg = cardColor;
-          try { cellBg = self.withAlpha(cardColor, 0.96);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-          cell.setBackground(self.ui.createStrokeDrawable(cellBg, self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.12), self.dp(1), self.dp(14)));
+          cell.setGravity(android.view.Gravity.CENTER);
+          cell.setPadding(self.dp(4), self.dp(6), self.dp(4), self.dp(5));
+          frame.addView(cell, new android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
 
           var iv = new android.widget.ImageView(context);
           iv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(iconSize, iconSize));
@@ -4651,42 +4694,50 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           try {
             var dr = self.getShortXIconDrawable(item.name);
             if (dr) { iv.setImageDrawable(dr); }
-           } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+          } catch(eIcon) { safeLog(null, 'e', "catch " + String(eIcon)); }
           cell.addView(iv);
 
           var tv = new android.widget.TextView(context);
           tv.setText(String(item.shortName || item.name));
-          tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
+          tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 9);
           tv.setGravity(android.view.Gravity.CENTER);
           tv.setMaxLines(1);
-          try { tv.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-          tv.setPadding(self.dp(2), self.dp(2), self.dp(2), 0);
-          cell.addView(tv);
+          try { tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eTvEll) {}
+          tv.setPadding(self.dp(2), self.dp(5), self.dp(2), 0);
+          tv.setTextColor(isSelected ? T.primaryDeep : subTextColor);
+          cell.addView(tv, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
 
-          if (selectedName === item.name) {
-            try { cell.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.42 : 0.34), self.dp(2), self.dp(14)));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-            try { tv.setTextColor(T.primaryDeep);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-          } else {
-            try { tv.setTextColor(subTextColor);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+          if (isSelected) {
+            var badge = new android.widget.TextView(context);
+            badge.setText("✓");
+            badge.setTextColor(T.onPrimary);
+            badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
+            badge.setGravity(android.view.Gravity.CENTER);
+            badge.setTypeface(null, android.graphics.Typeface.BOLD);
+            badge.setBackground(self.ui.createRoundDrawable(T.primary, self.dp(9)));
+            var badgeLp = new android.widget.FrameLayout.LayoutParams(self.dp(18), self.dp(18));
+            badgeLp.gravity = android.view.Gravity.TOP | android.view.Gravity.RIGHT;
+            badgeLp.setMargins(0, self.dp(4), self.dp(4), 0);
+            frame.addView(badge, badgeLp);
           }
 
-          cell.setOnClickListener(new android.view.View.OnClickListener({
+          frame.setOnClickListener(new android.view.View.OnClickListener({
             onClick: function() {
               self.touchActivity();
               selectedName = item.name;
-              updateSelectPreview();
+              updateSelectedLabel();
               renderGrid();
             }
           }));
 
           var cellLp = new android.widget.GridLayout.LayoutParams();
           cellLp.width = cellW;
-          cellLp.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT;
+          cellLp.height = cellH;
           var col = idx % colCount;
           var mr = (col === colCount - 1) ? 0 : gap;
           cellLp.setMargins(0, 0, mr, gap);
-          cell.setLayoutParams(cellLp);
-          grid.addView(cell);
+          frame.setLayoutParams(cellLp);
+          grid.addView(frame);
         })(pageItems[idx]);
       }
     } catch(eRender) {
@@ -4708,7 +4759,6 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
 
   return { close: dismiss };
 };
-
 
 
 FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
