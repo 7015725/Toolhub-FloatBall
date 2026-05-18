@@ -856,11 +856,12 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   bar.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
   try { bar.setElevation(this.dp(3)); } catch(eBarElev) {}
 
-  var btnBack = this.ui.createFlatButton(this, canBack ? "‹" : "", T.brown, function() {
+  var btnBack = this.ui.createFlatButton(this, "‹", T.brown, function() {
     self.popToolAppPage("topbar");
   });
   btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
   btnBack.setPadding(this.dp(8), 0, this.dp(8), 0);
+  try { btnBack.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eBackBg) {}
   bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
 
   var tvTitle = new android.widget.TextView(context);
@@ -868,17 +869,28 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   tvTitle.setTextColor(T.text);
   tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
   tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-  tvTitle.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  tvTitle.setGravity(android.view.Gravity.CENTER);
   var titleLp = new android.widget.LinearLayout.LayoutParams(0, -1);
   titleLp.weight = 1;
   bar.addView(tvTitle, titleLp);
 
-  var btnClose = this.ui.createFlatButton(this, "✕", T.sub, function() {
+  var btnClose = this.ui.createFlatButton(this, "📖 岛务手册", T.primaryDeep, function() {
+    try {
+      if (String(self.state.toolAppRoute || "") === "settings") {
+        var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+        intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
+        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+        return;
+      }
+    } catch(eDoc) { try { self.toast("无法打开文档链接"); } catch(eToast) {} return; }
     self.closeToolApp();
   });
-  btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
-  btnClose.setPadding(this.dp(8), 0, this.dp(8), 0);
-  bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
+  btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  btnClose.setTypeface(null, android.graphics.Typeface.BOLD);
+  btnClose.setPadding(this.dp(10), 0, this.dp(10), 0);
+  try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
+  bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
   var barLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(56));
   barLp.setMargins(this.dp(8), this.dp(8), this.dp(8), this.dp(4));
   body.addView(bar, barLp);
@@ -908,6 +920,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   this.state.toolAppContentHost = host;
   this.state.toolAppTitleView = tvTitle;
   this.state.toolAppBackButton = btnBack;
+  this.state.toolAppRightButton = btnClose;
   this.updateToolAppShellChrome(title, canBack);
   return root;
 };
@@ -924,11 +937,18 @@ FloatBallAppWM.prototype.ensureToolAppShell = function() {
 
 FloatBallAppWM.prototype.updateToolAppShellChrome = function(title, canBack) {
   try {
-    if (this.state.toolAppTitleView) this.state.toolAppTitleView.setText(String(title || "ToolHub"));
+    var r = String(this.state.toolAppRoute || "");
+    var titleText = String(title || "ToolHub");
+    if (r === "settings") titleText = "❧ 岛屿设置 ❧";
+    if (this.state.toolAppTitleView) this.state.toolAppTitleView.setText(titleText);
     if (this.state.toolAppBackButton) {
-      this.state.toolAppBackButton.setText(canBack ? "‹" : "");
-      this.state.toolAppBackButton.setVisibility(canBack ? android.view.View.VISIBLE : android.view.View.INVISIBLE);
-      this.state.toolAppBackButton.setEnabled(!!canBack);
+      this.state.toolAppBackButton.setText("‹");
+      this.state.toolAppBackButton.setVisibility(android.view.View.VISIBLE);
+      this.state.toolAppBackButton.setEnabled(true);
+    }
+    if (this.state.toolAppRightButton) {
+      if (r === "settings") this.state.toolAppRightButton.setText("📖 岛务手册");
+      else this.state.toolAppRightButton.setText("✕");
     }
   } catch (e) { safeLog(this.L, 'w', "updateToolAppShellChrome fail: " + String(e)); }
 };
