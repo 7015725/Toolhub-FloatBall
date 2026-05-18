@@ -2,8 +2,8 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "ea06cb734ad4ccdcec06d746771f6e3c71154d1acf02192edd2b9664109a8e31",
-      "size": 55958
+      "sha256": "6b7a51c97f76b797b176c8fcf712dbafb8d33ebab448d0c7574f26568dcd14df",
+      "size": 56392
     },
     "th_02_core.js": {
       "sha256": "15bb9bfbd19a673d442e221b0a00a456ed5f87af2666b9c73b117d6223faeecd",
@@ -58,8 +58,8 @@
       "size": 262019
     },
     "th_15_extra.js": {
-      "sha256": "bf28b503ea5e2f023952016a57a421ecc8f8ff57844f39571f01ca18ebbcdad4",
-      "size": 97293
+      "sha256": "36a7adf784921de6f4c66a772175ec99e61c9f5be8545cc6cb394c0f96601033",
+      "size": 97990
     },
     "th_16_entry.js": {
       "sha256": "e7c99c3dfbd6aedab05551426955081ae6cae034754f2f557cefa01dc75dc001",
@@ -68,5 +68,5 @@
   },
   "keyId": "toolhub-targets-2026-rsa3072",
   "schema": 2,
-  "version": 20260518170217
+  "version": 20260518190147
 }

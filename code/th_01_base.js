@@ -97,6 +97,7 @@ var ConfigValidator = {
 
     // 交互配置
     LONG_PRESS_MS: { type: "int", min: 200, max: 2000, default: 600 },
+    LONG_PRESS_TRIGGERED_MOVE_SLOP_DP: { type: "int", min: 8, max: 80, default: 28 },
     LONG_PRESS_VIBRATE_MS: { type: "int", min: 10, max: 100, default: 40 },
     CLICK_SLOP_DP: { type: "int", min: 2, max: 20, default: 6 },
     TOOLAPP_BACK_EDGE_WIDTH_DP: { type: "int", min: 1, max: 120, default: 22 },
@@ -731,6 +732,7 @@ var ConfigManager = {
         LONG_PRESS_VIBRATE_MS: 18,
         ENABLE_LONG_PRESS: true,
         LONG_PRESS_MS: 520,
+        LONG_PRESS_TRIGGERED_MOVE_SLOP_DP: 28,
         CLICK_SLOP_DP: 6,
         TOOLAPP_BACK_EDGE_WIDTH_DP: 22,
         TOOLAPP_BACK_COMMIT_DISTANCE_DP: 72,
@@ -849,6 +851,7 @@ var ConfigManager = {
         { key: "TOOLAPP_BACK_PROGRESS_DISTANCE_DP", name: "设置页返回动画距离", type: "int", min: 1, max: 720, step: 1 },
         { key: "ENABLE_LONG_PRESS", name: "启用长按", type: "bool" },
         { key: "LONG_PRESS_MS", name: "长按判定(ms)", type: "int", min: 200, max: 2000, step: 10 },
+        { key: "LONG_PRESS_TRIGGERED_MOVE_SLOP_DP", name: "长按后抖动容忍距离", type: "int", min: 8, max: 80, step: 1 },
         { key: "LONG_PRESS_HAPTIC_ENABLE", name: "长按震动反馈", type: "bool" },
         { key: "LONG_PRESS_VIBRATE_MS", name: "震动时长(ms)", type: "int", min: 1, max: 120, step: 1 },
 
@@ -883,7 +886,7 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0) {
             needReset = true;
         }
 
@@ -916,7 +919,8 @@ var ConfigManager = {
                 schemaItemDiffers("BALL_BG_COLOR_HEX", ["name", "type"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_EDGE_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_COMMIT_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
-                schemaItemDiffers("TOOLAPP_BACK_PROGRESS_DISTANCE_DP", ["name", "type", "min", "max", "step"])) {
+                schemaItemDiffers("TOOLAPP_BACK_PROGRESS_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP", ["name", "type", "min", "max", "step"])) {
                 needReset = true;
             }
         }

@@ -2052,6 +2052,20 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         var dx = Math.round(curRawX - startRawX);
         var dy = Math.round(curRawY - startRawY);
 
+        var longPressMoveSlopDp = Number(self.config.LONG_PRESS_TRIGGERED_MOVE_SLOP_DP || 28);
+        if (isNaN(longPressMoveSlopDp)) longPressMoveSlopDp = 28;
+        if (longPressMoveSlopDp < 8) longPressMoveSlopDp = 8;
+        if (longPressMoveSlopDp > 80) longPressMoveSlopDp = 80;
+        var longPressMoveSlop = self.dp(longPressMoveSlopDp);
+
+        if (self.state.longPressTriggered) {
+          // 长按已经触发设置页后，手指未抬起期间的移动全部消费，避免进入普通拖动逻辑并误关设置页。
+          if (Math.abs(dx) <= longPressMoveSlop && Math.abs(dy) <= longPressMoveSlop) {
+            return true;
+          }
+          return true;
+        }
+
         if (!self.state.dragging) {
           if (Math.abs(dx) > slop || Math.abs(dy) > slop) {
             self.state.dragging = true;
