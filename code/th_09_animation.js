@@ -415,6 +415,17 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
   try {
     if (!panel) return false;
     if (android.os.Build.VERSION.SDK_INT < 33) return false;
+    // attach listener + post fallback may fire almost together; avoid unregister/register churn and duplicate logs.
+    try {
+      var nowReg = Date.now();
+      var entries0 = this.state.panelBackCallbackEntries || [];
+      for (var ei0 = 0; ei0 < entries0.length; ei0++) {
+        var it0 = entries0[ei0];
+        if (it0 && it0.view === panel && String(it0.which || "") === String(which || "") && (nowReg - Number(it0.registeredAt || 0)) < 300) {
+          return true;
+        }
+      }
+    } catch(eRegDebounce) {}
     this.unregisterPanelPredictiveBack(panel);
     var dispatcher = null;
     try { dispatcher = panel.findOnBackInvokedDispatcher(); } catch (eFind) { dispatcher = null; }
@@ -483,7 +494,7 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
     } catch (ePri) { priority = 0; }
     dispatcher.registerOnBackInvokedCallback(priority, cb);
     if (!this.state.panelBackCallbackEntries) this.state.panelBackCallbackEntries = [];
-    this.state.panelBackCallbackEntries.push({ view: panel, dispatcher: dispatcher, callback: cb, which: String(which || ""), animation: usedAnimation, mode: mode });
+    this.state.panelBackCallbackEntries.push({ view: panel, dispatcher: dispatcher, callback: cb, which: String(which || ""), animation: usedAnimation, mode: mode, registeredAt: Date.now() });
     safeLog(this.L, 'i', "back callback registered which=" + String(which || "") + " mode=" + mode + " priority=" + String(priority));
     return true;
   } catch (e) {
