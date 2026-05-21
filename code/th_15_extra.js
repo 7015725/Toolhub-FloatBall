@@ -587,6 +587,25 @@ FloatBallAppWM.prototype.getToolAppPreviousStackEntry = function() {
   return null;
 };
 
+FloatBallAppWM.prototype.hasToolAppPaneBackTarget = function() {
+  try {
+    var r = String(this.state.toolAppRoute || "");
+    if (r !== "settings") return false;
+    if (!this.state.settingsHomeSelectedItemId) return false;
+    var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : (this.getToolAppResponsiveSpec ? this.getToolAppResponsiveSpec() : null);
+    return !!(spec && spec.useSideBySide);
+  } catch (e) {}
+  return false;
+};
+
+FloatBallAppWM.prototype.hasToolAppBackTarget = function() {
+  try {
+    if (this.getToolAppPreviousStackEntry && this.getToolAppPreviousStackEntry()) return true;
+    if (this.hasToolAppPaneBackTarget && this.hasToolAppPaneBackTarget()) return true;
+  } catch (e) {}
+  return false;
+};
+
 FloatBallAppWM.prototype.makeToolAppStackEntry = function(route) {
   return {
     route: String(route || "settings"),
@@ -687,9 +706,28 @@ FloatBallAppWM.prototype.prepareToolAppBackPreview = function(edge) {
     var root = this.state.toolAppRoot;
     var body = this.state.toolAppBody;
     var prevEntry = this.getToolAppPreviousStackEntry();
+    var isPaneBack = false;
+    if ((!prevEntry || !prevEntry.route) && this.hasToolAppPaneBackTarget && this.hasToolAppPaneBackTarget()) {
+      prevEntry = this.makeToolAppStackEntry ? this.makeToolAppStackEntry("settings") : { route: "settings", settingsGroupKey: "" };
+      isPaneBack = true;
+    }
     if (!root || !body || !prevEntry || !prevEntry.route) return false;
-    var prevRoute = String(prevEntry.route || "settings");
-    var prevBody = this.buildToolAppPreviewBody(prevEntry);
+    var prevRoute = isPaneBack ? "settings:pane" : String(prevEntry.route || "settings");
+    var oldPaneItem = null;
+    var hasOldPaneItem = false;
+    var prevBody = null;
+    try {
+      if (isPaneBack) {
+        oldPaneItem = this.state.settingsHomeSelectedItemId;
+        hasOldPaneItem = true;
+        this.state.settingsHomeSelectedItemId = null;
+      }
+      prevBody = this.buildToolAppPreviewBody(prevEntry);
+    } finally {
+      if (hasOldPaneItem) {
+        try { this.state.settingsHomeSelectedItemId = oldPaneItem; } catch(eRestorePane) {}
+      }
+    }
     if (!prevBody) return false;
     var lp = new android.widget.FrameLayout.LayoutParams(-1, -1);
     prevBody.setAlpha(0.88);
@@ -803,7 +841,7 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
         if (action === android.view.MotionEvent.ACTION_DOWN) {
           downX = event.getRawX();
           downY = event.getRawY();
-          active = !!(self.state && self.state.toolAppActive && self.getToolAppPreviousStackEntry());
+          active = !!(self.state && self.state.toolAppActive && self.hasToolAppBackTarget && self.hasToolAppBackTarget());
           moved = false;
           if (active) self.prepareToolAppBackPreview(edge);
           return active;
@@ -875,7 +913,7 @@ FloatBallAppWM.prototype.getToolAppBackEdgeWidthPx = function() {
 FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
   try {
     if (!this.state.wm || !this.state.toolAppActive) return false;
-    if (!this.getToolAppPreviousStackEntry || !this.getToolAppPreviousStackEntry()) {
+    if (!this.hasToolAppBackTarget || !this.hasToolAppBackTarget()) {
       this.hideToolAppScreenBackStrips();
       return false;
     }

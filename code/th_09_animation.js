@@ -368,7 +368,7 @@ FloatBallAppWM.prototype.applyPanelPredictiveBackProgress = function(panel, even
     if (p > 1) p = 1;
     var edge = 0;
     try { edge = Number(event.getSwipeEdge()); } catch (eE) { edge = 0; }
-    if (panel && this.state && this.state.toolAppRoot === panel && this.applyToolAppBackPreviewProgress && this.getToolAppPreviousStackEntry && this.getToolAppPreviousStackEntry()) {
+    if (panel && this.state && this.state.toolAppRoot === panel && this.applyToolAppBackPreviewProgress && this.hasToolAppBackTarget && this.hasToolAppBackTarget()) {
       this.state.toolAppBackEdge = edge;
       this.applyToolAppBackPreviewProgress(edge, p);
       return;
@@ -429,7 +429,7 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
     var usedAnimation = false;
 
     function finishBack(reason) {
-      if (String(which || "") === "tool_app" && self.finishToolAppBackPreview && self.getToolAppPreviousStackEntry && self.getToolAppPreviousStackEntry()) {
+      if (String(which || "") === "tool_app" && self.finishToolAppBackPreview && self.hasToolAppBackTarget && self.hasToolAppBackTarget()) {
         var edge = 0;
         try { edge = Number(self.state.toolAppBackEdge || 0); } catch (eEdge) { edge = 0; }
         self.finishToolAppBackPreview(edge, true);
