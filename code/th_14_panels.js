@@ -5800,14 +5800,40 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       alphaValTv.setText(String(currentAlphaByte));
       content.addView(alphaRow);
 
-      // 操作按钮
+      // 操作按钮：不用通用 Flat/Solid Button，避免颜色面板里出现文字/背景适配异常。
+      function createColorPanelActionButton(label, primary, onClick) {
+        var b = new android.widget.TextView(context);
+        b.setText(label);
+        b.setGravity(android.view.Gravity.CENTER);
+        b.setSingleLine(true);
+        b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        b.setTypeface(null, android.graphics.Typeface.BOLD);
+        b.setPadding(self.dp(12), 0, self.dp(12), 0);
+        try { b.setIncludeFontPadding(false); } catch(eFontPad) {}
+        try { b.setMinHeight(self.dp(46)); } catch(eMinH) {}
+        if (primary) {
+          b.setTextColor(T.onPrimary || android.graphics.Color.WHITE);
+          try { b.setBackground(self.ui.createStrokeDrawable(T.primary, self.withAlpha(T.primaryDeep, isDark ? 0.38 : 0.20), self.dp(1), self.dp(23))); } catch(eBg1) {}
+        } else {
+          b.setTextColor(T.primaryDeep);
+          try { b.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.24), self.dp(1), self.dp(23))); } catch(eBg2) {}
+        }
+        try { b.setClickable(true); b.setFocusable(true); } catch(eClickable) {}
+        b.setOnClickListener(new android.view.View.OnClickListener({
+          onClick: function(v) {
+            self.touchActivity();
+            try { if (onClick) onClick(v); } catch(eBtn) { safeLog(self.L, 'e', "color panel action err=" + String(eBtn)); }
+          }
+        }));
+        return b;
+      }
+
       var actionRow = new android.widget.LinearLayout(context);
       actionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       actionRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      actionRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+      actionRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(10));
 
-      var btnClear = self.ui.createFlatButton(self, "恢复默认", T.primaryDeep, function() {
-        self.touchActivity();
+      var btnClear = createColorPanelActionButton("恢复默认", false, function() {
         isFollowTheme = true;
         selectedColor = "";
         updatePreview();
@@ -5819,21 +5845,12 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         alphaValTv.setText("255");
         currentAlphaByte = 255;
       });
-      try {
-        btnClear.setGravity(android.view.Gravity.CENTER);
-        btnClear.setSingleLine(true);
-        btnClear.setMinHeight(self.dp(44));
-        btnClear.setClickable(true);
-      } catch(eClearStyle) { safeLog(self.L, 'w', "color clear style fail: " + String(eClearStyle)); }
-      var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+      var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(46));
       clearLp.weight = 1;
       clearLp.setMargins(0, 0, self.dp(6), 0);
       actionRow.addView(btnClear, clearLp);
 
-      var okTextColor = T.onPrimary;
-      try { if (okTextColor === undefined || okTextColor === null) okTextColor = android.graphics.Color.WHITE; } catch(eOkText) { okTextColor = android.graphics.Color.WHITE; }
-      var btnOk = self.ui.createSolidButton(self, "保存颜色", T.primary, okTextColor, function() {
-        self.touchActivity();
+      var btnOk = createColorPanelActionButton("保存颜色", true, function() {
         try {
           var finalColor = isFollowTheme ? "" : String(selectedColor || "");
           if (!isFollowTheme && selectedColor) {
@@ -5849,15 +5866,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         }
         closePopup();
       });
-      try {
-        btnOk.setText("保存颜色");
-        btnOk.setTextColor(okTextColor);
-        btnOk.setGravity(android.view.Gravity.CENTER);
-        btnOk.setMinHeight(self.dp(42));
-        btnOk.setSingleLine(true);
-        btnOk.setClickable(true);
-      } catch(eOkStyle) { safeLog(self.L, 'w', "color ok style fail: " + String(eOkStyle)); }
-      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(46));
       okLp.weight = 1;
       okLp.setMargins(self.dp(6), 0, 0, 0);
       actionRow.addView(btnOk, okLp);
