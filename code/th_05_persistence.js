@@ -327,20 +327,18 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
           } else if (this.showToolApp) {
             this.showToolApp(this.state.toolAppRoute || "settings", false);
           }
+          if (this.refreshToolAppScreenBackStrips) this.refreshToolAppScreenBackStrips();
         }
       } catch(eBackStrip) {
-        safeLog(this.L, "w", "apply inner back strip fail: " + String(eBackStrip));
+        safeLog(this.L, "w", "apply back strip fail: " + String(eBackStrip));
       }
       return;
     }
 
     if (k === "ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") {
       try {
-        if (this.state.toolAppActive) {
-          var enableScreenBackStrip = false;
-          try { enableScreenBackStrip = parseBooleanLike(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS); } catch(eCfg2) { enableScreenBackStrip = false; }
-          if (enableScreenBackStrip && this.hasToolAppBackTarget && this.hasToolAppBackTarget() && this.showToolAppScreenBackStrips) this.showToolAppScreenBackStrips();
-          else if (this.hideToolAppScreenBackStrips) this.hideToolAppScreenBackStrips();
+        if (this.state.toolAppActive && this.refreshToolAppScreenBackStrips) {
+          this.refreshToolAppScreenBackStrips();
         }
       } catch(eScreenBackStrip) {
         safeLog(this.L, "w", "apply screen back strip fail: " + String(eScreenBackStrip));

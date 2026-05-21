@@ -914,16 +914,22 @@ FloatBallAppWM.prototype.hideToolAppScreenBackStrips = function() {
 };
 
 FloatBallAppWM.prototype.getToolAppBackEdgeWidthPx = function() {
-  var stripDp = 48;
+  var stripDp = 24;
   try {
-    stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 48);
-    if (isNaN(stripDp)) stripDp = 48;
+    stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 24);
+    if (isNaN(stripDp)) stripDp = 24;
     if (stripDp < 1) stripDp = 1;
     if (stripDp > 120) stripDp = 120;
   } catch(e) {
-    stripDp = 48;
+    stripDp = 24;
   }
   return this.dp(stripDp);
+};
+
+FloatBallAppWM.prototype.isToolAppScreenBackStripsEnabled = function() {
+  try { return parseBooleanLike(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS); } catch(e) {}
+  try { return String(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS || "false") === "true"; } catch(e2) {}
+  return false;
 };
 
 FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
@@ -933,15 +939,14 @@ FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
       this.hideToolAppScreenBackStrips();
       return false;
     }
-    if (this.state.toolAppScreenBackStrips && this.state.toolAppScreenBackStrips.length === 2) return true;
     this.hideToolAppScreenBackStrips();
 
     var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
     if (sw <= 1) {
       try { var ss = this.getScreenSizePx(); sw = ss.w; } catch (eScreen) {}
     }
-    var stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 22);
-    if (isNaN(stripDp)) stripDp = 22;
+    var stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 24);
+    if (isNaN(stripDp)) stripDp = 24;
     if (stripDp < 1) stripDp = 1;
     if (stripDp > 120) stripDp = 120;
     var stripW = this.dp(stripDp);
@@ -979,6 +984,20 @@ FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
   } catch (e) {
     this.hideToolAppScreenBackStrips();
     safeLog(this.L, 'w', "show tool app screen back strips fail: " + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.refreshToolAppScreenBackStrips = function() {
+  try {
+    this.hideToolAppScreenBackStrips();
+    if (!this.state.toolAppActive) return false;
+    if (!this.hasToolAppBackTarget || !this.hasToolAppBackTarget()) return false;
+    if (!this.isToolAppScreenBackStripsEnabled || !this.isToolAppScreenBackStripsEnabled()) return false;
+    return this.showToolAppScreenBackStrips();
+  } catch(e) {
+    try { this.hideToolAppScreenBackStrips(); } catch(eHide) {}
+    safeLog(this.L, 'w', "refresh tool app screen back strips fail: " + String(e));
   }
   return false;
 };
@@ -1088,11 +1107,11 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   hostLp.setMargins((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), 0, (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6));
   body.addView(host, hostLp);
 
-  // 自定义边缘返回热区会覆盖左右边缘的真实按钮（返回、关闭、添加、保存装扮等）。
-  // 默认不再叠加透明触摸层；需要排查预测返回时再显式开启。
+  // 页面内透明返回热区可能覆盖内容区左右边缘的真实按钮/列表项/颜色面板。
+  // 默认关闭页面内热区；默认启用更窄的屏幕边缘热区，更贴近全面屏返回习惯。
   try {
     var enableInnerBackStrip = false;
-    try { enableInnerBackStrip = (String(this.config.ENABLE_TOOLAPP_INNER_BACK_STRIPS || "false") === "true"); } catch(eCfg) { enableInnerBackStrip = false; }
+    try { enableInnerBackStrip = parseBooleanLike(this.config.ENABLE_TOOLAPP_INNER_BACK_STRIPS); } catch(eCfg) { enableInnerBackStrip = false; }
     if (enableInnerBackStrip) {
       var stripW = this.getToolAppBackEdgeWidthPx ? this.getToolAppBackEdgeWidthPx() : this.dp(24);
       var leftStrip = this.createToolAppEdgeBackStrip(0);
@@ -1286,14 +1305,7 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
       } catch (eUpd) { safeLog(this.L, 'w', "tool_app update layout fail: " + String(eUpd)); }
       try { shell.requestFocus(); } catch (eFocus) {}
     }
-    // 不再默认添加屏幕边缘透明覆盖层：它会抢占 ToolApp 顶栏/内容区左右边缘按钮的触摸。
-    // 如需临时排查返回手势，可把 ENABLE_TOOLAPP_SCREEN_BACK_STRIPS 设为字符串 "true"。
-    try {
-      var enableScreenBackStrip = false;
-      try { enableScreenBackStrip = (String(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS || "false") === "true"); } catch(eCfg2) { enableScreenBackStrip = false; }
-      if (enableScreenBackStrip && this.hasToolAppBackTarget && this.hasToolAppBackTarget()) this.showToolAppScreenBackStrips();
-      else this.hideToolAppScreenBackStrips();
-    } catch (eScreenBack) { safeLog(this.L, 'w', "screen edge back strip update fail: " + String(eScreenBack)); }
+    try { this.refreshToolAppScreenBackStrips(); } catch (eScreenBack) { safeLog(this.L, 'w', "screen edge back strip update fail: " + String(eScreenBack)); }
   } catch (e) {
     this.state.toolAppActive = false;
     safeLog(this.L, 'e', "showToolApp fail route=" + r + " err=" + String(e));

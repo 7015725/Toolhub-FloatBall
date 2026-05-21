@@ -971,6 +971,10 @@ FloatBallAppWM.prototype.onScreenChangedReflow = function(reason) {
   try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU) { safeLog(null, 'e', "catch " + String(eU)); }
   this.savePos(this.state.ballLp.x, this.state.ballLp.y);
 
+  if (this.state.toolAppActive && this.refreshToolAppScreenBackStrips) {
+    try { this.refreshToolAppScreenBackStrips(); } catch(eBackStrip) { safeLog(this.L, 'w', "screen reflow refresh tool app back strips fail: " + String(eBackStrip)); }
+  }
+
   safeLog(this.L, 'i',
     "screen reflow reason=" + String(reason || "") +
     " old=" + oldW + "x" + oldH +
