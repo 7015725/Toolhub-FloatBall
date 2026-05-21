@@ -1256,9 +1256,12 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
       } catch (eUpd) { safeLog(this.L, 'w', "tool_app update layout fail: " + String(eUpd)); }
       try { shell.requestFocus(); } catch (eFocus) {}
     }
-    // 不再添加全屏左右边缘返回热区：它会抢占系统全面屏返回手势，导致系统返回无效。
-    // ToolApp 自身边界内仍保留子 View fallback；屏幕最边缘交还给系统 OnBackAnimationCallback。
-    try { this.hideToolAppScreenBackStrips(); } catch (eScreenBack) { safeLog(this.L, 'w', "hide screen edge back fail: " + String(eScreenBack)); }
+    // 竖屏系统边缘 predictive back 在 overlay/Rhino 下可能只能收到最终回调；保留窄屏幕边缘 fallback，
+    // 复用现有 ToolApp 返回预览栈，拖动时实时露出上一级 UI。宽度由 TOOLAPP_BACK_EDGE_WIDTH_DP 控制，默认 22dp。
+    try {
+      if (this.hasToolAppBackTarget && this.hasToolAppBackTarget()) this.showToolAppScreenBackStrips();
+      else this.hideToolAppScreenBackStrips();
+    } catch (eScreenBack) { safeLog(this.L, 'w', "screen edge back strip update fail: " + String(eScreenBack)); }
   } catch (e) {
     this.state.toolAppActive = false;
     safeLog(this.L, 'e', "showToolApp fail route=" + r + " err=" + String(e));

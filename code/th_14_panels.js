@@ -4755,8 +4755,11 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var wm = this.state.wm;
 
   var root = new android.widget.FrameLayout(context);
-  root.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42));
+  var overlayBaseAlpha = isDark ? 0.58 : 0.42;
+  root.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, overlayBaseAlpha));
   root.setClickable(true);
+  root.setFocusable(true);
+  root.setFocusableInTouchMode(true);
 
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -4784,19 +4787,31 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   });
   closeBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   closeBtn.setTypeface(null, android.graphics.Typeface.BOLD);
+  closeBtn.setGravity(android.view.Gravity.CENTER);
+  closeBtn.setMinWidth(self.dp(48));
+  closeBtn.setMinHeight(self.dp(42));
+  closeBtn.setClickable(true);
+  closeBtn.setPadding(0, 0, 0, 0);
   try { closeBtn.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(18))); } catch(eCloseBg) {}
-  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(42), self.dp(38)));
+  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(48), self.dp(42)));
   card.addView(header);
 
+  var scroll = new android.widget.ScrollView(context);
+  scroll.setFillViewport(false);
+  try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_IF_CONTENT_SCROLLS); } catch(eScrollMode) {}
   var content = new android.widget.LinearLayout(context);
   content.setOrientation(android.widget.LinearLayout.VERTICAL);
-  content.setPadding(0, self.dp(8), 0, 0);
+  content.setPadding(0, self.dp(8), 0, self.dp(6));
+  scroll.addView(content, new android.widget.ScrollView.LayoutParams(
+    android.widget.ScrollView.LayoutParams.MATCH_PARENT,
+    android.widget.ScrollView.LayoutParams.WRAP_CONTENT
+  ));
   var contentLp = new android.widget.LinearLayout.LayoutParams(
     android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-    android.widget.LinearLayout.LayoutParams.MATCH_PARENT
+    0
   );
-  content.setLayoutParams(contentLp);
-  card.addView(content);
+  contentLp.weight = 1;
+  card.addView(scroll, contentLp);
 
   root.addView(card);
 
@@ -4821,20 +4836,110 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   lp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
     | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 
-  try { wm.addView(root, lp); } catch(eAdd) { safeLog(self.L, 'e', "popup addView fail: " + String(eAdd)); return null; }
+  var popupClosed = false;
+  var backDispatcher = null;
+  var backCallback = null;
+
+  function applyPopupBackProgress(progress, edge) {
+    try {
+      var p = Number(progress || 0);
+      if (isNaN(p)) p = 0;
+      if (p < 0) p = 0;
+      if (p > 1) p = 1;
+      var eased = 1 - Math.pow(1 - p, 2.0);
+      var dir = Number(edge) === 1 ? -1 : 1;
+      card.setTranslationX(dir * self.dp(72) * eased);
+      card.setAlpha(1.0 - 0.18 * eased);
+      var scale = 1.0 - 0.035 * eased;
+      card.setScaleX(scale);
+      card.setScaleY(scale);
+      root.setAlpha(1.0 - 0.28 * eased);
+    } catch(eProg) { safeLog(self.L, 'w', "popup back progress fail: " + String(eProg)); }
+  }
+
+  function resetPopupBackVisual() {
+    try {
+      card.animate().cancel();
+      root.animate().cancel();
+      card.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(160).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+      root.animate().alpha(1).setDuration(160).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+    } catch(eReset) {
+      try { card.setTranslationX(0); card.setAlpha(1); card.setScaleX(1); card.setScaleY(1); root.setAlpha(1); } catch(eReset2) {}
+    }
+  }
+
+  function unregisterPopupBack() {
+    try { if (backDispatcher && backCallback) backDispatcher.unregisterOnBackInvokedCallback(backCallback); } catch(eUnreg) {}
+    backDispatcher = null;
+    backCallback = null;
+  }
 
   function closePopup() {
+    if (popupClosed) return;
+    popupClosed = true;
+    unregisterPopupBack();
     try { wm.removeView(root);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     if (typeof onDismiss === "function") {
       try { onDismiss();  } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }
     }
   }
 
+  function registerPopupBack() {
+    try {
+      root.requestFocus();
+      if (android.os.Build.VERSION.SDK_INT >= 33) {
+        try { backDispatcher = root.findOnBackInvokedDispatcher(); } catch(eFind) { backDispatcher = null; }
+        if (backDispatcher) {
+          var cb = null;
+          var mode = "OnBackInvokedCallback";
+          if (android.os.Build.VERSION.SDK_INT >= 34) {
+            try {
+              var animCls = java.lang.Class.forName("android.window.OnBackAnimationCallback");
+              cb = new JavaAdapter(Packages.android.window.OnBackAnimationCallback, {
+                onBackStarted: function(event) { var edge = 0; try { edge = Number(event.getSwipeEdge()); } catch(eEdge) {} applyPopupBackProgress(0, edge); },
+                onBackProgressed: function(event) { var p = 0; var edge = 0; try { p = Number(event.getProgress()); } catch(eP) {} try { edge = Number(event.getSwipeEdge()); } catch(eEdge2) {} applyPopupBackProgress(p, edge); },
+                onBackCancelled: function() { resetPopupBackVisual(); },
+                onBackInvoked: function() { closePopup(); }
+              });
+              if (!animCls.isInstance(cb)) {
+                safeLog(self.L, 'w', "popup OnBackAnimationCallback proxy not instance; fallback final-only");
+                cb = null;
+              } else { mode = "OnBackAnimationCallback"; }
+            } catch(eAnim) { safeLog(self.L, 'w', "popup create OnBackAnimationCallback fail: " + String(eAnim)); cb = null; }
+          }
+          if (!cb) {
+            var cbCls = java.lang.Class.forName("android.window.OnBackInvokedCallback");
+            cb = new JavaAdapter(cbCls, { onBackInvoked: function() { closePopup(); } });
+          }
+          var priority = 0;
+          try { priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT; } catch(ePri) { priority = 0; }
+          backDispatcher.registerOnBackInvokedCallback(priority, cb);
+          backCallback = cb;
+          safeLog(self.L, 'i', "popup back callback registered mode=" + mode + " priority=" + String(priority));
+        }
+      }
+    } catch(eBackReg) { safeLog(self.L, 'w', "popup back callback register fail: " + String(eBackReg)); }
+  }
+
+  root.setOnKeyListener(new android.view.View.OnKeyListener({
+    onKey: function(v, keyCode, event) {
+      try {
+        if (!event) return false;
+        if (event.getAction() !== android.view.KeyEvent.ACTION_UP) return false;
+        if (keyCode === android.view.KeyEvent.KEYCODE_BACK || keyCode === android.view.KeyEvent.KEYCODE_ESCAPE) { closePopup(); return true; }
+      } catch(eKey) { safeLog(self.L, 'w', "popup key back fail: " + String(eKey)); }
+      return false;
+    }
+  }));
+
+  try { wm.addView(root, lp); } catch(eAdd) { safeLog(self.L, 'e', "popup addView fail: " + String(eAdd)); return null; }
+  try { root.post(new java.lang.Runnable({ run: registerPopupBack })); } catch(ePostBack) { registerPopupBack(); }
+
   if (typeof builder === "function") {
     try { builder(content, closePopup); } catch(eB) { safeLog(self.L, 'e', "popup builder fail: " + String(eB)); }
   }
 
-  return { close: closePopup, content: content };
+  return { close: closePopup, content: content, root: root, card: card };
 };
 
 FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
@@ -5821,7 +5926,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       });
       actionRow.addView(btnClear);
 
-      var btnOk = self.ui.createSolidButton(self, "保存颜色", T.primary, T.onPrimary, function() {
+      var okTextColor = T.onPrimary;
+      try { if (okTextColor === undefined || okTextColor === null) okTextColor = android.graphics.Color.WHITE; } catch(eOkText) { okTextColor = android.graphics.Color.WHITE; }
+      var btnOk = self.ui.createSolidButton(self, "保存颜色", T.primary, okTextColor, function() {
         self.touchActivity();
         try {
           var finalColor = isFollowTheme ? "" : String(selectedColor || "");
@@ -5838,7 +5945,18 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         }
         closePopup();
       });
-      actionRow.addView(btnOk);
+      try {
+        btnOk.setText("保存颜色");
+        btnOk.setTextColor(okTextColor);
+        btnOk.setGravity(android.view.Gravity.CENTER);
+        btnOk.setMinHeight(self.dp(42));
+        btnOk.setSingleLine(true);
+        btnOk.setClickable(true);
+      } catch(eOkStyle) { safeLog(self.L, 'w', "color ok style fail: " + String(eOkStyle)); }
+      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+      okLp.weight = 1;
+      okLp.setMargins(self.dp(6), 0, 0, 0);
+      actionRow.addView(btnOk, okLp);
 
       content.addView(actionRow);
     }
