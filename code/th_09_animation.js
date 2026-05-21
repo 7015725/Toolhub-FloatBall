@@ -370,7 +370,31 @@ FloatBallAppWM.prototype.applyPanelPredictiveBackProgress = function(panel, even
     try { edge = Number(event.getSwipeEdge()); } catch (eE) { edge = 0; }
     if (panel && this.state && this.state.toolAppRoot === panel && this.applyToolAppBackPreviewProgress && this.hasToolAppBackTarget && this.hasToolAppBackTarget()) {
       this.state.toolAppBackEdge = edge;
-      this.applyToolAppBackPreviewProgress(edge, p);
+
+      var dragPx = 0;
+      try {
+        var panelW = 0;
+        try { panelW = Number(panel.getWidth ? panel.getWidth() : 0); } catch(ePW) { panelW = 0; }
+        if (!panelW || panelW < this.dp(120)) {
+          try { panelW = Number((this.state.viewerPanelLp && this.state.viewerPanelLp.width) || 0); } catch(eLpW) { panelW = 0; }
+        }
+        if (!panelW || panelW < this.dp(120)) panelW = this.dp(320);
+
+        var maxFollow = Math.min(this.dp(220), Math.floor(panelW * 0.45));
+        dragPx = Math.round(maxFollow * p);
+      } catch(eDrag) {
+        dragPx = Math.round(this.dp(180) * p);
+      }
+
+      try {
+        var nowPb = Date.now();
+        if (!this.state.toolAppPredictiveBackLogAt || (nowPb - Number(this.state.toolAppPredictiveBackLogAt || 0)) > 300) {
+          this.state.toolAppPredictiveBackLogAt = nowPb;
+          safeLog(this.L, 'd', 'predictive back progress edge=' + String(edge) + ' p=' + String(p) + ' dragPx=' + String(dragPx));
+        }
+      } catch(eLogPb) {}
+
+      this.applyToolAppBackPreviewProgress(edge, p, dragPx);
       return;
     }
     var dir = edge === 1 ? -1 : 1;

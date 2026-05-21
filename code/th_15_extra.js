@@ -846,7 +846,16 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
       }
     } catch(eFollow) {}
     if (body) {
-      body.setTranslationX(dir * w * eased * 0.42);
+      var bodyMove = dir * w * eased * 0.42;
+      try {
+        if (dragPx !== undefined && dragPx !== null) {
+          var rawDrag = Number(dragPx || 0);
+          if (isNaN(rawDrag)) rawDrag = 0;
+          if (rawDrag < 0) rawDrag = -rawDrag;
+          bodyMove = dir * Math.min(rawDrag, Math.floor(w * 0.45));
+        }
+      } catch(eBodyMove) {}
+      body.setTranslationX(bodyMove);
       body.setAlpha(1.0 - 0.10 * eased);
       var s = 1.0 - 0.015 * eased;
       body.setScaleX(s);
@@ -934,6 +943,9 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
           var my = event.getRawY() - downY;
           var validDir = (edge === 0 && mx > 0) || (edge === 1 && mx < 0);
           if (validDir && Math.abs(mx) > self.dp(4) && Math.abs(mx) > Math.abs(my)) {
+            if (!moved) {
+              try { safeLog(self.L, 'd', 'edge strip move edge=' + String(edge) + ' mx=' + String(mx)); } catch(eMoveLog) {}
+            }
             moved = true;
             var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 180);
             if (isNaN(triggerDp)) triggerDp = 180;
