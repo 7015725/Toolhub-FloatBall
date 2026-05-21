@@ -322,9 +322,7 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
     if (k === "TOOLAPP_BACK_EDGE_WIDTH_DP" || k === "ENABLE_TOOLAPP_INNER_BACK_STRIPS") {
       try {
         if (this.state.toolAppActive) {
-          if (k === "TOOLAPP_BACK_EDGE_WIDTH_DP" && this.updateToolAppInnerBackEdgeWidth) {
-            this.updateToolAppInnerBackEdgeWidth();
-          } else if (this.showToolApp) {
+          if (k === "ENABLE_TOOLAPP_INNER_BACK_STRIPS" && this.showToolApp) {
             this.showToolApp(this.state.toolAppRoute || "settings", false);
           }
           if (this.refreshToolAppScreenBackStrips) this.refreshToolAppScreenBackStrips();

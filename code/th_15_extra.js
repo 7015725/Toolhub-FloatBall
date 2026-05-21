@@ -1139,58 +1139,9 @@ FloatBallAppWM.prototype.isToolAppScreenBackStripsEnabled = function() {
 };
 
 FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
-  try {
-    if (!this.state.wm || !this.state.toolAppActive) return false;
-    if (!this.hasToolAppBackTarget || !this.hasToolAppBackTarget()) {
-      this.hideToolAppScreenBackStrips();
-      return false;
-    }
-    this.hideToolAppScreenBackStrips();
-
-    var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
-    if (sw <= 1) {
-      try { var ss = this.getScreenSizePx(); sw = ss.w; } catch (eScreen) {}
-    }
-    var stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 24);
-    if (isNaN(stripDp)) stripDp = 24;
-    if (stripDp < 1) stripDp = 1;
-    if (stripDp > 120) stripDp = 120;
-    var stripW = this.dp(stripDp);
-    var flags = android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-      android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
-
-    var left = this.createToolAppEdgeBackStrip(0);
-    var lpL = new android.view.WindowManager.LayoutParams(
-      stripW,
-      android.view.WindowManager.LayoutParams.MATCH_PARENT,
-      android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-      flags,
-      android.graphics.PixelFormat.TRANSLUCENT
-    );
-    lpL.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
-    lpL.x = 0;
-    lpL.y = 0;
-
-    var right = this.createToolAppEdgeBackStrip(1);
-    var lpR = new android.view.WindowManager.LayoutParams(
-      stripW,
-      android.view.WindowManager.LayoutParams.MATCH_PARENT,
-      android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-      flags,
-      android.graphics.PixelFormat.TRANSLUCENT
-    );
-    lpR.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
-    lpR.x = Math.max(0, sw - stripW);
-    lpR.y = 0;
-
-    this.state.wm.addView(left, lpL);
-    this.state.wm.addView(right, lpR);
-    this.state.toolAppScreenBackStrips = [left, right];
-    return true;
-  } catch (e) {
-    this.hideToolAppScreenBackStrips();
-    safeLog(this.L, 'w', "show tool app screen back strips fail: " + String(e));
-  }
+  // 兼容旧配置入口：不再创建覆盖 ToolApp 内容区的 MATCH_PARENT 透明触摸层。
+  // 主要返回手势已迁移到 ToolApp root 的 onInterceptTouchEvent，避免遮挡列表/按钮/SeekBar/Switch。
+  try { this.hideToolAppScreenBackStrips(); } catch(eHide) {}
   return false;
 };
 
@@ -1247,7 +1198,108 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var shellPad = spec ? spec.shellPadding : this.dp(6);
   var outerRadius = spec ? spec.outerRadius : this.dp(26);
   var topBarHeight = spec ? spec.topBarHeight : this.dp(56);
-  var root = new android.widget.FrameLayout(context);
+  var rootDownX = 0;
+  var rootDownY = 0;
+  var rootEdge = -1;
+  var rootBackActive = false;
+  var rootBackMoved = false;
+  var root = new JavaAdapter(android.widget.FrameLayout, {
+    onInterceptTouchEvent: function(ev) {
+      try {
+        if (!ev) return false;
+        var action = ev.getActionMasked();
+        if (action === android.view.MotionEvent.ACTION_DOWN) {
+          rootDownX = ev.getX();
+          rootDownY = ev.getY();
+          rootBackActive = false;
+          rootBackMoved = false;
+          rootEdge = -1;
+          var canBackNow = !!(self.state && self.state.toolAppActive && self.hasToolAppBackTarget && self.hasToolAppBackTarget());
+          if (canBackNow) {
+            var edgeW = self.getToolAppBackEdgeWidthPx ? self.getToolAppBackEdgeWidthPx() : self.dp(24);
+            var rw = 0;
+            try { rw = this.getWidth(); } catch(eW) { rw = 0; }
+            if (rootDownX <= edgeW) rootEdge = 0;
+            else if (rw > 0 && rootDownX >= rw - edgeW) rootEdge = 1;
+          }
+          // DOWN 必须放行给子控件，避免按钮/列表/Switch/SeekBar 被边缘手势抢走。
+          return false;
+        }
+        if (action === android.view.MotionEvent.ACTION_MOVE) {
+          if (rootEdge < 0) return false;
+          var dx = ev.getX() - rootDownX;
+          var dy = ev.getY() - rootDownY;
+          var adx = Math.abs(dx);
+          var ady = Math.abs(dy);
+          var validDir = (rootEdge === 0 && dx > 0) || (rootEdge === 1 && dx < 0);
+          var slopDp = Number(self.config.CLICK_SLOP_DP || 6) * 2;
+          if (isNaN(slopDp)) slopDp = 12;
+          if (slopDp < 12) slopDp = 12;
+          if (slopDp > 40) slopDp = 40;
+          var touchSlop = self.dp(slopDp);
+          if (validDir && adx > touchSlop && adx > ady * 1.2) {
+            rootBackActive = true;
+            rootBackMoved = true;
+            try { self.prepareToolAppBackPreview(rootEdge); } catch(ePrep) { try { safeLog(self.L, 'w', 'root back preview prepare fail: ' + String(ePrep)); } catch(eLogPrep) {} }
+            try { safeLog(self.L, 'd', 'root edge back intercept edge=' + String(rootEdge) + ' dx=' + String(dx)); } catch(eMoveLog) {}
+            return true;
+          }
+          return false;
+        }
+        return false;
+      } catch(e) {
+        try { safeLog(self.L, 'w', 'tool app root intercept fail: ' + String(e)); } catch(eLog) {}
+      }
+      return false;
+    },
+    onTouchEvent: function(ev) {
+      try {
+        if (!ev) return false;
+        var action = ev.getActionMasked();
+        if (!rootBackActive) return false;
+        if (action === android.view.MotionEvent.ACTION_MOVE) {
+          var mx = ev.getX() - rootDownX;
+          var my = ev.getY() - rootDownY;
+          var validDir2 = (rootEdge === 0 && mx > 0) || (rootEdge === 1 && mx < 0);
+          if (validDir2 && Math.abs(mx) > Math.abs(my) * 1.2) {
+            var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 180);
+            if (isNaN(triggerDp)) triggerDp = 180;
+            if (triggerDp < 1) triggerDp = 1;
+            if (triggerDp > 720) triggerDp = 720;
+            var triggerDistance = self.dp(triggerDp);
+            var p = Math.min(1, Math.abs(mx) / triggerDistance);
+            self.applyToolAppBackPreviewProgress(rootEdge, p, Math.abs(mx));
+          }
+          return true;
+        }
+        if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
+          var ux = ev.getX() - rootDownX;
+          var uy = ev.getY() - rootDownY;
+          var commitDp = Number(self.config.TOOLAPP_BACK_COMMIT_DISTANCE_DP || 72);
+          if (isNaN(commitDp)) commitDp = 72;
+          if (commitDp < 1) commitDp = 1;
+          if (commitDp > 480) commitDp = 480;
+          var completeDistance = self.dp(commitDp);
+          var okDir = (rootEdge === 0 && ux > completeDistance) || (rootEdge === 1 && ux < -completeDistance);
+          var ok = (action === android.view.MotionEvent.ACTION_UP) && rootBackMoved && okDir && Math.abs(ux) > Math.abs(uy) * 1.2;
+          var edgeDone = rootEdge;
+          rootBackActive = false;
+          rootBackMoved = false;
+          rootEdge = -1;
+          self.finishToolAppBackPreview(edgeDone, ok);
+          return true;
+        }
+        return true;
+      } catch(e2) {
+        try { self.clearToolAppBackPreview(true); } catch(eClear) {}
+        try { safeLog(self.L, 'w', 'tool app root back touch fail: ' + String(e2)); } catch(eLog2) {}
+      }
+      rootBackActive = false;
+      rootBackMoved = false;
+      rootEdge = -1;
+      return false;
+    }
+  }, context);
   var body = new android.widget.LinearLayout(context);
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
   // 外层薄荷容器本身就是整张“岛屿设置”卡片：四角统一圆角，并给底部留出完整收口。
@@ -1313,30 +1365,12 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   hostLp.setMargins((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), 0, (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6));
   body.addView(host, hostLp);
 
-  // 页面内透明返回热区可能覆盖内容区左右边缘的真实按钮/列表项/颜色面板。
-  // 默认关闭页面内热区；默认启用更窄的屏幕边缘热区，更贴近全面屏返回习惯。
+  // 兼容旧设置：不再添加页面内透明返回热区。
+  // 返回手势由 root.onInterceptTouchEvent 按“边缘起手 + 横向阈值 + 方向正确”延迟拦截，避免覆盖控件。
   try {
-    var enableInnerBackStrip = false;
-    try { enableInnerBackStrip = parseBooleanLike(this.config.ENABLE_TOOLAPP_INNER_BACK_STRIPS); } catch(eCfg) { enableInnerBackStrip = false; }
-    if (enableInnerBackStrip) {
-      var stripW = this.getToolAppBackEdgeWidthPx ? this.getToolAppBackEdgeWidthPx() : this.dp(24);
-      var leftStrip = this.createToolAppEdgeBackStrip(0);
-      var leftLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
-      leftLp.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
-      leftLp.topMargin = topBarHeight + this.dp(8);
-      root.addView(leftStrip, leftLp);
-      var rightStrip = this.createToolAppEdgeBackStrip(1);
-      var rightLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
-      rightLp.gravity = android.view.Gravity.END | android.view.Gravity.TOP;
-      rightLp.topMargin = topBarHeight + this.dp(8);
-      root.addView(rightStrip, rightLp);
-      this.state.toolAppInnerBackLeftStrip = leftStrip;
-      this.state.toolAppInnerBackRightStrip = rightStrip;
-    } else {
-      this.state.toolAppInnerBackLeftStrip = null;
-      this.state.toolAppInnerBackRightStrip = null;
-    }
-  } catch (eStrip) { safeLog(this.L, 'w', "add edge back strip fail: " + String(eStrip)); }
+    this.state.toolAppInnerBackLeftStrip = null;
+    this.state.toolAppInnerBackRightStrip = null;
+  } catch (eStrip) { safeLog(this.L, 'w', "clear edge back strip state fail: " + String(eStrip)); }
 
   this.state.toolAppRoot = root;
   this.state.toolAppBody = body;
