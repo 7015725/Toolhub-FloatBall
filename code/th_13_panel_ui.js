@@ -237,14 +237,46 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     // 透明波纹背景
     btn.setBackground(self.ui.createTransparentRippleDrawable(primary, self.dp(16)));
 
+    function runSettingAction() {
+      try {
+        self.touchActivity();
+        var action = String(item.action || "");
+        if (action === "open_btn_mgr") {
+          self.showPanelAvoidBall("btn_editor");
+          return;
+        }
+        if (action === "open_schema_editor") {
+          self.showPanelAvoidBall("schema_editor");
+          return;
+        }
+        if (action === "open_settings") {
+          self.showPanelAvoidBall("settings");
+          return;
+        }
+        if (action === "open_manual" || action === "open_doc") {
+          var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+          intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
+          intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+          context.startActivity(intent);
+          return;
+        }
+        if (action && (action.indexOf("http://") === 0 || action.indexOf("https://") === 0)) {
+          var urlIntent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+          urlIntent.setData(android.net.Uri.parse(action));
+          urlIntent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+          context.startActivity(urlIntent);
+          return;
+        }
+        self.toast(action ? ("暂不支持动作: " + action) : "动作未配置");
+      } catch(e) {
+        try { self.toast("动作执行失败: " + String(e)); } catch(eToast) {}
+        safeLog(null, 'e', "setting action fail " + String(e));
+      }
+    }
+
     btn.setOnClickListener(new android.view.View.OnClickListener({
         onClick: function(v) {
-            try {
-              self.touchActivity();
-              if (item.action === "open_btn_mgr") {
-                self.showPanelAvoidBall("btn_editor");
-              }
-             } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+            runSettingAction();
         }
     }));
     row.addView(btn);
@@ -252,12 +284,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     // 行点击也触发
     row.setOnClickListener(new android.view.View.OnClickListener({
       onClick: function(v) {
-         try {
-          self.touchActivity();
-          if (item.action === "open_btn_mgr") {
-            self.showPanelAvoidBall("btn_editor");
-          }
-         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+         runSettingAction();
       }
     }));
 

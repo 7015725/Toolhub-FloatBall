@@ -614,6 +614,7 @@ FloatBallAppWM.prototype.makeToolAppStackEntry = function(route) {
 };
 
 FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
+  var self = this;
   var oldGroupKey = null;
   var hasOldGroupKey = false;
   var r = "settings";
@@ -650,10 +651,13 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     bar.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
     try { bar.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 1 : 2)); } catch(eBarElev) {}
 
-    var btnBack = this.ui.createFlatButton(this, "‹", T.brown, function() {});
+    function handlePreviewBackClick() {
+      try { self.toast("这是返回预览，松手后才会返回"); } catch(eToast) {}
+    }
+    var btnBack = this.ui.createFlatButton(this, "‹", T.brown, handlePreviewBackClick);
     btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
     btnBack.setPadding(this.dp(8), 0, this.dp(8), 0);
-    try { btnBack.setClickable(false); btnBack.setAlpha(0.45); } catch(eBackClick) {}
+    try { btnBack.setAlpha(0.62); } catch(eBackClick) {}
     try { btnBack.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eBackBg) {}
     bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
 
@@ -670,11 +674,23 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     bar.addView(tvTitle, titleLp);
 
     var rightText = r === "settings" ? "📖 岛务手册" : "✕";
-    var btnClose = this.ui.createFlatButton(this, rightText, T.primaryDeep, function() {});
+    function handlePreviewRightClick() {
+      try {
+        if (r === "settings") {
+          var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+          intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
+          intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+          context.startActivity(intent);
+          return;
+        }
+        self.toast("这是返回预览，松手后才会返回");
+      } catch(eDoc) { try { self.toast("无法打开文档链接"); } catch(eToast) {} }
+    }
+    var btnClose = this.ui.createFlatButton(this, rightText, T.primaryDeep, handlePreviewRightClick);
     btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, r === "settings" ? 12 : 18);
     btnClose.setTypeface(null, android.graphics.Typeface.BOLD);
     btnClose.setPadding(this.dp(10), 0, this.dp(10), 0);
-    try { btnClose.setClickable(false); btnClose.setAlpha(0.45); } catch(eRightClick) {}
+    try { btnClose.setAlpha(0.62); } catch(eRightClick) {}
     try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
     bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
     var barLp = new android.widget.LinearLayout.LayoutParams(-1, topBarHeight);
