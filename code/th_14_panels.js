@@ -4821,9 +4821,9 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var content = new android.widget.LinearLayout(context);
   content.setOrientation(android.widget.LinearLayout.VERTICAL);
   content.setPadding(0, self.dp(8), 0, 0);
-  scroll.addView(content, new android.widget.ScrollView.LayoutParams(
-    android.widget.ScrollView.LayoutParams.MATCH_PARENT,
-    android.widget.ScrollView.LayoutParams.WRAP_CONTENT
+  scroll.addView(content, new android.widget.FrameLayout.LayoutParams(
+    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+    android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
   ));
   card.addView(scroll);
 
