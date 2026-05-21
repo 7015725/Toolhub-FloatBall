@@ -5800,23 +5800,30 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       alphaValTv.setText(String(currentAlphaByte));
       content.addView(alphaRow);
 
-      // 操作按钮：不用通用 Flat/Solid Button，避免颜色面板里出现文字/背景适配异常。
+      // 操作按钮：对齐设置页/按钮管理页的 chip + 主按钮视觉。
       function createColorPanelActionButton(label, primary, onClick) {
         var b = new android.widget.TextView(context);
         b.setText(label);
         b.setGravity(android.view.Gravity.CENTER);
         b.setSingleLine(true);
-        b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
         b.setTypeface(null, android.graphics.Typeface.BOLD);
-        b.setPadding(self.dp(10), 0, self.dp(10), 0);
         try { b.setIncludeFontPadding(false); } catch(eFontPad) {}
-        try { b.setMinHeight(self.dp(40)); } catch(eMinH) {}
         if (primary) {
+          // 与设置页底部“保存布置”一致：主色胶囊、44dp 高、轻描边。
+          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
           b.setTextColor(T.onPrimary || android.graphics.Color.WHITE);
-          try { b.setBackground(self.ui.createStrokeDrawable(T.primary, self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.18), self.dp(1), self.dp(20))); } catch(eBg1) {}
+          b.setPadding(self.dp(18), 0, self.dp(18), 0);
+          try { b.setMinHeight(self.dp(44)); } catch(eMinH1) {}
+          try { b.setBackground(self.ui.createStrokeDrawable(T.primary, self.withAlpha(T.primaryDeep, isDark ? 0.22 : 0.16), self.dp(1), self.dp(23))); } catch(eBg1) {}
+          try { b.setElevation(self.dp(1)); } catch(eElev) {}
         } else {
+          // 与按钮管理页 action chip 一致：浅底、小胶囊、34dp 高。
+          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
           b.setTextColor(T.primaryDeep);
-          try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(20))); } catch(eBg2) {}
+          b.setPadding(self.dp(10), 0, self.dp(10), 0);
+          try { b.setMinHeight(self.dp(34)); } catch(eMinH2) {}
+          try { b.setBackground(self.ui.createStrokeDrawable(self.withAlpha(T.primarySoft, isDark ? 0.62 : 0.95), self.withAlpha(T.primaryDeep, 0.32), self.dp(1), self.dp(14))); } catch(eBg2) {}
+          try { b.setElevation(self.dp(1)); } catch(eElev2) {}
         }
         try { b.setClickable(true); b.setFocusable(true); } catch(eClickable) {}
         b.setOnClickListener(new android.view.View.OnClickListener({
@@ -5831,7 +5838,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       var actionRow = new android.widget.LinearLayout(context);
       actionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       actionRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      actionRow.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(8));
+      actionRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(10));
 
       var btnClear = createColorPanelActionButton("恢复默认", false, function() {
         isFollowTheme = true;
@@ -5845,8 +5852,8 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         alphaValTv.setText("255");
         currentAlphaByte = 255;
       });
-      var clearLp = new android.widget.LinearLayout.LayoutParams(self.dp(108), self.dp(40));
-      clearLp.setMargins(0, 0, self.dp(8), 0);
+      var clearLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, self.dp(34));
+      clearLp.setMargins(0, 0, self.dp(10), 0);
       actionRow.addView(btnClear, clearLp);
 
       var btnOk = createColorPanelActionButton("保存颜色", true, function() {
@@ -5865,9 +5872,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         }
         closePopup();
       });
-      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(40));
+      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
       okLp.weight = 1;
-      okLp.setMargins(self.dp(4), 0, 0, 0);
+      okLp.setMargins(0, 0, 0, 0);
       actionRow.addView(btnOk, okLp);
 
       content.addView(actionRow, new android.widget.LinearLayout.LayoutParams(
