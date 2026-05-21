@@ -4754,15 +4754,32 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var T = PT ? PT.T : this.getAnimalIslandTheme();
   var wm = this.state.wm;
 
+  var dm = context.getResources().getDisplayMetrics();
+  var sw = Number(dm.widthPixels || 0);
+  var sh = Number(dm.heightPixels || 0);
+  try {
+    if (self.getScreenSizePx) {
+      var ss = self.getScreenSizePx();
+      if (ss && ss.w > 0 && ss.h > 0) { sw = ss.w; sh = ss.h; }
+    }
+  } catch(eScreenSize) { safeLog(null, 'e', "catch " + String(eScreenSize)); }
+  if (sw <= 0) sw = self.dp(360);
+  if (sh <= 0) sh = self.dp(640);
+  var panelWidth = Math.round(sw * 0.92);
+  var panelHeight = Math.round(sh * 0.84);
+  if (panelWidth > self.dp(420)) panelWidth = self.dp(420);
+  if (panelWidth < self.dp(300)) panelWidth = Math.min(sw - self.dp(16), self.dp(300));
+  if (panelHeight > sh - self.dp(48)) panelHeight = sh - self.dp(48);
+  if (panelHeight < self.dp(420)) panelHeight = Math.min(sh - self.dp(24), self.dp(420));
+
   var root = new android.widget.FrameLayout(context);
   root.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42));
   root.setClickable(true);
+  try { root.setFocusable(true); root.setFocusableInTouchMode(true); } catch(eRootFocus) {}
 
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
-  var cardLp = new android.widget.FrameLayout.LayoutParams(
-    self.dp(340), self.dp(520)
-  );
+  var cardLp = new android.widget.FrameLayout.LayoutParams(panelWidth, panelHeight);
   cardLp.gravity = android.view.Gravity.CENTER;
   card.setLayoutParams(cardLp);
   card.setBackground(self.ui.createStrokeDrawable(T.card, self.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.22), self.dp(1), self.dp(24)));
@@ -4784,19 +4801,31 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   });
   closeBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   closeBtn.setTypeface(null, android.graphics.Typeface.BOLD);
-  try { closeBtn.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(18))); } catch(eCloseBg) {}
-  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(42), self.dp(38)));
+  closeBtn.setGravity(android.view.Gravity.CENTER);
+  closeBtn.setPadding(0, 0, 0, 0);
+  try { closeBtn.setMinWidth(self.dp(44)); closeBtn.setMinHeight(self.dp(44)); } catch(eCloseMin) {}
+  try { closeBtn.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(22))); } catch(eCloseBg) {}
+  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(44), self.dp(44)));
   card.addView(header);
+
+  var scroll = new android.widget.ScrollView(context);
+  try { scroll.setFillViewport(false); } catch(eFill) {}
+  try { scroll.setVerticalScrollBarEnabled(false); } catch(eBar) {}
+  var scrollLp = new android.widget.LinearLayout.LayoutParams(
+    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+    0
+  );
+  scrollLp.weight = 1;
+  scroll.setLayoutParams(scrollLp);
 
   var content = new android.widget.LinearLayout(context);
   content.setOrientation(android.widget.LinearLayout.VERTICAL);
   content.setPadding(0, self.dp(8), 0, 0);
-  var contentLp = new android.widget.LinearLayout.LayoutParams(
-    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-    android.widget.LinearLayout.LayoutParams.MATCH_PARENT
-  );
-  content.setLayoutParams(contentLp);
-  card.addView(content);
+  scroll.addView(content, new android.widget.ScrollView.LayoutParams(
+    android.widget.ScrollView.LayoutParams.MATCH_PARENT,
+    android.widget.ScrollView.LayoutParams.WRAP_CONTENT
+  ));
+  card.addView(scroll);
 
   root.addView(card);
 
