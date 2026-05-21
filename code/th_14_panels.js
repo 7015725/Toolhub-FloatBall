@@ -5810,21 +5810,21 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         try { b.setIncludeFontPadding(false); } catch(eFontPad) {}
         if (primary) {
           // 与设置页底部“保存布置”一致：主色胶囊、44dp 高、轻描边。
-          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
           // 颜色面板里不用高饱和青色，改成更沉稳的深绿主按钮。
           b.setTextColor(android.graphics.Color.WHITE);
           b.setPadding(self.dp(18), 0, self.dp(18), 0);
-          try { b.setMinHeight(self.dp(44)); } catch(eMinH1) {}
-          try { b.setBackground(self.ui.createStrokeDrawable(T.primaryDeep, self.withAlpha(T.brown || T.primaryDeep, isDark ? 0.28 : 0.18), self.dp(1), self.dp(22))); } catch(eBg1) {}
+          try { b.setMinHeight(self.dp(52)); } catch(eMinH1) {}
+          try { b.setBackground(self.ui.createStrokeDrawable(T.primaryDeep, self.withAlpha(T.brown || T.primaryDeep, isDark ? 0.28 : 0.18), self.dp(1), self.dp(26))); } catch(eBg1) {}
           try { b.setElevation(self.dp(1)); } catch(eElev) {}
         } else {
           // 与设置页按钮一致：次级也用大圆角按钮，不再做小 chip。
-          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
           // 次级按钮走设置页里的奶油/描边感，不再用薄荷绿底。
           b.setTextColor(T.brown || T.sub);
           b.setPadding(self.dp(16), 0, self.dp(16), 0);
-          try { b.setMinHeight(self.dp(44)); } catch(eMinH2) {}
-          try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.card, self.withAlpha(T.stroke || T.brown, isDark ? 0.42 : 0.55), self.dp(1), self.dp(22))); } catch(eBg2) {}
+          try { b.setMinHeight(self.dp(52)); } catch(eMinH2) {}
+          try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.card, self.withAlpha(T.stroke || T.brown, isDark ? 0.42 : 0.55), self.dp(1), self.dp(26))); } catch(eBg2) {}
           try { b.setElevation(self.dp(1)); } catch(eElev2) {}
         }
         try { b.setClickable(true); b.setFocusable(true); } catch(eClickable) {}
@@ -5840,7 +5840,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       var actionRow = new android.widget.LinearLayout(context);
       actionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       actionRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      actionRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(10));
+      actionRow.setPadding(self.dp(10), self.dp(10), self.dp(10), self.dp(12));
 
       var btnClear = createColorPanelActionButton("恢复默认", false, function() {
         isFollowTheme = true;
@@ -5854,7 +5854,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         alphaValTv.setText("255");
         currentAlphaByte = 255;
       });
-      var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+      var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(52));
       clearLp.weight = 1;
       clearLp.setMargins(0, 0, self.dp(6), 0);
       actionRow.addView(btnClear, clearLp);
@@ -5875,7 +5875,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         }
         closePopup();
       });
-      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(52));
       okLp.weight = 1;
       okLp.setMargins(self.dp(6), 0, 0, 0);
       actionRow.addView(btnOk, okLp);
