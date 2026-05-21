@@ -546,6 +546,7 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.toolAppRoute = null;
     this.state.toolAppNavStack = [];
     this.state.settingsGroupKey = null;
+    this.state.settingsHomeSelectedItemId = null;
     this.hideViewerPanel();
     this.state.toolAppRoot = null;
     this.state.toolAppBody = null;
@@ -1249,6 +1250,14 @@ FloatBallAppWM.prototype.replaceToolAppPage = function(route) {
 FloatBallAppWM.prototype.popToolAppPage = function(reason) {
   try {
     var curRoute = this.state.toolAppRoute ? String(this.state.toolAppRoute) : "";
+    try {
+      var specBack = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
+      if (curRoute === "settings" && specBack && specBack.useSideBySide && this.state.settingsHomeSelectedItemId) {
+        this.state.settingsHomeSelectedItemId = null;
+        this.showToolApp("settings", false);
+        return true;
+      }
+    } catch(ePaneBack) {}
     if (curRoute === "btn_editor" && this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
       this.state.editingButtonIndex = null;
       this.state.keepBtnEditorState = true;

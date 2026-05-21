@@ -6,8 +6,8 @@
       "size": 56392
     },
     "th_02_core.js": {
-      "sha256": "15bb9bfbd19a673d442e221b0a00a456ed5f87af2666b9c73b117d6223faeecd",
-      "size": 4584
+      "sha256": "3c5c498d200e961d48fc9ca3f885475e770ecb32b83ec6a89d23df3f88aed1c9",
+      "size": 4664
     },
     "th_03_icon.js": {
       "sha256": "717f7f37474d3616c2cd944581455f600020a850ec8812100d0546ec1302c987",
@@ -18,8 +18,8 @@
       "size": 41840
     },
     "th_05_persistence.js": {
-      "sha256": "7d913b2caddf04c41ca13023c06763c03a7e372bb31080af37e7a3b2aa81d5f8",
-      "size": 15157
+      "sha256": "8cc52d3dacc8ac3c1b5aecf6fc399a2fe516402955799eddbd07dc9195c10d40",
+      "size": 15192
     },
     "th_06_icon_parser.js": {
       "sha256": "25b95a5df634a7ee359f3ab798e4d3154a71c24016f7b4bf8a658096644b2484",
@@ -54,12 +54,12 @@
       "size": 21198
     },
     "th_14_panels.js": {
-      "sha256": "3c4df811ab2287d86e639f2a24fe408587ad408ae9f19bf8d3296d94fd89ba8c",
-      "size": 279891
+      "sha256": "e13131fea0170a069a61ce73644097132b54436ace979705f572d18e9a0e6c11",
+      "size": 290242
     },
     "th_15_extra.js": {
-      "sha256": "bdb963bdd6b1b5a7b57f6f55f90a3f022cc2df925765f0195aa6f033efbbc7de",
-      "size": 102108
+      "sha256": "a78f59de13c283c9b796e2be3c80d7303e82805cd438a82ba6697c964aa01b7a",
+      "size": 102533
     },
     "th_16_entry.js": {
       "sha256": "6c59d9891cd010647f84c3db93f1cf95c7bbfb758470ea21044bf72eb8ff73d1",
@@ -68,5 +68,5 @@
   },
   "keyId": "toolhub-targets-2026-rsa3072",
   "schema": 2,
-  "version": 20260521165944
+  "version": 20260521171952
 }

@@ -158,7 +158,7 @@ FloatBallAppWM.prototype.setPendingValue = function(k, v) {
   if (String(k) === "SETTINGS_THEME") {
       try {
           if (this.state.toolAppActive && this.replaceToolAppPage) {
-              this.replaceToolAppPage("settings_group");
+              this.replaceToolAppPage(String(this.state.toolAppRoute || "settings_group"));
           } else {
               if (this.state.settingsPanel) {
                   this.safeRemoveView(this.state.settingsPanel, "settingsPanel");

@@ -60,6 +60,8 @@ function FloatBallAppWM(logger) {
     toolAppTitleView: null,
     toolAppBackButton: null,
     settingsGroupKey: null,
+    settingsHomeSelectedCategoryId: null,
+    settingsHomeSelectedItemId: null,
 
     mask: null,
     maskLp: null,
