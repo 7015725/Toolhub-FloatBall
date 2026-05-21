@@ -1577,12 +1577,13 @@ FloatBallAppWM.prototype.showIconPicker = function(opts) {
         if (e.getAction() === android.view.MotionEvent.ACTION_DOWN) {
           try {
             var rect = new android.graphics.Rect();
-            if (state.root) {
-              state.root.getGlobalVisibleRect(rect);
+            if (panel) {
+              panel.getGlobalVisibleRect(rect);
               var x = e.getRawX();
               var y = e.getRawY();
               if (!rect.contains(x, y)) {
                 hide();
+                return true;
               }
             }
            } catch(eOut) { safeLog(null, 'e', "catch " + String(eOut)); }

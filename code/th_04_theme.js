@@ -281,21 +281,30 @@ FloatBallAppWM.prototype.ui = {
         var pasteBtn = this.createFlatButton(app, "粘贴", this.colors.accent, function() {
             try {
                 var cb = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
-                if (cb.hasPrimaryClip()) {
-                    var item = cb.getPrimaryClip().getItemAt(0);
-                    if (item) {
-                        var txt = item.getText();
-                        if (txt) {
-                            var st = String(txt);
-                            var old = String(et.getText());
-                            if (old.length > 0) et.setText(old + st);
-                            else et.setText(st);
-                            et.setSelection(et.getText().length());
-                        }
-                    }
-                } else {
+                if (!cb || !cb.hasPrimaryClip()) {
                     app.toast("剪贴板为空");
+                    return;
                 }
+                var clip = cb.getPrimaryClip();
+                if (!clip || clip.getItemCount() <= 0) {
+                    app.toast("剪贴板为空");
+                    return;
+                }
+                var item = clip.getItemAt(0);
+                if (!item) {
+                    app.toast("剪贴板为空");
+                    return;
+                }
+                var txt = item.getText();
+                if (txt === null || txt === undefined || String(txt).length === 0) {
+                    app.toast("剪贴板不是文本内容");
+                    return;
+                }
+                var st = String(txt);
+                var old = String(et.getText());
+                if (old.length > 0) et.setText(old + st);
+                else et.setText(st);
+                et.setSelection(et.getText().length());
             } catch (eP) {
                 app.toast("粘贴失败: " + eP);
             }

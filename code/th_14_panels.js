@@ -3453,8 +3453,14 @@ scRefreshTv.setOnClickListener(new android.view.View.OnClickListener({
             try { __scIconCache = {};  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
             try { __scIconKeys = [];  } catch(eC1) { safeLog(null, 'e', "catch " + String(eC1)); }
             try { __scIconInFlight = {};  } catch(eC2) { safeLog(null, 'e', "catch " + String(eC2)); }
-            // 若当前已展开，立即触发重新加载与渲染
-            if (scInlineState.expanded) __scEnsureLoadedAndRender();
+            // 点击刷新时给用户即时反馈；折叠状态下自动展开并加载，避免看起来无效。
+            if (!scInlineState.expanded) {
+                scInlineState.expanded = true;
+                try { scBody.setVisibility(android.view.View.VISIBLE); } catch(eV) { safeLog(null, 'e', "catch " + String(eV)); }
+                try { scArrowTv.setText("▲"); } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
+            }
+            __scEnsureLoadedAndRender();
+            try { self.toast("正在刷新快捷方式"); } catch(eToast) {}
          } catch(eR) { safeLog(null, 'e', "catch " + String(eR)); }
     }
 }));

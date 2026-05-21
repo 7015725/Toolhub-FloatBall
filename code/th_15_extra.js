@@ -653,7 +653,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     var btnBack = this.ui.createFlatButton(this, "‹", T.brown, function() {});
     btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
     btnBack.setPadding(this.dp(8), 0, this.dp(8), 0);
-    try { btnBack.setClickable(false); } catch(eBackClick) {}
+    try { btnBack.setClickable(false); btnBack.setAlpha(0.45); } catch(eBackClick) {}
     try { btnBack.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eBackBg) {}
     bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
 
@@ -674,7 +674,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, r === "settings" ? 12 : 18);
     btnClose.setTypeface(null, android.graphics.Typeface.BOLD);
     btnClose.setPadding(this.dp(10), 0, this.dp(10), 0);
-    try { btnClose.setClickable(false); } catch(eRightClick) {}
+    try { btnClose.setClickable(false); btnClose.setAlpha(0.45); } catch(eRightClick) {}
     try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
     bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
     var barLp = new android.widget.LinearLayout.LayoutParams(-1, topBarHeight);
@@ -1143,11 +1143,14 @@ FloatBallAppWM.prototype.updateToolAppShellChrome = function(title, canBack) {
     var r = String(this.state.toolAppRoute || "");
     var titleText = String(title || "ToolHub");
     if (r === "settings") titleText = "❧ 岛屿设置 ❧";
+    var hasBack = false;
+    try { hasBack = !!(this.hasToolAppBackTarget && this.hasToolAppBackTarget()); } catch(eHasBack) { hasBack = !!canBack; }
     if (this.state.toolAppTitleView) this.state.toolAppTitleView.setText(titleText);
     if (this.state.toolAppBackButton) {
-      this.state.toolAppBackButton.setText("‹");
+      this.state.toolAppBackButton.setText(hasBack ? "‹" : "✕");
       this.state.toolAppBackButton.setVisibility(android.view.View.VISIBLE);
       this.state.toolAppBackButton.setEnabled(true);
+      try { this.state.toolAppBackButton.setAlpha(1.0); } catch(eAlpha) {}
     }
     if (this.state.toolAppRightButton) {
       if (r === "settings") this.state.toolAppRightButton.setText("📖 岛务手册");
