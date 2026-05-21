@@ -4356,14 +4356,20 @@ shortcutWrap.addView(scBody);
             delete newBtn.launchUserId;
 
             var isValid = true;
+            var validationMessage = "";
+            function markInvalid(inputObj, msg) {
+                isValid = false;
+                if (!validationMessage) validationMessage = String(msg || "请补全必填项");
+                try { if (inputObj && inputObj.setError) inputObj.setError(String(msg || "必填")); } catch(eMark) { safeLog(null, 'e', "catch " + String(eMark)); }
+            }
 
             if (newBtn.type === "shell") {
                 var c = inputShell.getValue();
-                if (!c) { inputShell.setError("请输入命令"); isValid=false; }
+                if (!c) { markInvalid(inputShell, "请输入命令"); }
                 else { inputShell.setError(null); newBtn.cmd = c; newBtn.cmd_b64 = encodeBase64Utf8(c); newBtn.root = true; }
             } else if (newBtn.type === "app") {
                 var p = inputPkg.getValue();
-                if (!p) { inputPkg.setError("请输入包名"); isValid=false; }
+                if (!p) { markInvalid(inputPkg, "请输入包名"); }
                 else { inputPkg.setError(null); newBtn.pkg = p; }// # 保存：启动用户ID（可选）
 try {
     var au = inputAppLaunchUser.getValue();
@@ -4376,20 +4382,20 @@ try {
 
             } else if (newBtn.type === "broadcast") {
                 var a = inputAction.getValue();
-                if (!a) { inputAction.setError("请输入 Action"); isValid=false; }
+                if (!a) { markInvalid(inputAction, "请输入 Action"); }
                 else { inputAction.setError(null); newBtn.action = a; }
 
                 var ex = inputExtras.getValue();
                 if (ex) {
                     try { newBtn.extras = JSON.parse(ex); inputExtras.setError(null); }
-                    catch(e) { inputExtras.setError("JSON 格式错误"); isValid=false; }
+                    catch(e) { markInvalid(inputExtras, "JSON 格式错误"); }
                 }
             } else if (newBtn.type === "shortcut") {
                 var sp = inputScPkg.getValue();
                 var sid = inputScId.getValue();
-                if (!sp) { inputScPkg.setError("请输入包名"); isValid=false; }
+                if (!sp) { markInvalid(inputScPkg, "请先选择快捷方式"); }
                 else { inputScPkg.setError(null); newBtn.pkg = sp; }
-                if (!sid) { inputScId.setError("请输入 shortcutId"); isValid=false; }
+                if (!sid) { markInvalid(inputScId, "请先选择快捷方式"); }
                 else { inputScId.setError(null); newBtn.shortcutId = sid; }
                 // # 保存：同时保存 intentUri/userId，供 JavaScript(startActivityAsUser) 脚本使用（锁定主/分身）
                 try { if (scSelectedIntentUri && scSelectedIntentUri.length > 0) newBtn.intentUri = String(scSelectedIntentUri);  } catch(eSIU2) { safeLog(null, 'e', "catch " + String(eSIU2)); }
@@ -4399,7 +4405,10 @@ try {
                 // # 保存：快捷方式仅使用 JavaScript 执行（取消 Shell/兜底）
                 newBtn.shortcutRunMode = "js";
             }
-            if (!isValid) return;
+            if (!isValid) {
+                try { self.toast(validationMessage || "请补全必填项"); } catch(eToastInvalid) {}
+                return;
+            }
 
 
 
