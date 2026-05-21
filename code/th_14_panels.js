@@ -5803,7 +5803,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       // 操作按钮
       var actionRow = new android.widget.LinearLayout(context);
       actionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-      actionRow.setGravity(android.view.Gravity.CENTER);
+      actionRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
       actionRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
 
       var btnClear = self.ui.createFlatButton(self, "恢复默认", T.primaryDeep, function() {
@@ -5819,7 +5819,16 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         alphaValTv.setText("255");
         currentAlphaByte = 255;
       });
-      actionRow.addView(btnClear);
+      try {
+        btnClear.setGravity(android.view.Gravity.CENTER);
+        btnClear.setSingleLine(true);
+        btnClear.setMinHeight(self.dp(44));
+        btnClear.setClickable(true);
+      } catch(eClearStyle) { safeLog(self.L, 'w', "color clear style fail: " + String(eClearStyle)); }
+      var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+      clearLp.weight = 1;
+      clearLp.setMargins(0, 0, self.dp(6), 0);
+      actionRow.addView(btnClear, clearLp);
 
       var okTextColor = T.onPrimary;
       try { if (okTextColor === undefined || okTextColor === null) okTextColor = android.graphics.Color.WHITE; } catch(eOkText) { okTextColor = android.graphics.Color.WHITE; }
@@ -5853,7 +5862,10 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       okLp.setMargins(self.dp(6), 0, 0, 0);
       actionRow.addView(btnOk, okLp);
 
-      content.addView(actionRow);
+      content.addView(actionRow, new android.widget.LinearLayout.LayoutParams(
+        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+      ));
     }
   });
 
