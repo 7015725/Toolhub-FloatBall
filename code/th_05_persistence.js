@@ -319,13 +319,31 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
     }
     if (k === "BALL_SIZE_DP" || k === "BALL_PNG_MODE" || k === "BALL_ICON_TYPE" || k === "BALL_ICON_FILE_PATH" || k === "BALL_ICON_RES_ID" || k === "BALL_ICON_RES_NAME" || k === "BALL_ICON_SIZE_DP" || k === "BALL_ICON_TINT_HEX" || k === "BALL_BG_COLOR_HEX") { this.rebuildBallForNewSize(); return; }
 
-    if (k === "TOOLAPP_BACK_EDGE_WIDTH_DP") {
+    if (k === "TOOLAPP_BACK_EDGE_WIDTH_DP" || k === "ENABLE_TOOLAPP_INNER_BACK_STRIPS") {
       try {
-        if (this.state.toolAppActive && this.updateToolAppInnerBackEdgeWidth) {
-          this.updateToolAppInnerBackEdgeWidth();
+        if (this.state.toolAppActive) {
+          if (k === "TOOLAPP_BACK_EDGE_WIDTH_DP" && this.updateToolAppInnerBackEdgeWidth) {
+            this.updateToolAppInnerBackEdgeWidth();
+          } else if (this.showToolApp) {
+            this.showToolApp(this.state.toolAppRoute || "settings", false);
+          }
         }
       } catch(eBackStrip) {
-        safeLog(this.L, "w", "apply back edge width fail: " + String(eBackStrip));
+        safeLog(this.L, "w", "apply inner back strip fail: " + String(eBackStrip));
+      }
+      return;
+    }
+
+    if (k === "ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") {
+      try {
+        if (this.state.toolAppActive) {
+          var enableScreenBackStrip = false;
+          try { enableScreenBackStrip = parseBooleanLike(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS); } catch(eCfg2) { enableScreenBackStrip = false; }
+          if (enableScreenBackStrip && this.hasToolAppBackTarget && this.hasToolAppBackTarget() && this.showToolAppScreenBackStrips) this.showToolAppScreenBackStrips();
+          else if (this.hideToolAppScreenBackStrips) this.hideToolAppScreenBackStrips();
+        }
+      } catch(eScreenBackStrip) {
+        safeLog(this.L, "w", "apply screen back strip fail: " + String(eScreenBackStrip));
       }
       return;
     }

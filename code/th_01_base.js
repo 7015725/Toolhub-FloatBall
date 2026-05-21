@@ -100,7 +100,9 @@ var ConfigValidator = {
     LONG_PRESS_TRIGGERED_MOVE_SLOP_DP: { type: "int", min: 8, max: 80, default: 28 },
     LONG_PRESS_VIBRATE_MS: { type: "int", min: 10, max: 100, default: 40 },
     CLICK_SLOP_DP: { type: "int", min: 2, max: 20, default: 6 },
-    TOOLAPP_BACK_EDGE_WIDTH_DP: { type: "int", min: 1, max: 120, default: 22 },
+    TOOLAPP_BACK_EDGE_WIDTH_DP: { type: "int", min: 1, max: 120, default: 48 },
+    ENABLE_TOOLAPP_INNER_BACK_STRIPS: { type: "bool", default: true },
+    ENABLE_TOOLAPP_SCREEN_BACK_STRIPS: { type: "bool", default: false },
     TOOLAPP_BACK_COMMIT_DISTANCE_DP: { type: "int", min: 1, max: 480, default: 72 },
     TOOLAPP_BACK_PROGRESS_DISTANCE_DP: { type: "int", min: 1, max: 720, default: 180 },
 
@@ -734,7 +736,9 @@ var ConfigManager = {
         LONG_PRESS_MS: 520,
         LONG_PRESS_TRIGGERED_MOVE_SLOP_DP: 28,
         CLICK_SLOP_DP: 6,
-        TOOLAPP_BACK_EDGE_WIDTH_DP: 22,
+        TOOLAPP_BACK_EDGE_WIDTH_DP: 48,
+        ENABLE_TOOLAPP_INNER_BACK_STRIPS: true,
+        ENABLE_TOOLAPP_SCREEN_BACK_STRIPS: false,
         TOOLAPP_BACK_COMMIT_DISTANCE_DP: 72,
         TOOLAPP_BACK_PROGRESS_DISTANCE_DP: 180,
         ENABLE_BOUNCE: true,
@@ -847,6 +851,8 @@ var ConfigManager = {
         { type: "section", name: "触摸与手势" },
         { key: "CLICK_SLOP_DP", name: "点击位移阈值(dp)", type: "int", min: 1, max: 40, step: 1 },
         { key: "TOOLAPP_BACK_EDGE_WIDTH_DP", name: "页面内返回边界宽度", type: "int", min: 1, max: 120, step: 1 },
+        { key: "ENABLE_TOOLAPP_INNER_BACK_STRIPS", name: "启用页面内左右滑动返回", type: "bool" },
+        { key: "ENABLE_TOOLAPP_SCREEN_BACK_STRIPS", name: "启用屏幕边缘返回热区(排查用)", type: "bool" },
         { key: "TOOLAPP_BACK_COMMIT_DISTANCE_DP", name: "设置页返回触发距离", type: "int", min: 1, max: 480, step: 1 },
         { key: "TOOLAPP_BACK_PROGRESS_DISTANCE_DP", name: "设置页返回动画距离", type: "int", min: 1, max: 720, step: 1 },
         { key: "ENABLE_LONG_PRESS", name: "启用长按", type: "bool" },
@@ -886,7 +892,7 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("ENABLE_TOOLAPP_INNER_BACK_STRIPS") < 0 || sStr.indexOf("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0) {
             needReset = true;
         }
 
@@ -918,6 +924,8 @@ var ConfigManager = {
                 schemaItemDiffers("BALL_ICON_SIZE_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("BALL_BG_COLOR_HEX", ["name", "type"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_EDGE_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("ENABLE_TOOLAPP_INNER_BACK_STRIPS", ["name", "type"]) ||
+                schemaItemDiffers("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS", ["name", "type"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_COMMIT_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_PROGRESS_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP", ["name", "type", "min", "max", "step"])) {
