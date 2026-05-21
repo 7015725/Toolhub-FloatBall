@@ -611,19 +611,83 @@ FloatBallAppWM.prototype.hasToolAppBackTarget = function() {
   return false;
 };
 
+FloatBallAppWM.prototype.captureToolAppPageSnapshot = function(route) {
+  var r = this.isToolAppRoute(route) ? String(route) : (this.isToolAppRoute(this.state.toolAppRoute) ? String(this.state.toolAppRoute) : "settings");
+  var s = this.state || {};
+  var entry = {
+    route: r,
+    settingsGroupKey: (s.settingsGroupKey !== undefined && s.settingsGroupKey !== null) ? String(s.settingsGroupKey) : "",
+    settingsHomeSelectedItemId: (s.settingsHomeSelectedItemId !== undefined) ? s.settingsHomeSelectedItemId : null,
+    editingButtonIndex: (s.editingButtonIndex !== undefined) ? s.editingButtonIndex : null,
+    editingSchemaIndex: (s.editingSchemaIndex !== undefined) ? s.editingSchemaIndex : null,
+    keepBtnEditorState: !!s.keepBtnEditorState,
+    keepSchemaEditorState: !!s.keepSchemaEditorState,
+    toolAppSubRoute: (s.toolAppSubRoute !== undefined) ? s.toolAppSubRoute : null,
+    toolAppSubPage: (s.toolAppSubPage !== undefined) ? s.toolAppSubPage : null,
+    toolAppSubKey: (s.toolAppSubKey !== undefined) ? s.toolAppSubKey : null,
+    toolAppSubPayload: (s.toolAppSubPayload !== undefined) ? s.toolAppSubPayload : null
+  };
+  if (r !== "settings_group") entry.settingsGroupKey = "";
+  if (r !== "settings") entry.settingsHomeSelectedItemId = null;
+  if (r !== "btn_editor") { entry.editingButtonIndex = null; entry.keepBtnEditorState = false; }
+  if (r !== "schema_editor") { entry.editingSchemaIndex = null; entry.keepSchemaEditorState = false; }
+  return entry;
+};
+
 FloatBallAppWM.prototype.makeToolAppStackEntry = function(route) {
+  return this.captureToolAppPageSnapshot(route);
+};
+
+FloatBallAppWM.prototype.applyToolAppPageSnapshot = function(entry) {
+  try {
+    if (!entry || typeof entry !== "object") return false;
+    var r = this.isToolAppRoute(entry.route) ? String(entry.route) : "settings";
+    this.state.toolAppRoute = r;
+    this.state.settingsGroupKey = (entry.settingsGroupKey !== undefined && entry.settingsGroupKey !== null) ? String(entry.settingsGroupKey) : "";
+    this.state.settingsHomeSelectedItemId = (entry.settingsHomeSelectedItemId !== undefined) ? entry.settingsHomeSelectedItemId : null;
+    this.state.editingButtonIndex = (entry.editingButtonIndex !== undefined) ? entry.editingButtonIndex : null;
+    this.state.editingSchemaIndex = (entry.editingSchemaIndex !== undefined) ? entry.editingSchemaIndex : null;
+    this.state.keepBtnEditorState = !!entry.keepBtnEditorState;
+    this.state.keepSchemaEditorState = !!entry.keepSchemaEditorState;
+    this.state.toolAppSubRoute = (entry.toolAppSubRoute !== undefined) ? entry.toolAppSubRoute : null;
+    this.state.toolAppSubPage = (entry.toolAppSubPage !== undefined) ? entry.toolAppSubPage : null;
+    this.state.toolAppSubKey = (entry.toolAppSubKey !== undefined) ? entry.toolAppSubKey : null;
+    this.state.toolAppSubPayload = (entry.toolAppSubPayload !== undefined) ? entry.toolAppSubPayload : null;
+    return true;
+  } catch(e) { safeLog(this.L, 'w', "apply tool app snapshot fail: " + String(e)); }
+  return false;
+};
+
+FloatBallAppWM.prototype.cloneToolAppPageSnapshot = function(entry) {
+  if (!entry || typeof entry !== "object") return this.makeToolAppStackEntry("settings");
   return {
-    route: String(route || "settings"),
-    settingsGroupKey: String(this.state.settingsGroupKey || "")
+    route: this.isToolAppRoute(entry.route) ? String(entry.route) : "settings",
+    settingsGroupKey: (entry.settingsGroupKey !== undefined && entry.settingsGroupKey !== null) ? String(entry.settingsGroupKey) : "",
+    settingsHomeSelectedItemId: (entry.settingsHomeSelectedItemId !== undefined) ? entry.settingsHomeSelectedItemId : null,
+    editingButtonIndex: (entry.editingButtonIndex !== undefined) ? entry.editingButtonIndex : null,
+    editingSchemaIndex: (entry.editingSchemaIndex !== undefined) ? entry.editingSchemaIndex : null,
+    keepBtnEditorState: !!entry.keepBtnEditorState,
+    keepSchemaEditorState: !!entry.keepSchemaEditorState,
+    toolAppSubRoute: (entry.toolAppSubRoute !== undefined) ? entry.toolAppSubRoute : null,
+    toolAppSubPage: (entry.toolAppSubPage !== undefined) ? entry.toolAppSubPage : null,
+    toolAppSubKey: (entry.toolAppSubKey !== undefined) ? entry.toolAppSubKey : null,
+    toolAppSubPayload: (entry.toolAppSubPayload !== undefined) ? entry.toolAppSubPayload : null
   };
 };
 
 FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
   var self = this;
-  var oldGroupKey = null;
-  var hasOldGroupKey = false;
+  var oldSnap = null;
   var r = "settings";
   try {
+    oldSnap = this.captureToolAppPageSnapshot ? this.captureToolAppPageSnapshot(this.state.toolAppRoute || "settings") : null;
+    if (entry && typeof entry === "object") {
+      if (this.applyToolAppPageSnapshot) this.applyToolAppPageSnapshot(entry);
+      r = this.isToolAppRoute(entry.route) ? String(entry.route) : "settings";
+    } else {
+      r = this.isToolAppRoute(entry) ? String(entry) : "settings";
+      if (this.applyToolAppPageSnapshot) this.applyToolAppPageSnapshot(this.makeToolAppStackEntry(r));
+    }
     var spec = null;
     try {
       spec = this.getToolAppResponsiveSpec ? this.getToolAppResponsiveSpec() : null;
@@ -631,18 +695,6 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
       spec = null;
     }
     var topBarHeight = spec ? spec.topBarHeight : this.dp(56);
-
-    oldGroupKey = this.state.settingsGroupKey;
-    hasOldGroupKey = true;
-    var groupKey = null;
-    if (entry && typeof entry === "object") {
-      r = this.isToolAppRoute(entry.route) ? String(entry.route) : "settings";
-      if (entry.settingsGroupKey !== undefined && entry.settingsGroupKey !== null) groupKey = String(entry.settingsGroupKey);
-    } else {
-      r = this.isToolAppRoute(entry) ? String(entry) : "settings";
-    }
-    if (r === "settings") this.state.settingsGroupKey = null;
-    else if (r === "settings_group") this.state.settingsGroupKey = groupKey !== null ? groupKey : String(oldGroupKey || "");
 
     var isDark = this.isDarkTheme();
     var C = this.ui.colors;
@@ -722,8 +774,8 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
   } catch (e) {
     safeLog(this.L, 'w', "build tool app preview body fail route=" + String(r || "") + " err=" + String(e));
   } finally {
-    if (hasOldGroupKey) {
-      try { this.state.settingsGroupKey = oldGroupKey; } catch (eRestore) {}
+    if (oldSnap && this.applyToolAppPageSnapshot) {
+      try { this.applyToolAppPageSnapshot(oldSnap); } catch (eRestore) {}
     }
   }
   return null;
@@ -1429,8 +1481,6 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
     }
     if (resetStack || !this.state.toolAppNavStack || !this.state.toolAppNavStack.length) {
       this.state.toolAppNavStack = [this.makeToolAppStackEntry(r)];
-    } else {
-      this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = this.makeToolAppStackEntry(r);
     }
 
     var raw = this.buildPanelView(r);
@@ -1470,7 +1520,12 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
 FloatBallAppWM.prototype.pushToolAppPage = function(route) {
   if (!this.isToolAppRoute(route)) return;
   if (!this.state.toolAppNavStack) this.state.toolAppNavStack = [];
-  this.state.toolAppNavStack.push(this.makeToolAppStackEntry(route));
+  if (this.state.toolAppNavStack.length <= 0) {
+    this.state.toolAppNavStack.push(this.makeToolAppStackEntry(this.state.toolAppRoute || "settings"));
+  }
+  var nextEntry = this.makeToolAppStackEntry(route);
+  this.state.toolAppNavStack.push(nextEntry);
+  if (this.applyToolAppPageSnapshot) this.applyToolAppPageSnapshot(nextEntry);
   this.showToolApp(route, false);
 };
 
@@ -1481,8 +1536,10 @@ FloatBallAppWM.prototype.pushToolAppSettingsGroup = function(groupKey) {
 
 FloatBallAppWM.prototype.replaceToolAppPage = function(route) {
   if (!this.isToolAppRoute(route)) return;
-  if (!this.state.toolAppNavStack || !this.state.toolAppNavStack.length) this.state.toolAppNavStack = [this.makeToolAppStackEntry(route)];
-  else this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = this.makeToolAppStackEntry(route);
+  var entry = this.makeToolAppStackEntry(route);
+  if (!this.state.toolAppNavStack || !this.state.toolAppNavStack.length) this.state.toolAppNavStack = [entry];
+  else this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = entry;
+  if (this.applyToolAppPageSnapshot) this.applyToolAppPageSnapshot(entry);
   this.showToolApp(route, false);
 };
 
@@ -1493,27 +1550,22 @@ FloatBallAppWM.prototype.popToolAppPage = function(reason) {
       var specBack = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
       if (curRoute === "settings" && specBack && specBack.useSideBySide && this.state.settingsHomeSelectedItemId) {
         this.state.settingsHomeSelectedItemId = null;
+        if (this.state.toolAppNavStack && this.state.toolAppNavStack.length > 0) {
+          this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = this.makeToolAppStackEntry("settings");
+        }
         this.showToolApp("settings", false);
         return true;
       }
     } catch(ePaneBack) {}
-    if (curRoute === "btn_editor" && this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
-      this.state.editingButtonIndex = null;
-      this.state.keepBtnEditorState = true;
-    }
-    if (curRoute === "schema_editor" && this.state.editingSchemaIndex !== null && this.state.editingSchemaIndex !== undefined) {
-      this.state.editingSchemaIndex = null;
-      this.state.keepSchemaEditorState = true;
-    }
     if (!this.state.toolAppNavStack || this.state.toolAppNavStack.length <= 1) {
       this.closeToolApp();
       return true;
     }
     this.state.toolAppNavStack.pop();
     var top = this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1];
-    var nextRoute = top && top.route ? String(top.route) : "settings";
-    if (nextRoute === "settings_group") this.state.settingsGroupKey = String((top && top.settingsGroupKey) ? top.settingsGroupKey : (this.state.settingsGroupKey || ""));
-    else this.state.settingsGroupKey = null;
+    var target = this.cloneToolAppPageSnapshot ? this.cloneToolAppPageSnapshot(top) : top;
+    var nextRoute = target && target.route ? String(target.route) : "settings";
+    if (this.applyToolAppPageSnapshot) this.applyToolAppPageSnapshot(target);
     this.showToolApp(nextRoute, false);
     return true;
   } catch (e) {
