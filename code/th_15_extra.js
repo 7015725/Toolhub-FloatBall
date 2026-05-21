@@ -857,11 +857,8 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
       try { w = Number((this.state.toolAppRoot && this.state.toolAppRoot.getWidth && this.state.toolAppRoot.getWidth()) || 0); } catch (eW1) {}
     }
     if (!w || w < this.dp(120)) w = this.dp(320);
-    try {
-      if (dragPx !== undefined && dragPx !== null) {
-        this.applyToolAppBackWindowFollow(edge, dragPx);
-      }
-    } catch(eFollow) {}
+    /* 不再移动 WindowManager 窗口，避免 prevBody 和当前页面一起跑。 */
+    /* try { this.applyToolAppBackWindowFollow(edge, dragPx); } catch(eFollow) {} */
 
     try {
       var nowLog = Date.now();
@@ -877,28 +874,24 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
     } catch(eLog) {}
 
     var root = this.state.toolAppRoot;
-    var rootMove = dir * w * eased * 0.42;
+    var bodyMove = dir * w * eased * 0.42;
     try {
       if (dragPx !== undefined && dragPx !== null) {
         var rawDrag = Number(dragPx || 0);
         if (isNaN(rawDrag)) rawDrag = 0;
         if (rawDrag < 0) rawDrag = -rawDrag;
-        rootMove = dir * Math.min(rawDrag, Math.floor(w * 0.45));
+        bodyMove = dir * Math.min(rawDrag, Math.floor(w * 0.45));
       }
-    } catch(eRootMove) {}
+    } catch(eBodyMove) {}
 
-    try {
-      if (root) {
-        try { root.animate().cancel(); } catch(eCancelRoot) {}
-        root.setTranslationX(rootMove);
-      }
-    } catch(eRootSet) {
-      safeLog(this.L, 'w', 'set tool app root translation fail: ' + String(eRootSet));
+    if (root) {
+      try { root.animate().cancel(); } catch(eCancelRoot) {}
+      try { root.setTranslationX(0); } catch(eRootReset) {}
     }
 
     if (body) {
       try { body.animate().cancel(); } catch(eCancelBody) {}
-      body.setTranslationX(0);
+      body.setTranslationX(bodyMove);
       body.setAlpha(1.0 - 0.10 * eased);
       var s = 1.0 - 0.015 * eased;
       body.setScaleX(s);
@@ -908,14 +901,16 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
     try {
       var rootTx = root ? root.getTranslationX() : 0;
       var bodyTx = body ? body.getTranslationX() : 0;
+      var prevTx = prev ? prev.getTranslationX() : 0;
       var lpX = (this.state.viewerPanelLp ? this.state.viewerPanelLp.x : 0);
       var nowLog2 = Date.now();
       if (!this.state._lastBackMoveLog || nowLog2 - this.state._lastBackMoveLog > 300) {
         safeLog(this.L, 'd',
           'back move apply edge=' + String(edge) +
-          ' rootMove=' + String(rootMove) +
+          ' bodyMove=' + String(bodyMove) +
           ' rootTx=' + String(rootTx) +
           ' bodyTx=' + String(bodyTx) +
+          ' prevTx=' + String(prevTx) +
           ' lpX=' + String(lpX)
         );
         this.state._lastBackMoveLog = nowLog2;
@@ -941,7 +936,7 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
     var prev = this.state.toolAppBackPreviewView;
     var dir = Number(edge) === 1 ? -1 : 1;
     var decel = new android.view.animation.DecelerateInterpolator();
-    if (complete && root) {
+    if (complete && body) {
       var w = 0;
       try { w = Number((this.state.viewerPanelLp && this.state.viewerPanelLp.width) || 0); } catch (eW0) {}
       if (!w || w < this.dp(120)) {
@@ -949,7 +944,7 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
       }
       if (!w || w < this.dp(120)) w = this.dp(320);
       try { if (prev) prev.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(180).setInterpolator(decel).start(); } catch(ePrev) {}
-      root.animate().translationX(dir * w).setDuration(180).setInterpolator(decel).withEndAction(new java.lang.Runnable({
+      body.animate().translationX(dir * w).alpha(0.90).scaleX(0.985).scaleY(0.985).setDuration(180).setInterpolator(decel).withEndAction(new java.lang.Runnable({
         run: function() {
           try { self.resetToolAppBackWindowFollow(); } catch(eResetFollow) {}
           try {
@@ -967,10 +962,10 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
       })).start();
       return;
     }
-    if (root) {
+    if (body) {
       var cancelInterp = new android.view.animation.AccelerateDecelerateInterpolator();
       try { if (prev) prev.animate().translationX(-dir * self.dp(24)).alpha(0.88).scaleX(0.975).scaleY(0.975).setDuration(200).setInterpolator(cancelInterp).start(); } catch(ePrev2) {}
-      root.animate().translationX(0).setDuration(200).setInterpolator(cancelInterp).withEndAction(new java.lang.Runnable({
+      body.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(200).setInterpolator(cancelInterp).withEndAction(new java.lang.Runnable({
         run: function() {
           try { self.resetToolAppBackWindowFollow(); } catch(eResetFollow2) {}
           try {
@@ -987,18 +982,7 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
       })).start();
       return;
     }
-    if (body) {
-      var cancelInterp2 = new android.view.animation.AccelerateDecelerateInterpolator();
-      try { if (prev) prev.animate().translationX(-dir * self.dp(24)).alpha(0.88).scaleX(0.975).scaleY(0.975).setDuration(200).setInterpolator(cancelInterp2).start(); } catch(ePrev3) {}
-      body.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(200).setInterpolator(cancelInterp2).withEndAction(new java.lang.Runnable({
-        run: function() {
-          try { self.resetToolAppBackWindowFollow(); } catch(eResetFollow4) {}
-          try { self.clearToolAppBackPreview(true); } catch (eClear3) {}
-        }
-      })).start();
-    } else {
-      this.clearToolAppBackPreview(true);
-    }
+    this.clearToolAppBackPreview(true);
   } catch (e) {
     try { this.resetToolAppBackWindowFollow(); } catch(eResetFollow3) {}
     try { if (this.state.toolAppRoot) this.state.toolAppRoot.setTranslationX(0); } catch(eRootCatch) {}
