@@ -5818,13 +5818,13 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           try { b.setBackground(self.ui.createStrokeDrawable(T.primaryDeep, self.withAlpha(T.brown || T.primaryDeep, isDark ? 0.28 : 0.18), self.dp(1), self.dp(22))); } catch(eBg1) {}
           try { b.setElevation(self.dp(1)); } catch(eElev) {}
         } else {
-          // 与按钮管理页 action chip 一致：浅底、小胶囊、34dp 高。
-          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+          // 与设置页按钮一致：次级也用大圆角按钮，不再做小 chip。
+          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
           // 次级按钮走设置页里的奶油/描边感，不再用薄荷绿底。
           b.setTextColor(T.brown || T.sub);
-          b.setPadding(self.dp(10), 0, self.dp(10), 0);
-          try { b.setMinHeight(self.dp(34)); } catch(eMinH2) {}
-          try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.card, self.withAlpha(T.stroke || T.brown, isDark ? 0.42 : 0.55), self.dp(1), self.dp(14))); } catch(eBg2) {}
+          b.setPadding(self.dp(16), 0, self.dp(16), 0);
+          try { b.setMinHeight(self.dp(44)); } catch(eMinH2) {}
+          try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.card, self.withAlpha(T.stroke || T.brown, isDark ? 0.42 : 0.55), self.dp(1), self.dp(22))); } catch(eBg2) {}
           try { b.setElevation(self.dp(1)); } catch(eElev2) {}
         }
         try { b.setClickable(true); b.setFocusable(true); } catch(eClickable) {}
@@ -5854,8 +5854,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         alphaValTv.setText("255");
         currentAlphaByte = 255;
       });
-      var clearLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, self.dp(34));
-      clearLp.setMargins(0, 0, self.dp(10), 0);
+      var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+      clearLp.weight = 1;
+      clearLp.setMargins(0, 0, self.dp(6), 0);
       actionRow.addView(btnClear, clearLp);
 
       var btnOk = createColorPanelActionButton("保存颜色", true, function() {
@@ -5876,7 +5877,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       });
       var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
       okLp.weight = 1;
-      okLp.setMargins(0, 0, 0, 0);
+      okLp.setMargins(self.dp(6), 0, 0, 0);
       actionRow.addView(btnOk, okLp);
 
       content.addView(actionRow, new android.widget.LinearLayout.LayoutParams(
