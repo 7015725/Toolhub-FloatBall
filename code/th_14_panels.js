@@ -4921,7 +4921,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     } catch(eBackReg) { safeLog(self.L, 'w', "popup back callback register fail: " + String(eBackReg)); }
   }
 
-  root.setOnKeyListener(new android.view.View.OnKeyListener({
+  root.setOnKeyListener(new JavaAdapter(android.view.View.OnKeyListener, {
     onKey: function(v, keyCode, event) {
       try {
         if (!event) return false;
