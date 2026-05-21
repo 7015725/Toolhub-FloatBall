@@ -5806,17 +5806,17 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         b.setText(label);
         b.setGravity(android.view.Gravity.CENTER);
         b.setSingleLine(true);
-        b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
         b.setTypeface(null, android.graphics.Typeface.BOLD);
-        b.setPadding(self.dp(12), 0, self.dp(12), 0);
+        b.setPadding(self.dp(10), 0, self.dp(10), 0);
         try { b.setIncludeFontPadding(false); } catch(eFontPad) {}
-        try { b.setMinHeight(self.dp(46)); } catch(eMinH) {}
+        try { b.setMinHeight(self.dp(40)); } catch(eMinH) {}
         if (primary) {
           b.setTextColor(T.onPrimary || android.graphics.Color.WHITE);
-          try { b.setBackground(self.ui.createStrokeDrawable(T.primary, self.withAlpha(T.primaryDeep, isDark ? 0.38 : 0.20), self.dp(1), self.dp(23))); } catch(eBg1) {}
+          try { b.setBackground(self.ui.createStrokeDrawable(T.primary, self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.18), self.dp(1), self.dp(20))); } catch(eBg1) {}
         } else {
           b.setTextColor(T.primaryDeep);
-          try { b.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.24), self.dp(1), self.dp(23))); } catch(eBg2) {}
+          try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(20))); } catch(eBg2) {}
         }
         try { b.setClickable(true); b.setFocusable(true); } catch(eClickable) {}
         b.setOnClickListener(new android.view.View.OnClickListener({
@@ -5831,7 +5831,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       var actionRow = new android.widget.LinearLayout(context);
       actionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       actionRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      actionRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(10));
+      actionRow.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(8));
 
       var btnClear = createColorPanelActionButton("恢复默认", false, function() {
         isFollowTheme = true;
@@ -5845,9 +5845,8 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         alphaValTv.setText("255");
         currentAlphaByte = 255;
       });
-      var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(46));
-      clearLp.weight = 1;
-      clearLp.setMargins(0, 0, self.dp(6), 0);
+      var clearLp = new android.widget.LinearLayout.LayoutParams(self.dp(108), self.dp(40));
+      clearLp.setMargins(0, 0, self.dp(8), 0);
       actionRow.addView(btnClear, clearLp);
 
       var btnOk = createColorPanelActionButton("保存颜色", true, function() {
@@ -5866,9 +5865,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         }
         closePopup();
       });
-      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(46));
+      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(40));
       okLp.weight = 1;
-      okLp.setMargins(self.dp(6), 0, 0, 0);
+      okLp.setMargins(self.dp(4), 0, 0, 0);
       actionRow.addView(btnOk, okLp);
 
       content.addView(actionRow, new android.widget.LinearLayout.LayoutParams(
