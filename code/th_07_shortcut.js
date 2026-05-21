@@ -1173,20 +1173,683 @@ try { state.root.setVisibility(android.view.View.VISIBLE);  } catch(eVis) { safe
   api.show(opts);
 };
 
-// =======================【工具：ShortX 图标库选择器（兼容入口）】======================
+// =======================【工具：ShortX 图标库选择器【多宫格自适应排列】======================
 FloatBallAppWM.prototype.showIconPicker = function(opts) {
   var self = this;
   var opt = opts || {};
-  if (typeof self.showShortXIconPickerPopup !== "function") {
-    try { safeLog(self.L, 'e', "showIconPicker fallback unavailable: showShortXIconPickerPopup missing"); } catch(eLog) {}
-    return null;
+  var onPick = (typeof opt.onPick === "function") ? opt.onPick : null;
+  var onDismiss = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
+
+  // # 会话隔离
+  var sessionId = String(new Date().getTime()) + "_" + Math.random().toString(36).substr(2, 9);
+  var currentSession = sessionId;
+  this.__currentIconSession = sessionId;
+
+  function checkSession() {
+    if (self.__currentIconSession !== currentSession) return false;
+    return true;
   }
-  return self.showShortXIconPickerPopup({
-    currentName: String(opt.currentName || opt.name || ""),
-    onSelect: function(name) {
-      if (typeof opt.onPick === "function") opt.onPick(name);
-      else if (typeof opt.onSelect === "function") opt.onSelect(name);
+
+  // # 单例复用（关键修复：跳过已销毁的实例）
+  try {
+    if (self.__iconPickerSingleton && typeof self.__iconPickerSingleton.show === "function") {
+      self.__iconPickerSingleton.show(opts);
+      return;
+    }
+   } catch(eSingle) { safeLog(null, 'e', "catch " + String(eSingle)); }
+
+  // # 获取图标列表
+  var allIcons = [];
+  try {
+    allIcons = self.getShortXIconCatalog(true) || [];
+  } catch(eCatalog) {
+    safeLog(self.L, 'e', "icon picker catalog failed: " + String(eCatalog));
+  }
+  if (!allIcons || allIcons.length === 0) {
+    self.toast("无法加载 ShortX 图标库");
+    if (onDismiss) try { onDismiss();  } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }
+    return;
+  }
+
+  var Context = android.content.Context;
+  var wm = context.getSystemService(Context.WINDOW_SERVICE);
+
+  // # 状态（新增分页状态）
+  var state = {
+    destroyed: false,
+    hidden: false,
+    root: null,
+    params: null,
+    isAdded: false,
+    query: "",
+    filteredIcons: allIcons.slice(),
+    grid: null,
+    etSearch: null,
+    tvStat: null,
+    scrollView: null,
+    pagerBar: null,     // 分页栏
+    tvPager: null,      // 页码显示
+    onDismiss: onDismiss,
+    onDismissCalled: false,
+    // 分页
+    currentPage: 0,
+    itemsPerPage: 24,   // 动态计算，这里是默认
+    totalPages: 1
+  };
+
+  function Li(msg) { try { if (self.L) self.L.i("[iconPicker] " + msg);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } }
+  function Le(msg) { try { if (self.L) self.L.e("[iconPicker] " + msg);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } }
+
+  // # 列数自适应计算
+  function computeColumns() {
+    try {
+      var sw = self.state.screen.w;
+      var sh = self.state.screen.h;
+      var isLandscape = sw > sh;
+      var cellMinDp = isLandscape ? 60 : 68;
+      var paddingTotalDp = 32;
+      var availablePx = sw - self.dp(paddingTotalDp);
+      var cols = Math.floor(availablePx / self.dp(cellMinDp));
+      if (isLandscape) {
+        cols = Math.max(6, Math.min(12, cols));
+      } else {
+        cols = Math.max(3, Math.min(6, cols));
+      }
+      return cols;
+    } catch(e) { return 4; }
+  }
+
+  // # 计算每页图标数（根据屏幕高度动态计算行数）
+  function computePageSize() {
+    try {
+      var sh = self.state.screen.h;
+      var maxPanelH = Math.floor(sh * 0.75);
+      var cols = computeColumns();
+
+      // 估算各部分占用的 dp 数
+      var headerH     = 48;  // 标题栏
+      var sepH        = 1;   // 分隔线
+      var searchH     = 72;  // 搜索框（含边距）
+      var footerH     = 30;  // 状态栏
+      var pagerH      = 44;  // 分页栏
+      var panelPad    = 24;  // 面板内边距 top+bottom
+      var scrollPad   = 16;  // 滚动区域内边距
+      var fixedDp     = headerH + sepH + searchH + footerH + pagerH + panelPad + scrollPad;
+
+      var density = self.state.density || 2.75;
+      var availableDp = (maxPanelH / density) - fixedDp;
+      var cellH = 72; // 每个格子大约 72dp（图标+文字+边距）
+      var rows = Math.max(3, Math.floor(availableDp / cellH));
+
+      var pageSize = cols * rows;
+      Li("pageSize calc cols=" + cols + " rows=" + rows + " → " + pageSize + " per page");
+      return Math.max(12, pageSize);
+    } catch(e) {
+      return 24;
+    }
+  }
+
+  // # 过滤
+  function filterIcons(q) {
+    var qLower = "";
+    try { qLower = String(q || "").toLowerCase();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+    if (!qLower) return allIcons.slice();
+    var out = [];
+    for (var i = 0; i < allIcons.length; i++) {
+      var ic = allIcons[i];
+      if (!ic) continue;
+      var name = "";
+      try { name = String(ic.shortName || ic.name || "").toLowerCase();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+      if (name.indexOf(qLower) >= 0) out.push(ic);
+    }
+    return out;
+  }
+
+  // # 分页：跳到指定页
+  function goPage(page) {
+    try {
+      if (state.totalPages <= 1) return;
+      if (page < 0) page = 0;
+      if (page >= state.totalPages) page = state.totalPages - 1;
+      state.currentPage = page;
+      buildGrid();
+      // 滚回顶部
+      try {
+        if (state.scrollView) state.scrollView.scrollTo(0, 0);
+       } catch(eScroll) { safeLog(null, 'e', "catch " + String(eScroll)); }
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+  }
+
+  // # 更新统计/页码显示
+  function updateStat() {
+    try {
+      if (state.tvStat) {
+        state.tvStat.setText("共 " + String(allIcons.length) + " 个 · 当前 " + String(state.filteredIcons.length) + " 个");
+      }
+      if (state.tvPager) {
+        state.tvPager.setText(String(state.currentPage + 1) + " / " + String(state.totalPages));
+      }
+      // 更新分页按钮状态
+      try {
+        if (state.pagerBar) {
+          var childCount = state.pagerBar.getChildCount();
+          for (var i = 0; i < childCount; i++) {
+            var child = state.pagerBar.getChildAt(i);
+            if (!child) continue;
+            try {
+              var tag = String(child.getTag() || "");
+              if (tag === "btnPrev") {
+                child.setEnabled(state.currentPage > 0);
+                child.setAlpha(state.currentPage > 0 ? 1.0 : 0.35);
+              } else if (tag === "btnNext") {
+                child.setEnabled(state.currentPage < state.totalPages - 1);
+                child.setAlpha(state.currentPage < state.totalPages - 1 ? 1.0 : 0.35);
+              }
+             } catch(eTag) { safeLog(null, 'e', "catch " + String(eTag)); }
+          }
+        }
+       } catch(eBar) { safeLog(null, 'e', "catch " + String(eBar)); }
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+  }
+
+  // # 构建网格（只渲染当前页）
+  function buildGrid() {
+    try {
+      if (!state.grid) return;
+      state.grid.removeAllViews();
+
+      var cols = computeColumns();
+      state.grid.setColumnCount(cols);
+
+      var isDark = self.isDarkTheme();
+      var C = self.ui.colors;
+      var cardColor = isDark ? C.cardDark : C.cardLight;
+      var textColor = isDark ? C.textPriDark : C.textPriLight;
+
+      var cellSizeDp = 56;
+      var labelSizeSp = 9;
+      var cellPadDp = 4;
+
+      // 计算当前页要显示的图标范围
+      var startIdx = state.currentPage * state.itemsPerPage;
+      var endIdx = Math.min(startIdx + state.itemsPerPage, state.filteredIcons.length);
+      var pageIcons = [];
+      for (var pi = startIdx; pi < endIdx; pi++) {
+        pageIcons.push(state.filteredIcons[pi]);
+      }
+
+      for (var i = 0; i < pageIcons.length; i++) {
+        (function(idx, iconInfo) {
+          var cell = new android.widget.LinearLayout(context);
+          cell.setOrientation(android.widget.LinearLayout.VERTICAL);
+          cell.setGravity(android.view.Gravity.CENTER);
+          cell.setPadding(self.dp(cellPadDp), self.dp(cellPadDp), self.dp(cellPadDp), self.dp(cellPadDp));
+
+          var lp = new android.widget.GridLayout.LayoutParams();
+          lp.width = 0;
+          lp.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT;
+          lp.columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1, 1.0);
+          lp.setMargins(self.dp(2), self.dp(2), self.dp(2), self.dp(2));
+          cell.setLayoutParams(lp);
+
+          // 图标
+          var iv = new android.widget.ImageView(context);
+          try {
+            var dr = self.resolveShortXDrawable(iconInfo.name);
+            if (dr) iv.setImageDrawable(dr);
+           } catch(eIcon) { safeLog(null, 'e', "catch " + String(eIcon)); }
+          try { iv.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+          var ivLp = new android.widget.LinearLayout.LayoutParams(self.dp(cellSizeDp), self.dp(cellSizeDp));
+          iv.setLayoutParams(ivLp);
+          cell.addView(iv);
+
+          // 文字
+          var tv = new android.widget.TextView(context);
+          var label = "";
+          try { label = String(iconInfo.shortName || iconInfo.name || "");  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+          if (label.length > 10) label = label.substring(0, 9) + "…";
+          tv.setText(label);
+          tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, labelSizeSp);
+          tv.setTextColor(textColor);
+          tv.setGravity(android.view.Gravity.CENTER);
+          try { tv.setLines(1); tv.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+          var tvLp = new android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+          );
+          tvLp.topMargin = self.dp(2);
+          tv.setLayoutParams(tvLp);
+          cell.addView(tv);
+
+          // 点击效果
+          try {
+            var rippleDr = self.ui.createRippleDrawable(cardColor, self.withAlpha(C.primary, 0.2), self.dp(8));
+            cell.setBackground(rippleDr);
+          } catch(eRipple) {
+            cell.setBackground(self.ui.createRoundDrawable(cardColor, self.dp(8)));
+          }
+          cell.setClickable(true);
+
+          cell.setOnClickListener(new android.view.View.OnClickListener({
+            onClick: function() {
+              try {
+                self.touchActivity();
+                if (onPick) onPick(iconInfo.name);
+                hide();
+               } catch(eClick) { safeLog(null, 'e', "catch " + String(eClick)); }
+            }
+          }));
+
+          state.grid.addView(cell);
+        })(i, pageIcons[i]);
+      }
+
+      updateStat();
+    } catch(eBuild) {
+      Le("buildGrid err=" + String(eBuild));
+    }
+  }
+
+  // # 重新渲染（过滤 + 重置到第1页）
+  function rebuild() {
+    try {
+      state.filteredIcons = filterIcons(state.query);
+      // 重新计算分页
+      state.itemsPerPage = computePageSize();
+      state.totalPages = Math.max(1, Math.ceil(state.filteredIcons.length / state.itemsPerPage));
+      state.currentPage = 0;
+      buildGrid();
+     } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+  }
+
+  // # 隐藏
+  function hide() {
+    try {
+      if (state.destroyed || state.hidden) return;
+      state.hidden = true;
+
+      // 退输入法
+      try {
+        if (state.etSearch) {
+          state.etSearch.clearFocus();
+          var imm = context.getSystemService(Context.INPUT_METHOD_SERVICE);
+          if (imm) imm.hideSoftInputFromWindow(state.etSearch.getWindowToken(), 0);
+        }
+       } catch(eK) { safeLog(null, 'e', "catch " + String(eK)); }
+
+      // 隐藏 View
+      try {
+        if (state.root) state.root.setVisibility(android.view.View.GONE);
+       } catch(eV) { safeLog(null, 'e', "catch " + String(eV)); }
+
+      // 通知外层
+      try {
+        if (state.onDismiss && !state.onDismissCalled) {
+          state.onDismissCalled = true;
+          state.onDismiss();
+        }
+       } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }
+
+      Li("icon picker hidden");
+     } catch(eHide) { safeLog(null, 'e', "catch " + String(eHide)); }
+  }
+
+  // # 销毁
+  function destroy() {
+    try {
+      if (state.destroyed) return;
+      state.destroyed = true;
+      state.hidden = true;
+
+      hide();
+
+      try {
+        if (state.isAdded && state.root) {
+          wm.removeView(state.root);
+        }
+       } catch(eR) { safeLog(null, 'e', "catch " + String(eR)); }
+
+      state.isAdded = false;
+      state.root = null;
+
+      if (self.__currentIconSession === currentSession) {
+        self.__currentIconSession = null;
+      }
+      try { self.__iconPickerSingleton = null;  } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
+
+      Li("icon picker destroyed");
+     } catch(eDes) { safeLog(null, 'e', "catch " + String(eDes)); }
+  }
+
+  // # 显示（关键修复：正确处理隐藏后重新显示）
+  function show() {
+    if (!checkSession()) return;
+    if (state.destroyed) return;
+
+    // 如果已有实例
+    if (state.root && state.isAdded) {
+      if (state.hidden) {
+        // 之前被隐藏了，重新显示
+        try {
+          state.hidden = false;
+          state.onDismissCalled = false; // 重置 dismiss 标志
+          state.root.setVisibility(android.view.View.VISIBLE);
+          // 刷新列数（可能旋转了屏幕）和内容
+          rebuild();
+          Li("icon picker re-shown (from hidden)");
+          return;
+        } catch(eShow) {
+          Le("re-show failed: " + String(eShow));
+        }
+      } else {
+        // 已经是显示状态，什么都不做
+        Li("icon picker already visible");
+        return;
+      }
+    }
+
+    // 如果 root 存在但未添加（不应该发生），清掉重建
+    if (state.root && !state.isAdded) {
+      try { state.root = null;  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+    }
+
+    // ========== 新建面板 ==========
+    var isDark = self.isDarkTheme();
+    var C = self.ui.colors;
+    var bgColor = isDark ? C.bgDark : C.bgLight;
+    var textColor = isDark ? C.textPriDark : C.textPriLight;
+    var subTextColor = isDark ? C.textSecDark : C.textSecLight;
+    var dividerColor = isDark ? C.dividerDark : C.dividerLight;
+    var inputBgColor = isDark ? C.inputBgDark : C.inputBgLight;
+
+    var sw = self.state.screen.w;
+    var sh = self.state.screen.h;
+
+    var panelW = sw - self.dp(32);
+    var maxPanelH = Math.floor(sh * 0.75);
+
+    // --- Root ---
+    var root = new android.widget.FrameLayout(context);
+    root.setBackgroundColor(0x00000000);
+    root.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
+      onTouch: function(v, e) {
+        self.touchActivity();
+        if (e.getAction() === android.view.MotionEvent.ACTION_DOWN) {
+          try {
+            var rect = new android.graphics.Rect();
+            if (state.root) {
+              state.root.getGlobalVisibleRect(rect);
+              var x = e.getRawX();
+              var y = e.getRawY();
+              if (!rect.contains(x, y)) {
+                hide();
+              }
+            }
+           } catch(eOut) { safeLog(null, 'e', "catch " + String(eOut)); }
+        }
+        return false;
+      }
+    }));
+
+    // --- 面板容器 ---
+    var panel = new android.widget.LinearLayout(context);
+    panel.setOrientation(android.widget.LinearLayout.VERTICAL);
+    var bgDr = new android.graphics.drawable.GradientDrawable();
+    bgDr.setColor(bgColor);
+    bgDr.setCornerRadius(self.dp(16));
+    panel.setBackground(bgDr);
+    try { panel.setElevation(self.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+    panel.setPadding(self.dp(16), self.dp(12), self.dp(16), self.dp(12));
+
+    var panelLp = new android.widget.FrameLayout.LayoutParams(panelW, android.widget.FrameLayout.LayoutParams.WRAP_CONTENT);
+    panelLp.gravity = android.view.Gravity.CENTER;
+    root.addView(panel, panelLp);
+
+    // --- 标题栏 ---
+    var header = new android.widget.LinearLayout(context);
+    header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    header.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
+    var tvTitle = new android.widget.TextView(context);
+    tvTitle.setText("选择图标");
+    tvTitle.setTextColor(textColor);
+    tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+    tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+    header.addView(tvTitle);
+
+    var spacer = new android.widget.LinearLayout(context);
+    spacer.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, 0, 1));
+    header.addView(spacer);
+
+    var btnClose = new android.widget.TextView(context);
+    btnClose.setText("✕");
+    btnClose.setTextColor(subTextColor);
+    btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+    btnClose.setPadding(self.dp(8), self.dp(4), self.dp(4), self.dp(4));
+    btnClose.setOnClickListener(new android.view.View.OnClickListener({
+      onClick: function() { hide(); }
+    }));
+    header.addView(btnClose);
+
+    panel.addView(header);
+
+    // --- 分隔线 ---
+    var sep = new android.view.View(context);
+    sep.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+      android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(1)
+    ));
+    sep.setBackgroundColor(dividerColor);
+    panel.addView(sep);
+
+    // --- 搜索框 ---
+    var searchBox = new android.widget.LinearLayout(context);
+    searchBox.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    searchBox.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    searchBox.setBackground(self.ui.createRoundDrawable(inputBgColor, self.dp(8)));
+    searchBox.setPadding(self.dp(10), self.dp(6), self.dp(10), self.dp(6));
+    var searchLp = new android.widget.LinearLayout.LayoutParams(
+      android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+      android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+    );
+    searchLp.setMargins(0, self.dp(8), 0, self.dp(8));
+    searchBox.setLayoutParams(searchLp);
+
+    var et = new android.widget.EditText(context);
+    et.setHint("搜索图标名称...");
+    try { et.setHintTextColor(subTextColor);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+    et.setTextColor(textColor);
+    et.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+    et.setBackground(null);
+    et.setSingleLine(true);
+    var etLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+    et.setLayoutParams(etLp);
+
+    et.addTextChangedListener(new JavaAdapter(android.text.TextWatcher, {
+      beforeTextChanged: function(s, start, count, after) {},
+      onTextChanged: function(s, start, before, count) {},
+      afterTextChanged: function(s) {
+        try {
+          state.query = String(s || "");
+          rebuild();
+         } catch(eTxt) { safeLog(null, 'e', "catch " + String(eTxt)); }
+      }
+    }));
+
+    searchBox.addView(et);
+    state.etSearch = et;
+
+    var btnClear = new android.widget.TextView(context);
+    btnClear.setText("✕");
+    btnClear.setTextColor(subTextColor);
+    btnClear.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+    btnClear.setPadding(self.dp(6), self.dp(2), self.dp(2), self.dp(2));
+    btnClear.setOnClickListener(new android.view.View.OnClickListener({
+      onClick: function() {
+        try {
+          et.setText("");
+          state.query = "";
+          rebuild();
+         } catch(eClr) { safeLog(null, 'e', "catch " + String(eClr)); }
+      }
+    }));
+    searchBox.addView(btnClear);
+
+    panel.addView(searchBox);
+
+    // --- 滚动区域 ---
+    var scroll = new android.widget.ScrollView(context);
+    try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+    try { scroll.setVerticalScrollBarEnabled(false);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+
+    var grid = new android.widget.GridLayout(context);
+    state.grid = grid;
+    scroll.addView(grid);
+
+    var scrollLp = new android.widget.LinearLayout.LayoutParams(
+      android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0
+    );
+    scrollLp.weight = 1;
+    scroll.setLayoutParams(scrollLp);
+    panel.addView(scroll);
+    state.scrollView = scroll;
+
+    // --- 底部：状态栏 + 分页栏 ---
+    // 状态栏
+    var footer = new android.widget.LinearLayout(context);
+    footer.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    footer.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    footer.setPadding(0, self.dp(4), 0, self.dp(4));
+
+    var tvStat = new android.widget.TextView(context);
+    tvStat.setTextColor(subTextColor);
+    tvStat.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+    footer.addView(tvStat);
+    state.tvStat = tvStat;
+
+    panel.addView(footer);
+
+    // 分页栏
+    var pagerBar = new android.widget.LinearLayout(context);
+    pagerBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    pagerBar.setGravity(android.view.Gravity.CENTER);
+    pagerBar.setPadding(0, self.dp(2), 0, 0);
+    var pagerLp = new android.widget.LinearLayout.LayoutParams(
+      android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+      android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+    );
+    pagerBar.setLayoutParams(pagerLp);
+
+    // 分页按钮工厂
+    function makePagerBtn(text, tag, onClick) {
+      var btn = new android.widget.TextView(context);
+      btn.setText(text);
+      btn.setTag(tag);
+      btn.setTextColor(C.primary);
+      btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+      btn.setTypeface(null, android.graphics.Typeface.BOLD);
+      btn.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
+      try {
+        var btnBg = self.ui.createRoundDrawable(
+          self.withAlpha(C.primary, 0.08),
+          self.dp(6)
+        );
+        btn.setBackground(btnBg);
+       } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+      btn.setClickable(true);
+      btn.setOnClickListener(new android.view.View.OnClickListener({
+        onClick: function() {
+          try { self.touchActivity();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+          onClick();
+        }
+      }));
+      return btn;
+    }
+
+    var btnPrev = makePagerBtn("◀ 上一页", "btnPrev", function() {
+      goPage(state.currentPage - 1);
+    });
+    pagerBar.addView(btnPrev);
+
+    // 页码
+    var tvPager = new android.widget.TextView(context);
+    tvPager.setText("1 / 1");
+    tvPager.setTextColor(subTextColor);
+    tvPager.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    tvPager.setPadding(self.dp(16), self.dp(4), self.dp(16), self.dp(4));
+    pagerBar.addView(tvPager);
+    state.tvPager = tvPager;
+
+    var btnNext = makePagerBtn("下一页 ▶", "btnNext", function() {
+      goPage(state.currentPage + 1);
+    });
+    pagerBar.addView(btnNext);
+
+    panel.addView(pagerBar);
+    state.pagerBar = pagerBar;
+
+    // --- 添加到 WM ---
+    var lp = new android.view.WindowManager.LayoutParams(
+      android.view.WindowManager.LayoutParams.MATCH_PARENT,
+      android.view.WindowManager.LayoutParams.MATCH_PARENT,
+      android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+      android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND,
+      android.graphics.PixelFormat.TRANSLUCENT
+    );
+    lp.dimAmount = 0.5;
+    lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+    lp.x = 0;
+    lp.y = 0;
+
+    try {
+      wm.addView(root, lp);
+      state.isAdded = true;
+    } catch(eAdd) {
+      Le("addView failed: " + String(eAdd));
+      self.toast("图标选择器打开失败");
+      if (onDismiss) try { onDismiss();  } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }
+      return;
+    }
+
+    state.root = root;
+    state.params = lp;
+
+    // 动画
+    try {
+      panel.setScaleX(0.95);
+      panel.setScaleY(0.95);
+      panel.setAlpha(0);
+      panel.animate()
+        .scaleX(1)
+        .scaleY(1)
+        .alpha(1)
+        .setDuration(180)
+        .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+        .start();
+     } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
+
+    // 初始渲染（会计算分页）
+    rebuild();
+
+    Li("icon picker shown icons=" + String(allIcons.length));
+  }
+
+  // 入口（关键修复：不在 api.show 中提前设置 state.hidden，让 show() 自己判断）
+  var api = {
+    show: function(newOpts) {
+      try {
+        var o = newOpts || {};
+        onPick = (typeof o.onPick === "function") ? o.onPick : onPick;
+        onDismiss = (typeof o.onDismiss === "function") ? o.onDismiss : onDismiss;
+        state.onDismiss = onDismiss;
+        state.onDismissCalled = false;
+       } catch(eOpt) { safeLog(null, 'e', "catch " + String(eOpt)); }
+      // 不在这里设置 state.hidden = false！让内部 show() 自己判断是隐藏重显还是新建
+      show();
     },
-    onDismiss: (typeof opt.onDismiss === "function") ? opt.onDismiss : null
-  });
+    hide: hide,
+    destroy: destroy
+  };
+  try { self.__iconPickerSingleton = api;  } catch(eSet) { safeLog(null, 'e', "catch " + String(eSet)); }
+  api.show(opts);
 };
+

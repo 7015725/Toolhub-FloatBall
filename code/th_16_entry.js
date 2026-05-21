@@ -7,7 +7,7 @@ function runOnMainSync(fn, timeoutMs) {
     if (mainLooper !== null && myLooper !== null && myLooper === mainLooper) {
       return { ok: true, value: fn() };
     }
-  } catch (eLoop) { safeLog(this.L, 'e', "runOnMainSync looper check failed: " + String(eLoop)); }
+  } catch (eLoop) {}
 
   try {
     var box = { ok: false, value: null, error: null };
@@ -109,7 +109,7 @@ FloatBallAppWM.prototype.close = function() {
       if (android.os.Build.VERSION.SDK_INT >= 18) this.state.ht.quitSafely();
       else this.state.ht.quit();
     }
-  } catch (eQ) { safeLog(this.L, 'e', "shortcut picker singleton destroy failed: " + String(eQ)); }
+  } catch (eQ) {}
 
   // # 清理图标加载线程
   try {
@@ -117,13 +117,13 @@ FloatBallAppWM.prototype.close = function() {
       if (android.os.Build.VERSION.SDK_INT >= 18) this._iconLoader.ht.quitSafely();
       else this._iconLoader.ht.quit();
     }
-  } catch (eIcon) { safeLog(this.L, 'e', "icon picker singleton destroy failed: " + String(eIcon)); }
+  } catch (eIcon) {}
   try {
     if (this.__scIconLoaderSingleton && this.__scIconLoaderSingleton.ht) {
       if (android.os.Build.VERSION.SDK_INT >= 18) this.__scIconLoaderSingleton.ht.quitSafely();
       else this.__scIconLoaderSingleton.ht.quit();
     }
-  } catch (eScIcon) { safeLog(this.L, 'e', "shortcut icon loader singleton destroy failed: " + String(eScIcon)); }
+  } catch (eScIcon) {}
   try { this.__scIconLoaderSingleton = null; } catch (eScIcon2) {}
 
   safeLog(this.L, 'i',  "close done");
@@ -211,7 +211,7 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
   var closeRcv = registerReceiverOnMain(this.config.ACTION_CLOSE_ALL, function(ctx, it) {
     try {
       h.post(new JavaAdapter(java.lang.Runnable, {
-        run: function() { try { self.close(); } catch (e1) { safeLog(self.L, 'e', "close broadcast handler failed: " + String(e1)); } }
+        run: function() { try { self.close(); } catch (e1) {} }
       }));
     } catch (e2) {}
   });
@@ -250,7 +250,7 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
       var reason = "";
       try { reason = String(intent.getStringExtra("reason") || ""); } catch (eReason) { reason = ""; }
       h.post(new JavaAdapter(java.lang.Runnable, {
-        run: function() { try { self.handleSystemUiDismiss(reason); } catch (eSysDlg) { safeLog(self.L, 'e', "system ui dismiss handler failed: " + String(eSysDlg)); } }
+        run: function() { try { self.handleSystemUiDismiss(reason); } catch (eSysDlg) {} }
       }));
     } catch (eSysDlgOuter) {}
   });
@@ -282,10 +282,10 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
           } catch (eAdd) {
             startBox.ok = false;
             startBox.err = "悬浮球 addView 失败: " + String(eAdd);
-            try { self.toast(startBox.err); } catch (eT) { safeLog(self.L, 'e', "toast start error failed: " + String(eT)); }
+            try { self.toast(startBox.err); } catch (eT) {}
             if (self.L) self.L.fatal("addView ball fail err=" + String(eAdd));
             self.state.addedBall = false;
-            try { self.close(); } catch (eC) { safeLog(self.L, 'e', "close after start failure failed: " + String(eC)); }
+            try { self.close(); } catch (eC) {}
             return;
           }
 

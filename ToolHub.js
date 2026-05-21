@@ -42,9 +42,7 @@ function writeLog(msg) {
         var writer = new java.io.FileWriter(f, true);
         writer.write("[" + ts + "] " + String(msg) + "\n");
         writer.close();
-    } catch (e) {
-        try { android.util.Log.e("ToolHub", "writeLog failed: " + String(e)); } catch(eLog) {}
-    }
+    } catch (e) {}
 }
 
 function runShell(cmdArr) {
@@ -52,7 +50,7 @@ function runShell(cmdArr) {
         var proc = java.lang.Runtime.getRuntime().exec(cmdArr);
         proc.waitFor();
         return proc.exitValue() === 0;
-    } catch (e) { writeLog("runShell failed: " + String(e)); return false; }
+    } catch (e) { return false; }
 }
 
 function checkDirPerms(path) {
@@ -66,7 +64,7 @@ function checkDirPerms(path) {
             var parts = String(line).trim().split(/\s+/);
             if (parts.length >= 3) return String(parts[0]) === "1000" && String(parts[1]) === "1000" && String(parts[2]) === "700";
         }
-    } catch (e) { writeLog("checkDirPerms failed: " + String(e)); }
+    } catch (e) {}
     return false;
 }
 
@@ -102,7 +100,7 @@ function readTextFile(path) {
         while ((line = r.readLine()) != null) sb.append(line).append("\n");
         r.close();
         return String(sb.toString());
-    } catch (e) { writeLog("readTextFile failed: " + String(path) + " err=" + String(e)); return null; }
+    } catch (e) { return null; }
 }
 
 function writeTextFile(path, text) {
@@ -114,7 +112,7 @@ function writeTextFile(path, text) {
         w.write(String(text));
         w.close();
         return true;
-    } catch (e) { writeLog("writeTextFile failed: " + String(path) + " err=" + String(e)); return false; }
+    } catch (e) { return false; }
 }
 
 function readFirstLine(path) {
@@ -286,15 +284,15 @@ function ensureVerifiedModule(relPath, destFile) {
     }
 
     var tmpFile = new java.io.File(destFile.getAbsolutePath() + ".tmp");
-    try { if (tmpFile.exists()) tmpFile.delete(); } catch (eDelTmp0) { writeLog("tmp delete before download failed: " + String(eDelTmp0)); }
+    try { if (tmpFile.exists()) tmpFile.delete(); } catch (eDelTmp0) {}
     var size = downloadFile(GIT_BASE + relPath, tmpFile);
     if (expectedSize > 0 && size !== expectedSize) {
-        try { tmpFile.delete(); } catch (eDelSize) { writeLog("tmp delete after size mismatch failed: " + String(eDelSize)); }
+        try { tmpFile.delete(); } catch (eDelSize) {}
         throw "manifest size mismatch for " + relPath + ": expected=" + expectedSize + ", got=" + size;
     }
     var tmpHash = sha256File(tmpFile.getAbsolutePath());
     if (!tmpHash || String(tmpHash).toLowerCase() !== expectedHash) {
-        try { tmpFile.delete(); } catch (eDelHash) { writeLog("tmp delete after hash mismatch failed: " + String(eDelHash)); }
+        try { tmpFile.delete(); } catch (eDelHash) {}
         throw "manifest SHA256 mismatch for " + relPath + ": expected=" + expectedHash + ", actual=" + tmpHash;
     }
     var wasNew = !destFile.exists();
@@ -335,7 +333,7 @@ function loadScript(relPath) {
         geval(String(code));
     } catch(e) {
         var errMsg = "loadScript(" + relPath + ") failed: " + e;
-        try { android.util.Log.e("ToolHub", errMsg); } catch(eLog) { writeLog("android log failed: " + String(eLog)); }
+        try { android.util.Log.e("ToolHub", errMsg); } catch(eLog) {}
         throw errMsg;
     }
 }
@@ -343,7 +341,7 @@ function loadScript(relPath) {
 var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.js", "th_05_persistence.js",
                "th_06_icon_parser.js", "th_07_shortcut.js", "th_08_content.js", "th_09_animation.js",
                "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
-               "th_14_panels.js", "th_15_picker.js", "th_15_extra.js", "th_16_entry.js"];
+               "th_14_panels.js", "th_15_extra.js", "th_16_entry.js"];
 var __moduleUpdates = [];
 var loadErrors = [];
 var criticalModules = { "th_01_base.js": true, "th_16_entry.js": true };
@@ -355,7 +353,7 @@ for (var i = 0; i < modules.length; i++) {
     } catch (e) {
         var modErr = "Module load failed: " + modules[i] + " -> " + String(e);
         writeLog(modErr);
-        try { android.util.Log.e("ToolHub", modErr); } catch(eLog) { writeLog("android log failed: " + String(eLog)); }
+        try { android.util.Log.e("ToolHub", modErr); } catch(eLog) {}
         loadErrors.push({ module: modules[i], err: String(e) });
         if (criticalModules[modules[i]]) throw "Critical module failed: " + modules[i] + " (" + String(e) + ")";
     }
@@ -406,7 +404,7 @@ var __out = (function() {
   var startRet = null;
   try { startRet = app.startAsync(entryInfo, closeRule); }
   catch (eTop) {
-    try { logger.fatal("TOP startAsync crash err=" + String(eTop)); } catch(eLog) { writeLog("logger fatal failed: " + String(eLog)); }
+    try { logger.fatal("TOP startAsync crash err=" + String(eTop)); } catch(eLog) {}
     startRet = { ok: false, err: String(eTop) };
   }
   var syncInfo = summarizeModuleUpdates(__moduleUpdates);

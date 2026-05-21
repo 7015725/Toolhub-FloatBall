@@ -127,7 +127,7 @@ FloatBallAppWM.prototype.playBounce = function(v) {
 FloatBallAppWM.prototype.safeRemoveView = function(v, whichName) {
   try {
     if (!v) return { ok: true, skipped: true };
-    try { if (this.unregisterPanelPredictiveBack) this.unregisterPanelPredictiveBack(v); } catch (eBack) { safeLog(this.L, 'e', "unregisterPanelPredictiveBack before remove failed: " + String(eBack)); }
+    try { if (this.unregisterPanelPredictiveBack) this.unregisterPanelPredictiveBack(v); } catch (eBack) {}
     try { if (whichName === "viewerPanel" && this.state && String(this.state.viewerPanelType || "") === "tool_app" && this.hideToolAppScreenBackStrips) this.hideToolAppScreenBackStrips(); } catch (eStrip) {}
     this.state.wm.removeView(v);
     return { ok: true };
@@ -283,7 +283,7 @@ FloatBallAppWM.prototype.hidePanelPredictiveBackIndicator = function() {
   try {
     var v = this.state.predictiveBackIndicatorView;
     if (v && this.state.wm) {
-      try { this.state.wm.removeView(v); } catch (eRm) { safeLog(this.L, 'e', "safeRemoveView removeView failed: " + String(eRm)); }
+      try { this.state.wm.removeView(v); } catch (eRm) {}
     }
     this.state.predictiveBackIndicatorView = null;
     this.state.predictiveBackIndicatorLp = null;
@@ -398,7 +398,7 @@ FloatBallAppWM.prototype.unregisterPanelPredictiveBack = function(panel) {
     for (var i = 0; i < entries.length; i++) {
       var it = entries[i];
       if (!it || it.view === panel) {
-        try { if (it && it.dispatcher && it.callback) it.dispatcher.unregisterOnBackInvokedCallback(it.callback); } catch (eUnreg) { safeLog(this.L, 'e', "panel predictive unregister failed: " + String(eUnreg)); }
+        try { if (it && it.dispatcher && it.callback) it.dispatcher.unregisterOnBackInvokedCallback(it.callback); } catch (eUnreg) {}
       } else {
         kept.push(it);
       }
@@ -993,7 +993,7 @@ FloatBallAppWM.prototype.scheduleScreenReflow = function(reason) {
       }
     }), 260);
   } catch (e0) {
-    try { this.onScreenChangedReflow(reason); } catch(e1) { safeLog(this.L, 'e', "onScreenChangedReflow failed: " + String(e1)); }
+    try { this.onScreenChangedReflow(reason); } catch(e1) {}
   }
 };
 

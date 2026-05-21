@@ -2,8 +2,8 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "d4b409e42d3b3d5b3b107c4b2338fe83ad9b7d6d7f7f6bc0bbc9e28a94a866cd",
-      "size": 53253
+      "sha256": "6b7a51c97f76b797b176c8fcf712dbafb8d33ebab448d0c7574f26568dcd14df",
+      "size": 56392
     },
     "th_02_core.js": {
       "sha256": "15bb9bfbd19a673d442e221b0a00a456ed5f87af2666b9c73b117d6223faeecd",
@@ -26,16 +26,16 @@
       "size": 22909
     },
     "th_07_shortcut.js": {
-      "sha256": "f992dcd6dd7993690d789e2a04b92d4e4be96b708a1a21920c5e8038f2d814c8",
-      "size": 48962
+      "sha256": "7b2dbd1e35c636cca4ccce335dfb9e0b972342972ce012116ff4bbcfc438caa1",
+      "size": 72992
     },
     "th_08_content.js": {
       "sha256": "8a76f15dfd1292081cba4b2dd218424be66540350e2807065421a6176a86c2db",
       "size": 7938
     },
     "th_09_animation.js": {
-      "sha256": "5e0e70319c13c39674b3524e30d6ade5c4188ad4f52f331c9bee83193580d0cd",
-      "size": 40549
+      "sha256": "2a991cbf4bf38bfb3d1dda876c0c86778e5dbbe75d6eb268a068e3f200ce0c13",
+      "size": 40229
     },
     "th_10_shell.js": {
       "sha256": "0ed793079c2f6ba7d29f4c0d411705cb72419f45f572cbe37ed32ac16527a8bc",
@@ -54,23 +54,19 @@
       "size": 21198
     },
     "th_14_panels.js": {
-      "sha256": "611c00c8362c346ff0a674aa29cd98e6240cbbe36a2d6c171e0188996bca22a5",
-      "size": 213491
+      "sha256": "185d7ed9d85ffa7e31b70abbd425c0d79d6a435a4c5cb6dc7610d942fdc0fc87",
+      "size": 262019
     },
     "th_15_extra.js": {
       "sha256": "1aa3bbe9c99e047cfaf663f17501d87bba1b5810a8002e66bca1f6ea605371a4",
       "size": 99378
     },
-    "th_15_picker.js": {
-      "sha256": "9d59acbbee0db6058e2eba2db310f75b581cbd84d1b8fdaa48f13e244f1cd4f8",
-      "size": 48989
-    },
     "th_16_entry.js": {
-      "sha256": "9b42884503be328c19a8f95e9e9ff986b1938586909bcf515971f3ff881133be",
-      "size": 13423
+      "sha256": "6c59d9891cd010647f84c3db93f1cf95c7bbfb758470ea21044bf72eb8ff73d1",
+      "size": 12799
     }
   },
   "keyId": "toolhub-targets-2026-rsa3072",
   "schema": 2,
-  "version": 20260521154208
+  "version": 20260521161017
 }
