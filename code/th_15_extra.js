@@ -621,14 +621,14 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     body.setPadding(this.dp(6), this.dp(6), this.dp(6), this.dp(8));
     body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.42 : 0.70), this.dp(1), this.dp(26)));
     try { body.setClipToOutline(true); } catch(eClip) {}
-    try { body.setElevation(this.dp(12)); } catch (eElev) {}
+    try { body.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 7 : 10)); } catch (eElev) {}
 
     var bar = new android.widget.LinearLayout(context);
     bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    bar.setPadding(this.dp(10), this.dp(10), this.dp(10), this.dp(6));
+    bar.setPadding(this.dp(10), (spec && spec.isLandscape) ? this.dp(6) : this.dp(10), this.dp(10), this.dp(6));
     bar.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
-    try { bar.setElevation(this.dp(3)); } catch(eBarElev) {}
+    try { bar.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 1 : 2)); } catch(eBarElev) {}
 
     var btnBack = this.ui.createFlatButton(this, "‹", T.brown, function() {});
     btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
@@ -657,7 +657,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     try { btnClose.setClickable(false); } catch(eRightClick) {}
     try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
     bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
-    var barLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(56));
+    var barLp = new android.widget.LinearLayout.LayoutParams(-1, topBarHeight);
     barLp.setMargins(this.dp(8), this.dp(8), this.dp(8), this.dp(4));
     body.addView(bar, barLp);
 
@@ -667,7 +667,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     try { raw.setElevation(0); } catch (eEl) {}
     host.addView(raw, new android.widget.FrameLayout.LayoutParams(-1, -1));
     var hostLp = new android.widget.LinearLayout.LayoutParams(-1, 0, 1);
-    hostLp.setMargins(this.dp(6), 0, this.dp(6), this.dp(6));
+    hostLp.setMargins((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), 0, (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6));
     body.addView(host, hostLp);
     return body;
   } catch (e) {
@@ -928,6 +928,34 @@ FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
   return false;
 };
 
+FloatBallAppWM.prototype.getToolAppResponsiveSpec = function() {
+  var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
+  var sh = Math.max(1, Number(this.state.screen && this.state.screen.h || 0));
+  if (sw <= 1 || sh <= 1) {
+    try { var ss = this.getScreenSizePx(); sw = ss.w; sh = ss.h; } catch (eScreen) {}
+  }
+  var isLandscape = sw > sh;
+  var isCompactWidth = sw < this.dp(600);
+  var isMediumWidth = sw >= this.dp(600) && sw < this.dp(840);
+  var isExpandedWidth = sw >= this.dp(840) && sw < this.dp(1200);
+  var isWideWidth = sw >= this.dp(1200);
+  return {
+    screenW: sw, screenH: sh, isLandscape: isLandscape,
+    isCompactWidth: isCompactWidth, isMediumWidth: isMediumWidth,
+    isExpandedWidth: isExpandedWidth, isWideWidth: isWideWidth,
+    contentMaxWidth: isWideWidth ? this.dp(1080) : (isExpandedWidth ? this.dp(960) : (isMediumWidth ? this.dp(680) : this.dp(560))),
+    gridColumnCount: (isExpandedWidth || isWideWidth) ? 2 : 1,
+    useSideBySide: isLandscape && (isExpandedWidth || isWideWidth),
+    leftPaneWidth: isWideWidth ? this.dp(340) : this.dp(300),
+    outerRadius: (isExpandedWidth || isWideWidth) ? this.dp(30) : this.dp(26),
+    cardRadius: (isExpandedWidth || isWideWidth) ? this.dp(20) : this.dp(24),
+    itemRadius: (isExpandedWidth || isWideWidth) ? this.dp(16) : this.dp(18),
+    shellPadding: (isExpandedWidth || isWideWidth) ? this.dp(4) : this.dp(6),
+    cardGap: (isExpandedWidth || isWideWidth) ? this.dp(14) : this.dp(8),
+    topBarHeight: (isLandscape && isCompactWidth) ? this.dp(50) : this.dp(56)
+  };
+};
+
 FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBack) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -935,22 +963,26 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var T = this.getAnimalIslandTheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
+  var spec = this.getToolAppResponsiveSpec ? this.getToolAppResponsiveSpec() : null;
+  var shellPad = spec ? spec.shellPadding : this.dp(6);
+  var outerRadius = spec ? spec.outerRadius : this.dp(26);
+  var topBarHeight = spec ? spec.topBarHeight : this.dp(56);
   var root = new android.widget.FrameLayout(context);
   var body = new android.widget.LinearLayout(context);
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
   // 外层薄荷容器本身就是整张“岛屿设置”卡片：四角统一圆角，并给底部留出完整收口。
-  body.setPadding(this.dp(6), this.dp(6), this.dp(6), this.dp(8));
-  body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.42 : 0.70), this.dp(1), this.dp(26)));
+  body.setPadding(shellPad, shellPad, shellPad, shellPad);
+  body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.30 : 0.46), this.dp(1), outerRadius));
   try { body.setClipToOutline(true); } catch(eClip) {}
-  try { body.setElevation(this.dp(12)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  try { body.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 7 : 10)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   root.addView(body, new android.widget.FrameLayout.LayoutParams(-1, -1));
 
   var bar = new android.widget.LinearLayout(context);
   bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  bar.setPadding(this.dp(10), this.dp(10), this.dp(10), this.dp(6));
+  bar.setPadding(this.dp(10), (spec && spec.isLandscape) ? this.dp(6) : this.dp(10), this.dp(10), this.dp(6));
   bar.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
-  try { bar.setElevation(this.dp(3)); } catch(eBarElev) {}
+  try { bar.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 1 : 2)); } catch(eBarElev) {}
 
   var btnBack = this.ui.createFlatButton(this, "‹", T.brown, function() {
     self.popToolAppPage("topbar");
@@ -987,7 +1019,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   btnClose.setPadding(this.dp(10), 0, this.dp(10), 0);
   try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
   bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
-  var barLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(56));
+  var barLp = new android.widget.LinearLayout.LayoutParams(-1, topBarHeight);
   barLp.setMargins(this.dp(8), this.dp(8), this.dp(8), this.dp(4));
   body.addView(bar, barLp);
 
@@ -998,7 +1030,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
     host.addView(contentView, new android.widget.FrameLayout.LayoutParams(-1, -1));
   }
   var hostLp = new android.widget.LinearLayout.LayoutParams(-1, 0, 1);
-  hostLp.setMargins(this.dp(6), 0, this.dp(6), this.dp(6));
+  hostLp.setMargins((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), 0, (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6));
   body.addView(host, hostLp);
 
   try {
@@ -1104,57 +1136,37 @@ FloatBallAppWM.prototype.calculateToolAppLayout = function(shell) {
   if (sw <= 1 || sh <= 1) {
     try { var ss = this.getScreenSizePx(); sw = ss.w; sh = ss.h; } catch (eScreen) {}
   }
+  var spec = this.getToolAppResponsiveSpec ? this.getToolAppResponsiveSpec() : null;
+  var isLandscape = spec ? spec.isLandscape : (sw > sh);
   var shortSide = Math.min(sw, sh);
   var longSide = Math.max(sw, sh);
-  var isLandscape = sw > sh;
-
-  var marginX = this.dp(12);
-  var marginTop = this.dp(14);
-  var marginBottom = this.dp(14);
-  var targetW;
-  var targetH;
-
-  if (shortSide < this.dp(420)) {
-    // 小屏/分屏：接近全屏，避免内容被裁剪。
-    marginX = this.dp(8);
-    marginTop = this.dp(8);
-    marginBottom = this.dp(8);
-    targetW = sw - marginX * 2;
-    targetH = sh - marginTop - marginBottom;
-  } else if (shortSide >= this.dp(720)) {
-    // 平板/大屏：不要铺满，保持卡片阅读宽度。
-    marginX = this.dp(28);
-    marginTop = this.dp(28);
-    marginBottom = this.dp(28);
-    targetW = Math.min(this.dp(680), Math.floor(sw * (isLandscape ? 0.56 : 0.72)));
-    targetH = Math.min(this.dp(780), sh - marginTop - marginBottom);
-  } else if (isLandscape) {
-    // 手机横屏：高度优先，宽度适当收窄。
-    marginX = this.dp(18);
-    marginTop = this.dp(12);
-    marginBottom = this.dp(12);
-    targetW = Math.min(this.dp(620), Math.floor(sw * 0.68));
-    targetH = sh - marginTop - marginBottom;
+  var marginX = this.dp(12), marginTop = this.dp(14), marginBottom = this.dp(14);
+  var targetW, targetH;
+  if (spec && (spec.isCompactWidth || shortSide < this.dp(420))) {
+    marginX = this.dp(isLandscape ? 8 : 10); marginTop = this.dp(isLandscape ? 6 : 14); marginBottom = this.dp(isLandscape ? 6 : 14);
+    targetW = Math.min(spec.contentMaxWidth, sw - marginX * 2);
+    targetH = isLandscape ? (sh - marginTop - marginBottom) : Math.min(Math.floor(sh * 0.92), sh - marginTop - marginBottom);
+  } else if (spec && spec.isMediumWidth) {
+    marginX = this.dp(18); marginTop = this.dp(isLandscape ? 10 : 18); marginBottom = this.dp(isLandscape ? 10 : 18);
+    targetW = Math.min(spec.contentMaxWidth, sw - marginX * 2); targetH = sh - marginTop - marginBottom;
+  } else if (spec && (spec.isExpandedWidth || shortSide >= this.dp(720))) {
+    marginX = this.dp(22); marginTop = this.dp(isLandscape ? 18 : 24); marginBottom = this.dp(isLandscape ? 18 : 24);
+    targetW = Math.min(spec.contentMaxWidth, sw - marginX * 2); targetH = sh - marginTop - marginBottom;
   } else {
-    // 手机竖屏：左右留少量边距，高度随屏幕增长。
-    marginX = this.dp(12);
-    marginTop = this.dp(18);
-    marginBottom = this.dp(18);
-    targetW = Math.min(this.dp(560), sw - marginX * 2);
-    targetH = Math.min(Math.floor(sh * 0.90), sh - marginTop - marginBottom);
+    marginX = this.dp(30); marginTop = this.dp(24); marginBottom = this.dp(24);
+    targetW = Math.min(spec ? spec.contentMaxWidth : this.dp(1080), sw - marginX * 2);
+    targetH = Math.min(this.dp(860), sh - marginTop - marginBottom);
   }
-
   targetW = Math.max(this.dp(300), Math.min(targetW, sw - marginX * 2));
-  targetH = Math.max(this.dp(360), Math.min(targetH, sh - marginTop - marginBottom));
-
+  targetH = Math.max(this.dp(320), Math.min(targetH, sh - marginTop - marginBottom));
   var x = Math.floor((sw - targetW) / 2);
   var y = Math.floor((sh - targetH) / 2);
   if (x < marginX) x = marginX;
   if (y < marginTop) y = marginTop;
   if (x + targetW > sw - marginX) x = Math.max(0, sw - marginX - targetW);
   if (y + targetH > sh - marginBottom) y = Math.max(0, sh - marginBottom - targetH);
-
-  return { width: targetW, height: targetH, x: x, y: y, marginX: marginX, marginTop: marginTop, marginBottom: marginBottom, isLandscape: isLandscape, shortSide: shortSide, longSide: longSide };
+  if (spec) this.state.toolAppResponsiveSpec = spec;
+  return { width: targetW, height: targetH, x: x, y: y, marginX: marginX, marginTop: marginTop, marginBottom: marginBottom, isLandscape: isLandscape, shortSide: Math.min(sw, sh), longSide: Math.max(sw, sh) };
 };
 
 FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
