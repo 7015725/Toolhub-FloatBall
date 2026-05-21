@@ -464,6 +464,29 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   tvDesc.setPadding(0, this.dp(4), 0, 0);
   top.addView(tvDesc, new android.widget.LinearLayout.LayoutParams(-1, -2));
   root.addView(top, new android.widget.LinearLayout.LayoutParams(-1, -2));
+  var groupDetailNotice = new android.widget.LinearLayout(context);
+  groupDetailNotice.setOrientation(android.widget.LinearLayout.VERTICAL);
+  groupDetailNotice.setVisibility(android.view.View.GONE);
+  root.addView(groupDetailNotice, new android.widget.LinearLayout.LayoutParams(-1, -2));
+  function setGroupDetailNotice(msg, kind) {
+    try {
+      groupDetailNotice.removeAllViews();
+      var k = String(kind || "info");
+      var color = (k === "error") ? C.error : T.primaryDeep;
+      var bg = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.10);
+      var stroke = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.22);
+      var tv = new android.widget.TextView(context);
+      tv.setText(String(msg || ""));
+      tv.setTextColor(color);
+      tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      tv.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+      tv.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
+      var lp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+      lp.setMargins(self.dp(2), self.dp(6), self.dp(2), self.dp(8));
+      groupDetailNotice.addView(tv, lp);
+      groupDetailNotice.setVisibility(android.view.View.VISIBLE);
+    } catch(eGDN) { safeLog(null, 'e', "catch " + String(eGDN)); }
+  }
 
   var scroll = new android.widget.ScrollView(context);
   try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); scroll.setVerticalScrollBarEnabled(false); } catch(eOS) {}
@@ -526,10 +549,9 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
       var r = self.commitPendingUserCfg();
       self.state.previewMode = false;
       if (self.state.addedPanel) self.hideMainPanel();
-      if (self.state.toolAppActive && self.closeToolApp) self.closeToolApp(); else self.hideSettingsPanel();
-      if (r && r.ok) self.toast("已确认并生效");
-      else self.toast("确认失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")));
-    } catch(e0) { try { self.toast("确认异常: " + String(e0)); } catch(eT) {} }
+      if (r && r.ok) setGroupDetailNotice("已保存并生效", "ok");
+      else setGroupDetailNotice("保存失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")), "error");
+    } catch(e0) { setGroupDetailNotice("保存异常: " + String(e0), "error"); }
   });
   var saveLp = new android.widget.LinearLayout.LayoutParams(this.dp(spec && spec.isWideWidth ? 300 : 260), this.dp(48));
   saveRow.addView(btnSave, saveLp);
@@ -663,17 +685,36 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   try { panel.setBackground(this.ui.createRoundDrawable(T.bg, spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(18) : this.dp(24))); } catch(ePanelBg) {}
   panel.setPadding(spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(4) : this.dp(8), spec && spec.isLandscape ? this.dp(2) : this.dp(6), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(4) : this.dp(8), this.dp(4));
 
+  var settingsNoticeContainer = null;
+  function setSettingsInlineNotice(msg, kind) {
+    try {
+      if (!settingsNoticeContainer) return;
+      settingsNoticeContainer.removeAllViews();
+      var k = String(kind || "info");
+      var color = (k === "error") ? C.error : T.primaryDeep;
+      var bg = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.10);
+      var stroke = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.22);
+      var tv = new android.widget.TextView(context);
+      tv.setText(String(msg || ""));
+      tv.setTextColor(color);
+      tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      tv.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+      tv.setGravity(android.view.Gravity.CENTER_VERTICAL);
+      tv.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
+      settingsNoticeContainer.addView(tv, new android.widget.LinearLayout.LayoutParams(-1, -2));
+      settingsNoticeContainer.setVisibility(android.view.View.VISIBLE);
+    } catch(eNotice) { safeLog(null, 'e', "catch " + String(eNotice)); }
+  }
+
   function saveSettingsNow() {
     try {
       self.touchActivity();
       var r = self.commitPendingUserCfg();
       self.state.previewMode = false;
       if (self.state.addedPanel) self.hideMainPanel();
-      if (self.state.toolAppActive && self.closeToolApp) self.closeToolApp();
-      else self.hideSettingsPanel();
-      if (r && r.ok) self.toast("已确认并生效");
-      else self.toast("确认失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")));
-    } catch(e0) { try { self.toast("确认异常: " + String(e0)); } catch(eT) {} }
+      if (r && r.ok) setSettingsInlineNotice("已保存并生效", "ok");
+      else setSettingsInlineNotice("保存失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")), "error");
+    } catch(e0) { setSettingsInlineNotice("保存异常: " + String(e0), "error"); }
   }
   function addChildEntry(parent, child) {
     self.createSettingsHomeEntry(parent, child.title, child.desc, "", function() {
@@ -840,6 +881,12 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
     }
   } catch(eStatus) {}
   this.createIslandWelcomeCard(panel, statusLabel, statusValue, statusBg, statusStroke, statusValueColor);
+  settingsNoticeContainer = new android.widget.LinearLayout(context);
+  settingsNoticeContainer.setOrientation(android.widget.LinearLayout.VERTICAL);
+  settingsNoticeContainer.setVisibility(android.view.View.GONE);
+  var noticeLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+  noticeLp.setMargins(this.dp(2), 0, this.dp(2), this.dp(8));
+  panel.addView(settingsNoticeContainer, noticeLp);
 
   var contentCard = new android.widget.LinearLayout(context);
   contentCard.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -917,6 +964,25 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   var panel = this.ui.createStyledPanel(this, 16);
   try { panel.setBackground(this.ui.createRoundDrawable(T.bg, spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(16) : this.dp(18))); } catch(ePanelBg) {}
   panel.setPadding(spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(4) : this.dp(8), spec && spec.isLandscape ? this.dp(2) : this.dp(6), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(4) : this.dp(8), this.dp(4));
+  var settingsGroupNotice = null;
+  function setSettingsGroupNotice(msg, kind) {
+    try {
+      if (!settingsGroupNotice) return;
+      settingsGroupNotice.removeAllViews();
+      var k = String(kind || "info");
+      var color = (k === "error") ? C.error : T.primaryDeep;
+      var bg = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.10);
+      var stroke = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.22);
+      var tv = new android.widget.TextView(context);
+      tv.setText(String(msg || ""));
+      tv.setTextColor(color);
+      tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      tv.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+      tv.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
+      settingsGroupNotice.addView(tv, new android.widget.LinearLayout.LayoutParams(-1, -2));
+      settingsGroupNotice.setVisibility(android.view.View.VISIBLE);
+    } catch(eSGN) { safeLog(null, 'e', "catch " + String(eSGN)); }
+  }
   var header = this.ui.createStyledHeader(this, spec && spec.isLandscape ? 4 : 8);
 
   // 占位 View 顶替标题位置，让右侧按钮靠右
@@ -957,12 +1023,12 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
           self.touchActivity();
           self.state.previewMode = !!checked;
           if (checked) {
-              self.toast("边调边看已开启");
+              setSettingsGroupNotice("边调边看已开启", "ok");
               tvPreview.setTextColor(T.primaryDeep);
               previewBox.setBackground(self.ui.createRoundDrawable(self.withAlpha(T.primarySoft, isDark ? 0.70 : 0.95), self.dp(16)));
               self.refreshPreview();
           } else {
-              self.toast("预览模式已关闭");
+              setSettingsGroupNotice("预览模式已关闭", "info");
               tvPreview.setTextColor(0xFF888888 | 0);
               previewBox.setBackground(null);
               if (self.state.addedPanel) self.hideMainPanel();
@@ -984,13 +1050,10 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
         self.state.previewMode = false;
         if (self.state.addedPanel) self.hideMainPanel();
 
-        if (self.state.toolAppActive && self.closeToolApp) self.closeToolApp();
-        else self.hideSettingsPanel();
-
-        if (r && r.ok) self.toast("已确认并生效");
-        else self.toast("确认失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")));
+        if (r && r.ok) setSettingsGroupNotice("已保存并生效", "ok");
+        else setSettingsGroupNotice("保存失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")), "error");
       } catch (e0) {
-        try { self.toast("确认异常: " + String(e0));  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
+        setSettingsGroupNotice("保存异常: " + String(e0), "error");
         if (self.L) self.L.e("settings confirm err=" + String(e0));
       }
   });
@@ -1001,6 +1064,12 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   // 暴露 Header
   panel.setTag(header);
   panel.addView(header);
+  settingsGroupNotice = new android.widget.LinearLayout(context);
+  settingsGroupNotice.setOrientation(android.widget.LinearLayout.VERTICAL);
+  settingsGroupNotice.setVisibility(android.view.View.GONE);
+  var settingsGroupNoticeLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+  settingsGroupNoticeLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
+  panel.addView(settingsGroupNotice, settingsGroupNoticeLp);
 
   var scroll = new android.widget.ScrollView(context);
   try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(eOS) { safeLog(null, 'e', "catch " + String(eOS)); }
@@ -1486,6 +1555,59 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   // Placeholder to push buttons to the right
   header.addView(this.ui.createSpacer(this));
 
+  function setButtonEditorNotice(msg, kind) {
+    try {
+      self.state.buttonEditorNotice = {
+        msg: String(msg || ""),
+        kind: String(kind || "info")
+      };
+    } catch(eNotice0) { safeLog(null, 'e', "catch " + String(eNotice0)); }
+  }
+
+  function clearButtonEditorNotice() {
+    try { self.state.buttonEditorNotice = null; } catch(eNotice1) {}
+  }
+
+  function addButtonEditorNotice(parent) {
+    try {
+      var n = self.state.buttonEditorNotice;
+      if (!n || !n.msg) return null;
+      var kind = String(n.kind || "info");
+      var color = (kind === "error") ? C.error : (kind === "ok" ? T.primaryDeep : T.primaryDeep);
+      var bg = (kind === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.10);
+      var stroke = (kind === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.22);
+      var box = new android.widget.TextView(context);
+      box.setText(String(n.msg));
+      box.setTextColor(color);
+      box.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      box.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+      box.setGravity(android.view.Gravity.CENTER_VERTICAL);
+      box.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
+      var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+      lp.setMargins(self.dp(2), self.dp(2), self.dp(2), self.dp(8));
+      parent.addView(box, lp);
+      return box;
+    } catch(eNotice2) {
+      safeLog(null, 'e', "catch " + String(eNotice2));
+      return null;
+    }
+  }
+
+  function updateInlineNotice(tv, msg, kind) {
+    try {
+      if (!tv) { setButtonEditorNotice(msg, kind); return; }
+      var k = String(kind || "info");
+      var color2 = (k === "error") ? C.error : (k === "ok" ? T.primaryDeep : T.primaryDeep);
+      var bg2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.10);
+      var stroke2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.22);
+      tv.setText(String(msg || ""));
+      tv.setTextColor(color2);
+      tv.setBackground(self.ui.createStrokeDrawable(bg2, stroke2, self.dp(1), self.dp(14)));
+      tv.setVisibility(android.view.View.VISIBLE);
+      setButtonEditorNotice(msg, kind);
+    } catch(eNotice3) { safeLog(null, 'e', "catch " + String(eNotice3)); }
+  }
+
   // 刷新面板辅助函数
   function refreshPanel() {
     // # 列表滚动位置保持：刷新前记录当前 ScrollView 的 scrollY，避免操作后回到第一页
@@ -1526,6 +1648,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     header.addView(btnAdd);
 
     panel.addView(header);
+    addButtonEditorNotice(panel);
 
     // 暴露 Header 给 DragListener
     panel.setTag(header);
@@ -1790,7 +1913,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     var btnListCancel = self.ui.createFlatButton(self, "不改了", subTextColor, function() {
         self.state.tempButtons = null;
-        self.toast("已取消更改");
+        clearButtonEditorNotice();
         self.hideAllPanels();
     });
     var btnListCancelLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
@@ -1803,9 +1926,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             ConfigManager.saveButtons(buttons);
             self.panels.main = buttons;
             self.state.tempButtons = null;
-            self.toast("保存成功");
+            setButtonEditorNotice("保存成功，按钮页已更新", "ok");
             refreshPanel();
-        } catch(e) { self.toast("保存失败:" + e); }
+        } catch(e) { setButtonEditorNotice("保存失败: " + e, "error"); refreshPanel(); }
     });
     var btnListSaveLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
     btnListSaveLp.weight = 1;
@@ -4296,6 +4419,13 @@ shortcutWrap.addView(scBody);
     // 动作类型初始刷新：首次进入编辑页时立刻根据默认选中项显示对应输入区
     applySelectedType(selectedTypeVal);
 
+    var editInlineNotice = new android.widget.TextView(context);
+    editInlineNotice.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    editInlineNotice.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+    editInlineNotice.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    editInlineNotice.setVisibility(android.view.View.GONE);
+    form.addView(editInlineNotice, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+
     scroll.addView(form);
     var scrollLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0);
     scrollLp.weight = 1;
@@ -4406,7 +4536,8 @@ try {
                 newBtn.shortcutRunMode = "js";
             }
             if (!isValid) {
-                try { self.toast(validationMessage || "请补全必填项"); } catch(eToastInvalid) {}
+                updateInlineNotice(editInlineNotice, validationMessage || "请补全必填项", "error");
+                try { scroll.post(new java.lang.Runnable({ run: function() { try { scroll.fullScroll(android.view.View.FOCUS_DOWN); } catch(eScrollNotice) {} } })); } catch(ePostNotice) {}
                 return;
             }
 
@@ -4422,13 +4553,14 @@ try {
             ConfigManager.saveButtons(buttons);
 
             self.state.editingButtonIndex = null;
+            setButtonEditorNotice("已暂存，请在列表页点击保存布置", "ok");
             if (self.state.toolAppActive && self.popToolAppPage) {
                 self.state.keepBtnEditorState = true;
                 self.popToolAppPage("button_edit_save");
             } else refreshPanel();
-            self.toast("已暂存，请在列表页点击保存");
         } catch (e) {
-            self.toast("暂存失败: " + e);
+            updateInlineNotice(editInlineNotice, "暂存失败: " + e, "error");
+            try { scroll.post(new java.lang.Runnable({ run: function() { try { scroll.fullScroll(android.view.View.FOCUS_DOWN); } catch(eScrollFail) {} } })); } catch(ePostFail) {}
         }
     });
     var btnSaveLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
@@ -4632,9 +4764,28 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     panel.addView(header);
     panel.setTag(header); // 暴露 Header
 
+    var schemaInlineNotice = new android.widget.TextView(context);
+    schemaInlineNotice.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    schemaInlineNotice.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+    schemaInlineNotice.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    schemaInlineNotice.setVisibility(android.view.View.GONE);
+    function updateSchemaInlineNotice(msg, kind) {
+        try {
+            var k = String(kind || "info");
+            var color = (k === "error") ? C.error : C.primary;
+            var bg = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(C.primary, isDark ? 0.18 : 0.10);
+            var stroke = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(C.primary, isDark ? 0.34 : 0.22);
+            schemaInlineNotice.setText(String(msg || ""));
+            schemaInlineNotice.setTextColor(color);
+            schemaInlineNotice.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
+            schemaInlineNotice.setVisibility(android.view.View.VISIBLE);
+        } catch(eSIN) { safeLog(null, 'e', "catch " + String(eSIN)); }
+    }
+
     var scroll = new android.widget.ScrollView(context);
     var form = new android.widget.LinearLayout(context);
     form.setOrientation(android.widget.LinearLayout.VERTICAL);
+    form.addView(schemaInlineNotice, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
     scroll.addView(form);
 
     function createInput(label, key, inputType, hint) {
@@ -4737,9 +4888,9 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
                 self.state.keepSchemaEditorState = true;
                 self.popToolAppPage("schema_edit_save");
             } else refreshPanel();
-            self.toast("已暂存，请在列表页点击保存生效");
         } catch (e) {
-            self.toast("暂存失败: " + e);
+            updateSchemaInlineNotice("暂存失败: " + e, "error");
+            try { scroll.post(new java.lang.Runnable({ run: function() { try { scroll.fullScroll(android.view.View.FOCUS_UP); } catch(eScrollSchema) {} } })); } catch(ePostSchema) {}
         }
     });
 
