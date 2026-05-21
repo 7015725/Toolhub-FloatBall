@@ -210,7 +210,12 @@ FloatBallAppWM.prototype.ui = {
         var rippleColor = app.withAlpha ? app.withAlpha(txtColor, 0.1) : 0x22888888;
         btn.setBackground(this.createTransparentRippleDrawable(rippleColor, app.dp(8)));
         btn.setOnClickListener(new android.view.View.OnClickListener({
-            onClick: function(v) { app.touchActivity(); app.guardClick("ui_btn", INTERACTION_CONSTANTS.CLICK_COOLDOWN_MS, function(){ if(onClick) onClick(v); }); }
+            onClick: function(v) {
+                app.touchActivity();
+                var guardKey = "ui_btn";
+                try { guardKey = "ui_btn_" + String(java.lang.System.identityHashCode(v || btn)); } catch(eKey) {}
+                app.guardClick(guardKey, INTERACTION_CONSTANTS.CLICK_COOLDOWN_MS, function(){ if(onClick) onClick(v); });
+            }
         }));
         return btn;
     },
@@ -228,7 +233,12 @@ FloatBallAppWM.prototype.ui = {
         btn.setBackground(this.createRippleDrawable(bgColor, pressedColor, app.dp(24)));
         try { btn.setElevation(app.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         btn.setOnClickListener(new android.view.View.OnClickListener({
-            onClick: function(v) { app.touchActivity(); app.guardClick("ui_btn", INTERACTION_CONSTANTS.CLICK_COOLDOWN_MS, function(){ if(onClick) onClick(v); }); }
+            onClick: function(v) {
+                app.touchActivity();
+                var guardKey = "ui_btn";
+                try { guardKey = "ui_btn_" + String(java.lang.System.identityHashCode(v || btn)); } catch(eKey) {}
+                app.guardClick(guardKey, INTERACTION_CONSTANTS.CLICK_COOLDOWN_MS, function(){ if(onClick) onClick(v); });
+            }
         }));
         return btn;
     },
