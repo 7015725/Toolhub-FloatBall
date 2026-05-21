@@ -1088,20 +1088,29 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   hostLp.setMargins((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), 0, (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6));
   body.addView(host, hostLp);
 
+  // 自定义边缘返回热区会覆盖左右边缘的真实按钮（返回、关闭、添加、保存装扮等）。
+  // 默认不再叠加透明触摸层；需要排查预测返回时再显式开启。
   try {
-    var stripW = this.getToolAppBackEdgeWidthPx ? this.getToolAppBackEdgeWidthPx() : this.dp(48);
-    var leftStrip = this.createToolAppEdgeBackStrip(0);
-    var leftLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
-    leftLp.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
-    leftLp.topMargin = topBarHeight + this.dp(8);
-    root.addView(leftStrip, leftLp);
-    var rightStrip = this.createToolAppEdgeBackStrip(1);
-    var rightLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
-    rightLp.gravity = android.view.Gravity.END | android.view.Gravity.TOP;
-    rightLp.topMargin = topBarHeight + this.dp(8);
-    root.addView(rightStrip, rightLp);
-    this.state.toolAppInnerBackLeftStrip = leftStrip;
-    this.state.toolAppInnerBackRightStrip = rightStrip;
+    var enableInnerBackStrip = false;
+    try { enableInnerBackStrip = (String(this.config.ENABLE_TOOLAPP_INNER_BACK_STRIPS || "false") === "true"); } catch(eCfg) { enableInnerBackStrip = false; }
+    if (enableInnerBackStrip) {
+      var stripW = this.getToolAppBackEdgeWidthPx ? this.getToolAppBackEdgeWidthPx() : this.dp(24);
+      var leftStrip = this.createToolAppEdgeBackStrip(0);
+      var leftLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
+      leftLp.gravity = android.view.Gravity.START | android.view.Gravity.TOP;
+      leftLp.topMargin = topBarHeight + this.dp(8);
+      root.addView(leftStrip, leftLp);
+      var rightStrip = this.createToolAppEdgeBackStrip(1);
+      var rightLp = new android.widget.FrameLayout.LayoutParams(stripW, -1);
+      rightLp.gravity = android.view.Gravity.END | android.view.Gravity.TOP;
+      rightLp.topMargin = topBarHeight + this.dp(8);
+      root.addView(rightStrip, rightLp);
+      this.state.toolAppInnerBackLeftStrip = leftStrip;
+      this.state.toolAppInnerBackRightStrip = rightStrip;
+    } else {
+      this.state.toolAppInnerBackLeftStrip = null;
+      this.state.toolAppInnerBackRightStrip = null;
+    }
   } catch (eStrip) { safeLog(this.L, 'w', "add edge back strip fail: " + String(eStrip)); }
 
   this.state.toolAppRoot = root;
@@ -1277,10 +1286,12 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
       } catch (eUpd) { safeLog(this.L, 'w', "tool_app update layout fail: " + String(eUpd)); }
       try { shell.requestFocus(); } catch (eFocus) {}
     }
-    // 竖屏系统边缘 predictive back 在 overlay/Rhino 下可能只能收到最终回调；保留窄屏幕边缘 fallback，
-    // 复用现有 ToolApp 返回预览栈，拖动时实时露出上一级 UI。宽度由 TOOLAPP_BACK_EDGE_WIDTH_DP 控制，默认 22dp。
+    // 不再默认添加屏幕边缘透明覆盖层：它会抢占 ToolApp 顶栏/内容区左右边缘按钮的触摸。
+    // 如需临时排查返回手势，可把 ENABLE_TOOLAPP_SCREEN_BACK_STRIPS 设为字符串 "true"。
     try {
-      if (this.hasToolAppBackTarget && this.hasToolAppBackTarget()) this.showToolAppScreenBackStrips();
+      var enableScreenBackStrip = false;
+      try { enableScreenBackStrip = (String(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS || "false") === "true"); } catch(eCfg2) { enableScreenBackStrip = false; }
+      if (enableScreenBackStrip && this.hasToolAppBackTarget && this.hasToolAppBackTarget()) this.showToolAppScreenBackStrips();
       else this.hideToolAppScreenBackStrips();
     } catch (eScreenBack) { safeLog(this.L, 'w', "screen edge back strip update fail: " + String(eScreenBack)); }
   } catch (e) {
