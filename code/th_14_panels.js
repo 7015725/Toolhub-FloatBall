@@ -5811,18 +5811,20 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         if (primary) {
           // 与设置页底部“保存布置”一致：主色胶囊、44dp 高、轻描边。
           b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-          b.setTextColor(T.onPrimary || android.graphics.Color.WHITE);
+          // 颜色面板里不用高饱和青色，改成更沉稳的深绿主按钮。
+          b.setTextColor(android.graphics.Color.WHITE);
           b.setPadding(self.dp(18), 0, self.dp(18), 0);
           try { b.setMinHeight(self.dp(44)); } catch(eMinH1) {}
-          try { b.setBackground(self.ui.createStrokeDrawable(T.primary, self.withAlpha(T.primaryDeep, isDark ? 0.22 : 0.16), self.dp(1), self.dp(23))); } catch(eBg1) {}
+          try { b.setBackground(self.ui.createStrokeDrawable(T.primaryDeep, self.withAlpha(T.brown || T.primaryDeep, isDark ? 0.28 : 0.18), self.dp(1), self.dp(22))); } catch(eBg1) {}
           try { b.setElevation(self.dp(1)); } catch(eElev) {}
         } else {
           // 与按钮管理页 action chip 一致：浅底、小胶囊、34dp 高。
           b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-          b.setTextColor(T.primaryDeep);
+          // 次级按钮走设置页里的奶油/描边感，不再用薄荷绿底。
+          b.setTextColor(T.brown || T.sub);
           b.setPadding(self.dp(10), 0, self.dp(10), 0);
           try { b.setMinHeight(self.dp(34)); } catch(eMinH2) {}
-          try { b.setBackground(self.ui.createStrokeDrawable(self.withAlpha(T.primarySoft, isDark ? 0.62 : 0.95), self.withAlpha(T.primaryDeep, 0.32), self.dp(1), self.dp(14))); } catch(eBg2) {}
+          try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.card, self.withAlpha(T.stroke || T.brown, isDark ? 0.42 : 0.55), self.dp(1), self.dp(14))); } catch(eBg2) {}
           try { b.setElevation(self.dp(1)); } catch(eElev2) {}
         }
         try { b.setClickable(true); b.setFocusable(true); } catch(eClickable) {}
