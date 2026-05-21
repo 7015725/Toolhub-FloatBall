@@ -620,6 +620,14 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
   var hasOldGroupKey = false;
   var r = "settings";
   try {
+    var spec = null;
+    try {
+      spec = this.getToolAppResponsiveSpec ? this.getToolAppResponsiveSpec() : null;
+    } catch(eSpec) {
+      spec = null;
+    }
+    var topBarHeight = spec ? spec.topBarHeight : this.dp(56);
+
     oldGroupKey = this.state.settingsGroupKey;
     hasOldGroupKey = true;
     var groupKey = null;
@@ -829,10 +837,15 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
     if (isNaN(p)) p = 0;
     if (p < 0) p = 0;
     if (p > 1) p = 1;
-    if (!this.prepareToolAppBackPreview(edge)) return false;
+    var previewReady = false;
+    try {
+      previewReady = this.prepareToolAppBackPreview(edge);
+    } catch(ePrepare) {
+      previewReady = false;
+    }
     var eased = 1 - Math.pow(1 - p, 2.2);
     var body = this.state.toolAppBody;
-    var prev = this.state.toolAppBackPreviewView;
+    var prev = previewReady ? this.state.toolAppBackPreviewView : null;
     var dir = Number(edge) === 1 ? -1 : 1;
     var w = 0;
     try { w = Number((this.state.viewerPanelLp && this.state.viewerPanelLp.width) || 0); } catch (eW0) {}
@@ -845,6 +858,20 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
         this.applyToolAppBackWindowFollow(edge, dragPx);
       }
     } catch(eFollow) {}
+
+    try {
+      var nowLog = Date.now();
+      if (!this.state._lastBackPreviewLog || nowLog - this.state._lastBackPreviewLog > 300) {
+        safeLog(this.L, 'd',
+          'back preview progress edge=' + String(edge) +
+          ' p=' + String(p) +
+          ' dragPx=' + String(dragPx) +
+          ' previewReady=' + String(previewReady)
+        );
+        this.state._lastBackPreviewLog = nowLog;
+      }
+    } catch(eLog) {}
+
     if (body) {
       var bodyMove = dir * w * eased * 0.42;
       try {
@@ -855,6 +882,7 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
           bodyMove = dir * Math.min(rawDrag, Math.floor(w * 0.45));
         }
       } catch(eBodyMove) {}
+      try { body.animate().cancel(); } catch(eCancelBody) {}
       body.setTranslationX(bodyMove);
       body.setAlpha(1.0 - 0.10 * eased);
       var s = 1.0 - 0.015 * eased;
