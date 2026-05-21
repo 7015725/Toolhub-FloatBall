@@ -4765,8 +4765,10 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   } catch(eScreenSize) { safeLog(null, 'e', "catch " + String(eScreenSize)); }
   if (sw <= 0) sw = self.dp(360);
   if (sh <= 0) sh = self.dp(640);
+  // 弹窗尺寸只做“内容可用的上限”，不要按屏幕比例强行拉满。
+  // 上一版 84% 屏高会在高屏手机上显得过长；颜色面板内容交给 ScrollView 溢出滚动。
   var panelWidth = Math.round(sw * 0.92);
-  var panelHeight = Math.round(sh * 0.84);
+  var panelHeight = Math.min(self.dp(520), Math.round(sh * 0.68));
   if (panelWidth > self.dp(420)) panelWidth = self.dp(420);
   if (panelWidth < self.dp(300)) panelWidth = Math.min(sw - self.dp(16), self.dp(300));
   if (panelHeight > sh - self.dp(48)) panelHeight = sh - self.dp(48);
