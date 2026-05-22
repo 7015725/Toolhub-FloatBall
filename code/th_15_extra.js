@@ -663,7 +663,7 @@ FloatBallAppWM.prototype.bumpToolAppStackVersion = function() {
     v = v + 1;
     if (v > 1000000000) v = 1;
     this.state.toolAppNavStackVersion = v;
-    this.clearToolAppBackPreview(false);
+    if (!this.state.keepToolAppBackPreviewDuringPop) this.clearToolAppBackPreview(false);
     return v;
   } catch(e) {}
   return 0;
@@ -1166,17 +1166,36 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
       body.animate().translationX(dir * w).alpha(0.90).scaleX(0.985).scaleY(0.985).setDuration(180).setInterpolator(decel).withEndAction(new java.lang.Runnable({
         run: function() {
           try { self.resetToolAppBackWindowFollow(); } catch(eResetFollow) {}
-          try {
-            if (self.state.toolAppRoot) self.state.toolAppRoot.setTranslationX(0);
-            if (self.state.toolAppBody) {
-              self.state.toolAppBody.setTranslationX(0);
-              self.state.toolAppBody.setAlpha(1);
-              self.state.toolAppBody.setScaleX(1);
-              self.state.toolAppBody.setScaleY(1);
-            }
-          } catch(eResetView) {}
-          try { self.clearToolAppBackPreview(true); } catch (eClear) {}
+          try { self.state.keepToolAppBackPreviewDuringPop = true; } catch(eKeepPreview) {}
           try { self.popToolAppPage("edge_swipe_back"); } catch (ePop) {}
+          try { self.state.keepToolAppBackPreviewDuringPop = false; } catch(eKeepPreview2) {}
+          try {
+            var rootAfter = self.state.toolAppRoot;
+            if (rootAfter) {
+              rootAfter.post(new java.lang.Runnable({ run: function() {
+                try {
+                  rootAfter.post(new java.lang.Runnable({ run: function() {
+                    try {
+                      if (self.state.toolAppRoot) self.state.toolAppRoot.setTranslationX(0);
+                      if (self.state.toolAppBody) {
+                        self.state.toolAppBody.setTranslationX(0);
+                        self.state.toolAppBody.setAlpha(1);
+                        self.state.toolAppBody.setScaleX(1);
+                        self.state.toolAppBody.setScaleY(1);
+                      }
+                    } catch(eResetViewLater) {}
+                    try { self.clearToolAppBackPreview(true); } catch (eClearLater) {}
+                  }}));
+                } catch(ePost2) {
+                  try { self.clearToolAppBackPreview(true); } catch (eClearPostFail) {}
+                }
+              }}));
+            } else {
+              try { self.clearToolAppBackPreview(true); } catch (eClearNoRoot) {}
+            }
+          } catch(eLater) {
+            try { self.clearToolAppBackPreview(true); } catch (eClearLaterFail) {}
+          }
         }
       })).start();
       return;
