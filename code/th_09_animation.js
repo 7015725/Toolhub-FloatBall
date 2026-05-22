@@ -606,6 +606,9 @@ FloatBallAppWM.prototype._clearHeavyCachesIfAllHidden = function(reason) {
 };
 
 FloatBallAppWM.prototype.hideAllPanels = function() {
+  try {
+    if (this.state && this.state.activePopupDismiss) this.state.activePopupDismiss();
+  } catch(ePopupDismiss) { try { safeLog(this.L, 'w', "hide active popup fail: " + String(ePopupDismiss)); } catch(eLogPopupDismiss) {} }
   this.hideMainPanel();
   this.hideSettingsPanel();
   this.hideViewerPanel();

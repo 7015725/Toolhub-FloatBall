@@ -4623,8 +4623,6 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var popupClosed = false;
   var popupBackDispatcher = null;
   var popupBackCallback = null;
-  var popupSystemDialogReceiver = null;
-  var popupSystemDialogRegistered = false;
   var popupHomeDownX = 0;
   var popupHomeDownY = 0;
   var popupHomeEligible = false;
@@ -4904,22 +4902,11 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
 
   try { wm.addView(root, lp); } catch(eAdd) { safeLog(self.L, 'e', "popup addView fail: " + String(eAdd)); return null; }
   try {
-    popupSystemDialogReceiver = new JavaAdapter(android.content.BroadcastReceiver, {
-      onReceive: function(ctx, intent) {
-        try {
-          if (popupClosed || !intent) return;
-          var action = String(intent.getAction ? intent.getAction() : "");
-          if (action === String(android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS)) {
-            closePopup();
-          }
-        } catch(eRecv) { try { safeLog(self.L, 'w', 'popup system dialog receiver fail: ' + String(eRecv)); } catch(eLogRecv) {} }
-      }
-    });
-    var filter = new android.content.IntentFilter();
-    filter.addAction(android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
-    context.registerReceiver(popupSystemDialogReceiver, filter);
-    popupSystemDialogRegistered = true;
-  } catch(eRegSysDialog) { try { safeLog(self.L, 'w', 'popup system dialog receiver register fail: ' + String(eRegSysDialog)); } catch(eLogSysDialog) {} }
+    if (!self.state) self.state = {};
+    // 接入 ToolHub 统一面板关闭链路：handleSystemUiDismiss()/hideAllPanels() 会关闭临时弹窗。
+    // 不在颜色面板里另起 ACTION_CLOSE_SYSTEM_DIALOGS receiver，避免和设置主页/ToolApp 的返回机制分叉。
+    self.state.activePopupDismiss = function() { closePopup(); };
+  } catch(ePopupState) { try { safeLog(self.L, 'w', 'popup dismiss hook fail: ' + String(ePopupState)); } catch(eLogPopupState) {} }
   try {
     root.requestFocus();
     root.post(new java.lang.Runnable({ run: function() {
@@ -4950,10 +4937,8 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     popupBackDispatcher = null;
     popupBackCallback = null;
     try {
-      if (popupSystemDialogRegistered && popupSystemDialogReceiver) context.unregisterReceiver(popupSystemDialogReceiver);
-    } catch(eUnregSysDialog) {}
-    popupSystemDialogRegistered = false;
-    popupSystemDialogReceiver = null;
+      if (self.state && self.state.activePopupDismiss) self.state.activePopupDismiss = null;
+    } catch(eClearPopupHook) {}
     try { wm.removeView(root);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     if (typeof onDismiss === "function") {
       try { onDismiss();  } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }
