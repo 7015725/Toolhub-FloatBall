@@ -4673,6 +4673,29 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var popupBackEligible = false;
   var popupBackActive = false;
   var popupBackMoved = false;
+  var popupBackVisualActive = false;
+  function beginPopupBackVisual(v) {
+    try {
+      if (popupBackVisualActive || !v) return;
+      popupBackVisualActive = true;
+      // ColorOS overlay 上拖动带 elevation 的圆角卡片容易留下阴影/拖影；拖动期间临时去掉阴影。
+      try { v.animate().cancel(); } catch(eAnimCancel) {}
+      try { v.setAlpha(1); v.setScaleX(1); v.setScaleY(1); } catch(eResetVisual) {}
+      try { v.setElevation(0); } catch(eElev0) {}
+      try { v.setLayerType(android.view.View.LAYER_TYPE_NONE, null); } catch(eLayer0) {}
+      try { v.invalidate(); root.invalidate(); } catch(eInv0) {}
+    } catch(eBeginVisual) {}
+  }
+  function endPopupBackVisual(v) {
+    try {
+      popupBackVisualActive = false;
+      if (!v) return;
+      try { v.setAlpha(1); v.setScaleX(1); v.setScaleY(1); } catch(eResetVisual2) {}
+      try { v.setElevation(self.dp(10)); } catch(eElevRestore) {}
+      try { v.setLayerType(android.view.View.LAYER_TYPE_NONE, null); } catch(eLayerRestore) {}
+      try { v.invalidate(); root.invalidate(); } catch(eInvRestore) {}
+    } catch(eEndVisual) {}
+  }
   var card = new JavaAdapter(android.widget.LinearLayout, {
     onInterceptTouchEvent: function(ev) {
       try {
@@ -4703,7 +4726,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
           if (validDir && adx > slop && adx > ady * 0.9) {
             popupBackActive = true;
             popupBackMoved = true;
-            try { this.animate().cancel(); } catch(eCancel) {}
+            beginPopupBackVisual(this);
             try { this.setTranslationX(dx); } catch(eTx) {}
             return true;
           }
@@ -4740,9 +4763,10 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
           popupBackMoved = false;
           popupBackEdge = -1;
           if (ok) {
-            this.animate().translationX(dir * panelWidth).alpha(0.96).setDuration(150).withEndAction(new java.lang.Runnable({ run: function() { closePopup(); } })).start();
+            this.animate().translationX(dir * panelWidth).setDuration(130).withEndAction(new java.lang.Runnable({ run: function() { endPopupBackVisual(card); closePopup(); } })).start();
           } else {
-            this.animate().translationX(0).alpha(1).setDuration(160).start();
+            var that = this;
+            this.animate().translationX(0).setDuration(140).withEndAction(new java.lang.Runnable({ run: function() { endPopupBackVisual(that); } })).start();
           }
           return true;
         }
@@ -4752,7 +4776,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         popupBackEligible = false;
         popupBackMoved = false;
         popupBackEdge = -1;
-        try { this.setTranslationX(0); this.setAlpha(1); } catch(eReset) {}
+        try { this.setTranslationX(0); this.setAlpha(1); endPopupBackVisual(this); } catch(eReset) {}
         try { safeLog(self.L, 'w', 'popup back touch fail: ' + String(eTouch)); } catch(eLog2) {}
       }
       return false;
