@@ -4624,8 +4624,111 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   root.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42));
   root.setClickable(true);
   try { root.setFocusable(true); root.setFocusableInTouchMode(true); } catch(eRootFocus) {}
+  try {
+    root.setOnKeyListener(new android.view.View.OnKeyListener({
+      onKey: function(v, keyCode, event) {
+        try {
+          if (keyCode === android.view.KeyEvent.KEYCODE_BACK && event && event.getAction && event.getAction() === android.view.KeyEvent.ACTION_UP) {
+            closePopup();
+            return true;
+          }
+        } catch(eKey) {}
+        return false;
+      }
+    }));
+  } catch(eRootKey) {}
 
-  var card = new android.widget.LinearLayout(context);
+  var popupBackDownX = 0;
+  var popupBackDownY = 0;
+  var popupBackEdge = -1;
+  var popupBackEligible = false;
+  var popupBackActive = false;
+  var popupBackMoved = false;
+  var card = new JavaAdapter(android.widget.LinearLayout, {
+    onInterceptTouchEvent: function(ev) {
+      try {
+        if (!ev) return false;
+        var action = ev.getActionMasked();
+        if (action === android.view.MotionEvent.ACTION_DOWN) {
+          popupBackDownX = ev.getX();
+          popupBackDownY = ev.getY();
+          popupBackEdge = -1;
+          popupBackEligible = false;
+          popupBackActive = false;
+          popupBackMoved = false;
+          var edgeW = self.dp(56);
+          var cw = 0;
+          try { cw = this.getWidth(); } catch(eW) { cw = 0; }
+          if (popupBackDownX <= edgeW) { popupBackEdge = 0; popupBackEligible = true; }
+          else if (cw > 0 && popupBackDownX >= cw - edgeW) { popupBackEdge = 1; popupBackEligible = true; }
+          return false;
+        }
+        if (action === android.view.MotionEvent.ACTION_MOVE) {
+          if (!popupBackEligible) return false;
+          var dx = ev.getX() - popupBackDownX;
+          var dy = ev.getY() - popupBackDownY;
+          var adx = Math.abs(dx);
+          var ady = Math.abs(dy);
+          var validDir = (popupBackEdge === 0 && dx > 0) || (popupBackEdge === 1 && dx < 0);
+          var slop = Math.max(self.dp(8), self.dp(Number(self.config.CLICK_SLOP_DP || 6)));
+          if (validDir && adx > slop && adx > ady * 0.9) {
+            popupBackActive = true;
+            popupBackMoved = true;
+            try { this.animate().cancel(); } catch(eCancel) {}
+            try { this.setTranslationX(dx); } catch(eTx) {}
+            return true;
+          }
+        }
+      } catch(eIntercept) { try { safeLog(self.L, 'w', 'popup back intercept fail: ' + String(eIntercept)); } catch(eLog) {} }
+      return false;
+    },
+    onTouchEvent: function(ev) {
+      try {
+        if (!ev || !popupBackActive) return false;
+        var action = ev.getActionMasked();
+        if (action === android.view.MotionEvent.ACTION_MOVE) {
+          var mx = ev.getX() - popupBackDownX;
+          var my = ev.getY() - popupBackDownY;
+          var validDir2 = (popupBackEdge === 0 && mx > 0) || (popupBackEdge === 1 && mx < 0);
+          if (validDir2 && Math.abs(mx) > Math.abs(my) * 0.9) {
+            popupBackMoved = true;
+            var maxMove = Math.floor(panelWidth * 0.62);
+            var tx = mx;
+            if (tx > maxMove) tx = maxMove;
+            if (tx < -maxMove) tx = -maxMove;
+            this.setTranslationX(tx);
+          }
+          return true;
+        }
+        if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
+          var ux = ev.getX() - popupBackDownX;
+          var uy = ev.getY() - popupBackDownY;
+          var okDir = (popupBackEdge === 0 && ux > self.dp(72)) || (popupBackEdge === 1 && ux < -self.dp(72));
+          var ok = action === android.view.MotionEvent.ACTION_UP && popupBackMoved && okDir && Math.abs(ux) > Math.abs(uy) * 0.9;
+          var dir = popupBackEdge === 1 ? -1 : 1;
+          popupBackActive = false;
+          popupBackEligible = false;
+          popupBackMoved = false;
+          popupBackEdge = -1;
+          if (ok) {
+            this.animate().translationX(dir * panelWidth).alpha(0.96).setDuration(150).withEndAction(new java.lang.Runnable({ run: function() { closePopup(); } })).start();
+          } else {
+            this.animate().translationX(0).alpha(1).setDuration(160).start();
+          }
+          return true;
+        }
+        return true;
+      } catch(eTouch) {
+        popupBackActive = false;
+        popupBackEligible = false;
+        popupBackMoved = false;
+        popupBackEdge = -1;
+        try { this.setTranslationX(0); this.setAlpha(1); } catch(eReset) {}
+        try { safeLog(self.L, 'w', 'popup back touch fail: ' + String(eTouch)); } catch(eLog2) {}
+      }
+      return false;
+    }
+  }, context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
   var cardLp = new android.widget.FrameLayout.LayoutParams(panelWidth, panelHeight);
   cardLp.gravity = android.view.Gravity.CENTER;
