@@ -1210,59 +1210,15 @@ FloatBallAppWM.prototype.getToolAppBackEdgeWidthPx = function() {
 };
 
 FloatBallAppWM.prototype.isToolAppScreenBackStripsEnabled = function() {
-  try { return parseBooleanLike(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS); } catch(e) {}
-  try { return String(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS || "true") === "true"; } catch(e2) {}
-  return true;
+  // 旧版 WindowManager 透明边缘热区已禁用：它可能抢 ACTION_DOWN，影响按钮、列表、SeekBar、Switch。
+  // 保留函数和清理路径仅为兼容历史状态；正式返回手势由 ToolApp root surface 接管。
+  try { this.hideToolAppScreenBackStrips(); } catch(eHide) {}
+  return false;
 };
 
 FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
-  // 只在 ToolApp 面板左右的屏幕空白区创建触摸层；绝不覆盖 ToolApp 矩形内部控件区域。
-  try {
-    this.hideToolAppScreenBackStrips();
-    if (!this.state || !this.state.wm || !this.state.viewerPanelLp) return false;
-    var lp0 = this.state.viewerPanelLp;
-    var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
-    var sh = Math.max(1, Number(this.state.screen && this.state.screen.h || 0));
-    if (sw <= 1 || sh <= 1) {
-      try { var ss = this.getScreenSizePx(); sw = ss.w; sh = ss.h; } catch(eScreen) {}
-    }
-    var px = Number(lp0.x || 0);
-    var pw = Number(lp0.width || 0);
-    if (isNaN(px)) px = 0;
-    if (isNaN(pw) || pw <= 0) return false;
-    var minBlank = this.dp(3);
-    var leftW = Math.max(0, Math.floor(px));
-    var rightX = Math.floor(px + pw);
-    var rightW = Math.max(0, Math.floor(sw - rightX));
-    var made = false;
-    var arr = [];
-    var addBlankStrip = function(self, edge, x, w) {
-      if (!w || w < minBlank) return false;
-      var strip = self.createToolAppEdgeBackStrip(edge);
-      var flags = android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-              android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-      var lp = new android.view.WindowManager.LayoutParams(
-        w,
-        sh,
-        android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-        flags,
-        android.graphics.PixelFormat.TRANSLUCENT
-      );
-      lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
-      lp.x = x;
-      lp.y = 0;
-      try { self.state.wm.addView(strip, lp); arr.push(strip); return true; } catch(eAdd) { safeLog(self.L, 'w', 'add blank screen back strip fail edge=' + String(edge) + ' err=' + String(eAdd)); }
-      return false;
-    };
-    if (addBlankStrip(this, 0, 0, leftW)) made = true;
-    if (addBlankStrip(this, 1, rightX, rightW)) made = true;
-    this.state.toolAppScreenBackStrips = arr;
-    try { if (made) safeLog(this.L, 'd', 'blank screen back strips leftW=' + String(leftW) + ' rightW=' + String(rightW) + ' panelX=' + String(px) + ' panelW=' + String(pw)); } catch(eLog) {}
-    return made;
-  } catch(e) {
-    try { this.hideToolAppScreenBackStrips(); } catch(eHide2) {}
-    safeLog(this.L, 'w', "show blank screen back strips fail: " + String(e));
-  }
+  // 旧版 WindowManager 透明边缘热区已禁用；不要再创建额外触摸层。
+  try { this.hideToolAppScreenBackStrips(); } catch(eHide) {}
   return false;
 };
 
