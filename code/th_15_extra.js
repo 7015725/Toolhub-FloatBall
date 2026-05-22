@@ -1111,10 +1111,9 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
     if (body) {
       try { body.animate().cancel(); } catch(eCancelBody) {}
       body.setTranslationX(bodyMove);
-      body.setAlpha(1.0 - 0.10 * eased);
-      var s = 1.0 - 0.015 * eased;
-      body.setScaleX(s);
-      body.setScaleY(s);
+      body.setAlpha(1.0);
+      body.setScaleX(1.0);
+      body.setScaleY(1.0);
     }
 
     try {
@@ -1136,11 +1135,10 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
       }
     } catch(eMoveLog) {}
     if (prev) {
-      prev.setAlpha(0.88 + 0.12 * eased);
-      prev.setTranslationX(-dir * this.dp(24) * (1.0 - eased));
-      var ps = 0.975 + 0.025 * eased;
-      prev.setScaleX(ps);
-      prev.setScaleY(ps);
+      prev.setAlpha(1.0);
+      prev.setTranslationX(0);
+      prev.setScaleX(1.0);
+      prev.setScaleY(1.0);
     }
     return true;
   } catch (e) { safeLog(this.L, 'w', "apply tool app back preview fail: " + String(e)); }
@@ -1162,8 +1160,8 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
         try { w = Number((this.state.toolAppRoot && this.state.toolAppRoot.getWidth && this.state.toolAppRoot.getWidth()) || 0); } catch (eW1) {}
       }
       if (!w || w < this.dp(120)) w = this.dp(320);
-      try { if (prev) prev.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(180).setInterpolator(decel).start(); } catch(ePrev) {}
-      body.animate().translationX(dir * w).alpha(0.90).scaleX(0.985).scaleY(0.985).setDuration(180).setInterpolator(decel).withEndAction(new java.lang.Runnable({
+      try { if (prev) prev.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(120).setInterpolator(decel).start(); } catch(ePrev) {}
+      body.animate().translationX(dir * w).alpha(1).scaleX(1).scaleY(1).setDuration(160).setInterpolator(decel).withEndAction(new java.lang.Runnable({
         run: function() {
           try { self.resetToolAppBackWindowFollow(); } catch(eResetFollow) {}
           try { self.state.keepToolAppBackPreviewDuringPop = true; } catch(eKeepPreview) {}
@@ -1202,7 +1200,7 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
     }
     if (body) {
       var cancelInterp = new android.view.animation.AccelerateDecelerateInterpolator();
-      try { if (prev) prev.animate().translationX(-dir * self.dp(24)).alpha(0.88).scaleX(0.975).scaleY(0.975).setDuration(200).setInterpolator(cancelInterp).start(); } catch(ePrev2) {}
+      try { if (prev) prev.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(160).setInterpolator(cancelInterp).start(); } catch(ePrev2) {}
       body.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(200).setInterpolator(cancelInterp).withEndAction(new java.lang.Runnable({
         run: function() {
           try { self.resetToolAppBackWindowFollow(); } catch(eResetFollow2) {}
