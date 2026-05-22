@@ -852,6 +852,9 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     } catch(eSpec) {
       spec = null;
     }
+    var shellPad = spec ? spec.shellPadding : this.dp(6);
+    var shellTopPad = shellPad;
+    var outerRadius = spec ? spec.outerRadius : this.dp(26);
     var topBarHeight = spec ? spec.topBarHeight : this.dp(56);
 
     var isDark = this.isDarkTheme();
@@ -862,8 +865,8 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
 
     var body = new android.widget.LinearLayout(context);
     body.setOrientation(android.widget.LinearLayout.VERTICAL);
-    body.setPadding(this.dp(6), this.dp(6), this.dp(6), this.dp(8));
-    body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.42 : 0.70), this.dp(1), this.dp(26)));
+    body.setPadding(shellPad, shellTopPad, shellPad, shellPad);
+    body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.30 : 0.46), this.dp(1), outerRadius));
     try { body.setClipToOutline(true); } catch(eClip) {}
     try { body.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 7 : 10)); } catch (eElev) {}
 
