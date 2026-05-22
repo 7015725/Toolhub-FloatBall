@@ -896,7 +896,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
     bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
     var barLp = new android.widget.LinearLayout.LayoutParams(-1, topBarHeight);
-    barLp.setMargins(this.dp(8), this.dp(8), this.dp(8), this.dp(4));
+    barLp.setMargins(this.dp(8), this.dp(2), this.dp(8), this.dp(4));
     body.addView(bar, barLp);
 
     var host = new android.widget.FrameLayout(context);
@@ -1332,10 +1332,8 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var spec = this.getToolAppResponsiveSpec ? this.getToolAppResponsiveSpec() : null;
   var shellPad = spec ? spec.shellPadding : this.dp(6);
   var shellTopPad = shellPad;
-  try {
-    var topInset = this.getToolAppStatusBarInsetPx ? this.getToolAppStatusBarInsetPx() : 0;
-    if (!isNaN(topInset) && topInset > 0) shellTopPad = shellPad + topInset;
-  } catch(eTopInset) {}
+  // ToolApp 是 WindowManager 浮层卡片，不需要额外叠加状态栏 inset；
+  // 否则一级/二级页面标题上方会出现一块空白。
   var outerRadius = spec ? spec.outerRadius : this.dp(26);
   var topBarHeight = spec ? spec.topBarHeight : this.dp(56);
   var rootDownX = 0;
@@ -1544,7 +1542,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
   bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
   var barLp = new android.widget.LinearLayout.LayoutParams(-1, topBarHeight);
-  barLp.setMargins(this.dp(8), this.dp(8), this.dp(8), this.dp(4));
+  barLp.setMargins(this.dp(8), this.dp(2), this.dp(8), this.dp(4));
   body.addView(bar, barLp);
 
   var host = new android.widget.FrameLayout(context);
