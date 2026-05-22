@@ -288,7 +288,6 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
       try {
         if (this.L) {
           this.L.enable = !!this.config.LOG_ENABLE;
-          this.L.cfg.LOG_ENABLE = !!this.config.LOG_ENABLE;
           this.L.i("apply LOG_ENABLE=" + String(this.config.LOG_ENABLE));
         }
        } catch(eLE) { safeLog(null, 'e', "catch " + String(eLE)); }
@@ -298,7 +297,6 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
       try {
         if (this.L) {
           this.L.debug = !!this.config.LOG_DEBUG;
-          this.L.cfg.LOG_DEBUG = !!this.config.LOG_DEBUG;
           this.L.i("apply LOG_DEBUG=" + String(this.config.LOG_DEBUG));
         }
        } catch(eLD) { safeLog(null, 'e', "catch " + String(eLD)); }
@@ -310,7 +308,6 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
         this.config.LOG_KEEP_DAYS = n;
         if (this.L) {
           this.L.keepDays = n;
-          this.L.cfg.LOG_KEEP_DAYS = n;
           this.L.i("apply LOG_KEEP_DAYS=" + String(n));
           this.L.cleanupOldFiles();
         }

@@ -21,24 +21,23 @@ FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
   }
 
   if (t === "open_viewer") {
-    var logPath = (this.L && this.L._filePathForToday) ? this.L._filePathForToday() : "";
-    if (!logPath) logPath = PATH_LOG_DIR + "/ShortX_ToolHub_" + (new java.text.SimpleDateFormat("yyyyMMdd").format(new java.util.Date())) + ".log";
-
-    var content = FileIO.readText(logPath);
-    if (!content) content = "(日志文件不存在或为空: " + logPath + ")";
-
-    if (content.length > 30000) {
-        content = "[...前略...]\n" + content.substring(content.length - 30000);
+    function tailLogText(path, maxLen) {
+      var txt = FileIO.readText(path);
+      if (!txt) return "(日志文件不存在或为空: " + path + ")";
+      txt = String(txt);
+      if (txt.length > maxLen) txt = "[...前略...]\n" + txt.substring(txt.length - maxLen);
+      try {
+        var lines = txt.split("\n");
+        if (lines.length > 1) txt = lines.reverse().join("\n");
+      } catch(eRev) { safeLog(null, 'e', "catch " + String(eRev)); }
+      return txt;
     }
-
-    // 简单的按行倒序，方便查看最新日志
-    try {
-        var lines = content.split("\n");
-        if (lines.length > 1) {
-             content = lines.reverse().join("\n");
-        }
-     } catch(eRev) { safeLog(null, 'e', "catch " + String(eRev)); }
-
+    var runLogPath = (this.L && this.L._filePathForToday) ? this.L._filePathForToday() : "";
+    if (!runLogPath) runLogPath = PATH_LOG_DIR + "/ShortX_ToolHub_" + (new java.text.SimpleDateFormat("yyyyMMdd").format(new java.util.Date())) + ".log";
+    var initLogPath = PATH_LOG_DIR + "/init.log";
+    var content = "【启动/更新日志】\n" + tailLogText(initLogPath, 15000) +
+      "\n\n【运行日志】\n" + tailLogText(runLogPath, 15000);
+    if (content.length > 32000) content = content.substring(0, 32000) + "\n[...后略...]";
     this.showViewerPanel("今日日志 (倒序)", content);
     return;
   }
@@ -132,7 +131,7 @@ return;
     if (r && r.ok) return;
 
     this.toast("shell 广播桥发送失败");
-    safeLog(this.L, 'e',  "shell all failed cmd_b64=" + cmdB64 + " ret=" + JSON.stringify(r || {}));
+    safeLog(this.L, 'e',  "shell all failed cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " ret=" + JSON.stringify(r || {}));
     return;
   }
 

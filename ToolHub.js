@@ -33,16 +33,31 @@ function getTrustedShaPath(relPath) { return getCodeDirPath() + ".trusted_sha_" 
 function getTrustedVersionPath() { return getCodeDirPath() + ".trusted_manifest_version"; }
 
 function writeLog(msg) {
+    var writer = null;
     try {
         var f = new java.io.File(getLogPath());
         var dir = f.getParentFile();
         if (dir && !dir.exists()) dir.mkdirs();
+        try {
+            var maxBytes = 512 * 1024;
+            if (f.exists() && f.length() > maxBytes) {
+                var bak = new java.io.File(String(f.getAbsolutePath()) + ".bak");
+                try { if (bak.exists()) bak.delete(); } catch (eBak0) {}
+                var moved = false;
+                try { moved = f.renameTo(bak); } catch (eMv) { moved = false; }
+                if (!moved) {
+                    try { f.delete(); } catch (eDel) {}
+                }
+            }
+        } catch (eTrim) {}
         var sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         var ts = sdf.format(new java.util.Date());
-        var writer = new java.io.FileWriter(f, true);
+        writer = new java.io.FileWriter(f, true);
         writer.write("[" + ts + "] " + String(msg) + "\n");
-        writer.close();
-    } catch (e) {}
+    } catch (e) {
+    } finally {
+        try { if (writer) writer.close(); } catch (eClose) {}
+    }
 }
 
 function runShell(cmdArr) {

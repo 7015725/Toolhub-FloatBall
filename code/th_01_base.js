@@ -1188,8 +1188,15 @@ function applyRule(rule, kv) {
 }
 
 // =======================【日志：文件写入器（尽力落盘 + 自动清理旧日志）】=======================
-// =======================【日志：文件写入器（全局统一目录 + 分级）】=======================
-// 优化后的日志系统（带缓冲，减少文件 IO）
+function sanitizeLogMessage(msg) {
+  try {
+    var s = String(msg == null ? "" : msg);
+    s = s.replace(/(authorization\s*[:=]\s*bearer\s+)[^\s,;]+/ig, "$1[REDACTED]");
+    s = s.replace(/((access_)?token|api[_-]?key|password|passwd|secret)(\s*[=:]\s*)[^\s,;]+/ig, "$1$3[REDACTED]");
+    return s;
+  } catch (e) { return String(msg == null ? "" : msg); }
+}
+
 function ToolHubLogger(procInfo) {
   this.proc = procInfo || {};
   this.dir = PATH_LOG_DIR;
@@ -1199,17 +1206,10 @@ function ToolHubLogger(procInfo) {
   this.debug = false;
   this.initOk = false;
   this.lastInitErr = "";
-
-  // 新增：日志缓冲
-  this._buffer = [];
-  this._bufferSize = 20; // 每 20 条写一次磁盘
-  this._flushTimer = null;
-
   this._initOnce();
 }
 
 ToolHubLogger.prototype._now = function() { return new Date().getTime(); };
-
 ToolHubLogger.prototype._initOnce = function() {
   try {
     if (FileIO.ensureDir(this.dir)) {
@@ -1224,109 +1224,21 @@ ToolHubLogger.prototype._initOnce = function() {
     this.lastInitErr = String(e);
   }
 };
-
 ToolHubLogger.prototype.updateConfig = function(cfg) {
   if (!cfg) return;
   if (typeof cfg.LOG_KEEP_DAYS === "number") this.keepDays = cfg.LOG_KEEP_DAYS;
   if (typeof cfg.LOG_ENABLE !== "undefined") this.enable = !!cfg.LOG_ENABLE;
   if (typeof cfg.LOG_DEBUG !== "undefined") this.debug = !!cfg.LOG_DEBUG;
 };
-
-ToolHubLogger.prototype._line = function(level, msg) {
-  var ts = this._now();
-  var d = new Date(ts);
-  function pad2(x) { return (x < 10 ? "0" : "") + x; }
-  var t = d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
-    " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
-  return t + " [" + level + "] " + msg + "\n";
-};
-
-ToolHubLogger.prototype._scheduleFlush = function() {
-  if (this._flushTimer) try { this._flushTimer.cancel(); } catch(e) {}
-  var self = this;
-  this._flushTimer = new java.util.Timer();
-  this._flushTimer.schedule(new java.util.TimerTask({
-    run: function() { self._flushBuffer(); }
-  }), 3000); // 3秒后强制刷新
-};
-
-ToolHubLogger.prototype._flushBuffer = function() {
-  if (this._buffer.length === 0) return;
-  var content = this._buffer.join('');
-  this._buffer = [];
-  var path = this.dir + "/" + this.prefix + "_" + this._ymd() + ".log";
-  FileIO.appendText(path, content);
-};
-
 ToolHubLogger.prototype._ymd = function() {
   var d = new Date();
   return "" + d.getFullYear() +
     ((d.getMonth() < 9 ? "0" : "") + (d.getMonth() + 1)) +
     ((d.getDate() < 10 ? "0" : "") + d.getDate());
 };
-
-ToolHubLogger.prototype._write = function(level, msg) {
-  if (!this.enable) return false;
-  this._buffer.push(this._line(level, msg));
-
-  // 缓冲满或错误级别立即写入
-  if (this._buffer.length >= this._bufferSize || level === 'F' || level === 'E') {
-    this._flushBuffer();
-  } else {
-    this._scheduleFlush(); // 延迟写入
-  }
-  return true;
-};
-
-ToolHubLogger.prototype.d = function(msg) { if (this.debug) this._write("D", msg); };
-ToolHubLogger.prototype.i = function(msg) { this._write("I", msg); };
-ToolHubLogger.prototype.w = function(msg) { this._write("W", msg); };
-ToolHubLogger.prototype.e = function(msg) { this._write("E", msg); };
-ToolHubLogger.prototype.fatal = function(msg) { this._write("F", msg); this._flushBuffer(); };
-
-ToolHubLogger.prototype.cleanupOldFiles = function() {
-  try {
-    if (!this.initOk) return false;
-    var dirF = new java.io.File(this.dir);
-    var files = dirF.listFiles();
-    if (!files) return false;
-    var now = this._now();
-    var cutoff = now - this.keepDays * 24 * 60 * 60 * 1000;
-    for (var i = 0; i < files.length; i++) {
-      var f = files[i];
-      if (f && f.isFile() && f.getName().indexOf(this.prefix) === 0 && f.lastModified() < cutoff) {
-        f["delete"]();
-      }
-    }
-    return true;
-  } catch (e) { return false; };
-};
-
 ToolHubLogger.prototype._filePathForToday = function() {
-  var name = this.prefix + "_" + this._ymd(this._now()) + ".log";
+  var name = this.prefix + "_" + this._ymd() + ".log";
   return this.dir + "/" + name;
-};
-ToolHubLogger.prototype._initOnce = function() {
-  try {
-    // # 尝试创建目录
-    if (FileIO.ensureDir(this.dir)) {
-      this.initOk = true;
-      // # 清理旧日志
-      this.cleanupOldFiles();
-    } else {
-      this.initOk = false;
-      this.lastInitErr = "Mkdirs failed: " + this.dir;
-    }
-  } catch (e) {
-    this.initOk = false;
-    this.lastInitErr = String(e);
-  }
-};
-ToolHubLogger.prototype.updateConfig = function(cfg) {
-  if (!cfg) return;
-  if (typeof cfg.LOG_KEEP_DAYS === "number") this.keepDays = cfg.LOG_KEEP_DAYS;
-  if (typeof cfg.LOG_ENABLE !== "undefined") this.enable = !!cfg.LOG_ENABLE;
-  if (typeof cfg.LOG_DEBUG !== "undefined") this.debug = !!cfg.LOG_DEBUG;
 };
 ToolHubLogger.prototype._line = function(level, msg) {
   var ts = this._now();
@@ -1339,7 +1251,7 @@ ToolHubLogger.prototype._line = function(level, msg) {
     proc = " uid=" + String(this.proc.uid) + " pid=" + String(this.proc.pid) + " tid=" + String(this.proc.tid) +
       " th=" + String(this.proc.threadName) + " proc=" + String(this.proc.processName);
   } catch (e0) {}
-  return t + " [" + String(level) + "] " + String(msg) + proc + "\n";
+  return t + " [" + String(level) + "] " + sanitizeLogMessage(msg) + proc + "\n";
 };
 ToolHubLogger.prototype._writeRaw = function(level, msg) {
   if (!this.initOk) return false;

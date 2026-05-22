@@ -128,17 +128,6 @@ FloatBallAppWM.prototype.close = function() {
 
   safeLog(this.L, 'i',  "close done");
 
-  // # 清理日志定时器
-  try {
-    if (this.L) {
-      try { this.L._flushBuffer(); } catch (eFlushLog0) { safeLog(this.L, 'e', "logger flush fail: " + String(eFlushLog0)); }
-      if (this.L._flushTimer) {
-        this.L._flushTimer.cancel();
-        this.L._flushTimer = null;
-      }
-    }
-  } catch (eLog) {}
-
   // # 清空缓存
   try {
     this._iconLru = null;
