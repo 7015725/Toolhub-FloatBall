@@ -100,6 +100,7 @@ var ConfigValidator = {
     LONG_PRESS_TRIGGERED_MOVE_SLOP_DP: { type: "int", min: 8, max: 80, default: 28 },
     LONG_PRESS_VIBRATE_MS: { type: "int", min: 10, max: 100, default: 40 },
     CLICK_SLOP_DP: { type: "int", min: 2, max: 20, default: 6 },
+    TOOLAPP_BACK_GESTURE_MODE: { type: "enum", values: ["edge", "surface", "off"], default: "surface" },
     TOOLAPP_BACK_EDGE_WIDTH_DP: { type: "int", min: 1, max: 120, default: 72 },
     ENABLE_TOOLAPP_INNER_BACK_STRIPS: { type: "bool", default: false },
     ENABLE_TOOLAPP_SCREEN_BACK_STRIPS: { type: "bool", default: true },
@@ -736,6 +737,7 @@ var ConfigManager = {
         LONG_PRESS_MS: 520,
         LONG_PRESS_TRIGGERED_MOVE_SLOP_DP: 28,
         CLICK_SLOP_DP: 6,
+        TOOLAPP_BACK_GESTURE_MODE: "surface",
         TOOLAPP_BACK_EDGE_WIDTH_DP: 72,
         ENABLE_TOOLAPP_INNER_BACK_STRIPS: false,
         ENABLE_TOOLAPP_SCREEN_BACK_STRIPS: true,
@@ -850,7 +852,12 @@ var ConfigManager = {
 
         { type: "section", name: "触摸与手势" },
         { key: "CLICK_SLOP_DP", name: "点击位移阈值(dp)", type: "int", min: 1, max: 40, step: 1 },
-        { key: "TOOLAPP_BACK_EDGE_WIDTH_DP", name: "返回起手边缘宽度", type: "int", min: 1, max: 120, step: 1 },
+        { key: "TOOLAPP_BACK_GESTURE_MODE", name: "设置页滑动返回模式", type: "single_choice", options: [
+            { label: "全表面横滑", value: "surface" },
+            { label: "仅左右边缘", value: "edge" },
+            { label: "关闭", value: "off" }
+        ]},
+        { key: "TOOLAPP_BACK_EDGE_WIDTH_DP", name: "边缘模式起手宽度", type: "int", min: 1, max: 120, step: 1 },
         { key: "ENABLE_TOOLAPP_INNER_BACK_STRIPS", name: "启用旧版页面覆盖热区(不推荐)", type: "bool" },
         { key: "ENABLE_TOOLAPP_SCREEN_BACK_STRIPS", name: "启用屏幕空白区返回", type: "bool" },
         { key: "TOOLAPP_BACK_COMMIT_DISTANCE_DP", name: "设置页返回触发距离", type: "int", min: 1, max: 480, step: 1 },
@@ -892,7 +899,7 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("ENABLE_TOOLAPP_INNER_BACK_STRIPS") < 0 || sStr.indexOf("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("ENABLE_TOOLAPP_INNER_BACK_STRIPS") < 0 || sStr.indexOf("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0) {
             needReset = true;
         }
 
@@ -923,6 +930,7 @@ var ConfigManager = {
             if (schemaItemDiffers("BALL_ICON_TINT_HEX", ["name", "type"]) ||
                 schemaItemDiffers("BALL_ICON_SIZE_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("BALL_BG_COLOR_HEX", ["name", "type"]) ||
+                schemaItemDiffers("TOOLAPP_BACK_GESTURE_MODE", ["name", "type"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_EDGE_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("ENABLE_TOOLAPP_INNER_BACK_STRIPS", ["name", "type"]) ||
                 schemaItemDiffers("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS", ["name", "type"]) ||

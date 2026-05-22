@@ -1231,6 +1231,73 @@ FloatBallAppWM.prototype.getToolAppResponsiveSpec = function() {
   };
 };
 
+FloatBallAppWM.prototype.getToolAppBackGestureMode = function() {
+  var mode = "surface";
+  try { mode = String(this.config.TOOLAPP_BACK_GESTURE_MODE || "surface"); } catch(e) { mode = "surface"; }
+  if (mode !== "edge" && mode !== "surface" && mode !== "off") mode = "surface";
+  return mode;
+};
+
+FloatBallAppWM.prototype.isToolAppBackInteractiveView = function(v) {
+  try {
+    if (!v) return false;
+    try { if (v instanceof android.widget.SeekBar) return true; } catch(eSeek) {}
+    try { if (v instanceof android.widget.CompoundButton) return true; } catch(eComp) {}
+    try { if (v instanceof android.widget.Switch) return true; } catch(eSw) {}
+    try { if (v instanceof android.widget.EditText) return true; } catch(eEdit) {}
+    try { if (v instanceof android.widget.Button) return true; } catch(eBtn) {}
+    try { if (v instanceof android.widget.AbsListView) return true; } catch(eAbs) {}
+    try { if (v instanceof android.widget.ListView) return true; } catch(eList) {}
+    try { if (v instanceof android.widget.HorizontalScrollView) return true; } catch(eHsv) {}
+    try {
+      var rvCls = java.lang.Class.forName("androidx.recyclerview.widget.RecyclerView");
+      if (rvCls && rvCls.isInstance(v)) return true;
+    } catch(eRv1) {}
+    try {
+      var rvCls2 = java.lang.Class.forName("android.support.v7.widget.RecyclerView");
+      if (rvCls2 && rvCls2.isInstance(v)) return true;
+    } catch(eRv2) {}
+    try { if (v.isClickable && v.isClickable()) return true; } catch(eClick) {}
+    try { if (v.isLongClickable && v.isLongClickable()) return true; } catch(eLong) {}
+  } catch(e) {}
+  return false;
+};
+
+FloatBallAppWM.prototype.findToolAppTouchedChild = function(v, rawX, rawY) {
+  try {
+    if (!v || !v.getVisibility || v.getVisibility() !== android.view.View.VISIBLE) return null;
+    var loc = java.lang.reflect.Array.newInstance(java.lang.Integer.TYPE, 2);
+    try { v.getLocationOnScreen(loc); } catch(eLoc) { return null; }
+    var l = Number(loc[0] || 0), t = Number(loc[1] || 0);
+    var r = l + Number(v.getWidth ? v.getWidth() : 0);
+    var b = t + Number(v.getHeight ? v.getHeight() : 0);
+    if (rawX < l || rawX > r || rawY < t || rawY > b) return null;
+    try {
+      if (v instanceof android.view.ViewGroup) {
+        var count = v.getChildCount ? v.getChildCount() : 0;
+        for (var i = count - 1; i >= 0; i--) {
+          var child = v.getChildAt(i);
+          var hit = this.findToolAppTouchedChild(child, rawX, rawY);
+          if (hit) return hit;
+        }
+      }
+    } catch(eGroup) {}
+    return v;
+  } catch(e) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.isToolAppBackBlockedAt = function(root, rawX, rawY) {
+  try {
+    var v = this.findToolAppTouchedChild(root, rawX, rawY);
+    while (v && v !== root) {
+      if (this.isToolAppBackInteractiveView && this.isToolAppBackInteractiveView(v)) return true;
+      try { v = v.getParent ? v.getParent() : null; } catch(eParent) { v = null; }
+    }
+  } catch(e) {}
+  return false;
+};
+
 FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBack) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -1244,8 +1311,13 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var topBarHeight = spec ? spec.topBarHeight : this.dp(56);
   var rootDownX = 0;
   var rootDownY = 0;
+  var rootDownRawX = 0;
+  var rootDownRawY = 0;
   var rootEdge = -1;
+  var rootBackMode = "surface";
   var rootBackActive = false;
+  var rootBackEligible = false;
+  var rootBackBlocked = false;
   var rootBackMoved = false;
   var root = new JavaAdapter(android.widget.FrameLayout, {
     onInterceptTouchEvent: function(ev) {
@@ -1255,36 +1327,61 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
         if (action === android.view.MotionEvent.ACTION_DOWN) {
           rootDownX = ev.getX();
           rootDownY = ev.getY();
+          rootDownRawX = ev.getRawX();
+          rootDownRawY = ev.getRawY();
           rootBackActive = false;
+          rootBackEligible = false;
+          rootBackBlocked = false;
           rootBackMoved = false;
           rootEdge = -1;
+          rootBackMode = self.getToolAppBackGestureMode ? self.getToolAppBackGestureMode() : "surface";
+          if (rootBackMode === "off") return false;
           var canBackNow = !!(self.state && self.state.toolAppActive && self.hasToolAppBackTarget && self.hasToolAppBackTarget());
-          if (canBackNow) {
-            var edgeW = self.getToolAppBackEdgeWidthPx ? self.getToolAppBackEdgeWidthPx() : self.dp(72);
-            var rw = 0;
-            try { rw = this.getWidth(); } catch(eW) { rw = 0; }
-            if (rootDownX <= edgeW) rootEdge = 0;
-            else if (rw > 0 && rootDownX >= rw - edgeW) rootEdge = 1;
+          if (!canBackNow) return false;
+          var edgeW = self.getToolAppBackEdgeWidthPx ? self.getToolAppBackEdgeWidthPx() : self.dp(72);
+          var rw = 0;
+          try { rw = this.getWidth(); } catch(eW) { rw = 0; }
+          if (rootBackMode === "edge") {
+            if (rootDownX <= edgeW) { rootEdge = 0; rootBackEligible = true; }
+            else if (rw > 0 && rootDownX >= rw - edgeW) { rootEdge = 1; rootBackEligible = true; }
+          } else {
+            rootBackEligible = true;
+            rootBackBlocked = !!(self.isToolAppBackBlockedAt && self.isToolAppBackBlockedAt(this, rootDownRawX, rootDownRawY));
           }
-          // DOWN 必须放行给子控件，避免按钮/列表/Switch/SeekBar 被边缘手势抢走。
+          // DOWN 必须放行给子控件，surface 模式也不抢按钮/列表/Switch/SeekBar 原始点击。
           return false;
         }
         if (action === android.view.MotionEvent.ACTION_MOVE) {
-          if (rootEdge < 0) return false;
+          if (!rootBackEligible || rootBackBlocked || rootBackMode === "off") return false;
+          if (!(self.hasToolAppBackTarget && self.hasToolAppBackTarget())) return false;
           var dx = ev.getX() - rootDownX;
           var dy = ev.getY() - rootDownY;
           var adx = Math.abs(dx);
           var ady = Math.abs(dy);
-          var validDir = (rootEdge === 0 && dx > 0) || (rootEdge === 1 && dx < 0);
-          var slopDp = Number(self.config.CLICK_SLOP_DP || 6);
-          if (isNaN(slopDp)) slopDp = 6;
-          if (slopDp < 1) slopDp = 1;
-          if (slopDp > 40) slopDp = 40;
-          var touchSlop = Math.max(self.dp(8), self.dp(slopDp));
-          if (validDir && adx > touchSlop && adx > ady * 0.75) {
+          var edge = rootEdge;
+          var validDir = false;
+          if (rootBackMode === "surface") {
+            edge = dx >= 0 ? 0 : 1;
+            validDir = (dx !== 0);
+          } else {
+            validDir = (edge === 0 && dx > 0) || (edge === 1 && dx < 0);
+          }
+          var shouldIntercept = false;
+          if (rootBackMode === "surface") {
+            shouldIntercept = validDir && adx > self.dp(48) && adx > ady * 1.2;
+          } else {
+            var slopDp = Number(self.config.CLICK_SLOP_DP || 6);
+            if (isNaN(slopDp)) slopDp = 6;
+            if (slopDp < 1) slopDp = 1;
+            if (slopDp > 40) slopDp = 40;
+            var touchSlop = Math.max(self.dp(8), self.dp(slopDp));
+            shouldIntercept = validDir && adx > touchSlop && adx > ady * 0.75;
+          }
+          if (shouldIntercept) {
+            rootEdge = edge;
             rootBackActive = true;
             rootBackMoved = true;
-            try { self.prepareToolAppBackPreview(rootEdge); } catch(ePrep) { try { safeLog(self.L, 'w', 'root back preview prepare fail: ' + String(ePrep)); } catch(eLogPrep) {} }
+            try { self.prepareToolAppBackPreview(edge); } catch(ePrep) { try { safeLog(self.L, 'w', 'root back preview prepare fail: ' + String(ePrep)); } catch(eLogPrep) {} }
             try {
               var triggerDp0 = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 96);
               if (isNaN(triggerDp0)) triggerDp0 = 96;
@@ -1292,9 +1389,9 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
               if (triggerDp0 > 720) triggerDp0 = 720;
               var triggerDistance0 = self.dp(triggerDp0);
               var p0 = Math.min(1, adx / triggerDistance0);
-              self.applyToolAppBackPreviewProgress(rootEdge, p0, adx);
+              self.applyToolAppBackPreviewProgress(edge, p0, adx);
             } catch(eFirstMove) {}
-            try { safeLog(self.L, 'd', 'root edge back intercept edge=' + String(rootEdge) + ' dx=' + String(dx)); } catch(eMoveLog) {}
+            try { safeLog(self.L, 'd', 'root back intercept mode=' + String(rootBackMode) + ' edge=' + String(edge) + ' dx=' + String(dx)); } catch(eMoveLog) {}
             return true;
           }
           return false;
@@ -1314,7 +1411,8 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           var mx = ev.getX() - rootDownX;
           var my = ev.getY() - rootDownY;
           var validDir2 = (rootEdge === 0 && mx > 0) || (rootEdge === 1 && mx < 0);
-          if (validDir2 && Math.abs(mx) > Math.abs(my) * 0.75) {
+          var dominance = rootBackMode === "surface" ? 1.2 : 0.75;
+          if (validDir2 && Math.abs(mx) > Math.abs(my) * dominance) {
             var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 96);
             if (isNaN(triggerDp)) triggerDp = 96;
             if (triggerDp < 1) triggerDp = 1;
@@ -1334,9 +1432,12 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           if (commitDp > 480) commitDp = 480;
           var completeDistance = self.dp(commitDp);
           var okDir = (rootEdge === 0 && ux > completeDistance) || (rootEdge === 1 && ux < -completeDistance);
-          var ok = (action === android.view.MotionEvent.ACTION_UP) && rootBackMoved && okDir && Math.abs(ux) > Math.abs(uy) * 0.75;
+          var ratio = rootBackMode === "surface" ? 1.2 : 0.75;
+          var ok = (action === android.view.MotionEvent.ACTION_UP) && rootBackMoved && okDir && Math.abs(ux) > Math.abs(uy) * ratio;
           var edgeDone = rootEdge;
           rootBackActive = false;
+          rootBackEligible = false;
+          rootBackBlocked = false;
           rootBackMoved = false;
           rootEdge = -1;
           self.finishToolAppBackPreview(edgeDone, ok);
@@ -1348,6 +1449,8 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
         try { safeLog(self.L, 'w', 'tool app root back touch fail: ' + String(e2)); } catch(eLog2) {}
       }
       rootBackActive = false;
+      rootBackEligible = false;
+      rootBackBlocked = false;
       rootBackMoved = false;
       rootEdge = -1;
       return false;
@@ -1419,7 +1522,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   body.addView(host, hostLp);
 
   // 兼容旧设置：不再添加页面内透明返回热区。
-  // 返回手势由 root.onInterceptTouchEvent 按“边缘起手 + 横向阈值 + 方向正确”延迟拦截，避免覆盖控件。
+  // 返回手势由 root.onInterceptTouchEvent 延迟拦截；surface 模式会排除交互控件，edge 模式保留边缘起手。
   try {
     this.state.toolAppInnerBackLeftStrip = null;
     this.state.toolAppInnerBackRightStrip = null;
