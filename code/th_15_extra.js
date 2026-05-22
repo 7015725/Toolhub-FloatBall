@@ -1120,28 +1120,72 @@ FloatBallAppWM.prototype.hideToolAppScreenBackStrips = function() {
 };
 
 FloatBallAppWM.prototype.getToolAppBackEdgeWidthPx = function() {
-  var stripDp = 56;
+  var stripDp = 72;
   try {
-    stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 56);
-    if (isNaN(stripDp)) stripDp = 56;
+    stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 72);
+    if (isNaN(stripDp)) stripDp = 72;
     if (stripDp < 1) stripDp = 1;
     if (stripDp > 120) stripDp = 120;
   } catch(e) {
-    stripDp = 56;
+    stripDp = 72;
   }
   return this.dp(stripDp);
 };
 
 FloatBallAppWM.prototype.isToolAppScreenBackStripsEnabled = function() {
   try { return parseBooleanLike(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS); } catch(e) {}
-  try { return String(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS || "false") === "true"; } catch(e2) {}
-  return false;
+  try { return String(this.config.ENABLE_TOOLAPP_SCREEN_BACK_STRIPS || "true") === "true"; } catch(e2) {}
+  return true;
 };
 
 FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
-  // 兼容旧配置入口：不再创建覆盖 ToolApp 内容区的 MATCH_PARENT 透明触摸层。
-  // 主要返回手势已迁移到 ToolApp root 的 onInterceptTouchEvent，避免遮挡列表/按钮/SeekBar/Switch。
-  try { this.hideToolAppScreenBackStrips(); } catch(eHide) {}
+  // 只在 ToolApp 面板左右的屏幕空白区创建触摸层；绝不覆盖 ToolApp 矩形内部控件区域。
+  try {
+    this.hideToolAppScreenBackStrips();
+    if (!this.state || !this.state.wm || !this.state.viewerPanelLp) return false;
+    var lp0 = this.state.viewerPanelLp;
+    var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
+    var sh = Math.max(1, Number(this.state.screen && this.state.screen.h || 0));
+    if (sw <= 1 || sh <= 1) {
+      try { var ss = this.getScreenSizePx(); sw = ss.w; sh = ss.h; } catch(eScreen) {}
+    }
+    var px = Number(lp0.x || 0);
+    var pw = Number(lp0.width || 0);
+    if (isNaN(px)) px = 0;
+    if (isNaN(pw) || pw <= 0) return false;
+    var minBlank = this.dp(3);
+    var leftW = Math.max(0, Math.floor(px));
+    var rightX = Math.floor(px + pw);
+    var rightW = Math.max(0, Math.floor(sw - rightX));
+    var made = false;
+    var arr = [];
+    var addBlankStrip = function(self, edge, x, w) {
+      if (!w || w < minBlank) return false;
+      var strip = self.createToolAppEdgeBackStrip(edge);
+      var flags = android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+              android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+      var lp = new android.view.WindowManager.LayoutParams(
+        w,
+        sh,
+        android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        flags,
+        android.graphics.PixelFormat.TRANSLUCENT
+      );
+      lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+      lp.x = x;
+      lp.y = 0;
+      try { self.state.wm.addView(strip, lp); arr.push(strip); return true; } catch(eAdd) { safeLog(self.L, 'w', 'add blank screen back strip fail edge=' + String(edge) + ' err=' + String(eAdd)); }
+      return false;
+    };
+    if (addBlankStrip(this, 0, 0, leftW)) made = true;
+    if (addBlankStrip(this, 1, rightX, rightW)) made = true;
+    this.state.toolAppScreenBackStrips = arr;
+    try { if (made) safeLog(this.L, 'd', 'blank screen back strips leftW=' + String(leftW) + ' rightW=' + String(rightW) + ' panelX=' + String(px) + ' panelW=' + String(pw)); } catch(eLog) {}
+    return made;
+  } catch(e) {
+    try { this.hideToolAppScreenBackStrips(); } catch(eHide2) {}
+    safeLog(this.L, 'w', "show blank screen back strips fail: " + String(e));
+  }
   return false;
 };
 
@@ -1216,7 +1260,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           rootEdge = -1;
           var canBackNow = !!(self.state && self.state.toolAppActive && self.hasToolAppBackTarget && self.hasToolAppBackTarget());
           if (canBackNow) {
-            var edgeW = self.getToolAppBackEdgeWidthPx ? self.getToolAppBackEdgeWidthPx() : self.dp(56);
+            var edgeW = self.getToolAppBackEdgeWidthPx ? self.getToolAppBackEdgeWidthPx() : self.dp(72);
             var rw = 0;
             try { rw = this.getWidth(); } catch(eW) { rw = 0; }
             if (rootDownX <= edgeW) rootEdge = 0;
@@ -1234,10 +1278,10 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           var validDir = (rootEdge === 0 && dx > 0) || (rootEdge === 1 && dx < 0);
           var slopDp = Number(self.config.CLICK_SLOP_DP || 6);
           if (isNaN(slopDp)) slopDp = 6;
-          if (slopDp < 3) slopDp = 3;
-          if (slopDp > 18) slopDp = 18;
-          var touchSlop = self.dp(slopDp);
-          if (validDir && adx > touchSlop && adx > ady * 0.85) {
+          if (slopDp < 1) slopDp = 1;
+          if (slopDp > 40) slopDp = 40;
+          var touchSlop = Math.max(self.dp(8), self.dp(slopDp));
+          if (validDir && adx > touchSlop && adx > ady * 0.75) {
             rootBackActive = true;
             rootBackMoved = true;
             try { self.prepareToolAppBackPreview(rootEdge); } catch(ePrep) { try { safeLog(self.L, 'w', 'root back preview prepare fail: ' + String(ePrep)); } catch(eLogPrep) {} }
@@ -1270,7 +1314,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           var mx = ev.getX() - rootDownX;
           var my = ev.getY() - rootDownY;
           var validDir2 = (rootEdge === 0 && mx > 0) || (rootEdge === 1 && mx < 0);
-          if (validDir2 && Math.abs(mx) > Math.abs(my) * 0.85) {
+          if (validDir2 && Math.abs(mx) > Math.abs(my) * 0.75) {
             var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 96);
             if (isNaN(triggerDp)) triggerDp = 96;
             if (triggerDp < 1) triggerDp = 1;
@@ -1290,7 +1334,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           if (commitDp > 480) commitDp = 480;
           var completeDistance = self.dp(commitDp);
           var okDir = (rootEdge === 0 && ux > completeDistance) || (rootEdge === 1 && ux < -completeDistance);
-          var ok = (action === android.view.MotionEvent.ACTION_UP) && rootBackMoved && okDir && Math.abs(ux) > Math.abs(uy) * 0.85;
+          var ok = (action === android.view.MotionEvent.ACTION_UP) && rootBackMoved && okDir && Math.abs(ux) > Math.abs(uy) * 0.75;
           var edgeDone = rootEdge;
           rootBackActive = false;
           rootBackMoved = false;
