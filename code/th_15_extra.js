@@ -545,6 +545,7 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.toolAppActive = false;
     this.state.toolAppRoute = null;
     this.state.toolAppNavStack = [];
+    try { this.bumpToolAppStackVersion(); } catch(eStackClose) {}
     this.state.settingsGroupKey = null;
     this.state.settingsHomeSelectedItemId = null;
     this.hideViewerPanel();
@@ -554,6 +555,8 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.toolAppBackPreviewView = null;
     this.state.toolAppBackPreviewRoute = null;
     this.state.toolAppBackPreviewReady = false;
+    this.state.toolAppBackPreviewStackVersion = null;
+    this.state.toolAppBackPreviewEntryKey = null;
     try { if (this.hideToolAppScreenBackStrips) this.hideToolAppScreenBackStrips(); } catch (eStrip) {}
     this.state.toolAppTitleView = null;
     this.state.toolAppBackButton = null;
@@ -571,6 +574,8 @@ FloatBallAppWM.prototype.clearToolAppBackPreview = function(resetCurrent) {
     this.state.toolAppBackPreviewView = null;
     this.state.toolAppBackPreviewRoute = null;
     this.state.toolAppBackPreviewReady = false;
+    this.state.toolAppBackPreviewStackVersion = null;
+    this.state.toolAppBackPreviewEntryKey = null;
     if (resetCurrent && root) {
       try { root.animate().cancel(); } catch (eCancelRoot) {}
       try { root.setTranslationX(0); root.setAlpha(1); root.setScaleX(1); root.setScaleY(1); } catch (eRoot) {}
@@ -611,6 +616,64 @@ FloatBallAppWM.prototype.hasToolAppBackTarget = function() {
   return false;
 };
 
+FloatBallAppWM.prototype.cloneToolAppSnapshotValue = function(v, depth) {
+  try {
+    if (depth === undefined || depth === null) depth = 0;
+    if (depth > 4) return null;
+    if (v === null || v === undefined) return v;
+    var t = typeof v;
+    if (t === "string" || t === "number" || t === "boolean") return v;
+    if (v instanceof java.lang.String) return String(v);
+    if (v instanceof java.lang.Number) return Number(v);
+    if (v instanceof java.lang.Boolean) return Boolean(v);
+    var tag = Object.prototype.toString.call(v);
+    if (tag === "[object Array]") {
+      var arr = [];
+      for (var i = 0; i < v.length; i++) arr.push(this.cloneToolAppSnapshotValue(v[i], depth + 1));
+      return arr;
+    }
+    if (t === "object") {
+      // 只深拷贝普通 JS 对象，避免把 Android View / Java 对象枚举进页面栈快照。
+      if (tag !== "[object Object]") return String(v);
+      var out = {};
+      for (var k in v) {
+        try {
+          if (!v.hasOwnProperty || v.hasOwnProperty(k)) out[k] = this.cloneToolAppSnapshotValue(v[k], depth + 1);
+        } catch(eKey) {}
+      }
+      return out;
+    }
+  } catch(e) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.getToolAppStackVersion = function() {
+  try {
+    var v = Number(this.state.toolAppNavStackVersion || 0);
+    if (isNaN(v) || v < 0) v = 0;
+    this.state.toolAppNavStackVersion = v;
+    return v;
+  } catch(e) {}
+  return 0;
+};
+
+FloatBallAppWM.prototype.bumpToolAppStackVersion = function() {
+  try {
+    var v = this.getToolAppStackVersion ? this.getToolAppStackVersion() : Number(this.state.toolAppNavStackVersion || 0);
+    v = v + 1;
+    if (v > 1000000000) v = 1;
+    this.state.toolAppNavStackVersion = v;
+    this.clearToolAppBackPreview(false);
+    return v;
+  } catch(e) {}
+  return 0;
+};
+
+FloatBallAppWM.prototype.getToolAppSnapshotKey = function(entry) {
+  try { return JSON.stringify(entry || {}); } catch(e) {}
+  return String(entry && entry.route || "");
+};
+
 FloatBallAppWM.prototype.captureToolAppPageSnapshot = function(route) {
   var r = this.isToolAppRoute(route) ? String(route) : (this.isToolAppRoute(this.state.toolAppRoute) ? String(this.state.toolAppRoute) : "settings");
   var s = this.state || {};
@@ -622,13 +685,15 @@ FloatBallAppWM.prototype.captureToolAppPageSnapshot = function(route) {
     editingSchemaIndex: (s.editingSchemaIndex !== undefined) ? s.editingSchemaIndex : null,
     keepBtnEditorState: !!s.keepBtnEditorState,
     keepSchemaEditorState: !!s.keepSchemaEditorState,
+    settingsHomeSelectedCategoryId: (s.settingsHomeSelectedCategoryId !== undefined) ? s.settingsHomeSelectedCategoryId : null,
     toolAppSubRoute: (s.toolAppSubRoute !== undefined) ? s.toolAppSubRoute : null,
     toolAppSubPage: (s.toolAppSubPage !== undefined) ? s.toolAppSubPage : null,
     toolAppSubKey: (s.toolAppSubKey !== undefined) ? s.toolAppSubKey : null,
-    toolAppSubPayload: (s.toolAppSubPayload !== undefined) ? s.toolAppSubPayload : null
+    toolAppSubPayload: (s.toolAppSubPayload !== undefined) ? this.cloneToolAppSnapshotValue(s.toolAppSubPayload, 0) : null,
+    toolAppPayload: (s.toolAppPayload !== undefined) ? this.cloneToolAppSnapshotValue(s.toolAppPayload, 0) : null
   };
   if (r !== "settings_group") entry.settingsGroupKey = "";
-  if (r !== "settings") entry.settingsHomeSelectedItemId = null;
+  if (r !== "settings") { entry.settingsHomeSelectedItemId = null; entry.settingsHomeSelectedCategoryId = null; }
   if (r !== "btn_editor") { entry.editingButtonIndex = null; entry.keepBtnEditorState = false; }
   if (r !== "schema_editor") { entry.editingSchemaIndex = null; entry.keepSchemaEditorState = false; }
   return entry;
@@ -645,6 +710,7 @@ FloatBallAppWM.prototype.applyToolAppPageSnapshot = function(entry) {
     this.state.toolAppRoute = r;
     this.state.settingsGroupKey = (entry.settingsGroupKey !== undefined && entry.settingsGroupKey !== null) ? String(entry.settingsGroupKey) : "";
     this.state.settingsHomeSelectedItemId = (entry.settingsHomeSelectedItemId !== undefined) ? entry.settingsHomeSelectedItemId : null;
+    this.state.settingsHomeSelectedCategoryId = (entry.settingsHomeSelectedCategoryId !== undefined) ? entry.settingsHomeSelectedCategoryId : null;
     this.state.editingButtonIndex = (entry.editingButtonIndex !== undefined) ? entry.editingButtonIndex : null;
     this.state.editingSchemaIndex = (entry.editingSchemaIndex !== undefined) ? entry.editingSchemaIndex : null;
     this.state.keepBtnEditorState = !!entry.keepBtnEditorState;
@@ -652,7 +718,8 @@ FloatBallAppWM.prototype.applyToolAppPageSnapshot = function(entry) {
     this.state.toolAppSubRoute = (entry.toolAppSubRoute !== undefined) ? entry.toolAppSubRoute : null;
     this.state.toolAppSubPage = (entry.toolAppSubPage !== undefined) ? entry.toolAppSubPage : null;
     this.state.toolAppSubKey = (entry.toolAppSubKey !== undefined) ? entry.toolAppSubKey : null;
-    this.state.toolAppSubPayload = (entry.toolAppSubPayload !== undefined) ? entry.toolAppSubPayload : null;
+    this.state.toolAppSubPayload = (entry.toolAppSubPayload !== undefined) ? this.cloneToolAppSnapshotValue(entry.toolAppSubPayload, 0) : null;
+    this.state.toolAppPayload = (entry.toolAppPayload !== undefined) ? this.cloneToolAppSnapshotValue(entry.toolAppPayload, 0) : null;
     return true;
   } catch(e) { safeLog(this.L, 'w', "apply tool app snapshot fail: " + String(e)); }
   return false;
@@ -668,10 +735,12 @@ FloatBallAppWM.prototype.cloneToolAppPageSnapshot = function(entry) {
     editingSchemaIndex: (entry.editingSchemaIndex !== undefined) ? entry.editingSchemaIndex : null,
     keepBtnEditorState: !!entry.keepBtnEditorState,
     keepSchemaEditorState: !!entry.keepSchemaEditorState,
+    settingsHomeSelectedCategoryId: (entry.settingsHomeSelectedCategoryId !== undefined) ? entry.settingsHomeSelectedCategoryId : null,
     toolAppSubRoute: (entry.toolAppSubRoute !== undefined) ? entry.toolAppSubRoute : null,
     toolAppSubPage: (entry.toolAppSubPage !== undefined) ? entry.toolAppSubPage : null,
     toolAppSubKey: (entry.toolAppSubKey !== undefined) ? entry.toolAppSubKey : null,
-    toolAppSubPayload: (entry.toolAppSubPayload !== undefined) ? entry.toolAppSubPayload : null
+    toolAppSubPayload: (entry.toolAppSubPayload !== undefined) ? this.cloneToolAppSnapshotValue(entry.toolAppSubPayload, 0) : null,
+    toolAppPayload: (entry.toolAppPayload !== undefined) ? this.cloneToolAppSnapshotValue(entry.toolAppPayload, 0) : null
   };
 };
 
@@ -783,7 +852,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
 
 FloatBallAppWM.prototype.prepareToolAppBackPreview = function(edge) {
   try {
-    if (this.state.toolAppBackPreviewReady) return true;
+    var stackVersion = this.getToolAppStackVersion ? this.getToolAppStackVersion() : Number(this.state.toolAppNavStackVersion || 0);
     var root = this.state.toolAppRoot;
     var body = this.state.toolAppBody;
     var prevEntry = this.getToolAppPreviousStackEntry();
@@ -793,6 +862,12 @@ FloatBallAppWM.prototype.prepareToolAppBackPreview = function(edge) {
       isPaneBack = true;
     }
     if (!root || !body || !prevEntry || !prevEntry.route) return false;
+    prevEntry = this.cloneToolAppPageSnapshot ? this.cloneToolAppPageSnapshot(prevEntry) : prevEntry;
+    var prevEntryKey = this.getToolAppSnapshotKey ? this.getToolAppSnapshotKey(prevEntry) : String(prevEntry.route || "settings");
+    if (this.state.toolAppBackPreviewReady) {
+      if (this.state.toolAppBackPreviewStackVersion === stackVersion && this.state.toolAppBackPreviewEntryKey === prevEntryKey) return true;
+      this.clearToolAppBackPreview(false);
+    }
     var prevRoute = isPaneBack ? "settings:pane" : String(prevEntry.route || "settings");
     var oldPaneItem = null;
     var hasOldPaneItem = false;
@@ -825,6 +900,8 @@ FloatBallAppWM.prototype.prepareToolAppBackPreview = function(edge) {
     this.state.toolAppBackPreviewView = prevBody;
     this.state.toolAppBackPreviewRoute = prevRoute;
     this.state.toolAppBackPreviewReady = true;
+    this.state.toolAppBackPreviewStackVersion = stackVersion;
+    this.state.toolAppBackPreviewEntryKey = prevEntryKey;
     return true;
   } catch (e) {
     safeLog(this.L, 'w', "prepare tool app back preview fail: " + String(e));
@@ -1245,21 +1322,12 @@ FloatBallAppWM.prototype.isToolAppBackInteractiveView = function(v) {
     try { if (v instanceof android.widget.CompoundButton) return true; } catch(eComp) {}
     try { if (v instanceof android.widget.Switch) return true; } catch(eSw) {}
     try { if (v instanceof android.widget.EditText) return true; } catch(eEdit) {}
-    try { if (v instanceof android.widget.Button) return true; } catch(eBtn) {}
-    try { if (v instanceof android.widget.AbsListView) return true; } catch(eAbs) {}
-    try { if (v instanceof android.widget.ListView) return true; } catch(eList) {}
     try { if (v instanceof android.widget.HorizontalScrollView) return true; } catch(eHsv) {}
-    try {
-      var rvCls = java.lang.Class.forName("androidx.recyclerview.widget.RecyclerView");
-      if (rvCls && rvCls.isInstance(v)) return true;
-    } catch(eRv1) {}
-    try {
-      var rvCls2 = java.lang.Class.forName("android.support.v7.widget.RecyclerView");
-      if (rvCls2 && rvCls2.isInstance(v)) return true;
-    } catch(eRv2) {}
+    // 普通 Button / 卡片 / 垂直列表 item 不在 DOWN 阶段屏蔽返回；强横滑由 root 在 MOVE 阶段接管。
+    // 垂直 ListView/RecyclerView 也不作为 blocker，保证列表上下滑正常且强横滑可返回。
     // 不把所有 clickable/longClickable 都当成阻断项：ToolHub 大量卡片/容器为了 ripple 都会 setClickable(true)，
     // 若在 surface 横滑模式下阻断它们，几乎整页都会 rootBackBlocked=true，导致滑动返回一直触发不了。
-    // DOWN 已经放行给子控件，只有超过横滑阈值后才拦截，所以保留按钮/Switch/SeekBar/EditText/列表等强交互控件即可。
+    // DOWN 已经放行给子控件，只有超过横滑阈值后才拦截；这里只保留 SeekBar/Switch/EditText/HorizontalScrollView 等强交互控件。
     /* try { if (v.isClickable && v.isClickable()) return true; } catch(eClick) {} */
     /* try { if (v.isLongClickable && v.isLongClickable()) return true; } catch(eLong) {} */
   } catch(e) {}
@@ -1674,6 +1742,7 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
     }
     if (resetStack || !this.state.toolAppNavStack || !this.state.toolAppNavStack.length) {
       this.state.toolAppNavStack = [this.makeToolAppStackEntry(r)];
+      try { this.bumpToolAppStackVersion(); } catch(eStackInit) {}
     }
 
     var raw = this.buildPanelView(r);
@@ -1716,8 +1785,9 @@ FloatBallAppWM.prototype.pushToolAppPage = function(route) {
   if (this.state.toolAppNavStack.length <= 0) {
     this.state.toolAppNavStack.push(this.makeToolAppStackEntry(this.state.toolAppRoute || "settings"));
   }
-  var nextEntry = this.makeToolAppStackEntry(route);
+  var nextEntry = this.cloneToolAppPageSnapshot ? this.cloneToolAppPageSnapshot(this.makeToolAppStackEntry(route)) : this.makeToolAppStackEntry(route);
   this.state.toolAppNavStack.push(nextEntry);
+  try { this.bumpToolAppStackVersion(); } catch(eStackPush) {}
   if (this.applyToolAppPageSnapshot) this.applyToolAppPageSnapshot(nextEntry);
   this.showToolApp(route, false);
 };
@@ -1732,6 +1802,7 @@ FloatBallAppWM.prototype.replaceToolAppPage = function(route) {
   var entry = this.makeToolAppStackEntry(route);
   if (!this.state.toolAppNavStack || !this.state.toolAppNavStack.length) this.state.toolAppNavStack = [entry];
   else this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = entry;
+  try { this.bumpToolAppStackVersion(); } catch(eStackReplace) {}
   if (this.applyToolAppPageSnapshot) this.applyToolAppPageSnapshot(entry);
   this.showToolApp(route, false);
 };
@@ -1745,6 +1816,7 @@ FloatBallAppWM.prototype.popToolAppPage = function(reason) {
         this.state.settingsHomeSelectedItemId = null;
         if (this.state.toolAppNavStack && this.state.toolAppNavStack.length > 0) {
           this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1] = this.makeToolAppStackEntry("settings");
+          try { this.bumpToolAppStackVersion(); } catch(eStackPane) {}
         }
         this.showToolApp("settings", false);
         return true;
@@ -1755,6 +1827,7 @@ FloatBallAppWM.prototype.popToolAppPage = function(reason) {
       return true;
     }
     this.state.toolAppNavStack.pop();
+    try { this.bumpToolAppStackVersion(); } catch(eStackPop) {}
     var top = this.state.toolAppNavStack[this.state.toolAppNavStack.length - 1];
     var target = this.cloneToolAppPageSnapshot ? this.cloneToolAppPageSnapshot(top) : top;
     var nextRoute = target && target.route ? String(target.route) : "settings";
