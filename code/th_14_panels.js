@@ -4623,7 +4623,71 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var popupClosed = false;
   var popupBackDispatcher = null;
   var popupBackCallback = null;
+  var popupHomeDownX = 0;
+  var popupHomeDownY = 0;
+  var popupHomeEligible = false;
+  var popupHomeActive = false;
   var root = new JavaAdapter(android.widget.FrameLayout, {
+    onInterceptTouchEvent: function(ev) {
+      try {
+        if (!ev || popupClosed) return false;
+        var action = ev.getActionMasked();
+        if (action === android.view.MotionEvent.ACTION_DOWN) {
+          popupHomeDownX = ev.getX();
+          popupHomeDownY = ev.getY();
+          popupHomeEligible = false;
+          popupHomeActive = false;
+          var h = 0;
+          try { h = this.getHeight(); } catch(eH) { h = 0; }
+          var bottomEdge = self.dp(72);
+          if (h > 0 && popupHomeDownY >= h - bottomEdge) popupHomeEligible = true;
+          return false;
+        }
+        if (action === android.view.MotionEvent.ACTION_MOVE) {
+          if (!popupHomeEligible) return false;
+          var dx = ev.getX() - popupHomeDownX;
+          var dy = ev.getY() - popupHomeDownY;
+          var adx = Math.abs(dx);
+          var ady = Math.abs(dy);
+          var slop = Math.max(self.dp(12), self.dp(Number(self.config.CLICK_SLOP_DP || 6)) * 2);
+          if (dy < -slop && ady > adx * 1.15) {
+            popupHomeActive = true;
+            return true;
+          }
+        }
+      } catch(eRootIntercept) { try { safeLog(self.L, 'w', 'popup root intercept fail: ' + String(eRootIntercept)); } catch(eLogRootInt) {} }
+      return false;
+    },
+    onTouchEvent: function(ev) {
+      try {
+        if (!ev || !popupHomeActive) return false;
+        var action = ev.getActionMasked();
+        if (action === android.view.MotionEvent.ACTION_MOVE) {
+          var my = ev.getY() - popupHomeDownY;
+          var mx = ev.getX() - popupHomeDownX;
+          if (my < -self.dp(36) && Math.abs(my) > Math.abs(mx) * 1.1) {
+            closePopup();
+            popupHomeActive = false;
+            popupHomeEligible = false;
+          }
+          return true;
+        }
+        if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
+          var uy0 = ev.getY() - popupHomeDownY;
+          var ux0 = ev.getX() - popupHomeDownX;
+          if (action === android.view.MotionEvent.ACTION_UP && uy0 < -self.dp(36) && Math.abs(uy0) > Math.abs(ux0) * 1.1) closePopup();
+          popupHomeActive = false;
+          popupHomeEligible = false;
+          return true;
+        }
+        return true;
+      } catch(eRootTouch) {
+        popupHomeActive = false;
+        popupHomeEligible = false;
+        try { safeLog(self.L, 'w', 'popup root touch fail: ' + String(eRootTouch)); } catch(eLogRootTouch) {}
+      }
+      return false;
+    },
     onWindowFocusChanged: function(hasFocus) {
       try {
         android.widget.FrameLayout.prototype.onWindowFocusChanged.call(this, hasFocus);
