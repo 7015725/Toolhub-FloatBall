@@ -1261,6 +1261,11 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
   var spec = this.getToolAppResponsiveSpec ? this.getToolAppResponsiveSpec() : null;
   var shellPad = spec ? spec.shellPadding : this.dp(6);
+  var shellTopPad = shellPad;
+  try {
+    var topInset = this.getToolAppStatusBarInsetPx ? this.getToolAppStatusBarInsetPx() : 0;
+    if (!isNaN(topInset) && topInset > 0) shellTopPad = shellPad + topInset;
+  } catch(eTopInset) {}
   var outerRadius = spec ? spec.outerRadius : this.dp(26);
   var topBarHeight = spec ? spec.topBarHeight : this.dp(56);
   var rootDownX = 0;
@@ -1420,7 +1425,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var body = new android.widget.LinearLayout(context);
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
   // 外层薄荷容器本身就是整张“岛屿设置”卡片：四角统一圆角，并给底部留出完整收口。
-  body.setPadding(shellPad, shellPad, shellPad, shellPad);
+  body.setPadding(shellPad, shellTopPad, shellPad, shellPad);
   body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.30 : 0.46), this.dp(1), outerRadius));
   try { body.setClipToOutline(true); } catch(eClip) {}
   try { body.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 7 : 10)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
@@ -1538,6 +1543,23 @@ FloatBallAppWM.prototype.setToolAppContent = function(contentView) {
   return false;
 };
 
+FloatBallAppWM.prototype.getToolAppStatusBarInsetPx = function() {
+  var inset = 0;
+  try {
+    var res = context.getResources();
+    var id = res.getIdentifier("status_bar_height", "dimen", "android");
+    if (id > 0) inset = Number(res.getDimensionPixelSize(id) || 0);
+  } catch(eRes) {
+    inset = 0;
+  }
+  if (isNaN(inset) || inset < 0) inset = 0;
+  try {
+    var maxInset = this.dp(48);
+    if (inset > maxInset) inset = maxInset;
+  } catch(eClamp) {}
+  return Math.floor(inset);
+};
+
 FloatBallAppWM.prototype.calculateToolAppLayout = function(shell) {
   var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
   var sh = Math.max(1, Number(this.state.screen && this.state.screen.h || 0));
@@ -1548,27 +1570,30 @@ FloatBallAppWM.prototype.calculateToolAppLayout = function(shell) {
   var isLandscape = spec ? spec.isLandscape : (sw > sh);
   var shortSide = Math.min(sw, sh);
   var longSide = Math.max(sw, sh);
-  var marginX = this.dp(12), marginTop = this.dp(14), marginBottom = this.dp(14);
+  var marginX = this.dp(12), marginTop = 0, marginBottom = this.dp(14);
+  var statusInset = 0;
+  try { statusInset = this.getToolAppStatusBarInsetPx ? this.getToolAppStatusBarInsetPx() : 0; } catch(eInset) { statusInset = 0; }
+  if (isNaN(statusInset) || statusInset < 0) statusInset = 0;
   var targetW, targetH;
   if (spec && (spec.isCompactWidth || shortSide < this.dp(420))) {
-    marginX = this.dp(isLandscape ? 8 : 10); marginTop = this.dp(isLandscape ? 6 : 14); marginBottom = this.dp(isLandscape ? 6 : 14);
+    marginX = this.dp(isLandscape ? 8 : 10); marginTop = 0; marginBottom = this.dp(isLandscape ? 6 : 14);
     targetW = Math.min(spec.contentMaxWidth, sw - marginX * 2);
-    targetH = isLandscape ? (sh - marginTop - marginBottom) : Math.min(Math.floor(sh * 0.92), sh - marginTop - marginBottom);
+    targetH = isLandscape ? (sh - marginTop - marginBottom) : Math.min(Math.floor(sh * 0.96), sh - marginTop - marginBottom);
   } else if (spec && spec.isMediumWidth) {
-    marginX = this.dp(18); marginTop = this.dp(isLandscape ? 10 : 18); marginBottom = this.dp(isLandscape ? 10 : 18);
+    marginX = this.dp(18); marginTop = 0; marginBottom = this.dp(isLandscape ? 10 : 18);
     targetW = Math.min(spec.contentMaxWidth, sw - marginX * 2); targetH = sh - marginTop - marginBottom;
   } else if (spec && (spec.isExpandedWidth || shortSide >= this.dp(720))) {
-    marginX = this.dp(22); marginTop = this.dp(isLandscape ? 18 : 24); marginBottom = this.dp(isLandscape ? 18 : 24);
+    marginX = this.dp(22); marginTop = 0; marginBottom = this.dp(isLandscape ? 18 : 24);
     targetW = Math.min(spec.contentMaxWidth, sw - marginX * 2); targetH = sh - marginTop - marginBottom;
   } else {
-    marginX = this.dp(30); marginTop = this.dp(24); marginBottom = this.dp(24);
+    marginX = this.dp(30); marginTop = 0; marginBottom = this.dp(24);
     targetW = Math.min(spec ? spec.contentMaxWidth : this.dp(1080), sw - marginX * 2);
-    targetH = Math.min(this.dp(860), sh - marginTop - marginBottom);
+    targetH = Math.min(this.dp(900), sh - marginTop - marginBottom);
   }
   targetW = Math.max(this.dp(300), Math.min(targetW, sw - marginX * 2));
   targetH = Math.max(this.dp(320), Math.min(targetH, sh - marginTop - marginBottom));
   var x = Math.floor((sw - targetW) / 2);
-  var y = Math.floor((sh - targetH) / 2);
+  var y = marginTop;
   if (x < marginX) x = marginX;
   if (y < marginTop) y = marginTop;
   if (x + targetW > sw - marginX) x = Math.max(0, sw - marginX - targetW);
