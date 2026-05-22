@@ -4727,7 +4727,8 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
             popupBackActive = true;
             popupBackMoved = true;
             beginPopupBackVisual(this);
-            try { this.setTranslationX(dx); } catch(eTx) {}
+            // 只识别滑动关闭手势，不再跟手平移卡片；ColorOS overlay 平移会留下上一帧拖影。
+            try { this.setTranslationX(0); this.setAlpha(1); } catch(eTx) {}
             return true;
           }
         }
@@ -4744,11 +4745,8 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
           var validDir2 = (popupBackEdge === 0 && mx > 0) || (popupBackEdge === 1 && mx < 0);
           if (validDir2 && Math.abs(mx) > Math.abs(my) * 0.9) {
             popupBackMoved = true;
-            var maxMove = Math.floor(panelWidth * 0.62);
-            var tx = mx;
-            if (tx > maxMove) tx = maxMove;
-            if (tx < -maxMove) tx = -maxMove;
-            this.setTranslationX(tx);
+            // 手势过程中保持卡片固定，避免 overlay translation 产生拖影/重复影像。
+            try { this.setTranslationX(0); this.setAlpha(1); } catch(eMoveReset) {}
           }
           return true;
         }
@@ -4763,10 +4761,12 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
           popupBackMoved = false;
           popupBackEdge = -1;
           if (ok) {
-            this.animate().translationX(dir * panelWidth).setDuration(130).withEndAction(new java.lang.Runnable({ run: function() { endPopupBackVisual(card); closePopup(); } })).start();
+            try { this.setTranslationX(0); this.setAlpha(1); } catch(eOkReset) {}
+            endPopupBackVisual(this);
+            closePopup();
           } else {
-            var that = this;
-            this.animate().translationX(0).setDuration(140).withEndAction(new java.lang.Runnable({ run: function() { endPopupBackVisual(that); } })).start();
+            try { this.setTranslationX(0); this.setAlpha(1); } catch(eCancelReset) {}
+            endPopupBackVisual(this);
           }
           return true;
         }
