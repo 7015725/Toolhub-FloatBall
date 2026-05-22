@@ -4620,7 +4620,36 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   if (panelHeight > sh - self.dp(48)) panelHeight = sh - self.dp(48);
   if (panelHeight < self.dp(420)) panelHeight = Math.min(sh - self.dp(24), self.dp(420));
 
-  var root = new android.widget.FrameLayout(context);
+  var popupClosed = false;
+  var popupBackDispatcher = null;
+  var popupBackCallback = null;
+  var root = new JavaAdapter(android.widget.FrameLayout, {
+    onWindowFocusChanged: function(hasFocus) {
+      try {
+        android.widget.FrameLayout.prototype.onWindowFocusChanged.call(this, hasFocus);
+      } catch(eSuperFocus) {}
+      try {
+        if (popupClosed) return;
+        // 用户底部上滑回主页 / 进入后台时，overlay 往往会失去焦点；弹窗应自动关闭。
+        if (!hasFocus) this.post(new java.lang.Runnable({ run: function() { closePopup(); } }));
+      } catch(eFocusClose) {}
+    },
+    onWindowVisibilityChanged: function(visibility) {
+      try {
+        android.widget.FrameLayout.prototype.onWindowVisibilityChanged.call(this, visibility);
+      } catch(eSuperVis) {}
+      try {
+        if (popupClosed) return;
+        if (visibility !== android.view.View.VISIBLE) this.post(new java.lang.Runnable({ run: function() { closePopup(); } }));
+      } catch(eVisClose) {}
+    },
+    onDetachedFromWindow: function() {
+      try { popupClosed = true; } catch(eMarkDetached) {}
+      try {
+        android.widget.FrameLayout.prototype.onDetachedFromWindow.call(this);
+      } catch(eSuperDetach) {}
+    }
+  }, context);
   root.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42));
   root.setClickable(true);
   try { root.setFocusable(true); root.setFocusableInTouchMode(true); } catch(eRootFocus) {}
@@ -4811,8 +4840,35 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 
   try { wm.addView(root, lp); } catch(eAdd) { safeLog(self.L, 'e', "popup addView fail: " + String(eAdd)); return null; }
+  try {
+    root.requestFocus();
+    root.post(new java.lang.Runnable({ run: function() {
+      try {
+        if (popupClosed) return;
+        var dispatcher = null;
+        try { dispatcher = root.findOnBackInvokedDispatcher(); } catch(eFindBack) { dispatcher = null; }
+        if (!dispatcher) return;
+        var cbCls = java.lang.Class.forName("android.window.OnBackInvokedCallback");
+        var cb = new JavaAdapter(cbCls, { onBackInvoked: function() { closePopup(); } });
+        var priority = 0;
+        try { priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT; } catch(ePri) { priority = 0; }
+        dispatcher.registerOnBackInvokedCallback(priority, cb);
+        popupBackDispatcher = dispatcher;
+        popupBackCallback = cb;
+      } catch(eRegPopupBack) {
+        try { safeLog(self.L, 'w', 'popup back callback register fail: ' + String(eRegPopupBack)); } catch(eLogReg) {}
+      }
+    }}));
+  } catch(eReqFocus) {}
 
   function closePopup() {
+    if (popupClosed) return;
+    popupClosed = true;
+    try {
+      if (popupBackDispatcher && popupBackCallback) popupBackDispatcher.unregisterOnBackInvokedCallback(popupBackCallback);
+    } catch(eUnregPopupBack) {}
+    popupBackDispatcher = null;
+    popupBackCallback = null;
     try { wm.removeView(root);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     if (typeof onDismiss === "function") {
       try { onDismiss();  } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }
