@@ -128,7 +128,6 @@ FloatBallAppWM.prototype.safeRemoveView = function(v, whichName) {
   try {
     if (!v) return { ok: true, skipped: true };
     try { if (this.unregisterPanelPredictiveBack) this.unregisterPanelPredictiveBack(v); } catch (eBack) {}
-    try { if (whichName === "viewerPanel" && this.state && String(this.state.viewerPanelType || "") === "tool_app" && this.hideToolAppScreenBackStrips) this.hideToolAppScreenBackStrips(); } catch (eStrip) {}
     this.state.wm.removeView(v);
     return { ok: true };
   } catch (e) {
@@ -196,7 +195,6 @@ FloatBallAppWM.prototype.hideViewerPanel = function() {
     this.state.toolAppBackPreviewView = null;
     this.state.toolAppBackPreviewRoute = null;
     this.state.toolAppBackPreviewReady = false;
-    try { if (this.hideToolAppScreenBackStrips) this.hideToolAppScreenBackStrips(); } catch (eStrip) {}
     this.state.toolAppTitleView = null;
     this.state.toolAppBackButton = null;
   }
@@ -608,7 +606,6 @@ FloatBallAppWM.prototype._clearHeavyCachesIfAllHidden = function(reason) {
 };
 
 FloatBallAppWM.prototype.hideAllPanels = function() {
-  try { if (this.hideToolAppScreenBackStrips) this.hideToolAppScreenBackStrips(); } catch (eStrip) {}
   this.hideMainPanel();
   this.hideSettingsPanel();
   this.hideViewerPanel();
@@ -994,10 +991,6 @@ FloatBallAppWM.prototype.onScreenChangedReflow = function(reason) {
 
   try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU) { safeLog(null, 'e', "catch " + String(eU)); }
   this.savePos(this.state.ballLp.x, this.state.ballLp.y);
-
-  if (this.state.toolAppActive && this.refreshToolAppScreenBackStrips) {
-    try { this.refreshToolAppScreenBackStrips(); } catch(eBackStrip) { safeLog(this.L, 'w', "screen reflow refresh tool app back strips fail: " + String(eBackStrip)); }
-  }
 
   safeLog(this.L, 'i',
     "screen reflow reason=" + String(reason || "") +

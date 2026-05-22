@@ -557,7 +557,6 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.toolAppBackPreviewReady = false;
     this.state.toolAppBackPreviewStackVersion = null;
     this.state.toolAppBackPreviewEntryKey = null;
-    try { if (this.hideToolAppScreenBackStrips) this.hideToolAppScreenBackStrips(); } catch (eStrip) {}
     this.state.toolAppTitleView = null;
     this.state.toolAppBackButton = null;
   } catch (e) { safeLog(this.L, 'e', "closeToolApp fail: " + String(e)); }
@@ -1121,81 +1120,6 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
   }
 };
 
-FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
-  var self = this;
-  var strip = new android.view.View(context);
-  strip.setBackgroundColor(android.graphics.Color.TRANSPARENT);
-  var downX = 0;
-  var downY = 0;
-  var active = false;
-  var moved = false;
-  strip.setOnTouchListener(new android.view.View.OnTouchListener({
-    onTouch: function(v, event) {
-      try {
-        if (!event) return false;
-        var action = event.getActionMasked();
-        if (action === android.view.MotionEvent.ACTION_DOWN) {
-          downX = event.getRawX();
-          downY = event.getRawY();
-          active = !!(self.state && self.state.toolAppActive && self.hasToolAppBackTarget && self.hasToolAppBackTarget());
-          moved = false;
-          if (active) self.prepareToolAppBackPreview(edge);
-          return active;
-        }
-        if (!active) return false;
-        if (action === android.view.MotionEvent.ACTION_MOVE) {
-          var mx = event.getRawX() - downX;
-          var my = event.getRawY() - downY;
-          var validDir = (edge === 0 && mx > 0) || (edge === 1 && mx < 0);
-          if (validDir && Math.abs(mx) > self.dp(3) && Math.abs(mx) > Math.abs(my) * 0.85) {
-            if (!moved) {
-              try { safeLog(self.L, 'd', 'edge strip move edge=' + String(edge) + ' mx=' + String(mx)); } catch(eMoveLog) {}
-            }
-            moved = true;
-            var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 96);
-            if (isNaN(triggerDp)) triggerDp = 96;
-            if (triggerDp < 1) triggerDp = 1;
-            if (triggerDp > 720) triggerDp = 720;
-            var triggerDistance = self.dp(triggerDp);
-            var p = Math.min(1, Math.abs(mx) / triggerDistance);
-            self.applyToolAppBackPreviewProgress(edge, p, Math.abs(mx));
-          }
-          return true;
-        }
-        if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
-          var ux = event.getRawX() - downX;
-          var uy = event.getRawY() - downY;
-          var commitDp = Number(self.config.TOOLAPP_BACK_COMMIT_DISTANCE_DP || 36);
-          if (isNaN(commitDp)) commitDp = 36;
-          if (commitDp < 1) commitDp = 1;
-          if (commitDp > 480) commitDp = 480;
-          var completeDistance = self.dp(commitDp);
-          var okDir = (edge === 0 && ux > completeDistance) || (edge === 1 && ux < -completeDistance);
-          var ok = (action === android.view.MotionEvent.ACTION_UP) && moved && okDir && Math.abs(ux) > Math.abs(uy) * 0.85;
-          active = false;
-          self.finishToolAppBackPreview(edge, ok);
-          return true;
-        }
-      } catch (e) {
-        try { self.clearToolAppBackPreview(true); } catch (eClear) {}
-        try { safeLog(self.L, 'w', "tool app edge back fail: " + String(e)); } catch(eLog) {}
-      }
-      return false;
-    }
-  }));
-  return strip;
-};
-
-FloatBallAppWM.prototype.hideToolAppScreenBackStrips = function() {
-  try {
-    var arr = this.state.toolAppScreenBackStrips || [];
-    for (var i = 0; i < arr.length; i++) {
-      try { if (arr[i] && this.state.wm) this.state.wm.removeView(arr[i]); } catch (eRm) {}
-    }
-    this.state.toolAppScreenBackStrips = [];
-  } catch (e) { safeLog(this.L, 'w', "hide tool app screen back strips fail: " + String(e)); }
-};
-
 FloatBallAppWM.prototype.getToolAppBackEdgeWidthPx = function() {
   var stripDp = 72;
   try {
@@ -1207,33 +1131,6 @@ FloatBallAppWM.prototype.getToolAppBackEdgeWidthPx = function() {
     stripDp = 72;
   }
   return this.dp(stripDp);
-};
-
-FloatBallAppWM.prototype.isToolAppScreenBackStripsEnabled = function() {
-  // 旧版 WindowManager 透明边缘热区已禁用：它可能抢 ACTION_DOWN，影响按钮、列表、SeekBar、Switch。
-  // 保留函数和清理路径仅为兼容历史状态；正式返回手势由 ToolApp root surface 接管。
-  try { this.hideToolAppScreenBackStrips(); } catch(eHide) {}
-  return false;
-};
-
-FloatBallAppWM.prototype.showToolAppScreenBackStrips = function() {
-  // 旧版 WindowManager 透明边缘热区已禁用；不要再创建额外触摸层。
-  try { this.hideToolAppScreenBackStrips(); } catch(eHide) {}
-  return false;
-};
-
-FloatBallAppWM.prototype.refreshToolAppScreenBackStrips = function() {
-  try {
-    this.hideToolAppScreenBackStrips();
-    if (!this.state.toolAppActive) return false;
-    if (!this.hasToolAppBackTarget || !this.hasToolAppBackTarget()) return false;
-    if (!this.isToolAppScreenBackStripsEnabled || !this.isToolAppScreenBackStripsEnabled()) return false;
-    return this.showToolAppScreenBackStrips();
-  } catch(e) {
-    try { this.hideToolAppScreenBackStrips(); } catch(eHide) {}
-    safeLog(this.L, 'w', "refresh tool app screen back strips fail: " + String(e));
-  }
-  return false;
 };
 
 FloatBallAppWM.prototype.getToolAppResponsiveSpec = function() {
@@ -1585,13 +1482,6 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   hostLp.setMargins((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), 0, (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6));
   body.addView(host, hostLp);
 
-  // 兼容旧设置：不再添加页面内透明返回热区。
-  // 返回手势由 root.onInterceptTouchEvent 延迟拦截；surface 模式会排除交互控件，edge 模式保留边缘起手。
-  try {
-    this.state.toolAppInnerBackLeftStrip = null;
-    this.state.toolAppInnerBackRightStrip = null;
-  } catch (eStrip) { safeLog(this.L, 'w', "clear edge back strip state fail: " + String(eStrip)); }
-
   this.state.toolAppRoot = root;
   this.state.toolAppBody = body;
   this.state.toolAppContentHost = host;
@@ -1600,36 +1490,6 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   this.state.toolAppRightButton = btnClose;
   this.updateToolAppShellChrome(title, canBack);
   return root;
-};
-
-FloatBallAppWM.prototype.updateToolAppInnerBackEdgeWidth = function() {
-  try {
-    var w = this.getToolAppBackEdgeWidthPx ? this.getToolAppBackEdgeWidthPx() : this.dp(48);
-
-    var left = this.state.toolAppInnerBackLeftStrip;
-    var right = this.state.toolAppInnerBackRightStrip;
-
-    if (left) {
-      var lpL = left.getLayoutParams();
-      if (lpL) {
-        lpL.width = w;
-        left.setLayoutParams(lpL);
-      }
-    }
-
-    if (right) {
-      var lpR = right.getLayoutParams();
-      if (lpR) {
-        lpR.width = w;
-        right.setLayoutParams(lpR);
-      }
-    }
-
-    return true;
-  } catch(e) {
-    safeLog(this.L, "w", "update inner back edge width fail: " + String(e));
-  }
-  return false;
 };
 
 FloatBallAppWM.prototype.ensureToolAppShell = function() {
@@ -1764,7 +1624,6 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
       } catch (eUpd) { safeLog(this.L, 'w', "tool_app update layout fail: " + String(eUpd)); }
       try { shell.requestFocus(); } catch (eFocus) {}
     }
-    try { this.refreshToolAppScreenBackStrips(); } catch (eScreenBack) { safeLog(this.L, 'w', "screen edge back strip update fail: " + String(eScreenBack)); }
   } catch (e) {
     this.state.toolAppActive = false;
     safeLog(this.L, 'e', "showToolApp fail route=" + r + " err=" + String(e));
