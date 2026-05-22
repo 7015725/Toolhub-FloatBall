@@ -341,7 +341,7 @@ function loadScript(relPath) {
 var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.js", "th_05_persistence.js",
                "th_06_icon_parser.js", "th_07_shortcut.js", "th_08_content.js", "th_09_animation.js",
                "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
-               "th_14_panels.js", "th_14_icon_picker.js", "th_15_extra.js", "th_16_entry.js"];
+               "th_14_panels.js", "th_14_color_picker.js", "th_14_icon_picker.js", "th_15_extra.js", "th_16_entry.js"];
 var __moduleUpdates = [];
 var loadErrors = [];
 var criticalModules = { "th_01_base.js": true, "th_16_entry.js": true };
