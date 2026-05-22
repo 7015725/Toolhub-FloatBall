@@ -109,6 +109,46 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
   var isFollowTheme = !currentColor;
   var currentBaseRgbHex = extractTintRgbHex(currentColor);
   var currentAlphaByte = extractTintAlphaByte(currentColor);
+  var alphaSeek = null;
+  var alphaValTv = null;
+  var updatePreviewFn = function() {};
+  var updateValueTvFn = function() {};
+  var refreshRecentGridFn = function() {};
+  var refreshCommonGridFn = function() {};
+  var syncRgbSeeksFn = function() {};
+
+  // 操作按钮：对齐设置页/按钮管理页的 chip + 主按钮视觉。
+  function createColorPanelActionButton(label, primary, onClick) {
+    var b = new android.widget.TextView(context);
+    b.setText(label);
+    b.setGravity(android.view.Gravity.CENTER);
+    b.setSingleLine(true);
+    b.setTypeface(null, android.graphics.Typeface.BOLD);
+    try { b.setIncludeFontPadding(false); } catch(eFontPad) {}
+    if (primary) {
+      b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
+      b.setTextColor(android.graphics.Color.WHITE);
+      b.setPadding(self.dp(18), 0, self.dp(18), 0);
+      try { b.setMinHeight(self.dp(52)); } catch(eMinH1) {}
+      try { b.setBackground(self.ui.createStrokeDrawable(T.primaryDeep, self.withAlpha(T.brown || T.primaryDeep, isDark ? 0.28 : 0.18), self.dp(1), self.dp(26))); } catch(eBg1) {}
+      try { b.setElevation(self.dp(1)); } catch(eElev) {}
+    } else {
+      b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
+      b.setTextColor(T.brown || T.sub);
+      b.setPadding(self.dp(16), 0, self.dp(16), 0);
+      try { b.setMinHeight(self.dp(52)); } catch(eMinH2) {}
+      try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.card, self.withAlpha(T.stroke || T.brown, isDark ? 0.42 : 0.55), self.dp(1), self.dp(26))); } catch(eBg2) {}
+      try { b.setElevation(self.dp(1)); } catch(eElev2) {}
+    }
+    try { b.setClickable(true); b.setFocusable(true); } catch(eClickable) {}
+    b.setOnClickListener(new android.view.View.OnClickListener({
+      onClick: function(v) {
+        self.touchActivity();
+        try { if (onClick) onClick(v); } catch(eBtn) { safeLog(self.L, 'e', "color panel action err=" + String(eBtn)); }
+      }
+    }));
+    return b;
+  }
 
   var popupResult = self.showPopupOverlay({
     title: "换颜色",
@@ -146,7 +186,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               try {
                 var parsed = android.graphics.Color.parseColor(selectedColor);
                 dr.setColorFilter(parsed, android.graphics.PorterDuff.Mode.SRC_IN);
-               } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+              } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
             } else {
               try { dr.clearColorFilter();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
             }
@@ -154,8 +194,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           } else {
             previewIv.setImageDrawable(null);
           }
-         } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+        } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
+      updatePreviewFn = updatePreview;
       updatePreview();
 
       // ========== 最近使用颜色 ==========
@@ -239,6 +280,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           }
          } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
+      refreshRecentGridFn = refreshRecentGrid;
       refreshRecentGrid();
 
       // 21 色常用颜色
@@ -328,6 +370,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           }
          } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
+      refreshCommonGridFn = refreshCommonGrid;
 
       // 颜色值显示
       var valueTv = new android.widget.TextView(context);
@@ -339,6 +382,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       function updateValueTv() {
         valueTv.setText(isFollowTheme ? "当前：跟随岛屿主题" : ("当前：" + (selectedColor || "无")));
       }
+      updateValueTvFn = updateValueTv;
       updateValueTv();
 
       // RGB 滑块
@@ -412,6 +456,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           rgbValTvs[2].setText(String(initB));
          } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
       }
+      syncRgbSeeksFn = syncRgbSeeks;
       syncRgbSeeks();
 
       // 透明度滑块
@@ -427,14 +472,14 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       alphaLabel.setMinWidth(self.dp(20));
       alphaRow.addView(alphaLabel);
 
-      var alphaSeek = new android.widget.SeekBar(context);
+      alphaSeek = new android.widget.SeekBar(context);
       alphaSeek.setMax(255);
       var alphaSeekLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
       alphaSeekLp.setMargins(self.dp(8), 0, self.dp(8), 0);
       alphaSeek.setLayoutParams(alphaSeekLp);
       alphaRow.addView(alphaSeek);
 
-      var alphaValTv = new android.widget.TextView(context);
+      alphaValTv = new android.widget.TextView(context);
       alphaValTv.setTextColor(subTextColor);
       alphaValTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
       alphaValTv.setMinWidth(self.dp(28));
@@ -460,59 +505,25 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       alphaValTv.setText(String(currentAlphaByte));
       content.addView(alphaRow);
 
-      // 操作按钮：对齐设置页/按钮管理页的 chip + 主按钮视觉。
-      function createColorPanelActionButton(label, primary, onClick) {
-        var b = new android.widget.TextView(context);
-        b.setText(label);
-        b.setGravity(android.view.Gravity.CENTER);
-        b.setSingleLine(true);
-        b.setTypeface(null, android.graphics.Typeface.BOLD);
-        try { b.setIncludeFontPadding(false); } catch(eFontPad) {}
-        if (primary) {
-          // 与设置页底部“保存布置”一致：主色胶囊、44dp 高、轻描边。
-          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
-          // 颜色面板里不用高饱和青色，改成更沉稳的深绿主按钮。
-          b.setTextColor(android.graphics.Color.WHITE);
-          b.setPadding(self.dp(18), 0, self.dp(18), 0);
-          try { b.setMinHeight(self.dp(52)); } catch(eMinH1) {}
-          try { b.setBackground(self.ui.createStrokeDrawable(T.primaryDeep, self.withAlpha(T.brown || T.primaryDeep, isDark ? 0.28 : 0.18), self.dp(1), self.dp(26))); } catch(eBg1) {}
-          try { b.setElevation(self.dp(1)); } catch(eElev) {}
-        } else {
-          // 与设置页按钮一致：次级也用大圆角按钮，不再做小 chip。
-          b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
-          // 次级按钮走设置页里的奶油/描边感，不再用薄荷绿底。
-          b.setTextColor(T.brown || T.sub);
-          b.setPadding(self.dp(16), 0, self.dp(16), 0);
-          try { b.setMinHeight(self.dp(52)); } catch(eMinH2) {}
-          try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.card, self.withAlpha(T.stroke || T.brown, isDark ? 0.42 : 0.55), self.dp(1), self.dp(26))); } catch(eBg2) {}
-          try { b.setElevation(self.dp(1)); } catch(eElev2) {}
-        }
-        try { b.setClickable(true); b.setFocusable(true); } catch(eClickable) {}
-        b.setOnClickListener(new android.view.View.OnClickListener({
-          onClick: function(v) {
-            self.touchActivity();
-            try { if (onClick) onClick(v); } catch(eBtn) { safeLog(self.L, 'e', "color panel action err=" + String(eBtn)); }
-          }
-        }));
-        return b;
-      }
-
+      // 底部操作按钮放到 showPopupOverlay 的固定 footer 中，避免默认首屏看不到。
+    },
+    footerBuilder: function(footer, closePopup) {
       var actionRow = new android.widget.LinearLayout(context);
       actionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       actionRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      actionRow.setPadding(self.dp(10), self.dp(10), self.dp(10), self.dp(12));
+      actionRow.setPadding(self.dp(10), self.dp(6), self.dp(10), self.dp(4));
 
       var btnClear = createColorPanelActionButton("恢复默认", false, function() {
         isFollowTheme = true;
         selectedColor = "";
-        updatePreview();
-        updateValueTv();
-        refreshRecentGrid();
-        refreshCommonGrid();
-        syncRgbSeeks();
-        alphaSeek.setProgress(255);
-        alphaValTv.setText("255");
         currentAlphaByte = 255;
+        try { updatePreviewFn(); } catch(eUp) {}
+        try { updateValueTvFn(); } catch(eVal) {}
+        try { refreshRecentGridFn(); } catch(eRecent) {}
+        try { refreshCommonGridFn(); } catch(eCommon) {}
+        try { syncRgbSeeksFn(); } catch(eSync) {}
+        try { if (alphaSeek) alphaSeek.setProgress(255); } catch(eAlphaSeek) {}
+        try { if (alphaValTv) alphaValTv.setText("255"); } catch(eAlphaTv) {}
       });
       var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(52));
       clearLp.weight = 1;
@@ -522,13 +533,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       var btnOk = createColorPanelActionButton("保存颜色", true, function() {
         try {
           var finalColor = isFollowTheme ? "" : String(selectedColor || "");
-          if (!isFollowTheme && selectedColor) {
-            pushRecentColor(selectedColor);
-          }
+          if (!isFollowTheme && selectedColor) pushRecentColor(selectedColor);
           if (typeof onSelect === "function") {
-            try { onSelect(finalColor); } catch(eOnSelect) {
-              safeLog(self.L, 'e', "colorPicker onSelect err=" + String(eOnSelect));
-            }
+            try { onSelect(finalColor); } catch(eOnSelect) { safeLog(self.L, 'e', "colorPicker onSelect err=" + String(eOnSelect)); }
           }
         } catch(e) {
           safeLog(self.L, 'e', "colorPicker confirm err=" + String(e));
@@ -540,7 +547,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       okLp.setMargins(self.dp(6), 0, 0, 0);
       actionRow.addView(btnOk, okLp);
 
-      content.addView(actionRow, new android.widget.LinearLayout.LayoutParams(
+      footer.addView(actionRow, new android.widget.LinearLayout.LayoutParams(
         android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
         android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
       ));

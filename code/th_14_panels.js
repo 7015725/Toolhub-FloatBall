@@ -4592,6 +4592,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var title = String(opt.title || "");
   var onDismiss = (typeof opt.onDismiss === "function") ? opt.onDismiss : null;
   var builder = (typeof opt.builder === "function") ? opt.builder : null;
+  var footerBuilder = (typeof opt.footerBuilder === "function") ? opt.footerBuilder : null;
 
   var PT = this.getIslandPickerTheme ? this.getIslandPickerTheme() : null;
   var isDark = PT ? PT.isDark : this.isDarkTheme();
@@ -4674,6 +4675,15 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   ));
   card.addView(scroll);
 
+  var footer = new android.widget.LinearLayout(context);
+  footer.setOrientation(android.widget.LinearLayout.VERTICAL);
+  footer.setVisibility(android.view.View.GONE);
+  try { footer.setPadding(0, self.dp(6), 0, 0); } catch(eFooterPad) {}
+  card.addView(footer, new android.widget.LinearLayout.LayoutParams(
+    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+  ));
+
   root.addView(card);
 
   root.setOnClickListener(new android.view.View.OnClickListener({
@@ -4709,8 +4719,14 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   if (typeof builder === "function") {
     try { builder(content, closePopup); } catch(eB) { safeLog(self.L, 'e', "popup builder fail: " + String(eB)); }
   }
+  if (typeof footerBuilder === "function") {
+    try {
+      footerBuilder(footer, closePopup);
+      if (footer.getChildCount && footer.getChildCount() > 0) footer.setVisibility(android.view.View.VISIBLE);
+    } catch(eF) { safeLog(self.L, 'e', "popup footer builder fail: " + String(eF)); }
+  }
 
-  return { close: closePopup, content: content };
+  return { close: closePopup, content: content, footer: footer };
 };
 
 // 兼容旧入口：旧 ToolHub.js 不会自动加载新增 th_14_color_picker.js，
