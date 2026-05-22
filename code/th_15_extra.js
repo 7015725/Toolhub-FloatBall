@@ -1257,8 +1257,11 @@ FloatBallAppWM.prototype.isToolAppBackInteractiveView = function(v) {
       var rvCls2 = java.lang.Class.forName("android.support.v7.widget.RecyclerView");
       if (rvCls2 && rvCls2.isInstance(v)) return true;
     } catch(eRv2) {}
-    try { if (v.isClickable && v.isClickable()) return true; } catch(eClick) {}
-    try { if (v.isLongClickable && v.isLongClickable()) return true; } catch(eLong) {}
+    // 不把所有 clickable/longClickable 都当成阻断项：ToolHub 大量卡片/容器为了 ripple 都会 setClickable(true)，
+    // 若在 surface 横滑模式下阻断它们，几乎整页都会 rootBackBlocked=true，导致滑动返回一直触发不了。
+    // DOWN 已经放行给子控件，只有超过横滑阈值后才拦截，所以保留按钮/Switch/SeekBar/EditText/列表等强交互控件即可。
+    /* try { if (v.isClickable && v.isClickable()) return true; } catch(eClick) {} */
+    /* try { if (v.isLongClickable && v.isLongClickable()) return true; } catch(eLong) {} */
   } catch(e) {}
   return false;
 };
