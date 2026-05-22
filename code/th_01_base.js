@@ -105,6 +105,7 @@ var ConfigValidator = {
     ENABLE_TOOLAPP_INNER_BACK_STRIPS: { type: "bool", default: false },
     ENABLE_TOOLAPP_SCREEN_BACK_STRIPS: { type: "bool", default: true },
     TOOLAPP_BACK_COMMIT_DISTANCE_DP: { type: "int", min: 1, max: 480, default: 36 },
+    TOOLAPP_BACK_SURFACE_SLOP_DP: { type: "int", min: 8, max: 96, default: 24 },
     TOOLAPP_BACK_PROGRESS_DISTANCE_DP: { type: "int", min: 1, max: 720, default: 96 },
 
     // 功能开关
@@ -742,6 +743,7 @@ var ConfigManager = {
         ENABLE_TOOLAPP_INNER_BACK_STRIPS: false,
         ENABLE_TOOLAPP_SCREEN_BACK_STRIPS: true,
         TOOLAPP_BACK_COMMIT_DISTANCE_DP: 36,
+        TOOLAPP_BACK_SURFACE_SLOP_DP: 24,
         TOOLAPP_BACK_PROGRESS_DISTANCE_DP: 96,
         ENABLE_BOUNCE: true,
         BOUNCE_TIMES: 2,
@@ -854,13 +856,14 @@ var ConfigManager = {
         { key: "CLICK_SLOP_DP", name: "点击位移阈值(dp)", type: "int", min: 1, max: 40, step: 1 },
         { key: "TOOLAPP_BACK_GESTURE_MODE", name: "设置页滑动返回模式", type: "single_choice", options: [
             { label: "全表面横滑", value: "surface" },
-            { label: "仅左右边缘", value: "edge" },
+            { label: "仅面板内部左右边缘", value: "edge" },
             { label: "关闭", value: "off" }
         ]},
         { key: "TOOLAPP_BACK_EDGE_WIDTH_DP", name: "边缘模式起手宽度", type: "int", min: 1, max: 120, step: 1 },
         { key: "ENABLE_TOOLAPP_INNER_BACK_STRIPS", name: "启用旧版页面覆盖热区(不推荐)", type: "bool" },
         { key: "ENABLE_TOOLAPP_SCREEN_BACK_STRIPS", name: "启用屏幕空白区返回", type: "bool" },
         { key: "TOOLAPP_BACK_COMMIT_DISTANCE_DP", name: "设置页返回触发距离", type: "int", min: 1, max: 480, step: 1 },
+        { key: "TOOLAPP_BACK_SURFACE_SLOP_DP", name: "表面横滑起手阈值", type: "int", min: 8, max: 96, step: 1 },
         { key: "TOOLAPP_BACK_PROGRESS_DISTANCE_DP", name: "设置页返回动画距离", type: "int", min: 1, max: 720, step: 1 },
         { key: "ENABLE_LONG_PRESS", name: "启用长按", type: "bool" },
         { key: "LONG_PRESS_MS", name: "长按判定(ms)", type: "int", min: 200, max: 2000, step: 10 },
@@ -899,7 +902,7 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("ENABLE_TOOLAPP_INNER_BACK_STRIPS") < 0 || sStr.indexOf("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("ENABLE_TOOLAPP_INNER_BACK_STRIPS") < 0 || sStr.indexOf("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0) {
             needReset = true;
         }
 
@@ -935,6 +938,7 @@ var ConfigManager = {
                 schemaItemDiffers("ENABLE_TOOLAPP_INNER_BACK_STRIPS", ["name", "type"]) ||
                 schemaItemDiffers("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS", ["name", "type"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_COMMIT_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("TOOLAPP_BACK_SURFACE_SLOP_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_PROGRESS_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP", ["name", "type", "min", "max", "step"])) {
                 needReset = true;

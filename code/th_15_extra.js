@@ -1312,22 +1312,52 @@ FloatBallAppWM.prototype.getToolAppBackGestureMode = function() {
   var mode = "surface";
   try { mode = String(this.config.TOOLAPP_BACK_GESTURE_MODE || "surface"); } catch(e) { mode = "surface"; }
   if (mode !== "edge" && mode !== "surface" && mode !== "off") mode = "surface";
+  // 全面屏手势下物理极致边缘容易被系统抢走；旧配置若停留在 edge，运行期优先回退到 surface。
+  // edge 分支仍保留为 ToolApp 面板内部边缘模式；只有显式把 TOOLAPP_BACK_FORCE_SURFACE 设为 false 时才启用。
+  if (mode === "edge") {
+    var forceSurface = true;
+    try { if (this.config.TOOLAPP_BACK_FORCE_SURFACE === false || String(this.config.TOOLAPP_BACK_FORCE_SURFACE) === "false") forceSurface = false; } catch(eForce) {}
+    if (forceSurface) {
+      try { this.config.TOOLAPP_BACK_GESTURE_MODE = "surface"; } catch(eMig) {}
+      mode = "surface";
+    }
+  }
   return mode;
 };
 
-FloatBallAppWM.prototype.isToolAppBackInteractiveView = function(v) {
+FloatBallAppWM.prototype.getToolAppBackSurfaceSlopPx = function(commitDistancePx) {
+  var slopDp = 24;
+  try { slopDp = Number(this.config.TOOLAPP_BACK_SURFACE_SLOP_DP || 24); } catch(e) { slopDp = 24; }
+  if (isNaN(slopDp)) slopDp = 24;
+  if (slopDp < 8) slopDp = 8;
+  if (slopDp > 96) slopDp = 96;
+  var px = this.dp(slopDp);
+  try {
+    var c = Number(commitDistancePx || 0);
+    if (!isNaN(c) && c > 0) px = Math.min(px, c);
+  } catch(e2) {}
+  return px;
+};
+
+FloatBallAppWM.prototype.isToolAppBackInteractiveView = function(v, dx, dy) {
   try {
     if (!v) return false;
-    try { if (v instanceof android.widget.SeekBar) return true; } catch(eSeek) {}
-    try { if (v instanceof android.widget.CompoundButton) return true; } catch(eComp) {}
-    try { if (v instanceof android.widget.Switch) return true; } catch(eSw) {}
+    var adx = Math.abs(Number(dx || 0));
+    var ady = Math.abs(Number(dy || 0));
+    var strongHorizontal = adx > 0 && adx >= ady;
+    try { if (v instanceof android.widget.SeekBar) return strongHorizontal; } catch(eSeek) {}
+    try { if (v instanceof android.widget.CompoundButton) return strongHorizontal; } catch(eComp) {}
+    try { if (v instanceof android.widget.Switch) return strongHorizontal; } catch(eSw) {}
     try { if (v instanceof android.widget.EditText) return true; } catch(eEdit) {}
-    try { if (v instanceof android.widget.HorizontalScrollView) return true; } catch(eHsv) {}
-    // 普通 Button / 卡片 / 垂直列表 item 不在 DOWN 阶段屏蔽返回；强横滑由 root 在 MOVE 阶段接管。
-    // 垂直 ListView/RecyclerView 也不作为 blocker，保证列表上下滑正常且强横滑可返回。
-    // 不把所有 clickable/longClickable 都当成阻断项：ToolHub 大量卡片/容器为了 ripple 都会 setClickable(true)，
-    // 若在 surface 横滑模式下阻断它们，几乎整页都会 rootBackBlocked=true，导致滑动返回一直触发不了。
-    // DOWN 已经放行给子控件，只有超过横滑阈值后才拦截；这里只保留 SeekBar/Switch/EditText/HorizontalScrollView 等强交互控件。
+    try {
+      if (v instanceof android.widget.HorizontalScrollView) {
+        var dir = Number(dx || 0) > 0 ? -1 : 1;
+        try { if (v.canScrollHorizontally && v.canScrollHorizontally(dir)) return true; } catch(eCan) {}
+        return false;
+      }
+    } catch(eHsv) {}
+    // 普通 Button / 卡片 / 垂直列表 item 不作为 blocker；点击和上下滑继续交给子控件，强横滑由 root 接管。
+    // 只有 SeekBar/Switch/EditText/可继续横向滚动的 HorizontalScrollView 在 MOVE 阶段按 dx/dy 细粒度阻断。
     /* try { if (v.isClickable && v.isClickable()) return true; } catch(eClick) {} */
     /* try { if (v.isLongClickable && v.isLongClickable()) return true; } catch(eLong) {} */
   } catch(e) {}
@@ -1358,11 +1388,11 @@ FloatBallAppWM.prototype.findToolAppTouchedChild = function(v, rawX, rawY) {
   return null;
 };
 
-FloatBallAppWM.prototype.isToolAppBackBlockedAt = function(root, rawX, rawY) {
+FloatBallAppWM.prototype.isToolAppBackBlockedAt = function(root, rawX, rawY, dx, dy) {
   try {
     var v = this.findToolAppTouchedChild(root, rawX, rawY);
     while (v && v !== root) {
-      if (this.isToolAppBackInteractiveView && this.isToolAppBackInteractiveView(v)) return true;
+      if (this.isToolAppBackInteractiveView && this.isToolAppBackInteractiveView(v, dx, dy)) return true;
       try { v = v.getParent ? v.getParent() : null; } catch(eParent) { v = null; }
     }
   } catch(e) {}
@@ -1417,13 +1447,13 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
             else if (rw > 0 && rootDownX >= rw - edgeW) { rootEdge = 1; rootBackEligible = true; }
           } else {
             rootBackEligible = true;
-            rootBackBlocked = !!(self.isToolAppBackBlockedAt && self.isToolAppBackBlockedAt(this, rootDownRawX, rootDownRawY));
+            rootBackBlocked = false;
           }
           // DOWN 必须放行给子控件，surface 模式也不抢按钮/列表/Switch/SeekBar 原始点击。
           return false;
         }
         if (action === android.view.MotionEvent.ACTION_MOVE) {
-          if (!rootBackEligible || rootBackBlocked || rootBackMode === "off") return false;
+          if (!rootBackEligible || rootBackMode === "off") return false;
           if (!(self.hasToolAppBackTarget && self.hasToolAppBackTarget())) return false;
           var dx = ev.getX() - rootDownX;
           var dy = ev.getY() - rootDownY;
@@ -1439,7 +1469,14 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           }
           var shouldIntercept = false;
           if (rootBackMode === "surface") {
-            shouldIntercept = validDir && adx > self.dp(48) && adx > ady * 1.2;
+            var commitDp0 = Number(self.config.TOOLAPP_BACK_COMMIT_DISTANCE_DP || 36);
+            if (isNaN(commitDp0)) commitDp0 = 36;
+            if (commitDp0 < 1) commitDp0 = 1;
+            if (commitDp0 > 480) commitDp0 = 480;
+            var surfaceSlop = self.getToolAppBackSurfaceSlopPx ? self.getToolAppBackSurfaceSlopPx(self.dp(commitDp0)) : Math.min(self.dp(24), self.dp(commitDp0));
+            var blockedNow = !!(self.isToolAppBackBlockedAt && self.isToolAppBackBlockedAt(this, rootDownRawX, rootDownRawY, dx, dy));
+            rootBackBlocked = blockedNow;
+            shouldIntercept = (!blockedNow) && validDir && adx > surfaceSlop && adx > ady * 1.08;
           } else {
             var slopDp = Number(self.config.CLICK_SLOP_DP || 6);
             if (isNaN(slopDp)) slopDp = 6;
@@ -1482,7 +1519,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           var mx = ev.getX() - rootDownX;
           var my = ev.getY() - rootDownY;
           var validDir2 = (rootEdge === 0 && mx > 0) || (rootEdge === 1 && mx < 0);
-          var dominance = rootBackMode === "surface" ? 1.2 : 0.75;
+          var dominance = rootBackMode === "surface" ? 1.08 : 0.75;
           if (validDir2 && Math.abs(mx) > Math.abs(my) * dominance) {
             var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 96);
             if (isNaN(triggerDp)) triggerDp = 96;
@@ -1503,7 +1540,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           if (commitDp > 480) commitDp = 480;
           var completeDistance = self.dp(commitDp);
           var okDir = (rootEdge === 0 && ux > completeDistance) || (rootEdge === 1 && ux < -completeDistance);
-          var ratio = rootBackMode === "surface" ? 1.2 : 0.75;
+          var ratio = rootBackMode === "surface" ? 1.08 : 0.75;
           var ok = (action === android.view.MotionEvent.ACTION_UP) && rootBackMoved && okDir && Math.abs(ux) > Math.abs(uy) * ratio;
           var edgeDone = rootEdge;
           rootBackActive = false;
