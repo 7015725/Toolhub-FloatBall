@@ -559,6 +559,7 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.toolAppBackPreviewEntryKey = null;
     this.state.toolAppTitleView = null;
     this.state.toolAppBackButton = null;
+    this.state.toolAppScrollY = 0;
   } catch (e) { safeLog(this.L, 'e', "closeToolApp fail: " + String(e)); }
 };
 
@@ -673,9 +674,73 @@ FloatBallAppWM.prototype.getToolAppSnapshotKey = function(entry) {
   return String(entry && entry.route || "");
 };
 
+FloatBallAppWM.prototype.findToolAppFirstScrollView = function(root) {
+  try {
+    if (!root) return null;
+    if (root instanceof android.widget.ScrollView) return root;
+    if (!root.getChildCount) return null;
+    var count = root.getChildCount();
+    for (var i = 0; i < count; i++) {
+      var found = this.findToolAppFirstScrollView(root.getChildAt(i));
+      if (found) return found;
+    }
+  } catch(e) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.captureToolAppCurrentScrollY = function() {
+  try {
+    var host = this.state ? this.state.toolAppContentHost : null;
+    var sv = this.findToolAppFirstScrollView ? this.findToolAppFirstScrollView(host) : null;
+    if (!sv) return null;
+    var y = Number(sv.getScrollY ? sv.getScrollY() : 0);
+    if (isNaN(y) || y < 0) y = 0;
+    return Math.floor(y);
+  } catch(e) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.saveToolAppCurrentStackScroll = function() {
+  try {
+    var st = this.state.toolAppNavStack;
+    if (!st || !st.length) return false;
+    var y = this.captureToolAppCurrentScrollY ? this.captureToolAppCurrentScrollY() : null;
+    if (y === null || y === undefined) return false;
+    st[st.length - 1].toolAppScrollY = y;
+    this.state.toolAppScrollY = y;
+    return true;
+  } catch(e) {}
+  return false;
+};
+
+FloatBallAppWM.prototype.restoreToolAppScrollLater = function(root, entry) {
+  try {
+    if (!root) return false;
+    var y = 0;
+    if (entry && entry.toolAppScrollY !== undefined && entry.toolAppScrollY !== null) y = Number(entry.toolAppScrollY);
+    else if (this.state && this.state.toolAppScrollY !== undefined && this.state.toolAppScrollY !== null) y = Number(this.state.toolAppScrollY);
+    if (isNaN(y) || y < 0) y = 0;
+    y = Math.floor(y);
+    if (y <= 0) return false;
+    var self = this;
+    root.post(new java.lang.Runnable({ run: function() {
+      try {
+        var sv = self.findToolAppFirstScrollView ? self.findToolAppFirstScrollView(root) : null;
+        if (sv) sv.scrollTo(0, y);
+      } catch(ePost) {}
+    }}));
+    return true;
+  } catch(e) {}
+  return false;
+};
+
 FloatBallAppWM.prototype.captureToolAppPageSnapshot = function(route) {
   var r = this.isToolAppRoute(route) ? String(route) : (this.isToolAppRoute(this.state.toolAppRoute) ? String(this.state.toolAppRoute) : "settings");
   var s = this.state || {};
+  var liveScrollY = null;
+  try {
+    if (String(s.toolAppRoute || "") === r && this.captureToolAppCurrentScrollY) liveScrollY = this.captureToolAppCurrentScrollY();
+  } catch(eLiveScroll) { liveScrollY = null; }
   var entry = {
     route: r,
     settingsGroupKey: (s.settingsGroupKey !== undefined && s.settingsGroupKey !== null) ? String(s.settingsGroupKey) : "",
@@ -689,7 +754,8 @@ FloatBallAppWM.prototype.captureToolAppPageSnapshot = function(route) {
     toolAppSubPage: (s.toolAppSubPage !== undefined) ? s.toolAppSubPage : null,
     toolAppSubKey: (s.toolAppSubKey !== undefined) ? s.toolAppSubKey : null,
     toolAppSubPayload: (s.toolAppSubPayload !== undefined) ? this.cloneToolAppSnapshotValue(s.toolAppSubPayload, 0) : null,
-    toolAppPayload: (s.toolAppPayload !== undefined) ? this.cloneToolAppSnapshotValue(s.toolAppPayload, 0) : null
+    toolAppPayload: (s.toolAppPayload !== undefined) ? this.cloneToolAppSnapshotValue(s.toolAppPayload, 0) : null,
+    toolAppScrollY: (String(s.toolAppRoute || "") === r) ? ((liveScrollY !== null && liveScrollY !== undefined) ? liveScrollY : ((s.toolAppScrollY !== undefined) ? s.toolAppScrollY : 0)) : 0
   };
   if (r !== "settings_group") entry.settingsGroupKey = "";
   if (r !== "settings") { entry.settingsHomeSelectedItemId = null; entry.settingsHomeSelectedCategoryId = null; }
@@ -719,6 +785,8 @@ FloatBallAppWM.prototype.applyToolAppPageSnapshot = function(entry) {
     this.state.toolAppSubKey = (entry.toolAppSubKey !== undefined) ? entry.toolAppSubKey : null;
     this.state.toolAppSubPayload = (entry.toolAppSubPayload !== undefined) ? this.cloneToolAppSnapshotValue(entry.toolAppSubPayload, 0) : null;
     this.state.toolAppPayload = (entry.toolAppPayload !== undefined) ? this.cloneToolAppSnapshotValue(entry.toolAppPayload, 0) : null;
+    this.state.toolAppScrollY = (entry.toolAppScrollY !== undefined && entry.toolAppScrollY !== null) ? Number(entry.toolAppScrollY) : 0;
+    if (isNaN(this.state.toolAppScrollY) || this.state.toolAppScrollY < 0) this.state.toolAppScrollY = 0;
     return true;
   } catch(e) { safeLog(this.L, 'w', "apply tool app snapshot fail: " + String(e)); }
   return false;
@@ -739,7 +807,8 @@ FloatBallAppWM.prototype.cloneToolAppPageSnapshot = function(entry) {
     toolAppSubPage: (entry.toolAppSubPage !== undefined) ? entry.toolAppSubPage : null,
     toolAppSubKey: (entry.toolAppSubKey !== undefined) ? entry.toolAppSubKey : null,
     toolAppSubPayload: (entry.toolAppSubPayload !== undefined) ? this.cloneToolAppSnapshotValue(entry.toolAppSubPayload, 0) : null,
-    toolAppPayload: (entry.toolAppPayload !== undefined) ? this.cloneToolAppSnapshotValue(entry.toolAppPayload, 0) : null
+    toolAppPayload: (entry.toolAppPayload !== undefined) ? this.cloneToolAppSnapshotValue(entry.toolAppPayload, 0) : null,
+    toolAppScrollY: (entry.toolAppScrollY !== undefined && entry.toolAppScrollY !== null) ? Number(entry.toolAppScrollY) : 0
   };
 };
 
@@ -835,6 +904,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     try { raw.setBackground(null); } catch (eBg) {}
     try { raw.setElevation(0); } catch (eEl) {}
     host.addView(raw, new android.widget.FrameLayout.LayoutParams(-1, -1));
+    try { if (this.restoreToolAppScrollLater) this.restoreToolAppScrollLater(raw, entry); } catch(ePreviewScroll) {}
     var hostLp = new android.widget.LinearLayout.LayoutParams(-1, 0, 1);
     hostLp.setMargins((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), 0, (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6), (spec && (spec.isExpandedWidth || spec.isWideWidth)) ? this.dp(4) : this.dp(6));
     body.addView(host, hostLp);
@@ -1536,6 +1606,11 @@ FloatBallAppWM.prototype.setToolAppContent = function(contentView) {
     try { contentView.setBackground(null); } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
     try { contentView.setElevation(0); } catch(eEl) { safeLog(null, 'e', "catch " + String(eEl)); }
     host.addView(contentView, new android.widget.FrameLayout.LayoutParams(-1, -1));
+    try {
+      var st = this.state.toolAppNavStack || [];
+      var top = st.length ? st[st.length - 1] : null;
+      if (this.restoreToolAppScrollLater) this.restoreToolAppScrollLater(contentView, top);
+    } catch(eRestoreScroll) {}
     return true;
   } catch (e) {
     safeLog(this.L, 'e', "setToolAppContent fail: " + String(e));
@@ -1617,6 +1692,7 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
       this.state.pendingUserCfg = null;
       this.state.pendingDirty = false;
       this.state.previewMode = false;
+      this.state.toolAppScrollY = 0;
     }
     if (resetStack || !this.state.toolAppNavStack || !this.state.toolAppNavStack.length) {
       this.state.toolAppNavStack = [this.makeToolAppStackEntry(r)];
@@ -1658,6 +1734,7 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
 
 FloatBallAppWM.prototype.pushToolAppPage = function(route) {
   if (!this.isToolAppRoute(route)) return;
+  try { if (this.saveToolAppCurrentStackScroll) this.saveToolAppCurrentStackScroll(); } catch(eSaveScrollPush) {}
   if (!this.state.toolAppNavStack) this.state.toolAppNavStack = [];
   if (this.state.toolAppNavStack.length <= 0) {
     this.state.toolAppNavStack.push(this.makeToolAppStackEntry(this.state.toolAppRoute || "settings"));
