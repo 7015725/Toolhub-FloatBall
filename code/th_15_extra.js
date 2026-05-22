@@ -713,7 +713,7 @@ FloatBallAppWM.prototype.saveToolAppCurrentStackScroll = function() {
   return false;
 };
 
-FloatBallAppWM.prototype.restoreToolAppScrollLater = function(root, entry) {
+FloatBallAppWM.prototype.restoreToolAppScrollLater = function(root, entry, hideUntilRestored) {
   try {
     if (!root) return false;
     var y = 0;
@@ -723,14 +723,35 @@ FloatBallAppWM.prototype.restoreToolAppScrollLater = function(root, entry) {
     y = Math.floor(y);
     if (y <= 0) return false;
     var self = this;
+    var shouldHide = !!hideUntilRestored;
+    if (shouldHide) {
+      try { root.setAlpha(0.01); } catch(eHide) {}
+    }
     root.post(new java.lang.Runnable({ run: function() {
       try {
         var sv = self.findToolAppFirstScrollView ? self.findToolAppFirstScrollView(root) : null;
         if (sv) sv.scrollTo(0, y);
       } catch(ePost) {}
+      try {
+        root.post(new java.lang.Runnable({ run: function() {
+          try {
+            var sv2 = self.findToolAppFirstScrollView ? self.findToolAppFirstScrollView(root) : null;
+            if (sv2) sv2.scrollTo(0, y);
+          } catch(ePost2) {}
+          if (shouldHide) {
+            try { root.setAlpha(1.0); } catch(eShow) {}
+          }
+        }}));
+      } catch(ePostAgain) {
+        if (shouldHide) {
+          try { root.setAlpha(1.0); } catch(eShow2) {}
+        }
+      }
     }}));
     return true;
-  } catch(e) {}
+  } catch(e) {
+    try { if (root) root.setAlpha(1.0); } catch(eRestoreAlpha) {}
+  }
   return false;
 };
 
@@ -1607,7 +1628,7 @@ FloatBallAppWM.prototype.setToolAppContent = function(contentView) {
     try {
       var st = this.state.toolAppNavStack || [];
       var top = st.length ? st[st.length - 1] : null;
-      if (this.restoreToolAppScrollLater) this.restoreToolAppScrollLater(contentView, top);
+      if (this.restoreToolAppScrollLater) this.restoreToolAppScrollLater(contentView, top, true);
     } catch(eRestoreScroll) {}
     return true;
   } catch (e) {
