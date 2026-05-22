@@ -129,14 +129,14 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
       b.setTextColor(android.graphics.Color.WHITE);
       b.setPadding(self.dp(16), 0, self.dp(16), 0);
-      try { b.setMinHeight(self.dp(44)); } catch(eMinH1) {}
+      try { b.setMinHeight(self.dp(50)); } catch(eMinH1) {}
       try { b.setBackground(self.ui.createStrokeDrawable(T.primaryDeep, self.withAlpha(T.brown || T.primaryDeep, isDark ? 0.28 : 0.18), self.dp(1), self.dp(26))); } catch(eBg1) {}
       try { b.setElevation(self.dp(1)); } catch(eElev) {}
     } else {
       b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
       b.setTextColor(T.brown || T.sub);
       b.setPadding(self.dp(14), 0, self.dp(14), 0);
-      try { b.setMinHeight(self.dp(44)); } catch(eMinH2) {}
+      try { b.setMinHeight(self.dp(50)); } catch(eMinH2) {}
       try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.card, self.withAlpha(T.stroke || T.brown, isDark ? 0.42 : 0.55), self.dp(1), self.dp(26))); } catch(eBg2) {}
       try { b.setElevation(self.dp(1)); } catch(eElev2) {}
     }
@@ -159,11 +159,11 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       var previewRow = new android.widget.LinearLayout(context);
       previewRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       previewRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      previewRow.setPadding(self.dp(10), self.dp(6), self.dp(10), self.dp(6));
-      previewRow.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.24 : 0.18), self.dp(1), self.dp(16)));
+      previewRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+      previewRow.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.24 : 0.18), self.dp(1), self.dp(18)));
 
       var previewIv = new android.widget.ImageView(context);
-      previewIv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(38), self.dp(38)));
+      previewIv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(44), self.dp(44)));
       previewIv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
       previewRow.addView(previewIv);
 
@@ -171,7 +171,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       previewLabel.setText("小图标试衣间");
       previewLabel.setTextColor(subTextColor);
       previewLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-      previewLabel.setPadding(self.dp(10), 0, 0, 0);
+      previewLabel.setPadding(self.dp(12), 0, 0, 0);
       previewRow.addView(previewLabel);
 
       content.addView(previewRow);
@@ -205,19 +205,19 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       recentTitle.setText("最近用过的小颜色");
       recentTitle.setTextColor(subTextColor);
       recentTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-      recentTitle.setPadding(self.dp(10), self.dp(5), self.dp(10), self.dp(2));
+      recentTitle.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(3));
       content.addView(recentTitle);
 
       var recentGrid = new android.widget.GridLayout(context);
       recentGrid.setColumnCount(8);
-      recentGrid.setPadding(self.dp(8), self.dp(2), self.dp(8), self.dp(2));
+      recentGrid.setPadding(self.dp(8), self.dp(3), self.dp(8), self.dp(3));
       content.addView(recentGrid);
 
       var recentEmptyTv = new android.widget.TextView(context);
       recentEmptyTv.setText("还没有最近颜色");
       recentEmptyTv.setTextColor(subTextColor);
       recentEmptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-      recentEmptyTv.setPadding(self.dp(10), self.dp(2), self.dp(10), self.dp(4));
+      recentEmptyTv.setPadding(self.dp(12), self.dp(3), self.dp(12), self.dp(6));
       recentEmptyTv.setVisibility(android.view.View.GONE);
       content.addView(recentEmptyTv);
 
@@ -233,11 +233,11 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           for (ri = 0; ri < recentColors.length && ri < MAX_RECENT_COLORS; ri++) {
             (function(hex) {
               var cell = new android.widget.FrameLayout(context);
-              var margin = self.dp(2);
+              var margin = self.dp(3);
               try {
                 var lp = new android.widget.GridLayout.LayoutParams();
-                lp.width = self.dp(24);
-                lp.height = self.dp(24);
+                lp.width = self.dp(28);
+                lp.height = self.dp(28);
                 lp.setMargins(margin, margin, margin, margin);
                 cell.setLayoutParams(lp);
                } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -247,7 +247,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               try {
                 var bg = new android.graphics.drawable.GradientDrawable();
                 bg.setColor(android.graphics.Color.parseColor(hex));
-                bg.setCornerRadius(self.dp(4));
+                bg.setCornerRadius(self.dp(5));
                 swatch.setBackground(bg);
                } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
               cell.addView(swatch);
@@ -256,7 +256,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
                 try {
                   var border = new android.graphics.drawable.GradientDrawable();
                   border.setColor(android.graphics.Color.TRANSPARENT);
-                  border.setCornerRadius(self.dp(4));
+                  border.setCornerRadius(self.dp(5));
                   border.setStroke(self.dp(2), T.primaryDeep);
                   cell.setForeground(border);
                  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -289,21 +289,21 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       commonTitle.setText("糖果常用色");
       commonTitle.setTextColor(subTextColor);
       commonTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-      commonTitle.setPadding(self.dp(10), self.dp(5), self.dp(10), self.dp(2));
+      commonTitle.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(3));
       content.addView(commonTitle);
 
       var commonGrid = new android.widget.GridLayout(context);
       commonGrid.setColumnCount(7);
-      commonGrid.setPadding(self.dp(8), self.dp(2), self.dp(8), self.dp(4));
+      commonGrid.setPadding(self.dp(8), self.dp(3), self.dp(8), self.dp(6));
       var ci;
       for (ci = 0; ci < commonTintHexValues.length; ci++) {
         (function(hex) {
           var cell = new android.widget.FrameLayout(context);
-          var margin = self.dp(2);
+          var margin = self.dp(3);
           try {
             var lp = new android.widget.GridLayout.LayoutParams();
-            lp.width = self.dp(26);
-            lp.height = self.dp(26);
+            lp.width = self.dp(30);
+            lp.height = self.dp(30);
             lp.setMargins(margin, margin, margin, margin);
             cell.setLayoutParams(lp);
            } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -377,7 +377,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       var valueTv = new android.widget.TextView(context);
       valueTv.setTextColor(textColor);
       valueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-      valueTv.setPadding(self.dp(10), self.dp(2), self.dp(10), self.dp(2));
+      valueTv.setPadding(self.dp(12), self.dp(3), self.dp(12), self.dp(3));
       content.addView(valueTv);
 
       function updateValueTv() {
@@ -396,19 +396,19 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           var row = new android.widget.LinearLayout(context);
           row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
           row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-          row.setPadding(self.dp(10), 0, self.dp(10), 0);
+          row.setPadding(self.dp(12), self.dp(2), self.dp(12), self.dp(2));
 
           var label = new android.widget.TextView(context);
           label.setText(rgbLabels[idx]);
           label.setTextColor(textColor);
           label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-          label.setMinWidth(self.dp(18));
+          label.setMinWidth(self.dp(20));
           row.addView(label);
 
           var seek = new android.widget.SeekBar(context);
           seek.setMax(255);
           var seekLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-          seekLp.setMargins(self.dp(6), 0, self.dp(6), 0);
+          seekLp.setMargins(self.dp(8), 0, self.dp(8), 0);
           seek.setLayoutParams(seekLp);
           row.addView(seek);
           rgbSeeks.push(seek);
@@ -416,7 +416,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           var valTv = new android.widget.TextView(context);
           valTv.setTextColor(subTextColor);
           valTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-          valTv.setMinWidth(self.dp(26));
+          valTv.setMinWidth(self.dp(28));
           row.addView(valTv);
           rgbValTvs.push(valTv);
 
@@ -464,26 +464,26 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       var alphaRow = new android.widget.LinearLayout(context);
       alphaRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       alphaRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      alphaRow.setPadding(self.dp(10), 0, self.dp(10), self.dp(2));
+      alphaRow.setPadding(self.dp(12), self.dp(2), self.dp(12), self.dp(4));
 
       var alphaLabel = new android.widget.TextView(context);
       alphaLabel.setText("A");
       alphaLabel.setTextColor(textColor);
       alphaLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-      alphaLabel.setMinWidth(self.dp(18));
+      alphaLabel.setMinWidth(self.dp(20));
       alphaRow.addView(alphaLabel);
 
       alphaSeek = new android.widget.SeekBar(context);
       alphaSeek.setMax(255);
       var alphaSeekLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-      alphaSeekLp.setMargins(self.dp(6), 0, self.dp(6), 0);
+      alphaSeekLp.setMargins(self.dp(8), 0, self.dp(8), 0);
       alphaSeek.setLayoutParams(alphaSeekLp);
       alphaRow.addView(alphaSeek);
 
       alphaValTv = new android.widget.TextView(context);
       alphaValTv.setTextColor(subTextColor);
       alphaValTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-      alphaValTv.setMinWidth(self.dp(26));
+      alphaValTv.setMinWidth(self.dp(28));
       alphaRow.addView(alphaValTv);
 
       alphaSeek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener({
@@ -512,7 +512,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       var actionRow = new android.widget.LinearLayout(context);
       actionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       actionRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      actionRow.setPadding(self.dp(10), self.dp(4), self.dp(10), self.dp(2));
+      actionRow.setPadding(self.dp(10), self.dp(6), self.dp(10), self.dp(4));
 
       var btnClear = createColorPanelActionButton("恢复默认", false, function() {
         isFollowTheme = true;
@@ -526,7 +526,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         try { if (alphaSeek) alphaSeek.setProgress(255); } catch(eAlphaSeek) {}
         try { if (alphaValTv) alphaValTv.setText("255"); } catch(eAlphaTv) {}
       });
-      var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+      var clearLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(50));
       clearLp.weight = 1;
       clearLp.setMargins(0, 0, self.dp(6), 0);
       actionRow.addView(btnClear, clearLp);
@@ -543,7 +543,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
         }
         closePopup();
       });
-      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+      var okLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(50));
       okLp.weight = 1;
       okLp.setMargins(self.dp(6), 0, 0, 0);
       actionRow.addView(btnOk, okLp);

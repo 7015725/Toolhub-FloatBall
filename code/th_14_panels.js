@@ -4612,12 +4612,12 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   if (sw <= 0) sw = self.dp(360);
   if (sh <= 0) sh = self.dp(640);
   var preferAllVisible = !!opt.preferAllVisible;
-  var panelWidth = Math.round(sw * (preferAllVisible ? 0.94 : 0.92));
-  var panelHeight = preferAllVisible ? Math.min(self.dp(640), sh - self.dp(28)) : Math.min(self.dp(520), Math.round(sh * 0.68));
-  if (panelWidth > self.dp(preferAllVisible ? 430 : 420)) panelWidth = self.dp(preferAllVisible ? 430 : 420);
-  if (panelWidth < self.dp(300)) panelWidth = Math.min(sw - self.dp(preferAllVisible ? 12 : 16), self.dp(300));
+  var panelWidth = Math.round(sw * 0.92);
+  var panelHeight = preferAllVisible ? Math.min(self.dp(590), sh - self.dp(36)) : Math.min(self.dp(520), Math.round(sh * 0.68));
+  if (panelWidth > self.dp(420)) panelWidth = self.dp(420);
+  if (panelWidth < self.dp(300)) panelWidth = Math.min(sw - self.dp(16), self.dp(300));
   if (preferAllVisible) {
-    if (panelHeight < self.dp(520)) panelHeight = Math.min(sh - self.dp(16), self.dp(520));
+    if (panelHeight < self.dp(540)) panelHeight = Math.min(sh - self.dp(24), self.dp(540));
   } else {
     if (panelHeight > sh - self.dp(48)) panelHeight = sh - self.dp(48);
     if (panelHeight < self.dp(420)) panelHeight = Math.min(sh - self.dp(24), self.dp(420));
