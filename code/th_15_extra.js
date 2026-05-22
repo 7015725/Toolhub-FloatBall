@@ -1088,13 +1088,13 @@ FloatBallAppWM.prototype.createToolAppEdgeBackStrip = function(edge) {
         if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
           var ux = event.getRawX() - downX;
           var uy = event.getRawY() - downY;
-          var commitDp = Number(self.config.TOOLAPP_BACK_COMMIT_DISTANCE_DP || 72);
-          if (isNaN(commitDp)) commitDp = 72;
+          var commitDp = Number(self.config.TOOLAPP_BACK_COMMIT_DISTANCE_DP || 48);
+          if (isNaN(commitDp)) commitDp = 48;
           if (commitDp < 1) commitDp = 1;
           if (commitDp > 480) commitDp = 480;
           var completeDistance = self.dp(commitDp);
           var okDir = (edge === 0 && ux > completeDistance) || (edge === 1 && ux < -completeDistance);
-          var ok = (action === android.view.MotionEvent.ACTION_UP) && moved && okDir && Math.abs(ux) > Math.abs(uy) * 1.2;
+          var ok = (action === android.view.MotionEvent.ACTION_UP) && moved && okDir && Math.abs(ux) > Math.abs(uy) * 1.05;
           active = false;
           self.finishToolAppBackPreview(edge, ok);
           return true;
@@ -1120,14 +1120,14 @@ FloatBallAppWM.prototype.hideToolAppScreenBackStrips = function() {
 };
 
 FloatBallAppWM.prototype.getToolAppBackEdgeWidthPx = function() {
-  var stripDp = 24;
+  var stripDp = 36;
   try {
-    stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 24);
-    if (isNaN(stripDp)) stripDp = 24;
+    stripDp = Number(this.config.TOOLAPP_BACK_EDGE_WIDTH_DP || 36);
+    if (isNaN(stripDp)) stripDp = 36;
     if (stripDp < 1) stripDp = 1;
     if (stripDp > 120) stripDp = 120;
   } catch(e) {
-    stripDp = 24;
+    stripDp = 36;
   }
   return this.dp(stripDp);
 };
@@ -1216,7 +1216,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           rootEdge = -1;
           var canBackNow = !!(self.state && self.state.toolAppActive && self.hasToolAppBackTarget && self.hasToolAppBackTarget());
           if (canBackNow) {
-            var edgeW = self.getToolAppBackEdgeWidthPx ? self.getToolAppBackEdgeWidthPx() : self.dp(24);
+            var edgeW = self.getToolAppBackEdgeWidthPx ? self.getToolAppBackEdgeWidthPx() : self.dp(36);
             var rw = 0;
             try { rw = this.getWidth(); } catch(eW) { rw = 0; }
             if (rootDownX <= edgeW) rootEdge = 0;
@@ -1232,15 +1232,24 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           var adx = Math.abs(dx);
           var ady = Math.abs(dy);
           var validDir = (rootEdge === 0 && dx > 0) || (rootEdge === 1 && dx < 0);
-          var slopDp = Number(self.config.CLICK_SLOP_DP || 6) * 2;
-          if (isNaN(slopDp)) slopDp = 12;
-          if (slopDp < 12) slopDp = 12;
-          if (slopDp > 40) slopDp = 40;
+          var slopDp = Number(self.config.CLICK_SLOP_DP || 6);
+          if (isNaN(slopDp)) slopDp = 6;
+          if (slopDp < 6) slopDp = 6;
+          if (slopDp > 18) slopDp = 18;
           var touchSlop = self.dp(slopDp);
-          if (validDir && adx > touchSlop && adx > ady * 1.2) {
+          if (validDir && adx > touchSlop && adx > ady * 1.05) {
             rootBackActive = true;
             rootBackMoved = true;
             try { self.prepareToolAppBackPreview(rootEdge); } catch(ePrep) { try { safeLog(self.L, 'w', 'root back preview prepare fail: ' + String(ePrep)); } catch(eLogPrep) {} }
+            try {
+              var triggerDp0 = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 120);
+              if (isNaN(triggerDp0)) triggerDp0 = 120;
+              if (triggerDp0 < 1) triggerDp0 = 1;
+              if (triggerDp0 > 720) triggerDp0 = 720;
+              var triggerDistance0 = self.dp(triggerDp0);
+              var p0 = Math.min(1, adx / triggerDistance0);
+              self.applyToolAppBackPreviewProgress(rootEdge, p0, adx);
+            } catch(eFirstMove) {}
             try { safeLog(self.L, 'd', 'root edge back intercept edge=' + String(rootEdge) + ' dx=' + String(dx)); } catch(eMoveLog) {}
             return true;
           }
@@ -1261,9 +1270,9 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
           var mx = ev.getX() - rootDownX;
           var my = ev.getY() - rootDownY;
           var validDir2 = (rootEdge === 0 && mx > 0) || (rootEdge === 1 && mx < 0);
-          if (validDir2 && Math.abs(mx) > Math.abs(my) * 1.2) {
-            var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 180);
-            if (isNaN(triggerDp)) triggerDp = 180;
+          if (validDir2 && Math.abs(mx) > Math.abs(my) * 1.05) {
+            var triggerDp = Number(self.config.TOOLAPP_BACK_PROGRESS_DISTANCE_DP || 120);
+            if (isNaN(triggerDp)) triggerDp = 120;
             if (triggerDp < 1) triggerDp = 1;
             if (triggerDp > 720) triggerDp = 720;
             var triggerDistance = self.dp(triggerDp);
@@ -1275,13 +1284,13 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
         if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
           var ux = ev.getX() - rootDownX;
           var uy = ev.getY() - rootDownY;
-          var commitDp = Number(self.config.TOOLAPP_BACK_COMMIT_DISTANCE_DP || 72);
-          if (isNaN(commitDp)) commitDp = 72;
+          var commitDp = Number(self.config.TOOLAPP_BACK_COMMIT_DISTANCE_DP || 48);
+          if (isNaN(commitDp)) commitDp = 48;
           if (commitDp < 1) commitDp = 1;
           if (commitDp > 480) commitDp = 480;
           var completeDistance = self.dp(commitDp);
           var okDir = (rootEdge === 0 && ux > completeDistance) || (rootEdge === 1 && ux < -completeDistance);
-          var ok = (action === android.view.MotionEvent.ACTION_UP) && rootBackMoved && okDir && Math.abs(ux) > Math.abs(uy) * 1.2;
+          var ok = (action === android.view.MotionEvent.ACTION_UP) && rootBackMoved && okDir && Math.abs(ux) > Math.abs(uy) * 1.05;
           var edgeDone = rootEdge;
           rootBackActive = false;
           rootBackMoved = false;
