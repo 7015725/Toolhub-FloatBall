@@ -2,7 +2,8 @@
 // 安全更新机制：入口内置 RSA 公钥，先验证 manifest.json/manifest.sig，再按 SHA256 下载子模块。
 // Gitea 只负责分发；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
-var UPDATE_SOURCE = 0; // 0: Gitea, 1: GitHub
+var UPDATE_SOURCE = 1; // 0: Gitea, 1: GitHub
+var UPDATE_SECURITY_MODE = 0; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 
 var UPDATE_ROOTS = [
     "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/",
@@ -10,6 +11,8 @@ var UPDATE_ROOTS = [
 ];
 
 if (UPDATE_SOURCE !== 1) UPDATE_SOURCE = 0;
+UPDATE_SECURITY_MODE = parseInt(String(UPDATE_SECURITY_MODE || 0), 10);
+if (isNaN(UPDATE_SECURITY_MODE) || UPDATE_SECURITY_MODE < 0 || UPDATE_SECURITY_MODE > 2) UPDATE_SECURITY_MODE = 0;
 
 var GIT_ROOT = UPDATE_ROOTS[UPDATE_SOURCE];
 var GIT_BASE = GIT_ROOT + "code/";
@@ -249,26 +252,40 @@ function verifyManifestSignature(manifestText, sigText, keyId) {
 function fetchTrustedManifest() {
     try {
         ensureCodeDir();
+        if (UPDATE_SECURITY_MODE === 0) {
+            __trustedManifest = null;
+            __securityStatus = { ok: true, plain: true, msg: "普通更新模式：未启用签名/manifest校验" };
+            writeLog(__securityStatus.msg);
+            return null;
+        }
+
         var manifestText = downloadText(GIT_ROOT + "manifest.json");
-        var sigText = downloadText(GIT_ROOT + "manifest.sig");
         var manifest = JSON.parse(String(manifestText));
         if (!manifest || !manifest.files) throw "manifest files missing";
-        if (String(manifest.alg || "") !== "SHA256withRSA") throw "unsupported manifest alg: " + String(manifest.alg);
-        var keyId = String(manifest.keyId || DEFAULT_TRUSTED_KEY_ID);
-        if (!getTrustedPublicKeyB64(keyId)) throw "untrusted manifest keyId: " + keyId;
-        if (!verifyManifestSignature(manifestText, sigText, keyId)) throw "manifest signature invalid";
+
         var version = parseInt(String(manifest.version || "0"), 10);
         if (isNaN(version) || version <= 0) throw "invalid manifest version";
-        if (version < MIN_TRUSTED_MANIFEST_VERSION) throw "manifest below minimum trusted version: remote=" + version + ", min=" + MIN_TRUSTED_MANIFEST_VERSION;
-        var localVersion = getTrustedVersion();
-        if (localVersion > 0 && version < localVersion) throw "manifest rollback: remote=" + version + ", local=" + localVersion;
-        __trustedManifest = manifest;
-        __securityStatus = { ok: true, msg: "安全清单验签通过，version=" + version + ", keyId=" + keyId, version: version, keyId: keyId };
+
+        if (UPDATE_SECURITY_MODE === 2) {
+            var sigText = downloadText(GIT_ROOT + "manifest.sig");
+            if (String(manifest.alg || "") !== "SHA256withRSA") throw "unsupported manifest alg: " + String(manifest.alg);
+            var keyId = String(manifest.keyId || DEFAULT_TRUSTED_KEY_ID);
+            if (!getTrustedPublicKeyB64(keyId)) throw "untrusted manifest keyId: " + keyId;
+            if (!verifyManifestSignature(manifestText, sigText, keyId)) throw "manifest signature invalid";
+            if (version < MIN_TRUSTED_MANIFEST_VERSION) throw "manifest below minimum trusted version: remote=" + version + ", min=" + MIN_TRUSTED_MANIFEST_VERSION;
+            var localVersion = getTrustedVersion();
+            if (localVersion > 0 && version < localVersion) throw "manifest rollback: remote=" + version + ", local=" + localVersion;
+            __trustedManifest = manifest;
+            __securityStatus = { ok: true, mode: 2, msg: "安全清单验签通过，version=" + version + ", keyId=" + keyId, version: version, keyId: keyId };
+        } else {
+            __trustedManifest = manifest;
+            __securityStatus = { ok: true, mode: 1, msg: "manifest哈希校验模式：version=" + version, version: version, keyId: String(manifest.keyId || "") };
+        }
         writeLog(__securityStatus.msg);
         return manifest;
     } catch (e) {
         __trustedManifest = null;
-        __securityStatus = { ok: false, msg: "安全清单校验失败，已停止远程拉取：" + String(e) };
+        __securityStatus = { ok: false, msg: "更新清单不可用：" + String(e) };
         writeLog(__securityStatus.msg);
         return null;
     }
@@ -285,6 +302,26 @@ function replaceFile(tmpFile, destFile) {
 function getManifestInfo(relPath) {
     if (!__trustedManifest || !__trustedManifest.files) return null;
     return __trustedManifest.files[relPath] || null;
+}
+
+function ensurePlainRemoteModule(relPath, destFile) {
+    var tmpFile = new java.io.File(destFile.getAbsolutePath() + ".tmp");
+    try { if (tmpFile.exists()) tmpFile.delete(); } catch (eDelTmp0) {}
+    try {
+        var size = downloadFile(GIT_BASE + relPath, tmpFile);
+        if (size <= 0) throw "empty download: " + relPath;
+        replaceFile(tmpFile, destFile);
+        var hash = sha256File(destFile.getAbsolutePath());
+        return { updated: true, size: size, hash: hash };
+    } catch (e) {
+        try { if (tmpFile.exists()) tmpFile.delete(); } catch (eDelTmp) {}
+        if (destFile.exists()) {
+            var localHash = sha256File(destFile.getAbsolutePath());
+            writeLog("Plain update failed, use local module " + relPath + ": " + String(e));
+            return { updated: false, localFallback: true, size: destFile.length(), hash: localHash };
+        }
+        throw String(e);
+    }
 }
 
 function ensureVerifiedModule(relPath, destFile) {
@@ -331,12 +368,15 @@ function loadScript(relPath) {
         var dir = ensureCodeDir();
         var f = new java.io.File(dir, relPath);
         var result;
-        if (__trustedManifest) result = ensureVerifiedModule(relPath, f);
-        else result = ensureLocalTrustedModule(relPath, f);
+        if (UPDATE_SECURITY_MODE === 0) result = ensurePlainRemoteModule(relPath, f);
+        else if (__trustedManifest) result = ensureVerifiedModule(relPath, f);
+        else if (UPDATE_SECURITY_MODE === 2) result = ensureLocalTrustedModule(relPath, f);
+        else if (f.exists()) result = { updated: false, localFallback: true, size: f.length(), hash: sha256File(f.getAbsolutePath()) };
+        else throw "manifest不可用且本地模块不存在: " + relPath;
 
         if (result.updated) {
             __moduleUpdates.push({ module: relPath, isNew: !!result.isNew, size: result.size });
-            writeLog("Verified update " + relPath + " (" + result.size + " bytes, sha256=" + result.hash + ")");
+            writeLog((UPDATE_SECURITY_MODE === 0 ? "Plain update " : "Verified update ") + relPath + " (" + result.size + " bytes, sha256=" + result.hash + ")");
         }
 
         var fileSize = f.length();
@@ -373,7 +413,7 @@ for (var i = 0; i < modules.length; i++) {
         if (criticalModules[modules[i]]) throw "Critical module failed: " + modules[i] + " (" + String(e) + ")";
     }
 }
-if (__trustedManifest && loadErrors.length === 0) saveTrustedVersion(__trustedManifest.version);
+if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0) saveTrustedVersion(__trustedManifest.version);
 
 var __out = (function() {
   if (typeof getProcessInfo !== "function") {
@@ -427,9 +467,11 @@ var __out = (function() {
   var started = !!(startRet && startRet.ok);
   var layoutObj = startRet && startRet.layout || null;
   var layoutText = layoutObj ? (String(layoutObj.cols || "?") + "×" + String(layoutObj.rows || "?")) : "未知";
-  var securityText = __securityStatus.ok
-    ? ("✓ 已验签 v" + String(__securityStatus.version || 0) + " / " + optStr(__securityStatus.keyId))
-    : ("✗ " + optStr(__securityStatus.msg));
+  var securityText;
+  if (UPDATE_SECURITY_MODE === 0) securityText = "⚠ 普通更新模式：未启用签名校验";
+  else if (UPDATE_SECURITY_MODE === 1 && __securityStatus.ok) securityText = "⚠ manifest哈希校验模式 v" + String(__securityStatus.version || 0);
+  else if (__securityStatus.ok) securityText = "✓ 已验签 v" + String(__securityStatus.version || 0) + " / " + optStr(__securityStatus.keyId);
+  else securityText = "✗ " + optStr(__securityStatus.msg);
   var syncText = syncInfo.count > 0
     ? ("✓ 已更新 " + syncInfo.count + " 个模块：" + syncInfo.modules.join("、"))
     : "✓ 子模块已是最新";
