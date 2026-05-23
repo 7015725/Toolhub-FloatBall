@@ -2544,10 +2544,6 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         grabOffsetX = startRawX - logicalDownX;
         grabOffsetY = startRawY - logicalDownY;
 
-        self.state.rawX = startRawX;
-        self.state.rawY = startRawY;
-        self.state.downX = logicalDownX;
-        self.state.downY = logicalDownY;
         self.state.dragging = false;
         lastUpdateTs = 0;
 

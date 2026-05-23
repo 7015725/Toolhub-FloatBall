@@ -100,12 +100,6 @@ FloatBallAppWM.prototype.loadSavedPos = function() {
   return { x: x, y: y };
 };
 
-FloatBallAppWM.prototype.trySavePosThrottled = function(x, y) {
-  var t = this.now();
-  if (t - this.state.lastSaveTs < this.config.SAVE_THROTTLE_MS) return false;
-  this.state.lastSaveTs = t;
-  return this.savePos(x, y);
-};
 
 // =======================【工具：配置持久化】======================
 FloatBallAppWM.prototype.saveConfig = function(obj) {

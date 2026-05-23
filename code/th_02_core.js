@@ -66,13 +66,8 @@ function FloatBallAppWM(logger) {
     maskLp: null,
 
     loadedPos: null,
-    lastSaveTs: 0,
 
     dragging: false,
-    rawX: 0,
-    rawY: 0,
-    downX: 0,
-    downY: 0,
 
     docked: false,
     dockSide: null,

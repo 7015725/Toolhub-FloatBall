@@ -769,7 +769,6 @@ var ConfigManager = {
         PANEL_LABEL_ENABLED: true,
         PANEL_LABEL_TEXT_SIZE_SP: 12,
         PANEL_LABEL_TOP_MARGIN_DP: 4,
-        PANEL_BG_FALLBACK_HEX: "#EE1E1E1E",
         PANEL_BG_ALPHA: 0.85,
         SETTINGS_THEME: "animal",
         THEME_MODE: 1,
