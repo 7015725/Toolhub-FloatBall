@@ -1,7 +1,8 @@
 # ShortX ToolHub
 
 ShortX ToolHub 是一个面向 **ShortX / Rhino ES5 JS** 的模块化悬浮工具框架。
-入口文件 `ToolHub.js` 负责安全拉取、验签、校验并加载子模块；业务 UI 和功能拆分在 `code/th_*.js` 中维护，避免单个 JS 文件过大。
+
+入口文件 `ToolHub.js` 负责拉取、校验、更新并加载子模块；业务 UI、按钮动作、主题、持久化、图标选择器、颜色选择器、ToolApp 页面栈等功能拆分在 `code/th_*.js` 中维护，避免单个 JS 文件过大。
 
 当前仓库地址：
 
@@ -15,22 +16,30 @@ GitHub 镜像地址：
 https://github.com/7015725/Toolhub-FloatBall
 ```
 
+整体结构说明：
+
+```text
+STRUCTURE.md
+```
+
 ---
 
 ## 核心特性
 
-- **模块化加载**：入口文件只做启动、同步、校验与汇总返回；功能代码拆到 16 个子模块。
-- **签名更新机制**：远端 `manifest.json` 必须通过 `manifest.sig` 的 RSA 签名校验后才可信。
+- **模块化加载**：入口文件只做启动、同步、校验与汇总返回；当前实际加载 19 个子模块。
+- **更新源切换**：入口支持在 Gitea 主源与 GitHub 镜像之间切换。
+- **签名更新机制**：安全模式下，远端 `manifest.json` 必须通过 `manifest.sig` 的 RSA 签名校验后才可信。
 - **SHA256 文件校验**：每个子模块按清单中的 `sha256` 和 `size` 校验，通过后才覆盖本地文件。
 - **防回滚**：入口内置 `MIN_TRUSTED_MANIFEST_VERSION`，并记录本地已信任清单版本，拒绝旧版本清单。
 - **本地可信回退**：网络或远端清单异常时，不盲目覆盖；已验证过的本地模块可继续使用。
-- **更新源切换**：入口支持在 Gitea 主源与 GitHub 镜像之间切换，下载流程仍统一走签名清单与 SHA256 校验。
-- **App 化设置页**：设置主页、按钮管理、按钮编辑等页面使用统一 Shell 与页面栈，支持顶部返回/关闭。
-- **系统返回适配**：支持导航键返回；悬浮窗内置左右边缘交互式滑动返回，拖动时实时露出上级页面，松手后完成返回。
-- **ShortX 图标选择器**：支持图标点选、搜索、分页、自适应列数，不再依赖手填图标名。
-- **颜色选择器**：使用折叠式完整调色板，支持常用色、最近色、RGB、透明度和实时预览；避免重复内联色板。
-- **自适应布局**：ToolApp 根据屏幕尺寸调整宽高，按钮管理页底部操作区保持可见；悬浮球在横竖屏切换后会重新计算屏幕尺寸并保持吸边位置。
-- **日志记录**：启动、更新、验签、加载异常写入 `ToolHub/logs/init.log`。
+- **App 化设置页**：设置主页、按钮管理、按钮编辑、Schema 编辑等页面使用统一 ToolApp Shell 与页面栈。
+- **系统返回适配**：支持返回键、Android 13+ 返回回调、Android 14+ 预测性返回，并内置 ToolApp 左右滑返回。
+- **Surface 滑动返回**：可在 ToolApp 页面任意位置横滑返回，避免全面屏系统手势抢占极窄边缘区域。
+- **ShortX 图标选择器**：支持图标点选、搜索、分页、收藏、最近、过滤，不再依赖手填图标名。
+- **颜色选择器**：支持常用色、最近色、RGB、透明度和实时预览。
+- **自适应布局**：ToolApp 根据屏幕尺寸调整宽高，支持手机竖屏、横屏和平板宽屏布局。
+- **位置恢复**：悬浮球横竖屏切换后按比例和吸边侧恢复位置，减少横屏跑到屏幕中间的问题。
+- **日志记录**：启动、更新、验签、加载异常写入 `ToolHub/logs/init.log`，运行日志按日期保存。
 
 ---
 
@@ -47,13 +56,46 @@ https://github.com/7015725/Toolhub-FloatBall
 入口会自动完成：
 
 1. 创建 `shortx.getShortXDir()/ToolHub/code/`
-2. 下载 `manifest.json` 与 `manifest.sig`
-3. 使用入口内置公钥验签清单
+2. 下载或读取 `manifest.json`
+3. 安全模式下下载并校验 `manifest.sig`
 4. 校验清单版本，防止回滚
-5. 按清单下载 16 个子模块到临时文件
-6. 校验 `size` 与 `sha256`
+5. 按清单下载 19 个子模块到临时文件
+6. 校验模块 `size` 与 `sha256`
 7. 校验通过后覆盖本地模块
-8. 加载模块并启动悬浮球
+8. `eval` 加载模块
+9. 创建 `FloatBallAppWM` 并启动悬浮球
+
+---
+
+## 入口配置
+
+`ToolHub.js` 顶部可配置：
+
+```javascript
+var UPDATE_SOURCE = 1;          // 0: Gitea, 1: GitHub
+var UPDATE_SECURITY_MODE = 0;   // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
+```
+
+更新源：
+
+```text
+0: https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/
+1: https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/main/
+```
+
+安全模式说明：
+
+| 模式 | 含义 |
+|---|---|
+| `0` | 普通更新模式，不启用签名 / manifest 严格校验 |
+| `1` | 读取 manifest，并按 manifest 校验模块 hash / size |
+| `2` | 完整验签安全更新：manifest 签名、keyId、版本、防回滚、模块 hash / size 全部校验 |
+
+如需严格安全更新，建议使用：
+
+```javascript
+var UPDATE_SECURITY_MODE = 2;
+```
 
 ---
 
@@ -79,23 +121,51 @@ shortx.getShortXDir()/
     │   ├── th_12_rebuild.js
     │   ├── th_13_panel_ui.js
     │   ├── th_14_panels.js
+    │   ├── th_14_color_picker.js
+    │   ├── th_14_icon_picker.js
+    │   ├── th_14_schema_editor.js
     │   ├── th_15_extra.js
-    │   └── th_16_entry.js
-    └── logs/
-        └── init.log
+    │   ├── th_16_entry.js
+    │   ├── .trusted_manifest_version
+    │   └── .trusted_sha_<module>
+    ├── logs/
+    │   ├── init.log
+    │   └── ShortX_ToolHub_yyyyMMdd.log
+    ├── settings.json
+    ├── buttons.json
+    └── schema.json
 ```
 
 ### 仓库目录
 
 ```text
-ShortX_ToolHub/
+Toolhub-FloatBall/
 ├── ToolHub.js
 ├── ToolHub.js.sha256
 ├── README.md
+├── STRUCTURE.md
 ├── manifest.json
 ├── manifest.sig
 ├── code/
-│   └── th_*.js
+│   ├── th_01_base.js
+│   ├── th_02_core.js
+│   ├── th_03_icon.js
+│   ├── th_04_theme.js
+│   ├── th_05_persistence.js
+│   ├── th_06_icon_parser.js
+│   ├── th_07_shortcut.js
+│   ├── th_08_content.js
+│   ├── th_09_animation.js
+│   ├── th_10_shell.js
+│   ├── th_11_action.js
+│   ├── th_12_rebuild.js
+│   ├── th_13_panel_ui.js
+│   ├── th_14_panels.js
+│   ├── th_14_color_picker.js
+│   ├── th_14_icon_picker.js
+│   ├── th_14_schema_editor.js
+│   ├── th_15_extra.js
+│   └── th_16_entry.js
 └── scripts/
     └── generate_signed_manifest.py
 ```
@@ -137,7 +207,7 @@ ShortX_ToolHub/
 
 - `ok: false`
 - `状态: "ToolHub 启动失败"`
-- `安全`: 当前验签/清单状态
+- `安全`: 当前验签 / 清单状态
 - `错误`: 失败原因
 - `加载异常`: 非关键模块加载失败列表（如存在）
 
@@ -161,13 +231,6 @@ ShortX_ToolHub/
 9. 校验通过才覆盖本地模块。
 10. 所有模块加载正常后，保存本地可信清单版本。
 
-入口顶部可通过 `UPDATE_SOURCE` 选择更新源：
-
-- `0`：Gitea 主源
-- `1`：GitHub 镜像
-
-无论选择哪个源，`manifest.json` / `manifest.sig` 验签、防回滚和子模块 SHA256 校验流程都保持一致。
-
 当前 keyId：
 
 ```text
@@ -180,44 +243,79 @@ toolhub-targets-2026-rsa3072
 
 | 文件 | 职责 |
 |------|------|
-| `th_01_base.js` | 基础工具、日志、配置校验、通用辅助 |
-| `th_02_core.js` | `FloatBallAppWM` 构造、基础状态与核心工具 |
-| `th_03_icon.js` | 图标缓存、Bitmap 管理、悬浮球图标加载 |
-| `th_04_theme.js` | 主题、颜色、样式工具 |
-| `th_05_persistence.js` | 持久化与设置数据层 |
-| `th_06_icon_parser.js` | 图标解析、ShortX 内置图标扫描与回退 |
-| `th_07_shortcut.js` | 快捷方式选择器 |
-| `th_08_content.js` | ContentProvider 读取与通用 query |
-| `th_09_animation.js` | 面板动画、吸边、显示/隐藏管理 |
-| `th_10_shell.js` | Shell 执行层 |
-| `th_11_action.js` | 按钮动作分发与执行 |
-| `th_12_rebuild.js` | 悬浮球重建逻辑 |
-| `th_13_panel_ui.js` | 设置面板通用 UI 组件 |
-| `th_14_panels.js` | 设置子页面、按钮编辑器、图标选择器、颜色选择器 |
-| `th_15_extra.js` | 主面板、ToolApp 页面栈、设置主页、按钮管理页 |
-| `th_16_entry.js` | 生命周期、广播注册、系统返回处理、启动与销毁 |
+| `th_01_base.js` | 基础工具、配置校验、路径常量、文件 IO、原子写、防抖写、日志基础 |
+| `th_02_core.js` | `FloatBallAppWM` 构造、核心 state 初始化、基础方法、UI 工具对象初始化 |
+| `th_03_icon.js` | 图标加载、图标缓存、Drawable / Bitmap 处理、悬浮球图标解析 |
+| `th_04_theme.js` | 屏幕尺寸、旋转、Toast、振动、动物岛主题、Monet 颜色、Drawable 工具 |
+| `th_05_persistence.js` | 悬浮球位置保存、设置保存、临时编辑缓存、实时预览刷新 |
+| `th_06_icon_parser.js` | ShortX 图标解析、图标目录扫描、图标名回退 |
+| `th_07_shortcut.js` | 快捷方式扫描、快捷方式选择器、跨用户 shortcut 启动数据生成 |
+| `th_08_content.js` | ContentProvider 查询、Content 类型按钮读取 |
+| `th_09_animation.js` | 悬浮球动画、吸边、面板显示隐藏、Mask、系统返回、预测性返回、缓存清理 |
+| `th_10_shell.js` | Shell 广播桥执行层 |
+| `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut |
+| `th_12_rebuild.js` | 悬浮球重建、尺寸 / 图标 / 配置变化刷新 |
+| `th_13_panel_ui.js` | 设置项基础 UI：section、bool、int、float、action、文本输入等 |
+| `th_14_panels.js` | 设置主页、设置分组、按钮管理、按钮编辑、弹窗基础、主题适配 |
+| `th_14_color_picker.js` | 颜色选择器：最近色、常用色、RGB、透明度、实时预览 |
+| `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
+| `th_14_schema_editor.js` | Schema 编辑器 |
+| `th_15_extra.js` | 主面板构建、ToolApp Shell、页面栈、响应式布局、左右滑返回预览 |
+| `th_16_entry.js` | 主线程同步、广播注册、`startAsync`、`close`、`dispose`、生命周期管理 |
 
 ---
 
-## 图标、颜色与设置交互
+## UI 与交互结构
 
 ### ToolApp 设置页
 
-- 设置、按钮管理、按钮编辑统一运行在 ToolApp Shell 内。
+- 设置、按钮管理、按钮编辑、Schema 编辑统一运行在 ToolApp Shell 内。
 - 顶部栏提供返回与关闭，子页面优先通过页面栈返回。
+- 页面栈保存完整页面快照，支持三级、四级、五级页面继续返回。
 - 系统返回键会优先回到上一页；没有上一页时关闭 ToolApp。
-- 悬浮窗无法稳定接入系统级预测性返回动画，因此 ToolHub 内置左右边缘交互式滑动返回作为替代。
-- 拖动过程中当前页面跟随手指横移，上级页面在底层实时露出；松手达到阈值后完成返回，未达到阈值则回弹。
 - 面板尺寸按屏幕自适应，减少小屏溢出与大屏空白。
-- 按钮管理页底部操作区保持可见，避免被列表内容挤出屏幕。
+- 横屏 / 平板宽屏下可进入更适合大屏的布局结构。
+
+### ToolApp 滑动返回
+
+返回模式配置：
+
+```text
+TOOLAPP_BACK_GESTURE_MODE=edge      # 左右边缘触发
+TOOLAPP_BACK_GESTURE_MODE=surface   # 页面任意位置横滑触发
+TOOLAPP_BACK_GESTURE_MODE=off       # 关闭内置滑动返回
+```
+
+当前更推荐 `surface`：
+
+- 全面屏系统手势会抢占物理极致边缘。
+- `edge` 模式容易出现触发范围过窄。
+- `surface` 模式可以从页面任意位置横滑一定距离返回。
+
+手势冲突处理：
+
+- `ACTION_DOWN` 永远放行给子控件。
+- `ACTION_MOVE` 达到横滑阈值后再判断是否拦截。
+- 只有强横向滑动才接管返回。
+- `SeekBar` / `Switch` / `EditText` / `HorizontalScrollView` 做细粒度阻断。
+- 普通按钮、卡片、垂直列表项不阻断 surface 返回。
+
+相关配置：
+
+| 配置项 | 作用 |
+|---|---|
+| `TOOLAPP_BACK_GESTURE_MODE` | 返回模式：edge / surface / off |
+| `TOOLAPP_BACK_EDGE_WIDTH_DP` | edge 模式边缘宽度 |
+| `TOOLAPP_BACK_COMMIT_DISTANCE_DP` | 松手完成返回距离 |
+| `TOOLAPP_BACK_SURFACE_SLOP_DP` | surface 模式起判阈值 |
+| `TOOLAPP_BACK_PROGRESS_DISTANCE_DP` | 预览动画进度距离 |
 
 ### ShortX 图标选择器
 
-- 图标库默认收起，点击后展开。
-- 支持搜索、上一页、下一页。
-- 按当前可用宽度自动计算列数。
-- 按可见高度计算每页容量，减少空白和滚动浪费。
-- 选中图标后自动回填并收起。
+- 支持搜索、分页、过滤。
+- 支持收藏、最近、常用分类。
+- 根据可用宽高计算网格容量。
+- 选中图标后自动回填。
 - 优先运行时扫描 ShortX 可用图标，避免维护超大静态图标表。
 
 ### 弹出式颜色选择器
@@ -230,12 +328,96 @@ toolhub-targets-2026-rsa3072
 
 ---
 
+## 按钮动作类型
+
+按钮点击统一进入：
+
+```text
+execButtonAction(btn, idx)
+```
+
+支持类型：
+
+| type | 行为 |
+|---|---|
+| `open_settings` | 打开设置 / ToolApp |
+| `open_viewer` | 打开日志查看器 |
+| `toast` | 显示 Toast |
+| `app` | 通过 PackageManager 启动 App，支持 `launchUserId` |
+| `shell` | 通过 shell 广播桥发送 base64 命令，默认 root |
+| `broadcast` | 发送自定义广播，兼容 `extra` / `extras` |
+| `shortcut` | 执行 `shortcutJsCode`，用于锁定主 / 分身快捷方式 |
+
+---
+
+## 配置与持久化
+
+主要文件：
+
+```text
+settings.json
+buttons.json
+schema.json
+```
+
+配置流：
+
+```text
+ConfigManager.loadSettings()
+    │
+    ▼
+ConfigValidator.sanitizeConfig()
+    │
+    ▼
+FloatBallAppWM.config
+    ├── pendingUserCfg 临时编辑
+    ├── previewMode 实时预览
+    └── ConfigManager.saveSettings() 落盘
+```
+
+写入策略：
+
+- 使用原子写入：临时文件 → flush / sync → rename。
+- 使用去抖合并写入，减少频繁保存导致的卡顿和文件损坏风险。
+- `close()` 时调用 `FileIO.flushDebouncedWrites()`，尽量保证最后一次修改落盘。
+
+---
+
+## 悬浮球位置保存
+
+位置保存不只记录 x/y，还记录屏幕元数据：
+
+```text
+BALL_INIT_X
+BALL_INIT_Y_DP
+BALL_POS_SCREEN_W
+BALL_POS_SCREEN_H
+BALL_POS_X_RATIO
+BALL_POS_Y_RATIO
+BALL_POS_DOCKED
+BALL_POS_DOCK_SIDE
+```
+
+作用：
+
+- 横竖屏切换后按比例恢复位置。
+- 如果处于吸边状态，优先按 `left/right` 恢复到对应边缘。
+- 兼容旧版只保存竖屏像素导致横屏时悬浮球跑到中间的问题。
+
+---
+
 ## 日志
 
 启动日志路径：
 
 ```text
 shortx.getShortXDir() + "/ToolHub/logs/init.log"
+```
+
+运行日志路径：
+
+```text
+shortx.getShortXDir() + "/ToolHub/logs/ShortX_ToolHub_yyyyMMdd.log"
 ```
 
 常见记录内容：
@@ -245,6 +427,7 @@ shortx.getShortXDir() + "/ToolHub/logs/init.log"
 - 模块下载、哈希校验与覆盖更新
 - 模块加载失败
 - 启动异常
+- 预测性返回 / ToolApp 返回调试记录
 - 模块体积告警（超过 200KB）
 
 ---
@@ -269,9 +452,14 @@ ToolHub.js.sha256
 
 然后再提交并推送。
 
-### 修改 README
+### 修改 README / STRUCTURE
 
-只改 `README.md` 不需要重新签名，因为 README 不参与手机端模块校验。
+只改以下文档不需要重新签名，因为它们不参与手机端模块校验：
+
+```text
+README.md
+STRUCTURE.md
+```
 
 ### 注意事项
 
@@ -280,10 +468,79 @@ ToolHub.js.sha256
 - 入口文件是信任根，改动后需要用户手动替换 ShortX 任务中的入口。
 - 不要把私钥提交到仓库。
 - 不建议把调试细节塞进启动返回 JSON，优先写日志。
+- 模块加载顺序不要随意改，尤其是 `th_14_*`、`th_15_extra.js`、`th_16_entry.js`。
+
+---
+
+## 模块加载顺序
+
+当前顺序大致是：
+
+```text
+base → core → icon / theme / persistence / parser / shortcut / content
+→ animation / shell / action / rebuild
+→ panel_ui → panels → color_picker / icon_picker / schema_editor
+→ extra → entry
+```
+
+注意：
+
+- `th_14_color_picker.js` 依赖 `th_14_panels.js` 的弹窗基础能力。
+- `th_14_icon_picker.js` 应位于 `th_14_panels.js` 之后、`th_15_extra.js` 之前。
+- `th_15_extra.js` 依赖前面 UI、主题、设置、页面构建能力。
+- `th_16_entry.js` 最后加载，负责真正启动实例。
+
+---
+
+## 后续拆分建议
+
+当前仍偏大的模块：
+
+```text
+th_15_extra.js
+th_14_panels.js
+th_09_animation.js
+```
+
+建议后续逐步拆分：
+
+```text
+th_15_extra.js
+├── ToolAppShell
+├── ToolAppNavigation
+├── ToolAppBackGesture
+├── ToolAppResponsiveLayout
+└── MainPanelView
+
+th_14_panels.js
+├── SettingsHome
+├── SettingsGroupPage
+├── ButtonManagerPage
+├── ButtonEditorPage
+└── CommonPopupOverlay
+
+th_09_animation.js
+├── BallDockAnimation
+├── PanelVisibility
+├── PredictiveBack
+└── CacheCleanup
+```
+
+短期不建议大规模重构。更稳的做法是每次只拆一个页面或一个手势模块，并同步更新 `manifest.json` 与签名。
 
 ---
 
 ## 更新记录
+
+### 2026-05-23
+
+**文档更新**
+
+- 新增 `STRUCTURE.md`，整理整体结构、启动链路、模块职责、ToolApp 页面栈和返回手势结构。
+- README 同步当前实际 19 个子模块。
+- README 补充 `th_14_color_picker.js`、`th_14_icon_picker.js`、`th_14_schema_editor.js`。
+- README 补充 surface 滑动返回、子控件冲突处理、按钮动作类型和持久化结构说明。
+- README 补充后续拆分建议。
 
 ### 2026-05-19
 
