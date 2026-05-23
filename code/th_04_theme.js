@@ -759,7 +759,7 @@ FloatBallAppWM.prototype.getMonetAccentForBall = function() {
   return fb;
 };
 
-FloatBallAppWM.prototype.updateBallContentBackground = function(contentView) {
+FloatBallAppWM.prototype.updateBallContentBackground = function(contentView, usedIconKind) {
   try {
     var ballColor = this.getMonetAccentForBall();
     try {
@@ -777,7 +777,7 @@ FloatBallAppWM.prototype.updateBallContentBackground = function(contentView) {
     // # 自定义 PNG/APP 模式下：背景透明
     var fillColor = ballColor;
     var _usedKind = "none";
-    try { _usedKind = this.state.usedIconKind || "none";  } catch(eK) { safeLog(null, 'e', "catch " + String(eK)); }
+    try { _usedKind = usedIconKind || this.state.usedIconKind || "none";  } catch(eK) { safeLog(null, 'e', "catch " + String(eK)); }
 
     try {
       var _pngModeBg = Number(this.config.BALL_PNG_MODE || 0);

@@ -2682,8 +2682,11 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
   });
 };
 
-FloatBallAppWM.prototype.createBallViews = function() {
+FloatBallAppWM.prototype.buildBallContentView = function(opts) {
+  opts = opts || {};
+  var preview = !!opts.preview;
   var di = this.getDockInfo();
+  var ballUsedIconKind = this.state.usedIconKind || "none";
 
   var root = new android.widget.FrameLayout(context);
   root.setClipToPadding(true);
@@ -2809,7 +2812,8 @@ try {
         usedKind = "none";
       }
 
-      this.state.usedIconKind = usedKind;
+      ballUsedIconKind = usedKind;
+      if (!preview) this.state.usedIconKind = usedKind;
 
       if (usedKind !== "none") {
         var _pngMode1 = Number(this.config.BALL_PNG_MODE || 0);
@@ -2849,21 +2853,29 @@ try {
  } catch(eBallInner) { safeLog(null, 'e', "catch " + String(eBallInner)); }
 
 
-  this.updateBallContentBackground(content);
+  this.updateBallContentBackground(content, ballUsedIconKind);
 
   // # 阴影控制：file/app 模式下不加阴影（避免透明背景带黑框）
-  var _uk = this.state.usedIconKind;
+  var _uk = ballUsedIconKind;
   if (_uk !== "file" && _uk !== "app") {
     try { root.setElevation(this.dp(6));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
   }
 
-  content.setClickable(true);
-  content.setOnTouchListener(this.setupTouchListener());
+  if (!preview) {
+    content.setClickable(true);
+    content.setOnTouchListener(this.setupTouchListener());
+  }
 
   root.addView(content);
 
-  this.state.ballRoot = root;
-  this.state.ballContent = content;
+  return { root: root, content: content, usedIconKind: ballUsedIconKind };
+};
+
+FloatBallAppWM.prototype.createBallViews = function() {
+  var built = this.buildBallContentView({ preview: false });
+  this.state.ballRoot = built.root;
+  this.state.ballContent = built.content;
+  this.state.usedIconKind = built.usedIconKind;
 };
 
 FloatBallAppWM.prototype.createBallLayoutParams = function() {
