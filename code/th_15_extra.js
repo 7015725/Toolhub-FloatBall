@@ -764,6 +764,7 @@ FloatBallAppWM.prototype.captureToolAppPageSnapshot = function(route) {
   var entry = {
     route: r,
     settingsGroupKey: (s.settingsGroupKey !== undefined && s.settingsGroupKey !== null) ? String(s.settingsGroupKey) : "",
+    settingsBallSubtab: (s.settingsBallSubtab !== undefined && s.settingsBallSubtab !== null) ? String(s.settingsBallSubtab) : "",
     settingsHomeSelectedItemId: (s.settingsHomeSelectedItemId !== undefined) ? s.settingsHomeSelectedItemId : null,
     editingButtonIndex: (s.editingButtonIndex !== undefined) ? s.editingButtonIndex : null,
     editingSchemaIndex: (s.editingSchemaIndex !== undefined) ? s.editingSchemaIndex : null,
@@ -777,7 +778,7 @@ FloatBallAppWM.prototype.captureToolAppPageSnapshot = function(route) {
     toolAppPayload: (s.toolAppPayload !== undefined) ? this.cloneToolAppSnapshotValue(s.toolAppPayload, 0) : null,
     toolAppScrollY: (String(s.toolAppRoute || "") === r) ? ((liveScrollY !== null && liveScrollY !== undefined) ? liveScrollY : ((s.toolAppScrollY !== undefined) ? s.toolAppScrollY : 0)) : 0
   };
-  if (r !== "settings_group") entry.settingsGroupKey = "";
+  if (r !== "settings_group") { entry.settingsGroupKey = ""; entry.settingsBallSubtab = ""; }
   if (r !== "settings") { entry.settingsHomeSelectedItemId = null; entry.settingsHomeSelectedCategoryId = null; }
   if (r !== "btn_editor") { entry.editingButtonIndex = null; entry.keepBtnEditorState = false; }
   if (r !== "schema_editor") { entry.editingSchemaIndex = null; entry.keepSchemaEditorState = false; }
@@ -794,6 +795,7 @@ FloatBallAppWM.prototype.applyToolAppPageSnapshot = function(entry) {
     var r = this.isToolAppRoute(entry.route) ? String(entry.route) : "settings";
     this.state.toolAppRoute = r;
     this.state.settingsGroupKey = (entry.settingsGroupKey !== undefined && entry.settingsGroupKey !== null) ? String(entry.settingsGroupKey) : "";
+    this.state.settingsBallSubtab = (entry.settingsBallSubtab !== undefined && entry.settingsBallSubtab !== null) ? String(entry.settingsBallSubtab) : "";
     this.state.settingsHomeSelectedItemId = (entry.settingsHomeSelectedItemId !== undefined) ? entry.settingsHomeSelectedItemId : null;
     this.state.settingsHomeSelectedCategoryId = (entry.settingsHomeSelectedCategoryId !== undefined) ? entry.settingsHomeSelectedCategoryId : null;
     this.state.editingButtonIndex = (entry.editingButtonIndex !== undefined) ? entry.editingButtonIndex : null;
@@ -817,6 +819,7 @@ FloatBallAppWM.prototype.cloneToolAppPageSnapshot = function(entry) {
   return {
     route: this.isToolAppRoute(entry.route) ? String(entry.route) : "settings",
     settingsGroupKey: (entry.settingsGroupKey !== undefined && entry.settingsGroupKey !== null) ? String(entry.settingsGroupKey) : "",
+    settingsBallSubtab: (entry.settingsBallSubtab !== undefined && entry.settingsBallSubtab !== null) ? String(entry.settingsBallSubtab) : "",
     settingsHomeSelectedItemId: (entry.settingsHomeSelectedItemId !== undefined) ? entry.settingsHomeSelectedItemId : null,
     editingButtonIndex: (entry.editingButtonIndex !== undefined) ? entry.editingButtonIndex : null,
     editingSchemaIndex: (entry.editingSchemaIndex !== undefined) ? entry.editingSchemaIndex : null,

@@ -196,14 +196,17 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
       chip.setTypeface(null, selected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
       chip.setTextColor(selected ? T.onPrimary : T.primaryDeep);
       chip.setPadding(self.dp(14), self.dp(8), self.dp(14), self.dp(8));
+      try { chip.setClickable(true); chip.setFocusable(true); } catch(eClickable) {}
       var bg = selected ? T.primary : self.withAlpha(T.primarySoft, isDark ? 0.70 : 0.94);
       var stroke = selected ? T.primary : self.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.18);
       chip.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(18)));
-      chip.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+      chip.setOnClickListener(new JavaAdapter(android.view.View.OnClickListener, { onClick: function(v) {
         try {
           self.touchActivity();
-          self.state.settingsBallSubtab = String(tab.key || "shape");
-          if (onChange) onChange(String(tab.key || "shape"));
+          var nextKey = String(tab.key || "shape");
+          if (String(self.state.settingsBallSubtab || "") === nextKey) return;
+          self.state.settingsBallSubtab = nextKey;
+          if (onChange) onChange(nextKey);
         } catch(eClick) { safeLog(null, 'e', "catch " + String(eClick)); }
       }}));
       var lp = new android.widget.LinearLayout.LayoutParams(-2, self.dp(38));
@@ -214,6 +217,26 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
   var wrapLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
   wrapLp.setMargins(this.dp(2), this.dp(0), this.dp(2), this.dp(8));
   parent.addView(wrap, wrapLp);
+};
+
+FloatBallAppWM.prototype.refreshBallSettingsSubtabPage = function() {
+  try {
+    if (this.state && this.state.toolAppActive && this.replaceToolAppPage) {
+      this.replaceToolAppPage("settings_group");
+      return true;
+    }
+    if (this.state && this.state.addedSettings && this.state.settingsPanel) {
+      try {
+        this.safeRemoveView(this.state.settingsPanel, "settingsPanel");
+        this.state.settingsPanel = null;
+        this.state.settingsPanelLp = null;
+        this.state.addedSettings = false;
+      } catch(eRemove) { safeLog(null, 'e', "catch " + String(eRemove)); }
+      this.showPanelAvoidBall("settings");
+      return true;
+    }
+  } catch(eRefresh) { safeLog(null, 'e', "catch " + String(eRefresh)); }
+  return false;
 };
 
 FloatBallAppWM.prototype.getSettingsHomeIcon = function(title) {
@@ -555,7 +578,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
       fixedPreviewLp.setMargins(this.dp(2), this.dp(4), this.dp(2), this.dp(8));
       root.addView(fixedPreview, fixedPreviewLp);
     } catch(eFixedPreview) { safeLog(null, 'e', "catch " + String(eFixedPreview)); }
-    try { if (this.createBallSettingsSubtabBar) this.createBallSettingsSubtabBar(root, function(k) { if (self.replaceToolAppPage) self.replaceToolAppPage("settings_group"); }); } catch(eBallTabs) { safeLog(null, 'e', "catch " + String(eBallTabs)); }
+    try { if (this.createBallSettingsSubtabBar) this.createBallSettingsSubtabBar(root, function(k) { if (self.refreshBallSettingsSubtabPage) self.refreshBallSettingsSubtabPage(); }); } catch(eBallTabs) { safeLog(null, 'e', "catch " + String(eBallTabs)); }
   }
 
   var scroll = new android.widget.ScrollView(context);
@@ -1153,7 +1176,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
       fixedPreviewLp2.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
       panel.addView(fixedPreview2, fixedPreviewLp2);
     } catch(eFixedPreview2) { safeLog(null, 'e', "catch " + String(eFixedPreview2)); }
-    try { if (this.createBallSettingsSubtabBar) this.createBallSettingsSubtabBar(panel, function(k) { if (self.state.settingsPanel) self.showSettingsGroupPanel(); }); } catch(eBallTabs2) { safeLog(null, 'e', "catch " + String(eBallTabs2)); }
+    try { if (this.createBallSettingsSubtabBar) this.createBallSettingsSubtabBar(panel, function(k) { if (self.refreshBallSettingsSubtabPage) self.refreshBallSettingsSubtabPage(); }); } catch(eBallTabs2) { safeLog(null, 'e', "catch " + String(eBallTabs2)); }
   }
 
   var scroll = new android.widget.ScrollView(context);
