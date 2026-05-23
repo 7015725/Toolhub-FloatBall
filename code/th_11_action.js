@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // =======================【WM 线程：按钮动作执行】======================
 FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
   // # 点击防抖
@@ -246,6 +246,38 @@ return;
      } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
 
     try { context.sendBroadcast(it2); } catch (eB) { this.toast("广播失败"); safeLog(this.L, 'e',  "broadcast fail action=" + action + " err=" + String(eB)); }
+    return;
+  }
+
+  if (t === "content") {
+    if (typeof this.execContentAction !== "function") {
+      this.toast("Content 模块未加载");
+      safeLog(this.L, 'e', "content action missing execContentAction idx=" + String(idx));
+      return;
+    }
+
+    var cr = this.execContentAction(btn);
+    if (cr && cr.ok) {
+      var title2 = btn.title ? String(btn.title) : "Content";
+      if (cr.text !== undefined && cr.text !== null && String(cr.text).length > 0) {
+        this.showViewerPanel(title2, String(cr.text));
+        return;
+      }
+      if (cr.value !== undefined && cr.value !== null) {
+        this.toast(String(cr.value));
+        return;
+      }
+      if (cr.rows !== undefined && cr.rows !== null) {
+        this.toast("Content 执行成功，rows=" + String(cr.rows));
+        return;
+      }
+      this.toast("Content 执行成功");
+      return;
+    }
+
+    var err2 = cr && cr.err ? String(cr.err) : "未知错误";
+    this.toast("Content 执行失败: " + err2);
+    safeLog(this.L, 'e', "content action fail idx=" + String(idx) + " err=" + err2);
     return;
   }
 
