@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 function runOnMainSync(fn, timeoutMs) {
   if (!fn) return { ok: false, error: "empty-fn" };
   try {
@@ -66,68 +66,6 @@ function registerReceiverOnMain(actions, callback) {
     return null;
   }
 }
-
-// =======================【兼容修复：补接 Content 按钮动作】======================
-// th_08_content.js 已实现 execContentAction(btn)，但 th_11_action.js 的分发入口缺少 type:"content"。
-// th_16_entry.js 最后加载，这里用轻量 wrapper 补接，避免大范围改动按钮动作模块。
-(function() {
-  try {
-    if (!FloatBallAppWM || !FloatBallAppWM.prototype) return;
-    if (FloatBallAppWM.prototype.__toolhubContentActionPatched) return;
-
-    var oldExecButtonAction = FloatBallAppWM.prototype.execButtonAction;
-    FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
-      try {
-        if (btn && String(btn.type || "") === "content") {
-          if (typeof this.execContentAction !== "function") {
-            this.toast("Content 模块未加载");
-            safeLog(this.L, 'e', "content action missing execContentAction idx=" + String(idx));
-            return;
-          }
-
-          if (!this.guardClick("btn_exec_" + String(idx), 380, null)) return;
-
-          var r = this.execContentAction(btn);
-          if (r && r.ok) {
-            var title = btn.title ? String(btn.title) : "Content";
-            if (r.text !== undefined && r.text !== null && String(r.text).length > 0) {
-              this.showViewerPanel(title, String(r.text));
-              return;
-            }
-            if (r.value !== undefined && r.value !== null) {
-              this.toast(String(r.value));
-              return;
-            }
-            if (r.rows !== undefined && r.rows !== null) {
-              this.toast("Content 执行成功，rows=" + String(r.rows));
-              return;
-            }
-            this.toast("Content 执行成功");
-            return;
-          }
-
-          var err = r && r.err ? String(r.err) : "未知错误";
-          this.toast("Content 执行失败: " + err);
-          safeLog(this.L, 'e', "content action fail idx=" + String(idx) + " err=" + err);
-          return;
-        }
-      } catch(eContent) {
-        try { this.toast("Content 执行异常"); } catch(eToast) {}
-        safeLog(this.L, 'e', "content action exception idx=" + String(idx) + " err=" + String(eContent));
-        return;
-      }
-
-      if (typeof oldExecButtonAction === "function") {
-        return oldExecButtonAction.call(this, btn, idx);
-      }
-      try { this.toast("按钮执行器未加载"); } catch(eFallbackToast) {}
-    };
-
-    FloatBallAppWM.prototype.__toolhubContentActionPatched = true;
-  } catch(ePatch) {
-    safeLog(null, 'e', "patch content action fail: " + String(ePatch));
-  }
-})();
 
 FloatBallAppWM.prototype.close = function() {
   if (this.state.closing) return;
@@ -410,7 +348,7 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
       }
     },
     content: {
-      actionPatched: !!this.__toolhubContentActionPatched,
+      hasContentAction: typeof this.execContentAction === "function",
       maxRows: Number(this.config.CONTENT_MAX_ROWS || 20),
       viewerTextSp: Number(this.config.CONTENT_VIEWER_TEXT_SP || 12)
     }
