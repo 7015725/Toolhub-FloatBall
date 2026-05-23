@@ -6,7 +6,8 @@ import sys
 root = pathlib.Path(__file__).resolve().parents[1]
 panel_text = (root / "code" / "th_14_panels.js").read_text(encoding="utf-8")
 icon_text = (root / "code" / "th_14_button_icon_editor.js").read_text(encoding="utf-8")
-text = panel_text + "\n" + icon_text
+button_text = (root / "code" / "th_14_button_editor.js").read_text(encoding="utf-8")
+text = panel_text + "\n" + icon_text + "\n" + button_text
 checks = [
     ("manager has action chip helper for search", "createButtonManagerActionChip" in text),
     ("manager has text action helper for card actions", "createButtonManagerTextAction" in text),
