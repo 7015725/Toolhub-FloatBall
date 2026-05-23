@@ -565,7 +565,6 @@ FloatBallAppWM.prototype.closeToolApp = function() {
 
 FloatBallAppWM.prototype.clearToolAppBackPreview = function(resetCurrent) {
   try {
-    try { this.resetToolAppBackWindowFollow(); } catch(eFollowClear) {}
     var prev = this.state.toolAppBackPreviewView;
     var root = this.state.toolAppRoot;
     if (prev && root) {
@@ -1002,61 +1001,6 @@ FloatBallAppWM.prototype.prepareToolAppBackPreview = function(edge) {
   return false;
 };
 
-FloatBallAppWM.prototype.applyToolAppBackWindowFollow = function(edge, dragPx) {
-  try {
-    if (!this.state || !this.state.wm || !this.state.viewerPanel || !this.state.viewerPanelLp) return false;
-
-    var lp = this.state.viewerPanelLp;
-    var dir = Number(edge) === 1 ? -1 : 1;
-
-    if (this.state.toolAppBackPreviewOriginX === null || this.state.toolAppBackPreviewOriginX === undefined) {
-      this.state.toolAppBackPreviewOriginX = Number(lp.x || 0);
-    }
-
-    var raw = Number(dragPx || 0);
-    if (isNaN(raw)) raw = 0;
-    if (raw < 0) raw = -raw;
-
-    var maxFollow = this.dp(160);
-    try {
-      var w = Number(lp.width || 0);
-      if (w > 0) maxFollow = Math.min(maxFollow, Math.floor(w * 0.38));
-    } catch(eW) {}
-
-    var follow = Math.min(raw, maxFollow);
-    var nx = Math.round(Number(this.state.toolAppBackPreviewOriginX || 0) + dir * follow);
-
-    if (lp.x !== nx) {
-      lp.x = nx;
-      this.state.wm.updateViewLayout(this.state.viewerPanel, lp);
-    }
-
-    return true;
-  } catch(e) {
-    safeLog(this.L, 'w', 'apply tool app window follow fail: ' + String(e));
-  }
-  return false;
-};
-
-FloatBallAppWM.prototype.resetToolAppBackWindowFollow = function() {
-  try {
-    if (!this.state || !this.state.wm || !this.state.viewerPanel || !this.state.viewerPanelLp) return false;
-    if (this.state.toolAppBackPreviewOriginX === null || this.state.toolAppBackPreviewOriginX === undefined) return false;
-
-    var lp = this.state.viewerPanelLp;
-    var ox = Number(this.state.toolAppBackPreviewOriginX || 0);
-    if (lp.x !== ox) {
-      lp.x = ox;
-      this.state.wm.updateViewLayout(this.state.viewerPanel, lp);
-    }
-    this.state.toolAppBackPreviewOriginX = null;
-    return true;
-  } catch(e) {
-    safeLog(this.L, 'w', 'reset tool app window follow fail: ' + String(e));
-  }
-  return false;
-};
-
 FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progress, dragPx) {
   try {
     var p = Number(progress || 0);
@@ -1080,7 +1024,6 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
     }
     if (!w || w < this.dp(120)) w = this.dp(320);
     /* 不再移动 WindowManager 窗口，避免 prevBody 和当前页面一起跑。 */
-    /* try { this.applyToolAppBackWindowFollow(edge, dragPx); } catch(eFollow) {} */
 
     try {
       var nowLog = Date.now();
@@ -1166,7 +1109,6 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
       try { if (prev) prev.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(120).setInterpolator(decel).start(); } catch(ePrev) {}
       body.animate().translationX(dir * w).alpha(1).scaleX(1).scaleY(1).setDuration(160).setInterpolator(decel).withEndAction(new java.lang.Runnable({
         run: function() {
-          try { self.resetToolAppBackWindowFollow(); } catch(eResetFollow) {}
           try { self.state.keepToolAppBackPreviewDuringPop = true; } catch(eKeepPreview) {}
           try { self.popToolAppPage("edge_swipe_back"); } catch (ePop) {}
           try { self.state.keepToolAppBackPreviewDuringPop = false; } catch(eKeepPreview2) {}
@@ -1206,7 +1148,6 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
       try { if (prev) prev.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(160).setInterpolator(cancelInterp).start(); } catch(ePrev2) {}
       body.animate().translationX(0).alpha(1).scaleX(1).scaleY(1).setDuration(200).setInterpolator(cancelInterp).withEndAction(new java.lang.Runnable({
         run: function() {
-          try { self.resetToolAppBackWindowFollow(); } catch(eResetFollow2) {}
           try {
             if (self.state.toolAppRoot) self.state.toolAppRoot.setTranslationX(0);
             if (self.state.toolAppBody) {
@@ -1223,7 +1164,6 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
     }
     this.clearToolAppBackPreview(true);
   } catch (e) {
-    try { this.resetToolAppBackWindowFollow(); } catch(eResetFollow3) {}
     try { if (this.state.toolAppRoot) this.state.toolAppRoot.setTranslationX(0); } catch(eRootCatch) {}
     try { if (this.state.toolAppBody) this.state.toolAppBody.setTranslationX(0); } catch(eBodyCatch) {}
     this.clearToolAppBackPreview(true);
@@ -1657,23 +1597,6 @@ FloatBallAppWM.prototype.setToolAppContent = function(contentView) {
   return false;
 };
 
-FloatBallAppWM.prototype.getToolAppStatusBarInsetPx = function() {
-  var inset = 0;
-  try {
-    var res = context.getResources();
-    var id = res.getIdentifier("status_bar_height", "dimen", "android");
-    if (id > 0) inset = Number(res.getDimensionPixelSize(id) || 0);
-  } catch(eRes) {
-    inset = 0;
-  }
-  if (isNaN(inset) || inset < 0) inset = 0;
-  try {
-    var maxInset = this.dp(48);
-    if (inset > maxInset) inset = maxInset;
-  } catch(eClamp) {}
-  return Math.floor(inset);
-};
-
 FloatBallAppWM.prototype.calculateToolAppLayout = function(shell) {
   var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
   var sh = Math.max(1, Number(this.state.screen && this.state.screen.h || 0));
@@ -1685,9 +1608,6 @@ FloatBallAppWM.prototype.calculateToolAppLayout = function(shell) {
   var shortSide = Math.min(sw, sh);
   var longSide = Math.max(sw, sh);
   var marginX = this.dp(12), marginTop = 0, marginBottom = this.dp(14);
-  var statusInset = 0;
-  try { statusInset = this.getToolAppStatusBarInsetPx ? this.getToolAppStatusBarInsetPx() : 0; } catch(eInset) { statusInset = 0; }
-  if (isNaN(statusInset) || statusInset < 0) statusInset = 0;
   var targetW, targetH;
   if (spec && (spec.isCompactWidth || shortSide < this.dp(420))) {
     marginX = this.dp(isLandscape ? 8 : 10); marginTop = 0; marginBottom = this.dp(isLandscape ? 6 : 14);
