@@ -163,8 +163,14 @@ FloatBallAppWM.prototype.setPendingValue = function(k, v) {
               this.replaceToolAppPage("settings_group");
           }
       } catch(eReb) { safeLog(null, 'e', "catch " + String(eReb)); }
-  } else if (this.state.previewMode) {
-      this.refreshPreview(k);
+  } else {
+      var keyStr = String(k);
+      if (keyStr.indexOf("BALL_") === 0 && this.refreshBallPreviewInSettings) {
+          try { this.refreshBallPreviewInSettings(); } catch(eBP) { safeLog(null, 'e', "catch " + String(eBP)); }
+      }
+      if (this.state.previewMode) {
+          this.refreshPreview(k);
+      }
   }
 };
 
@@ -210,9 +216,11 @@ FloatBallAppWM.prototype._refreshPreviewInternal = function(changedKey) {
             if (changedKey === "BALL_SIZE_DP") needPanel = true;
         }
 
-        // 1. 刷新悬浮球 (保持面板不关闭)
+        // 1. 刷新悬浮球 / 设置页内嵌预览 (保持面板不关闭)
         if (needBall) {
-            this.rebuildBallForNewSize(true);
+            if (!this.refreshBallPreviewInSettings || !this.refreshBallPreviewInSettings()) {
+                this.rebuildBallForNewSize(true);
+            }
         }
 
         // 2. 刷新主面板预览
