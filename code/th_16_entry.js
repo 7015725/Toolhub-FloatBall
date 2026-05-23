@@ -145,13 +145,6 @@ FloatBallAppWM.prototype.dispose = function() {
   // # 先执行标准关闭流程
   this.close();
   
-  // # 清理单例引用
-  try {
-    if (this.__shortcutPickerSingleton) {
-      this.__shortcutPickerSingleton = null;
-    }
-  } catch (e) {}
-  
   // # 清理配置缓存
   this._settingsCache = null;
   this._buttonsCache = null;

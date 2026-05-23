@@ -49,7 +49,6 @@ Toolhub-FloatBall/
 │   ├── th_04_theme.js
 │   ├── th_05_persistence.js
 │   ├── th_06_icon_parser.js
-│   ├── th_07_shortcut.js
 │   ├── th_08_content.js
 │   ├── th_09_animation.js
 │   ├── th_10_shell.js
@@ -66,7 +65,7 @@ Toolhub-FloatBall/
     └── generate_signed_manifest.py
 ```
 
-当前实际加载 **19 个子模块**。旧文档中“16 个子模块”的说法已经过期，因为 `th_14_*` 已拆出颜色选择器、图标选择器和 schema 编辑器。
+当前实际加载 **18 个子模块**。旧文档中“16 个子模块”的说法已经过期，因为 `th_14_*` 已拆出颜色选择器、图标选择器和 schema 编辑器；旧 shortcut 选择器模块已退役，快捷方式选择逻辑并入 `th_14_panels.js`。
 
 ---
 
@@ -136,14 +135,13 @@ th_16_entry.js
 | `th_04_theme.js` | 屏幕尺寸、旋转、Toast、振动、动物岛主题、Monet 颜色、Drawable 工具 |
 | `th_05_persistence.js` | 悬浮球位置保存、设置保存、临时编辑缓存、实时预览刷新 |
 | `th_06_icon_parser.js` | ShortX 图标解析、图标目录扫描、图标名回退 |
-| `th_07_shortcut.js` | 快捷方式扫描、快捷方式选择器、跨用户 shortcut 启动数据生成 |
 | `th_08_content.js` | ContentProvider 查询、Content 类型按钮读取 |
 | `th_09_animation.js` | 悬浮球动画、吸边、面板显示隐藏、Mask、系统返回、预测性返回、缓存清理 |
 | `th_10_shell.js` | Shell 广播桥执行层 |
 | `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut |
 | `th_12_rebuild.js` | 悬浮球重建、尺寸 / 图标 / 配置变化刷新 |
 | `th_13_panel_ui.js` | 设置项基础 UI：section、bool、int、float、action、文本输入等 |
-| `th_14_panels.js` | 设置主页、设置分组、按钮管理、按钮编辑、弹窗基础、主题适配 |
+| `th_14_panels.js` | 设置主页、设置分组、按钮管理、按钮编辑、内联快捷方式选择、弹窗基础、主题适配 |
 | `th_14_color_picker.js` | 颜色选择器：最近色、常用色、RGB、透明度、实时预览 |
 | `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
 | `th_14_schema_editor.js` | Schema 编辑器 |
@@ -444,7 +442,7 @@ ToolHub.js 内置 RSA 公钥
 schema: 2
 alg: SHA256withRSA
 keyId: toolhub-targets-2026-rsa3072
-files: 19 个模块
+files: 18 个模块
 ```
 
 ---
@@ -468,7 +466,7 @@ ToolHub.js.sha256
 模块加载顺序不建议随意调整。当前顺序大致是：
 
 ```text
-base → core → icon/theme/persistence/parser/shortcut/content
+base → core → icon/theme/persistence/parser/content
 → animation/shell/action/rebuild
 → panel_ui → panels → picker/editor → extra → entry
 ```

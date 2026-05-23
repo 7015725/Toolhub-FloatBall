@@ -26,7 +26,7 @@ STRUCTURE.md
 
 ## 核心特性
 
-- **模块化加载**：入口文件只做启动、同步、校验与汇总返回；当前实际加载 19 个子模块。
+- **模块化加载**：入口文件只做启动、同步、校验与汇总返回；当前实际加载 18 个子模块。
 - **更新源切换**：入口支持在 Gitea 主源与 GitHub 镜像之间切换。
 - **签名更新机制**：安全模式下，远端 `manifest.json` 必须通过 `manifest.sig` 的 RSA 签名校验后才可信。
 - **SHA256 文件校验**：每个子模块按清单中的 `sha256` 和 `size` 校验，通过后才覆盖本地文件。
@@ -59,7 +59,7 @@ STRUCTURE.md
 2. 下载或读取 `manifest.json`
 3. 安全模式下下载并校验 `manifest.sig`
 4. 校验清单版本，防止回滚
-5. 按清单下载 19 个子模块到临时文件
+5. 按清单下载 18 个子模块到临时文件
 6. 校验模块 `size` 与 `sha256`
 7. 校验通过后覆盖本地模块
 8. `eval` 加载模块
@@ -113,7 +113,6 @@ shortx.getShortXDir()/
     │   ├── th_04_theme.js
     │   ├── th_05_persistence.js
     │   ├── th_06_icon_parser.js
-    │   ├── th_07_shortcut.js
     │   ├── th_08_content.js
     │   ├── th_09_animation.js
     │   ├── th_10_shell.js
@@ -153,7 +152,6 @@ Toolhub-FloatBall/
 │   ├── th_04_theme.js
 │   ├── th_05_persistence.js
 │   ├── th_06_icon_parser.js
-│   ├── th_07_shortcut.js
 │   ├── th_08_content.js
 │   ├── th_09_animation.js
 │   ├── th_10_shell.js
@@ -249,14 +247,13 @@ toolhub-targets-2026-rsa3072
 | `th_04_theme.js` | 屏幕尺寸、旋转、Toast、振动、动物岛主题、Monet 颜色、Drawable 工具 |
 | `th_05_persistence.js` | 悬浮球位置保存、设置保存、临时编辑缓存、实时预览刷新 |
 | `th_06_icon_parser.js` | ShortX 图标解析、图标目录扫描、图标名回退 |
-| `th_07_shortcut.js` | 快捷方式扫描、快捷方式选择器、跨用户 shortcut 启动数据生成 |
 | `th_08_content.js` | ContentProvider 查询、Content 类型按钮读取 |
 | `th_09_animation.js` | 悬浮球动画、吸边、面板显示隐藏、Mask、系统返回、预测性返回、缓存清理 |
 | `th_10_shell.js` | Shell 广播桥执行层 |
 | `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut |
 | `th_12_rebuild.js` | 悬浮球重建、尺寸 / 图标 / 配置变化刷新 |
 | `th_13_panel_ui.js` | 设置项基础 UI：section、bool、int、float、action、文本输入等 |
-| `th_14_panels.js` | 设置主页、设置分组、按钮管理、按钮编辑、弹窗基础、主题适配 |
+| `th_14_panels.js` | 设置主页、设置分组、按钮管理、按钮编辑、内联快捷方式选择、弹窗基础、主题适配 |
 | `th_14_color_picker.js` | 颜色选择器：最近色、常用色、RGB、透明度、实时预览 |
 | `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
 | `th_14_schema_editor.js` | Schema 编辑器 |
@@ -477,7 +474,7 @@ STRUCTURE.md
 当前顺序大致是：
 
 ```text
-base → core → icon / theme / persistence / parser / shortcut / content
+base → core → icon / theme / persistence / parser / content
 → animation / shell / action / rebuild
 → panel_ui → panels → color_picker / icon_picker / schema_editor
 → extra → entry
@@ -537,7 +534,8 @@ th_09_animation.js
 **模块化与结构整理**
 
 - 新增 `STRUCTURE.md`，整理整体结构、启动链路、模块职责、ToolApp 页面栈和返回手势结构。
-- README 同步当前实际 19 个子模块，并补充 `th_14_color_picker.js`、`th_14_icon_picker.js`、`th_14_schema_editor.js` 的职责。
+- README 同步当前实际 18 个子模块，并补充 `th_14_color_picker.js`、`th_14_icon_picker.js`、`th_14_schema_editor.js` 的职责。
+- 退役无入口的 `th_07_shortcut.js`；快捷方式选择逻辑已并入 `th_14_panels.js` 的按钮编辑页。
 - 拆分 ShortX 图标选择器到 `th_14_icon_picker.js`，降低 `th_14_panels.js` 体积。
 - 拆分颜色面板到 `th_14_color_picker.js`，并保留旧入口兼容路径。
 - 拆分高级蓝图 / schema 编辑器到 `th_14_schema_editor.js`，并整理蓝图 UI。

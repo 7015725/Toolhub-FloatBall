@@ -4089,7 +4089,7 @@ try {
                 else { inputScId.setError(null); newBtn.shortcutId = sid; }
                 // # 保存：同时保存 intentUri/userId，供 JavaScript(startActivityAsUser) 脚本使用（锁定主/分身）
                 try { if (scSelectedIntentUri && scSelectedIntentUri.length > 0) newBtn.intentUri = String(scSelectedIntentUri);  } catch(eSIU2) { safeLog(null, 'e', "catch " + String(eSIU2)); }
-                try { newBtn.userId = scSelectedUserId; } catch(eSUID2) { newBtn.userId = 0; }
+                try { newBtn.userId = scSelectedUserId; newBtn.launchUserId = scSelectedUserId; } catch(eSUID2) { newBtn.userId = 0; newBtn.launchUserId = 0; }
                 // # 保存：快捷方式 JS 启动代码（自动生成/可手动编辑）
                 try { if (inputScJsCode) newBtn.shortcutJsCode = String(inputScJsCode.getValue());  } catch(eSaveJs) { safeLog(null, 'e', "catch " + String(eSaveJs)); }
                 // # 保存：快捷方式仅使用 JavaScript 执行（取消 Shell/兜底）
