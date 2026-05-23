@@ -1,0 +1,1154 @@
+# ToolHub 技术架构
+
+更新时间：2026-05-23
+
+本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **18 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择逻辑已并入 `th_14_panels.js`。
+
+---
+
+## 1. 项目定位
+
+ToolHub 是面向 **ShortX / Rhino ES5 JavaScript 环境** 的 WindowManager 悬浮球工具框架。
+
+核心定位：
+
+```text
+ShortX JS 任务入口
+  └─ ToolHub.js
+      └─ FloatBallAppWM
+          └─ WindowManager 悬浮球 / 面板 / ToolApp 工具框架
+```
+
+关键对象：
+
+- `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
+- `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
+- `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
+- `code/th_*.js`：入口按顺序加载的子模块，当前为 18 个。
+
+---
+
+## 2. 总体架构
+
+```text
+ShortX JS 任务
+   │
+   ▼
+ToolHub.js
+   │
+   ├─ ensureCodeDir()
+   │    └─ 准备 shortx.getShortXDir()/ToolHub/code/
+   │
+   ├─ fetchTrustedManifest()
+   │    ├─ 普通更新模式：跳过签名 / manifest 严格校验
+   │    ├─ manifest 哈希校验模式：读取 manifest.json
+   │    └─ 完整验签模式：读取 manifest.json + manifest.sig
+   │
+   ├─ 遍历 modules[]
+   │    └─ loadScript(relPath)
+   │         ├─ 下载或复用本地子模块
+   │         ├─ 校验 size / sha256（安全模式）
+   │         └─ eval(code)
+   │
+   ├─ installCrashHandler(logger)
+   │
+   └─ new FloatBallAppWM(logger).startAsync(...)
+        │
+        ├─ HandlerThread 承载 WindowManager View 操作
+        ├─ Main Looper 注册广播与系统回调
+        ├─ 悬浮球 ballRoot / ballContent
+        ├─ 主面板 panel
+        ├─ viewerPanel / ToolApp Shell
+        ├─ 按钮动作分发
+        └─ 配置、日志、关闭与清理
+```
+
+数据与控制流：
+
+```text
+用户点击悬浮球
+   │
+   ▼
+ballRoot / ballContent Touch
+   │
+   ├─ 拖拽 / 吸边 / 保存位置
+   └─ 打开主面板 panel
+          │
+          ▼
+      按钮网格
+          │
+          └─ execButtonAction(btn, idx)
+                 ├─ open_settings → ToolApp 设置
+                 ├─ open_viewer   → viewerPanel
+                 ├─ toast         → Toast
+                 ├─ app           → PackageManager / startActivityAsUser
+                 ├─ shell         → Shell 广播桥
+                 ├─ broadcast     → 自定义广播
+                 ├─ shortcut      → shortcutJsCode
+                 └─ content       → ContentProvider 查询 / 展示
+```
+
+---
+
+## 3. 模块分层
+
+当前实际加载 18 个子模块，入口 `modules[]` 顺序如下：
+
+```text
+基础能力层
+  th_01_base.js
+  th_02_core.js
+  th_03_icon.js
+  th_04_theme.js
+  th_05_persistence.js
+  th_06_icon_parser.js
+  th_08_content.js
+  th_09_animation.js
+
+执行与动作层
+  th_10_shell.js
+  th_11_action.js
+  th_12_rebuild.js
+
+UI 基础与页面层
+  th_13_panel_ui.js
+  th_14_panels.js
+  th_14_color_picker.js
+  th_14_icon_picker.js
+  th_14_schema_editor.js
+  th_15_extra.js
+
+生命周期入口层
+  th_16_entry.js
+```
+
+模块职责：
+
+```text
+th_01_base.js
+  基础工具、路径常量、配置校验、ConfigManager、ConfigValidator、FileIO、日志基础、Base64、默认配置。 
+
+th_02_core.js
+  FloatBallAppWM 构造函数、this.state 初始化、dp/sp/now/clamp、runOnUiThreadSafe、UI 工具对象初始化。
+
+th_03_icon.js
+  图标加载、图标缓存、Drawable / Bitmap 处理、悬浮球图标解析。
+
+th_04_theme.js
+  屏幕尺寸、旋转、Toast、振动、动物岛主题、Monet 动态颜色、Drawable 构造、startActivityAsUser 辅助。
+
+th_05_persistence.js
+  设置保存、悬浮球位置保存、pendingUserCfg、previewMode、实时预览、配置持久化刷新。
+
+th_06_icon_parser.js
+  ShortX 图标解析、图标目录扫描、图标名回退。
+
+th_08_content.js
+  ContentProvider query/get/view 相关能力，支撑 content 类型按钮。
+
+th_09_animation.js
+  悬浮球动画、吸边、面板显示隐藏、mask、系统返回键、预测性返回、面板清理。
+
+th_10_shell.js
+  Shell 广播桥执行层。
+
+th_11_action.js
+  execButtonAction(btn, idx)，按钮动作分发：设置、查看器、Toast、App、Shell、Broadcast、Shortcut、Content。
+
+th_12_rebuild.js
+  悬浮球重建，尺寸 / 图标 / 配置变化刷新。
+
+th_13_panel_ui.js
+  设置项基础 UI：section、bool、int、float、action、文本输入等组件。
+
+th_14_panels.js
+  设置主页、设置分组、按钮管理、按钮编辑、内联快捷方式选择、弹窗基础、主题适配。
+
+th_14_color_picker.js
+  颜色选择器：常用色、最近色、RGB、透明度、实时预览。
+
+th_14_icon_picker.js
+  ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay。
+
+th_14_schema_editor.js
+  Schema 编辑器。
+
+th_15_extra.js
+  主面板构建、ToolApp Shell、页面栈、响应式布局、左右滑返回预览。
+
+th_16_entry.js
+  runOnMainSync、registerReceiverOnMain、startAsync、close、dispose、广播注册与生命周期收尾。
+```
+
+说明：
+
+- `th_07_shortcut.js` 已退役。
+- `th_07` 编号空洞保留，不补位、不重命名，避免影响入口加载表、manifest、旧缓存和实机稳定性。
+- 当前仍存在 `th_14_*` 多个模块，这是历史演进结果；新模块命名规则见本文后续章节。
+
+---
+
+## 4. 启动机制
+
+入口启动链：
+
+```text
+ToolHub.js
+  │
+  ├─ ensureCodeDir()
+  │    ├─ 创建 shortx.getShortXDir()/ToolHub/code/
+  │    ├─ 检查 / 修复 chmod 700
+  │    └─ 检查 / 修复 chown 1000:1000
+  │
+  ├─ fetchTrustedManifest()
+  │    ├─ 根据 UPDATE_SECURITY_MODE 选择校验策略
+  │    ├─ 下载 manifest.json
+  │    ├─ 必要时下载 manifest.sig
+  │    └─ 设置 __trustedManifest / __securityStatus
+  │
+  ├─ loadScript(relPath)
+  │    ├─ 普通模式：ensurePlainRemoteModule()
+  │    ├─ manifest 模式：ensureVerifiedModule()
+  │    ├─ 完整验签且远端不可用：ensureLocalTrustedModule()
+  │    ├─ readTextFile()
+  │    └─ 间接 eval(code)
+  │
+  ├─ getProcessInfo("entry")
+  ├─ new ToolHubLogger(entryInfo)
+  ├─ installCrashHandler(logger)
+  ├─ new FloatBallAppWM(logger)
+  └─ app.startAsync(entryInfo, closeRule)
+```
+
+关键点：
+
+- `ToolHub.js` 顶部当前配置：
+
+```javascript
+var UPDATE_SOURCE = 1;        // 0: Gitea, 1: GitHub
+var UPDATE_SECURITY_MODE = 0; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
+```
+
+- `UPDATE_SECURITY_MODE` 当前默认是 `0`，即普通更新模式。
+- 入口中 `criticalModules` 包含 `th_01_base.js` 和 `th_16_entry.js`，这两个模块加载失败会中断启动。
+- 其他模块加载失败会记录到 `loadErrors`，但不一定立即中断，可能在运行期暴露功能缺失。
+- 入口会在启动返回 JSON 中汇总安全状态、同步状态、布局、关闭广播、更新模块和加载异常。
+
+---
+
+## 5. 安全更新机制
+
+安全更新链：
+
+```text
+ToolHub.js 内置 RSA 公钥
+   │
+   ▼
+下载 manifest.json
+   │
+   ├─ manifest.alg = SHA256withRSA
+   ├─ manifest.keyId = toolhub-targets-2026-rsa3072
+   ├─ manifest.version
+   └─ manifest.files[模块名].sha256 / size
+   │
+   ▼
+下载 manifest.sig
+   │
+   ▼
+verifyManifestSignature(manifestText, sigText, keyId)
+   │
+   ├─ Base64 解码公钥与签名
+   ├─ X509EncodedKeySpec
+   ├─ Signature.getInstance("SHA256withRSA")
+   └─ verifier.verify(sigBytes)
+   │
+   ▼
+版本校验
+   │
+   ├─ MIN_TRUSTED_MANIFEST_VERSION
+   ├─ .trusted_manifest_version
+   └─ 拒绝低于本地可信版本的远端清单
+   │
+   ▼
+逐个模块下载到 .tmp
+   │
+   ├─ size 校验
+   ├─ sha256 校验
+   └─ 通过后 replaceFile(tmp, dest)
+   │
+   ▼
+保存 .trusted_sha_<module>
+```
+
+涉及文件：
+
+- `manifest.json`：模块清单，包含 `alg`、`files`、`keyId`、`schema`、`version`。
+- `manifest.sig`：`manifest.json` 的签名文件。
+- `ToolHub.js`：内置 `TRUSTED_PUBLIC_KEYS`、`DEFAULT_TRUSTED_KEY_ID`、`MIN_TRUSTED_MANIFEST_VERSION`。
+- `ToolHub.js.sha256`：入口文件 SHA256 公示文件。
+
+三种更新模式：
+
+```text
+UPDATE_SECURITY_MODE = 0
+  普通更新模式：不启用签名 / manifest 严格校验，按远端文件更新。当前默认值为 0。
+
+UPDATE_SECURITY_MODE = 1
+  manifest 哈希校验模式：读取 manifest.json，按 manifest 中的 size / sha256 校验模块。
+
+UPDATE_SECURITY_MODE = 2
+  完整验签安全更新：manifest.sig、RSA 公钥、SHA256withRSA、keyId、version、防回滚、size、sha256 全部校验。
+```
+
+防回滚与可信缓存：
+
+- 入口内置 `MIN_TRUSTED_MANIFEST_VERSION`。
+- 完整验签模式下，远端 `version` 小于最低可信版本会被拒绝。
+- 本地保存 `.trusted_manifest_version`，远端版本小于本地可信版本会被拒绝。
+- 每个通过校验的模块保存 `.trusted_sha_<module>`。
+- 完整验签模式下，如果远端清单不可用，入口只允许复用本地已有可信 SHA 的模块，不盲目覆盖。
+
+---
+
+## 6. 本地缓存机制
+
+实机目录：
+
+```text
+shortx.getShortXDir()/ToolHub/
+├── code/
+│   ├── th_01_base.js
+│   ├── ... 18 个当前子模块
+│   ├── th_16_entry.js
+│   ├── .trusted_manifest_version
+│   └── .trusted_sha_<module>
+├── logs/
+│   ├── init.log
+│   └── ShortX_ToolHub_yyyyMMdd.log
+├── settings.json
+├── buttons.json
+└── schema.json
+```
+
+缓存职责：
+
+```text
+code/
+  本地子模块缓存。入口每次运行按更新模式下载、校验、覆盖或复用。
+
+logs/init.log
+  入口启动、目录创建、权限修复、manifest、安全更新、模块加载异常等日志。
+
+logs/ShortX_ToolHub_yyyyMMdd.log
+  运行期日志文件。
+
+settings.json
+  用户配置持久化。
+
+buttons.json
+  按钮配置持久化。
+
+schema.json
+  设置页 schema 持久化。
+
+.trusted_manifest_version
+  完整验签模式下记录本地已信任 manifest 版本。
+
+.trusted_sha_<module>
+  记录已通过校验的模块 SHA256，用于本地可信回退。
+```
+
+注意：`ToolHub.js` 入口本身不能安全地自我更新；入口变更仍需要用户手动替换 ShortX JS 任务中的入口内容。
+
+---
+
+## 7. 核心状态机制
+
+`FloatBallAppWM` 在构造函数中初始化 `this.state`。核心状态按职责可分为：
+
+```text
+this.state
+├── WindowManager / 线程
+│   ├── wm
+│   ├── dm
+│   ├── ht
+│   ├── h
+│   ├── receivers
+│   └── displayListener
+│
+├── 屏幕状态
+│   ├── screen { w, h }
+│   ├── lastRotation
+│   └── lastMonitorTs
+│
+├── 悬浮球
+│   ├── ballRoot
+│   ├── ballContent
+│   ├── ballLp
+│   ├── addedBall
+│   ├── dragging
+│   ├── docked
+│   └── dockSide
+│
+├── 面板 / 遮罩 / 查看器
+│   ├── panel / panelLp / addedPanel
+│   ├── settingsPanel / settingsPanelLp / addedSettings
+│   ├── viewerPanel / viewerPanelLp / addedViewer
+│   ├── viewerPanelType
+│   ├── mask / maskLp / addedMask
+│   └── panelBackCallbackEntries
+│
+├── ToolApp
+│   ├── toolAppActive
+│   ├── toolAppNavStack
+│   ├── toolAppRoute
+│   ├── toolAppRoot
+│   ├── toolAppBody
+│   ├── toolAppContentHost
+│   ├── toolAppBackPreviewView
+│   ├── toolAppBackPreviewRoute
+│   ├── toolAppBackPreviewReady
+│   ├── toolAppTitleView
+│   ├── toolAppBackButton
+│   ├── settingsGroupKey
+│   ├── settingsHomeSelectedCategoryId
+│   └── settingsHomeSelectedItemId
+│
+├── 配置编辑
+│   ├── pendingUserCfg
+│   ├── pendingDirty
+│   ├── previewMode
+│   └── buttonManagerQuery
+│
+└── closing
+```
+
+状态设计要点：
+
+- `this.config` 保存当前运行配置，来自 `ConfigManager.loadSettings()`。
+- `this.panels.main` 保存当前按钮列表，来自 `ConfigManager.loadButtons()`。
+- `pendingUserCfg` 是设置页临时编辑缓存，保存前不直接覆盖持久化配置。
+- `previewMode` 控制边调边看时的预览刷新。
+- `closing` 用于避免关闭流程中重复操作 WindowManager 和线程资源。
+
+---
+
+## 8. UI 机制
+
+UI 层级：
+
+```text
+WindowManager
+├── ballRoot
+│   └── ballContent
+│       └── 悬浮球内容 / 图标 / 背景
+│
+├── mask
+│   └── 空白点击关闭面板
+│
+├── panel
+│   └── 主按钮网格
+│
+└── viewerPanel
+    ├── 普通查看器 / 日志 / content 结果
+    └── ToolApp Shell
+        ├── 顶部栏：返回 / 标题 / 右侧按钮
+        └── 内容区
+            ├── 设置主页
+            ├── 设置分组
+            ├── 按钮管理
+            ├── 按钮编辑
+            └── schema 编辑
+```
+
+主要 UI 类型：
+
+```text
+ballRoot / ballContent
+  悬浮球根视图和内容视图。负责点击、拖拽、吸边和图标展示。
+
+panel
+  主按钮面板，显示按钮网格。
+
+mask
+  面板遮罩，负责点击空白关闭相关面板。
+
+viewerPanel
+  查看器容器，可显示日志、ContentProvider 结果，也承载 ToolApp Shell。
+
+ToolApp Shell
+  设置类 UI 的 App 化外壳。内部使用单根 View + 内容容器切页，避免每次切页都 remove/add 整个 overlay。
+```
+
+设置类页面：
+
+- 设置主页：入口卡片、布局与管理、趣味元素、外观与互动、记录与状态等入口。
+- 设置分组：按 schema 分组渲染配置项。
+- 按钮管理：搜索、列表、启用/禁用、排序、删除、新增。
+- 按钮编辑：一页式编辑，包含基础信息、图标外观、动作设置等区域。
+- schema 编辑：编辑设置页 schema。
+
+---
+
+## 9. ToolApp 页面栈机制
+
+ToolApp 相关状态：
+
+```text
+toolAppActive
+toolAppNavStack
+toolAppRoute
+toolAppRoot
+toolAppBody
+toolAppContentHost
+toolAppBackPreviewView
+toolAppBackPreviewRoute
+toolAppBackPreviewReady
+```
+
+页面路径示例：
+
+```text
+settings
+├── settings_group
+├── button_manager
+│   └── btn_editor
+└── schema_editor
+```
+
+页面栈机制：
+
+```text
+showToolApp(route, resetStack)
+   │
+   ├─ resetStack=true 时初始化 toolAppNavStack
+   ├─ ensureToolAppShell()
+   ├─ buildPanelView(route)
+   ├─ setToolAppContent(contentView)
+   └─ updateToolAppShellChrome(title, canBack)
+
+pushToolAppPage(route)
+   │
+   ├─ 保存当前 page snapshot
+   ├─ push nextEntry
+   └─ showToolApp(route, false)
+
+popToolAppPage(reason)
+   │
+   ├─ 优先处理横屏 detail pane 返回目标
+   ├─ toolAppNavStack.pop()
+   ├─ 恢复上一页 snapshot
+   └─ 无上一级时 closeToolApp()
+```
+
+page snapshot 主要保存：
+
+- `route`
+- 设置分组 key
+- 设置首页横屏 master-detail 选择状态
+- 按钮 / schema 编辑状态所需上下文
+
+返回预览：
+
+```text
+用户横滑
+   │
+   ▼
+prepareToolAppBackPreview()
+   │
+   ├─ 读取上一页 snapshot
+   ├─ 构建预览页 View
+   └─ 放入 toolAppBackPreviewView
+   │
+   ▼
+applyToolAppBackPreviewProgress(progress)
+   │
+   └─ 当前页与预览页同步位移 / 透明度 / 缩放
+   │
+   ▼
+finishToolAppBackPreview(commit)
+   ├─ commit=true  → popToolAppPage("edge_swipe_back")
+   └─ commit=false → 回弹并清理预览
+```
+
+支持多级页面返回，不限于一层子页。
+
+---
+
+## 10. 返回机制
+
+返回体系：
+
+```text
+系统返回键 / ESC
+   │
+   └─ attachPanelSystemKeyHandler()
+        └─ handlePanelBack()
+             ├─ ToolApp: popToolAppPage(reason)
+             └─ 非 ToolApp: 按 viewer / settings / panel 层级关闭
+
+Android 13+ / 14+ 预测性返回
+   │
+   └─ registerPanelPredictiveBack(panel, which)
+        ├─ OnBackInvokedCallback
+        ├─ OnBackAnimationCallback
+        ├─ applyPanelPredictiveBackProgress()
+        └─ unregisterPanelPredictiveBack()
+
+ToolApp 内置左右滑返回
+   │
+   └─ buildToolAppShell() 自定义触摸处理
+        ├─ onInterceptTouchEvent()
+        ├─ onTouchEvent()
+        ├─ prepareToolAppBackPreview()
+        ├─ applyToolAppBackPreviewProgress()
+        └─ finishToolAppBackPreview()
+```
+
+返回模式：
+
+```text
+edge
+  左右边缘触发。
+
+surface
+  页面 surface 横滑触发。当前更适合全面屏手势环境，优先级高于 edge 的窄边缘体验。
+
+off
+  关闭 ToolApp 内置滑动返回。
+```
+
+当前策略：
+
+- `surface` 模式优先保证 ToolApp 内部横滑返回的可用性。
+- 系统返回键和 ESC 仍通过焦点 View 的 key listener 处理。
+- Android 13+ / 14+ 预测性返回使用系统回调能力；overlay 场景下视觉反馈由代码自管。
+
+---
+
+## 11. 手势冲突处理机制
+
+ToolApp surface 返回的冲突处理原则：
+
+```text
+ACTION_DOWN
+  永远先放行给子控件，不在 DOWN 阶段抢触摸。
+
+ACTION_MOVE
+  移动达到阈值后再判断是否拦截。
+
+强横向滑动
+  只有横向意图足够明确时才接管为返回手势。
+
+可交互控件阻断
+  SeekBar / Switch / EditText / HorizontalScrollView 等控件阻断返回手势，优先保证自身操作。
+
+普通控件不阻断
+  普通按钮 / 卡片 / 垂直列表项不阻断 surface 返回，避免页面大部分区域无法横滑返回。
+```
+
+相关配置项：
+
+```text
+TOOLAPP_BACK_GESTURE_MODE
+TOOLAPP_BACK_EDGE_WIDTH_DP
+TOOLAPP_BACK_COMMIT_DISTANCE_DP
+TOOLAPP_BACK_SURFACE_SLOP_DP
+TOOLAPP_BACK_PROGRESS_DISTANCE_DP
+```
+
+设计目标：
+
+- 不让横滑返回覆盖普通点击。
+- 不让 SeekBar、Switch、EditText、HorizontalScrollView 被误拦截。
+- 在普通卡片和垂直列表上保持返回手势可用。
+
+---
+
+## 12. 按钮动作机制
+
+统一入口：
+
+```text
+execButtonAction(btn, idx)
+```
+
+动作类型：
+
+```text
+open_settings
+  打开设置 / ToolApp。
+
+open_viewer
+  打开查看器，常用于日志或内容展示。
+
+toast
+  显示 Toast。
+
+app
+  通过 PackageManager 获取 launch intent 并启动 App；支持 launchUserId。
+
+shell
+  执行 shell 命令，优先走 Shell 能力 / 广播桥；支持 cmd 与 cmd_b64。
+
+broadcast
+  发送自定义广播，兼容 extra / extras。
+
+shortcut
+  执行 shortcutJsCode，用于锁定主 / 分身快捷方式。
+
+content
+  通过 th_08_content.js 查询 / 获取 / 查看 ContentProvider 结果。
+```
+
+动作分发图：
+
+```text
+按钮点击
+  │
+  ▼
+execButtonAction(btn, idx)
+  │
+  ├─ 参数归一化 / 日志
+  ├─ 根据 btn.type 分支
+  ├─ 执行具体动作
+  ├─ 必要时打开 viewerPanel 展示结果
+  └─ 异常时 toast / safeLog
+```
+
+---
+
+## 13. Shell 广播桥机制
+
+Shell 相关常量和配置：
+
+```text
+CONST_SHELL_BRIDGE_ACTION = shortx.toolhub.SHELL
+CONST_SHELL_BRIDGE_EXTRA_CMD = cmd_b64
+SHELL_BRIDGE_ACTION
+SHELL_BRIDGE_EXTRA_CMD
+```
+
+协议字段：
+
+```text
+cmd
+  明文 shell 命令。
+
+cmd_b64
+  Base64 编码后的 shell 命令。按钮保存时会尽量生成 cmd_b64。
+
+root
+  是否 root 执行；当前 shell 按钮保存逻辑默认写入 root=true。
+
+from
+  来源标记，便于广播接收端识别。
+```
+
+广播桥流程：
+
+```text
+shell 类型按钮
+   │
+   ├─ 读取 btn.cmd / btn.cmd_b64
+   ├─ 如果只有明文 cmd，则生成 Base64
+   ├─ 如果 cmd_b64 异常，则尝试按明文重新编码
+   ├─ 构造 Intent(action = SHELL_BRIDGE_ACTION)
+   ├─ extras: from / root / cmd_b64 / 必要时 cmd
+   └─ context.sendBroadcast(intent)
+```
+
+设计原因：
+
+- `cmd_b64` 避免命令中的换行、引号、特殊字符在广播 extras 中损坏。
+- 兼容历史配置中把明文误写入 `cmd_b64` 的情况。
+- 广播 action 可通过配置覆盖，默认是 `shortx.toolhub.SHELL`。
+
+---
+
+## 14. App / Shortcut 启动机制
+
+App 启动：
+
+```text
+app 类型按钮
+   │
+   ├─ PackageManager.getLaunchIntentForPackage(pkg)
+   ├─ addFlags(FLAG_ACTIVITY_NEW_TASK)
+   ├─ launchUserId 为空时默认主用户 0
+   ├─ context.startActivityAsUser(intent, UserHandle.of(launchUserId))
+   └─ 失败时回退普通 startActivity(intent)
+```
+
+Shortcut 启动：
+
+```text
+shortcut 类型按钮
+   │
+   ├─ 读取 shortcutJsCode
+   ├─ 读取 launchUserId / userId
+   ├─ 执行自包含 JS 启动代码
+   └─ 用于锁定主 / 分身快捷方式
+```
+
+快捷方式选择：
+
+- `th_07_shortcut.js` 已退役。
+- 快捷方式选择逻辑已经并入 `th_14_panels.js`。
+- 按钮编辑页中快捷方式选择会生成 `shortcutJsCode`。
+- 保存时同步保存 `intentUri`、`userId`、`launchUserId`，用于锁定主 / 分身。
+
+---
+
+## 15. ContentProvider 机制
+
+相关模块：
+
+```text
+th_08_content.js
+```
+
+用途：
+
+- 支持 `content` 类型按钮。
+- 处理 ContentProvider URI 相关操作。
+- 提供 query / get / view 结果展示能力。
+
+流程：
+
+```text
+content 类型按钮
+   │
+   ▼
+execButtonAction(btn, idx)
+   │
+   ▼
+th_08_content.js
+   │
+   ├─ 解析 content URI / 参数
+   ├─ 执行 query / get / view
+   └─ 将结果交给 viewerPanel 展示
+```
+
+---
+
+## 16. 配置与持久化机制
+
+持久化文件：
+
+```text
+settings.json
+buttons.json
+schema.json
+```
+
+核心对象：
+
+```text
+ConfigManager
+  负责 loadSettings / saveSettings / loadButtons / saveButtons / loadSchema / saveSchema。
+
+ConfigValidator
+  负责默认配置、配置 schema、sanitizeConfig、schema 兼容刷新。
+
+pendingUserCfg
+  设置页临时编辑缓存。
+
+previewMode
+  设置页边调边看状态。
+```
+
+配置流：
+
+```text
+启动
+  │
+  ├─ ConfigManager.loadSettings()
+  ├─ ConfigValidator.sanitizeConfig()
+  └─ this.config
+
+设置页打开
+  │
+  ├─ beginEditConfig()
+  └─ pendingUserCfg = 当前配置副本
+
+用户修改设置
+  │
+  ├─ setPendingValue(key, value)
+  ├─ pendingDirty = true
+  └─ previewMode 下刷新预览
+
+保存
+  │
+  ├─ commitPendingUserCfg()
+  ├─ ConfigValidator.sanitizeConfig()
+  └─ ConfigManager.saveSettings()
+```
+
+写入策略：
+
+- 原子写：临时文件写入后 flush / sync，再 rename 到目标文件。
+- 防抖写：连续修改合并写入，减少频繁 IO。
+- `close()` 时执行 flush，避免关闭时仍有待写配置未落盘。
+
+---
+
+## 17. 悬浮球位置机制
+
+位置相关配置：
+
+```text
+BALL_INIT_X
+BALL_INIT_Y_DP
+BALL_POS_SCREEN_W
+BALL_POS_SCREEN_H
+BALL_POS_X_RATIO
+BALL_POS_Y_RATIO
+BALL_POS_DOCKED
+BALL_POS_DOCK_SIDE
+```
+
+保存机制：
+
+```text
+悬浮球位置变化
+   │
+   ├─ 保存绝对坐标 BALL_INIT_X / BALL_INIT_Y_DP
+   ├─ 保存当时屏幕尺寸 BALL_POS_SCREEN_W / BALL_POS_SCREEN_H
+   ├─ 保存比例 BALL_POS_X_RATIO / BALL_POS_Y_RATIO
+   ├─ 保存吸边状态 BALL_POS_DOCKED
+   └─ 保存吸边方向 BALL_POS_DOCK_SIDE
+```
+
+恢复机制：
+
+```text
+启动 / 屏幕变化
+   │
+   ├─ 读取当前屏幕 w/h
+   ├─ 如果屏幕尺寸变化，按比例恢复 x/y
+   ├─ 如果已吸边，优先按 dockSide 恢复 left / right
+   └─ clamp 到当前屏幕可见范围
+```
+
+目标：
+
+- 横竖屏切换后不把竖屏坐标直接套到横屏。
+- 吸边悬浮球优先恢复到对应边缘。
+- 兼容旧版只保存绝对像素导致横屏落到中间的问题。
+
+---
+
+## 18. 生命周期机制
+
+`startAsync`：
+
+```text
+startAsync(entryInfo, closeRule)
+   │
+   ├─ 准备关闭广播 action
+   ├─ 先发送关闭广播清理旧实例
+   ├─ 创建 HandlerThread
+   ├─ 在线程中创建 / 操作 WindowManager View
+   ├─ registerReceiverOnMain() 注册广播
+   │    ├─ 关闭广播
+   │    ├─ 配置变化广播
+   │    └─ 系统对话框广播 android.intent.action.CLOSE_SYSTEM_DIALOGS
+   ├─ 创建 ballRoot / ballContent
+   ├─ wm.addView(ballRoot, ballLp)
+   ├─ 启动屏幕变化监听
+   └─ 返回启动结果
+```
+
+`close`：
+
+```text
+close(reason)
+   │
+   ├─ 标记 closing
+   ├─ 取消吸边 / 长按 / 返回预览等异步任务
+   ├─ 停止屏幕监听
+   ├─ 保存悬浮球位置
+   ├─ flushDebouncedWrites()
+   ├─ 移除 mask / panel / viewerPanel / ballRoot
+   ├─ 注销 receivers
+   └─ 退出 HandlerThread
+```
+
+`dispose`：
+
+```text
+dispose()
+   │
+   └─ 进一步清理图标缓存、picker 缓存、线程、引用等资源
+```
+
+广播机制：
+
+- 关闭广播：用于关闭旧实例或外部触发关闭。
+- 配置变化广播：用于配置变更后的刷新。
+- 系统对话框广播：处理 Home / 最近任务等系统层行为，避免 overlay 残留。
+
+---
+
+## 19. 线程机制
+
+线程边界：
+
+```text
+ShortX 入口线程
+   │
+   ├─ 执行 ToolHub.js
+   ├─ 下载 / 校验 / eval 子模块
+   ├─ 创建 logger / FloatBallAppWM
+   └─ 调用 startAsync()
+
+HandlerThread
+   │
+   ├─ 负责 WindowManager View 创建与更新
+   ├─ addView / updateViewLayout / removeView
+   ├─ 悬浮球拖拽 / 吸边 / 面板显示隐藏
+   └─ 避免入口线程直接操作 WM
+
+Main Looper
+   │
+   ├─ registerReceiverOnMain()
+   ├─ 系统广播注册 / 注销
+   ├─ Android 返回回调注册
+   └─ 部分系统回调处理
+```
+
+设计要点：
+
+- 入口线程不直接承担长期 WindowManager UI 操作。
+- WindowManager View 操作集中到 HandlerThread，降低阻塞入口和回调混乱的风险。
+- receiver 注册和系统回调通过 Main Looper 执行。
+
+---
+
+## 20. 日志机制
+
+日志文件：
+
+```text
+shortx.getShortXDir()/ToolHub/logs/init.log
+shortx.getShortXDir()/ToolHub/logs/ShortX_ToolHub_yyyyMMdd.log
+```
+
+`init.log`：
+
+- 入口阶段日志。
+- 目录创建与权限修复。
+- manifest 下载与安全状态。
+- 模块下载 / 覆盖 / 校验。
+- 模块加载异常。
+- 体积告警，例如大于 200KB 的模块。
+
+运行日志：
+
+- 由 `ToolHubLogger` 写入。
+- 文件名形如 `ShortX_ToolHub_yyyyMMdd.log`。
+- 覆盖启动、更新、运行、异常、按钮动作、返回手势等运行期信息。
+
+日志保护：
+
+- `init.log` 超过阈值后会尝试滚动为 `.bak` 或重新创建，避免无限增长。
+- `ToolHubLogger` 初始化后会根据配置更新日志行为。
+
+---
+
+## 21. 模块命名与演进规则
+
+命名格式：
+
+```text
+th_<两位编号>_<模块名>.js
+```
+
+编号段规则：
+
+```text
+01-09  基础能力层
+10-19  执行与动作层
+20-29  UI 基础层
+30-39  ToolApp 页面层
+40-49  弹窗 / 选择器层
+50-59  生命周期入口层
+```
+
+演进规则：
+
+- 历史空洞不补位。
+- 已退役编号可以保留为空，例如 `th_07_shortcut.js` 已退役。
+- 不为“看起来连续”而重命名旧模块。
+- 新增模块优先使用对应编号段。
+- 如果未来确实需要重命名或新增加载模块，必须同步：
+  - `ToolHub.js` 的 `modules[]`
+  - `manifest.json`
+  - `manifest.sig`
+  - `ToolHub.js.sha256`
+  - 文档中的模块清单
+
+当前实际情况：
+
+```text
+当前模块数量：18
+已退役模块：th_07_shortcut.js
+当前历史空洞：th_07
+当前偏历史的 UI 编号：th_13 / th_14 / th_15 / th_16
+```
+
+---
+
+## 22. 当前风险点与拆分方向
+
+当前可见风险点：
+
+```text
+th_14_panels.js 偏大
+  当前承担设置主页、设置分组、按钮管理、按钮编辑、内联快捷方式选择、弹窗基础、主题适配等多类职责。
+
+th_15_extra.js 偏大
+  当前承担主面板、ToolApp Shell、页面栈、响应式布局、左右滑返回预览等职责。
+
+prototype 方法过多
+  大量能力通过 FloatBallAppWM.prototype 挂载，模块之间边界容易变模糊。
+
+非关键模块失败可能运行期暴露
+  除 th_01_base.js / th_16_entry.js 外，其他模块加载失败会被记录到 loadErrors，但不一定立即中断。
+
+UPDATE_SECURITY_MODE 默认 0
+  当前入口默认普通更新模式，未启用完整签名验签。严格安全更新需要手动设为 2。
+```
+
+建议拆分方向：
+
+```text
+ToolAppShell
+  从 th_15_extra.js 拆出 ToolApp 外壳、顶部栏、内容容器、尺寸计算。
+
+ToolAppNavigation
+  从 th_15_extra.js 拆出 showToolApp / pushToolAppPage / popToolAppPage / replaceToolAppPage / page snapshot。
+
+ToolAppBackGesture
+  从 th_15_extra.js / th_09_animation.js 边界中拆出 ToolApp 横滑返回、返回预览、surface / edge 模式。
+
+ButtonManagerPage
+  从 th_14_panels.js 拆出按钮管理列表、搜索、排序、启用禁用、删除。
+
+ButtonEditorPage
+  从 th_14_panels.js 拆出一页式按钮编辑表单、动作参数区、底部暂存。
+
+SettingsHomePage / SettingsGroupPage
+  从 th_14_panels.js 拆出设置主页与设置分组页。
+
+PopupOverlayBase
+  将 showPopupOverlay 等弹窗基础能力从 th_14_panels.js 中独立，供颜色、图标、快捷方式选择复用。
+```
+
+拆分原则：
+
+- 小步拆分，避免一次改动入口加载、页面栈、overlay 焦点和 picker 行为。
+- 新增模块时必须考虑旧入口不会自动加载新模块的问题。
+- 修改 `code/*.js` 后才需要重新生成 `manifest.json` / `manifest.sig` / `ToolHub.js.sha256`；本文档改动不需要。
+- 文档-only 提交不重签、不改 manifest。

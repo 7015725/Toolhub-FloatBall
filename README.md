@@ -22,6 +22,8 @@ https://github.com/7015725/Toolhub-FloatBall
 STRUCTURE.md
 ```
 
+技术架构见 ARCHITECTURE.md
+
 ---
 
 ## 核心特性
