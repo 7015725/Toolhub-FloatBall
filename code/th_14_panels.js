@@ -128,6 +128,94 @@ FloatBallAppWM.prototype.isSchemaSectionInSettingsGroup = function(sectionName, 
   return false;
 };
 
+
+FloatBallAppWM.prototype.getBallSettingsSubtabs = function() {
+  return [
+    { key: "shape", title: "外形", desc: "大小、背景、透明度和距离", keys: ["BALL_SIZE_DP", "BALL_BG_COLOR_HEX", "BALL_IDLE_ALPHA", "BALL_PANEL_GAP_DP"] },
+    { key: "badge", title: "徽章", desc: "图标来源、岛上图标、颜色和大小", keys: ["BALL_ICON_TYPE", "BALL_ICON_FILE_PATH", "BALL_ICON_RES_NAME", "BALL_ICON_TINT_HEX", "BALL_ICON_SIZE_DP"] }
+  ];
+};
+
+FloatBallAppWM.prototype.getActiveBallSettingsSubtab = function() {
+  var tabs = this.getBallSettingsSubtabs ? this.getBallSettingsSubtabs() : [];
+  var cur = "";
+  try { cur = String(this.state.settingsBallSubtab || ""); } catch(eCur) { cur = ""; }
+  for (var i = 0; i < tabs.length; i++) {
+    if (tabs[i] && String(tabs[i].key) === cur) return cur;
+  }
+  return tabs.length > 0 ? String(tabs[0].key) : "";
+};
+
+FloatBallAppWM.prototype.getBallSettingsSubtabDef = function(key) {
+  var tabs = this.getBallSettingsSubtabs ? this.getBallSettingsSubtabs() : [];
+  var k = String(key || "");
+  for (var i = 0; i < tabs.length; i++) {
+    if (tabs[i] && String(tabs[i].key) === k) return tabs[i];
+  }
+  return tabs.length > 0 ? tabs[0] : null;
+};
+
+FloatBallAppWM.prototype.isSchemaItemInBallSubtab = function(item, tabKey) {
+  if (!item || item.type === "section") return true;
+  var d = this.getBallSettingsSubtabDef ? this.getBallSettingsSubtabDef(tabKey) : null;
+  if (!d || !d.keys) return true;
+  var k = String(item.key || "");
+  for (var i = 0; i < d.keys.length; i++) {
+    if (String(d.keys[i]) === k) return true;
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange) {
+  var self = this;
+  var isDark = this.isDarkTheme();
+  var C = this.ui.colors;
+  var T = this.getAnimalIslandTheme();
+  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+  try { this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) {}
+  var tabs = this.getBallSettingsSubtabs ? this.getBallSettingsSubtabs() : [];
+  if (!tabs || tabs.length <= 1) return;
+  var active = this.getActiveBallSettingsSubtab ? this.getActiveBallSettingsSubtab() : String(tabs[0].key);
+
+  var wrap = new android.widget.HorizontalScrollView(context);
+  try { wrap.setHorizontalScrollBarEnabled(false); wrap.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch(eHS) {}
+  var row = new android.widget.LinearLayout(context);
+  row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  row.setPadding(this.dp(2), this.dp(2), this.dp(2), this.dp(2));
+  wrap.addView(row, new android.widget.FrameLayout.LayoutParams(-2, -2));
+
+  for (var i = 0; i < tabs.length; i++) {
+    (function(tab) {
+      var selected = String(tab.key) === active;
+      var chip = new android.widget.TextView(context);
+      chip.setText(String(tab.title || tab.key));
+      chip.setGravity(android.view.Gravity.CENTER);
+      chip.setSingleLine(true);
+      chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+      chip.setTypeface(null, selected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+      chip.setTextColor(selected ? T.onPrimary : T.primaryDeep);
+      chip.setPadding(self.dp(14), self.dp(8), self.dp(14), self.dp(8));
+      var bg = selected ? T.primary : self.withAlpha(T.primarySoft, isDark ? 0.70 : 0.94);
+      var stroke = selected ? T.primary : self.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.18);
+      chip.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(18)));
+      chip.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+        try {
+          self.touchActivity();
+          self.state.settingsBallSubtab = String(tab.key || "shape");
+          if (onChange) onChange(String(tab.key || "shape"));
+        } catch(eClick) { safeLog(null, 'e', "catch " + String(eClick)); }
+      }}));
+      var lp = new android.widget.LinearLayout.LayoutParams(-2, self.dp(38));
+      lp.setMargins(0, 0, self.dp(8), 0);
+      row.addView(chip, lp);
+    })(tabs[i]);
+  }
+  var wrapLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+  wrapLp.setMargins(this.dp(2), this.dp(0), this.dp(2), this.dp(8));
+  parent.addView(wrap, wrapLp);
+};
+
 FloatBallAppWM.prototype.getSettingsHomeIcon = function(title) {
   var t = String(title || "");
   if (t.indexOf("工具伙伴") >= 0 || t.indexOf("工具") >= 0) return "🧰";
@@ -467,6 +555,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
       fixedPreviewLp.setMargins(this.dp(2), this.dp(4), this.dp(2), this.dp(8));
       root.addView(fixedPreview, fixedPreviewLp);
     } catch(eFixedPreview) { safeLog(null, 'e', "catch " + String(eFixedPreview)); }
+    try { if (this.createBallSettingsSubtabBar) this.createBallSettingsSubtabBar(root, function(k) { if (self.replaceToolAppPage) self.replaceToolAppPage("settings_group"); }); } catch(eBallTabs) { safeLog(null, 'e', "catch " + String(eBallTabs)); }
   }
 
   var scroll = new android.widget.ScrollView(context);
@@ -502,6 +591,8 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
     return c;
   }
   var activeGroupKey = String(groupKey || "");
+  var activeBallSubtab = activeGroupKey === "ball" && this.getActiveBallSettingsSubtab ? this.getActiveBallSettingsSubtab() : "";
+  var activeBallSubtabDef = activeGroupKey === "ball" && this.getBallSettingsSubtabDef ? this.getBallSettingsSubtabDef(activeBallSubtab) : null;
   for (var i = 0; i < schema.length; i++) {
     (function(item) {
       if (item && String(item.type) === "section") {
@@ -509,9 +600,11 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
         if (!includeSection) { currentCard = null; return; }
         currentCard = createCard();
         box.addView(currentCard);
-        self.createSectionHeader(item, currentCard);
+        if (activeGroupKey === "ball" && activeBallSubtabDef) self.createSectionHeader({ type: "section", name: String(activeBallSubtabDef.title || "悬浮球") }, currentCard);
+        else self.createSectionHeader(item, currentCard);
       } else {
         if (!includeSection) return;
+        if (activeGroupKey === "ball" && self.isSchemaItemInBallSubtab && !self.isSchemaItemInBallSubtab(item, activeBallSubtab)) return;
         if (!currentCard) { currentCard = createCard(); box.addView(currentCard); }
         var needDivider = (currentCard.getChildCount() > 0);
         if (currentCard.getChildCount() === 1) needDivider = false;
@@ -1060,6 +1153,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
       fixedPreviewLp2.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
       panel.addView(fixedPreview2, fixedPreviewLp2);
     } catch(eFixedPreview2) { safeLog(null, 'e', "catch " + String(eFixedPreview2)); }
+    try { if (this.createBallSettingsSubtabBar) this.createBallSettingsSubtabBar(panel, function(k) { if (self.state.settingsPanel) self.showSettingsGroupPanel(); }); } catch(eBallTabs2) { safeLog(null, 'e', "catch " + String(eBallTabs2)); }
   }
 
   var scroll = new android.widget.ScrollView(context);
@@ -1076,6 +1170,8 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   }));
 
   var schema = this.getConfigSchema();
+  var activeBallSubtab = activeGroupKey === "ball" && this.getActiveBallSettingsSubtab ? this.getActiveBallSettingsSubtab() : "";
+  var activeBallSubtabDef = activeGroupKey === "ball" && this.getBallSettingsSubtabDef ? this.getBallSettingsSubtabDef(activeBallSubtab) : null;
   var currentCard = null;
   var includeSection = false;
 
@@ -1109,9 +1205,11 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
         if (!includeSection) { currentCard = null; return; }
         currentCard = createCard();
         box.addView(currentCard);
-        self.createSectionHeader(item, currentCard);
+        if (activeGroupKey === "ball" && activeBallSubtabDef) self.createSectionHeader({ type: "section", name: String(activeBallSubtabDef.title || "悬浮球") }, currentCard);
+        else self.createSectionHeader(item, currentCard);
       } else {
         if (!includeSection) return;
+        if (activeGroupKey === "ball" && self.isSchemaItemInBallSubtab && !self.isSchemaItemInBallSubtab(item, activeBallSubtab)) return;
         if (!currentCard) {
             currentCard = createCard();
             box.addView(currentCard);

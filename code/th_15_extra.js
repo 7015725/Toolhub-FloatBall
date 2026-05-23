@@ -2914,9 +2914,9 @@ FloatBallAppWM.prototype.buildBallPreviewView = function() {
     var card = new android.widget.LinearLayout(context);
     card.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     card.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    card.setPadding(this.dp(12), this.dp(8), this.dp(12), this.dp(8));
-    card.setMinimumHeight(this.dp(74));
-    card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.18), this.dp(1), this.dp(18)));
+    card.setPadding(this.dp(10), this.dp(6), this.dp(10), this.dp(6));
+    card.setMinimumHeight(this.dp(66));
+    card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.18), this.dp(1), this.dp(16)));
     try { card.setElevation(this.dp(2)); } catch(eElev) {}
 
     var previewHost = new android.widget.FrameLayout(context);
@@ -2931,9 +2931,9 @@ FloatBallAppWM.prototype.buildBallPreviewView = function() {
     ballLp.gravity = android.view.Gravity.CENTER;
     previewHost.addView(built.root, ballLp);
 
-    var hostSize = Math.max(this.dp(76), ballSize + this.dp(22));
+    var hostSize = Math.max(this.dp(64), ballSize + this.dp(16));
     var hostLp = new android.widget.LinearLayout.LayoutParams(hostSize, hostSize);
-    hostLp.setMargins(0, 0, this.dp(12), 0);
+    hostLp.setMargins(0, 0, this.dp(10), 0);
     card.addView(previewHost, hostLp);
 
     var texts = new android.widget.LinearLayout(context);
