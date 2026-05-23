@@ -65,11 +65,70 @@ Toolhub-FloatBall/
     └── generate_signed_manifest.py
 ```
 
-当前实际加载 **18 个子模块**。旧文档中“16 个子模块”的说法已经过期，因为 `th_14_*` 已拆出颜色选择器、图标选择器和 schema 编辑器；旧 shortcut 选择器模块已退役，快捷方式选择逻辑并入 `th_14_panels.js`。
+当前实际加载 **18 个子模块**。旧文档中“16 个子模块”的说法已经过期，因为 `th_14_*` 已拆出颜色选择器、图标选择器和 schema 编辑器；`th_07_shortcut.js` 已退役，快捷方式选择逻辑并入 `th_14_panels.js`。
+
+当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而有意保留，不是遗漏；本仓库不会为了填补空号重命名历史文件，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
 
 ---
 
-## 3. 实机目录
+## 3. 子模块命名规则
+
+### 文件名格式
+
+```text
+th_<两位编号>_<模块名>.js
+```
+
+示例：
+
+```text
+th_01_base.js
+th_20_panel_ui.js
+th_40_color_picker.js
+th_50_entry.js
+```
+
+### 编号含义
+
+```text
+01-09   基础能力层
+10-19   执行与动作层
+20-29   UI 基础层
+30-39   ToolApp 页面层
+40-49   弹窗 / 选择器层
+50-59   生命周期入口层
+```
+
+### 通用规则
+
+- 编号表示加载顺序和依赖层级，不表示功能重要程度。
+- 文件名只允许小写英文、数字和下划线。
+- 不使用中文、驼峰、横杠。
+- 已退役模块的编号可以留空，不强制补位。
+- 为降低更新风险，历史文件不为了填补空号而重命名。
+- 新增模块优先放入对应编号段。
+- 如果未来确实要重命名，必须同步：
+  - `ToolHub.js` 模块加载列表
+  - `manifest.json`
+  - `manifest.sig`
+  - `ToolHub.js.sha256`
+  - `README.md`
+  - `STRUCTURE.md`
+
+### 当前策略
+
+- 保留现有 `th_08`、`th_09`、`th_10` 等历史编号。
+- `th_07` 空洞作为退役模块编号保留。
+- 子模块命名规则以后按新分段执行。
+- 后续新增模块使用新编号段，例如：
+  - `th_20_xxx.js` 用于 UI 基础。
+  - `th_30_xxx.js` 用于 ToolApp 页面。
+  - `th_40_xxx.js` 用于弹窗 / 选择器。
+  - `th_50_xxx.js` 用于生命周期入口。
+
+---
+
+## 4. 实机目录
 
 ```text
 shortx.getShortXDir()/ToolHub/
@@ -89,7 +148,7 @@ shortx.getShortXDir()/ToolHub/
 
 ---
 
-## 4. 启动链路
+## 5. 启动链路
 
 入口文件 `ToolHub.js` 主要流程：
 
@@ -125,7 +184,7 @@ th_16_entry.js
 
 ---
 
-## 5. 模块职责
+## 6. 模块职责
 
 | 模块 | 职责 |
 |---|---|
@@ -150,7 +209,7 @@ th_16_entry.js
 
 ---
 
-## 6. FloatBallAppWM 状态结构
+## 7. FloatBallAppWM 状态结构
 
 ```text
 state
@@ -195,7 +254,7 @@ state
 
 ---
 
-## 7. UI 层级
+## 8. UI 层级
 
 ```text
 悬浮球 ballRoot
@@ -218,7 +277,7 @@ viewerPanel
 
 ---
 
-## 8. ToolApp 页面栈
+## 9. ToolApp 页面栈
 
 典型页面路径：
 
@@ -240,7 +299,7 @@ settings
 
 ---
 
-## 9. 返回手势结构
+## 10. 返回手势结构
 
 返回体系分三层：
 
@@ -276,7 +335,7 @@ off       关闭内置滑动返回
 
 ---
 
-## 10. 子控件冲突处理
+## 11. 子控件冲突处理
 
 ToolApp 内置返回手势策略：
 
@@ -300,7 +359,7 @@ SeekBar / Switch / EditText / HorizontalScrollView 做细粒度阻断
 
 ---
 
-## 11. 按钮动作分发
+## 12. 按钮动作分发
 
 统一入口：
 
@@ -322,7 +381,7 @@ execButtonAction(btn, idx)
 
 ---
 
-## 12. 配置与持久化
+## 13. 配置与持久化
 
 主要文件：
 
@@ -355,7 +414,7 @@ FloatBallAppWM.config
 
 ---
 
-## 13. 悬浮球位置与横竖屏适配
+## 14. 悬浮球位置与横竖屏适配
 
 位置相关配置：
 
@@ -378,7 +437,7 @@ BALL_POS_DOCK_SIDE
 
 ---
 
-## 14. 生命周期
+## 15. 生命周期
 
 ### startAsync
 
@@ -409,7 +468,7 @@ BALL_POS_DOCK_SIDE
 
 ---
 
-## 15. 安全更新机制
+## 16. 安全更新机制
 
 ```text
 ToolHub.js 内置 RSA 公钥
@@ -447,7 +506,7 @@ files: 18 个模块
 
 ---
 
-## 16. 维护注意事项
+## 17. 维护注意事项
 
 修改 `code/*.js` 或 `ToolHub.js` 后，需要重新生成签名清单：
 
@@ -480,7 +539,7 @@ base → core → icon/theme/persistence/parser/content
 
 ---
 
-## 17. 当前结构观察
+## 18. 当前结构观察
 
 ### 优点
 
@@ -496,12 +555,12 @@ base → core → icon/theme/persistence/parser/content
 - `th_15_extra.js` 和 `th_14_panels.js` 仍偏大，后续建议继续拆分。
 - 大量方法挂载到同一个 prototype，隐式依赖较多。
 - `UPDATE_SECURITY_MODE` 当前默认是 `0`，严格安全更新应改为 `2`。
-- README 中模块数量可能仍与 manifest 不一致。
+- 文档中的模块数量需要持续与 `manifest.json` 保持一致。
 - 非关键模块加载失败后可能继续启动，运行期才暴露缺失方法。
 
 ---
 
-## 18. 建议拆分方向
+## 19. 建议拆分方向
 
 ```text
 th_15_extra.js
