@@ -460,6 +460,15 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
     } catch(eGDN) { safeLog(null, 'e', "catch " + String(eGDN)); }
   }
 
+  if (String(groupKey || "") === "ball" && this.buildBallPreviewView) {
+    try {
+      var fixedPreview = this.buildBallPreviewView();
+      var fixedPreviewLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+      fixedPreviewLp.setMargins(this.dp(2), this.dp(4), this.dp(2), this.dp(8));
+      root.addView(fixedPreview, fixedPreviewLp);
+    } catch(eFixedPreview) { safeLog(null, 'e', "catch " + String(eFixedPreview)); }
+  }
+
   var scroll = new android.widget.ScrollView(context);
   try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); scroll.setVerticalScrollBarEnabled(false); } catch(eOS) {}
   var box = columns > 1 ? this.createSettingsGridContainer(columns) : new android.widget.LinearLayout(context);
@@ -501,9 +510,6 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
         currentCard = createCard();
         box.addView(currentCard);
         self.createSectionHeader(item, currentCard);
-        if (activeGroupKey === "ball" && String(item.name || "") === "悬浮球" && self.buildBallPreviewView) {
-          try { currentCard.addView(self.buildBallPreviewView(), new android.widget.LinearLayout.LayoutParams(-1, -2)); } catch(eBP) { safeLog(null, 'e', "catch " + String(eBP)); }
-        }
       } else {
         if (!includeSection) return;
         if (!currentCard) { currentCard = createCard(); box.addView(currentCard); }
@@ -935,6 +941,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
   var columns = spec ? spec.gridColumnCount : 1;
   var cardRadius = spec ? spec.cardRadius : this.dp(18);
+  var activeGroupKey = String(this.state.settingsGroupKey || "");
 
   var panel = this.ui.createStyledPanel(this, 16);
   try { panel.setBackground(this.ui.createRoundDrawable(T.bg, spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(16) : this.dp(18))); } catch(ePanelBg) {}
@@ -1046,6 +1053,15 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   settingsGroupNoticeLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
   panel.addView(settingsGroupNotice, settingsGroupNoticeLp);
 
+  if (activeGroupKey === "ball" && this.buildBallPreviewView) {
+    try {
+      var fixedPreview2 = this.buildBallPreviewView();
+      var fixedPreviewLp2 = new android.widget.LinearLayout.LayoutParams(-1, -2);
+      fixedPreviewLp2.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
+      panel.addView(fixedPreview2, fixedPreviewLp2);
+    } catch(eFixedPreview2) { safeLog(null, 'e', "catch " + String(eFixedPreview2)); }
+  }
+
   var scroll = new android.widget.ScrollView(context);
   try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(eOS) { safeLog(null, 'e', "catch " + String(eOS)); }
   try { scroll.setVerticalScrollBarEnabled(false);  } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
@@ -1060,7 +1076,6 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   }));
 
   var schema = this.getConfigSchema();
-  var activeGroupKey = String(this.state.settingsGroupKey || "");
   var currentCard = null;
   var includeSection = false;
 
@@ -1095,9 +1110,6 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
         currentCard = createCard();
         box.addView(currentCard);
         self.createSectionHeader(item, currentCard);
-        if (activeGroupKey === "ball" && String(item.name || "") === "悬浮球" && self.buildBallPreviewView) {
-          try { currentCard.addView(self.buildBallPreviewView(), new android.widget.LinearLayout.LayoutParams(-1, -2)); } catch(eBP) { safeLog(null, 'e', "catch " + String(eBP)); }
-        }
       } else {
         if (!includeSection) return;
         if (!currentCard) {

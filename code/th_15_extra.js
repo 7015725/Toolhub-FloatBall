@@ -2914,8 +2914,9 @@ FloatBallAppWM.prototype.buildBallPreviewView = function() {
     var card = new android.widget.LinearLayout(context);
     card.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     card.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    card.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(12));
-    card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.18), this.dp(1), this.dp(20)));
+    card.setPadding(this.dp(12), this.dp(8), this.dp(12), this.dp(8));
+    card.setMinimumHeight(this.dp(74));
+    card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.18), this.dp(1), this.dp(18)));
     try { card.setElevation(this.dp(2)); } catch(eElev) {}
 
     var previewHost = new android.widget.FrameLayout(context);
