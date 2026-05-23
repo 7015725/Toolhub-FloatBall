@@ -410,13 +410,6 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     iconRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
     iconRow.setPadding(0, self.dp(8), 0, 0);
 
-    var previewIv = new android.widget.ImageView(context);
-    var previewIvLp = new android.widget.LinearLayout.LayoutParams(self.dp(36), self.dp(36));
-    previewIvLp.rightMargin = self.dp(10);
-    previewIv.setLayoutParams(previewIvLp);
-    previewIv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-    iconRow.addView(previewIv);
-
     var nameTv = new android.widget.TextView(context);
     nameTv.setTextColor(secColor);
     nameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
@@ -429,13 +422,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
         var curIconName0 = String(self.getPendingValue(item.key) || "");
         var curTint0 = String(self.getPendingValue("BALL_ICON_TINT_HEX") || "");
         nameTv.setText(curIconName0 || "未选择");
-        if (curIconName0) {
-          var dr0 = self.resolveShortXDrawable(curIconName0, curTint0);
-          if (dr0) previewIv.setImageDrawable(dr0);
-          else previewIv.setImageDrawable(null);
-        } else {
-          previewIv.setImageDrawable(null);
-        }
+        // 页面顶部已有完整实时气球预览，这里只显示当前值，避免重复小预览占位。
        } catch(ePreview0) { safeLog(null, 'e', "catch " + String(ePreview0)); }
     }
     refreshBallShortXPreview();
@@ -488,12 +475,6 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     colorRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
     colorRow.setPadding(0, self.dp(8), 0, 0);
 
-    var colorDot = new android.view.View(context);
-    var colorDotLp = new android.widget.LinearLayout.LayoutParams(self.dp(28), self.dp(28));
-    colorDotLp.rightMargin = self.dp(10);
-    colorDot.setLayoutParams(colorDotLp);
-    colorRow.addView(colorDot);
-
     var colorValueTv = new android.widget.TextView(context);
     colorValueTv.setTextColor(secColor);
     colorValueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
@@ -505,13 +486,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
       try {
         var curHex0 = String(self.getPendingValue(item.key) || "");
         colorValueTv.setText(curHex0 || "默认");
-        if (curHex0) {
-          colorDot.setBackground(self.ui.createRoundDrawable(android.graphics.Color.parseColor(curHex0), self.dp(14)));
-        } else {
-          colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14)));
-        }
       } catch(eDot0) {
-        try { colorDot.setBackground(self.ui.createRoundDrawable(0xFFCCCCCC | 0, self.dp(14)));  } catch(eDot1) { safeLog(null, 'e', "catch " + String(eDot1)); }
         colorValueTv.setText("默认");
       }
     }
