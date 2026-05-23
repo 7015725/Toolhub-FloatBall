@@ -88,15 +88,6 @@ FloatBallAppWM.prototype.getAnimalIslandTheme = function() {
   };
 };
 
-FloatBallAppWM.prototype.createAnimalCardDrawable = function(fillColor, radiusDp) {
-  var T = this.getAnimalIslandTheme();
-  return this.ui.createStrokeDrawable(fillColor || T.card, this.withAlpha(T.stroke, this.isDarkTheme() ? 0.36 : 0.55), this.dp(1), this.dp(radiusDp || 18));
-};
-
-FloatBallAppWM.prototype.createAnimalButtonDrawable = function(normalColor, pressedColor, radiusDp) {
-  return this.ui.createRippleDrawable(normalColor, pressedColor, this.dp(radiusDp || 18));
-};
-
 FloatBallAppWM.prototype.toast = function(msg) { try { android.widget.Toast.makeText(context, String(msg), 0).show();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } };
 FloatBallAppWM.prototype.vibrateOnce = function(ms) {
   if (!this.config.LONG_PRESS_HAPTIC_ENABLE) return;

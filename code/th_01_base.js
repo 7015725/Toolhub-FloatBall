@@ -727,6 +727,8 @@ var ConfigManager = {
         DOCK_AFTER_IDLE_MS: 1500,
         PANEL_IDLE_CLOSE_AND_DOCK_MS: 5000,
         EDGE_VISIBLE_RATIO: 0.70,
+        ENABLE_SNAP_TO_EDGE: true,
+        ENABLE_ANIMATIONS: true,
         DOCK_ANIM_MS: 260,
         UNDOCK_ANIM_MS: 180,
         SAVE_THROTTLE_MS: 220,

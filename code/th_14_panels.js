@@ -168,22 +168,6 @@ FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function(parent, icon
   parent.addView(row, new android.widget.LinearLayout.LayoutParams(-1, -2));
 };
 
-FloatBallAppWM.prototype.addSettingsHomeDashedDivider = function(parent) {
-  var isDark = this.isDarkTheme();
-  var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
-  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
-  var line = new android.widget.TextView(context);
-  line.setText("· · · · · · · · · · · · · · · · · · · ·");
-  line.setGravity(android.view.Gravity.CENTER);
-  line.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
-  line.setTextColor(this.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.26));
-  var lp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(16));
-  lp.setMargins(this.dp(4), this.dp(2), this.dp(4), this.dp(2));
-  parent.addView(line, lp);
-};
-
 
 FloatBallAppWM.prototype.getIslandPickerTheme = function() {
   var isDark = this.isDarkTheme();
@@ -411,18 +395,6 @@ FloatBallAppWM.prototype.getSettingsHomeCategoryDefs = function(useMonetHome) {
   return cats;
 };
 
-
-FloatBallAppWM.prototype.findSettingsHomeCategoryAndChild = function(cats, itemId) {
-  var target = String(itemId || "");
-  for (var i = 0; i < (cats || []).length; i++) {
-    var cat = cats[i];
-    var children = cat && cat.children ? cat.children : [];
-    for (var j = 0; j < children.length; j++) {
-      if (String(children[j].id) === target) return { category: cat, child: children[j] };
-    }
-  }
-  return null;
-};
 
 FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title, desc) {
   var self = this;
@@ -1300,36 +1272,6 @@ FloatBallAppWM.prototype.matchesButtonManagerQuery = function(btnCfg, query) {
   } catch(e) { return true; }
 };
 
-FloatBallAppWM.prototype.createButtonManagerSummaryCard = function(parent, totalCount, enabledCount, disabledCount) {
-  var isDark = this.isDarkTheme();
-  var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
-  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
-  var card = new android.widget.LinearLayout(context);
-  card.setOrientation(android.widget.LinearLayout.VERTICAL);
-  card.setPadding(this.dp(14), this.dp(10), this.dp(14), this.dp(10));
-  card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.34 : 0.50), this.dp(1), this.dp(18)));
-  try { card.setElevation(this.dp(3)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
-
-  var title = new android.widget.TextView(context);
-  title.setText("按钮统计");
-  title.setTextColor(T.text);
-  title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
-  title.setTypeface(null, android.graphics.Typeface.BOLD);
-  card.addView(title);
-
-  var sub = new android.widget.TextView(context);
-  sub.setText("共 " + totalCount + " 个 · 已启用 " + enabledCount + " · 已禁用 " + disabledCount);
-  sub.setTextColor(T.sub);
-  sub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-  sub.setPadding(0, this.dp(4), 0, 0);
-  card.addView(sub);
-
-  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-  lp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
-  parent.addView(card, lp);
-};
-
 FloatBallAppWM.prototype.createButtonManagerActionChip = function(text, textColor, strokeColor, onClickFn) {
   var T = this.getAnimalIslandTheme();
   this.applySettingsTheme(T, this.isDarkTheme(), this.ui.colors, this.state.pendingUserCfg || this.config);
@@ -1374,40 +1316,6 @@ FloatBallAppWM.prototype.createButtonManagerTextAction = function(text, textColo
   return tv;
 };
 
-FloatBallAppWM.prototype.createButtonManagerPolishedCard = function(parent, title, subtitle, statText) {
-  var isDark = this.isDarkTheme();
-  var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
-  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
-  var card = new android.widget.LinearLayout(context);
-  card.setOrientation(android.widget.LinearLayout.VERTICAL);
-  card.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(12));
-  card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.32 : 0.48), this.dp(1), this.dp(20)));
-  try { card.setElevation(this.dp(3)); } catch(eElev) {}
-  var tv = new android.widget.TextView(context);
-  tv.setText(String(title || ""));
-  tv.setTextColor(T.text);
-  tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
-  tv.setTypeface(null, android.graphics.Typeface.BOLD);
-  card.addView(tv);
-  var sub = new android.widget.TextView(context);
-  sub.setText(String(subtitle || ""));
-  sub.setTextColor(T.sub);
-  sub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-  sub.setPadding(0, this.dp(4), 0, 0);
-  card.addView(sub);
-  if (statText) {
-    var chip = this.createButtonManagerActionChip(String(statText), T.primaryDeep, this.withAlpha(T.primaryDeep, 0.32), null);
-    var chipLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-    chipLp.setMargins(0, this.dp(10), 0, 0);
-    card.addView(chip, chipLp);
-  }
-  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-  lp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
-  parent.addView(card, lp);
-  return card;
-};
-
 FloatBallAppWM.prototype.addButtonEditorField = function(parent, view) {
   try {
     var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -1416,35 +1324,6 @@ FloatBallAppWM.prototype.addButtonEditorField = function(parent, view) {
   } catch (e) {
     try { parent.addView(view); } catch(e2) {}
   }
-};
-
-FloatBallAppWM.prototype.createButtonEditorSectionCard = function(parent, title, desc) {
-  var isDark = this.isDarkTheme();
-  var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
-  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
-  var box = new android.widget.LinearLayout(context);
-  box.setOrientation(android.widget.LinearLayout.VERTICAL);
-  box.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
-  box.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.46), this.dp(1), this.dp(18)));
-  var tv = new android.widget.TextView(context);
-  tv.setText(String(title || ""));
-  tv.setTextColor(T.text);
-  tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-  tv.setTypeface(null, android.graphics.Typeface.BOLD);
-  box.addView(tv);
-  if (desc) {
-    var dv = new android.widget.TextView(context);
-    dv.setText(String(desc));
-    dv.setTextColor(T.sub);
-    dv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-    dv.setPadding(0, this.dp(3), 0, 0);
-    box.addView(dv);
-  }
-  var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-  lp.setMargins(0, this.dp(8), 0, this.dp(8));
-  parent.addView(box, lp);
-  return box;
 };
 
 
@@ -2519,9 +2398,6 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var currentShortXIconTint = defaultTint;
     var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空 = 跟随主题色)", defaultTint, false, "支持 #RRGGBB / #AARRGGBB；也可点右侧“颜色”选择");
     iconSectionBody.addView(inputShortXIconTint.view);
-    // # 避免 Rhino 闭包问题：将输入框引用存储到 self.state，供颜色选择器回调使用
-    self.state._btnEditorTintInput = inputShortXIconTint;
-
     function updateTintPaletteToggleText() {
         try {
             if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(tintPaletteState.expanded ? getTintPaletteOpenedLabel() : getTintPaletteClosedLabel());

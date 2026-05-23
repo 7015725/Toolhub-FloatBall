@@ -914,14 +914,6 @@ FloatBallAppWM.prototype.guardClick = function(key, cooldownMs, fn) {
   }
 };
 
-FloatBallAppWM.prototype.safeUiCall = function(tag, fn) {
-  try {
-    fn && fn();
-  } catch (e) {
-    safeLog(this.L, 'e',  "safeUiCall err tag=" + String(tag || "") + " err=" + String(e));
-  }
-};
-
 ;
 
 FloatBallAppWM.prototype.onScreenChangedReflow = function(reason) {
