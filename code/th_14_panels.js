@@ -501,6 +501,9 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
         currentCard = createCard();
         box.addView(currentCard);
         self.createSectionHeader(item, currentCard);
+        if (activeGroupKey === "ball" && String(item.name || "") === "悬浮球" && self.buildBallPreviewView) {
+          try { currentCard.addView(self.buildBallPreviewView(), new android.widget.LinearLayout.LayoutParams(-1, -2)); } catch(eBP) { safeLog(null, 'e', "catch " + String(eBP)); }
+        }
       } else {
         if (!includeSection) return;
         if (!currentCard) { currentCard = createCard(); box.addView(currentCard); }
@@ -1092,6 +1095,9 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
         currentCard = createCard();
         box.addView(currentCard);
         self.createSectionHeader(item, currentCard);
+        if (activeGroupKey === "ball" && String(item.name || "") === "悬浮球" && self.buildBallPreviewView) {
+          try { currentCard.addView(self.buildBallPreviewView(), new android.widget.LinearLayout.LayoutParams(-1, -2)); } catch(eBP) { safeLog(null, 'e', "catch " + String(eBP)); }
+        }
       } else {
         if (!includeSection) return;
         if (!currentCard) {

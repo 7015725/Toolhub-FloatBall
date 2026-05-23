@@ -2878,6 +2878,102 @@ FloatBallAppWM.prototype.createBallViews = function() {
   this.state.usedIconKind = built.usedIconKind;
 };
 
+FloatBallAppWM.prototype.withPendingBallConfig = function(fn) {
+  var oldConfig = this.config;
+  var oldKind = this.state.usedIconKind;
+  try {
+    if (this.state.pendingUserCfg) {
+      var cfg = {};
+      var k;
+      for (k in this.config) { cfg[k] = this.config[k]; }
+      for (k in this.state.pendingUserCfg) { cfg[k] = this.state.pendingUserCfg[k]; }
+      this.config = cfg;
+    }
+    return fn.call(this);
+  } finally {
+    this.config = oldConfig;
+    this.state.usedIconKind = oldKind;
+  }
+};
+
+FloatBallAppWM.prototype.createBallPreviewContent = function() {
+  return this.withPendingBallConfig(function() {
+    return this.buildBallContentView({ preview: true });
+  });
+};
+
+FloatBallAppWM.prototype.buildBallPreviewView = function() {
+  var self = this;
+  return this.withPendingBallConfig(function() {
+    var isDark = this.isDarkTheme();
+    var C = this.ui.colors;
+    var T = this.getAnimalIslandTheme();
+    var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+    try { this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
+
+    var card = new android.widget.LinearLayout(context);
+    card.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    card.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    card.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(12));
+    card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.18), this.dp(1), this.dp(20)));
+    try { card.setElevation(this.dp(2)); } catch(eElev) {}
+
+    var previewHost = new android.widget.FrameLayout(context);
+    previewHost.setClipToPadding(false);
+    previewHost.setClipChildren(false);
+    previewHost.setBackground(this.ui.createStrokeDrawable(this.withAlpha(T.primarySoft, isDark ? 0.46 : 0.72), this.withAlpha(T.primaryDeep, isDark ? 0.24 : 0.16), this.dp(1), this.dp(22)));
+    this.state.ballPreviewHost = previewHost;
+
+    var built = this.buildBallContentView({ preview: true });
+    var ballSize = this.dp(Number(this.config.BALL_SIZE_DP || 56));
+    var ballLp = new android.widget.FrameLayout.LayoutParams(ballSize, ballSize);
+    ballLp.gravity = android.view.Gravity.CENTER;
+    previewHost.addView(built.root, ballLp);
+
+    var hostSize = Math.max(this.dp(76), ballSize + this.dp(22));
+    var hostLp = new android.widget.LinearLayout.LayoutParams(hostSize, hostSize);
+    hostLp.setMargins(0, 0, this.dp(12), 0);
+    card.addView(previewHost, hostLp);
+
+    var texts = new android.widget.LinearLayout(context);
+    texts.setOrientation(android.widget.LinearLayout.VERTICAL);
+    texts.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    var title = new android.widget.TextView(context);
+    title.setText("实时气球预览");
+    title.setTextColor(T.text);
+    title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
+    title.setTypeface(null, android.graphics.Typeface.BOLD);
+    texts.addView(title, new android.widget.LinearLayout.LayoutParams(-1, -2));
+    var sub = new android.widget.TextView(context);
+    sub.setText("复用真实悬浮球渲染逻辑，预览本身不响应拖动");
+    sub.setTextColor(T.sub);
+    sub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    sub.setPadding(0, this.dp(3), 0, 0);
+    try { sub.setMaxLines(2); } catch(eMax) {}
+    texts.addView(sub, new android.widget.LinearLayout.LayoutParams(-1, -2));
+    card.addView(texts, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
+    return card;
+  });
+};
+
+FloatBallAppWM.prototype.refreshBallPreviewInSettings = function() {
+  try {
+    var host = this.state.ballPreviewHost;
+    if (!host) return false;
+    host.removeAllViews();
+    var built = this.createBallPreviewContent();
+    var cfg = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+    var ballSize = this.dp(Number(cfg.BALL_SIZE_DP || 56));
+    var lp = new android.widget.FrameLayout.LayoutParams(ballSize, ballSize);
+    lp.gravity = android.view.Gravity.CENTER;
+    host.addView(built.root, lp);
+    return true;
+  } catch(e) {
+    safeLog(this.L, 'e', "refreshBallPreviewInSettings err=" + String(e));
+    return false;
+  }
+};
+
 FloatBallAppWM.prototype.createBallLayoutParams = function() {
   var di = this.getDockInfo();
 
