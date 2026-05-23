@@ -274,24 +274,27 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
     }
 
     var shortxQuickRow = new android.widget.LinearLayout(context);
-    shortxQuickRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    shortxQuickRow.setOrientation(android.widget.LinearLayout.VERTICAL);
     shortxQuickRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
     shortxQuickRow.setPadding(0, 0, 0, self.dp(8));
     iconSectionBody.addView(shortxQuickRow);
 
+    // 图标预览独占一行，避免右侧按钮挤压预览图。
     var shortxPreviewCard = new android.widget.LinearLayout(context);
     shortxPreviewCard.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     shortxPreviewCard.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    shortxPreviewCard.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
+    shortxPreviewCard.setPadding(self.dp(12), self.dp(10), self.dp(12), self.dp(10));
+    shortxPreviewCard.setMinimumHeight(self.dp(58));
     shortxPreviewCard.setBackground(self.ui.createRoundDrawable(self.withAlpha(C.primary, 0.08), self.dp(12)));
-    var shortxPreviewLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-    shortxPreviewLp.weight = 1;
+    var shortxPreviewLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    shortxPreviewLp.setMargins(0, 0, 0, self.dp(8));
     shortxQuickRow.addView(shortxPreviewCard, shortxPreviewLp);
 
     var shortxPreviewIv = new android.widget.ImageView(context);
-    var shortxPreviewIvLp = new android.widget.LinearLayout.LayoutParams(self.dp(34), self.dp(34));
+    var shortxPreviewIvLp = new android.widget.LinearLayout.LayoutParams(self.dp(38), self.dp(38));
     shortxPreviewIvLp.rightMargin = self.dp(10);
     shortxPreviewIv.setLayoutParams(shortxPreviewIvLp);
+    try { shortxPreviewIv.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE); } catch(eScalePrev) { safeLog(null, 'e', "catch " + String(eScalePrev)); }
     shortxPreviewCard.addView(shortxPreviewIv);
     shortxPickerState.previewIv = shortxPreviewIv;
 
@@ -302,11 +305,12 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
     shortxPreviewCard.addView(shortxPreviewNameTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
     shortxPickerState.previewNameTv = shortxPreviewNameTv;
 
-    var shortxBtnGap = new android.view.View(context);
-    shortxBtnGap.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
-    shortxQuickRow.addView(shortxBtnGap);
+    var shortxActionRow = new android.widget.LinearLayout(context);
+    shortxActionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    shortxActionRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    shortxQuickRow.addView(shortxActionRow, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
 
-    var btnBrowseShortXIcon = self.ui.createFlatButton(self, "选择图标", C.primary, function() {
+    var btnBrowseShortXIcon = self.ui.createFlatButton(self, "展开图标库", C.primary, function() {
         self.touchActivity();
         self.showShortXIconPickerPopup({
             currentName: currentShortXIconName,
@@ -314,7 +318,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
             onSelect: function(name) {
                 currentShortXIconName = name;
                 updateShortXIconPreview();
-                try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(name || "\u9009\u62e9\u56fe\u6807");  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+                try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(getShortXPickerClosedLabel());  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
                 // # 选中 ShortX 图标后自动切换到 ShortX 图标模式，避免保存时走 file 分支导致颜色丢失
                 try { rbIconShortX.setChecked(true);  } catch(eRb) { safeLog(null, 'e', "catch " + String(eRb)); }
                 try { updateIconInputs("shortx");  } catch(eUp) { safeLog(null, 'e', "catch " + String(eUp)); }
@@ -322,29 +326,29 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
         });
     });
     shortxPickerState.toggleBtn = btnBrowseShortXIcon;
-    shortxQuickRow.addView(btnBrowseShortXIcon);
-
-    var shortxBtnGap2 = new android.view.View(context);
-    shortxBtnGap2.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
-    shortxQuickRow.addView(shortxBtnGap2);
+    var browseIconLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(40));
+    browseIconLp.weight = 1;
+    browseIconLp.rightMargin = self.dp(6);
+    shortxActionRow.addView(btnBrowseShortXIcon, browseIconLp);
 
     function clearShortXIconOnly() {
         currentShortXIconName = "";
         updateShortXIconPreview();
+        try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(getShortXPickerClosedLabel());  } catch(eClearToggle) { safeLog(null, 'e', "catch " + String(eClearToggle)); }
     }
 
-    var btnClearShortXIcon = self.ui.createFlatButton(self, "\u6e05\u7a7a", subTextColor, function() {
+    var btnClearShortXIcon = self.ui.createFlatButton(self, "清空", subTextColor, function() {
         self.touchActivity();
         clearShortXIconOnly();
     });
     shortxPickerState.clearBtn = btnClearShortXIcon;
-    shortxQuickRow.addView(btnClearShortXIcon);
+    var clearIconLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(40));
+    clearIconLp.weight = 1;
+    clearIconLp.leftMargin = self.dp(6);
+    clearIconLp.rightMargin = self.dp(6);
+    shortxActionRow.addView(btnClearShortXIcon, clearIconLp);
 
-    var shortxBtnGap3 = new android.view.View(context);
-    shortxBtnGap3.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(8), 1));
-    shortxQuickRow.addView(shortxBtnGap3);
-
-    var btnColorShortX = self.ui.createFlatButton(self, "\u989c\u8272", C.primary, function() {
+    var btnColorShortX = self.ui.createFlatButton(self, "颜色", C.primary, function() {
         self.touchActivity();
         var currentTint = currentShortXIconTint || "";
         self.showColorPickerPopup({
@@ -359,7 +363,10 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
             }
         });
     });
-    shortxQuickRow.addView(btnColorShortX);
+    var colorIconLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(40));
+    colorIconLp.weight = 1;
+    colorIconLp.leftMargin = self.dp(6);
+    shortxActionRow.addView(btnColorShortX, colorIconLp);
 
     var shortxPickerWrap = new android.widget.LinearLayout(context);
     shortxPickerWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -596,7 +603,8 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
     var defaultTint = targetBtn.iconTint ? String(targetBtn.iconTint) : "";
     var currentShortXIconTint = defaultTint;
     var inputShortXIconTint = self.ui.createInputGroup(self, "图标颜色 (留空 = 跟随主题色)", defaultTint, false, "支持 #RRGGBB / #AARRGGBB；也可点右侧“颜色”选择");
-    iconSectionBody.addView(inputShortXIconTint.view);
+    // 颜色文本编辑框不再占用图标外观主页面，已合并到“颜色”弹窗中；这里保留隐藏输入作为保存桥接状态。
+    try { inputShortXIconTint.view.setVisibility(android.view.View.GONE); } catch(eTintHide0) { safeLog(null, 'e', "catch " + String(eTintHide0)); }
     function updateTintPaletteToggleText() {
         try {
             if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(tintPaletteState.expanded ? getTintPaletteOpenedLabel() : getTintPaletteClosedLabel());
@@ -741,7 +749,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
         try { syncTintUiFromInput(!!safeColor); } catch(eSyncTint1) { safeLog(self.L, 'e', "applyTintSelectionFromPopup sync err=" + String(eSyncTint1)); }
         try { if (rbIconShortX) rbIconShortX.setChecked(true);  } catch(eRbTint0) { safeLog(null, 'e', "catch " + String(eRbTint0)); }
         try { updateIconInputs("shortx");  } catch(eIconInputTint0) { safeLog(null, 'e', "catch " + String(eIconInputTint0)); }
-        try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(safeColor || "\u9009\u62e9\u989c\u8272");  } catch(eTintPopupBtn0) { safeLog(null, 'e', "catch " + String(eTintPopupBtn0)); }
+        try { if (tintPaletteState.toggleBtn) tintPaletteState.toggleBtn.setText(getTintPaletteClosedLabel());  } catch(eTintPopupBtn0) { safeLog(null, 'e', "catch " + String(eTintPopupBtn0)); }
         try {
             if (shortxPickerState.previewIv) {
                 var normalizedShort = currentShortXIconName ? self.normalizeShortXIconName(currentShortXIconName, false) : "";
@@ -886,7 +894,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
             inputIconPath.view.setVisibility(android.view.View.VISIBLE);
             shortxQuickRow.setVisibility(android.view.View.GONE);
             shortxPickerWrap.setVisibility(android.view.View.GONE);
-            inputShortXIconTint.view.setVisibility(android.view.View.GONE);
+            try { inputShortXIconTint.view.setVisibility(android.view.View.GONE); } catch(eTintVisFile) { safeLog(null, 'e', "catch " + String(eTintVisFile)); }
             if (tintPaletteWrap) tintPaletteWrap.setVisibility(android.view.View.GONE);
             shortxPickerState.expanded = false;
             try { if (shortxPickerState.toggleBtn) shortxPickerState.toggleBtn.setText(getShortXPickerClosedLabel());  } catch(eBt0) { safeLog(null, 'e', "catch " + String(eBt0)); }
@@ -895,7 +903,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
         } else if (type === "shortx") {
             inputIconPath.view.setVisibility(android.view.View.GONE);
             shortxQuickRow.setVisibility(android.view.View.VISIBLE);
-            inputShortXIconTint.view.setVisibility(android.view.View.VISIBLE);
+            try { inputShortXIconTint.view.setVisibility(android.view.View.GONE); } catch(eTintVisShort) { safeLog(null, 'e', "catch " + String(eTintVisShort)); }
             if (tintPaletteWrap) tintPaletteWrap.setVisibility(android.view.View.GONE);
             inputIconPath.input.setText("");
             syncTintUiFromInput(false);

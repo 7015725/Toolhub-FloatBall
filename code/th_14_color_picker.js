@@ -109,6 +109,8 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
   var isFollowTheme = !currentColor;
   var currentBaseRgbHex = extractTintRgbHex(currentColor);
   var currentAlphaByte = extractTintAlphaByte(currentColor);
+  var colorValueInput = null;
+  var syncingColorInput = false;
   var alphaSeek = null;
   var alphaValTv = null;
   var updatePreviewFn = function() {};
@@ -373,18 +375,81 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       }
       refreshCommonGridFn = refreshCommonGrid;
 
-      // 颜色值显示
+      // 颜色值编辑：合并到颜色面板中，支持手动输入 #RRGGBB / #AARRGGBB。
       var valueTv = new android.widget.TextView(context);
       valueTv.setTextColor(textColor);
       valueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       valueTv.setPadding(self.dp(12), self.dp(3), self.dp(12), self.dp(3));
       content.addView(valueTv);
 
+      colorValueInput = new android.widget.EditText(context);
+      colorValueInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+      colorValueInput.setTextColor(textColor);
+      try { colorValueInput.setHintTextColor(subTextColor); } catch(eHintColorInput) { safeLog(null, 'e', "catch " + String(eHintColorInput)); }
+      colorValueInput.setHint("留空 = 跟随主题；支持 #RRGGBB / #AARRGGBB");
+      colorValueInput.setSingleLine(true);
+      colorValueInput.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
+      try { colorValueInput.setBackground(self.ui.createStrokeDrawable(isDark ? self.ui.colors.inputBgDark : self.ui.colors.inputBgLight, isDark ? self.ui.colors.dividerDark : self.ui.colors.dividerLight, self.dp(1), self.dp(10))); } catch(eColorInputBg) { safeLog(null, 'e', "catch " + String(eColorInputBg)); }
+      var colorValueInputLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+      colorValueInputLp.setMargins(self.dp(12), 0, self.dp(12), self.dp(6));
+      content.addView(colorValueInput, colorValueInputLp);
+
+      function syncColorInputFromState() {
+        try {
+          if (!colorValueInput) return;
+          syncingColorInput = true;
+          colorValueInput.setText(isFollowTheme ? "" : String(selectedColor || ""));
+          try { colorValueInput.setSelection(String(isFollowTheme ? "" : (selectedColor || "")).length); } catch(eSelInput) {}
+        } catch(eInputSync) { safeLog(null, 'e', "catch " + String(eInputSync)); }
+        syncingColorInput = false;
+      }
+
       function updateValueTv() {
         valueTv.setText(isFollowTheme ? "当前：跟随岛屿主题" : ("当前：" + (selectedColor || "无")));
+        syncColorInputFromState();
       }
       updateValueTvFn = updateValueTv;
       updateValueTv();
+
+      try {
+        colorValueInput.addTextChangedListener(new JavaAdapter(android.text.TextWatcher, {
+          afterTextChanged: function(s) {
+            if (syncingColorInput) return;
+            var raw = String(s || "").replace(/^\s+|\s+$/g, "");
+            if (!raw) {
+              isFollowTheme = true;
+              selectedColor = "";
+              currentAlphaByte = 255;
+              updatePreview();
+              valueTv.setText("当前：跟随岛屿主题");
+              refreshRecentGrid();
+              refreshCommonGrid();
+              syncRgbSeeks();
+              try { if (alphaSeek) alphaSeek.setProgress(255); } catch(eAlphaEmpty) {}
+              try { if (alphaValTv) alphaValTv.setText("255"); } catch(eAlphaEmptyTv) {}
+              return;
+            }
+            var normalized = normalizeTintColorValue(raw);
+            if (!normalized) {
+              valueTv.setText("当前：" + raw + "（格式无效）");
+              return;
+            }
+            isFollowTheme = false;
+            selectedColor = normalized;
+            currentBaseRgbHex = extractTintRgbHex(normalized);
+            currentAlphaByte = extractTintAlphaByte(normalized);
+            updatePreview();
+            valueTv.setText("当前：" + selectedColor);
+            refreshRecentGrid();
+            refreshCommonGrid();
+            syncRgbSeeks();
+            try { if (alphaSeek) alphaSeek.setProgress(currentAlphaByte); } catch(eAlphaNorm) {}
+            try { if (alphaValTv) alphaValTv.setText(String(currentAlphaByte)); } catch(eAlphaNormTv) {}
+          },
+          beforeTextChanged: function(s, st, c, a) {},
+          onTextChanged: function(s, st, b, c) {}
+        }));
+      } catch(eColorInputWatcher) { safeLog(null, 'e', "catch " + String(eColorInputWatcher)); }
 
       // RGB 滑块
       var rgbLabels = ["R", "G", "B"];
