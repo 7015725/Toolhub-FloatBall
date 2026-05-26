@@ -30,8 +30,69 @@ function buildNoCacheUrl(urlStr) {
     return String(urlStr) + sep + "_toolhub_ts=" + java.lang.System.currentTimeMillis();
 }
 
-function getLogPath() { return shortx.getShortXDir() + "/ToolHub/logs/init.log"; }
-function getCodeDirPath() { return shortx.getShortXDir() + "/ToolHub/code/"; }
+var __toolHubRootDir = null;
+
+function getAndroidContext() {
+    try {
+        var app = Packages.android.app.ActivityThread.currentApplication();
+        if (app) return app.getApplicationContext ? app.getApplicationContext() : app;
+    } catch (eApp) {}
+    try {
+        var ctx = Packages.tornaco.apps.shortx.core.OooO0O0.OooO00o();
+        if (ctx && ctx.getApplicationContext) return ctx.getApplicationContext();
+        return ctx;
+    } catch (eCtx) {}
+    return null;
+}
+
+function canWriteDirPath(path) {
+    try {
+        if (!path) return false;
+        var dir = new java.io.File(String(path));
+        if (!dir.exists() && !dir.mkdirs()) return false;
+        if (!dir.isDirectory()) return false;
+        var probe = new java.io.File(dir, ".write_probe_" + java.lang.System.currentTimeMillis());
+        var out = new java.io.FileOutputStream(probe, false);
+        out.write(49);
+        out.close();
+        try { probe.delete(); } catch (eDelProbe) {}
+        return true;
+    } catch (eProbe) { return false; }
+}
+
+function getToolHubRootDir() {
+    if (__toolHubRootDir) return __toolHubRootDir;
+    var candidates = [];
+    try {
+        if (typeof shortx !== "undefined" && shortx && typeof shortx.getShortXDir === "function") {
+            var sx = String(shortx.getShortXDir() || "");
+            if (sx) candidates.push(sx + "/ToolHub");
+        }
+    } catch (eSxRoot) {}
+    try {
+        var ctx = getAndroidContext();
+        if (ctx) {
+            var ext = ctx.getExternalFilesDir(null);
+            if (ext) candidates.push(String(ext.getAbsolutePath()) + "/ToolHub");
+            var files = ctx.getFilesDir();
+            if (files) candidates.push(String(files.getAbsolutePath()) + "/ToolHub");
+        }
+    } catch (eCtxRoot) {}
+    candidates.push("/sdcard/Android/data/tornaco.apps.shortx/files/ToolHub");
+    candidates.push("/data/system/ShortX_ToolHub");
+    for (var i = 0; i < candidates.length; i++) {
+        var p = String(candidates[i]);
+        if (canWriteDirPath(p)) {
+            __toolHubRootDir = p;
+            return __toolHubRootDir;
+        }
+    }
+    __toolHubRootDir = String(candidates[0] || "/data/system/ShortX_ToolHub");
+    return __toolHubRootDir;
+}
+
+function getLogPath() { return getToolHubRootDir() + "/logs/init.log"; }
+function getCodeDirPath() { return getToolHubRootDir() + "/code/"; }
 function getTrustedShaPath(relPath) { return getCodeDirPath() + ".trusted_sha_" + relPath; }
 function getTrustedVersionPath() { return getCodeDirPath() + ".trusted_manifest_version"; }
 
@@ -72,23 +133,14 @@ function runShell(cmdArr) {
 }
 
 function checkDirPerms(path) {
-    try {
-        var proc = java.lang.Runtime.getRuntime().exec(["stat", "-c", "%u %g %a", path]);
-        proc.waitFor();
-        var reader = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getInputStream()));
-        var line = reader.readLine();
-        reader.close();
-        if (line) {
-            var parts = String(line).trim().split(/\s+/);
-            if (parts.length >= 3) return String(parts[0]) === "1000" && String(parts[1]) === "1000" && String(parts[2]) === "700";
-        }
-    } catch (e) {}
-    return false;
+    return canWriteDirPath(path);
 }
 
 function setDirPerms(path) {
+    // 只尝试 chmod，不再强制 chown 1000:1000。
+    // 在部分 ColorOS/ShortX 环境中，shortx.getShortXDir() 位于 /data/system/shortx_*，
+    // 强制改 owner 反而会让当前 JS 进程失去写权限，导致 Dir not writable。
     runShell(["chmod", "700", path]);
-    runShell(["chown", "1000:1000", path]);
 }
 
 function ensureCodeDir() {

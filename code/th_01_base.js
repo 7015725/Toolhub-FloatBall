@@ -306,26 +306,71 @@ function createDebouncedWriter(fn, delay) {
   return writer;
 }
 
+function canWriteToolHubDir(path) {
+  try {
+    if (!path) return false;
+    var dir = new java.io.File(String(path));
+    if (!dir.exists() && !dir.mkdirs()) return false;
+    if (!dir.isDirectory()) return false;
+    var probe = new java.io.File(dir, ".write_probe_" + java.lang.System.currentTimeMillis());
+    var out = new java.io.FileOutputStream(probe, false);
+    out.write(49);
+    out.close();
+    try { probe.delete(); } catch (eDelProbe) {}
+    return true;
+  } catch (eProbe) { return false; }
+}
+
+function getToolHubAndroidContext() {
+  try {
+    var app = Packages.android.app.ActivityThread.currentApplication();
+    if (app) return app.getApplicationContext ? app.getApplicationContext() : app;
+  } catch (eApp) {}
+  try {
+    var ctx = Packages.tornaco.apps.shortx.core.OooO0O0.OooO00o();
+    if (ctx && ctx.getApplicationContext) return ctx.getApplicationContext();
+    return ctx;
+  } catch (eCtx) {}
+  return null;
+}
+
 function resolveToolHubRootDir() {
+  var candidates = [];
   try {
     if (typeof shortx !== "undefined" && shortx && typeof shortx.getShortXDir === "function") {
       var shortxDir = String(shortx.getShortXDir() || "");
-      if (shortxDir) return shortxDir + "/ToolHub";
+      if (shortxDir) candidates.push(shortxDir + "/ToolHub");
     }
   } catch (eShortX) {}
+
+  try {
+    var ctx = getToolHubAndroidContext();
+    if (ctx) {
+      var ext = ctx.getExternalFilesDir(null);
+      if (ext) candidates.push(String(ext.getAbsolutePath()) + "/ToolHub");
+      var files = ctx.getFilesDir();
+      if (files) candidates.push(String(files.getAbsolutePath()) + "/ToolHub");
+    }
+  } catch (eCtxRoot) {}
 
   try {
     var logDirFile = new java.io.File(
       Packages.tornaco.apps.shortx.core.OooO0O0.OooO00o().getLogDir()
     );
     var parent = logDirFile.getParentFile();
-    if (parent == null) {
-      return String(logDirFile.getAbsolutePath()) + "/ToolHub";
-    }
-    return String(parent.getAbsolutePath()) + "/ToolHub";
+    if (parent == null) candidates.push(String(logDirFile.getAbsolutePath()) + "/ToolHub");
+    else candidates.push(String(parent.getAbsolutePath()) + "/ToolHub");
   } catch (eRoot2) {}
 
-  return "/data/system/ShortX_ToolHub";
+  candidates.push("/sdcard/Android/data/tornaco.apps.shortx/files/ToolHub");
+  candidates.push("/data/system/ShortX_ToolHub");
+
+  for (var i = 0; i < candidates.length; i++) {
+    var p = String(candidates[i]);
+    if (canWriteToolHubDir(p)) return p;
+  }
+
+  return String(candidates[0] || "/data/system/ShortX_ToolHub");
 }
 
 
