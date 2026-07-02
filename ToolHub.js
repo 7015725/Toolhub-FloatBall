@@ -1,10 +1,10 @@
 // ToolHub - 入口文件 (加载子模块并执行)
-// Entry sync marker: 2026-07-02 22:15:29 +0800
+// Entry sync marker: 2026-07-03 06:42:55 +0800
 // 安全更新机制：入口内置 RSA 公钥，先验证 manifest.json/manifest.sig，再按 SHA256 下载子模块。
 // Gitea 只负责分发；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SOURCE = 1; // 0: Gitea, 1: GitHub
-var UPDATE_SECURITY_MODE = 1; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
+var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 
 var UPDATE_ROOTS = [
     "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/",
@@ -18,9 +18,9 @@ if (isNaN(UPDATE_SECURITY_MODE) || UPDATE_SECURITY_MODE < 0 || UPDATE_SECURITY_M
 var GIT_ROOT = UPDATE_ROOTS[UPDATE_SOURCE];
 var GIT_BASE = GIT_ROOT + "code/";
 var TRUSTED_PUBLIC_KEYS = {
-  "toolhub-targets-2026-rsa3072": "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEApiyhtMDJce7dVCxH1/oDu8kbiECYoT5XXmXvR/XNYuJ/5FuL83SbpCQ3QmUnqkbfNyOFqnxac/qlbXJtx6eeSotLP1HmrKI0LGymgxG6b1FfGHBfIKNZfBLIvzVDQob+HJfshlsS1JRlW5Jhm25TMh8dJCQQQZWW/ZItbtOvPYbLwG8cnqEdX8gqyB304+r2l35GPTfxZIGEK/9PcE3AMuqwTolMJsBHtG61hmMdz3dzTTEZQoOcciGWuwr2ZW8XkF6f5SgWkC29ZxZqAxceK4FJ8BsYirpFQxVKyZ6eiYlpNiYz+pHLP2U7JTO6ImmT1rlYSS6xw2tlWf0xq72nuOPC+VzEivuEhnC4y9WBSvauRa/ViIDgQ3yXl2MajuAvGSVWRfZ5Gz5Up8PQD7vxmHT2r0fA4xq4GIvUvGCqOG/d1FRrlVyEuNhCZ7KgpEKPno7fLnC6/ftnYcN5ZNOSWwjWH/e4fBxM5s6RRIYzIY2N0f/fqsRH42lWAhX5stujAgMBAAE="
+    "toolhub-targets-20260703-rsa3072": "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAxcjp3aJFSfhqiOzs1klu+LIyTcIA/SzgCmMUjJgy8x5paDl9YO7F1r0XVHNzH1TZrkIzzck+w3geEtcRRjQqDOb6aUynvbCuMaDm8RlhGZnXHUE6/7uvbG3t5wwv7nML+L+MnBU9OysJcwAB+MgSWJUAr/A4oWB3IXpBwJWGft1iDmt7jWbajaDMiyEpDdVVJabsQsZlEfy4r9PhsXCu/cWYuuOPQq+MM8nA1U7QpJuXh55epx1uCoP+DIroFwdFIjUB5b+woWuMk9KtR6FOmoVzFiflD5tJfkqS0mHlmilINhsLpecDAFDwE/YP2Nzy/+X+jO8AEFJBqmWs80w/bHSz6lKxXG8AuAIcf+AuB1XMyPkST7BvZeQ8mF239Gq4y9oOLqKjISqagrRUqGM99nl7CSNsBqPGBN9guxnnR2lkWZD+0ij++mzKsfIC9N0JQaB0/f2eaXUfB/qrxsh600ZlpEJEPn1O3BL9TKOWqd9BO/XS6jhUPAXiG6LQxKf5AgMBAAE="
 };
-var DEFAULT_TRUSTED_KEY_ID = "toolhub-targets-2026-rsa3072";
+var DEFAULT_TRUSTED_KEY_ID = "toolhub-targets-20260703-rsa3072";
 var MIN_TRUSTED_MANIFEST_VERSION = 20260507152251;
 var __dirChecked = false;
 var __trustedManifest = null;

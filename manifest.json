@@ -70,8 +70,8 @@
       "size": 24999
     },
     "th_14_panels.js": {
-      "sha256": "5b31ac5ebc0625441eb556e3305ee4cfde5eca609aa55e14de0670d338828966",
-      "size": 99918
+      "sha256": "161dcbcc9c7fe85d21b5a69e763a5027e32f6ac422638bae1a68469e80addeb8",
+      "size": 105879
     },
     "th_14_schema_editor.js": {
       "sha256": "748e0f608f5edf80edc638073f715f5b45ab6dc97750bebb43900df25020e61d",
@@ -86,16 +86,16 @@
       "size": 12187
     }
   },
-  "keyId": "toolhub-targets-2026-rsa3072",
+  "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化设置页欢迎卡身份区与状态胶囊布局",
-      "配置状态与更新状态分区展示",
-      "大屏设置目录同步显示配置状态"
+      "修复了因 manifest 签名与清单不同步导致完整验签模式更新失败的问题",
+      "轮换完整验签模式的 RSA3072 信任根",
+      "默认启用完整验签安全更新模式"
     ],
-    "date": "2026-07-02",
-    "title": "设置页欢迎卡 UI 优化"
+    "date": "2026-07-03",
+    "title": "完整验签更新修复"
   },
   "schema": 2,
-  "version": 20260702135935
+  "version": 20260702224417
 }

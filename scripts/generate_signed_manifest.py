@@ -21,7 +21,7 @@ MANIFEST = ROOT / "manifest.json"
 SIG = ROOT / "manifest.sig"
 ENTRY = ROOT / "ToolHub.js"
 ENTRY_SHA = ROOT / "ToolHub.js.sha256"
-DEFAULT_KEY_ID = "toolhub-targets-2026-rsa3072"
+DEFAULT_KEY_ID = "toolhub-targets-20260703-rsa3072"
 
 MODULES = [
     "th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.js",
