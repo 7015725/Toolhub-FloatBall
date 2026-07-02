@@ -453,7 +453,14 @@ FloatBallAppWM.prototype.getToolHubUpdateVisual = function(updateState, T, isDar
     stroke: this.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.24)
   };
   var s = updateState ? String(updateState.status || "unknown") : "unknown";
-  if (s === "available") {
+  if (s === "checking") {
+    visual.icon = "…";
+    visual.label = "检查中";
+    visual.sub = "稍候";
+    visual.textColor = warningColor;
+    visual.bg = warningBg;
+    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+  } else if (s === "available") {
     visual.icon = "↓";
     visual.label = "发现新版本";
     visual.sub = updateState && Number(updateState.availableCount || 0) > 0 ? (String(updateState.availableCount) + "项") : "更新";
@@ -549,6 +556,103 @@ FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, o
   return pill;
 };
 
+
+FloatBallAppWM.prototype.startToolHubUpdateCheckFromSettings = function(anchorView) {
+  var self = this;
+  try {
+    if (typeof checkToolHubModuleUpdatesNow !== "function") {
+      try { this.toast("检查函数不可用，请重新启动 ToolHub"); } catch(eToast0) {}
+      return;
+    }
+    var cur = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
+    var statusText = cur ? String(cur.status || "") : "";
+    if (statusText === "checking") {
+      try { this.toast("检查正在进行"); } catch(eToast1) {}
+      return;
+    }
+    if (statusText === "installing") {
+      try { this.toast("子模块正在更新"); } catch(eToast2) {}
+      return;
+    }
+    try {
+      if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
+        TOOLHUB_UPDATE_STATE.status = "checking";
+        TOOLHUB_UPDATE_STATE.error = "";
+      }
+    } catch(eState0) {}
+    try { this.state.settingsUpdateExpanded = true; } catch(eExpand) {}
+    try { this.toast("开始检查更新"); } catch(eToast3) {}
+    try { if (this.replaceToolAppPage) this.replaceToolAppPage("settings"); } catch(eRefresh0) {}
+    new java.lang.Thread(new java.lang.Runnable({
+      run: function() {
+        var ret = null;
+        try {
+          ret = checkToolHubModuleUpdatesNow();
+        } catch(eRun) {
+          ret = { ok: false, msg: "检查失败：" + String(eRun), error: String(eRun) };
+          try {
+            if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
+              TOOLHUB_UPDATE_STATE.ok = false;
+              TOOLHUB_UPDATE_STATE.status = "error";
+              TOOLHUB_UPDATE_STATE.error = String(eRun);
+            }
+          } catch(eState1) {}
+        }
+        try {
+          self.runOnUiThreadSafe(function() {
+            try { self.state.settingsUpdateExpanded = true; } catch(eExpand2) {}
+            try { self.toast(ret && ret.msg ? String(ret.msg) : "检查完成"); } catch(eToast4) {}
+            try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eRefresh1) {}
+          });
+        } catch(eUi) {
+          try { if (anchorView && anchorView.post) anchorView.post(new java.lang.Runnable({ run: function() { try { self.toast(ret && ret.msg ? String(ret.msg) : "检查完成"); if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(ePostUi) {} } })); } catch(ePost) {}
+        }
+      }
+    })).start();
+  } catch(eStart) {
+    try { this.toast("启动检查失败：" + String(eStart)); } catch(eToast5) {}
+  }
+};
+
+FloatBallAppWM.prototype.maybeAutoCheckToolHubUpdatesFromSettings = function() {
+  var self = this;
+  try {
+    if (typeof checkToolHubModuleUpdatesNow !== "function") return;
+    if (!this.state) return;
+    if (this.state.settingsAutoUpdateCheckRunning) return;
+    var cur = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
+    var statusText = cur ? String(cur.status || "") : "";
+    if (statusText === "checking" || statusText === "installing") return;
+    var now = java.lang.System.currentTimeMillis();
+    var last = cur ? Number(cur.lastCheckAt || 0) : 0;
+    if (isNaN(last)) last = 0;
+    if (last > 0 && Number(now) - last < 30 * 60 * 1000) return;
+    this.state.settingsAutoUpdateCheckRunning = true;
+    try {
+      if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
+        TOOLHUB_UPDATE_STATE.status = "checking";
+        TOOLHUB_UPDATE_STATE.error = "";
+      }
+    } catch(eState0) {}
+    new java.lang.Thread(new java.lang.Runnable({
+      run: function() {
+        try { checkToolHubModuleUpdatesNow(); } catch(eRun) {}
+        try { self.state.settingsAutoUpdateCheckRunning = false; } catch(eFlag) {}
+        try {
+          self.runOnUiThreadSafe(function() {
+            try {
+              var route = self.state && self.state.toolAppRoute ? String(self.state.toolAppRoute) : "";
+              if (self.state && self.state.toolAppActive && route === "settings" && self.replaceToolAppPage) self.replaceToolAppPage("settings");
+            } catch(eRefresh) {}
+          });
+        } catch(eUi) {}
+      }
+    })).start();
+  } catch(eAuto) {
+    try { this.state.settingsAutoUpdateCheckRunning = false; } catch(eFlag2) {}
+  }
+};
+
 FloatBallAppWM.prototype.startToolHubModuleUpdateFromSettings = function(anchorView) {
   var self = this;
   try {
@@ -557,8 +661,13 @@ FloatBallAppWM.prototype.startToolHubModuleUpdateFromSettings = function(anchorV
       return;
     }
     var cur = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
-    if (cur && String(cur.status || "") === "installing") {
+    var statusText = cur ? String(cur.status || "") : "";
+    if (statusText === "installing") {
       try { this.toast("更新正在进行"); } catch(eToast1) {}
+      return;
+    }
+    if (statusText === "checking") {
+      try { this.toast("检查正在进行"); } catch(eToastCheck) {}
       return;
     }
     try {
@@ -665,20 +774,32 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   if (updateState && updateState.error) addLine(this, box, "错误：" + String(updateState.error), T.danger || C.danger, 11, false);
 
   var statusName = updateState ? String(updateState.status || "") : "";
-  if (statusName === "installing") {
+  function addActionButton(labelText, bgColor, textColor, descText, onClickFn, topMarginDp) {
+    var actionBtn = self.ui.createSolidButton(self, labelText, bgColor, textColor, onClickFn);
+    try { actionBtn.setContentDescription(descText); } catch(eDescBtn) {}
+    var actionLp = new android.widget.LinearLayout.LayoutParams(-1, self.dp(48));
+    actionLp.setMargins(0, self.dp(topMarginDp), 0, 0);
+    box.addView(actionBtn, actionLp);
+    return actionBtn;
+  }
+  if (statusName === "checking") {
+    var checkingTv = addLine(this, box, "正在后台检查更新，请稍候。", T.primaryDeep, 12, true);
+    checkingTv.setPadding(0, this.dp(10), 0, 0);
+  } else if (statusName === "installing") {
     var runningTv = addLine(this, box, "正在后台下载并校验子模块，请稍候。", T.primaryDeep, 12, true);
     runningTv.setPadding(0, this.dp(10), 0, 0);
   } else if (updateState && updateState.needRestart) {
     var restartTv = addLine(this, box, "更新已写入本地，重启 ToolHub 后生效。", T.primaryDeep, 12, true);
     restartTv.setPadding(0, this.dp(10), 0, 0);
-  } else if (statusName === "available" || (updateState && Number(updateState.availableCount || 0) > 0)) {
-    var btn = this.ui.createSolidButton(this, "更新子模块", T.primary, T.onPrimary, function(v) {
-      try { self.startToolHubModuleUpdateFromSettings(v); } catch(eStartBtn) { try { self.toast("启动更新失败：" + String(eStartBtn)); } catch(eToastBtn) {} }
-    });
-    try { btn.setContentDescription("更新 ToolHub 子模块"); } catch(eDesc) {}
-    var btnLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(48));
-    btnLp.setMargins(0, this.dp(10), 0, 0);
-    box.addView(btn, btnLp);
+  } else {
+    addActionButton("检查更新", T.primarySoft || T.primary, T.primaryDeep || T.onPrimary, "检查 ToolHub 更新", function(v) {
+      try { self.startToolHubUpdateCheckFromSettings(v); } catch(eCheckBtn) { try { self.toast("启动检查失败：" + String(eCheckBtn)); } catch(eToastCheckBtn) {} }
+    }, 10);
+    if (statusName === "available" || (updateState && Number(updateState.availableCount || 0) > 0)) {
+      addActionButton("更新子模块", T.primary, T.onPrimary, "更新 ToolHub 子模块", function(v) {
+        try { self.startToolHubModuleUpdateFromSettings(v); } catch(eStartBtn) { try { self.toast("启动更新失败：" + String(eStartBtn)); } catch(eToastBtn) {} }
+      }, 8);
+    }
   }
   return box;
 };
@@ -1172,6 +1293,8 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
       statusBg = T.primarySoft; statusStroke = T.primaryDeep; statusValueColor = T.primaryDeep;
     }
   } catch(eStatus) {}
+
+  try { if (this.maybeAutoCheckToolHubUpdatesFromSettings) this.maybeAutoCheckToolHubUpdatesFromSettings(); } catch(eAutoCheckSettings) {}
 
   var settingsNoticeContainer = null;
   function setSettingsInlineNotice(msg, kind) {

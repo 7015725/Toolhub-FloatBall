@@ -26,6 +26,7 @@ var __dirChecked = false;
 var __trustedManifest = null;
 var __installedManifest = null;
 var __manualUpdateRunning = false;
+var __runtimeUpdateCheckRunning = false;
 var __securityStatus = { ok: false, msg: "安全清单尚未校验" };
 var TOOLHUB_UPDATE_STATE = {
     ok: true,
@@ -469,6 +470,79 @@ function getManifestRelease() {
     return out;
 }
 
+
+function runtimeOptString(v) {
+    return (v === undefined || v === null) ? "" : String(v);
+}
+
+function copyRuntimeStringList(list) {
+    var out = [];
+    if (!list || list.length === undefined) return out;
+    for (var i = 0; i < list.length; i++) {
+        if (list[i] !== undefined && list[i] !== null && String(list[i]).length > 0) out.push(String(list[i]));
+    }
+    return out;
+}
+
+function getUpdateSourceText() {
+    return UPDATE_SOURCE === 1 ? "GitHub" : "Gitea";
+}
+
+function getUpdateModeText() {
+    if (UPDATE_SECURITY_MODE === 1) return "manifest哈希校验";
+    if (UPDATE_SECURITY_MODE === 2) return "完整验签安全更新";
+    return "普通更新模式";
+}
+
+function getTrustedManifestVersionNumber() {
+    var versionNum = 0;
+    if (__securityStatus && __securityStatus.version !== undefined && __securityStatus.version !== null) versionNum = Number(__securityStatus.version || 0);
+    if ((!versionNum || isNaN(versionNum)) && __trustedManifest && __trustedManifest.version !== undefined) versionNum = Number(__trustedManifest.version || 0);
+    if (isNaN(versionNum)) versionNum = 0;
+    return versionNum;
+}
+
+function buildToolHubSecurityText() {
+    if (UPDATE_SECURITY_MODE === 0) return "⚠ 普通更新模式：未启用签名校验";
+    if (UPDATE_SECURITY_MODE === 1 && __securityStatus.ok) return "⚠ manifest哈希校验模式 v" + String(__securityStatus.version || 0);
+    if (__securityStatus.ok) return "✓ 已验签 v" + String(__securityStatus.version || 0) + " / " + runtimeOptString(__securityStatus.keyId);
+    return "✗ " + runtimeOptString(__securityStatus.msg);
+}
+
+function applyRuntimeUpdateState(availableNames, errText) {
+    try {
+        var names = copyRuntimeStringList(availableNames || []);
+        var err = errText ? String(errText) : "";
+        var rel = getManifestRelease();
+        var versionNum = getTrustedManifestVersionNumber();
+        var oldNeedRestart = TOOLHUB_UPDATE_STATE && TOOLHUB_UPDATE_STATE.needRestart === true;
+        TOOLHUB_UPDATE_STATE.ok = err.length === 0;
+        if (err.length > 0) TOOLHUB_UPDATE_STATE.status = "error";
+        else if (oldNeedRestart) TOOLHUB_UPDATE_STATE.status = "updated";
+        else if (UPDATE_SECURITY_MODE === 0) TOOLHUB_UPDATE_STATE.status = "plain";
+        else TOOLHUB_UPDATE_STATE.status = names.length > 0 ? "available" : "latest";
+        TOOLHUB_UPDATE_STATE.source = getUpdateSourceText();
+        TOOLHUB_UPDATE_STATE.mode = UPDATE_SECURITY_MODE;
+        TOOLHUB_UPDATE_STATE.modeText = getUpdateModeText();
+        TOOLHUB_UPDATE_STATE.version = versionNum;
+        if (err.length === 0 || rel.title) TOOLHUB_UPDATE_STATE.title = runtimeOptString(rel.title);
+        if (err.length === 0 || rel.date) TOOLHUB_UPDATE_STATE.date = runtimeOptString(rel.date);
+        if (err.length === 0 || (rel.changes && rel.changes.length > 0)) TOOLHUB_UPDATE_STATE.changes = copyRuntimeStringList(rel.changes);
+        if (!oldNeedRestart) {
+            TOOLHUB_UPDATE_STATE.updatedCount = 0;
+            TOOLHUB_UPDATE_STATE.updatedModules = [];
+        }
+        TOOLHUB_UPDATE_STATE.availableCount = err.length > 0 ? 0 : names.length;
+        TOOLHUB_UPDATE_STATE.availableModules = err.length > 0 ? [] : names;
+        TOOLHUB_UPDATE_STATE.needRestart = oldNeedRestart;
+        TOOLHUB_UPDATE_STATE.lastCheckAt = Number(java.lang.System.currentTimeMillis());
+        TOOLHUB_UPDATE_STATE.securityText = buildToolHubSecurityText();
+        TOOLHUB_UPDATE_STATE.error = err;
+    } catch (eApply) {
+        writeLog("Runtime update state apply failed: " + String(eApply));
+    }
+}
+
 function hashesEqual(a, b) {
     if (!a || !b) return false;
     return String(a).toLowerCase() === String(b).toLowerCase();
@@ -653,6 +727,67 @@ function installPendingModuleUpdates() {
     }
 }
 
+
+function checkToolHubModuleUpdatesNow() {
+    if (__runtimeUpdateCheckRunning) return { ok: false, running: true, msg: "检查正在进行" };
+    __runtimeUpdateCheckRunning = true;
+    var names = [];
+    try {
+        ensureCodeDir();
+        if (UPDATE_SECURITY_MODE === 0) {
+            applyRuntimeUpdateState([], "");
+            writeLog("Runtime module update check skipped in plain mode");
+            return { ok: true, count: 0, modules: [], msg: "普通更新模式已跳过清单检查" };
+        }
+        fetchTrustedManifest();
+        if (!__trustedManifest) throw (__securityStatus && __securityStatus.msg ? __securityStatus.msg : "更新清单不可用");
+        __pendingModuleUpdates = [];
+        var dir = ensureCodeDir();
+        for (var i = 0; i < modules.length; i++) {
+            var relPath = String(modules[i]);
+            var f = new java.io.File(dir, relPath);
+            var info = getManifestInfo(relPath);
+            if (!info || !info.sha256) throw "module not in trusted manifest: " + relPath;
+            var expectedHash = String(info.sha256).toLowerCase();
+            var expectedSize = Number(info.size || 0);
+            var actualHash = f.exists() ? sha256File(f.getAbsolutePath()) : "";
+            if (actualHash && hashesEqual(actualHash, expectedHash)) {
+                saveTrustedSha(relPath, expectedHash);
+                continue;
+            }
+            if (!f.exists()) {
+                addPendingModuleUpdate(relPath, "", expectedHash, expectedSize);
+                names.push(relPath);
+                continue;
+            }
+            var installedHash = getInstalledSha(relPath);
+            var trustedHash = getTrustedSha(relPath);
+            if (actualHash && (hashesEqual(actualHash, installedHash) || hashesEqual(actualHash, trustedHash))) {
+                addPendingModuleUpdate(relPath, actualHash, expectedHash, expectedSize);
+                names.push(relPath);
+                continue;
+            }
+            throw "本地子模块状态异常：" + relPath;
+        }
+        applyRuntimeUpdateState(names, "");
+        writeLog("Runtime module update check finished, count=" + names.length + ", modules=" + names.join(","));
+        return {
+            ok: true,
+            count: names.length,
+            modules: names,
+            msg: names.length > 0 ? ("发现 " + names.length + " 个可更新子模块。") : "已是最新。"
+        };
+    } catch (eCheck) {
+        var errText = String(eCheck);
+        __pendingModuleUpdates = [];
+        applyRuntimeUpdateState([], errText);
+        writeLog("Runtime module update check failed: " + errText);
+        return { ok: false, error: errText, msg: "检查失败：" + errText };
+    } finally {
+        __runtimeUpdateCheckRunning = false;
+    }
+}
+
 function loadScript(relPath) {
     try {
         var dir = ensureCodeDir();
@@ -763,20 +898,15 @@ var __out = (function() {
     return { count: names.length, modules: names, msg: names.length ? ("有 " + names.length + " 个子模块加载失败：" + names.join("、")) : "所有子模块加载正常。" };
   }
   function buildSecurityText() {
-    if (UPDATE_SECURITY_MODE === 0) return "⚠ 普通更新模式：未启用签名校验";
-    if (UPDATE_SECURITY_MODE === 1 && __securityStatus.ok) return "⚠ manifest哈希校验模式 v" + String(__securityStatus.version || 0);
-    if (__securityStatus.ok) return "✓ 已验签 v" + String(__securityStatus.version || 0) + " / " + optStr(__securityStatus.keyId);
-    return "✗ " + optStr(__securityStatus.msg);
+    return buildToolHubSecurityText();
   }
   function buildToolHubUpdateState(syncInfo, pendingInfo, loadInfo, securityText) {
     var rel = getManifestRelease();
-    var sourceText = UPDATE_SOURCE === 1 ? "GitHub" : "Gitea";
-    var modeText = "普通更新模式";
+    var sourceText = getUpdateSourceText();
+    var modeText = getUpdateModeText();
     var statusName = "latest";
     var errText = "";
     var versionNum = 0;
-    if (UPDATE_SECURITY_MODE === 1) modeText = "manifest哈希校验";
-    else if (UPDATE_SECURITY_MODE === 2) modeText = "完整验签安全更新";
     if (__securityStatus && __securityStatus.version !== undefined && __securityStatus.version !== null) versionNum = Number(__securityStatus.version || 0);
     if ((!versionNum || isNaN(versionNum)) && __trustedManifest && __trustedManifest.version !== undefined) versionNum = Number(__trustedManifest.version || 0);
     if (isNaN(versionNum)) versionNum = 0;
