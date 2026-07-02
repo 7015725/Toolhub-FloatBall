@@ -1,4 +1,5 @@
 // ToolHub - 入口文件 (加载子模块并执行)
+// Entry sync marker: 2026-07-02 22:10:29 +0800
 // 安全更新机制：入口内置 RSA 公钥，先验证 manifest.json/manifest.sig，再按 SHA256 下载子模块。
 // Gitea 只负责分发；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
