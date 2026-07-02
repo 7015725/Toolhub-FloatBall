@@ -384,9 +384,23 @@ FloatBallAppWM.prototype.getToolHubUpdateState = function() {
     changes: [],
     updatedCount: 0,
     updatedModules: [],
+    availableCount: 0,
+    availableModules: [],
+    bootFixedCount: 0,
+    bootFixedModules: [],
+    needRestart: false,
+    lastCheckAt: 0,
     securityText: "",
     error: ""
   };
+  function copyList(src) {
+    var outList = [];
+    if (!src || src.length === undefined) return outList;
+    for (var i = 0; i < src.length; i++) {
+      if (src[i] !== undefined && src[i] !== null && String(src[i]).length > 0) outList.push(String(src[i]));
+    }
+    return outList;
+  }
   try {
     if (typeof TOOLHUB_UPDATE_STATE !== "object" || !TOOLHUB_UPDATE_STATE) return fallback;
     var raw = TOOLHUB_UPDATE_STATE;
@@ -399,27 +413,24 @@ FloatBallAppWM.prototype.getToolHubUpdateState = function() {
       version: Number(raw.version || 0),
       title: raw.title === undefined || raw.title === null ? "" : String(raw.title),
       date: raw.date === undefined || raw.date === null ? "" : String(raw.date),
-      changes: [],
+      changes: copyList(raw.changes || []),
       updatedCount: Number(raw.updatedCount || 0),
-      updatedModules: [],
+      updatedModules: copyList(raw.updatedModules || []),
+      availableCount: Number(raw.availableCount || 0),
+      availableModules: copyList(raw.availableModules || []),
+      bootFixedCount: Number(raw.bootFixedCount || 0),
+      bootFixedModules: copyList(raw.bootFixedModules || []),
+      needRestart: raw.needRestart === true,
+      lastCheckAt: Number(raw.lastCheckAt || 0),
       securityText: raw.securityText === undefined || raw.securityText === null ? "" : String(raw.securityText),
       error: raw.error === undefined || raw.error === null ? "" : String(raw.error)
     };
     if (isNaN(out.mode)) out.mode = 0;
     if (isNaN(out.version)) out.version = 0;
     if (isNaN(out.updatedCount)) out.updatedCount = 0;
-    var changes = raw.changes || [];
-    if (changes && changes.length !== undefined) {
-      for (var ci = 0; ci < changes.length; ci++) {
-        if (changes[ci] !== undefined && changes[ci] !== null && String(changes[ci]).length > 0) out.changes.push(String(changes[ci]));
-      }
-    }
-    var mods = raw.updatedModules || [];
-    if (mods && mods.length !== undefined) {
-      for (var mi = 0; mi < mods.length; mi++) {
-        if (mods[mi] !== undefined && mods[mi] !== null && String(mods[mi]).length > 0) out.updatedModules.push(String(mods[mi]));
-      }
-    }
+    if (isNaN(out.availableCount)) out.availableCount = 0;
+    if (isNaN(out.bootFixedCount)) out.bootFixedCount = 0;
+    if (isNaN(out.lastCheckAt)) out.lastCheckAt = 0;
     return out;
   } catch(eState) {}
   return fallback;
@@ -431,6 +442,8 @@ FloatBallAppWM.prototype.getToolHubUpdateVisual = function(updateState, T, isDar
   var dangerBg = T.dangerSoft || this.withAlpha(dangerColor, isDark ? 0.22 : 0.12);
   var warningColor = C.warning || T.brown || T.primaryDeep;
   var warningBg = this.withAlpha(warningColor, isDark ? 0.22 : 0.12);
+  var successColor = C.success || T.primaryDeep;
+  var successBg = this.withAlpha(successColor, isDark ? 0.20 : 0.10);
   var visual = {
     icon: "✓",
     label: "更新状态待确认",
@@ -440,9 +453,27 @@ FloatBallAppWM.prototype.getToolHubUpdateVisual = function(updateState, T, isDar
     stroke: this.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.24)
   };
   var s = updateState ? String(updateState.status || "unknown") : "unknown";
-  if (s === "updated") {
+  if (s === "available") {
+    visual.icon = "↓";
+    visual.label = "发现新版本";
+    visual.sub = updateState && Number(updateState.availableCount || 0) > 0 ? (String(updateState.availableCount) + "项") : "更新";
+    visual.textColor = warningColor;
+    visual.bg = warningBg;
+    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+  } else if (s === "installing") {
+    visual.icon = "…";
+    visual.label = "正在更新";
+    visual.sub = "稍候";
+    visual.textColor = warningColor;
+    visual.bg = warningBg;
+    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+  } else if (s === "updated") {
     visual.icon = "↻";
-    visual.label = "新版本已同步";
+    visual.label = updateState && updateState.needRestart ? "已更新，重启生效" : "启动已修复";
+    visual.sub = updateState && updateState.needRestart ? "重启" : (updateState && Number(updateState.updatedCount || 0) > 0 ? (String(updateState.updatedCount) + "项") : "完成");
+    visual.textColor = successColor;
+    visual.bg = successBg;
+    visual.stroke = this.withAlpha(successColor, isDark ? 0.44 : 0.30);
   } else if (s === "latest") {
     visual.icon = "✓";
     visual.label = "已是最新";
@@ -459,8 +490,7 @@ FloatBallAppWM.prototype.getToolHubUpdateVisual = function(updateState, T, isDar
     visual.bg = dangerBg;
     visual.stroke = this.withAlpha(dangerColor, isDark ? 0.44 : 0.30);
   }
-  if (updateState && Number(updateState.updatedCount || 0) > 0 && s === "updated") visual.sub = String(updateState.updatedCount) + "项";
-  else if (updateState && Number(updateState.version || 0) > 0) visual.sub = "v" + String(Math.floor(Number(updateState.version || 0)));
+  if (s !== "available" && s !== "installing" && s !== "updated" && updateState && Number(updateState.version || 0) > 0) visual.sub = "v" + String(Math.floor(Number(updateState.version || 0)));
   return visual;
 };
 
@@ -519,7 +549,60 @@ FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, o
   return pill;
 };
 
+FloatBallAppWM.prototype.startToolHubModuleUpdateFromSettings = function(anchorView) {
+  var self = this;
+  try {
+    if (typeof installPendingModuleUpdates !== "function") {
+      try { this.toast("更新函数不可用，请重新启动 ToolHub"); } catch(eToast0) {}
+      return;
+    }
+    var cur = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
+    if (cur && String(cur.status || "") === "installing") {
+      try { this.toast("更新正在进行"); } catch(eToast1) {}
+      return;
+    }
+    try {
+      if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
+        TOOLHUB_UPDATE_STATE.status = "installing";
+        TOOLHUB_UPDATE_STATE.error = "";
+      }
+    } catch(eState0) {}
+    try { this.state.settingsUpdateExpanded = true; } catch(eExpand) {}
+    try { this.toast("开始更新子模块"); } catch(eToast2) {}
+    try { if (this.replaceToolAppPage) this.replaceToolAppPage("settings"); } catch(eRefresh0) {}
+    new java.lang.Thread(new java.lang.Runnable({
+      run: function() {
+        var ret = null;
+        try {
+          ret = installPendingModuleUpdates();
+        } catch(eRun) {
+          ret = { ok: false, msg: "更新失败：" + String(eRun), error: String(eRun) };
+          try {
+            if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
+              TOOLHUB_UPDATE_STATE.ok = false;
+              TOOLHUB_UPDATE_STATE.status = "error";
+              TOOLHUB_UPDATE_STATE.error = String(eRun);
+            }
+          } catch(eState1) {}
+        }
+        try {
+          self.runOnUiThreadSafe(function() {
+            try { self.state.settingsUpdateExpanded = true; } catch(eExpand2) {}
+            try { self.toast(ret && ret.msg ? String(ret.msg) : "更新完成"); } catch(eToast3) {}
+            try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eRefresh1) {}
+          });
+        } catch(eUi) {
+          try { if (anchorView && anchorView.post) anchorView.post(new java.lang.Runnable({ run: function() { try { self.toast(ret && ret.msg ? String(ret.msg) : "更新完成"); if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(ePostUi) {} } })); } catch(ePost) {}
+        }
+      }
+    })).start();
+  } catch(eStart) {
+    try { this.toast("启动更新失败：" + String(eStart)); } catch(eToast4) {}
+  }
+};
+
 FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
+  var self = this;
   var isDark = this.isDarkTheme();
   var T = this.getAnimalIslandTheme();
   var C = this.ui.colors;
@@ -550,15 +633,29 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   if (updateState && updateState.changes && updateState.changes.length > 0) {
     var changeHead = addLine(this, box, "更新内容", T.primaryDeep, 12, true);
     changeHead.setPadding(0, this.dp(8), 0, this.dp(2));
-    for (var ci = 0; ci < updateState.changes.length; ci++) {
+    var maxChanges = Math.min(3, updateState.changes.length);
+    for (var ci = 0; ci < maxChanges; ci++) {
       addLine(this, box, "• " + String(updateState.changes[ci]), T.sub, 12, false);
     }
+    if (updateState.changes.length > maxChanges) addLine(this, box, "+" + String(updateState.changes.length - maxChanges) + " 项", T.sub, 12, false);
+  }
+
+  if (updateState && updateState.availableModules && updateState.availableModules.length > 0) {
+    var availableTv = addLine(this, box, "可更新模块：" + updateState.availableModules.join("、"), T.sub, 12, false);
+    availableTv.setPadding(0, this.dp(8), 0, 0);
+    try { availableTv.setMaxLines(2); availableTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eAvail) {}
   }
 
   if (updateState && updateState.updatedModules && updateState.updatedModules.length > 0) {
-    var modsTv = addLine(this, box, "同步模块：" + updateState.updatedModules.join("、"), T.sub, 12, false);
+    var modsTv = addLine(this, box, "已处理模块：" + updateState.updatedModules.join("、"), T.sub, 12, false);
     modsTv.setPadding(0, this.dp(8), 0, 0);
     try { modsTv.setMaxLines(2); modsTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eMods) {}
+  }
+
+  if (updateState && updateState.bootFixedModules && updateState.bootFixedModules.length > 0) {
+    var fixedTv = addLine(this, box, "启动修复：" + updateState.bootFixedModules.join("、"), T.sub, 12, false);
+    fixedTv.setPadding(0, this.dp(6), 0, 0);
+    try { fixedTv.setMaxLines(2); fixedTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eFixed) {}
   }
 
   var metaText = "来源：" + String(updateState && updateState.source ? updateState.source : "未知") + " · " + String(updateState && updateState.modeText ? updateState.modeText : "更新模式待确认");
@@ -566,6 +663,23 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   metaTv.setPadding(0, this.dp(8), 0, 0);
   if (updateState && updateState.securityText) addLine(this, box, "安全状态：" + String(updateState.securityText), T.sub, 11, false);
   if (updateState && updateState.error) addLine(this, box, "错误：" + String(updateState.error), T.danger || C.danger, 11, false);
+
+  var statusName = updateState ? String(updateState.status || "") : "";
+  if (statusName === "installing") {
+    var runningTv = addLine(this, box, "正在后台下载并校验子模块，请稍候。", T.primaryDeep, 12, true);
+    runningTv.setPadding(0, this.dp(10), 0, 0);
+  } else if (updateState && updateState.needRestart) {
+    var restartTv = addLine(this, box, "更新已写入本地，重启 ToolHub 后生效。", T.primaryDeep, 12, true);
+    restartTv.setPadding(0, this.dp(10), 0, 0);
+  } else if (statusName === "available" || (updateState && Number(updateState.availableCount || 0) > 0)) {
+    var btn = this.ui.createSolidButton(this, "更新子模块", T.primary, T.onPrimary, function(v) {
+      try { self.startToolHubModuleUpdateFromSettings(v); } catch(eStartBtn) { try { self.toast("启动更新失败：" + String(eStartBtn)); } catch(eToastBtn) {} }
+    });
+    try { btn.setContentDescription("更新 ToolHub 子模块"); } catch(eDesc) {}
+    var btnLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(48));
+    btnLp.setMargins(0, this.dp(10), 0, 0);
+    box.addView(btn, btnLp);
+  }
   return box;
 };
 

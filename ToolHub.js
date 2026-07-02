@@ -24,6 +24,8 @@ var DEFAULT_TRUSTED_KEY_ID = "toolhub-targets-2026-rsa3072";
 var MIN_TRUSTED_MANIFEST_VERSION = 20260507152251;
 var __dirChecked = false;
 var __trustedManifest = null;
+var __installedManifest = null;
+var __manualUpdateRunning = false;
 var __securityStatus = { ok: false, msg: "安全清单尚未校验" };
 var TOOLHUB_UPDATE_STATE = {
     ok: true,
@@ -37,6 +39,12 @@ var TOOLHUB_UPDATE_STATE = {
     changes: [],
     updatedCount: 0,
     updatedModules: [],
+    availableCount: 0,
+    availableModules: [],
+    bootFixedCount: 0,
+    bootFixedModules: [],
+    needRestart: false,
+    lastCheckAt: 0,
     securityText: "",
     error: ""
 };
@@ -111,6 +119,7 @@ function getLogPath() { return getToolHubRootDir() + "/logs/init.log"; }
 function getCodeDirPath() { return getToolHubRootDir() + "/code/"; }
 function getTrustedShaPath(relPath) { return getCodeDirPath() + ".trusted_sha_" + relPath; }
 function getTrustedVersionPath() { return getCodeDirPath() + ".trusted_manifest_version"; }
+function getInstalledManifestPath() { return getCodeDirPath() + ".installed_manifest.json"; }
 
 function writeLog(msg) {
     var writer = null;
@@ -236,6 +245,76 @@ function getTrustedVersion() {
     return isNaN(v) ? 0 : v;
 }
 function saveTrustedVersion(v) { writeTextFile(getTrustedVersionPath(), String(v || 0)); }
+
+function getEmptyInstalledManifest() {
+    return { schema: 1, version: 0, files: {}, updatedAt: 0 };
+}
+
+function readInstalledManifest() {
+    if (__installedManifest) return __installedManifest;
+    try {
+        var txt = readTextFile(getInstalledManifestPath());
+        if (!txt) {
+            __installedManifest = getEmptyInstalledManifest();
+            return __installedManifest;
+        }
+        var parsed = JSON.parse(String(txt));
+        if (!parsed || !parsed.files) {
+            __installedManifest = getEmptyInstalledManifest();
+            return __installedManifest;
+        }
+        __installedManifest = parsed;
+        return __installedManifest;
+    } catch (e) {
+        writeLog("Installed manifest read failed: " + String(e));
+        __installedManifest = getEmptyInstalledManifest();
+        return __installedManifest;
+    }
+}
+
+function getInstalledFileInfo(relPath) {
+    try {
+        var man = readInstalledManifest();
+        if (!man || !man.files) return null;
+        return man.files[relPath] || null;
+    } catch (e) { return null; }
+}
+
+function getInstalledSha(relPath) {
+    var info = getInstalledFileInfo(relPath);
+    if (!info || !info.sha256) return null;
+    return String(info.sha256).toLowerCase();
+}
+
+function saveInstalledManifestFromLocal() {
+    try {
+        ensureCodeDir();
+        var now = java.lang.System.currentTimeMillis();
+        var man = { schema: 1, version: 0, files: {}, updatedAt: Number(now) };
+        var versionNum = 0;
+        if (__trustedManifest && __trustedManifest.version !== undefined && __trustedManifest.version !== null) versionNum = Number(__trustedManifest.version || 0);
+        if (!versionNum || isNaN(versionNum)) versionNum = getTrustedVersion();
+        man.version = isNaN(versionNum) ? 0 : Number(versionNum);
+        for (var i = 0; i < modules.length; i++) {
+            var relPath = String(modules[i]);
+            var f = new java.io.File(getCodeDirPath(), relPath);
+            if (!f.exists()) continue;
+            var hash = sha256File(f.getAbsolutePath());
+            if (!hash) continue;
+            man.files[relPath] = {
+                sha256: String(hash).toLowerCase(),
+                size: Number(f.length()),
+                mtime: Number(f.lastModified())
+            };
+        }
+        var ok = writeTextFile(getInstalledManifestPath(), JSON.stringify(man, null, 2));
+        if (ok) __installedManifest = man;
+        return ok;
+    } catch (eSaveInstalled) {
+        writeLog("Installed manifest save failed: " + String(eSaveInstalled));
+        return false;
+    }
+}
 
 function downloadText(urlStr) {
     var url = new java.net.URL(buildNoCacheUrl(urlStr));
@@ -390,6 +469,65 @@ function getManifestRelease() {
     return out;
 }
 
+function hashesEqual(a, b) {
+    if (!a || !b) return false;
+    return String(a).toLowerCase() === String(b).toLowerCase();
+}
+
+function addPendingModuleUpdate(relPath, currentHash, expectedHash, expectedSize) {
+    try {
+        for (var i = 0; i < __pendingModuleUpdates.length; i++) {
+            if (String(__pendingModuleUpdates[i].module || "") === String(relPath)) return;
+        }
+        __pendingModuleUpdates.push({
+            module: String(relPath),
+            currentHash: currentHash ? String(currentHash).toLowerCase() : "",
+            expectedHash: expectedHash ? String(expectedHash).toLowerCase() : "",
+            size: Number(expectedSize || 0)
+        });
+    } catch (ePending) {}
+}
+
+function ensurePlainBootModule(relPath, destFile) {
+    if (destFile.exists()) {
+        return { updated: false, localFallback: true, size: destFile.length(), hash: sha256File(destFile.getAbsolutePath()) };
+    }
+    var ret = ensurePlainRemoteModule(relPath, destFile);
+    ret.isNew = true;
+    ret.bootFixed = true;
+    return ret;
+}
+
+function ensureBootVerifiedModule(relPath, destFile) {
+    var info = getManifestInfo(relPath);
+    if (!info || !info.sha256) throw "module not in trusted manifest: " + relPath;
+    var expectedHash = String(info.sha256).toLowerCase();
+    var expectedSize = Number(info.size || 0);
+    var actualHash = destFile.exists() ? sha256File(destFile.getAbsolutePath()) : null;
+    if (destFile.exists() && hashesEqual(actualHash, expectedHash)) {
+        saveTrustedSha(relPath, expectedHash);
+        return { updated: false, latest: true, size: destFile.length(), hash: actualHash };
+    }
+    if (destFile.exists() && actualHash) {
+        var installedHash = getInstalledSha(relPath);
+        if (hashesEqual(actualHash, installedHash)) {
+            saveTrustedSha(relPath, actualHash);
+            addPendingModuleUpdate(relPath, actualHash, expectedHash, expectedSize);
+            writeLog("Module update available, keep installed copy " + relPath + " (local=" + actualHash + ", remote=" + expectedHash + ")");
+            return { updated: false, available: true, source: "installed_manifest", size: destFile.length(), hash: actualHash, expectedHash: expectedHash };
+        }
+        var trustedHash = getTrustedSha(relPath);
+        if (hashesEqual(actualHash, trustedHash)) {
+            addPendingModuleUpdate(relPath, actualHash, expectedHash, expectedSize);
+            writeLog("Module update available, keep trusted local copy " + relPath + " (local=" + actualHash + ", remote=" + expectedHash + ")");
+            return { updated: false, available: true, source: "trusted_sha", size: destFile.length(), hash: actualHash, expectedHash: expectedHash };
+        }
+    }
+    var fixed = ensureVerifiedModule(relPath, destFile);
+    fixed.bootFixed = true;
+    return fixed;
+}
+
 function ensurePlainRemoteModule(relPath, destFile) {
     var tmpFile = new java.io.File(destFile.getAbsolutePath() + ".tmp");
     try { if (tmpFile.exists()) tmpFile.delete(); } catch (eDelTmp0) {}
@@ -449,20 +587,86 @@ function ensureLocalTrustedModule(relPath, destFile) {
     return { updated: false, size: destFile.length(), hash: actualHash };
 }
 
+function installPendingModuleUpdates() {
+    if (__manualUpdateRunning) return { ok: false, running: true, msg: "更新正在进行" };
+    __manualUpdateRunning = true;
+    var names = [];
+    try {
+        var dir = ensureCodeDir();
+        if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) fetchTrustedManifest();
+        if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) throw (__securityStatus && __securityStatus.msg ? __securityStatus.msg : "更新清单不可用");
+        for (var i = 0; i < modules.length; i++) {
+            var relPath = String(modules[i]);
+            var f = new java.io.File(dir, relPath);
+            var result = null;
+            if (UPDATE_SECURITY_MODE === 0) {
+                result = ensurePlainRemoteModule(relPath, f);
+            } else {
+                var info = getManifestInfo(relPath);
+                if (!info || !info.sha256) throw "module not in trusted manifest: " + relPath;
+                var expectedHash = String(info.sha256).toLowerCase();
+                var actualHash = f.exists() ? sha256File(f.getAbsolutePath()) : null;
+                if (actualHash && hashesEqual(actualHash, expectedHash)) {
+                    saveTrustedSha(relPath, expectedHash);
+                    continue;
+                }
+                result = ensureVerifiedModule(relPath, f);
+            }
+            if (result && result.updated) names.push(relPath);
+        }
+        __pendingModuleUpdates = [];
+        saveInstalledManifestFromLocal();
+        if (UPDATE_SECURITY_MODE === 2 && __trustedManifest) saveTrustedVersion(__trustedManifest.version);
+        var rel = getManifestRelease();
+        var now = java.lang.System.currentTimeMillis();
+        TOOLHUB_UPDATE_STATE.ok = true;
+        TOOLHUB_UPDATE_STATE.status = names.length > 0 ? "updated" : "latest";
+        TOOLHUB_UPDATE_STATE.version = (__trustedManifest && __trustedManifest.version !== undefined) ? Number(__trustedManifest.version || 0) : Number(TOOLHUB_UPDATE_STATE.version || 0);
+        TOOLHUB_UPDATE_STATE.title = rel.title || TOOLHUB_UPDATE_STATE.title || "";
+        TOOLHUB_UPDATE_STATE.date = rel.date || TOOLHUB_UPDATE_STATE.date || "";
+        TOOLHUB_UPDATE_STATE.changes = rel.changes || TOOLHUB_UPDATE_STATE.changes || [];
+        TOOLHUB_UPDATE_STATE.updatedCount = names.length;
+        TOOLHUB_UPDATE_STATE.updatedModules = names;
+        TOOLHUB_UPDATE_STATE.availableCount = 0;
+        TOOLHUB_UPDATE_STATE.availableModules = [];
+        TOOLHUB_UPDATE_STATE.needRestart = names.length > 0;
+        TOOLHUB_UPDATE_STATE.lastCheckAt = Number(now);
+        TOOLHUB_UPDATE_STATE.error = "";
+        writeLog("Manual module update finished, count=" + names.length + ", modules=" + names.join(","));
+        return {
+            ok: true,
+            count: names.length,
+            modules: names,
+            needRestart: names.length > 0,
+            msg: names.length > 0 ? ("已更新 " + names.length + " 个子模块，重启 ToolHub 后生效。") : "子模块已是最新。"
+        };
+    } catch (eInstall) {
+        var errText = String(eInstall);
+        TOOLHUB_UPDATE_STATE.ok = false;
+        TOOLHUB_UPDATE_STATE.status = "error";
+        TOOLHUB_UPDATE_STATE.error = errText;
+        TOOLHUB_UPDATE_STATE.lastCheckAt = Number(java.lang.System.currentTimeMillis());
+        writeLog("Manual module update failed: " + errText);
+        return { ok: false, error: errText, msg: "更新失败：" + errText };
+    } finally {
+        __manualUpdateRunning = false;
+    }
+}
+
 function loadScript(relPath) {
     try {
         var dir = ensureCodeDir();
         var f = new java.io.File(dir, relPath);
         var result;
-        if (UPDATE_SECURITY_MODE === 0) result = ensurePlainRemoteModule(relPath, f);
-        else if (__trustedManifest) result = ensureVerifiedModule(relPath, f);
+        if (UPDATE_SECURITY_MODE === 0) result = ensurePlainBootModule(relPath, f);
+        else if (__trustedManifest) result = ensureBootVerifiedModule(relPath, f);
         else if (UPDATE_SECURITY_MODE === 2) result = ensureLocalTrustedModule(relPath, f);
         else if (f.exists()) result = { updated: false, localFallback: true, size: f.length(), hash: sha256File(f.getAbsolutePath()) };
         else throw "manifest不可用且本地模块不存在: " + relPath;
 
         if (result.updated) {
-            __moduleUpdates.push({ module: relPath, isNew: !!result.isNew, size: result.size });
-            writeLog((UPDATE_SECURITY_MODE === 0 ? "Plain update " : "Verified update ") + relPath + " (" + result.size + " bytes, sha256=" + result.hash + ")");
+            __moduleUpdates.push({ module: relPath, isNew: !!result.isNew, size: result.size, bootFixed: !!result.bootFixed });
+            writeLog((UPDATE_SECURITY_MODE === 0 ? "Plain boot repair " : "Verified boot repair ") + relPath + " (" + result.size + " bytes, sha256=" + result.hash + ")");
         }
 
         var fileSize = f.length();
@@ -485,6 +689,7 @@ var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.j
                "th_14_panels.js", "th_14_button_shortcut.js", "th_14_button_icon_editor.js", "th_14_button_editor.js",
                "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_16_entry.js"];
 var __moduleUpdates = [];
+var __pendingModuleUpdates = [];
 var loadErrors = [];
 var criticalModules = { "th_01_base.js": true, "th_16_entry.js": true };
 fetchTrustedManifest();
@@ -500,7 +705,8 @@ for (var i = 0; i < modules.length; i++) {
         if (criticalModules[modules[i]]) throw "Critical module failed: " + modules[i] + " (" + String(e) + ")";
     }
 }
-if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0) saveTrustedVersion(__trustedManifest.version);
+if (__trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveInstalledManifestFromLocal();
+if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveTrustedVersion(__trustedManifest.version);
 
 var __out = (function() {
   if (typeof getProcessInfo !== "function") {
@@ -533,8 +739,18 @@ var __out = (function() {
       if (name) names.push(name);
       if (item.isNew) created++; else overwritten++;
     }
-    if (names.length === 0) return { count: 0, modules: [], msg: "子模块已是最新，本次未覆盖更新。" };
-    return { count: names.length, modules: names, msg: "本次覆盖更新 " + names.length + " 个子模块（新增 " + created + " / 覆盖 " + overwritten + "）：" + names.join("、") };
+    if (names.length === 0) return { count: 0, modules: [], msg: "启动阶段未补全或修复子模块。" };
+    return { count: names.length, modules: names, msg: "启动阶段补全/修复 " + names.length + " 个子模块（新增 " + created + " / 修复 " + overwritten + "）：" + names.join("、") };
+  }
+  function summarizePendingModuleUpdates(list) {
+    var names = [];
+    var i;
+    for (i = 0; i < list.length; i++) {
+      var item = list[i] || {};
+      var name = optStr(item.module);
+      if (name) names.push(name);
+    }
+    return { count: names.length, modules: names, msg: names.length ? ("发现 " + names.length + " 个可更新子模块：" + names.join("、")) : "所有子模块已是最新。" };
   }
   function summarizeLoadErrors(list) {
     var names = [];
@@ -552,7 +768,7 @@ var __out = (function() {
     if (__securityStatus.ok) return "✓ 已验签 v" + String(__securityStatus.version || 0) + " / " + optStr(__securityStatus.keyId);
     return "✗ " + optStr(__securityStatus.msg);
   }
-  function buildToolHubUpdateState(syncInfo, loadInfo, securityText) {
+  function buildToolHubUpdateState(syncInfo, pendingInfo, loadInfo, securityText) {
     var rel = getManifestRelease();
     var sourceText = UPDATE_SOURCE === 1 ? "GitHub" : "Gitea";
     var modeText = "普通更新模式";
@@ -566,6 +782,7 @@ var __out = (function() {
     if (isNaN(versionNum)) versionNum = 0;
     if (UPDATE_SECURITY_MODE === 0) statusName = "plain";
     if (syncInfo && syncInfo.count > 0) statusName = "updated";
+    if (pendingInfo && pendingInfo.count > 0) statusName = "available";
     if (!__securityStatus || !__securityStatus.ok) {
       statusName = "error";
       errText = optStr(__securityStatus && __securityStatus.msg);
@@ -586,15 +803,22 @@ var __out = (function() {
       changes: copyStringList(rel.changes),
       updatedCount: syncInfo ? Number(syncInfo.count || 0) : 0,
       updatedModules: syncInfo ? copyStringList(syncInfo.modules) : [],
+      availableCount: pendingInfo ? Number(pendingInfo.count || 0) : 0,
+      availableModules: pendingInfo ? copyStringList(pendingInfo.modules) : [],
+      bootFixedCount: syncInfo ? Number(syncInfo.count || 0) : 0,
+      bootFixedModules: syncInfo ? copyStringList(syncInfo.modules) : [],
+      needRestart: false,
+      lastCheckAt: Number(java.lang.System.currentTimeMillis()),
       securityText: optStr(securityText),
       error: errText
     };
   }
 
   var syncInfo = summarizeModuleUpdates(__moduleUpdates);
+  var pendingInfo = summarizePendingModuleUpdates(__pendingModuleUpdates);
   var loadInfo = summarizeLoadErrors(loadErrors);
   var securityText = buildSecurityText();
-  TOOLHUB_UPDATE_STATE = buildToolHubUpdateState(syncInfo, loadInfo, securityText);
+  TOOLHUB_UPDATE_STATE = buildToolHubUpdateState(syncInfo, pendingInfo, loadInfo, securityText);
 
   var entryInfo = getProcessInfo("entry");
   var logger = new ToolHubLogger(entryInfo);
@@ -611,8 +835,8 @@ var __out = (function() {
   var layoutObj = startRet && startRet.layout || null;
   var layoutText = layoutObj ? (String(layoutObj.cols || "?") + "×" + String(layoutObj.rows || "?")) : "未知";
   var syncText = syncInfo.count > 0
-    ? ("✓ 已更新 " + syncInfo.count + " 个模块：" + syncInfo.modules.join("、"))
-    : "✓ 子模块已是最新";
+    ? ("✓ 启动已补全/修复 " + syncInfo.count + " 个模块：" + syncInfo.modules.join("、"))
+    : (pendingInfo.count > 0 ? ("↻ 有 " + pendingInfo.count + " 个子模块可更新") : "✓ 子模块已是最新");
 
   var out = {
     ok: started,
@@ -625,7 +849,8 @@ var __out = (function() {
   };
   if (TOOLHUB_UPDATE_STATE.title) out.更新标题 = TOOLHUB_UPDATE_STATE.title;
   if (TOOLHUB_UPDATE_STATE.changes && TOOLHUB_UPDATE_STATE.changes.length > 0) out.更新内容 = TOOLHUB_UPDATE_STATE.changes;
-  if (syncInfo.count > 0) out.更新模块 = syncInfo.modules;
+  if (syncInfo.count > 0) out.启动修复模块 = syncInfo.modules;
+  if (pendingInfo.count > 0) out.可更新模块 = pendingInfo.modules;
   if (loadInfo.count > 0) out.加载异常 = loadInfo.modules;
   if (!started) out.错误 = optStr(startRet && startRet.err) || (loadInfo.modules && loadInfo.modules.join(", ")) || "未知错误";
   return out;
