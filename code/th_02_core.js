@@ -61,6 +61,7 @@ function FloatBallAppWM(logger) {
     settingsGroupKey: null,
     settingsHomeSelectedCategoryId: null,
     settingsHomeSelectedItemId: null,
+    settingsUpdateExpanded: false,
 
     mask: null,
     maskLp: null,

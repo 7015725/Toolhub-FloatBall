@@ -371,7 +371,206 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   }
 };
 
+FloatBallAppWM.prototype.getToolHubUpdateState = function() {
+  var fallback = {
+    ok: true,
+    status: "unknown",
+    source: "",
+    mode: 0,
+    modeText: "",
+    version: 0,
+    title: "",
+    date: "",
+    changes: [],
+    updatedCount: 0,
+    updatedModules: [],
+    securityText: "",
+    error: ""
+  };
+  try {
+    if (typeof TOOLHUB_UPDATE_STATE !== "object" || !TOOLHUB_UPDATE_STATE) return fallback;
+    var raw = TOOLHUB_UPDATE_STATE;
+    var out = {
+      ok: raw.ok !== false,
+      status: raw.status === undefined || raw.status === null ? "unknown" : String(raw.status),
+      source: raw.source === undefined || raw.source === null ? "" : String(raw.source),
+      mode: Number(raw.mode || 0),
+      modeText: raw.modeText === undefined || raw.modeText === null ? "" : String(raw.modeText),
+      version: Number(raw.version || 0),
+      title: raw.title === undefined || raw.title === null ? "" : String(raw.title),
+      date: raw.date === undefined || raw.date === null ? "" : String(raw.date),
+      changes: [],
+      updatedCount: Number(raw.updatedCount || 0),
+      updatedModules: [],
+      securityText: raw.securityText === undefined || raw.securityText === null ? "" : String(raw.securityText),
+      error: raw.error === undefined || raw.error === null ? "" : String(raw.error)
+    };
+    if (isNaN(out.mode)) out.mode = 0;
+    if (isNaN(out.version)) out.version = 0;
+    if (isNaN(out.updatedCount)) out.updatedCount = 0;
+    var changes = raw.changes || [];
+    if (changes && changes.length !== undefined) {
+      for (var ci = 0; ci < changes.length; ci++) {
+        if (changes[ci] !== undefined && changes[ci] !== null && String(changes[ci]).length > 0) out.changes.push(String(changes[ci]));
+      }
+    }
+    var mods = raw.updatedModules || [];
+    if (mods && mods.length !== undefined) {
+      for (var mi = 0; mi < mods.length; mi++) {
+        if (mods[mi] !== undefined && mods[mi] !== null && String(mods[mi]).length > 0) out.updatedModules.push(String(mods[mi]));
+      }
+    }
+    return out;
+  } catch(eState) {}
+  return fallback;
+};
+
+FloatBallAppWM.prototype.getToolHubUpdateVisual = function(updateState, T, isDark) {
+  var C = this.ui.colors || {};
+  var dangerColor = T.danger || C.danger || android.graphics.Color.parseColor("#BA1A1A");
+  var dangerBg = T.dangerSoft || this.withAlpha(dangerColor, isDark ? 0.22 : 0.12);
+  var warningColor = C.warning || T.brown || T.primaryDeep;
+  var warningBg = this.withAlpha(warningColor, isDark ? 0.22 : 0.12);
+  var visual = {
+    icon: "✓",
+    label: "更新状态待确认",
+    sub: "详情",
+    textColor: T.primaryDeep,
+    bg: this.withAlpha(T.primarySoft, isDark ? 0.82 : 0.96),
+    stroke: this.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.24)
+  };
+  var s = updateState ? String(updateState.status || "unknown") : "unknown";
+  if (s === "updated") {
+    visual.icon = "↻";
+    visual.label = "新版本已同步";
+  } else if (s === "latest") {
+    visual.icon = "✓";
+    visual.label = "已是最新";
+  } else if (s === "plain") {
+    visual.icon = "⚠";
+    visual.label = "普通更新";
+    visual.textColor = warningColor;
+    visual.bg = warningBg;
+    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+  } else if (s === "error") {
+    visual.icon = "!";
+    visual.label = "更新异常";
+    visual.textColor = dangerColor;
+    visual.bg = dangerBg;
+    visual.stroke = this.withAlpha(dangerColor, isDark ? 0.44 : 0.30);
+  }
+  if (updateState && Number(updateState.updatedCount || 0) > 0 && s === "updated") visual.sub = String(updateState.updatedCount) + "项";
+  else if (updateState && Number(updateState.version || 0) > 0) visual.sub = "v" + String(Math.floor(Number(updateState.version || 0)));
+  return visual;
+};
+
+FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, onToggle) {
+  var self = this;
+  var isDark = this.isDarkTheme();
+  var T = this.getAnimalIslandTheme();
+  var C = this.ui.colors;
+  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+  this.applySettingsTheme(T, isDark, C, cfgTpl);
+  var updateState = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
+  var visual = this.getToolHubUpdateVisual ? this.getToolHubUpdateVisual(updateState, T, isDark) : null;
+  var pill = new android.widget.LinearLayout(context);
+  pill.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  pill.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  pill.setClickable(true);
+  pill.setPadding(this.dp(10), this.dp(5), this.dp(8), this.dp(5));
+  pill.setMinimumHeight(this.dp(48));
+  pill.setBackground(this.ui.createStrokeDrawable(visual.bg, visual.stroke, this.dp(1), this.dp(18)));
+  try { pill.setContentDescription((expanded ? "收起" : "查看") + "ToolHub更新详情"); } catch(eDesc) {}
+
+  var iconTv = new android.widget.TextView(context);
+  iconTv.setText(String(visual.icon || "✓"));
+  iconTv.setTextColor(visual.textColor);
+  iconTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compact ? 12 : 13);
+  iconTv.setGravity(android.view.Gravity.CENTER);
+  iconTv.setTypeface(null, android.graphics.Typeface.BOLD);
+  pill.addView(iconTv, new android.widget.LinearLayout.LayoutParams(this.dp(20), -2));
+
+  var labelTv = new android.widget.TextView(context);
+  labelTv.setText(String(visual.label || "更新状态"));
+  labelTv.setTextColor(visual.textColor);
+  labelTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compact ? 11 : 12);
+  labelTv.setTypeface(null, android.graphics.Typeface.BOLD);
+  labelTv.setSingleLine(true);
+  try { labelTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eEll) {}
+  var labelLp = new android.widget.LinearLayout.LayoutParams(0, -2, 1);
+  labelLp.setMargins(this.dp(4), 0, this.dp(6), 0);
+  pill.addView(labelTv, labelLp);
+
+  var detailTv = new android.widget.TextView(context);
+  detailTv.setText(expanded ? "收起" : String(visual.sub || "详情"));
+  detailTv.setTextColor(visual.textColor);
+  detailTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+  detailTv.setGravity(android.view.Gravity.CENTER);
+  detailTv.setSingleLine(true);
+  detailTv.setPadding(this.dp(7), this.dp(3), this.dp(7), this.dp(3));
+  detailTv.setBackground(this.ui.createRoundDrawable(this.withAlpha(visual.textColor, isDark ? 0.16 : 0.10), this.dp(12)));
+  pill.addView(detailTv, new android.widget.LinearLayout.LayoutParams(-2, -2));
+
+  pill.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+    try { self.touchActivity(); } catch(eTouch) {}
+    try { self.state.settingsUpdateExpanded = !expanded; } catch(eSet) {}
+    try { if (onToggle) onToggle(!!self.state.settingsUpdateExpanded); } catch(eToggle) {}
+  }}));
+  return pill;
+};
+
+FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
+  var isDark = this.isDarkTheme();
+  var T = this.getAnimalIslandTheme();
+  var C = this.ui.colors;
+  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+  this.applySettingsTheme(T, isDark, C, cfgTpl);
+  var updateState = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
+  var visual = this.getToolHubUpdateVisual ? this.getToolHubUpdateVisual(updateState, T, isDark) : null;
+  var box = new android.widget.LinearLayout(context);
+  box.setOrientation(android.widget.LinearLayout.VERTICAL);
+  box.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
+  box.setBackground(this.ui.createStrokeDrawable(this.withAlpha(T.card2, isDark ? 0.80 : 0.96), this.withAlpha(visual.stroke, isDark ? 0.46 : 0.28), this.dp(1), this.dp(18)));
+
+  function addLine(app, parent, textValue, colorValue, spValue, bold) {
+    var tv = new android.widget.TextView(context);
+    tv.setText(String(textValue || ""));
+    tv.setTextColor(colorValue);
+    tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, spValue);
+    tv.setLineSpacing(app.dp(1), 1.04);
+    if (bold) tv.setTypeface(null, android.graphics.Typeface.BOLD);
+    parent.addView(tv, new android.widget.LinearLayout.LayoutParams(-1, -2));
+    return tv;
+  }
+
+  var headText = updateState && updateState.title ? String(updateState.title) : "更新详情";
+  if (updateState && updateState.date) headText += " · " + String(updateState.date);
+  addLine(this, box, headText, T.text, 13, true);
+
+  if (updateState && updateState.changes && updateState.changes.length > 0) {
+    var changeHead = addLine(this, box, "更新内容", T.primaryDeep, 12, true);
+    changeHead.setPadding(0, this.dp(8), 0, this.dp(2));
+    for (var ci = 0; ci < updateState.changes.length; ci++) {
+      addLine(this, box, "• " + String(updateState.changes[ci]), T.sub, 12, false);
+    }
+  }
+
+  if (updateState && updateState.updatedModules && updateState.updatedModules.length > 0) {
+    var modsTv = addLine(this, box, "同步模块：" + updateState.updatedModules.join("、"), T.sub, 12, false);
+    modsTv.setPadding(0, this.dp(8), 0, 0);
+    try { modsTv.setMaxLines(2); modsTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eMods) {}
+  }
+
+  var metaText = "来源：" + String(updateState && updateState.source ? updateState.source : "未知") + " · " + String(updateState && updateState.modeText ? updateState.modeText : "更新模式待确认");
+  var metaTv = addLine(this, box, metaText, T.sub, 11, false);
+  metaTv.setPadding(0, this.dp(8), 0, 0);
+  if (updateState && updateState.securityText) addLine(this, box, "安全状态：" + String(updateState.securityText), T.sub, 11, false);
+  if (updateState && updateState.error) addLine(this, box, "错误：" + String(updateState.error), T.danger || C.danger, 11, false);
+  return box;
+};
+
 FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel, statusValue, statusBg, statusStroke, statusValueColor) {
+  var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getAnimalIslandTheme();
@@ -380,11 +579,18 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
   var compactWelcome = spec && (spec.isLandscape || spec.isExpandedWidth || spec.isWideWidth);
   var card = new android.widget.LinearLayout(context);
-  card.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  card.setOrientation(android.widget.LinearLayout.VERTICAL);
   card.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  card.setMinimumHeight(compactWelcome ? this.dp(92) : this.dp(120));
   card.setPadding(this.dp(14), compactWelcome ? this.dp(10) : this.dp(14), this.dp(14), compactWelcome ? this.dp(10) : this.dp(14));
   card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.primaryDeep, isDark ? 0.22 : 0.18), this.dp(1), spec ? spec.cardRadius : this.dp(24)));
   try { card.setElevation(this.dp(compactWelcome ? 2 : 4)); } catch(eElev) {}
+
+  var topRow = new android.widget.LinearLayout(context);
+  topRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  topRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  card.addView(topRow, new android.widget.LinearLayout.LayoutParams(-1, -2));
+
   var island = new android.widget.TextView(context);
   island.setText("╭──╮\n│小岛│\n≈≈≈≈");
   island.setGravity(android.view.Gravity.CENTER);
@@ -393,7 +599,8 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   island.setBackground(this.ui.createRoundDrawable(this.withAlpha(T.primarySoft, isDark ? 0.78 : 0.96), this.dp(22)));
   var islandLp = new android.widget.LinearLayout.LayoutParams(compactWelcome ? this.dp(76) : this.dp(104), compactWelcome ? this.dp(64) : this.dp(88));
   islandLp.setMargins(0, 0, this.dp(14), 0);
-  card.addView(island, islandLp);
+  topRow.addView(island, islandLp);
+
   var right = new android.widget.LinearLayout(context);
   right.setOrientation(android.widget.LinearLayout.VERTICAL);
   right.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -409,11 +616,17 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   titleSub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   titleSub.setPadding(0, this.dp(3), 0, compactWelcome ? this.dp(6) : this.dp(10));
   right.addView(titleSub, new android.widget.LinearLayout.LayoutParams(-1, -2));
+
+  var statusArea = new android.widget.LinearLayout(context);
+  statusArea.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  statusArea.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
   var statusBar = new android.widget.LinearLayout(context);
   statusBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   statusBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  statusBar.setPadding(this.dp(10), this.dp(6), this.dp(8), this.dp(6));
-  statusBar.setBackground(this.ui.createStrokeDrawable(statusBg, this.withAlpha(statusStroke, isDark ? 0.34 : 0.24), this.dp(1), this.dp(16)));
+  statusBar.setMinimumHeight(this.dp(48));
+  statusBar.setPadding(this.dp(10), this.dp(5), this.dp(8), this.dp(5));
+  statusBar.setBackground(this.ui.createStrokeDrawable(statusBg, this.withAlpha(statusStroke, isDark ? 0.34 : 0.24), this.dp(1), this.dp(18)));
   var dot = new android.widget.TextView(context);
   dot.setText("●");
   dot.setTextColor(T.primaryDeep);
@@ -423,8 +636,10 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   var st = new android.widget.TextView(context);
   st.setText(String(statusValue || "当前生效"));
   st.setTextColor(statusValueColor);
-  st.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  st.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compactWelcome ? 11 : 12);
   st.setTypeface(null, android.graphics.Typeface.BOLD);
+  st.setSingleLine(true);
+  try { st.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eStEll) {}
   statusBar.addView(st, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
   var ok = new android.widget.TextView(context);
   ok.setText("✓");
@@ -433,9 +648,25 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   ok.setTypeface(null, android.graphics.Typeface.BOLD);
   ok.setBackground(this.ui.createRoundDrawable(T.primary, this.dp(12)));
   statusBar.addView(ok, new android.widget.LinearLayout.LayoutParams(this.dp(24), this.dp(24)));
-  right.addView(statusBar, new android.widget.LinearLayout.LayoutParams(-1, -2));
-  card.addView(right, new android.widget.LinearLayout.LayoutParams(0, -1, 1));
-  var lp = new android.widget.LinearLayout.LayoutParams(-1, compactWelcome ? this.dp(92) : this.dp(120));
+  var statusLp = new android.widget.LinearLayout.LayoutParams(0, -2, 1);
+  statusLp.setMargins(0, 0, this.dp(8), 0);
+  statusArea.addView(statusBar, statusLp);
+
+  var updatePill = this.createToolHubUpdatePill ? this.createToolHubUpdatePill(!!this.state.settingsUpdateExpanded, compactWelcome, function() {
+    try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eReplace) {}
+  }) : null;
+  if (updatePill) statusArea.addView(updatePill, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
+  right.addView(statusArea, new android.widget.LinearLayout.LayoutParams(-1, -2));
+  topRow.addView(right, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
+
+  if (this.state.settingsUpdateExpanded && this.createToolHubUpdateDetailBox) {
+    var detailBox = this.createToolHubUpdateDetailBox();
+    var detailLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+    detailLp.setMargins(0, this.dp(10), 0, 0);
+    card.addView(detailBox, detailLp);
+  }
+
+  var lp = new android.widget.LinearLayout.LayoutParams(-1, -2);
   lp.setMargins(0, compactWelcome ? this.dp(4) : this.dp(8), 0, compactWelcome ? this.dp(8) : this.dp(12));
   parent.addView(card, lp);
 };
@@ -853,6 +1084,22 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
     navSub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
     navSub.setPadding(0, this.dp(3), 0, this.dp(10));
     navCard.addView(navSub, new android.widget.LinearLayout.LayoutParams(-1, -2));
+    try {
+      var updateNavPill = this.createToolHubUpdatePill ? this.createToolHubUpdatePill(!!this.state.settingsUpdateExpanded, true, function() {
+        try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eReplaceNav) {}
+      }) : null;
+      if (updateNavPill) {
+        var updateNavPillLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+        updateNavPillLp.setMargins(0, 0, 0, this.dp(8));
+        navCard.addView(updateNavPill, updateNavPillLp);
+      }
+      if (this.state.settingsUpdateExpanded && this.createToolHubUpdateDetailBox) {
+        var updateNavDetail = this.createToolHubUpdateDetailBox();
+        var updateNavDetailLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+        updateNavDetailLp.setMargins(0, 0, 0, this.dp(10));
+        navCard.addView(updateNavDetail, updateNavDetailLp);
+      }
+    } catch(eUpdateNav) { safeLog(null, 'e', "catch " + String(eUpdateNav)); }
     var navScroll = new android.widget.ScrollView(context);
     try { navScroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); navScroll.setVerticalScrollBarEnabled(false); } catch(eNS) {}
     var navList = new android.widget.LinearLayout(context);

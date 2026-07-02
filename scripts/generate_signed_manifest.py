@@ -68,6 +68,9 @@ def main() -> None:
     ap.add_argument("--yes", action="store_true", help="skip interactive confirmation after review summary")
     ap.add_argument("--key-id", default=DEFAULT_KEY_ID)
     ap.add_argument("--version", type=int, default=0, help="manifest version; default UTC yyyyMMddHHmmss")
+    ap.add_argument("--title", default="", help="optional release title written to manifest.release.title")
+    ap.add_argument("--date", default="", help="optional release date written to manifest.release.date")
+    ap.add_argument("--change", action="append", default=[], help="optional release note item; repeat for multiple changes")
     args = ap.parse_args()
 
     if not PRIVATE_KEY.exists():
@@ -99,6 +102,18 @@ def main() -> None:
         "alg": "SHA256withRSA",
         "files": files,
     }
+    release = {}
+    title = str(args.title or "").strip()
+    date = str(args.date or "").strip()
+    changes = [str(item).strip() for item in (args.change or []) if str(item).strip()]
+    if title:
+        release["title"] = title
+    if date:
+        release["date"] = date
+    if changes:
+        release["changes"] = changes
+    if release:
+        manifest["release"] = release
     data = (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     MANIFEST.write_bytes(data)
 
@@ -114,6 +129,10 @@ def main() -> None:
     print(f"manifest_version={manifest['version']}")
     print(f"key_id={manifest['keyId']}")
     print(f"signed_files={len(files)}")
+    if manifest.get("release"):
+        rel = manifest["release"]
+        print(f"release_title={rel.get('title', '')}")
+        print(f"release_changes={len(rel.get('changes', []))}")
     print(f"ToolHub.js_sha256={entry_hash}")
 
 

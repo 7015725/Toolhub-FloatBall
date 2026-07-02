@@ -3,7 +3,7 @@
 // Gitea 只负责分发；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SOURCE = 1; // 0: Gitea, 1: GitHub
-var UPDATE_SECURITY_MODE = 0; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
+var UPDATE_SECURITY_MODE = 1; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 
 var UPDATE_ROOTS = [
     "https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub/raw/branch/main/",
@@ -24,6 +24,21 @@ var MIN_TRUSTED_MANIFEST_VERSION = 20260507152251;
 var __dirChecked = false;
 var __trustedManifest = null;
 var __securityStatus = { ok: false, msg: "安全清单尚未校验" };
+var TOOLHUB_UPDATE_STATE = {
+    ok: true,
+    status: "unknown",
+    source: "",
+    mode: 0,
+    modeText: "",
+    version: 0,
+    title: "",
+    date: "",
+    changes: [],
+    updatedCount: 0,
+    updatedModules: [],
+    securityText: "",
+    error: ""
+};
 
 function buildNoCacheUrl(urlStr) {
     var sep = String(urlStr).indexOf("?") >= 0 ? "&" : "?";
@@ -356,6 +371,24 @@ function getManifestInfo(relPath) {
     return __trustedManifest.files[relPath] || null;
 }
 
+function getManifestRelease() {
+    var out = { title: "", date: "", changes: [] };
+    try {
+        var rel = (__trustedManifest && __trustedManifest.release) ? __trustedManifest.release : null;
+        if (!rel) return out;
+        out.title = (rel.title === undefined || rel.title === null) ? "" : String(rel.title);
+        out.date = (rel.date === undefined || rel.date === null) ? "" : String(rel.date);
+        var rawChanges = rel.changes;
+        if (rawChanges && rawChanges.length !== undefined) {
+            for (var ri = 0; ri < rawChanges.length; ri++) {
+                var oneChange = rawChanges[ri];
+                if (oneChange !== undefined && oneChange !== null && String(oneChange).length > 0) out.changes.push(String(oneChange));
+            }
+        }
+    } catch (eRel) {}
+    return out;
+}
+
 function ensurePlainRemoteModule(relPath, destFile) {
     var tmpFile = new java.io.File(destFile.getAbsolutePath() + ".tmp");
     try { if (tmpFile.exists()) tmpFile.delete(); } catch (eDelTmp0) {}
@@ -479,6 +512,15 @@ var __out = (function() {
     return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心类 FloatBallAppWM 未定义，请检查 th_02_core.js / th_16_entry.js 是否加载成功" };
   }
   function optStr(v) { return (v === undefined || v === null) ? "" : String(v); }
+  function copyStringList(list) {
+    var outList = [];
+    var i;
+    if (!list || list.length === undefined) return outList;
+    for (i = 0; i < list.length; i++) {
+      if (list[i] !== undefined && list[i] !== null && String(list[i]).length > 0) outList.push(String(list[i]));
+    }
+    return outList;
+  }
   function summarizeModuleUpdates(list) {
     var names = [];
     var created = 0;
@@ -491,7 +533,7 @@ var __out = (function() {
       if (item.isNew) created++; else overwritten++;
     }
     if (names.length === 0) return { count: 0, modules: [], msg: "子模块已是最新，本次未覆盖更新。" };
-    return { count: names.length, modules: names, msg: "本次已通过签名校验并覆盖更新 " + names.length + " 个子模块（新增 " + created + " / 覆盖 " + overwritten + "）：" + names.join("、") };
+    return { count: names.length, modules: names, msg: "本次覆盖更新 " + names.length + " 个子模块（新增 " + created + " / 覆盖 " + overwritten + "）：" + names.join("、") };
   }
   function summarizeLoadErrors(list) {
     var names = [];
@@ -503,6 +545,55 @@ var __out = (function() {
     }
     return { count: names.length, modules: names, msg: names.length ? ("有 " + names.length + " 个子模块加载失败：" + names.join("、")) : "所有子模块加载正常。" };
   }
+  function buildSecurityText() {
+    if (UPDATE_SECURITY_MODE === 0) return "⚠ 普通更新模式：未启用签名校验";
+    if (UPDATE_SECURITY_MODE === 1 && __securityStatus.ok) return "⚠ manifest哈希校验模式 v" + String(__securityStatus.version || 0);
+    if (__securityStatus.ok) return "✓ 已验签 v" + String(__securityStatus.version || 0) + " / " + optStr(__securityStatus.keyId);
+    return "✗ " + optStr(__securityStatus.msg);
+  }
+  function buildToolHubUpdateState(syncInfo, loadInfo, securityText) {
+    var rel = getManifestRelease();
+    var sourceText = UPDATE_SOURCE === 1 ? "GitHub" : "Gitea";
+    var modeText = "普通更新模式";
+    var statusName = "latest";
+    var errText = "";
+    var versionNum = 0;
+    if (UPDATE_SECURITY_MODE === 1) modeText = "manifest哈希校验";
+    else if (UPDATE_SECURITY_MODE === 2) modeText = "完整验签安全更新";
+    if (__securityStatus && __securityStatus.version !== undefined && __securityStatus.version !== null) versionNum = Number(__securityStatus.version || 0);
+    if ((!versionNum || isNaN(versionNum)) && __trustedManifest && __trustedManifest.version !== undefined) versionNum = Number(__trustedManifest.version || 0);
+    if (isNaN(versionNum)) versionNum = 0;
+    if (UPDATE_SECURITY_MODE === 0) statusName = "plain";
+    if (syncInfo && syncInfo.count > 0) statusName = "updated";
+    if (!__securityStatus || !__securityStatus.ok) {
+      statusName = "error";
+      errText = optStr(__securityStatus && __securityStatus.msg);
+    }
+    if (loadInfo && loadInfo.count > 0) {
+      statusName = "error";
+      errText = errText ? (errText + "；" + loadInfo.msg) : loadInfo.msg;
+    }
+    return {
+      ok: statusName !== "error",
+      status: statusName,
+      source: sourceText,
+      mode: UPDATE_SECURITY_MODE,
+      modeText: modeText,
+      version: versionNum,
+      title: optStr(rel.title),
+      date: optStr(rel.date),
+      changes: copyStringList(rel.changes),
+      updatedCount: syncInfo ? Number(syncInfo.count || 0) : 0,
+      updatedModules: syncInfo ? copyStringList(syncInfo.modules) : [],
+      securityText: optStr(securityText),
+      error: errText
+    };
+  }
+
+  var syncInfo = summarizeModuleUpdates(__moduleUpdates);
+  var loadInfo = summarizeLoadErrors(loadErrors);
+  var securityText = buildSecurityText();
+  TOOLHUB_UPDATE_STATE = buildToolHubUpdateState(syncInfo, loadInfo, securityText);
 
   var entryInfo = getProcessInfo("entry");
   var logger = new ToolHubLogger(entryInfo);
@@ -515,16 +606,9 @@ var __out = (function() {
     try { logger.fatal("TOP startAsync crash err=" + String(eTop)); } catch(eLog) {}
     startRet = { ok: false, err: String(eTop) };
   }
-  var syncInfo = summarizeModuleUpdates(__moduleUpdates);
-  var loadInfo = summarizeLoadErrors(loadErrors);
   var started = !!(startRet && startRet.ok);
   var layoutObj = startRet && startRet.layout || null;
   var layoutText = layoutObj ? (String(layoutObj.cols || "?") + "×" + String(layoutObj.rows || "?")) : "未知";
-  var securityText;
-  if (UPDATE_SECURITY_MODE === 0) securityText = "⚠ 普通更新模式：未启用签名校验";
-  else if (UPDATE_SECURITY_MODE === 1 && __securityStatus.ok) securityText = "⚠ manifest哈希校验模式 v" + String(__securityStatus.version || 0);
-  else if (__securityStatus.ok) securityText = "✓ 已验签 v" + String(__securityStatus.version || 0) + " / " + optStr(__securityStatus.keyId);
-  else securityText = "✗ " + optStr(__securityStatus.msg);
   var syncText = syncInfo.count > 0
     ? ("✓ 已更新 " + syncInfo.count + " 个模块：" + syncInfo.modules.join("、"))
     : "✓ 子模块已是最新";
@@ -534,13 +618,15 @@ var __out = (function() {
     状态: started ? "ToolHub 启动成功" : "ToolHub 启动失败",
     安全: securityText,
     同步: syncText,
+    更新状态: TOOLHUB_UPDATE_STATE.status,
     布局: layoutText,
     关闭广播: optStr(startRet && startRet.closeAction)
   };
+  if (TOOLHUB_UPDATE_STATE.title) out.更新标题 = TOOLHUB_UPDATE_STATE.title;
+  if (TOOLHUB_UPDATE_STATE.changes && TOOLHUB_UPDATE_STATE.changes.length > 0) out.更新内容 = TOOLHUB_UPDATE_STATE.changes;
   if (syncInfo.count > 0) out.更新模块 = syncInfo.modules;
   if (loadInfo.count > 0) out.加载异常 = loadInfo.modules;
   if (!started) out.错误 = optStr(startRet && startRet.err) || (loadInfo.modules && loadInfo.modules.join(", ")) || "未知错误";
   return out;
 })();
-
 JSON.stringify(__out, null, 2);

@@ -2,20 +2,20 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "5700ffb45c43c57b3569c263416e7f152bc302998e043ee8e5304d7575509d98",
+      "sha256": "54e41899cf19c1a83bd321cc61c32d04d7774b944b02722d8836b35f622dc79c",
       "size": 56257
     },
     "th_02_core.js": {
-      "sha256": "941f2a9fd641a888392f60ff0d52c8ecb78a018d123e838b3617c9bd9833b89e",
-      "size": 4558
+      "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
+      "size": 4593
     },
     "th_03_icon.js": {
       "sha256": "717f7f37474d3616c2cd944581455f600020a850ec8812100d0546ec1302c987",
       "size": 5598
     },
     "th_04_theme.js": {
-      "sha256": "a837cbe94c01e32f46ccb7b38488e41b9c6343f7bba72121c5e9464d849961cf",
-      "size": 42117
+      "sha256": "dab2d0feab9ee22f9e7fd81614f8bb261136e31c801749e6e0d27cc350aaaa08",
+      "size": 44550
     },
     "th_05_persistence.js": {
       "sha256": "13a4bb5a625a22a5b6e523cc15b173fceb4c3225c52d8723e0b027cae8e5de5e",
@@ -46,16 +46,16 @@
       "size": 2362
     },
     "th_13_panel_ui.js": {
-      "sha256": "8392ddb436aa892a60f9e6db77bb572b3a903feb3eb462f35b816ed084c862db",
-      "size": 21117
+      "sha256": "110a974cb6e7318e4e5f9b85ef35002fb5193b5acfc59efac3337a87d9472871",
+      "size": 21290
     },
     "th_14_button_editor.js": {
-      "sha256": "71682d9db8ecb9c8e1ee59207eba045ae7c648b7f4124e50fbe54a84df4f4fe3",
-      "size": 50379
+      "sha256": "1b7be46d38e7b9bc8652f310308b6f8ab17e394ba7f88548ad1786a349917d32",
+      "size": 51080
     },
     "th_14_button_icon_editor.js": {
-      "sha256": "c1d54a9105e7d7e54e6776afbc626eb9255289568ca2123510d7f0de965e49e1",
-      "size": 51610
+      "sha256": "41675d1a34e073425f1e5f4a54118f5f7bddc6e52092c51c9c635bcc8c212494",
+      "size": 52210
     },
     "th_14_button_shortcut.js": {
       "sha256": "67da6647cba0c0244b1244a6ebe55a12123e8b52754858f6a1d858441fb45d7c",
@@ -66,20 +66,20 @@
       "size": 27523
     },
     "th_14_icon_picker.js": {
-      "sha256": "1df5c4bf82e68de24d7b89c852a4d9878768451effe086e8ddb86620ecc98c35",
-      "size": 23906
+      "sha256": "586210ef0c2418803edc0b1939658fcba6623dd04ece9b96b55b29f9eb9cbe1b",
+      "size": 24999
     },
     "th_14_panels.js": {
-      "sha256": "8a0b219d79208ebbcae7348f306df2cb78e72eee17dbc988feb4b18897b9ac59",
-      "size": 85510
+      "sha256": "9ad5cab6040a087c4579a7b0b68c4fde9c63aab5e59a44543925a96285869eb3",
+      "size": 98268
     },
     "th_14_schema_editor.js": {
-      "sha256": "5669d0b5a16f770bed24eedee24203df57f7cbc7910c840931e533adac1ef146",
-      "size": 20484
+      "sha256": "748e0f608f5edf80edc638073f715f5b45ab6dc97750bebb43900df25020e61d",
+      "size": 20769
     },
     "th_15_extra.js": {
-      "sha256": "8ad7709c9e807276e2ed5b7277e8499fc17bb5a230a9933e0eb5b8f7af542497",
-      "size": 130788
+      "sha256": "32a4695a3069661792546dfa535cbeef479b85645ef49975346d951c8711fa37",
+      "size": 133064
     },
     "th_16_entry.js": {
       "sha256": "455915936eb3a0735b8a3bdafca7c4794eab9d83f4fc5c3eb9deb76d13849192",
@@ -87,6 +87,15 @@
     }
   },
   "keyId": "toolhub-targets-2026-rsa3072",
+  "release": {
+    "changes": [
+      "设置页欢迎卡增加更新状态胶囊",
+      "新增展开的更新详情和 release notes 展示",
+      "大屏设置目录同步显示更新状态"
+    ],
+    "date": "2026-07-02",
+    "title": "设置页更新状态优化"
+  },
   "schema": 2,
-  "version": 20260526001928
+  "version": 20260702094202
 }
