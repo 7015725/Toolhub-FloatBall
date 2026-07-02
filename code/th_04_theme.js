@@ -189,6 +189,46 @@ FloatBallAppWM.prototype.ui = {
         return sd;
     },
 
+    // 辅助：把符号按钮转换成可读语义，供 TalkBack 和自动化识别。
+    buttonTextToContentDescription: function(txt) {
+        var s = String(txt || "");
+        if (s === "‹" || s === "←") return "返回";
+        if (s === "×" || s === "✕") return "关闭";
+        if (s === "?") return "帮助";
+        if (s === "+") return "添加";
+        if (s === "✓" || s === "✔") return "确认";
+        if (s === "⋮") return "更多";
+        return s;
+    },
+
+    setButtonContentDescription: function(btn, desc) {
+        try {
+            var d = String(desc || "");
+            if (!d && btn && btn.getText) d = this.buttonTextToContentDescription(btn.getText());
+            if (btn && btn.setContentDescription) btn.setContentDescription(d);
+        } catch(eDesc) {}
+        return btn;
+    },
+
+    // 辅助：标准触控区。视觉可紧凑，真实命中区保持 48dp。
+    applyButtonTouchTarget: function(app, btn, minDp) {
+        var m = Number(minDp || 48);
+        if (isNaN(m) || m < 48) m = 48;
+        try { btn.setMinHeight(app.dp(m)); } catch(eMinH) {}
+        try { btn.setMinimumHeight(app.dp(m)); } catch(eMinH2) {}
+        try { btn.setMinWidth(app.dp(48)); } catch(eMinW) {}
+        try { btn.setMinimumWidth(app.dp(48)); } catch(eMinW2) {}
+        try { btn.setIncludeFontPadding(false); } catch(eFontPad) {}
+        return this.setButtonContentDescription(btn, "");
+    },
+
+    // 辅助：紧凑按钮。用于顶栏、chip、工具栏按钮；触控区仍保持 48dp。
+    applyCompactButtonStyle: function(app, btn) {
+        try { btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12); } catch(eSize) {}
+        try { btn.setPadding(app.dp(12), 0, app.dp(12), 0); } catch(ePad) {}
+        return this.applyButtonTouchTarget(app, btn, 48);
+    },
+
     // 辅助：创建扁平按钮
     createFlatButton: function(app, txt, txtColor, onClick) {
         var btn = new android.widget.TextView(context);
@@ -197,6 +237,7 @@ FloatBallAppWM.prototype.ui = {
         btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         btn.setPadding(app.dp(12), app.dp(6), app.dp(12), app.dp(6));
         btn.setGravity(android.view.Gravity.CENTER);
+        this.applyButtonTouchTarget(app, btn, 48);
         // use divider color or just low alpha text color for ripple
         var rippleColor = app.withAlpha ? app.withAlpha(txtColor, 0.1) : 0x22888888;
         btn.setBackground(this.createTransparentRippleDrawable(rippleColor, app.dp(8)));
@@ -211,6 +252,12 @@ FloatBallAppWM.prototype.ui = {
         return btn;
     },
 
+    // 辅助：创建紧凑扁平按钮
+    createCompactFlatButton: function(app, txt, txtColor, onClick) {
+        var btn = this.createFlatButton(app, txt, txtColor, onClick);
+        return this.applyCompactButtonStyle(app, btn);
+    },
+
     // 辅助：创建实心按钮
     createSolidButton: function(app, txt, bgColor, txtColor, onClick) {
         var btn = new android.widget.TextView(context);
@@ -220,6 +267,7 @@ FloatBallAppWM.prototype.ui = {
         btn.setTypeface(null, android.graphics.Typeface.BOLD);
         btn.setPadding(app.dp(16), app.dp(8), app.dp(16), app.dp(8));
         btn.setGravity(android.view.Gravity.CENTER);
+        this.applyButtonTouchTarget(app, btn, 48);
         var pressedColor = app.withAlpha ? app.withAlpha(bgColor, 0.8) : bgColor;
         btn.setBackground(this.createRippleDrawable(bgColor, pressedColor, app.dp(24)));
         try { btn.setElevation(app.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -232,6 +280,12 @@ FloatBallAppWM.prototype.ui = {
             }
         }));
         return btn;
+    },
+
+    // 辅助：创建紧凑实心按钮
+    createCompactSolidButton: function(app, txt, bgColor, txtColor, onClick) {
+        var btn = this.createSolidButton(app, txt, bgColor, txtColor, onClick);
+        return this.applyCompactButtonStyle(app, btn);
     },
 
     // 辅助：创建带标签的输入组（支持粘贴）

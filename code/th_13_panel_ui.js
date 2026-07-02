@@ -234,6 +234,8 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     btn.setTypeface(null, android.graphics.Typeface.BOLD);
     btn.setGravity(android.view.Gravity.CENTER);
     btn.setPadding(self.dp(16), self.dp(8), self.dp(16), self.dp(8));
+    try { self.ui.applyButtonTouchTarget(self, btn, 48); } catch(eBtnTouch) {}
+    try { btn.setContentDescription("打开" + String(item.name || "")); } catch(eBtnDesc) {}
     // 透明波纹背景
     btn.setBackground(self.ui.createTransparentRippleDrawable(primary, self.dp(16)));
 

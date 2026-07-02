@@ -861,7 +861,7 @@ var ConfigManager = {
         { type: "section", name: "面板布局" },
         { key: "PANEL_ROWS", name: "面板可视行数(超出滚动)", type: "int", min: 1, max: 12, step: 1 },
         { key: "PANEL_COLS", name: "面板列数", type: "int", min: 1, max: 6, step: 1 },
-        { key: "PANEL_ITEM_SIZE_DP", name: "面板单元格(dp)", type: "int", min: 36, max: 120, step: 1 },
+        { key: "PANEL_ITEM_SIZE_DP", name: "面板单元格(dp)", type: "int", min: 48, max: 120, step: 1 },
         { key: "PANEL_GAP_DP", name: "格子间距(dp)", type: "int", min: 0, max: 30, step: 1 },
         { key: "PANEL_PADDING_DP", name: "面板内边距(dp)", type: "int", min: 0, max: 40, step: 1 },
         { key: "PANEL_ICON_SIZE_DP", name: "图标大小(dp)", type: "int", min: 16, max: 80, step: 1 },

@@ -56,7 +56,10 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     tv.setGravity(android.view.Gravity.CENTER);
     tv.setTypeface(null, android.graphics.Typeface.BOLD);
-    tv.setMinHeight(self.dp(32));
+    try { tv.setMinHeight(self.dp(48)); tv.setMinimumHeight(self.dp(48)); } catch(eMinH) {}
+    try { tv.setMinWidth(self.dp(48)); tv.setMinimumWidth(self.dp(48)); } catch(eMinW) {}
+    try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
+    try { tv.setContentDescription(String(txt || "")); } catch(eDesc) {}
     tv.setPadding(self.dp(10), 0, self.dp(10), 0);
     try { tv.setBackground(self.ui.createStrokeDrawable(self.withAlpha(color || primaryColor, isDark ? 0.16 : 0.08), self.withAlpha(color || primaryColor, isDark ? 0.45 : 0.28), self.dp(1), self.dp(16))); } catch(eBg) {}
     if (onClick) {
@@ -212,7 +215,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
       showToast("已恢复默认蓝图");
       refreshPanel();
     });
-    bottom.addView(resetBtn, new android.widget.LinearLayout.LayoutParams(0, self.dp(42), 1));
+    bottom.addView(resetBtn, new android.widget.LinearLayout.LayoutParams(0, self.dp(48), 1));
     var saveBtn = self.ui.createSolidButton(self, "保存蓝图", primaryColor, T && T.onPrimary ? T.onPrimary : android.graphics.Color.WHITE, function() {
       ConfigManager.saveSchema(schema);
       self.state.tempSchema = null;
@@ -226,7 +229,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
         self.showPanelAvoidBall("settings");
       }
     });
-    var saveLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(42), 1);
+    var saveLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(48), 1);
     saveLp.setMargins(self.dp(8), 0, 0, 0);
     bottom.addView(saveBtn, saveLp);
     panel.addView(bottom, lpFullWrap());
@@ -358,7 +361,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
       self.state.keepSchemaEditorState = true;
       self.popToolAppPage("schema_edit_back");
     } else refreshPanel();
-  }), new android.widget.LinearLayout.LayoutParams(0, self.dp(42), 1));
+  }), new android.widget.LinearLayout.LayoutParams(0, self.dp(48), 1));
 
   var saveDraftBtn = self.ui.createSolidButton(self, "暂存蓝图项", primaryColor, T && T.onPrimary ? T.onPrimary : android.graphics.Color.WHITE, function() {
     try {
@@ -383,7 +386,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
       try { scroll2.fullScroll(android.view.View.FOCUS_UP); } catch(eFocusUp2) {}
     }
   });
-  var saveDraftLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(42), 1);
+  var saveDraftLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(48), 1);
   saveDraftLp.setMargins(self.dp(8), 0, 0, 0);
   editBottom.addView(saveDraftBtn, saveDraftLp);
   panel.addView(editBottom, lpFullWrap());

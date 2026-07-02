@@ -91,7 +91,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
       { key: "ball", title: "悬浮球", desc: "大小、图标、颜色和跟随距离", sections: ["悬浮球"] },
       { key: "panel", title: "面板", desc: "排列、文字、位置和吸边行为", sections: ["面板布局", "面板文字", "吸边与位置"] },
       { key: "theme", title: "外观", desc: "颜色、背景、透明度和动态取色", sections: ["外观"] },
-      { key: "motion", title: "动作与手势", desc: "点击、长按、动画和贴边回弹", sections: ["动画", "触摸与手势"] },
+      { key: "motion", title: "动作与手势", desc: "点击、长按、动画和贴边回弹", sections: ["动画", "动作与手势"] },
       { key: "debug", title: "运行记录", desc: "查看日志与当前状态", sections: ["日志"] }
     ];
   }
@@ -99,7 +99,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
     { key: "ball", title: "漂浮气球", desc: "调整气球大小、图标和跟随距离", sections: ["悬浮球"] },
     { key: "panel", title: "面板小屋", desc: "调整面板排列、文字、位置和吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
     { key: "theme", title: "换装与装饰", desc: "更换颜色、背景和透明度", sections: ["外观"] },
-    { key: "motion", title: "动作与手势", desc: "调整点击、长按和贴边回弹效果", sections: ["动画", "触摸与手势"] },
+    { key: "motion", title: "动作与手势", desc: "调整点击、长按和贴边回弹效果", sections: ["动画", "动作与手势"] },
     { key: "debug", title: "岛务记录", desc: "查看运行记录和岛屿状态", sections: ["日志"] }
   ];
 };
@@ -196,6 +196,10 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
       chip.setTypeface(null, selected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
       chip.setTextColor(selected ? T.onPrimary : T.primaryDeep);
       chip.setPadding(self.dp(14), self.dp(8), self.dp(14), self.dp(8));
+      try { chip.setMinHeight(self.dp(48)); chip.setMinimumHeight(self.dp(48)); } catch(eMinH) {}
+      try { chip.setMinWidth(self.dp(48)); chip.setMinimumWidth(self.dp(48)); } catch(eMinW) {}
+      try { chip.setIncludeFontPadding(false); } catch(eFontPad) {}
+      try { chip.setContentDescription("切换到" + String(tab.title || tab.key)); } catch(eDesc) {}
       try { chip.setClickable(true); chip.setFocusable(true); } catch(eClickable) {}
       var bg = selected ? T.primary : self.withAlpha(T.primarySoft, isDark ? 0.70 : 0.94);
       var stroke = selected ? T.primary : self.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.18);
@@ -209,7 +213,7 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
           if (onChange) onChange(nextKey);
         } catch(eClick) { safeLog(null, 'e', "catch " + String(eClick)); }
       }}));
-      var lp = new android.widget.LinearLayout.LayoutParams(-2, self.dp(38));
+      var lp = new android.widget.LinearLayout.LayoutParams(-2, self.dp(48));
       lp.setMargins(0, 0, self.dp(8), 0);
       row.addView(chip, lp);
     })(tabs[i]);
@@ -241,13 +245,13 @@ FloatBallAppWM.prototype.refreshBallSettingsSubtabPage = function() {
 
 FloatBallAppWM.prototype.getSettingsHomeIcon = function(title) {
   var t = String(title || "");
-  if (t.indexOf("工具伙伴") >= 0 || t.indexOf("工具") >= 0) return "🧰";
-  if (t.indexOf("蓝图") >= 0 || t.indexOf("配置") >= 0) return "🗺";
-  if (t.indexOf("气球") >= 0 || t.indexOf("悬浮") >= 0 || t.indexOf("球") >= 0) return "🎈";
-  if (t.indexOf("面板") >= 0 || t.indexOf("小屋") >= 0) return "🏡";
-  if (t.indexOf("换装") >= 0 || t.indexOf("装饰") >= 0 || t.indexOf("外观") >= 0) return "👕";
-  if (t.indexOf("动作") >= 0 || t.indexOf("手势") >= 0) return "👆";
-  if (t.indexOf("记录") >= 0 || t.indexOf("日志") >= 0) return "📒";
+  if (t.indexOf("工具伙伴") >= 0 || t.indexOf("工具") >= 0) return "▣";
+  if (t.indexOf("蓝图") >= 0 || t.indexOf("配置") >= 0) return "◇";
+  if (t.indexOf("气球") >= 0 || t.indexOf("悬浮") >= 0 || t.indexOf("球") >= 0) return "○";
+  if (t.indexOf("面板") >= 0 || t.indexOf("小屋") >= 0) return "⌂";
+  if (t.indexOf("换装") >= 0 || t.indexOf("装饰") >= 0 || t.indexOf("外观") >= 0) return "◎";
+  if (t.indexOf("动作") >= 0 || t.indexOf("手势") >= 0) return "↯";
+  if (t.indexOf("记录") >= 0 || t.indexOf("日志") >= 0) return "☰";
   return "✦";
 };
 
@@ -382,7 +386,7 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.primaryDeep, isDark ? 0.22 : 0.18), this.dp(1), spec ? spec.cardRadius : this.dp(24)));
   try { card.setElevation(this.dp(compactWelcome ? 2 : 4)); } catch(eElev) {}
   var island = new android.widget.TextView(context);
-  island.setText("☁  ︵\n🌴🏠⛱\n≈≈≈≈");
+  island.setText("╭──╮\n│小岛│\n≈≈≈≈");
   island.setGravity(android.view.Gravity.CENTER);
   island.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compactWelcome ? 16 : 20);
   island.setTextColor(T.primaryDeep);
@@ -449,20 +453,20 @@ FloatBallAppWM.prototype.getSettingsHomeCategoryDefs = function(useMonetHome) {
   }
   if (useMonetHome) {
     var all = [];
-    addChild(all, "tools", "工具", "添加、整理和排序工具入口", "🧰", "route", "btn_editor");
+    addChild(all, "tools", "工具", "添加、整理和排序工具入口", "▣", "route", "btn_editor");
     for (var m = 0; m < defs.length; m++) {
       var dm = defs[m];
       if (!dm) continue;
       addChild(all, String(dm.key), dm.title, dm.desc, this.getSettingsHomeIcon ? this.getSettingsHomeIcon(dm.title) : "✦", "group", dm.key);
       used[String(dm.key)] = true;
     }
-    addChild(all, "schema", "高级设置", "编辑设置页结构和高级配置", "⚙", "route", "schema_editor");
+    addChild(all, "schema", "高级设置", "编辑设置页结构和高级配置", "◇", "route", "schema_editor");
     cats.push({ id: "all", icon: "▦", title: "工具与配置", desc: "集中管理全部设置入口", children: all });
     return cats;
   }
   var layout = [];
-  addChild(layout, "tools", "工具伙伴", "添加、整理和安排你的工具伙伴", "🧰", "route", "btn_editor");
-  cats.push({ id: "layout", icon: "🧰", title: "布局与管理", desc: "工具伙伴与岛屿结构", children: layout });
+  addChild(layout, "tools", "工具伙伴", "添加、整理和安排你的工具伙伴", "▣", "route", "btn_editor");
+  cats.push({ id: "layout", icon: "▣", title: "布局与管理", desc: "工具伙伴与岛屿结构", children: layout });
 
   var fun = [];
   for (var i = 0; i < defs.length; i++) {
@@ -472,7 +476,7 @@ FloatBallAppWM.prototype.getSettingsHomeCategoryDefs = function(useMonetHome) {
     addChild(fun, String(d.key), d.title, d.desc, this.getSettingsHomeIcon ? this.getSettingsHomeIcon(d.title) : "✦", "group", d.key);
     used[String(d.key)] = true;
   }
-  cats.push({ id: "fun", icon: "🎈", title: "趣味元素", desc: "漂浮气球和面板小屋", children: fun });
+  cats.push({ id: "fun", icon: "○", title: "趣味元素", desc: "漂浮气球和面板小屋", children: fun });
 
   var look = [];
   for (var j = 0; j < defs.length; j++) {
@@ -482,7 +486,7 @@ FloatBallAppWM.prototype.getSettingsHomeCategoryDefs = function(useMonetHome) {
     addChild(look, String(d2.key), d2.title, d2.desc, this.getSettingsHomeIcon ? this.getSettingsHomeIcon(d2.title) : "✦", "group", d2.key);
     used[String(d2.key)] = true;
   }
-  cats.push({ id: "look", icon: "👕", title: "外观与互动", desc: "换装、装饰、动作与手势", children: look });
+  cats.push({ id: "look", icon: "◎", title: "外观与互动", desc: "换装、装饰、动作与手势", children: look });
 
   var record = [];
   for (var k = 0; k < defs.length; k++) {
@@ -492,8 +496,8 @@ FloatBallAppWM.prototype.getSettingsHomeCategoryDefs = function(useMonetHome) {
     addChild(record, String(d3.key), d3.title, d3.desc, this.getSettingsHomeIcon ? this.getSettingsHomeIcon(d3.title) : "✦", "group", d3.key);
     used[String(d3.key)] = true;
   }
-  addChild(record, "schema", "高级蓝图", "编辑设置页结构和高级配置，适合进阶用户", "🗺", "route", "schema_editor");
-  cats.push({ id: "record", icon: "📒", title: "记录与状态", desc: "岛务记录和高级蓝图", children: record });
+  addChild(record, "schema", "高级蓝图", "编辑设置页结构和高级配置，适合进阶用户", "◇", "route", "schema_editor");
+  cats.push({ id: "record", icon: "☰", title: "记录与状态", desc: "岛务记录和高级蓝图", children: record });
 
   var other = [];
   for (var x = 0; x < defs.length; x++) {
@@ -640,7 +644,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   var saveRow = new android.widget.LinearLayout(context);
   saveRow.setGravity(android.view.Gravity.RIGHT | android.view.Gravity.CENTER_VERTICAL);
   saveRow.setPadding(0, this.dp(8), 0, 0);
-  var btnSave = this.ui.createSolidButton(this, "💾  保存布置", T.primary, T.onPrimary, function() {
+  var btnSave = this.ui.createSolidButton(this, "保存设置", T.primary, T.onPrimary, function() {
     try {
       self.touchActivity();
       var r = self.commitPendingUserCfg();
@@ -751,6 +755,7 @@ FloatBallAppWM.prototype.createSettingsMasterMenuItem = function(parent, cat, se
     try { self.touchActivity(); } catch(eT) {}
     try { if (onClick) onClick(); } catch(eC) { try { self.toast("切换失败: " + String(eC)); } catch(eToast) {} }
   }}));
+  try { row.setContentDescription("打开" + String(cat && cat.title || "设置项")); } catch(eRowDesc) {}
   var lp = new android.widget.LinearLayout.LayoutParams(-1, -2);
   lp.setMargins(0, 0, 0, this.dp(8));
   parent.addView(row, lp);
@@ -944,7 +949,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
       var saveRow = new android.widget.LinearLayout(context);
       saveRow.setGravity(android.view.Gravity.RIGHT | android.view.Gravity.CENTER_VERTICAL);
       saveRow.setPadding(0, self.dp(8), 0, 0);
-      var btnSave = self.ui.createSolidButton(self, useMonetHome ? "保存" : "💾  保存布置", T.primary, T.onPrimary, saveSettingsNow);
+      var btnSave = self.ui.createSolidButton(self, "保存设置", T.primary, T.onPrimary, saveSettingsNow);
       btnSave.setPadding(self.dp(18), 0, self.dp(18), 0);
       try { btnSave.setBackground(self.ui.createStrokeDrawable(T.primary, self.withAlpha(T.primaryDeep, isDark ? 0.22 : 0.16), self.dp(1), self.dp(24))); } catch(eSaveBg) {}
       try { btnSave.setElevation(self.dp(1)); } catch(eSaveElev) {}
@@ -1017,16 +1022,16 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   bottom.setPadding(this.dp(14), spec && spec.isLandscape ? this.dp(4) : this.dp(8), this.dp(14), spec && spec.isLandscape ? this.dp(8) : this.dp(14));
   bottom.setBackground(this.ui.createRoundDrawable(this.withAlpha(T.bg, isDark ? 0.70 : 0.82), this.dp(20)));
   var deco = new android.widget.TextView(context);
-  deco.setText(spec && (spec.isExpandedWidth || spec.isWideWidth) ? "🌿        ✿        🌿" : "🌿  ✿                 ✿  🌿");
+  deco.setText(spec && (spec.isExpandedWidth || spec.isWideWidth) ? "────────        ────────" : "──────              ──────");
   deco.setGravity(android.view.Gravity.CENTER);
   deco.setTextColor(this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.24));
   deco.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
   if (!(spec && spec.isLandscape)) bottom.addView(deco, new android.widget.LinearLayout.LayoutParams(-1, this.dp(14)));
-  var bottomSave = this.ui.createSolidButton(this, useMonetHome ? "保存" : "💾  保存布置", T.primary, T.onPrimary, saveSettingsNow);
+  var bottomSave = this.ui.createSolidButton(this, "保存设置", T.primary, T.onPrimary, saveSettingsNow);
   bottomSave.setPadding(this.dp(18), 0, this.dp(18), 0);
   try { bottomSave.setBackground(this.ui.createStrokeDrawable(T.primary, this.withAlpha(T.primaryDeep, isDark ? 0.22 : 0.16), this.dp(1), this.dp(23))); } catch(eSaveBg2) {}
   try { bottomSave.setElevation(this.dp(1)); } catch(eSaveElev2) {}
-  var saveLp2 = new android.widget.LinearLayout.LayoutParams(-1, this.dp(44));
+  var saveLp2 = new android.widget.LinearLayout.LayoutParams(-1, this.dp(48));
   saveLp2.setMargins(spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(80) : this.dp(34), this.dp(4), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(80) : this.dp(34), 0);
   bottom.addView(bottomSave, saveLp2);
   var bottomLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
@@ -1498,22 +1503,25 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   header.setGravity(android.view.Gravity.CENTER_VERTICAL);
   var titleTv = new android.widget.TextView(context);
-  titleTv.setText("❧ " + title + " ❧");
+  titleTv.setText(String(title || ""));
   titleTv.setTextColor(T.text);
   titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
   titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
   header.addView(titleTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-  var closeBtn = self.ui.createFlatButton(self, "✕", T.primaryDeep, function() {
+  var closeBtn = self.ui.createCompactFlatButton ? self.ui.createCompactFlatButton(self, "×", T.primaryDeep, function() {
+    closePopup();
+  }) : self.ui.createFlatButton(self, "×", T.primaryDeep, function() {
     closePopup();
   });
   closeBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   closeBtn.setTypeface(null, android.graphics.Typeface.BOLD);
   closeBtn.setGravity(android.view.Gravity.CENTER);
   closeBtn.setPadding(0, 0, 0, 0);
-  try { closeBtn.setMinWidth(self.dp(44)); closeBtn.setMinHeight(self.dp(44)); } catch(eCloseMin) {}
+  try { closeBtn.setContentDescription("关闭弹窗"); } catch(eCloseDesc) {}
+  try { closeBtn.setMinWidth(self.dp(48)); closeBtn.setMinHeight(self.dp(48)); } catch(eCloseMin) {}
   try { closeBtn.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(22))); } catch(eCloseBg) {}
-  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(44), self.dp(44)));
+  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(48), self.dp(48)));
   card.addView(header);
 
   var scroll = new android.widget.ScrollView(context);

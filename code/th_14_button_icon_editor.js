@@ -326,7 +326,8 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
         });
     });
     shortxPickerState.toggleBtn = btnBrowseShortXIcon;
-    var browseIconLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(40));
+    try { btnBrowseShortXIcon.setContentDescription("打开 ShortX 图标库"); } catch(eBrowseDesc) {}
+    var browseIconLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(48));
     browseIconLp.weight = 1;
     browseIconLp.rightMargin = self.dp(6);
     shortxActionRow.addView(btnBrowseShortXIcon, browseIconLp);
@@ -342,7 +343,8 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
         clearShortXIconOnly();
     });
     shortxPickerState.clearBtn = btnClearShortXIcon;
-    var clearIconLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(40));
+    try { btnClearShortXIcon.setContentDescription("清空 ShortX 图标"); } catch(eClearDesc) {}
+    var clearIconLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(48));
     clearIconLp.weight = 1;
     clearIconLp.leftMargin = self.dp(6);
     clearIconLp.rightMargin = self.dp(6);
@@ -363,7 +365,8 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
             }
         });
     });
-    var colorIconLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(40));
+    try { btnColorShortX.setContentDescription("选择图标颜色"); } catch(eColorDesc) {}
+    var colorIconLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(48));
     colorIconLp.weight = 1;
     colorIconLp.leftMargin = self.dp(6);
     shortxActionRow.addView(btnColorShortX, colorIconLp);
@@ -420,7 +423,8 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
         self.touchActivity();
         goShortXPage(-1);
     });
-    shortxPageBar.addView(btnPrevPage);
+    try { btnPrevPage.setContentDescription("上一页"); } catch(ePrevDesc) {}
+    shortxPageBar.addView(btnPrevPage, new android.widget.LinearLayout.LayoutParams(self.dp(82), self.dp(48)));
     shortxPickerState.prevBtn = btnPrevPage;
 
     var shortxPageInfo = new android.widget.TextView(context);
@@ -435,7 +439,8 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
         self.touchActivity();
         goShortXPage(1);
     });
-    shortxPageBar.addView(btnNextPage);
+    try { btnNextPage.setContentDescription("下一页"); } catch(eNextDesc) {}
+    shortxPageBar.addView(btnNextPage, new android.widget.LinearLayout.LayoutParams(self.dp(82), self.dp(48)));
     shortxPickerState.nextBtn = btnNextPage;
 
     var shortxGridScroll = new android.widget.ScrollView(context);

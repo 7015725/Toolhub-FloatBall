@@ -540,6 +540,19 @@ FloatBallAppWM.prototype.getToolAppTitle = function(route) {
   return "ToolHub";
 };
 
+FloatBallAppWM.prototype.openToolHubManual = function() {
+  try {
+    var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+    intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
+    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+    context.startActivity(intent);
+    return true;
+  } catch(eDoc) {
+    try { this.toast("无法打开文档链接"); } catch(eToast) {}
+  }
+  return false;
+};
+
 FloatBallAppWM.prototype.closeToolApp = function() {
   try {
     this.state.toolAppActive = false;
@@ -559,6 +572,9 @@ FloatBallAppWM.prototype.closeToolApp = function() {
     this.state.toolAppBackPreviewEntryKey = null;
     this.state.toolAppTitleView = null;
     this.state.toolAppBackButton = null;
+    this.state.toolAppHelpButton = null;
+    this.state.toolAppCloseButton = null;
+    this.state.toolAppRightButton = null;
     this.state.toolAppScrollY = 0;
   } catch (e) { safeLog(this.L, 'e', "closeToolApp fail: " + String(e)); }
 };
@@ -875,7 +891,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     var bar = new android.widget.LinearLayout(context);
     bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    bar.setPadding(this.dp(10), (spec && spec.isLandscape) ? this.dp(6) : this.dp(10), this.dp(10), this.dp(6));
+    bar.setPadding(this.dp(8), this.dp(4), this.dp(8), this.dp(4));
     bar.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
     try { bar.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 1 : 2)); } catch(eBarElev) {}
 
@@ -885,13 +901,14 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     var btnBack = this.ui.createFlatButton(this, "‹", T.brown, handlePreviewBackClick);
     btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
     btnBack.setPadding(this.dp(8), 0, this.dp(8), 0);
+    try { btnBack.setContentDescription("返回"); } catch(eBackDesc) {}
     try { btnBack.setAlpha(0.62); } catch(eBackClick) {}
     try { btnBack.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eBackBg) {}
-    bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
+    bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48)));
 
     var tvTitle = new android.widget.TextView(context);
     var titleText = String(this.getToolAppTitle(r) || "ToolHub");
-    if (r === "settings") titleText = "❧ 岛屿设置 ❧";
+    if (r === "settings") titleText = "岛屿设置";
     tvTitle.setText(titleText);
     tvTitle.setTextColor(T.text);
     tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
@@ -901,26 +918,32 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     titleLp.weight = 1;
     bar.addView(tvTitle, titleLp);
 
-    var rightText = r === "settings" ? "📖 岛务手册" : "✕";
-    function handlePreviewRightClick() {
-      try {
-        if (r === "settings") {
-          var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
-          intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
-          intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
-          context.startActivity(intent);
-          return;
-        }
-        self.toast("这是返回预览，松手后才会返回");
-      } catch(eDoc) { try { self.toast("无法打开文档链接"); } catch(eToast) {} }
+    var btnHelp = this.ui.createFlatButton(this, "?", T.primaryDeep, function() {
+      try { self.openToolHubManual(); } catch(eHelp) {}
+    });
+    btnHelp.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+    btnHelp.setTypeface(null, android.graphics.Typeface.BOLD);
+    btnHelp.setPadding(0, 0, 0, 0);
+    try { btnHelp.setContentDescription("打开手册"); } catch(eHelpDesc) {}
+    try { btnHelp.setAlpha(0.62); } catch(eHelpAlpha) {}
+    try { btnHelp.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eHelpBg) {}
+    var helpLp = new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48));
+    helpLp.setMargins(this.dp(6), 0, 0, 0);
+    bar.addView(btnHelp, helpLp);
+
+    function handlePreviewCloseClick() {
+      try { self.toast("这是返回预览，松手后才会返回"); } catch(eToast) {}
     }
-    var btnClose = this.ui.createFlatButton(this, rightText, T.primaryDeep, handlePreviewRightClick);
-    btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, r === "settings" ? 12 : 18);
+    var btnClose = this.ui.createFlatButton(this, "×", T.primaryDeep, handlePreviewCloseClick);
+    btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20);
     btnClose.setTypeface(null, android.graphics.Typeface.BOLD);
-    btnClose.setPadding(this.dp(10), 0, this.dp(10), 0);
+    btnClose.setPadding(0, 0, 0, 0);
+    try { btnClose.setContentDescription("关闭"); } catch(eCloseDesc) {}
     try { btnClose.setAlpha(0.62); } catch(eRightClick) {}
     try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
-    bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
+    var closeLp = new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48));
+    closeLp.setMargins(this.dp(6), 0, 0, 0);
+    bar.addView(btnClose, closeLp);
     var barLp = new android.widget.LinearLayout.LayoutParams(-1, topBarHeight);
     barLp.setMargins(this.dp(8), this.dp(2), this.dp(8), this.dp(4));
     body.addView(bar, barLp);
@@ -1211,7 +1234,7 @@ FloatBallAppWM.prototype.getToolAppResponsiveSpec = function() {
     itemRadius: (isExpandedWidth || isWideWidth) ? this.dp(16) : this.dp(18),
     shellPadding: (isExpandedWidth || isWideWidth) ? this.dp(4) : this.dp(6),
     cardGap: (isExpandedWidth || isWideWidth) ? this.dp(14) : this.dp(8),
-    topBarHeight: (isLandscape && isCompactWidth) ? this.dp(50) : this.dp(56)
+    topBarHeight: this.dp(56)
   };
 };
 
@@ -1486,17 +1509,20 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var bar = new android.widget.LinearLayout(context);
   bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  bar.setPadding(this.dp(10), (spec && spec.isLandscape) ? this.dp(6) : this.dp(10), this.dp(10), this.dp(6));
+  bar.setPadding(this.dp(8), this.dp(4), this.dp(8), this.dp(4));
   bar.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
   try { bar.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 1 : 2)); } catch(eBarElev) {}
 
   var btnBack = this.ui.createFlatButton(this, "‹", T.brown, function() {
-    self.popToolAppPage("topbar");
+    try {
+      if (self.hasToolAppBackTarget && self.hasToolAppBackTarget()) self.popToolAppPage("topbar");
+    } catch(eBackClick) {}
   });
   btnBack.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
   btnBack.setPadding(this.dp(8), 0, this.dp(8), 0);
+  try { btnBack.setContentDescription("返回"); } catch(eBackDesc) {}
   try { btnBack.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eBackBg) {}
-  bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(38)));
+  bar.addView(btnBack, new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48)));
 
   var tvTitle = new android.widget.TextView(context);
   tvTitle.setText(String(title || "ToolHub"));
@@ -1508,23 +1534,29 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   titleLp.weight = 1;
   bar.addView(tvTitle, titleLp);
 
-  var btnClose = this.ui.createFlatButton(this, "📖 岛务手册", T.primaryDeep, function() {
-    try {
-      if (String(self.state.toolAppRoute || "") === "settings") {
-        var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
-        intent.setData(android.net.Uri.parse("https://xin-blog.com/114.html"));
-        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(intent);
-        return;
-      }
-    } catch(eDoc) { try { self.toast("无法打开文档链接"); } catch(eToast) {} return; }
+  var btnHelp = this.ui.createFlatButton(this, "?", T.primaryDeep, function() {
+    try { self.openToolHubManual(); } catch(eHelp) {}
+  });
+  btnHelp.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+  btnHelp.setTypeface(null, android.graphics.Typeface.BOLD);
+  btnHelp.setPadding(0, 0, 0, 0);
+  try { btnHelp.setContentDescription("打开手册"); } catch(eHelpDesc) {}
+  try { btnHelp.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eHelpBg) {}
+  var helpLp = new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48));
+  helpLp.setMargins(this.dp(6), 0, 0, 0);
+  bar.addView(btnHelp, helpLp);
+
+  var btnClose = this.ui.createFlatButton(this, "×", T.primaryDeep, function() {
     self.closeToolApp();
   });
-  btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20);
   btnClose.setTypeface(null, android.graphics.Typeface.BOLD);
-  btnClose.setPadding(this.dp(10), 0, this.dp(10), 0);
+  btnClose.setPadding(0, 0, 0, 0);
+  try { btnClose.setContentDescription("关闭"); } catch(eCloseDesc) {}
   try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
-  bar.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(104), this.dp(38)));
+  var closeLp = new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48));
+  closeLp.setMargins(this.dp(6), 0, 0, 0);
+  bar.addView(btnClose, closeLp);
   var barLp = new android.widget.LinearLayout.LayoutParams(-1, topBarHeight);
   barLp.setMargins(this.dp(8), this.dp(2), this.dp(8), this.dp(4));
   body.addView(bar, barLp);
@@ -1544,6 +1576,8 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   this.state.toolAppContentHost = host;
   this.state.toolAppTitleView = tvTitle;
   this.state.toolAppBackButton = btnBack;
+  this.state.toolAppHelpButton = btnHelp;
+  this.state.toolAppCloseButton = btnClose;
   this.state.toolAppRightButton = btnClose;
   this.updateToolAppShellChrome(title, canBack);
   return root;
@@ -1563,19 +1597,28 @@ FloatBallAppWM.prototype.updateToolAppShellChrome = function(title, canBack) {
   try {
     var r = String(this.state.toolAppRoute || "");
     var titleText = String(title || "ToolHub");
-    if (r === "settings") titleText = "❧ 岛屿设置 ❧";
+    if (r === "settings") titleText = "岛屿设置";
     var hasBack = false;
     try { hasBack = !!(this.hasToolAppBackTarget && this.hasToolAppBackTarget()); } catch(eHasBack) { hasBack = !!canBack; }
     if (this.state.toolAppTitleView) this.state.toolAppTitleView.setText(titleText);
     if (this.state.toolAppBackButton) {
-      this.state.toolAppBackButton.setText(hasBack ? "‹" : "✕");
-      this.state.toolAppBackButton.setVisibility(android.view.View.VISIBLE);
-      this.state.toolAppBackButton.setEnabled(true);
-      try { this.state.toolAppBackButton.setAlpha(1.0); } catch(eAlpha) {}
+      this.state.toolAppBackButton.setText("‹");
+      this.state.toolAppBackButton.setVisibility(hasBack ? android.view.View.VISIBLE : android.view.View.INVISIBLE);
+      this.state.toolAppBackButton.setEnabled(hasBack);
+      try { this.state.toolAppBackButton.setAlpha(hasBack ? 1.0 : 0.0); } catch(eAlpha) {}
     }
-    if (this.state.toolAppRightButton) {
-      if (r === "settings") this.state.toolAppRightButton.setText("📖 岛务手册");
-      else this.state.toolAppRightButton.setText("✕");
+    if (this.state.toolAppHelpButton) {
+      this.state.toolAppHelpButton.setText("?");
+      this.state.toolAppHelpButton.setVisibility(android.view.View.VISIBLE);
+      this.state.toolAppHelpButton.setEnabled(true);
+    }
+    if (this.state.toolAppCloseButton) {
+      this.state.toolAppCloseButton.setText("×");
+      this.state.toolAppCloseButton.setVisibility(android.view.View.VISIBLE);
+      this.state.toolAppCloseButton.setEnabled(true);
+    }
+    if (this.state.toolAppRightButton && this.state.toolAppRightButton !== this.state.toolAppCloseButton) {
+      this.state.toolAppRightButton.setText("×");
     }
   } catch (e) { safeLog(this.L, 'w', "updateToolAppShellChrome fail: " + String(e)); }
 };
@@ -2007,17 +2050,21 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
     header.addView(titleTv);
 
     // Close Button
-    var btnClose = this.ui.createFlatButton(this, "✕", C.textSecLight, function() {
+    var btnClose = this.ui.createCompactFlatButton ? this.ui.createCompactFlatButton(this, "×", C.textSecLight, function() {
+        if (onClose) onClose();
+        else self.hideAllPanels();
+    }) : this.ui.createFlatButton(this, "×", C.textSecLight, function() {
         if (onClose) onClose();
         else self.hideAllPanels();
     });
-    btnClose.setPadding(self.dp(8), self.dp(4), self.dp(8), self.dp(4));
+    btnClose.setPadding(0, 0, 0, 0);
+    try { btnClose.setContentDescription("关闭面板"); } catch(eCloseDesc) {}
     try { btnClose.setElevation(this.dp(25));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } // Ensure on top of resize handles
-    header.addView(btnClose);
+    header.addView(btnClose, new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48)));
 
     // Spacer to avoid overlap with Top-Right resize handle
     var spacer = new android.view.View(context);
-    spacer.setLayoutParams(new android.widget.LinearLayout.LayoutParams(this.dp(30), 1));
+    spacer.setLayoutParams(new android.widget.LinearLayout.LayoutParams(this.dp(48), 1));
     header.addView(spacer);
 
     container.addView(header);
@@ -2042,7 +2089,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
     // Resize Handle (Bottom-Right Corner) - Invisible
     var handleBR = new android.view.View(context);
     try { handleBR.setElevation(this.dp(20));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-    var handleBRLp = new android.widget.FrameLayout.LayoutParams(this.dp(30), this.dp(30));
+    var handleBRLp = new android.widget.FrameLayout.LayoutParams(this.dp(48), this.dp(48));
     handleBRLp.gravity = android.view.Gravity.BOTTOM | android.view.Gravity.END;
     handleBRLp.rightMargin = 0;
     handleBRLp.bottomMargin = 0;
@@ -2051,7 +2098,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
     // Resize Handle (Bottom-Left Corner) - Invisible
     var handleBL = new android.view.View(context);
     try { handleBL.setElevation(this.dp(20));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-    var handleBLLp = new android.widget.FrameLayout.LayoutParams(this.dp(30), this.dp(30));
+    var handleBLLp = new android.widget.FrameLayout.LayoutParams(this.dp(48), this.dp(48));
     handleBLLp.gravity = android.view.Gravity.BOTTOM | android.view.Gravity.START;
     handleBLLp.bottomMargin = 0;
     handleBLLp.leftMargin = 0;
@@ -2060,7 +2107,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
     // Resize Handle (Top-Left Corner) - Invisible
     var handleTL = new android.view.View(context);
     try { handleTL.setElevation(this.dp(20));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-    var handleTLLp = new android.widget.FrameLayout.LayoutParams(this.dp(30), this.dp(30));
+    var handleTLLp = new android.widget.FrameLayout.LayoutParams(this.dp(48), this.dp(48));
     handleTLLp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
     handleTLLp.topMargin = 0;
     handleTLLp.leftMargin = 0;
@@ -2069,7 +2116,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
     // Resize Handle (Top-Right Corner) - Invisible
     var handleTR = new android.view.View(context);
     try { handleTR.setElevation(this.dp(20));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-    var handleTRLp = new android.widget.FrameLayout.LayoutParams(this.dp(30), this.dp(30));
+    var handleTRLp = new android.widget.FrameLayout.LayoutParams(this.dp(48), this.dp(48));
     handleTRLp.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
     handleTRLp.topMargin = 0;
     handleTRLp.rightMargin = 0;

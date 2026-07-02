@@ -22,7 +22,10 @@ FloatBallAppWM.prototype.createButtonManagerActionChip = function(text, textColo
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tv.setTypeface(null, android.graphics.Typeface.BOLD);
   tv.setTextColor(textColor);
-  tv.setMinHeight(this.dp(34));
+  try { tv.setMinHeight(this.dp(48)); tv.setMinimumHeight(this.dp(48)); } catch(eMinH) {}
+  try { tv.setMinWidth(this.dp(48)); tv.setMinimumWidth(this.dp(48)); } catch(eMinW) {}
+  try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
+  try { tv.setContentDescription(String(text || "")); } catch(eDesc) {}
   tv.setPadding(this.dp(10), 0, this.dp(10), 0);
   try {
     var bg = new android.graphics.drawable.GradientDrawable();
@@ -47,7 +50,10 @@ FloatBallAppWM.prototype.createButtonManagerTextAction = function(text, textColo
   tv.setGravity(android.view.Gravity.CENTER);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tv.setTextColor(textColor);
-  tv.setMinHeight(this.dp(30));
+  try { tv.setMinHeight(this.dp(48)); tv.setMinimumHeight(this.dp(48)); } catch(eMinH) {}
+  try { tv.setMinWidth(this.dp(48)); tv.setMinimumWidth(this.dp(48)); } catch(eMinW) {}
+  try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
+  try { tv.setContentDescription(String(text || "")); } catch(eDesc) {}
   tv.setPadding(this.dp(8), 0, this.dp(8), 0);
   if (onClickFn) {
     tv.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
@@ -536,7 +542,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         clearButtonEditorNotice();
         self.hideAllPanels();
     });
-    var btnListCancelLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+    var btnListCancelLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(48));
     btnListCancelLp.weight = 1;
     btnListCancelLp.rightMargin = self.dp(8);
     bottomBar.addView(btnListCancel, btnListCancelLp);
@@ -550,7 +556,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
             refreshPanel();
         } catch(e) { setButtonEditorNotice("保存失败: " + e, "error"); refreshPanel(); }
     });
-    var btnListSaveLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+    var btnListSaveLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(48));
     btnListSaveLp.weight = 1;
     bottomBar.addView(btnListSave, btnListSaveLp);
 
@@ -686,7 +692,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         try { rb.setSingleLine(true);  } catch(eSL) { safeLog(null, 'e', "catch " + String(eSL)); }
         try { rb.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(eEl) { safeLog(null, 'e', "catch " + String(eEl)); }
         try { rb.setMinWidth(0);  } catch(eMW) { safeLog(null, 'e', "catch " + String(eMW)); }
-        try { rb.setMinHeight(self.dp(40));  } catch(eMH) { safeLog(null, 'e', "catch " + String(eMH)); }
+        try { rb.setMinHeight(self.dp(48)); rb.setMinimumHeight(self.dp(48)); } catch(eMH) { safeLog(null, 'e', "catch " + String(eMH)); }
+        try { rb.setContentDescription("动作类型：" + String(types[i].txt || "")); } catch(eRbDesc) {}
         rb.setPadding(self.dp(8), self.dp(6), self.dp(8), self.dp(6));
 
         // 互斥选择
@@ -886,7 +893,7 @@ appWrap.addView(inputAppLaunchUser.view);
             self.popToolAppPage("button_edit_cancel");
         } else refreshPanel();
     });
-    var btnCancelLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+    var btnCancelLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(48));
     btnCancelLp.weight = 1;
     btnCancelLp.rightMargin = self.dp(8);
     bottomBar.addView(btnCancel, btnCancelLp);
@@ -1000,7 +1007,7 @@ try {
             try { scroll.post(new java.lang.Runnable({ run: function() { try { scroll.fullScroll(android.view.View.FOCUS_DOWN); } catch(eScrollFail) {} } })); } catch(ePostFail) {}
         }
     });
-    var btnSaveLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(44));
+    var btnSaveLp = new android.widget.LinearLayout.LayoutParams(0, self.dp(48));
     btnSaveLp.weight = 1;
     bottomBar.addView(btnSave, btnSaveLp);
 

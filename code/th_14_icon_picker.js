@@ -217,12 +217,13 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   titleBox.addView(countTv);
   header.addView(titleBox);
 
-  var closeBtn = self.ui.createFlatButton(self, "✕", T.primaryDeep, function() { dismiss(); });
+  var closeBtn = self.ui.createCompactFlatButton ? self.ui.createCompactFlatButton(self, "×", T.primaryDeep, function() { dismiss(); }) : self.ui.createFlatButton(self, "×", T.primaryDeep, function() { dismiss(); });
   closeBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   closeBtn.setTypeface(null, android.graphics.Typeface.BOLD);
   closeBtn.setPadding(self.dp(8), 0, self.dp(8), 0);
+  try { closeBtn.setContentDescription("关闭图标库"); } catch(eCloseDesc) {}
   try { closeBtn.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(18))); } catch(eCloseBg) {}
-  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(42), self.dp(38)));
+  header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(48), self.dp(48)));
   card.addView(header);
 
   var searchEt = new android.widget.EditText(context);
@@ -256,7 +257,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   filterRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
   filterRow.setPadding(0, 0, 0, 0);
   filterScroll.addView(filterRow);
-  var filterLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(36));
+  var filterLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(48));
   filterLp.setMargins(0, 0, 0, self.dp(4));
   card.addView(filterScroll, filterLp);
 
@@ -282,6 +283,10 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
       chip.setPadding(self.dp(12), 0, self.dp(12), 0);
       chip.setSingleLine(true);
       chip.setClickable(true);
+      try { chip.setMinHeight(self.dp(48)); chip.setMinimumHeight(self.dp(48)); } catch(eMinH) {}
+      try { chip.setMinWidth(self.dp(48)); chip.setMinimumWidth(self.dp(48)); } catch(eMinW) {}
+      try { chip.setIncludeFontPadding(false); } catch(eFontPad) {}
+      try { chip.setContentDescription("筛选：" + String(tag)); } catch(eDesc) {}
       chip.setOnClickListener(new android.view.View.OnClickListener({
         onClick: function() {
           self.touchActivity();
@@ -291,7 +296,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           renderGrid();
         }
       }));
-      var chipLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, self.dp(30));
+      var chipLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, self.dp(48));
       chipLp.setMargins(0, 0, self.dp(7), 0);
       filterRow.addView(chip, chipLp);
       filterViews.push({ name: tag, view: chip });
@@ -303,13 +308,14 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   pageBar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   pageBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
   pageBar.setPadding(self.dp(2), 0, self.dp(2), self.dp(4));
-  var pageBarLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(34));
+  var pageBarLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(48));
   card.addView(pageBar, pageBarLp);
 
   var btnPrev = self.ui.createFlatButton(self, "上一页", self.withAlpha(T.primaryDeep, 0.72), function() {
     if (popupState.currentPage > 0) { popupState.currentPage--; renderGrid(); }
   });
-  pageBar.addView(btnPrev, new android.widget.LinearLayout.LayoutParams(self.dp(78), self.dp(30)));
+  try { btnPrev.setContentDescription("上一页"); } catch(ePrevDesc) {}
+  pageBar.addView(btnPrev, new android.widget.LinearLayout.LayoutParams(self.dp(78), self.dp(48)));
 
   var pageInfo = new android.widget.TextView(context);
   pageInfo.setTextColor(self.withAlpha(textColor, 0.76));
@@ -322,7 +328,8 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     popupState.currentPage++;
     renderGrid();
   });
-  pageBar.addView(btnNext, new android.widget.LinearLayout.LayoutParams(self.dp(78), self.dp(30)));
+  try { btnNext.setContentDescription("下一页"); } catch(eNextDesc) {}
+  pageBar.addView(btnNext, new android.widget.LinearLayout.LayoutParams(self.dp(78), self.dp(48)));
 
   var gridScroll = new android.widget.ScrollView(context);
   gridScroll.setVerticalScrollBarEnabled(false);
@@ -361,7 +368,8 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     }
     dismiss();
   });
-  var confirmLp = new android.widget.LinearLayout.LayoutParams(self.dp(104), self.dp(42));
+  try { selectConfirm.setContentDescription("确认选择图标"); } catch(eConfirmDesc) {}
+  var confirmLp = new android.widget.LinearLayout.LayoutParams(self.dp(104), self.dp(48));
   confirmLp.setMargins(self.dp(10), 0, 0, 0);
   selectRow.addView(selectConfirm, confirmLp);
 
@@ -389,7 +397,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
 
       if (pageItems.length === 0) {
         var emptyTv = new android.widget.TextView(context);
-        emptyTv.setText(popupState.filter === "收藏" ? "收藏夹还空着，点图标左上角 ☆ 收藏" : "没有找到这枚小图标");
+        emptyTv.setText(popupState.filter === "收藏" ? "收藏夹还空着，点图标左上角星标收藏" : "没有找到这枚小图标");
         emptyTv.setTextColor(subTextColor);
         emptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         emptyTv.setGravity(android.view.Gravity.CENTER);
@@ -441,6 +449,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           favBtn.setTypeface(null, android.graphics.Typeface.BOLD);
           favBtn.setBackground(self.ui.createRoundDrawable(isFavoriteIcon(item.name) ? T.primarySoft : self.withAlpha(T.card, 0.88), self.dp(9)));
           favBtn.setClickable(true);
+          try { favBtn.setContentDescription((isFavoriteIcon(item.name) ? "取消收藏" : "收藏") + String(item.shortName || item.name || "图标")); } catch(eFavDesc) {}
           favBtn.setOnClickListener(new android.view.View.OnClickListener({
             onClick: function() {
               self.touchActivity();
@@ -477,6 +486,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
               renderGrid();
             }
           }));
+          try { frame.setContentDescription("选择图标" + String(item.shortName || item.name || "")); } catch(eFrameDesc) {}
 
           var cellLp = new android.widget.GridLayout.LayoutParams();
           cellLp.width = cellW;
