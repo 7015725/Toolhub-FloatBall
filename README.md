@@ -28,13 +28,14 @@ STRUCTURE.md
 
 ## 核心特性
 
-- **模块化加载**：入口文件只做启动、同步、校验与汇总返回；当前实际加载 18 个子模块。
+- **模块化加载**：入口文件只做启动、同步、校验与汇总返回；当前实际加载 21 个子模块。
 - **更新源切换**：入口支持在 Gitea 主源与 GitHub 镜像之间切换。
-- **签名更新机制**：安全模式下，远端 `manifest.json` 必须通过 `manifest.sig` 的 RSA 签名校验后才可信。
+- **安全更新模式**：`UPDATE_SECURITY_MODE = 1` 使用 manifest 哈希校验；`2` 在此基础上增加 `manifest.sig` RSA 验签、keyId 校验和防回滚。
 - **SHA256 文件校验**：每个子模块按清单中的 `sha256` 和 `size` 校验，通过后才覆盖本地文件。
-- **防回滚**：入口内置 `MIN_TRUSTED_MANIFEST_VERSION`，并记录本地已信任清单版本，拒绝旧版本清单。
-- **本地可信回退**：网络或远端清单异常时，不盲目覆盖；已验证过的本地模块可继续使用。
+- **防回滚**：入口内置 `MIN_TRUSTED_MANIFEST_VERSION`，并在完整验签模式下记录本地已信任清单版本，拒绝旧版本清单。
+- **本地可信回退**：网络或远端清单异常时，已验证过的本地模块可继续使用。
 - **App 化设置页**：设置主页、按钮管理、按钮编辑、Schema 编辑等页面使用统一 ToolApp Shell 与页面栈。
+- **更新状态可视化**：设置页欢迎卡显示更新状态胶囊，展开后展示 release notes、更新源、校验模式和同步模块。
 - **系统返回适配**：支持返回键、Android 13+ 返回回调、Android 14+ 预测性返回，并内置 ToolApp 左右滑返回。
 - **Surface 滑动返回**：可在 ToolApp 页面任意位置横滑返回，避免全面屏系统手势抢占极窄边缘区域。
 - **ShortX 图标选择器**：支持图标点选、搜索、分页、收藏、最近、过滤，不再依赖手填图标名。
@@ -59,9 +60,9 @@ STRUCTURE.md
 
 1. 创建 `shortx.getShortXDir()/ToolHub/code/`
 2. 下载或读取 `manifest.json`
-3. 安全模式下下载并校验 `manifest.sig`
-4. 校验清单版本，防止回滚
-5. 按清单下载 18 个子模块到临时文件
+3. 完整验签模式下下载并校验 `manifest.sig`
+4. 按安全模式记录清单版本与校验状态
+5. 按清单下载 21 个子模块到临时文件
 6. 校验模块 `size` 与 `sha256`
 7. 校验通过后覆盖本地模块
 8. `eval` 加载模块
@@ -75,7 +76,7 @@ STRUCTURE.md
 
 ```javascript
 var UPDATE_SOURCE = 1;          // 0: Gitea, 1: GitHub
-var UPDATE_SECURITY_MODE = 0;   // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
+var UPDATE_SECURITY_MODE = 1;   // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 ```
 
 更新源：
@@ -122,6 +123,9 @@ shortx.getShortXDir()/
     │   ├── th_12_rebuild.js
     │   ├── th_13_panel_ui.js
     │   ├── th_14_panels.js
+    │   ├── th_14_button_shortcut.js
+    │   ├── th_14_button_icon_editor.js
+    │   ├── th_14_button_editor.js
     │   ├── th_14_color_picker.js
     │   ├── th_14_icon_picker.js
     │   ├── th_14_schema_editor.js
@@ -161,6 +165,9 @@ Toolhub-FloatBall/
 │   ├── th_12_rebuild.js
 │   ├── th_13_panel_ui.js
 │   ├── th_14_panels.js
+│   ├── th_14_button_shortcut.js
+│   ├── th_14_button_icon_editor.js
+│   ├── th_14_button_editor.js
 │   ├── th_14_color_picker.js
 │   ├── th_14_icon_picker.js
 │   ├── th_14_schema_editor.js
@@ -180,10 +187,17 @@ Toolhub-FloatBall/
 {
   "ok": true,
   "状态": "ToolHub 启动成功",
-  "安全": "✓ 已验签 v20260507155220 / toolhub-targets-2026-rsa3072",
+  "安全": "⚠ manifest哈希校验模式 v20260702094202",
   "同步": "✓ 子模块已是最新",
+  "更新状态": "latest",
   "布局": "4×4",
-  "关闭广播": "shortx.wm.floatball.CLOSE"
+  "关闭广播": "shortx.wm.floatball.CLOSE",
+  "更新标题": "设置页更新状态优化",
+  "更新内容": [
+    "设置页欢迎卡增加更新状态胶囊",
+    "新增展开的更新详情和 release notes 展示",
+    "大屏设置目录同步显示更新状态"
+  ]
 }
 ```
 
@@ -193,10 +207,17 @@ Toolhub-FloatBall/
 {
   "ok": true,
   "状态": "ToolHub 启动成功",
-  "安全": "✓ 已验签 v20260507155220 / toolhub-targets-2026-rsa3072",
+  "安全": "⚠ manifest哈希校验模式 v20260702094202",
   "同步": "✓ 已更新 2 个模块：th_14_panels.js、th_16_entry.js",
+  "更新状态": "updated",
   "布局": "4×4",
   "关闭广播": "shortx.wm.floatball.CLOSE",
+  "更新标题": "设置页更新状态优化",
+  "更新内容": [
+    "设置页欢迎卡增加更新状态胶囊",
+    "新增展开的更新详情和 release notes 展示",
+    "大屏设置目录同步显示更新状态"
+  ],
   "更新模块": ["th_14_panels.js", "th_16_entry.js"]
 }
 ```
@@ -208,6 +229,7 @@ Toolhub-FloatBall/
 - `ok: false`
 - `状态: "ToolHub 启动失败"`
 - `安全`: 当前验签 / 清单状态
+- `更新状态`: `"error"`
 - `错误`: 失败原因
 - `加载异常`: 非关键模块加载失败列表（如存在）
 
@@ -222,14 +244,13 @@ Toolhub-FloatBall/
    - `manifest.json`
    - `manifest.sig`
    - `code/*.js`
-3. 入口下载清单和签名。
-4. 使用 `SHA256withRSA` 校验 `manifest.sig`。
-5. 检查 `manifest.keyId` 是否在入口信任列表内。
-6. 检查 `manifest.version` 是否低于最低可信版本或本地已信任版本。
+3. 入口下载 `manifest.json`。
+4. `UPDATE_SECURITY_MODE = 1` 时按 manifest 校验模块 `size` 和 `sha256`。
+5. `UPDATE_SECURITY_MODE = 2` 时额外下载 `manifest.sig` 并使用 `SHA256withRSA` 验签。
+6. 完整验签模式会检查 `manifest.keyId`、最低可信版本和本地已信任版本。
 7. 每个模块下载到 `.tmp`。
-8. 校验模块 `size` 和 `sha256`。
-9. 校验通过才覆盖本地模块。
-10. 所有模块加载正常后，保存本地可信清单版本。
+8. 校验通过才覆盖本地模块。
+9. 所有模块加载正常后，保存本地可信清单版本。
 
 当前 keyId：
 
@@ -255,7 +276,10 @@ toolhub-targets-2026-rsa3072
 | `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut |
 | `th_12_rebuild.js` | 悬浮球重建、尺寸 / 图标 / 配置变化刷新 |
 | `th_13_panel_ui.js` | 设置项基础 UI：section、bool、int、float、action、文本输入等 |
-| `th_14_panels.js` | 设置主页、设置分组、按钮管理、按钮编辑、内联快捷方式选择、弹窗基础、主题适配 |
+| `th_14_panels.js` | 设置主页、设置分组、按钮管理入口、弹窗基础、主题适配、更新状态展示 |
+| `th_14_button_shortcut.js` | 内联快捷方式选择、快捷方式图标异步加载与回填 |
+| `th_14_button_icon_editor.js` | 按钮图标编辑、图标来源选择与颜色联动 |
+| `th_14_button_editor.js` | 按钮编辑页、动作参数、保存校验与页面内反馈 |
 | `th_14_color_picker.js` | 颜色选择器：最近色、常用色、RGB、透明度、实时预览 |
 | `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
 | `th_14_schema_editor.js` | Schema 编辑器 |
@@ -266,7 +290,7 @@ toolhub-targets-2026-rsa3072
 
 ## 子模块命名规则
 
-当前 `manifest.json` 实际包含 **18 个子模块**。`th_07_shortcut.js` 已退役，编号从 `th_06` 跳到 `th_08` 是有意保留的历史空洞，不是遗漏。
+当前 `manifest.json` 实际包含 **21 个子模块**。`th_07_shortcut.js` 已退役，编号从 `th_06` 跳到 `th_08` 是有意保留的历史空洞，不是遗漏。
 
 ### 文件名格式
 
@@ -333,6 +357,9 @@ th_50_entry.js
 - 系统返回键会优先回到上一页；没有上一页时关闭 ToolApp。
 - 面板尺寸按屏幕自适应，减少小屏溢出与大屏空白。
 - 横屏 / 平板宽屏下可进入更适合大屏的布局结构。
+- 欢迎卡内置更新状态胶囊，显示最新 / 已同步 / 普通更新 / 更新异常等状态。
+- 点击更新胶囊可展开详情，展示 release notes、更新源、校验模式、安全状态和本次同步模块。
+- 大屏设置目录同步显示更新状态，用户无需进入日志页即可确认当前版本状态。
 
 ### ToolApp 滑动返回
 
@@ -537,13 +564,14 @@ STRUCTURE.md
 ```text
 base → core → icon / theme / persistence / parser / content
 → animation / shell / action / rebuild
-→ panel_ui → panels → color_picker / icon_picker / schema_editor
-→ extra → entry
+→ panel_ui → panels → button_shortcut / button_icon_editor / button_editor
+→ color_picker / icon_picker / schema_editor → extra → entry
 ```
 
 注意：
 
 - `th_14_color_picker.js` 依赖 `th_14_panels.js` 的弹窗基础能力。
+- `th_14_button_shortcut.js`、`th_14_button_icon_editor.js`、`th_14_button_editor.js` 位于 `th_14_panels.js` 之后。
 - `th_14_icon_picker.js` 应位于 `th_14_panels.js` 之后、`th_15_extra.js` 之前。
 - `th_15_extra.js` 依赖前面 UI、主题、设置、页面构建能力。
 - `th_16_entry.js` 最后加载，负责真正启动实例。
@@ -574,7 +602,7 @@ th_14_panels.js
 ├── SettingsHome
 ├── SettingsGroupPage
 ├── ButtonManagerPage
-├── ButtonEditorPage
+├── UpdateStatusCard
 └── CommonPopupOverlay
 
 th_09_animation.js
@@ -589,6 +617,16 @@ th_09_animation.js
 ---
 
 ## 更新记录
+
+### 2026-07-02
+
+**设置页更新状态优化**
+
+- 设置页欢迎卡增加更新状态胶囊，直接展示最新、已同步、普通更新和更新异常状态。
+- 新增展开的更新详情区域，展示 release notes、更新源、校验模式、安全状态和同步模块。
+- 大屏设置目录同步显示更新状态，减少进入日志页确认版本的步骤。
+- 启动返回 JSON 增加 `更新状态`、`更新标题`、`更新内容` 字段，便于外部规则直接读取。
+- 入口默认更新模式调整为 `UPDATE_SECURITY_MODE = 1`，使用 manifest 哈希校验作为默认更新链路。
 
 ### 2026-05-23
 
