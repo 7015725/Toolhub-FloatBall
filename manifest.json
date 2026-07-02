@@ -70,8 +70,8 @@
       "size": 24999
     },
     "th_14_panels.js": {
-      "sha256": "9ad5cab6040a087c4579a7b0b68c4fde9c63aab5e59a44543925a96285869eb3",
-      "size": 98268
+      "sha256": "5b31ac5ebc0625441eb556e3305ee4cfde5eca609aa55e14de0670d338828966",
+      "size": 99918
     },
     "th_14_schema_editor.js": {
       "sha256": "748e0f608f5edf80edc638073f715f5b45ab6dc97750bebb43900df25020e61d",
@@ -89,13 +89,13 @@
   "keyId": "toolhub-targets-2026-rsa3072",
   "release": {
     "changes": [
-      "设置页欢迎卡增加更新状态胶囊",
-      "新增展开的更新详情和 release notes 展示",
-      "大屏设置目录同步显示更新状态"
+      "优化设置页欢迎卡身份区与状态胶囊布局",
+      "配置状态与更新状态分区展示",
+      "大屏设置目录同步显示配置状态"
     ],
     "date": "2026-07-02",
-    "title": "设置页更新状态优化"
+    "title": "设置页欢迎卡 UI 优化"
   },
   "schema": 2,
-  "version": 20260702094202
+  "version": 20260702135935
 }
