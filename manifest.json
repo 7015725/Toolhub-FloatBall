@@ -14,8 +14,8 @@
       "size": 5598
     },
     "th_04_theme.js": {
-      "sha256": "dab2d0feab9ee22f9e7fd81614f8bb261136e31c801749e6e0d27cc350aaaa08",
-      "size": 44550
+      "sha256": "e1dcfc9b95571dcfc9a17570ed551d2fe2ad5a62fc87f236493daadd1f278f39",
+      "size": 48008
     },
     "th_05_persistence.js": {
       "sha256": "13a4bb5a625a22a5b6e523cc15b173fceb4c3225c52d8723e0b027cae8e5de5e",
@@ -70,12 +70,12 @@
       "size": 24999
     },
     "th_14_panels.js": {
-      "sha256": "5f60b19df49a8adac23408b67e1bce823a4021679c4e03232b9a3c038e02472b",
-      "size": 115350
+      "sha256": "5e8c064705ee8b3b5f444b2906c2e8fc20276ff1f572c0249b711ac42b6a9bc9",
+      "size": 115100
     },
     "th_14_schema_editor.js": {
-      "sha256": "bc4bf6f9760277ee8cdeca48c53661bd885bae0178abeceb55ab455b421b052e",
-      "size": 20760
+      "sha256": "903fb69f973af2a722ea2536bd86099005bb07605616028d5ae9c388fe2981e0",
+      "size": 22247
     },
     "th_15_extra.js": {
       "sha256": "fbf0fbce6326981aae2a709909d13c796bb8094a01cdaf2628a20324b4e517bf",
@@ -89,11 +89,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "收敛调试日志输出",
-      "增强返回手势异常日志"
+      "修复了因更新清单未同步导致设置页无法检测到新更新的问题"
     ],
     "title": "ToolHub 悬浮球更新"
   },
   "schema": 2,
-  "version": 20260703075605
+  "version": 20260703090922
 }
