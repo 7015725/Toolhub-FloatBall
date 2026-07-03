@@ -474,6 +474,13 @@ FloatBallAppWM.prototype.getToolHubUpdateVisual = function(updateState, T, isDar
     visual.textColor = warningColor;
     visual.bg = warningBg;
     visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+  } else if (s === "restarting") {
+    visual.icon = "↻";
+    visual.label = "正在重启";
+    visual.sub = "稍候";
+    visual.textColor = warningColor;
+    visual.bg = warningBg;
+    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
   } else if (s === "updated") {
     visual.icon = "↻";
     visual.label = updateState && updateState.needRestart ? "已更新，重启生效" : "模块已更新";
@@ -710,6 +717,63 @@ FloatBallAppWM.prototype.startToolHubModuleUpdateFromSettings = function(anchorV
   }
 };
 
+FloatBallAppWM.prototype.startToolHubRestartFromSettings = function(anchorView) {
+  var self = this;
+  try {
+    if (typeof restartToolHubFromSettings !== "function") {
+      try { this.toast("重启模块未加载，请重新运行 ToolHub 入口"); } catch(eToast0) {}
+      return;
+    }
+    var cur = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
+    var statusText = cur ? String(cur.status || "") : "";
+    if (statusText === "checking") {
+      try { this.toast("检查正在进行"); } catch(eToast1) {}
+      return;
+    }
+    if (statusText === "installing") {
+      try { this.toast("更新正在进行"); } catch(eToast2) {}
+      return;
+    }
+    try { this.toast("正在重启 ToolHub"); } catch(eToast3) {}
+    try {
+      if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
+        TOOLHUB_UPDATE_STATE.status = "restarting";
+        TOOLHUB_UPDATE_STATE.error = "";
+      }
+    } catch(eState0) {}
+    try { if (this.replaceToolAppPage) this.replaceToolAppPage("settings"); } catch(eRefresh0) {}
+    new java.lang.Thread(new java.lang.Runnable({
+      run: function() {
+        var ret = null;
+        try {
+          ret = restartToolHubFromSettings();
+        } catch(eRun) {
+          ret = { ok: false, msg: "重启失败：" + String(eRun), error: String(eRun) };
+          try {
+            if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
+              TOOLHUB_UPDATE_STATE.ok = false;
+              TOOLHUB_UPDATE_STATE.status = "error";
+              TOOLHUB_UPDATE_STATE.error = String(eRun);
+            }
+          } catch(eState1) {}
+        }
+        if (ret && ret.ok === false) {
+          try {
+            self.runOnUiThreadSafe(function() {
+              try { self.toast(ret.msg || "重启失败"); } catch(eToast4) {}
+              try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eRefresh1) {}
+            });
+          } catch(eUi) {
+            try { if (anchorView && anchorView.post) anchorView.post(new java.lang.Runnable({ run: function() { try { self.toast(ret.msg || "重启失败"); } catch(ePostToast) {} } })); } catch(ePost) {}
+          }
+        }
+      }
+    })).start();
+  } catch(eStart) {
+    try { this.toast("启动重启失败"); safeLog(this.L, "e", "start restart thread fail err=" + String(eStart)); } catch(eToast5) {}
+  }
+};
+
 FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -788,9 +852,15 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   } else if (statusName === "installing") {
     var runningTv = addLine(this, box, "正在后台下载并校验模块，请稍候。", T.primaryDeep, 12, true);
     runningTv.setPadding(0, this.dp(10), 0, 0);
+  } else if (statusName === "restarting") {
+    var restartingTv = addLine(this, box, "正在关闭旧悬浮球并重新启动 ToolHub。", T.primaryDeep, 12, true);
+    restartingTv.setPadding(0, this.dp(10), 0, 0);
   } else if (updateState && updateState.needRestart) {
-    var restartTv = addLine(this, box, "更新已写入本地，重启 ToolHub 后生效。", T.primaryDeep, 12, true);
+    var restartTv = addLine(this, box, "更新已下载完成，重启 ToolHub 后生效。", T.primaryDeep, 12, true);
     restartTv.setPadding(0, this.dp(10), 0, 0);
+    addActionButton("重启 ToolHub", T.primary, T.onPrimary, "关闭并重新启动 ToolHub", function(v) {
+      try { self.startToolHubRestartFromSettings(v); } catch(eRestartBtn) { try { self.toast("启动重启失败"); safeLog(self.L, "e", "restart button fail err=" + String(eRestartBtn)); } catch(eToastRestartBtn) {} }
+    }, 10);
   } else {
     var hasAvailableUpdates = (statusName === "available" || (updateState && Number(updateState.availableCount || 0) > 0));
     if (hasAvailableUpdates) {

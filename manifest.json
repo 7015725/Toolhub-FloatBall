@@ -70,8 +70,8 @@
       "size": 24999
     },
     "th_14_panels.js": {
-      "sha256": "42eb0497e25f634c8d0f75d382fbf807f8d49e5b7065b96922b2f7c606f8b2c0",
-      "size": 112149
+      "sha256": "6426f4513c5765eb1f690e2424ffd6af6998baa0ce043694893c8bcaf261e9f7",
+      "size": 115350
     },
     "th_14_schema_editor.js": {
       "sha256": "bc4bf6f9760277ee8cdeca48c53661bd885bae0178abeceb55ab455b421b052e",
@@ -89,13 +89,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "统一设置页文案和配置范围",
-      "优化更新卡片按钮优先级",
-      "简化 Toast，错误详情保留在日志和更新卡片"
+      "设置页下载更新完成后增加重启 ToolHub 按钮",
+      "重启时关闭旧悬浮球并重新加载本地模块",
+      "增加重启中状态提示"
     ],
     "date": "2026-07-03",
-    "title": "设置页文案和更新卡片优化"
+    "title": "设置页更新重启体验"
   },
   "schema": 2,
-  "version": 20260703011004
+  "version": 20260703044854
 }

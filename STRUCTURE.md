@@ -4,6 +4,8 @@
 
 本文档用于整理 `7015725/Toolhub-FloatBall` 当前代码结构、启动链路、模块职责和主要状态流。项目运行环境为 **ShortX / Rhino ES5 JavaScript**，入口文件负责安全更新和模块加载，核心业务集中挂载到 `FloatBallAppWM.prototype`。
 
+维护要求：每次修改或调整 ToolHub 后，必须同步推送到 GitHub 和 Gitea 两个仓库。
+
 ---
 
 ## 1. 总体架构

@@ -16,6 +16,12 @@ GitHub 镜像地址：
 https://github.com/7015725/Toolhub-FloatBall
 ```
 
+维护要求：
+
+```text
+每次修改或调整 ToolHub 后，必须同步推送到 GitHub 和 Gitea 两个仓库。
+```
+
 整体结构说明：
 
 ```text

@@ -839,6 +839,80 @@ for (var i = 0; i < modules.length; i++) {
 if (__trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveInstalledManifestFromLocal();
 if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveTrustedVersion(__trustedManifest.version);
 
+var TOOLHUB_ACTIVE_APP = null;
+var __toolHubRestartRunning = false;
+
+function closeToolHubAppForRestart(appObj) {
+  try {
+    if (!appObj) return;
+    if (appObj.state && appObj.state.h) {
+      appObj.state.h.post(new JavaAdapter(java.lang.Runnable, {
+        run: function() { try { appObj.close(); } catch(eClosePost) { writeLog("Restart close post failed: " + String(eClosePost)); } }
+      }));
+      return;
+    }
+    if (typeof appObj.close === "function") appObj.close();
+  } catch(eClose) {
+    writeLog("Restart close failed: " + String(eClose));
+  }
+}
+
+function reloadLocalToolHubModulesForRestart() {
+  var dir = ensureCodeDir();
+  for (var i = 0; i < modules.length; i++) {
+    var relPath = String(modules[i]);
+    var f = new java.io.File(dir, relPath);
+    if (!f.exists()) throw "本地模块不存在: " + relPath;
+    var code = readTextFile(f.getAbsolutePath());
+    if (code === null) throw "读取模块失败: " + relPath;
+    var geval = eval;
+    geval(String(code));
+  }
+}
+
+function restartToolHubFromSettings() {
+  if (__toolHubRestartRunning) return { ok: false, running: true, msg: "ToolHub 正在重启" };
+  __toolHubRestartRunning = true;
+  try { writeLog("Restart requested from settings"); } catch(eLog0) {}
+  new java.lang.Thread(new java.lang.Runnable({
+    run: function() {
+      try {
+        var oldApp = null;
+        try { oldApp = TOOLHUB_ACTIVE_APP; } catch(eOld) { oldApp = null; }
+        closeToolHubAppForRestart(oldApp);
+        try { java.lang.Thread.sleep(800); } catch(eSleep) {}
+        reloadLocalToolHubModulesForRestart();
+        var entryInfo = getProcessInfo("restart");
+        var logger = new ToolHubLogger(entryInfo);
+        installCrashHandler(logger);
+        var app = new FloatBallAppWM(logger);
+        TOOLHUB_ACTIVE_APP = app;
+        var closeRule = String(app.config.ACTION_CLOSE_ALL_RULE || "shortx.wm.floatball.CLOSE");
+        var startRet = app.startAsync(entryInfo, closeRule);
+        if (startRet && startRet.ok) {
+          try {
+            if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
+              TOOLHUB_UPDATE_STATE.needRestart = false;
+              TOOLHUB_UPDATE_STATE.status = "latest";
+              TOOLHUB_UPDATE_STATE.availableCount = 0;
+              TOOLHUB_UPDATE_STATE.availableModules = [];
+              TOOLHUB_UPDATE_STATE.error = "";
+            }
+          } catch(eState) {}
+          try { writeLog("Restart finished, closeAction=" + String(startRet.closeAction || "")); } catch(eLog1) {}
+        } else {
+          try { writeLog("Restart start failed: " + String(startRet && startRet.err ? startRet.err : "unknown")); } catch(eLog2) {}
+        }
+      } catch(eRestart) {
+        try { writeLog("Restart failed: " + String(eRestart)); } catch(eLog3) {}
+      } finally {
+        __toolHubRestartRunning = false;
+      }
+    }
+  })).start();
+  return { ok: true, msg: "正在重启 ToolHub" };
+}
+
 var __out = (function() {
   if (typeof getProcessInfo !== "function") {
     return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心函数 getProcessInfo 未定义，请检查 th_01_base.js 是否加载成功" };
@@ -937,6 +1011,7 @@ var __out = (function() {
   var logger = new ToolHubLogger(entryInfo);
   installCrashHandler(logger);
   var app = new FloatBallAppWM(logger);
+  TOOLHUB_ACTIVE_APP = app;
   var closeRule = String(app.config.ACTION_CLOSE_ALL_RULE || "shortx.wm.floatball.CLOSE");
   var startRet = null;
   try { startRet = app.startAsync(entryInfo, closeRule); }
