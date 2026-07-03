@@ -1,6 +1,6 @@
 # ToolHub-FloatBall 整体结构说明
 
-更新时间：2026-05-23
+更新时间：2026-07-03
 
 本文档用于整理 `7015725/Toolhub-FloatBall` 当前代码结构、启动链路、模块职责和主要状态流。项目运行环境为 **ShortX / Rhino ES5 JavaScript**，入口文件负责安全更新和模块加载，核心业务集中挂载到 `FloatBallAppWM.prototype`。
 
@@ -42,6 +42,7 @@ Toolhub-FloatBall/
 ├── ToolHub.js.sha256
 ├── README.md
 ├── STRUCTURE.md
+├── ARCHITECTURE.md
 ├── manifest.json
 ├── manifest.sig
 ├── code/
@@ -58,16 +59,24 @@ Toolhub-FloatBall/
 │   ├── th_12_rebuild.js
 │   ├── th_13_panel_ui.js
 │   ├── th_14_panels.js
+│   ├── th_14_button_shortcut.js
+│   ├── th_14_button_icon_editor.js
+│   ├── th_14_button_editor.js
 │   ├── th_14_color_picker.js
 │   ├── th_14_icon_picker.js
 │   ├── th_14_schema_editor.js
 │   ├── th_15_extra.js
 │   └── th_16_entry.js
 └── scripts/
-    └── generate_signed_manifest.py
+    ├── generate_signed_manifest.py
+    ├── verify_manifest.py
+    ├── verify_button_editor_layout.py
+    ├── verify_schema_validator.py
+    ├── verify_toolapp_adaptive_size.py
+    └── verify_toolapp_single_root.py
 ```
 
-当前实际加载 **18 个子模块**。旧文档中“16 个子模块”的说法已经过期，因为 `th_14_*` 已拆出颜色选择器、图标选择器和 schema 编辑器；`th_07_shortcut.js` 已退役，快捷方式选择逻辑并入 `th_14_panels.js`。
+当前实际加载 **21 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮编辑、颜色选择器、图标选择器和 schema 编辑器；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载。
 
 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而有意保留，不是遗漏；本仓库不会为了填补空号重命名历史文件，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
 
@@ -172,7 +181,7 @@ shortx.getShortXDir()/ToolHub/
 
 ```javascript
 var UPDATE_SOURCE = 1;          // 0: Gitea, 1: GitHub
-var UPDATE_SECURITY_MODE = 0;   // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
+var UPDATE_SECURITY_MODE = 2;   // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 ```
 
 关键模块：
@@ -202,12 +211,15 @@ th_16_entry.js
 | `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut |
 | `th_12_rebuild.js` | 悬浮球重建、尺寸 / 图标 / 配置变化刷新 |
 | `th_13_panel_ui.js` | 设置项基础 UI：section、bool、int、float、action、文本输入等 |
-| `th_14_panels.js` | 设置主页、设置分组、按钮管理、按钮编辑、内联快捷方式选择、弹窗基础、主题适配 |
+| `th_14_panels.js` | 设置主页、设置分组、按钮管理入口、弹窗基础、主题适配、更新状态展示 |
+| `th_14_button_shortcut.js` | 内联快捷方式选择、快捷方式图标异步加载与回填 |
+| `th_14_button_icon_editor.js` | 按钮图标编辑、图标来源选择与颜色联动 |
+| `th_14_button_editor.js` | 按钮编辑页、动作参数、保存校验与页面内反馈 |
 | `th_14_color_picker.js` | 颜色选择器：最近色、常用色、RGB、透明度、实时预览 |
 | `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
-| `th_14_schema_editor.js` | Schema 编辑器 |
+| `th_14_schema_editor.js` | 设置结构编辑器 |
 | `th_15_extra.js` | 主面板构建、ToolApp Shell、页面栈、响应式布局、左右滑返回预览 |
-| `th_16_entry.js` | 主线程同步、广播注册、`startAsync`、`close`、`dispose`、生命周期管理 |
+| `th_16_entry.js` | 主线程同步、广播注册、实例注册、`startAsync`、`close`、`dispose`、设置页重启 |
 
 ---
 
@@ -251,7 +263,8 @@ state
 │   ├── pendingUserCfg
 │   ├── pendingDirty
 │   └── previewMode
-└── closing
+├── closing
+└── closed
 ```
 
 ---
@@ -445,27 +458,41 @@ BALL_POS_DOCK_SIDE
 
 ```text
 1. 生成关闭广播 action
-2. 先发关闭广播清理旧实例
-3. 创建 HandlerThread
-4. 注册关闭广播 / 配置变化广播 / 系统对话框关闭广播
-5. 创建悬浮球 View
-6. addView 到 WindowManager
-7. 启动屏幕旋转监控
-8. 返回启动结果 JSON
+2. 创建 HandlerThread
+3. 注册关闭广播 / 配置变化广播 / 系统对话框关闭广播
+4. 创建悬浮球 View
+5. addView 到 WindowManager
+6. 启动屏幕旋转监控
+7. 返回启动结果 JSON
 ```
+
+入口在创建新实例前会检查 `TOOLHUB_ACTIVE_APP`，并通过 `closeToolHubAppsForRestart()` 先关闭旧实例。
 
 ### close
 
 ```text
 1. 标记 closing
-2. 取消吸边定时器
+2. 取消吸边定时器与未完成动画
 3. 停止屏幕监听
 4. 保存悬浮球位置
 5. flush 待写配置
-6. 移除所有面板和悬浮球
+6. 使用 removeViewImmediate 移除所有面板和悬浮球
 7. 注销广播接收器
 8. 退出 HandlerThread
-9. 清理图标 / shortcut 缓存
+9. 标记 state.closed 并从实例注册表移除
+10. 清理图标 / shortcut 缓存
+```
+
+### restartToolHubFromSettings
+
+```text
+1. 设置页点击“重启 ToolHub”
+2. 设置 TOOLHUB_UPDATE_STATE.status = restarting
+3. 广播关闭 action 清理旧实例
+4. 遍历 TOOLHUB_APP_REGISTRY 并逐个 close
+5. 对旧实例 Handler 投递 close，并用 CountDownLatch 等待关闭完成
+6. 重新读取本地模块并创建新 FloatBallAppWM
+7. 新实例 startAsync 后更新状态为 latest
 ```
 
 ---
@@ -500,10 +527,11 @@ ToolHub.js 内置 RSA 公钥
 当前 `manifest.json` 信息：
 
 ```text
-schema: 2
+schema: 3
+version: 20260703110021
 alg: SHA256withRSA
-keyId: toolhub-targets-2026-rsa3072
-files: 18 个模块
+keyId: toolhub-targets-20260703-rsa3072
+files: 21 个模块
 ```
 
 ---
@@ -529,7 +557,8 @@ ToolHub.js.sha256
 ```text
 base → core → icon/theme/persistence/parser/content
 → animation/shell/action/rebuild
-→ panel_ui → panels → picker/editor → extra → entry
+→ panel_ui → panels → button_shortcut / button_icon_editor / button_editor
+→ color_picker / icon_picker / schema_editor → extra → entry
 ```
 
 尤其注意：
@@ -556,7 +585,7 @@ base → core → icon/theme/persistence/parser/content
 
 - `th_15_extra.js` 和 `th_14_panels.js` 仍偏大，后续建议继续拆分。
 - 大量方法挂载到同一个 prototype，隐式依赖较多。
-- `UPDATE_SECURITY_MODE` 当前默认是 `0`，严格安全更新应改为 `2`。
+- 入口文件是信任根，升级入口仍需要用户手动替换 ShortX JS 任务内容。
 - 文档中的模块数量需要持续与 `manifest.json` 保持一致。
 - 非关键模块加载失败后可能继续启动，运行期才暴露缺失方法。
 

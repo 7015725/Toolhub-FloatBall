@@ -1,8 +1,8 @@
 # ToolHub 技术架构
 
-更新时间：2026-05-23
+更新时间：2026-07-03
 
-本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **18 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择逻辑已并入 `th_14_panels.js`。
+本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **21 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载。
 
 ---
 
@@ -24,7 +24,7 @@ ShortX JS 任务入口
 - `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
 - `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
 - `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
-- `code/th_*.js`：入口按顺序加载的子模块，当前为 18 个。
+- `code/th_*.js`：入口按顺序加载的子模块，当前为 21 个。
 
 ---
 
@@ -92,7 +92,7 @@ ballRoot / ballContent Touch
 
 ## 3. 模块分层
 
-当前实际加载 18 个子模块，入口 `modules[]` 顺序如下：
+当前实际加载 21 个子模块，入口 `modules[]` 顺序如下：
 
 ```text
 基础能力层
@@ -113,6 +113,9 @@ ballRoot / ballContent Touch
 UI 基础与页面层
   th_13_panel_ui.js
   th_14_panels.js
+  th_14_button_shortcut.js
+  th_14_button_icon_editor.js
+  th_14_button_editor.js
   th_14_color_picker.js
   th_14_icon_picker.js
   th_14_schema_editor.js
@@ -126,7 +129,7 @@ UI 基础与页面层
 
 ```text
 th_01_base.js
-  基础工具、路径常量、配置校验、ConfigManager、ConfigValidator、FileIO、日志基础、Base64、默认配置。 
+  基础工具、路径常量、配置校验、ConfigManager、ConfigValidator、FileIO、日志基础、Base64、默认配置。
 
 th_02_core.js
   FloatBallAppWM 构造函数、this.state 初始化、dp/sp/now/clamp、runOnUiThreadSafe、UI 工具对象初始化。
@@ -162,7 +165,16 @@ th_13_panel_ui.js
   设置项基础 UI：section、bool、int、float、action、文本输入等组件。
 
 th_14_panels.js
-  设置主页、设置分组、按钮管理、按钮编辑、内联快捷方式选择、弹窗基础、主题适配。
+  设置主页、设置分组、按钮管理入口、弹窗基础、主题适配、更新状态展示。
+
+th_14_button_shortcut.js
+  内联快捷方式选择、快捷方式图标异步加载与回填。
+
+th_14_button_icon_editor.js
+  按钮图标编辑、图标来源选择与颜色联动。
+
+th_14_button_editor.js
+  按钮编辑页、动作参数、保存校验与页面内反馈。
 
 th_14_color_picker.js
   颜色选择器：常用色、最近色、RGB、透明度、实时预览。
@@ -171,19 +183,19 @@ th_14_icon_picker.js
   ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay。
 
 th_14_schema_editor.js
-  Schema 编辑器。
+  设置结构编辑器。
 
 th_15_extra.js
   主面板构建、ToolApp Shell、页面栈、响应式布局、左右滑返回预览。
 
 th_16_entry.js
-  runOnMainSync、registerReceiverOnMain、startAsync、close、dispose、广播注册与生命周期收尾。
+  runOnMainSync、registerReceiverOnMain、startAsync、close、dispose、实例注册、设置页重启与生命周期收尾。
 ```
 
 说明：
 
 - `th_07_shortcut.js` 已退役。
-- `th_07` 编号空洞保留，不补位、不重命名，避免影响入口加载表、manifest、旧缓存和实机稳定性。
+- `th_07` 编号空洞保留，历史文件名保持稳定，避免影响入口加载表、manifest、旧缓存和实机稳定性。
 - 当前仍存在 `th_14_*` 多个模块，这是历史演进结果；新模块命名规则见本文后续章节。
 
 ---
@@ -226,10 +238,10 @@ ToolHub.js
 
 ```javascript
 var UPDATE_SOURCE = 1;        // 0: Gitea, 1: GitHub
-var UPDATE_SECURITY_MODE = 0; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
+var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 ```
 
-- `UPDATE_SECURITY_MODE` 当前默认是 `0`，即普通更新模式。
+- `UPDATE_SECURITY_MODE` 当前默认是 `2`，即完整验签安全更新模式。
 - 入口中 `criticalModules` 包含 `th_01_base.js` 和 `th_16_entry.js`，这两个模块加载失败会中断启动。
 - 其他模块加载失败会记录到 `loadErrors`，但不一定立即中断，可能在运行期暴露功能缺失。
 - 入口会在启动返回 JSON 中汇总安全状态、同步状态、布局、关闭广播、更新模块和加载异常。
@@ -247,8 +259,8 @@ ToolHub.js 内置 RSA 公钥
 下载 manifest.json
    │
    ├─ manifest.alg = SHA256withRSA
-   ├─ manifest.keyId = toolhub-targets-2026-rsa3072
-   ├─ manifest.version
+   ├─ manifest.keyId = toolhub-targets-20260703-rsa3072
+   ├─ manifest.version = 20260703110021
    └─ manifest.files[模块名].sha256 / size
    │
    ▼
@@ -291,7 +303,7 @@ verifyManifestSignature(manifestText, sigText, keyId)
 
 ```text
 UPDATE_SECURITY_MODE = 0
-  普通更新模式：不启用签名 / manifest 严格校验，按远端文件更新。当前默认值为 0。
+  普通更新模式：跳过签名 / manifest 严格校验，按远端文件更新。
 
 UPDATE_SECURITY_MODE = 1
   manifest 哈希校验模式：读取 manifest.json，按 manifest 中的 size / sha256 校验模块。
@@ -318,7 +330,7 @@ UPDATE_SECURITY_MODE = 2
 shortx.getShortXDir()/ToolHub/
 ├── code/
 │   ├── th_01_base.js
-│   ├── ... 18 个当前子模块
+│   ├── ... 21 个当前子模块
 │   ├── th_16_entry.js
 │   ├── .trusted_manifest_version
 │   └── .trusted_sha_<module>
@@ -420,7 +432,8 @@ this.state
 │   ├── previewMode
 │   └── buttonManagerQuery
 │
-└── closing
+├── closing
+└── closed
 ```
 
 状态设计要点：
@@ -486,6 +499,7 @@ ToolApp Shell
 - 设置分组：按 schema 分组渲染配置项。
 - 按钮管理：搜索、列表、启用/禁用、排序、删除、新增。
 - 按钮编辑：一页式编辑，包含基础信息、图标外观、动作设置等区域。
+- 按钮快捷方式与图标编辑：由拆分模块承载，减少主设置模块体积。
 - schema 编辑：编辑设置页 schema。
 
 ---
@@ -947,7 +961,6 @@ BALL_POS_DOCK_SIDE
 startAsync(entryInfo, closeRule)
    │
    ├─ 准备关闭广播 action
-   ├─ 先发送关闭广播清理旧实例
    ├─ 创建 HandlerThread
    ├─ 在线程中创建 / 操作 WindowManager View
    ├─ registerReceiverOnMain() 注册广播
@@ -960,19 +973,38 @@ startAsync(entryInfo, closeRule)
    └─ 返回启动结果
 ```
 
+入口创建新实例前会读取 `TOOLHUB_ACTIVE_APP`，并通过 `closeToolHubAppsForRestart()` 关闭旧实例。
+
 `close`：
 
 ```text
 close(reason)
    │
    ├─ 标记 closing
-   ├─ 取消吸边 / 长按 / 返回预览等异步任务
+   ├─ 取消吸边 / 长按 / 返回预览 / View 动画等异步任务
    ├─ 停止屏幕监听
    ├─ 保存悬浮球位置
    ├─ flushDebouncedWrites()
-   ├─ 移除 mask / panel / viewerPanel / ballRoot
+   ├─ removeViewImmediate 移除 mask / panel / viewerPanel / ballRoot
    ├─ 注销 receivers
-   └─ 退出 HandlerThread
+   ├─ 退出 HandlerThread
+   ├─ 标记 state.closed
+   └─ 从 TOOLHUB_APP_REGISTRY 移除当前实例
+```
+
+`restartToolHubFromSettings`：
+
+```text
+设置页重启
+   │
+   ├─ 设置 TOOLHUB_UPDATE_STATE.status = restarting
+   ├─ 发送关闭广播
+   ├─ 遍历 TOOLHUB_APP_REGISTRY
+   ├─ 对旧实例 Handler 投递 close()
+   ├─ CountDownLatch 等待旧实例关闭完成
+   ├─ reloadLocalToolHubModulesForRestart()
+   ├─ new FloatBallAppWM(logger)
+   └─ startAsync(entryInfo, closeRule)
 ```
 
 `dispose`：
@@ -1092,7 +1124,7 @@ th_<两位编号>_<模块名>.js
 当前实际情况：
 
 ```text
-当前模块数量：18
+当前模块数量：21
 已退役模块：th_07_shortcut.js
 当前历史空洞：th_07
 当前偏历史的 UI 编号：th_13 / th_14 / th_15 / th_16
@@ -1117,8 +1149,8 @@ prototype 方法过多
 非关键模块失败可能运行期暴露
   除 th_01_base.js / th_16_entry.js 外，其他模块加载失败会被记录到 loadErrors，但不一定立即中断。
 
-UPDATE_SECURITY_MODE 默认 0
-  当前入口默认普通更新模式，未启用完整签名验签。严格安全更新需要手动设为 2。
+入口信任根升级
+  ToolHub.js 内置公钥、最低可信版本和入口模块表，入口文件变更后需要用户手动替换 ShortX JS 任务内容。
 ```
 
 建议拆分方向：

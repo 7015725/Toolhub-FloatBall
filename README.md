@@ -41,7 +41,8 @@ STRUCTURE.md
 - **防回滚**：入口内置 `MIN_TRUSTED_MANIFEST_VERSION`，并在完整验签模式下记录本地已信任清单版本，拒绝旧版本清单。
 - **本地可信回退**：网络或远端清单异常时，已验证过的本地模块可继续使用。
 - **App 化设置页**：设置主页、按钮管理、按钮编辑、设置结构编辑等页面使用统一 ToolApp Shell 与页面栈。
-- **更新状态可视化**：设置页欢迎卡显示更新状态胶囊，展开后展示 release notes、更新源、校验模式和同步模块，并支持手动检查与立即更新。
+- **更新状态可视化**：设置页欢迎卡显示更新状态胶囊，展开后展示 release notes、更新源、校验模式和同步模块，并支持手动检查、立即更新与重启 ToolHub。
+- **设置页内重启**：更新下载完成后可在设置页直接重启；重启前会广播关闭旧实例，并等待旧悬浮窗释放后再启动新 UI。
 - **系统返回适配**：支持返回键、Android 13+ 返回回调、Android 14+ 预测性返回，并内置 ToolApp 左右滑返回。
 - **Surface 滑动返回**：可在 ToolApp 页面任意位置横滑返回，避免全面屏系统手势抢占极窄边缘区域。
 - **ShortX 图标选择器**：支持图标点选、搜索、分页、收藏、最近、过滤，不再依赖手填图标名。
@@ -155,6 +156,7 @@ Toolhub-FloatBall/
 ├── ToolHub.js.sha256
 ├── README.md
 ├── STRUCTURE.md
+├── ARCHITECTURE.md
 ├── manifest.json
 ├── manifest.sig
 ├── code/
@@ -180,7 +182,12 @@ Toolhub-FloatBall/
 │   ├── th_15_extra.js
 │   └── th_16_entry.js
 └── scripts/
-    └── generate_signed_manifest.py
+    ├── generate_signed_manifest.py
+    ├── verify_manifest.py
+    ├── verify_button_editor_layout.py
+    ├── verify_schema_validator.py
+    ├── verify_toolapp_adaptive_size.py
+    └── verify_toolapp_single_root.py
 ```
 
 ---
@@ -193,38 +200,36 @@ Toolhub-FloatBall/
 {
   "ok": true,
   "状态": "ToolHub 启动成功",
-  "安全": "⚠ manifest哈希校验模式 v20260702094202",
+  "安全": "✓ 已验签 v20260703110021 / toolhub-targets-20260703-rsa3072",
   "同步": "✓ 子模块已是最新",
   "更新状态": "latest",
   "布局": "4×4",
   "关闭广播": "shortx.wm.floatball.CLOSE",
-  "更新标题": "设置页文案和更新卡片优化",
+  "更新标题": "修复旧 UI 残留",
   "更新内容": [
-    "统一设置页文案和配置范围",
-    "优化更新卡片按钮优先级",
-    "简化 Toast，错误详情保留在日志和更新卡片"
+    "修复了因更新重启关闭未等待完成导致旧 UI 残留的问题",
+    "优化重启前实例清理，先广播关闭并等待旧悬浮窗释放后再启动新 UI"
   ]
 }
 ```
 
-### 正常启动，有模块更新
+### 正常启动，发现可更新模块
 
 ```json
 {
   "ok": true,
   "状态": "ToolHub 启动成功",
-  "安全": "⚠ manifest哈希校验模式 v20260702094202",
-  "同步": "✓ 已更新 2 个模块：th_14_panels.js、th_16_entry.js",
-  "更新状态": "updated",
+  "安全": "✓ 已验签 v20260703110021 / toolhub-targets-20260703-rsa3072",
+  "同步": "↻ 有 2 个子模块可更新",
+  "更新状态": "available",
   "布局": "4×4",
   "关闭广播": "shortx.wm.floatball.CLOSE",
-  "更新标题": "设置页文案和更新卡片优化",
+  "更新标题": "修复旧 UI 残留",
   "更新内容": [
-    "统一设置页文案和配置范围",
-    "优化更新卡片按钮优先级",
-    "简化 Toast，错误详情保留在日志和更新卡片"
+    "修复了因更新重启关闭未等待完成导致旧 UI 残留的问题",
+    "优化重启前实例清理，先广播关闭并等待旧悬浮窗释放后再启动新 UI"
   ],
-  "更新模块": ["th_14_panels.js", "th_16_entry.js"]
+  "可更新模块": ["th_09_animation.js", "th_16_entry.js"]
 }
 ```
 
@@ -243,7 +248,7 @@ Toolhub-FloatBall/
 
 ## 安全更新机制
 
-当前更新链路不是旧版 `Last-Modified` 热更新，而是：
+当前更新链路：
 
 1. `ToolHub.js` 内置可信 RSA 公钥。
 2. 远端仓库分发：
@@ -256,12 +261,14 @@ Toolhub-FloatBall/
 6. 完整验签模式会检查 `manifest.keyId`、最低可信版本和本地已信任版本。
 7. 每个模块下载到 `.tmp`。
 8. 校验通过才覆盖本地模块。
-9. 所有模块加载正常后，保存本地可信清单版本。
+9. 启动阶段发现可信本地模块落后于远端清单时，保留当前模块并标记“可更新”。
+10. 设置页点击“立即更新”后下载覆盖模块，再点击“重启 ToolHub”让新模块生效。
+11. 所有模块加载正常后，保存本地可信清单版本。
 
 当前 keyId：
 
 ```text
-toolhub-targets-2026-rsa3072
+toolhub-targets-20260703-rsa3072
 ```
 
 ---
@@ -543,13 +550,14 @@ ToolHub.js.sha256
 
 然后再提交并推送。
 
-### 修改 README / STRUCTURE
+### 修改 README / STRUCTURE / ARCHITECTURE
 
 只改以下文档不需要重新签名，因为它们不参与手机端模块校验：
 
 ```text
 README.md
 STRUCTURE.md
+ARCHITECTURE.md
 ```
 
 ### 注意事项
@@ -626,6 +634,12 @@ th_09_animation.js
 
 ### 2026-07-03
 
+**修复旧 UI 残留**
+
+- 修复了因更新重启关闭未等待完成导致旧 UI 残留的问题。
+- 更新重启前会广播关闭并清扫已注册实例，等待旧悬浮窗释放后再启动新实例。
+- 关闭流程取消 View 动画并使用 `removeViewImmediate`，完成后标记 `state.closed` 并从实例注册表移除。
+
 **设置页文案和更新卡片优化**
 
 - 统一设置页文案，把“气球 / 小屋 / 蓝图 / 岛屿”等拟物名称调整为“悬浮球 / 工具面板 / 设置结构 / 设置”。
@@ -650,7 +664,7 @@ th_09_animation.js
 **模块化与结构整理**
 
 - 新增 `STRUCTURE.md`，整理整体结构、启动链路、模块职责、ToolApp 页面栈和返回手势结构。
-- README 同步当前实际 18 个子模块，并补充 `th_14_color_picker.js`、`th_14_icon_picker.js`、`th_14_schema_editor.js` 的职责。
+- README 同步模块化结构，并补充 `th_14_color_picker.js`、`th_14_icon_picker.js`、`th_14_schema_editor.js` 的职责。
 - 退役无入口的 `th_07_shortcut.js`；快捷方式选择逻辑已并入 `th_14_panels.js` 的按钮编辑页。
 - 拆分 ShortX 图标选择器到 `th_14_icon_picker.js`，降低 `th_14_panels.js` 体积。
 - 拆分颜色面板到 `th_14_color_picker.js`，并保留旧入口兼容路径。
@@ -680,12 +694,12 @@ th_09_animation.js
   - `0`：普通更新，不验签、不读 manifest、不防回滚。
   - `1`：manifest 哈希校验，不验签。
   - `2`：完整安全更新，验签 + SHA256/size + 防回滚。
-- 当前默认改为 `UPDATE_SOURCE = 1`、`UPDATE_SECURITY_MODE = 0`，即 GitHub 普通更新模式，便于快速测试 UI 修改。
+- 调试阶段曾切到 GitHub 普通更新链路，便于快速测试 UI 修改。
 
 **文档更新**
 
 - README 补充 surface 滑动返回、子控件冲突处理、按钮动作类型、持久化结构和后续拆分建议。
-- README 同步当前模块化结构和普通更新模式说明。
+- README 同步模块化结构和更新模式说明。
 - README / STRUCTURE 补充子模块命名规则：明确 `th_<两位编号>_<模块名>.js` 格式、新编号分段、`th_07` 退役空洞保留策略，以及未来重命名时需要同步的入口、manifest、签名和文档文件。
 
 ### 2026-05-22
