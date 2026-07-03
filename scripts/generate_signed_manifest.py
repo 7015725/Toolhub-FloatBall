@@ -43,6 +43,21 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def read_module_version(path: Path) -> str:
+    try:
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines()[:5]:
+            line = line.strip()
+            if "@version" not in line:
+                continue
+            version_text = line.split("@version", 1)[1].strip().split()[0].strip()
+            parts = version_text.split(".")
+            if len(parts) == 3 and all(part.isdigit() for part in parts):
+                return version_text
+    except Exception:
+        pass
+    return "0.0.0"
+
+
 def git_output(args):
     try:
         return subprocess.check_output(["git", *args], cwd=ROOT, text=True, stderr=subprocess.STDOUT)
@@ -90,13 +105,14 @@ def main() -> None:
         if not path.exists():
             raise SystemExit(f"Missing module: {path}")
         files[name] = {
+            "version": read_module_version(path),
             "sha256": sha256_file(path),
             "size": path.stat().st_size,
         }
 
     version = args.version or int(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
     manifest = {
-        "schema": 2,
+        "schema": 3,
         "version": version,
         "keyId": args.key_id,
         "alg": "SHA256withRSA",

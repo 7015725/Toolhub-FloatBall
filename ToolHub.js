@@ -42,6 +42,7 @@ var TOOLHUB_UPDATE_STATE = {
     updatedModules: [],
     availableCount: 0,
     availableModules: [],
+    availableDetails: [],
     bootFixedCount: 0,
     bootFixedModules: [],
     needRestart: false,
@@ -530,6 +531,7 @@ function applyRuntimeUpdateState(availableNames, errText) {
         }
         TOOLHUB_UPDATE_STATE.availableCount = err.length > 0 ? 0 : names.length;
         TOOLHUB_UPDATE_STATE.availableModules = err.length > 0 ? [] : names;
+        TOOLHUB_UPDATE_STATE.availableDetails = err.length > 0 ? [] : copyRuntimeDetailList(__pendingModuleUpdates);
         TOOLHUB_UPDATE_STATE.needRestart = oldNeedRestart;
         TOOLHUB_UPDATE_STATE.lastCheckAt = Number(java.lang.System.currentTimeMillis());
         TOOLHUB_UPDATE_STATE.securityText = buildToolHubSecurityText();
@@ -544,7 +546,75 @@ function hashesEqual(a, b) {
     return String(a).toLowerCase() === String(b).toLowerCase();
 }
 
-function addPendingModuleUpdate(relPath, currentHash, expectedHash, expectedSize) {
+function parseModuleVersionText(v) {
+    var s = String(v || "0.0.0");
+    var arr = s.split(".");
+    var out = [0, 0, 0];
+    for (var i = 0; i < 3; i++) {
+        var n = parseInt(String(arr[i] || "0"), 10);
+        out[i] = isNaN(n) ? 0 : n;
+    }
+    return out;
+}
+
+function compareModuleVersion(a, b) {
+    var aa = parseModuleVersionText(a);
+    var bb = parseModuleVersionText(b);
+    for (var i = 0; i < 3; i++) {
+        if (aa[i] > bb[i]) return 1;
+        if (aa[i] < bb[i]) return -1;
+    }
+    return 0;
+}
+
+function readModuleVersionFromText(text) {
+    try {
+        var lines = String(text || "").split("\n");
+        var max = lines.length < 5 ? lines.length : 5;
+        for (var i = 0; i < max; i++) {
+            var line = String(lines[i] || "");
+            var m = line.match(/@version\s+([0-9]+\.[0-9]+\.[0-9]+)/);
+            if (m && m[1]) return String(m[1]);
+        }
+    } catch (eReadVersionText) {}
+    return "0.0.0";
+}
+
+function readModuleVersionFromFile(fileObj) {
+    try {
+        if (!fileObj || !fileObj.exists()) return "0.0.0";
+        var text = readTextFile(fileObj.getAbsolutePath());
+        if (text === null) return "0.0.0";
+        return readModuleVersionFromText(text);
+    } catch (eReadVersionFile) {}
+    return "0.0.0";
+}
+
+function getManifestModuleVersion(info) {
+    try {
+        if (info && info.version !== undefined && info.version !== null) return String(info.version);
+    } catch (eManifestVersion) {}
+    return "";
+}
+
+function copyRuntimeDetailList(list) {
+    var out = [];
+    if (!list || list.length === undefined) return out;
+    for (var i = 0; i < list.length; i++) {
+        var item = list[i] || {};
+        var name = runtimeOptString(item.module);
+        if (!name) continue;
+        out.push({
+            module: name,
+            localVersion: runtimeOptString(item.localVersion),
+            remoteVersion: runtimeOptString(item.remoteVersion),
+            reason: runtimeOptString(item.reason)
+        });
+    }
+    return out;
+}
+
+function addPendingModuleUpdate(relPath, currentHash, expectedHash, expectedSize, localVersion, remoteVersion, reason) {
     try {
         for (var i = 0; i < __pendingModuleUpdates.length; i++) {
             if (String(__pendingModuleUpdates[i].module || "") === String(relPath)) return;
@@ -553,7 +623,10 @@ function addPendingModuleUpdate(relPath, currentHash, expectedHash, expectedSize
             module: String(relPath),
             currentHash: currentHash ? String(currentHash).toLowerCase() : "",
             expectedHash: expectedHash ? String(expectedHash).toLowerCase() : "",
-            size: Number(expectedSize || 0)
+            size: Number(expectedSize || 0),
+            localVersion: localVersion ? String(localVersion) : "",
+            remoteVersion: remoteVersion ? String(remoteVersion) : "",
+            reason: reason ? String(reason) : ""
         });
     } catch (ePending) {}
 }
@@ -699,6 +772,7 @@ function installPendingModuleUpdates() {
         TOOLHUB_UPDATE_STATE.updatedModules = names;
         TOOLHUB_UPDATE_STATE.availableCount = 0;
         TOOLHUB_UPDATE_STATE.availableModules = [];
+        TOOLHUB_UPDATE_STATE.availableDetails = [];
         TOOLHUB_UPDATE_STATE.needRestart = names.length > 0;
         TOOLHUB_UPDATE_STATE.lastCheckAt = Number(now);
         TOOLHUB_UPDATE_STATE.error = "";
@@ -746,20 +820,39 @@ function checkToolHubModuleUpdatesNow() {
             if (!info || !info.sha256) throw "module not in trusted manifest: " + relPath;
             var expectedHash = String(info.sha256).toLowerCase();
             var expectedSize = Number(info.size || 0);
+            var remoteVersion = getManifestModuleVersion(info);
+            var localVersion = f.exists() ? readModuleVersionFromFile(f) : "0.0.0";
             var actualHash = f.exists() ? sha256File(f.getAbsolutePath()) : "";
-            if (actualHash && hashesEqual(actualHash, expectedHash)) {
-                saveTrustedSha(relPath, expectedHash);
+            if (!f.exists()) {
+                addPendingModuleUpdate(relPath, "", expectedHash, expectedSize, localVersion, remoteVersion, "missing");
+                names.push(relPath);
                 continue;
             }
-            if (!f.exists()) {
-                addPendingModuleUpdate(relPath, "", expectedHash, expectedSize);
-                names.push(relPath);
+            if (remoteVersion) {
+                var versionCmp = compareModuleVersion(remoteVersion, localVersion);
+                if (versionCmp > 0) {
+                    addPendingModuleUpdate(relPath, actualHash, expectedHash, expectedSize, localVersion, remoteVersion, "version");
+                    names.push(relPath);
+                    continue;
+                }
+                if (versionCmp === 0) {
+                    if (actualHash && hashesEqual(actualHash, expectedHash)) {
+                        saveTrustedSha(relPath, expectedHash);
+                        continue;
+                    }
+                    throw "本地子模块同版本内容异常：" + relPath;
+                }
+                writeLog("Local module version is newer, skip update " + relPath + " local=" + localVersion + " remote=" + remoteVersion);
+                continue;
+            }
+            if (actualHash && hashesEqual(actualHash, expectedHash)) {
+                saveTrustedSha(relPath, expectedHash);
                 continue;
             }
             var installedHash = getInstalledSha(relPath);
             var trustedHash = getTrustedSha(relPath);
             if (actualHash && (hashesEqual(actualHash, installedHash) || hashesEqual(actualHash, trustedHash))) {
-                addPendingModuleUpdate(relPath, actualHash, expectedHash, expectedSize);
+                addPendingModuleUpdate(relPath, actualHash, expectedHash, expectedSize, localVersion, remoteVersion, "hash");
                 names.push(relPath);
                 continue;
             }
@@ -896,6 +989,7 @@ function restartToolHubFromSettings() {
               TOOLHUB_UPDATE_STATE.status = "latest";
               TOOLHUB_UPDATE_STATE.availableCount = 0;
               TOOLHUB_UPDATE_STATE.availableModules = [];
+              TOOLHUB_UPDATE_STATE.availableDetails = [];
               TOOLHUB_UPDATE_STATE.error = "";
             }
           } catch(eState) {}
@@ -945,7 +1039,7 @@ var __out = (function() {
       var name = runtimeOptString(item.module);
       if (name) names.push(name);
     }
-    return { count: names.length, modules: names, msg: names.length ? ("发现 " + names.length + " 个可更新子模块：" + names.join("、")) : "所有子模块已是最新。" };
+    return { count: names.length, modules: names, details: copyRuntimeDetailList(list), msg: names.length ? ("发现 " + names.length + " 个可更新子模块：" + names.join("、")) : "所有子模块已是最新。" };
   }
   function summarizeLoadErrors(list) {
     var names = [];
@@ -992,6 +1086,7 @@ var __out = (function() {
       updatedModules: syncInfo ? copyRuntimeStringList(syncInfo.modules) : [],
       availableCount: pendingInfo ? Number(pendingInfo.count || 0) : 0,
       availableModules: pendingInfo ? copyRuntimeStringList(pendingInfo.modules) : [],
+      availableDetails: pendingInfo ? copyRuntimeDetailList(pendingInfo.details) : [],
       bootFixedCount: syncInfo ? Number(syncInfo.count || 0) : 0,
       bootFixedModules: syncInfo ? copyRuntimeStringList(syncInfo.modules) : [],
       needRestart: false,

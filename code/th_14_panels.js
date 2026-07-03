@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -386,6 +386,7 @@ FloatBallAppWM.prototype.getToolHubUpdateState = function() {
     updatedModules: [],
     availableCount: 0,
     availableModules: [],
+    availableDetails: [],
     bootFixedCount: 0,
     bootFixedModules: [],
     needRestart: false,
@@ -398,6 +399,22 @@ FloatBallAppWM.prototype.getToolHubUpdateState = function() {
     if (!src || src.length === undefined) return outList;
     for (var i = 0; i < src.length; i++) {
       if (src[i] !== undefined && src[i] !== null && String(src[i]).length > 0) outList.push(String(src[i]));
+    }
+    return outList;
+  }
+  function copyDetailList(src) {
+    var outList = [];
+    if (!src || src.length === undefined) return outList;
+    for (var i = 0; i < src.length; i++) {
+      var item = src[i] || {};
+      var name = item.module === undefined || item.module === null ? "" : String(item.module);
+      if (!name) continue;
+      outList.push({
+        module: name,
+        localVersion: item.localVersion === undefined || item.localVersion === null ? "" : String(item.localVersion),
+        remoteVersion: item.remoteVersion === undefined || item.remoteVersion === null ? "" : String(item.remoteVersion),
+        reason: item.reason === undefined || item.reason === null ? "" : String(item.reason)
+      });
     }
     return outList;
   }
@@ -418,6 +435,7 @@ FloatBallAppWM.prototype.getToolHubUpdateState = function() {
       updatedModules: copyList(raw.updatedModules || []),
       availableCount: Number(raw.availableCount || 0),
       availableModules: copyList(raw.availableModules || []),
+      availableDetails: copyDetailList(raw.availableDetails || []),
       bootFixedCount: Number(raw.bootFixedCount || 0),
       bootFixedModules: copyList(raw.bootFixedModules || []),
       needRestart: raw.needRestart === true,
@@ -813,7 +831,20 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
     if (updateState.changes.length > maxChanges) addLine(this, box, "+" + String(updateState.changes.length - maxChanges) + " 项", T.sub, 12, false);
   }
 
-  if (updateState && updateState.availableModules && updateState.availableModules.length > 0) {
+  if (updateState && updateState.availableDetails && updateState.availableDetails.length > 0) {
+    var detailHead = addLine(this, box, "版本差异", T.primaryDeep, 12, true);
+    detailHead.setPadding(0, this.dp(8), 0, this.dp(2));
+    var maxDetails = Math.min(4, updateState.availableDetails.length);
+    for (var di = 0; di < maxDetails; di++) {
+      var detail = updateState.availableDetails[di] || {};
+      var modName = detail.module ? String(detail.module) : "模块";
+      var localText = detail.localVersion ? String(detail.localVersion) : "0.0.0";
+      var remoteText = detail.remoteVersion ? String(detail.remoteVersion) : "清单版本";
+      var reasonText = detail.reason === "missing" ? "缺失" : (detail.reason === "hash" ? "哈希变更" : "版本升级");
+      addLine(this, box, "• " + modName + "  " + localText + " → " + remoteText + " · " + reasonText, T.sub, 12, false);
+    }
+    if (updateState.availableDetails.length > maxDetails) addLine(this, box, "+" + String(updateState.availableDetails.length - maxDetails) + " 个模块", T.sub, 12, false);
+  } else if (updateState && updateState.availableModules && updateState.availableModules.length > 0) {
     var availableTv = addLine(this, box, "可更新模块：" + updateState.availableModules.join("、"), T.sub, 12, false);
     availableTv.setPadding(0, this.dp(8), 0, 0);
     try { availableTv.setMaxLines(2); availableTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eAvail) {}
