@@ -158,10 +158,6 @@ function runShell(cmdArr) {
     } catch (e) { return false; }
 }
 
-function checkDirPerms(path) {
-    return canWriteDirPath(path);
-}
-
 function setDirPerms(path) {
     // 只尝试 chmod，不再强制 chown 1000:1000。
     // 在部分 ColorOS/ShortX 环境中，shortx.getShortXDir() 位于 /data/system/shortx_*，
@@ -176,7 +172,7 @@ function ensureCodeDir() {
             dir.mkdirs();
             setDirPerms(dir.getAbsolutePath());
             writeLog("Created dir: " + dir.getAbsolutePath());
-        } else if (!checkDirPerms(dir.getAbsolutePath())) {
+        } else if (!canWriteDirPath(dir.getAbsolutePath())) {
             setDirPerms(dir.getAbsolutePath());
             writeLog("Fixed dir perms: " + dir.getAbsolutePath());
         }
@@ -853,16 +849,6 @@ var __out = (function() {
   if (typeof FloatBallAppWM !== "function") {
     return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心类 FloatBallAppWM 未定义，请检查 th_02_core.js / th_16_entry.js 是否加载成功" };
   }
-  function optStr(v) { return (v === undefined || v === null) ? "" : String(v); }
-  function copyStringList(list) {
-    var outList = [];
-    var i;
-    if (!list || list.length === undefined) return outList;
-    for (i = 0; i < list.length; i++) {
-      if (list[i] !== undefined && list[i] !== null && String(list[i]).length > 0) outList.push(String(list[i]));
-    }
-    return outList;
-  }
   function summarizeModuleUpdates(list) {
     var names = [];
     var created = 0;
@@ -870,7 +856,7 @@ var __out = (function() {
     var i;
     for (i = 0; i < list.length; i++) {
       var item = list[i] || {};
-      var name = optStr(item.module);
+      var name = runtimeOptString(item.module);
       if (name) names.push(name);
       if (item.isNew) created++; else overwritten++;
     }
@@ -882,7 +868,7 @@ var __out = (function() {
     var i;
     for (i = 0; i < list.length; i++) {
       var item = list[i] || {};
-      var name = optStr(item.module);
+      var name = runtimeOptString(item.module);
       if (name) names.push(name);
     }
     return { count: names.length, modules: names, msg: names.length ? ("发现 " + names.length + " 个可更新子模块：" + names.join("、")) : "所有子模块已是最新。" };
@@ -892,13 +878,10 @@ var __out = (function() {
     var i;
     for (i = 0; i < list.length; i++) {
       var item = list[i] || {};
-      var name = optStr(item.module);
+      var name = runtimeOptString(item.module);
       if (name) names.push(name);
     }
     return { count: names.length, modules: names, msg: names.length ? ("有 " + names.length + " 个子模块加载失败：" + names.join("、")) : "所有子模块加载正常。" };
-  }
-  function buildSecurityText() {
-    return buildToolHubSecurityText();
   }
   function buildToolHubUpdateState(syncInfo, pendingInfo, loadInfo, securityText) {
     var rel = getManifestRelease();
@@ -915,7 +898,7 @@ var __out = (function() {
     if (pendingInfo && pendingInfo.count > 0) statusName = "available";
     if (!__securityStatus || !__securityStatus.ok) {
       statusName = "error";
-      errText = optStr(__securityStatus && __securityStatus.msg);
+      errText = runtimeOptString(__securityStatus && __securityStatus.msg);
     }
     if (loadInfo && loadInfo.count > 0) {
       statusName = "error";
@@ -928,18 +911,18 @@ var __out = (function() {
       mode: UPDATE_SECURITY_MODE,
       modeText: modeText,
       version: versionNum,
-      title: optStr(rel.title),
-      date: optStr(rel.date),
-      changes: copyStringList(rel.changes),
+      title: runtimeOptString(rel.title),
+      date: runtimeOptString(rel.date),
+      changes: copyRuntimeStringList(rel.changes),
       updatedCount: syncInfo ? Number(syncInfo.count || 0) : 0,
-      updatedModules: syncInfo ? copyStringList(syncInfo.modules) : [],
+      updatedModules: syncInfo ? copyRuntimeStringList(syncInfo.modules) : [],
       availableCount: pendingInfo ? Number(pendingInfo.count || 0) : 0,
-      availableModules: pendingInfo ? copyStringList(pendingInfo.modules) : [],
+      availableModules: pendingInfo ? copyRuntimeStringList(pendingInfo.modules) : [],
       bootFixedCount: syncInfo ? Number(syncInfo.count || 0) : 0,
-      bootFixedModules: syncInfo ? copyStringList(syncInfo.modules) : [],
+      bootFixedModules: syncInfo ? copyRuntimeStringList(syncInfo.modules) : [],
       needRestart: false,
       lastCheckAt: Number(java.lang.System.currentTimeMillis()),
-      securityText: optStr(securityText),
+      securityText: runtimeOptString(securityText),
       error: errText
     };
   }
@@ -947,7 +930,7 @@ var __out = (function() {
   var syncInfo = summarizeModuleUpdates(__moduleUpdates);
   var pendingInfo = summarizePendingModuleUpdates(__pendingModuleUpdates);
   var loadInfo = summarizeLoadErrors(loadErrors);
-  var securityText = buildSecurityText();
+  var securityText = buildToolHubSecurityText();
   TOOLHUB_UPDATE_STATE = buildToolHubUpdateState(syncInfo, pendingInfo, loadInfo, securityText);
 
   var entryInfo = getProcessInfo("entry");
@@ -975,14 +958,14 @@ var __out = (function() {
     同步: syncText,
     更新状态: TOOLHUB_UPDATE_STATE.status,
     布局: layoutText,
-    关闭广播: optStr(startRet && startRet.closeAction)
+    关闭广播: runtimeOptString(startRet && startRet.closeAction)
   };
   if (TOOLHUB_UPDATE_STATE.title) out.更新标题 = TOOLHUB_UPDATE_STATE.title;
   if (TOOLHUB_UPDATE_STATE.changes && TOOLHUB_UPDATE_STATE.changes.length > 0) out.更新内容 = TOOLHUB_UPDATE_STATE.changes;
   if (syncInfo.count > 0) out.启动修复模块 = syncInfo.modules;
   if (pendingInfo.count > 0) out.可更新模块 = pendingInfo.modules;
   if (loadInfo.count > 0) out.加载异常 = loadInfo.modules;
-  if (!started) out.错误 = optStr(startRet && startRet.err) || (loadInfo.modules && loadInfo.modules.join(", ")) || "未知错误";
+  if (!started) out.错误 = runtimeOptString(startRet && startRet.err) || (loadInfo.modules && loadInfo.modules.join(", ")) || "未知错误";
   return out;
 })();
 JSON.stringify(__out, null, 2);
