@@ -523,19 +523,19 @@ FloatBallAppWM.prototype.isToolAppRoute = function(route) {
 
 FloatBallAppWM.prototype.getToolAppTitle = function(route) {
   var r = String(route || "settings");
-  if (r === "settings") return "岛屿设置";
-  if (r === "settings_group") return this.getSettingsGroupTitle ? this.getSettingsGroupTitle(this.state.settingsGroupKey) : "岛屿分区";
+  if (r === "settings") return "设置";
+  if (r === "settings_group") return this.getSettingsGroupTitle ? this.getSettingsGroupTitle(this.state.settingsGroupKey) : "设置分组";
   if (r === "btn_editor") {
     if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
-      return (this.state.editingButtonIndex === -1) ? "添加工具伙伴" : "整理工具伙伴";
+      return (this.state.editingButtonIndex === -1) ? "添加工具" : "整理工具";
     }
-    return "工具小屋";
+    return "工具";
   }
   if (r === "schema_editor") {
     if (this.state.editingSchemaIndex !== null && this.state.editingSchemaIndex !== undefined) {
-      return (this.state.editingSchemaIndex === -1) ? "新增蓝图项" : "编辑蓝图项";
+      return (this.state.editingSchemaIndex === -1) ? "新增结构项" : "编辑结构项";
     }
-    return "高级蓝图";
+    return "设置结构";
   }
   return "ToolHub";
 };
@@ -908,7 +908,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
 
     var tvTitle = new android.widget.TextView(context);
     var titleText = String(this.getToolAppTitle(r) || "ToolHub");
-    if (r === "settings") titleText = "岛屿设置";
+    if (r === "settings") titleText = "设置";
     tvTitle.setText(titleText);
     tvTitle.setTextColor(T.text);
     tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
@@ -1499,7 +1499,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   }, context);
   var body = new android.widget.LinearLayout(context);
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
-  // 外层薄荷容器本身就是整张“岛屿设置”卡片：四角统一圆角，并给底部留出完整收口。
+  // 外层薄荷容器本身就是整张“设置”卡片：四角统一圆角，并给底部留出完整收口。
   body.setPadding(shellPad, shellTopPad, shellPad, shellPad);
   body.setBackground(this.ui.createStrokeDrawable(T.bg, this.withAlpha(T.stroke, isDark ? 0.30 : 0.46), this.dp(1), outerRadius));
   try { body.setClipToOutline(true); } catch(eClip) {}
@@ -1597,7 +1597,7 @@ FloatBallAppWM.prototype.updateToolAppShellChrome = function(title, canBack) {
   try {
     var r = String(this.state.toolAppRoute || "");
     var titleText = String(title || "ToolHub");
-    if (r === "settings") titleText = "岛屿设置";
+    if (r === "settings") titleText = "设置";
     var hasBack = false;
     try { hasBack = !!(this.hasToolAppBackTarget && this.hasToolAppBackTarget()); } catch(eHasBack) { hasBack = !!canBack; }
     if (this.state.toolAppTitleView) this.state.toolAppTitleView.setText(titleText);
@@ -1913,7 +1913,7 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
           var titleMap = {
               "settings": "设置",
               "btn_editor": "按钮管理",
-              "schema_editor": "高级蓝图"
+              "schema_editor": "设置结构"
           };
           var title = titleMap[which] || "面板";
 
@@ -2990,7 +2990,7 @@ FloatBallAppWM.prototype.buildBallPreviewView = function() {
     texts.setOrientation(android.widget.LinearLayout.VERTICAL);
     texts.setGravity(android.view.Gravity.CENTER_VERTICAL);
     var title = new android.widget.TextView(context);
-    title.setText("实时气球预览");
+    title.setText("悬浮球预览");
     title.setTextColor(T.text);
     title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     title.setTypeface(null, android.graphics.Typeface.BOLD);

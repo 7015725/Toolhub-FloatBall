@@ -254,7 +254,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     // 提示文字 (左侧)
     var hintTv = new android.widget.TextView(context);
-    hintTv.setText("共 " + buttons.length + " 个工具伙伴");
+    hintTv.setText("共 " + buttons.length + " 个工具");
     hintTv.setTextColor(subTextColor);
     hintTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     header.addView(hintTv);

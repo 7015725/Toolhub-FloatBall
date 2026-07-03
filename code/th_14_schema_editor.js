@@ -1,4 +1,4 @@
-// ToolHub - 高级蓝图编辑器模块
+// ToolHub - 设置结构编辑器模块
 // 依赖：th_14_panels.js 的设置页主题/基础 UI，th_05_persistence.js 的 ConfigManager。
 // 加载顺序：th_14_panels.js 之后，th_15_extra.js 之前。
 
@@ -127,7 +127,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     titleRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
     var titleBox = new android.widget.LinearLayout(context);
     titleBox.setOrientation(android.widget.LinearLayout.VERTICAL);
-    titleBox.addView(makeText("岛屿蓝图", 17, textColor, true));
+    titleBox.addView(makeText("设置结构", 17, textColor, true));
     titleBox.addView(makeText("这里会改变设置页结构，建议只在需要整理入口时使用", 12, subTextColor, false));
     titleRow.addView(titleBox, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
     titleRow.addView(makeChip("添加", primaryDeep, function() {
@@ -138,7 +138,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     }));
     topCard.addView(titleRow);
 
-    var stat = makeText("共 " + schema.length + " 个蓝图项 · 保存后才会生效", 12, subTextColor, false);
+    var stat = makeText("共 " + schema.length + " 个结构项 · 保存后生效", 12, subTextColor, false);
     stat.setPadding(0, self.dp(8), 0, 0);
     topCard.addView(stat);
     addWithMargins(panel, topCard, 0, 0, 0, 8);
@@ -150,7 +150,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     list.setPadding(0, self.dp(2), 0, self.dp(10));
 
     if (!schema.length) {
-      var empty = makeText("蓝图列表为空，可点上方“添加”创建新项。", 13, subTextColor, false);
+      var empty = makeText("结构列表为空，可点上方“添加”创建新项。", 13, subTextColor, false);
       empty.setGravity(android.view.Gravity.CENTER);
       empty.setPadding(self.dp(12), self.dp(24), self.dp(12), self.dp(24));
       list.addView(empty, lpFullWrap());
@@ -176,7 +176,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
         var info = new android.widget.LinearLayout(context);
         info.setOrientation(android.widget.LinearLayout.VERTICAL);
         info.setPadding(self.dp(10), 0, 0, 0);
-        var nameTv = makeText(String(item.name || item.key || "未命名蓝图项"), 14, textColor, true);
+        var nameTv = makeText(String(item.name || item.key || "未命名结构项"), 14, textColor, true);
         info.addView(nameTv);
         var sub = item.type === "section" ? "分组标题" : ("配置键：" + String(item.key || "未填写"));
         info.addView(makeText(sub, 11, subTextColor, false));
@@ -208,19 +208,19 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     bottom.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     bottom.setGravity(android.view.Gravity.CENTER_VERTICAL);
     bottom.setPadding(0, self.dp(8), 0, 0);
-    var resetBtn = makeChip("恢复默认蓝图", dangerColor, function() {
+    var resetBtn = makeChip("恢复默认结构", dangerColor, function() {
       ConfigManager.resetSchema();
       self.state.tempSchema = null;
       clearDraft();
-      showToast("已恢复默认蓝图");
+      showToast("已恢复默认结构");
       refreshPanel();
     });
     bottom.addView(resetBtn, new android.widget.LinearLayout.LayoutParams(0, self.dp(48), 1));
-    var saveBtn = self.ui.createSolidButton(self, "保存蓝图", primaryColor, T && T.onPrimary ? T.onPrimary : android.graphics.Color.WHITE, function() {
+    var saveBtn = self.ui.createSolidButton(self, "保存结构", primaryColor, T && T.onPrimary ? T.onPrimary : android.graphics.Color.WHITE, function() {
       ConfigManager.saveSchema(schema);
       self.state.tempSchema = null;
       clearDraft();
-      showToast("蓝图已保存");
+      showToast("结构已保存");
       if (self.state.toolAppActive && self.popToolAppPage) {
         self.state.editingSchemaIndex = null;
         self.popToolAppPage("schema_save_all");
@@ -250,9 +250,9 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
   formCard.setPadding(self.dp(14), self.dp(12), self.dp(14), self.dp(12));
   try { formCard.setBackground(self.ui.createStrokeDrawable(cardColor, self.withAlpha(strokeColor, isDark ? 0.32 : 0.42), self.dp(1), self.dp(20))); } catch(eFormBg) {}
 
-  var editTitle = makeText(editIdx === -1 ? "添加蓝图项" : "整理蓝图项", 17, textColor, true);
+  var editTitle = makeText(editIdx === -1 ? "添加结构项" : "整理结构项", 17, textColor, true);
   formCard.addView(editTitle);
-  var editHint = makeText("修改后先“暂存”，回到列表再统一保存蓝图。", 12, subTextColor, false);
+  var editHint = makeText("修改后先“暂存”，回到列表再统一保存结构。", 12, subTextColor, false);
   editHint.setPadding(0, self.dp(4), 0, self.dp(10));
   formCard.addView(editHint);
 
@@ -334,7 +334,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
   }));
   form.addView(typeRow, lpFullWrap());
 
-  inputName = createInput("显示名字", "name", android.text.InputType.TYPE_CLASS_TEXT, "例如：漂浮气球");
+  inputName = createInput("显示名字", "name", android.text.InputType.TYPE_CLASS_TEXT, "例如：悬浮球");
   if (editItem.type !== "section") {
     inputKey = createInput("配置键", "key", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, "例如：BALL_SIZE_DP");
   }
@@ -363,7 +363,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     } else refreshPanel();
   }), new android.widget.LinearLayout.LayoutParams(0, self.dp(48), 1));
 
-  var saveDraftBtn = self.ui.createSolidButton(self, "暂存蓝图项", primaryColor, T && T.onPrimary ? T.onPrimary : android.graphics.Color.WHITE, function() {
+  var saveDraftBtn = self.ui.createSolidButton(self, "暂存结构项", primaryColor, T && T.onPrimary ? T.onPrimary : android.graphics.Color.WHITE, function() {
     try {
       syncDraftFromInputs();
       normalizeItem(editItem);

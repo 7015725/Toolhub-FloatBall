@@ -836,7 +836,11 @@ var ConfigManager = {
             { label: "动物岛风", value: "animal" },
             { label: "系统莫奈色", value: "monet" }
         ]},
-        { key: "THEME_MODE", name: "主题(0跟随/1白/2黑)", type: "int", min: 0, max: 2, step: 1 },
+        { key: "THEME_MODE", name: "主题模式", type: "single_choice", options: [
+            { label: "跟随系统", value: 0 },
+            { label: "浅色", value: 1 },
+            { label: "深色", value: 2 }
+        ]},
         { key: "THEME_DAY_BG_HEX", name: "日间背景色(#RRGGBB)", type: "text" },
         { key: "THEME_DAY_TEXT_HEX", name: "日间文字色(#RRGGBB)", type: "text" },
         { key: "THEME_NIGHT_BG_HEX", name: "夜间背景色(#RRGGBB)", type: "text" },
@@ -844,27 +848,27 @@ var ConfigManager = {
         { key: "PANEL_BG_ALPHA", name: "面板背景透明度(0.1~1.0)", type: "float", min: 0.1, max: 1.0, step: 0.05 },
 
         { type: "section", name: "悬浮球" },
-        { key: "BALL_SIZE_DP", name: "气球大小", type: "int", min: 28, max: 120, step: 1 },
-        { key: "BALL_PANEL_GAP_DP", name: "离小屋的距离", type: "int", min: 0, max: 60, step: 1 },
-        { key: "BALL_ICON_TYPE", name: "气球徽章", type: "single_choice", options: [
-            { label: "应用头像", value: "app" },
-            { label: "从文件选择", value: "file" },
-            { label: "岛上图标库", value: "shortx" }
+        { key: "BALL_SIZE_DP", name: "悬浮球大小", type: "int", min: 20, max: 200, step: 1 },
+        { key: "BALL_PANEL_GAP_DP", name: "球与面板距离", type: "int", min: 0, max: 50, step: 1 },
+        { key: "BALL_ICON_TYPE", name: "悬浮球图标来源", type: "single_choice", options: [
+            { label: "应用图标", value: "app" },
+            { label: "本地文件", value: "file" },
+            { label: "内置图标库", value: "shortx" }
         ]},
         { key: "BALL_ICON_FILE_PATH", name: "已选择的图标文件", type: "text" },
-        { key: "BALL_ICON_RES_NAME", name: "岛上图标", type: "ball_shortx_icon" },
-        { key: "BALL_ICON_TINT_HEX", name: "徽章颜色", type: "ball_color" },
-        { key: "BALL_ICON_SIZE_DP", name: "徽章大小", type: "int", min: 12, max: 80, step: 1 },
+        { key: "BALL_ICON_RES_NAME", name: "内置图标", type: "ball_shortx_icon" },
+        { key: "BALL_ICON_TINT_HEX", name: "图标颜色", type: "ball_color" },
+        { key: "BALL_ICON_SIZE_DP", name: "图标大小", type: "int", min: 12, max: 80, step: 1 },
         { key: "BALL_BG_COLOR_HEX", name: "球体背景", type: "ball_color" },
         { key: "BALL_IDLE_ALPHA", name: "安静时透明度", type: "float", min: 0.1, max: 1.0, step: 0.05 },
 
         { type: "section", name: "面板布局" },
-        { key: "PANEL_ROWS", name: "面板可视行数(超出滚动)", type: "int", min: 1, max: 12, step: 1 },
+        { key: "PANEL_ROWS", name: "面板可视行数", type: "int", min: 1, max: 10, step: 1 },
         { key: "PANEL_COLS", name: "面板列数", type: "int", min: 1, max: 6, step: 1 },
         { key: "PANEL_ITEM_SIZE_DP", name: "面板单元格(dp)", type: "int", min: 48, max: 120, step: 1 },
-        { key: "PANEL_GAP_DP", name: "格子间距(dp)", type: "int", min: 0, max: 30, step: 1 },
-        { key: "PANEL_PADDING_DP", name: "面板内边距(dp)", type: "int", min: 0, max: 40, step: 1 },
-        { key: "PANEL_ICON_SIZE_DP", name: "图标大小(dp)", type: "int", min: 16, max: 80, step: 1 },
+        { key: "PANEL_GAP_DP", name: "按钮间距(dp)", type: "int", min: 4, max: 24, step: 1 },
+        { key: "PANEL_PADDING_DP", name: "面板内边距(dp)", type: "int", min: 8, max: 32, step: 1 },
+        { key: "PANEL_ICON_SIZE_DP", name: "面板图标大小(dp)", type: "int", min: 16, max: 64, step: 1 },
 
         { type: "section", name: "面板文字" },
         { key: "PANEL_LABEL_ENABLED", name: "显示按钮文字", type: "bool" },
@@ -881,7 +885,7 @@ var ConfigManager = {
         { key: "ENABLE_SNAP_TO_EDGE", name: "启用自动吸边", type: "bool" },
         { key: "DOCK_AFTER_IDLE_MS", name: "无操作吸边延迟(ms)", type: "int", min: 200, max: 8000, step: 100 },
         { key: "PANEL_IDLE_CLOSE_AND_DOCK_MS", name: "面板无操作：关面板再吸边(ms)", type: "int", min: 200, max: 12000, step: 100 },
-        { key: "EDGE_VISIBLE_RATIO", name: "吸边露出比例(0~1)", type: "float", min: 0.20, max: 1.00, step: 0.05 },
+        { key: "EDGE_VISIBLE_RATIO", name: "吸边露出比例", type: "float", min: 0.30, max: 1.00, step: 0.05 },
         { key: "SAVE_THROTTLE_MS", name: "保存位置节流(ms)", type: "int", min: 0, max: 5000, step: 10 },
 
         { type: "section", name: "动画" },
@@ -895,7 +899,7 @@ var ConfigManager = {
         { key: "BOUNCE_DECAY", name: "回弹衰减(0~1)", type: "float", min: 0.30, max: 0.95, step: 0.01 },
 
         { type: "section", name: "动作与手势" },
-        { key: "CLICK_SLOP_DP", name: "点击位移阈值(dp)", type: "int", min: 1, max: 40, step: 1 },
+        { key: "CLICK_SLOP_DP", name: "点击位移阈值(dp)", type: "int", min: 2, max: 20, step: 1 },
         { key: "TOOLAPP_BACK_GESTURE_MODE", name: "设置页滑动返回模式", type: "single_choice", options: [
             { label: "全表面横滑", value: "surface" },
             { label: "仅面板内部左右边缘", value: "edge" },
@@ -909,7 +913,7 @@ var ConfigManager = {
         { key: "LONG_PRESS_MS", name: "长按判定(ms)", type: "int", min: 200, max: 2000, step: 10 },
         { key: "LONG_PRESS_TRIGGERED_MOVE_SLOP_DP", name: "长按后抖动容忍距离", type: "int", min: 8, max: 80, step: 1 },
         { key: "LONG_PRESS_HAPTIC_ENABLE", name: "长按震动反馈", type: "bool" },
-        { key: "LONG_PRESS_VIBRATE_MS", name: "震动时长(ms)", type: "int", min: 1, max: 120, step: 1 },
+        { key: "LONG_PRESS_VIBRATE_MS", name: "长按震动时长(ms)", type: "int", min: 10, max: 100, step: 1 },
 
         { type: "section", name: "日志" },
         { key: "LOG_ENABLE", name: "写文件日志", type: "bool" },

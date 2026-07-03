@@ -424,7 +424,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
         var curIconName0 = String(self.getPendingValue(item.key) || "");
         var curTint0 = String(self.getPendingValue("BALL_ICON_TINT_HEX") || "");
         nameTv.setText(curIconName0 || "未选择");
-        // 页面顶部已有完整实时气球预览，这里只显示当前值，避免重复小预览占位。
+        // 页面顶部已有完整悬浮球预览，这里只显示当前值，避免重复小预览占位。
        } catch(ePreview0) { safeLog(null, 'e', "catch " + String(ePreview0)); }
     }
     refreshBallShortXPreview();

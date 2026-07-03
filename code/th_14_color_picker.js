@@ -405,7 +405,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       }
 
       function updateValueTv() {
-        valueTv.setText(isFollowTheme ? "当前：跟随岛屿主题" : ("当前：" + (selectedColor || "无")));
+        valueTv.setText(isFollowTheme ? "当前：跟随主题" : ("当前：" + (selectedColor || "无")));
         syncColorInputFromState();
       }
       updateValueTvFn = updateValueTv;
@@ -421,7 +421,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               selectedColor = "";
               currentAlphaByte = 255;
               updatePreview();
-              valueTv.setText("当前：跟随岛屿主题");
+              valueTv.setText("当前：跟随主题");
               refreshRecentGrid();
               refreshCommonGrid();
               syncRgbSeeks();

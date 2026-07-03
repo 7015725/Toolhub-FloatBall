@@ -2,8 +2,8 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "54e41899cf19c1a83bd321cc61c32d04d7774b944b02722d8836b35f622dc79c",
-      "size": 56257
+      "sha256": "4a627298cca908f05e5b7a52f1faa11dc47c6cd50b4fe3626fdc760c8f5677b5",
+      "size": 56387
     },
     "th_02_core.js": {
       "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
@@ -46,12 +46,12 @@
       "size": 2362
     },
     "th_13_panel_ui.js": {
-      "sha256": "110a974cb6e7318e4e5f9b85ef35002fb5193b5acfc59efac3337a87d9472871",
-      "size": 21290
+      "sha256": "608de028b04a9bda7627d5e4681d323697fe70b934538265ead7fcbc00a769c3",
+      "size": 21287
     },
     "th_14_button_editor.js": {
-      "sha256": "1b7be46d38e7b9bc8652f310308b6f8ab17e394ba7f88548ad1786a349917d32",
-      "size": 51080
+      "sha256": "9220ed189eca422c8076fcbf19d787fdab77dacf6b575d413e54c62693e87e35",
+      "size": 51074
     },
     "th_14_button_icon_editor.js": {
       "sha256": "41675d1a34e073425f1e5f4a54118f5f7bddc6e52092c51c9c635bcc8c212494",
@@ -62,24 +62,24 @@
       "size": 58590
     },
     "th_14_color_picker.js": {
-      "sha256": "badce3fdf48e5e2f10fdf7aea390ff64f5eaadc385baa102d8884ebcd7f16814",
-      "size": 27523
+      "sha256": "8c94ef5c8b1b7dccbf880707797660794087b35ade59dad623040a35433a9398",
+      "size": 27511
     },
     "th_14_icon_picker.js": {
       "sha256": "586210ef0c2418803edc0b1939658fcba6623dd04ece9b96b55b29f9eb9cbe1b",
       "size": 24999
     },
     "th_14_panels.js": {
-      "sha256": "d7265f5dd5ce9076d1c7d353be59ee4cc1e7aca5c552d18662a371fa0bbf4db0",
-      "size": 111432
+      "sha256": "42eb0497e25f634c8d0f75d382fbf807f8d49e5b7065b96922b2f7c606f8b2c0",
+      "size": 112149
     },
     "th_14_schema_editor.js": {
-      "sha256": "748e0f608f5edf80edc638073f715f5b45ab6dc97750bebb43900df25020e61d",
-      "size": 20769
+      "sha256": "bc4bf6f9760277ee8cdeca48c53661bd885bae0178abeceb55ab455b421b052e",
+      "size": 20760
     },
     "th_15_extra.js": {
-      "sha256": "32a4695a3069661792546dfa535cbeef479b85645ef49975346d951c8711fa37",
-      "size": 133064
+      "sha256": "2ae8b705a96cccb7dbf8c22ff8ba9b572d4735f5cc9e8bf03f73d12927998eaa",
+      "size": 133019
     },
     "th_16_entry.js": {
       "sha256": "455915936eb3a0735b8a3bdafca7c4794eab9d83f4fc5c3eb9deb76d13849192",
@@ -89,13 +89,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化了设置页更新卡片，支持手动检查更新和后台状态提示",
-      "修复了因设置页只能显示启动时更新状态导致用户需要重启才能刷新更新信息的问题",
-      "增强了运行时更新状态的安全校验提示"
+      "统一设置页文案和配置范围",
+      "优化更新卡片按钮优先级",
+      "简化 Toast，错误详情保留在日志和更新卡片"
     ],
     "date": "2026-07-03",
-    "title": "设置页更新体验优化"
+    "title": "设置页文案和更新卡片优化"
   },
   "schema": 2,
-  "version": 20260702234727
+  "version": 20260703011004
 }
