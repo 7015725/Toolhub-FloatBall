@@ -70,7 +70,7 @@
       "size": 24999
     },
     "th_14_panels.js": {
-      "sha256": "2acda91cb692895f95e98cb23862d71e0e588d1493c7ac5337ed6496a37e5740",
+      "sha256": "5f60b19df49a8adac23408b67e1bce823a4021679c4e03232b9a3c038e02472b",
       "size": 115350
     },
     "th_14_schema_editor.js": {
@@ -89,11 +89,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "最小更新 th_14_panels.js 版本标记，用于验证设置页更新检查、下载和重启流程"
+      "最小更新 th_14_panels.js 版本标记，用于复测设置页更新下载流程"
     ],
     "date": "2026-07-03",
-    "title": "设置页更新系统测试"
+    "title": "设置页更新系统复测"
   },
   "schema": 2,
-  "version": 20260703050041
+  "version": 20260703051033
 }
