@@ -1054,7 +1054,7 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
     try {
       var nowLog = Date.now();
       if (!this.state._lastBackPreviewLog || nowLog - this.state._lastBackPreviewLog > 300) {
-        safeLog(this.L, 'd',
+        debugLog(this.L,
           'back preview progress edge=' + String(edge) +
           ' p=' + String(p) +
           ' dragPx=' + String(dragPx) +
@@ -1095,7 +1095,7 @@ FloatBallAppWM.prototype.applyToolAppBackPreviewProgress = function(edge, progre
       var lpX = (this.state.viewerPanelLp ? this.state.viewerPanelLp.x : 0);
       var nowLog2 = Date.now();
       if (!this.state._lastBackMoveLog || nowLog2 - this.state._lastBackMoveLog > 300) {
-        safeLog(this.L, 'd',
+        debugLog(this.L,
           'back move apply edge=' + String(edge) +
           ' bodyMove=' + String(bodyMove) +
           ' rootTx=' + String(rootTx) +
@@ -1136,7 +1136,7 @@ FloatBallAppWM.prototype.finishToolAppBackPreview = function(edge, complete) {
       body.animate().translationX(dir * w).alpha(1).scaleX(1).scaleY(1).setDuration(160).setInterpolator(decel).withEndAction(new java.lang.Runnable({
         run: function() {
           try { self.state.keepToolAppBackPreviewDuringPop = true; } catch(eKeepPreview) {}
-          try { self.popToolAppPage("edge_swipe_back"); } catch (ePop) {}
+          try { self.popToolAppPage("edge_swipe_back"); } catch (ePop) { safeLog(self.L, 'w', "edge swipe pop page fail: " + String(ePop)); }
           try { self.state.keepToolAppBackPreviewDuringPop = false; } catch(eKeepPreview2) {}
           try {
             var rootAfter = self.state.toolAppRoot;
@@ -1432,7 +1432,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
               var p0 = Math.min(1, adx / triggerDistance0);
               self.applyToolAppBackPreviewProgress(edge, p0, adx);
             } catch(eFirstMove) {}
-            try { safeLog(self.L, 'd', 'root back intercept mode=' + String(rootBackMode) + ' edge=' + String(edge) + ' dx=' + String(dx)); } catch(eMoveLog) {}
+            try { debugLog(self.L, 'root back intercept mode=' + String(rootBackMode) + ' edge=' + String(edge) + ' dx=' + String(dx)); } catch(eMoveLog) {}
             return true;
           }
           return false;

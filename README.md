@@ -36,7 +36,7 @@ STRUCTURE.md
 
 - **模块化加载**：入口文件只做启动、同步、校验与汇总返回；当前实际加载 21 个子模块。
 - **更新源切换**：入口支持在 Gitea 主源与 GitHub 镜像之间切换。
-- **安全更新模式**：`UPDATE_SECURITY_MODE = 1` 使用 manifest 哈希校验；`2` 在此基础上增加 `manifest.sig` RSA 验签、keyId 校验和防回滚。
+- **安全更新模式**：默认使用 `UPDATE_SECURITY_MODE = 2`，启用 manifest 哈希校验、`manifest.sig` RSA 验签、keyId 校验和防回滚。
 - **SHA256 文件校验**：每个子模块按清单中的 `sha256` 和 `size` 校验，通过后才覆盖本地文件。
 - **防回滚**：入口内置 `MIN_TRUSTED_MANIFEST_VERSION`，并在完整验签模式下记录本地已信任清单版本，拒绝旧版本清单。
 - **本地可信回退**：网络或远端清单异常时，已验证过的本地模块可继续使用。
@@ -82,7 +82,7 @@ STRUCTURE.md
 
 ```javascript
 var UPDATE_SOURCE = 1;          // 0: Gitea, 1: GitHub
-var UPDATE_SECURITY_MODE = 1;   // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
+var UPDATE_SECURITY_MODE = 2;   // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 ```
 
 更新源：
@@ -100,7 +100,7 @@ var UPDATE_SECURITY_MODE = 1;   // 0: 普通更新, 1: manifest哈希校验, 2: 
 | `1` | 读取 manifest，并按 manifest 校验模块 hash / size |
 | `2` | 完整验签安全更新：manifest 签名、keyId、版本、防回滚、模块 hash / size 全部校验 |
 
-如需严格安全更新，建议使用：
+默认已启用完整验签安全更新：
 
 ```javascript
 var UPDATE_SECURITY_MODE = 2;

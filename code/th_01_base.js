@@ -23,6 +23,14 @@ function safeLog(logger, level, msg) {
   try { logger[level](msg); } catch(e) {}
 }
 
+var TOOLHUB_DEBUG_LOG = false;
+
+function debugLog(logger, msg) {
+  try {
+    if (TOOLHUB_DEBUG_LOG && logger && logger.d) logger.d(String(msg));
+  } catch(e) {}
+}
+
 // # 分级操作封装：关键业务抛出错误，非关键业务静默处理
 function safeOperation(opName, fn, critical, logger) {
   try {

@@ -388,7 +388,7 @@ FloatBallAppWM.prototype.applyPanelPredictiveBackProgress = function(panel, even
         var nowPb = Date.now();
         if (!this.state.toolAppPredictiveBackLogAt || (nowPb - Number(this.state.toolAppPredictiveBackLogAt || 0)) > 300) {
           this.state.toolAppPredictiveBackLogAt = nowPb;
-          safeLog(this.L, 'd', 'predictive back progress edge=' + String(edge) + ' p=' + String(p) + ' dragPx=' + String(dragPx));
+          debugLog(this.L, 'predictive back progress edge=' + String(edge) + ' p=' + String(p) + ' dragPx=' + String(dragPx));
         }
       } catch(eLogPb) {}
 
@@ -725,7 +725,7 @@ FloatBallAppWM.prototype.snapToEdgeDocked = function(withAnim, forceSide) {
       this.savePos(this.state.ballLp.x, this.state.ballLp.y);
     }
 
-    safeLog(this.L, 'd',  "dock left x=0 y=" + String(targetY) + " w=" + String(targetW));
+    debugLog(this.L, "dock left x=0 y=" + String(targetY) + " w=" + String(targetW));
 
     // 闲置变暗
     try {
