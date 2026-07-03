@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 FloatBallAppWM.prototype.animateBallLayout = function(toX, toY, toW, durMs, endCb) {
   var st = this.state;
   if (!st.addedBall || !st.ballRoot || !st.ballLp) { if (endCb) endCb(); return; }
@@ -127,12 +127,25 @@ FloatBallAppWM.prototype.playBounce = function(v) {
 FloatBallAppWM.prototype.safeRemoveView = function(v, whichName) {
   try {
     if (!v) return { ok: true, skipped: true };
+    try { v.animate().cancel(); } catch (eAnimCancel) {}
+    try { v.clearAnimation(); } catch (eClearAnim) {}
     try { if (this.unregisterPanelPredictiveBack) this.unregisterPanelPredictiveBack(v); } catch (eBack) {}
-    this.state.wm.removeView(v);
-    return { ok: true };
+    if (!this.state || !this.state.wm) return { ok: false, err: "WindowManager missing", where: whichName || "" };
+    if (this.state.closing) this.state.wm.removeViewImmediate(v);
+    else this.state.wm.removeView(v);
+    return { ok: true, immediate: !!(this.state && this.state.closing) };
   } catch (e) {
-    safeLog(this.L, 'w',  "removeView fail which=" + String(whichName || "") + " err=" + String(e));
-    return { ok: false, err: String(e), where: whichName || "" };
+    var err = String(e);
+    try {
+      if (this.state && this.state.wm) {
+        this.state.wm.removeView(v);
+        return { ok: true, fallbackRemove: true, firstErr: err };
+      }
+    } catch (e2) {
+      err = err + "; fallback=" + String(e2);
+    }
+    safeLog(this.L, 'w',  "removeView fail which=" + String(whichName || "") + " err=" + err);
+    return { ok: false, err: err, where: whichName || "" };
   }
 };
 

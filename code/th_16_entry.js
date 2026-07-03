@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 function runOnMainSync(fn, timeoutMs) {
   if (!fn) return { ok: false, error: "empty-fn" };
   try {
@@ -127,6 +127,8 @@ FloatBallAppWM.prototype.close = function() {
   try { this.__scIconLoaderSingleton = null; } catch (eScIcon2) {}
 
   safeLog(this.L, 'i',  "close done");
+  this.state.closed = true;
+  try { if (typeof unregisterToolHubAppInstance === "function") unregisterToolHubAppInstance(this); } catch (eUnregApp) {}
 
   // # 清空缓存
   try {

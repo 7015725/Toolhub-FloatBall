@@ -932,22 +932,165 @@ for (var i = 0; i < modules.length; i++) {
 if (__trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveInstalledManifestFromLocal();
 if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveTrustedVersion(__trustedManifest.version);
 
-var TOOLHUB_ACTIVE_APP = null;
-var __toolHubRestartRunning = false;
+var TOOLHUB_ACTIVE_APP = (typeof TOOLHUB_ACTIVE_APP !== "undefined") ? TOOLHUB_ACTIVE_APP : null;
+var __toolHubRestartRunning = (typeof __toolHubRestartRunning !== "undefined") ? __toolHubRestartRunning : false;
+var TOOLHUB_APP_REGISTRY = (typeof TOOLHUB_APP_REGISTRY !== "undefined" && TOOLHUB_APP_REGISTRY) ? TOOLHUB_APP_REGISTRY : [];
 
-function closeToolHubAppForRestart(appObj) {
+function registerToolHubAppInstance(appObj) {
   try {
     if (!appObj) return;
-    if (appObj.state && appObj.state.h) {
-      appObj.state.h.post(new JavaAdapter(java.lang.Runnable, {
-        run: function() { try { appObj.close(); } catch(eClosePost) { writeLog("Restart close post failed: " + String(eClosePost)); } }
-      }));
-      return;
+    if (!TOOLHUB_APP_REGISTRY) TOOLHUB_APP_REGISTRY = [];
+    for (var i = 0; i < TOOLHUB_APP_REGISTRY.length; i++) {
+      if (TOOLHUB_APP_REGISTRY[i] === appObj) {
+        TOOLHUB_ACTIVE_APP = appObj;
+        return;
+      }
     }
-    if (typeof appObj.close === "function") appObj.close();
-  } catch(eClose) {
-    writeLog("Restart close failed: " + String(eClose));
+    TOOLHUB_APP_REGISTRY.push(appObj);
+    TOOLHUB_ACTIVE_APP = appObj;
+  } catch(eRegApp) {
+    try { writeLog("Register app instance failed: " + String(eRegApp)); } catch(eLogRegApp) {}
   }
+}
+
+function unregisterToolHubAppInstance(appObj) {
+  try {
+    if (!appObj) return;
+    var next = [];
+    if (TOOLHUB_APP_REGISTRY) {
+      for (var i = 0; i < TOOLHUB_APP_REGISTRY.length; i++) {
+        if (TOOLHUB_APP_REGISTRY[i] && TOOLHUB_APP_REGISTRY[i] !== appObj) next.push(TOOLHUB_APP_REGISTRY[i]);
+      }
+    }
+    TOOLHUB_APP_REGISTRY = next;
+    if (TOOLHUB_ACTIVE_APP === appObj) TOOLHUB_ACTIVE_APP = next.length > 0 ? next[next.length - 1] : null;
+  } catch(eUnregApp) {
+    try { writeLog("Unregister app instance failed: " + String(eUnregApp)); } catch(eLogUnregApp) {}
+  }
+}
+
+function getToolHubCloseActionForRestart(appObj) {
+  try {
+    if (appObj && appObj.config && appObj.config.ACTION_CLOSE_ALL) return String(appObj.config.ACTION_CLOSE_ALL);
+  } catch(eAction0) {}
+  try {
+    if (typeof CONST_ACTION_CLOSE_ALL_RULE !== "undefined" && CONST_ACTION_CLOSE_ALL_RULE) return String(CONST_ACTION_CLOSE_ALL_RULE);
+  } catch(eAction1) {}
+  return "shortx.wm.floatball.CLOSE";
+}
+
+function sendToolHubCloseBroadcastForRestart(appObj) {
+  var action = getToolHubCloseActionForRestart(appObj);
+  var ret = { ok: false, action: action, via: "" };
+  try {
+    context.sendBroadcast(new android.content.Intent(String(action)));
+    ret.ok = true;
+    ret.via = "context";
+    return ret;
+  } catch(eCtx) {
+    ret.error = String(eCtx);
+  }
+  try {
+    if (typeof shell === "function") {
+      shell("am broadcast -a " + String(action));
+      ret.ok = true;
+      ret.via = "shell";
+      return ret;
+    }
+  } catch(eShell) {
+    ret.error = String(ret.error || "") + "; shell=" + String(eShell);
+  }
+  try { writeLog("Restart close broadcast failed action=" + String(action) + " err=" + String(ret.error || "")); } catch(eLogBroadcast) {}
+  return ret;
+}
+
+function closeToolHubAppForRestart(appObj) {
+  var ret = { ok: false, skipped: false, timedOut: false, err: "" };
+  try {
+    if (!appObj) {
+      ret.ok = true;
+      ret.skipped = true;
+      return ret;
+    }
+    if (appObj.state && appObj.state.closed) {
+      unregisterToolHubAppInstance(appObj);
+      ret.ok = true;
+      ret.skipped = true;
+      return ret;
+    }
+    if (appObj.state && appObj.state.h) {
+      var latch = new java.util.concurrent.CountDownLatch(1);
+      var posted = false;
+      try {
+        posted = appObj.state.h.post(new JavaAdapter(java.lang.Runnable, {
+          run: function() {
+            try {
+              if (typeof appObj.close === "function") appObj.close();
+              ret.ok = true;
+            } catch(eClosePost) {
+              ret.err = String(eClosePost);
+              try { writeLog("Restart close post failed: " + String(eClosePost)); } catch(eLogClosePost) {}
+            } finally {
+              try { latch.countDown(); } catch(eLatchDown) {}
+            }
+          }
+        }));
+      } catch(ePostClose) {
+        ret.err = String(ePostClose);
+        posted = false;
+      }
+      if (posted) {
+        var done = false;
+        try { done = latch["await"](2800, java.util.concurrent.TimeUnit.MILLISECONDS); } catch(eAwaitClose) { ret.err = String(eAwaitClose); }
+        if (!done) {
+          ret.timedOut = true;
+          if (!ret.err) ret.err = "close wait timeout";
+        }
+        return ret;
+      }
+    }
+    if (typeof appObj.close === "function") {
+      appObj.close();
+      ret.ok = true;
+      return ret;
+    }
+    ret.ok = true;
+    ret.skipped = true;
+  } catch(eClose) {
+    ret.err = String(eClose);
+    try { writeLog("Restart close failed: " + String(eClose)); } catch(eLogClose) {}
+  }
+  return ret;
+}
+
+function closeToolHubAppsForRestart(primaryApp) {
+  var broadcastRet = sendToolHubCloseBroadcastForRestart(primaryApp);
+  try { java.lang.Thread.sleep(broadcastRet.ok ? 250 : 80); } catch(eSleepCloseBroadcast) {}
+  var list = [];
+  var i;
+  try {
+    if (TOOLHUB_APP_REGISTRY) {
+      for (i = 0; i < TOOLHUB_APP_REGISTRY.length; i++) {
+        if (TOOLHUB_APP_REGISTRY[i]) list.push(TOOLHUB_APP_REGISTRY[i]);
+      }
+    }
+  } catch(eListRegistry) {}
+  if (primaryApp) {
+    var exists = false;
+    for (i = 0; i < list.length; i++) {
+      if (list[i] === primaryApp) exists = true;
+    }
+    if (!exists) list.push(primaryApp);
+  }
+  var closed = 0;
+  var timedOut = 0;
+  for (i = 0; i < list.length; i++) {
+    var one = closeToolHubAppForRestart(list[i]);
+    if (one && one.ok) closed++;
+    if (one && one.timedOut) timedOut++;
+  }
+  try { writeLog("Restart close sweep action=" + String(broadcastRet.action || "") + " broadcast=" + String(broadcastRet.ok) + " apps=" + String(list.length) + " closed=" + String(closed) + " timeout=" + String(timedOut)); } catch(eLogSweep) {}
+  return { broadcast: broadcastRet, count: list.length, closed: closed, timedOut: timedOut };
 }
 
 function reloadLocalToolHubModulesForRestart() {
@@ -972,14 +1115,14 @@ function restartToolHubFromSettings() {
       try {
         var oldApp = null;
         try { oldApp = TOOLHUB_ACTIVE_APP; } catch(eOld) { oldApp = null; }
-        closeToolHubAppForRestart(oldApp);
-        try { java.lang.Thread.sleep(800); } catch(eSleep) {}
+        closeToolHubAppsForRestart(oldApp);
+        try { java.lang.Thread.sleep(200); } catch(eSleep) {}
         reloadLocalToolHubModulesForRestart();
         var entryInfo = getProcessInfo("restart");
         var logger = new ToolHubLogger(entryInfo);
         installCrashHandler(logger);
         var app = new FloatBallAppWM(logger);
-        TOOLHUB_ACTIVE_APP = app;
+        registerToolHubAppInstance(app);
         var closeRule = String(app.config.ACTION_CLOSE_ALL_RULE || "shortx.wm.floatball.CLOSE");
         var startRet = app.startAsync(entryInfo, closeRule);
         if (startRet && startRet.ok) {
@@ -995,6 +1138,7 @@ function restartToolHubFromSettings() {
           } catch(eState) {}
           try { writeLog("Restart finished, closeAction=" + String(startRet.closeAction || "")); } catch(eLog1) {}
         } else {
+          unregisterToolHubAppInstance(app);
           try { writeLog("Restart start failed: " + String(startRet && startRet.err ? startRet.err : "unknown")); } catch(eLog2) {}
         }
       } catch(eRestart) {
@@ -1102,11 +1246,18 @@ var __out = (function() {
   var securityText = buildToolHubSecurityText();
   TOOLHUB_UPDATE_STATE = buildToolHubUpdateState(syncInfo, pendingInfo, loadInfo, securityText);
 
+  var existingApp = null;
+  try { existingApp = TOOLHUB_ACTIVE_APP; } catch(eExistingApp) { existingApp = null; }
+  if (existingApp) {
+    try { writeLog("Entry found existing ToolHub app, closing before start"); } catch(eLogExisting) {}
+    closeToolHubAppsForRestart(existingApp);
+  }
+
   var entryInfo = getProcessInfo("entry");
   var logger = new ToolHubLogger(entryInfo);
   installCrashHandler(logger);
   var app = new FloatBallAppWM(logger);
-  TOOLHUB_ACTIVE_APP = app;
+  registerToolHubAppInstance(app);
   var closeRule = String(app.config.ACTION_CLOSE_ALL_RULE || "shortx.wm.floatball.CLOSE");
   var startRet = null;
   try { startRet = app.startAsync(entryInfo, closeRule); }
@@ -1115,6 +1266,7 @@ var __out = (function() {
     startRet = { ok: false, err: String(eTop) };
   }
   var started = !!(startRet && startRet.ok);
+  if (!started) unregisterToolHubAppInstance(app);
   var layoutObj = startRet && startRet.layout || null;
   var layoutText = layoutObj ? (String(layoutObj.cols || "?") + "×" + String(layoutObj.rows || "?")) : "未知";
   var syncText = syncInfo.count > 0
