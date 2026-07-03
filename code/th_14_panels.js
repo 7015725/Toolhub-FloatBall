@@ -1374,21 +1374,8 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   var settingsNoticeContainer = null;
   function setSettingsInlineNotice(msg, kind) {
     try {
-      if (!settingsNoticeContainer) return;
-      settingsNoticeContainer.removeAllViews();
-      var k = String(kind || "info");
-      var color = (k === "error") ? C.error : T.primaryDeep;
-      var bg = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.10);
-      var stroke = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.22);
-      var tv = new android.widget.TextView(context);
-      tv.setText(String(msg || ""));
-      tv.setTextColor(color);
-      tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-      tv.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
-      tv.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      tv.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
-      settingsNoticeContainer.addView(tv, new android.widget.LinearLayout.LayoutParams(-1, -2));
-      settingsNoticeContainer.setVisibility(android.view.View.VISIBLE);
+      if (self.setInlineNotice) self.setInlineNotice(String(msg || ""), kind || "info");
+      else safeLog(self.L, kind === "error" ? "e" : "i", "settings notice: " + String(msg || ""));
     } catch(eNotice) { safeLog(null, 'e', "catch " + String(eNotice)); }
   }
 
@@ -1397,9 +1384,12 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
       self.touchActivity();
       var r = self.commitPendingUserCfg();
       self.state.previewMode = false;
-      if (self.state.addedPanel) self.hideMainPanel();
-      if (r && r.ok) setSettingsInlineNotice("已保存并生效", "ok");
-      else setSettingsInlineNotice("保存失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")), "error");
+      if (r && r.ok) {
+        safeLog(self.L, "i", "settings saved");
+        if (self.state.addedPanel) self.hideMainPanel();
+        return;
+      }
+      setSettingsInlineNotice("保存失败: " + (r && r.reason ? r.reason : (r && r.err ? r.err : "unknown")), "error");
     } catch(e0) { setSettingsInlineNotice("保存异常: " + String(e0), "error"); }
   }
   function addChildEntry(parent, child) {
@@ -1412,6 +1402,23 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
       if (String(child.kind) === "group") { if (self.pushToolAppSettingsGroup) self.pushToolAppSettingsGroup(child.key); }
       else self.pushToolAppPage(child.key);
     });
+  }
+
+  settingsNoticeContainer = new android.widget.LinearLayout(context);
+  settingsNoticeContainer.setOrientation(android.widget.LinearLayout.VERTICAL);
+  settingsNoticeContainer.setVisibility(android.view.View.GONE);
+  var noticeLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+  noticeLp.setMargins(this.dp(2), 0, this.dp(2), this.dp(8));
+  panel.addView(settingsNoticeContainer, noticeLp);
+  try { this.state.settingsNoticeContainerRef = settingsNoticeContainer; } catch(eNoticeRef) {}
+  var pendingNotice = this.consumeInlineNotice ? this.consumeInlineNotice(8000) : null;
+  if (pendingNotice && pendingNotice.msg) {
+    try {
+      this.state.inlineNoticeMsg = String(pendingNotice.msg || "");
+      this.state.inlineNoticeKind = String(pendingNotice.kind || "info");
+      this.state.inlineNoticeAt = Number(pendingNotice.at || java.lang.System.currentTimeMillis());
+      if (this.renderInlineNoticeNow) this.renderInlineNoticeNow();
+    } catch(eRenderPending) {}
   }
 
   if (useMasterDetail) {
@@ -1575,12 +1582,6 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   }
 
   this.createIslandWelcomeCard(panel, statusLabel, statusValue, statusBg, statusStroke, statusValueColor);
-  settingsNoticeContainer = new android.widget.LinearLayout(context);
-  settingsNoticeContainer.setOrientation(android.widget.LinearLayout.VERTICAL);
-  settingsNoticeContainer.setVisibility(android.view.View.GONE);
-  var noticeLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-  noticeLp.setMargins(this.dp(2), 0, this.dp(2), this.dp(8));
-  panel.addView(settingsNoticeContainer, noticeLp);
 
   var contentCard = new android.widget.LinearLayout(context);
   contentCard.setOrientation(android.widget.LinearLayout.VERTICAL);

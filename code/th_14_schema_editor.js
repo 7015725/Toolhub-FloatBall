@@ -71,7 +71,14 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     return tv;
   }
 
-  function showToast(msg) { try { self.toast(String(msg || "")); } catch(eToast) {} }
+  function showSchemaNotice(msg, kind) {
+    try {
+      self.state.schemaEditorNoticeMsg = String(msg || "");
+      self.state.schemaEditorNoticeKind = String(kind || "info");
+      self.state.schemaEditorNoticeAt = java.lang.System.currentTimeMillis();
+      safeLog(self.L, kind === "error" ? "e" : "i", "schema notice: " + String(msg || ""));
+    } catch(eNotice) {}
+  }
 
   function refreshPanel() {
     self.state.keepSchemaEditorState = true;
@@ -143,6 +150,28 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     topCard.addView(stat);
     addWithMargins(panel, topCard, 0, 0, 0, 8);
 
+    function showListInlineNotice(msg, kind) {
+      try {
+        var k = String(kind || "info");
+        var color = k === "error" ? dangerColor : (k === "ok" ? (C.success || primaryDeep) : primaryDeep);
+        var tv = makeText(String(msg || ""), 12, color, false);
+        tv.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+        try { tv.setBackground(self.ui.createStrokeDrawable(self.withAlpha(color, isDark ? 0.18 : 0.08), self.withAlpha(color, isDark ? 0.42 : 0.25), self.dp(1), self.dp(14))); } catch(eBg) {}
+        addWithMargins(panel, tv, 0, 0, 0, 8);
+      } catch(eListNotice) {}
+    }
+    try {
+      var noticeMsg = String(self.state.schemaEditorNoticeMsg || "");
+      if (noticeMsg) {
+        var noticeAt = Number(self.state.schemaEditorNoticeAt || 0);
+        var nowNotice = java.lang.System.currentTimeMillis();
+        if (!noticeAt || nowNotice - noticeAt <= 8000) showListInlineNotice(noticeMsg, self.state.schemaEditorNoticeKind || "info");
+        self.state.schemaEditorNoticeMsg = "";
+        self.state.schemaEditorNoticeKind = "";
+        self.state.schemaEditorNoticeAt = 0;
+      }
+    } catch(ePendingSchemaNotice) {}
+
     var scroll = new android.widget.ScrollView(context);
     try { scroll.setVerticalScrollBarEnabled(false); scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); } catch(eScroll) {}
     var list = new android.widget.LinearLayout(context);
@@ -212,7 +241,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
       ConfigManager.resetSchema();
       self.state.tempSchema = null;
       clearDraft();
-      showToast("已恢复默认结构");
+      showSchemaNotice("已恢复默认结构", "ok");
       refreshPanel();
     });
     bottom.addView(resetBtn, new android.widget.LinearLayout.LayoutParams(0, self.dp(48), 1));
@@ -220,7 +249,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
       ConfigManager.saveSchema(schema);
       self.state.tempSchema = null;
       clearDraft();
-      showToast("结构已保存");
+      showSchemaNotice("结构已保存", "ok");
       if (self.state.toolAppActive && self.popToolAppPage) {
         self.state.editingSchemaIndex = null;
         self.popToolAppPage("schema_save_all");

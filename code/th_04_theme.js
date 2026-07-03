@@ -88,7 +88,84 @@ FloatBallAppWM.prototype.getAnimalIslandTheme = function() {
   };
 };
 
-FloatBallAppWM.prototype.toast = function(msg) { try { android.widget.Toast.makeText(context, String(msg), 0).show();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); } };
+FloatBallAppWM.prototype.toast = function(msg) {
+  try {
+    if (this.setInlineNotice) this.setInlineNotice(String(msg || ""), "info");
+    else safeLog(this.L, "i", "toast suppressed: " + String(msg || ""));
+  } catch(e) {
+    safeLog(null, "e", "toast suppress catch " + String(e));
+  }
+};
+FloatBallAppWM.prototype.setInlineNotice = function(msg, kind) {
+  try {
+    if (!this.state) return;
+    this.state.inlineNoticeMsg = String(msg || "");
+    this.state.inlineNoticeKind = String(kind || "info");
+    this.state.inlineNoticeAt = java.lang.System.currentTimeMillis();
+    safeLog(this.L, kind === "error" ? "e" : "i", "inline notice: " + this.state.inlineNoticeMsg);
+    if (this.renderInlineNoticeNow) this.renderInlineNoticeNow();
+  } catch(e) {
+    safeLog(null, "e", "setInlineNotice catch " + String(e));
+  }
+};
+FloatBallAppWM.prototype.consumeInlineNotice = function(maxAgeMs) {
+  try {
+    if (!this.state || !this.state.inlineNoticeMsg) return null;
+    var now = java.lang.System.currentTimeMillis();
+    var at = Number(this.state.inlineNoticeAt || 0);
+    if (maxAgeMs && at > 0 && now - at > maxAgeMs) {
+      this.state.inlineNoticeMsg = "";
+      this.state.inlineNoticeKind = "";
+      this.state.inlineNoticeAt = 0;
+      return null;
+    }
+    var ret = { msg: String(this.state.inlineNoticeMsg || ""), kind: String(this.state.inlineNoticeKind || "info"), at: at };
+    this.state.inlineNoticeMsg = "";
+    this.state.inlineNoticeKind = "";
+    this.state.inlineNoticeAt = 0;
+    return ret;
+  } catch(e) {
+    return null;
+  }
+};
+FloatBallAppWM.prototype.renderInlineNoticeNow = function() {
+  var self = this;
+  try {
+    if (!this.state || !this.state.settingsNoticeContainerRef) return;
+    var msg = String(this.state.inlineNoticeMsg || "");
+    var kind = String(this.state.inlineNoticeKind || "info");
+    var fn = function() {
+      try {
+        var box = self.state.settingsNoticeContainerRef;
+        if (!box) return;
+        box.removeAllViews();
+        if (!msg) { box.setVisibility(android.view.View.GONE); return; }
+        var isDark = self.isDarkTheme ? self.isDarkTheme() : false;
+        var C = self.ui && self.ui.colors ? self.ui.colors : {};
+        var T = self.getAnimalIslandTheme ? self.getAnimalIslandTheme() : null;
+        var primary = T && T.primaryDeep ? T.primaryDeep : (C.primary || android.graphics.Color.parseColor("#005BC0"));
+        var error = C.error || C.danger || android.graphics.Color.parseColor("#BA1A1A");
+        var okColor = C.success || primary;
+        var color = kind === "error" ? error : (kind === "ok" ? okColor : primary);
+        var bg = self.withAlpha ? self.withAlpha(color, isDark ? 0.20 : 0.10) : color;
+        var stroke = self.withAlpha ? self.withAlpha(color, isDark ? 0.44 : 0.28) : color;
+        var tv = new android.widget.TextView(context);
+        tv.setText(msg);
+        tv.setTextColor(color);
+        tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+        tv.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+        tv.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        if (self.ui && self.ui.createStrokeDrawable) tv.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
+        box.addView(tv, new android.widget.LinearLayout.LayoutParams(-1, -2));
+        box.setVisibility(android.view.View.VISIBLE);
+      } catch(eRun) { safeLog(null, "e", "renderInlineNoticeNow run catch " + String(eRun)); }
+    };
+    if (this.runOnUiThreadSafe) this.runOnUiThreadSafe(fn);
+    else fn();
+  } catch(e) {
+    safeLog(null, "e", "renderInlineNoticeNow catch " + String(e));
+  }
+};
 FloatBallAppWM.prototype.vibrateOnce = function(ms) {
   if (!this.config.LONG_PRESS_HAPTIC_ENABLE) return;
   try {
