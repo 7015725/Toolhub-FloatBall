@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。

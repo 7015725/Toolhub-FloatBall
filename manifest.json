@@ -70,7 +70,7 @@
       "size": 24999
     },
     "th_14_panels.js": {
-      "sha256": "6426f4513c5765eb1f690e2424ffd6af6998baa0ce043694893c8bcaf261e9f7",
+      "sha256": "2acda91cb692895f95e98cb23862d71e0e588d1493c7ac5337ed6496a37e5740",
       "size": 115350
     },
     "th_14_schema_editor.js": {
@@ -89,13 +89,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "设置页下载更新完成后增加重启 ToolHub 按钮",
-      "重启时关闭旧悬浮球并重新加载本地模块",
-      "增加重启中状态提示"
+      "最小更新 th_14_panels.js 版本标记，用于验证设置页更新检查、下载和重启流程"
     ],
     "date": "2026-07-03",
-    "title": "设置页更新重启体验"
+    "title": "设置页更新系统测试"
   },
   "schema": 2,
-  "version": 20260703044854
+  "version": 20260703050041
 }
