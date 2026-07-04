@@ -208,40 +208,107 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     var T = this.getAnimalIslandTheme();
     this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
     var menuItems = [
-      { label: "上移", kind: "up", enabled: idx > 0, danger: false },
-      { label: "下移", kind: "down", enabled: idx < buttons.length - 1, danger: false },
-      { label: "复制", kind: "copy", enabled: true, danger: false },
-      { label: (btnCfg.enabled === false) ? "启用" : "暂停", kind: "toggle", enabled: true, danger: false },
-      { label: "移除", kind: "remove", enabled: true, danger: true }
+      { label: "上移", hint: "提前显示", icon: "↑", kind: "up", enabled: idx > 0, danger: false },
+      { label: "下移", hint: "靠后显示", icon: "↓", kind: "down", enabled: idx < buttons.length - 1, danger: false },
+      { label: "复制", hint: "创建副本", icon: "+", kind: "copy", enabled: true, danger: false },
+      { label: (btnCfg.enabled === false) ? "启用" : "暂停", hint: (btnCfg.enabled === false) ? "恢复显示" : "临时隐藏", icon: (btnCfg.enabled === false) ? "✓" : "Ⅱ", kind: "toggle", enabled: true, danger: false },
+      { label: "移除", hint: "从列表删除", icon: "×", kind: "remove", enabled: true, danger: true }
     ];
-    var menuW = this.dp(168);
-    var rowH = this.dp(48);
+    var menuW = this.dp(224);
+    var rowH = this.dp(52);
+    var headerH = this.dp(54);
     var box = new android.widget.LinearLayout(context);
     box.setOrientation(android.widget.LinearLayout.VERTICAL);
-    box.setPadding(this.dp(4), this.dp(6), this.dp(4), this.dp(6));
+    box.setPadding(this.dp(8), this.dp(8), this.dp(8), this.dp(8));
     try {
-      var bg = this.ui.createStrokeDrawable(isDark ? C.cardDark : C.cardLight, this.withAlpha(T.stroke, isDark ? 0.34 : 0.46), this.dp(1), this.dp(16));
+      var bg = this.ui.createStrokeDrawable(isDark ? C.cardDark : C.cardLight, this.withAlpha(T.stroke, isDark ? 0.28 : 0.38), this.dp(1), this.dp(18));
       box.setBackground(bg);
-      try { box.setElevation(this.dp(8)); } catch(eElev) {}
+      try { box.setElevation(this.dp(10)); } catch(eElev) {}
+      try { box.setClipToOutline(true); } catch(eClipOutline) {}
     } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
+
+    var headerBox = new android.widget.LinearLayout(context);
+    headerBox.setOrientation(android.widget.LinearLayout.VERTICAL);
+    headerBox.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    headerBox.setPadding(this.dp(10), 0, this.dp(10), this.dp(6));
+    var titleTv = new android.widget.TextView(context);
+    titleTv.setText(String(btnCfg.title || "管理工具"));
+    titleTv.setTextColor(T.text);
+    titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+    titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
+    titleTv.setSingleLine(true);
+    titleTv.setEllipsize(android.text.TextUtils.TruncateAt.END);
+    try { titleTv.setIncludeFontPadding(false); } catch(eTitlePad) {}
+    headerBox.addView(titleTv);
+    var subTv = new android.widget.TextView(context);
+    subTv.setText("更多操作");
+    subTv.setTextColor(T.sub);
+    subTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+    subTv.setSingleLine(true);
+    try { subTv.setIncludeFontPadding(false); } catch(eSubPad) {}
+    var subLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    subLp.topMargin = this.dp(4);
+    headerBox.addView(subTv, subLp);
+    box.addView(headerBox, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, headerH));
+
+    var divider = new android.view.View(context);
+    divider.setBackgroundColor(this.withAlpha(T.stroke, isDark ? 0.24 : 0.30));
+    var dividerLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1);
+    dividerLp.setMargins(this.dp(6), 0, this.dp(6), this.dp(4));
+    box.addView(divider, dividerLp);
+
     var popup = new android.widget.PopupWindow(context);
     for (var mi = 0; mi < menuItems.length; mi++) {
       (function(menuItem) {
-        var row = new android.widget.TextView(context);
-        row.setText(String(menuItem.label || ""));
+        var row = new android.widget.LinearLayout(context);
+        row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
         row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        row.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-        row.setTypeface(null, android.graphics.Typeface.BOLD);
+        row.setPadding(self.dp(10), 0, self.dp(10), 0);
         var rowColor = menuItem.danger ? C.danger : T.primaryDeep;
-        row.setTextColor(menuItem.enabled ? rowColor : self.withAlpha(rowColor, 0.34));
-        row.setPadding(self.dp(14), 0, self.dp(14), 0);
         try { row.setMinHeight(rowH); row.setMinimumHeight(rowH); } catch(eRowH) {}
-        try { row.setIncludeFontPadding(false); } catch(eFontPad) {}
         try { row.setContentDescription(String(menuItem.label || "")); } catch(eDesc) {}
         try {
-          var rowBg = self.ui.createRoundDrawable(self.withAlpha(rowColor, menuItem.enabled ? 0.08 : 0.04), self.dp(12));
+          var rowBg = self.ui.createStrokeDrawable(self.withAlpha(rowColor, menuItem.enabled ? (menuItem.danger ? 0.09 : 0.07) : 0.03), self.withAlpha(rowColor, menuItem.enabled ? 0.16 : 0.08), self.dp(1), self.dp(14));
           row.setBackground(rowBg);
         } catch(eRowBg) {}
+
+        var iconTv = new android.widget.TextView(context);
+        iconTv.setText(String(menuItem.icon || ""));
+        iconTv.setGravity(android.view.Gravity.CENTER);
+        iconTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        iconTv.setTypeface(null, android.graphics.Typeface.BOLD);
+        iconTv.setTextColor(menuItem.enabled ? rowColor : self.withAlpha(rowColor, 0.34));
+        try { iconTv.setIncludeFontPadding(false); } catch(eIconPad) {}
+        try { iconTv.setBackground(self.ui.createRoundDrawable(self.withAlpha(rowColor, menuItem.enabled ? 0.13 : 0.05), self.dp(12))); } catch(eIconBg) {}
+        var iconLp = new android.widget.LinearLayout.LayoutParams(self.dp(32), self.dp(32));
+        iconLp.rightMargin = self.dp(10);
+        row.addView(iconTv, iconLp);
+
+        var textBox = new android.widget.LinearLayout(context);
+        textBox.setOrientation(android.widget.LinearLayout.VERTICAL);
+        textBox.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        var labelTv = new android.widget.TextView(context);
+        labelTv.setText(String(menuItem.label || ""));
+        labelTv.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        labelTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        labelTv.setTypeface(null, android.graphics.Typeface.BOLD);
+        labelTv.setTextColor(menuItem.enabled ? rowColor : self.withAlpha(rowColor, 0.34));
+        labelTv.setSingleLine(true);
+        try { labelTv.setIncludeFontPadding(false); } catch(eLabelPad) {}
+        textBox.addView(labelTv);
+        var hintTv = new android.widget.TextView(context);
+        hintTv.setText(String(menuItem.hint || ""));
+        hintTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+        hintTv.setTextColor(menuItem.enabled ? T.sub : self.withAlpha(T.sub, 0.38));
+        hintTv.setSingleLine(true);
+        try { hintTv.setIncludeFontPadding(false); } catch(eHintPad) {}
+        var hintLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        hintLp.topMargin = self.dp(4);
+        textBox.addView(hintTv, hintLp);
+        var textBoxLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        textBoxLp.weight = 1;
+        row.addView(textBox, textBoxLp);
+
         if (menuItem.enabled) {
           row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
             try { popup.dismiss(); } catch(eDismiss) {}
@@ -249,18 +316,18 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
           }}));
         }
         var rowLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, rowH);
-        rowLp.setMargins(0, self.dp(2), 0, self.dp(2));
+        rowLp.setMargins(0, self.dp(3), 0, self.dp(3));
         box.addView(row, rowLp);
       })(menuItems[mi]);
     }
     popup.setContentView(box);
     popup.setWidth(menuW);
-    popup.setHeight(rowH * menuItems.length + this.dp(12));
+    popup.setHeight(headerH + rowH * menuItems.length + this.dp(50));
     popup.setOutsideTouchable(true);
     popup.setFocusable(true);
     try { popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)); } catch(eBack) {}
     try { popup.setClippingEnabled(true); } catch(eClip) {}
-    popup.showAsDropDown(anchorView, -menuW + this.dp(48), 0);
+    popup.showAsDropDown(anchorView, -menuW + this.dp(48), this.dp(4));
   } catch(eDrop) {
     safeLog(null, 'e', "catch " + String(eDrop));
     try { self.showButtonManagerActionSheet(opt); } catch(eFallback) {}
