@@ -62,8 +62,8 @@
       "version": "1.0.0"
     },
     "th_14_button_editor.js": {
-      "sha256": "5e6caddd881da44b92bd8ddb766fbb2bb7c2bb0954178722d00f983bdb9f4ffa",
-      "size": 66297,
+      "sha256": "084609b4fd17d0bf0773d198ac3feb5828d97a3bb0691ca64809c0c8071839f1",
+      "size": 70664,
       "version": "0.0.0"
     },
     "th_14_button_icon_editor.js": {
@@ -110,10 +110,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化按钮管理更多菜单为下拉列表"
+      "优化按钮管理更多菜单的标题、图标、说明文字和间距"
     ],
-    "title": "优化按钮管理更多菜单为下拉列表"
+    "title": "优化按钮管理下拉菜单 UI"
   },
   "schema": 3,
-  "version": 20260704031043
+  "version": 20260704032255
 }
