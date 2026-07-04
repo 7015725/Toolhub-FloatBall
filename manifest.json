@@ -62,8 +62,8 @@
       "version": "1.0.0"
     },
     "th_14_button_editor.js": {
-      "sha256": "ac7d0ec9beede1694adb0c980d269a25f1bf8c11c8221c890e88927d934f6140",
-      "size": 60680,
+      "sha256": "5e6caddd881da44b92bd8ddb766fbb2bb7c2bb0954178722d00f983bdb9f4ffa",
+      "size": 66297,
       "version": "0.0.0"
     },
     "th_14_button_icon_editor.js": {
@@ -110,10 +110,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化设置页按钮管理列表布局"
+      "优化按钮管理更多菜单为下拉列表"
     ],
-    "title": "优化设置页按钮管理列表布局"
+    "title": "优化按钮管理更多菜单为下拉列表"
   },
   "schema": 3,
-  "version": 20260704021048
+  "version": 20260704031043
 }
