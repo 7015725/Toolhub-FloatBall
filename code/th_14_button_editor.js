@@ -147,11 +147,124 @@ FloatBallAppWM.prototype.createButtonManagerMoreButton = function(onClickFn) {
   try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
   try { tv.setContentDescription("更多操作"); } catch(eDesc) {}
   if (onClickFn) {
-    tv.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
-      try { onClickFn(); } catch(eClick) { safeLog(null, 'e', "catch " + String(eClick)); }
+    tv.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+      try { onClickFn(v || tv); } catch(eClick) { safeLog(null, 'e', "catch " + String(eClick)); }
     }}));
   }
   return tv;
+};
+
+FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) {
+  var self = this;
+  var opt = opts || {};
+  var buttons = opt.buttons || [];
+  var idx = Number(opt.index || 0);
+  var btnCfg = buttons[idx] || {};
+  function changed(msg, kind) {
+    try { if (opt.onChanged) opt.onChanged(String(msg || ""), String(kind || "ok")); } catch(eChanged) { safeLog(null, 'e', "catch " + String(eChanged)); }
+  }
+  function swap(a, b) {
+    try {
+      var temp = buttons[a];
+      buttons[a] = buttons[b];
+      buttons[b] = temp;
+      return true;
+    } catch(eSwap) { safeLog(null, 'e', "catch " + String(eSwap)); }
+    return false;
+  }
+  function runAction(itemKind) {
+    try {
+      if (itemKind === "up") {
+        if (swap(idx, idx - 1)) changed("已上移，点保存布置生效", "ok");
+      } else if (itemKind === "down") {
+        if (swap(idx, idx + 1)) changed("已下移，点保存布置生效", "ok");
+      } else if (itemKind === "copy") {
+        try {
+          var copy = JSON.parse(JSON.stringify(buttons[idx] || {}));
+          copy.title = String(copy.title || "工具") + " 副本";
+          buttons.splice(idx + 1, 0, copy);
+          changed("已复制，点保存布置生效", "ok");
+        } catch(eCopy) { changed("复制失败: " + String(eCopy), "error"); }
+      } else if (itemKind === "toggle") {
+        try {
+          btnCfg.enabled = (btnCfg.enabled === false) ? true : false;
+          changed((btnCfg.enabled === false) ? "已暂停，点保存布置生效" : "已启用，点保存布置生效", "ok");
+        } catch(eToggle) { changed("切换失败: " + String(eToggle), "error"); }
+      } else if (itemKind === "remove") {
+        try {
+          buttons.splice(idx, 1);
+          changed("已移除，点保存布置生效；点不改了可撤销", "ok");
+        } catch(eDel) { changed("移除失败: " + String(eDel), "error"); }
+      }
+    } catch(eRun) { safeLog(null, 'e', "catch " + String(eRun)); }
+  }
+  try {
+    if (!anchorView) {
+      try { this.showButtonManagerActionSheet(opt); } catch(eNoAnchorFallback) {}
+      return;
+    }
+    var isDark = this.isDarkTheme();
+    var C = this.ui.colors;
+    var T = this.getAnimalIslandTheme();
+    this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
+    var menuItems = [
+      { label: "上移", kind: "up", enabled: idx > 0, danger: false },
+      { label: "下移", kind: "down", enabled: idx < buttons.length - 1, danger: false },
+      { label: "复制", kind: "copy", enabled: true, danger: false },
+      { label: (btnCfg.enabled === false) ? "启用" : "暂停", kind: "toggle", enabled: true, danger: false },
+      { label: "移除", kind: "remove", enabled: true, danger: true }
+    ];
+    var menuW = this.dp(168);
+    var rowH = this.dp(48);
+    var box = new android.widget.LinearLayout(context);
+    box.setOrientation(android.widget.LinearLayout.VERTICAL);
+    box.setPadding(this.dp(4), this.dp(6), this.dp(4), this.dp(6));
+    try {
+      var bg = this.ui.createStrokeDrawable(isDark ? C.cardDark : C.cardLight, this.withAlpha(T.stroke, isDark ? 0.34 : 0.46), this.dp(1), this.dp(16));
+      box.setBackground(bg);
+      try { box.setElevation(this.dp(8)); } catch(eElev) {}
+    } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
+    var popup = new android.widget.PopupWindow(context);
+    for (var mi = 0; mi < menuItems.length; mi++) {
+      (function(menuItem) {
+        var row = new android.widget.TextView(context);
+        row.setText(String(menuItem.label || ""));
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        row.setTypeface(null, android.graphics.Typeface.BOLD);
+        var rowColor = menuItem.danger ? C.danger : T.primaryDeep;
+        row.setTextColor(menuItem.enabled ? rowColor : self.withAlpha(rowColor, 0.34));
+        row.setPadding(self.dp(14), 0, self.dp(14), 0);
+        try { row.setMinHeight(rowH); row.setMinimumHeight(rowH); } catch(eRowH) {}
+        try { row.setIncludeFontPadding(false); } catch(eFontPad) {}
+        try { row.setContentDescription(String(menuItem.label || "")); } catch(eDesc) {}
+        try {
+          var rowBg = self.ui.createRoundDrawable(self.withAlpha(rowColor, menuItem.enabled ? 0.08 : 0.04), self.dp(12));
+          row.setBackground(rowBg);
+        } catch(eRowBg) {}
+        if (menuItem.enabled) {
+          row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
+            try { popup.dismiss(); } catch(eDismiss) {}
+            try { runAction(String(menuItem.kind || "")); } catch(eAction) { safeLog(null, 'e', "catch " + String(eAction)); }
+          }}));
+        }
+        var rowLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, rowH);
+        rowLp.setMargins(0, self.dp(2), 0, self.dp(2));
+        box.addView(row, rowLp);
+      })(menuItems[mi]);
+    }
+    popup.setContentView(box);
+    popup.setWidth(menuW);
+    popup.setHeight(rowH * menuItems.length + this.dp(12));
+    popup.setOutsideTouchable(true);
+    popup.setFocusable(true);
+    try { popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)); } catch(eBack) {}
+    try { popup.setClippingEnabled(true); } catch(eClip) {}
+    popup.showAsDropDown(anchorView, -menuW + this.dp(48), 0);
+  } catch(eDrop) {
+    safeLog(null, 'e', "catch " + String(eDrop));
+    try { self.showButtonManagerActionSheet(opt); } catch(eFallback) {}
+  }
 };
 
 FloatBallAppWM.prototype.showButtonManagerActionSheet = function(opts) {
@@ -160,7 +273,7 @@ FloatBallAppWM.prototype.showButtonManagerActionSheet = function(opts) {
   var buttons = opt.buttons || [];
   var idx = Number(opt.index || 0);
   var btnCfg = buttons[idx] || {};
-  var title = String(btnCfg.title || "无标题");
+  var buttonName = String(btnCfg.title || "无标题");
   function changed(msg, kind) {
     try { if (opt.onChanged) opt.onChanged(String(msg || ""), String(kind || "ok")); } catch(eChanged) { safeLog(null, 'e', "catch " + String(eChanged)); }
   }
@@ -179,7 +292,7 @@ FloatBallAppWM.prototype.showButtonManagerActionSheet = function(opts) {
       preferAllVisible: false,
       builder: function(content, closePopup) {
         var desc = new android.widget.TextView(context);
-        desc.setText(title);
+        desc.setText(buttonName);
         desc.setTextColor(self.getAnimalIslandTheme().sub);
         desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
         desc.setSingleLine(true);
@@ -675,8 +788,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
           statusLp.leftMargin = self.dp(8);
           mainRow.addView(statusChip, statusLp);
 
-          var moreBtn = self.createButtonManagerMoreButton(function() {
-            self.showButtonManagerActionSheet({
+          var moreBtn = self.createButtonManagerMoreButton(function(anchorView) {
+            self.showButtonManagerDropdown(anchorView, {
               buttons: buttons,
               index: idx,
               onChanged: function(msg, kind) {
