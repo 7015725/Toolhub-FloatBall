@@ -1,6 +1,9 @@
 name: sign-toolhub
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch:
     inputs:
       title:
@@ -17,27 +20,56 @@ on:
         type: string
 
 permissions:
+  actions: write
   contents: write
+  pull-requests: read
+
+concurrency:
+  group: sign-toolhub-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   sign:
     name: sign-toolhub
     runs-on: ubuntu-latest
     environment: signing
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.pull_request.base.ref == 'main' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.draft == false &&
+        (
+          startsWith(github.event.pull_request.head.ref, 'fix/') ||
+          startsWith(github.event.pull_request.head.ref, 'rollback/')
+        )
+      )
+    env:
+      TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
     steps:
       - name: Checkout selected branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
 
       - name: Guard branch
         shell: bash
         run: |
-          if [ "$GITHUB_REF_NAME" = "main" ]; then
-            echo "sign-toolhub runs on feature branches only"
-            exit 1
-          fi
+          case "$TARGET_BRANCH" in
+            main)
+              echo "sign-toolhub runs on feature branches only"
+              exit 1
+              ;;
+            fix/*|rollback/*)
+              ;;
+            *)
+              if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+                echo "skip branch: $TARGET_BRANCH"
+                exit 0
+              fi
+              ;;
+          esac
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -60,11 +92,24 @@ jobs:
       - name: Generate signed manifest
         shell: bash
         env:
-          TITLE: ${{ inputs.title }}
-          CHANGE: ${{ inputs.change }}
-          RELEASE_DATE: ${{ inputs.date }}
+          INPUT_TITLE: ${{ github.event.inputs.title || '' }}
+          INPUT_CHANGE: ${{ github.event.inputs.change || '' }}
+          RELEASE_DATE: ${{ github.event.inputs.date || '' }}
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
         run: |
-          args=(--yes --title "$TITLE" --change "$CHANGE")
+          title="$INPUT_TITLE"
+          change="$INPUT_CHANGE"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            title="$PR_TITLE"
+            change="$PR_TITLE"
+          fi
+          if [ -z "${title// /}" ]; then
+            title="ToolHub 自动签名更新"
+          fi
+          if [ -z "${change// /}" ]; then
+            change="$title"
+          fi
+          args=(--yes --title "$title" --change "$change")
           if [ -n "$RELEASE_DATE" ]; then
             args+=(--date "$RELEASE_DATE")
           fi
@@ -83,6 +128,7 @@ jobs:
           git diff --check
 
       - name: Commit generated artifacts
+        id: commit-generated
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -90,7 +136,17 @@ jobs:
           git add manifest.json manifest.sig ToolHub.js.sha256
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git commit -m "签名 ToolHub 更新"
-          git push origin "HEAD:$GITHUB_REF_NAME"
+          git push origin "HEAD:$TARGET_BRANCH"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger verify for generated commit
+        if: steps.commit-generated.outputs.changed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run verify.yml --ref "$TARGET_BRANCH"
