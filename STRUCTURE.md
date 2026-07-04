@@ -76,7 +76,7 @@ Toolhub-FloatBall/
     └── verify_toolapp_single_root.py
 ```
 
-当前实际加载 **21 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮编辑、颜色选择器、图标选择器和 schema 编辑器；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载。
+当前实际加载 **21 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；`th_14_button_editor.js` 承载按钮管理紧凑列表、筛选、状态菜单和排序模式，快捷方式选择能力由 `th_14_button_shortcut.js` 承载。
 
 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而有意保留，不是遗漏；本仓库不会为了填补空号重命名历史文件，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
 
