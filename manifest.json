@@ -62,7 +62,7 @@
       "version": "1.0.0"
     },
     "th_14_button_editor.js": {
-      "sha256": "084609b4fd17d0bf0773d198ac3feb5828d97a3bb0691ca64809c0c8071839f1",
+      "sha256": "51852a01ef97927aa952f68ae8d6dd8ddc699ec425ee234ece309f2958d947ed",
       "size": 70664,
       "version": "0.0.0"
     },
@@ -110,10 +110,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化按钮管理下拉菜单 UI"
+      "优化工具管理列表布局"
     ],
-    "title": "优化按钮管理下拉菜单 UI"
+    "title": "优化工具管理列表布局"
   },
   "schema": 3,
-  "version": 20260704032448
+  "version": 20260704040506
 }
