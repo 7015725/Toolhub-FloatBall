@@ -1,0 +1,101 @@
+name: rollback-toolhub
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: '稳定 tag 或 commit，例如 v20260703110021'
+        required: true
+        type: string
+      title:
+        description: '回滚 PR 标题，留空自动生成'
+        required: false
+        type: string
+      change:
+        description: '回滚更新记录，写入 manifest.release.changes'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  rollback:
+    name: rollback-toolhub
+    runs-on: ubuntu-latest
+    environment: signing
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install signing key
+        shell: bash
+        env:
+          TOOLHUB_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.TOOLHUB_SIGNING_PRIVATE_KEY_PEM }}
+        run: |
+          if [ -z "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" ]; then
+            echo "TOOLHUB_SIGNING_PRIVATE_KEY_PEM is empty"
+            exit 1
+          fi
+          mkdir -p "$HOME/.hermes/toolhub_signing"
+          printf '%s\n' "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" > "$HOME/.hermes/toolhub_signing/private_key.pem"
+          chmod 600 "$HOME/.hermes/toolhub_signing/private_key.pem"
+
+      - name: Restore target and regenerate manifest
+        shell: bash
+        env:
+          TARGET_REF: ${{ inputs.target_ref }}
+          TITLE: ${{ inputs.title }}
+          CHANGE: ${{ inputs.change }}
+        run: |
+          git fetch --all --tags
+          branch="rollback/${GITHUB_RUN_ID}"
+          git switch -c "$branch"
+          git restore --source="$TARGET_REF" -- ToolHub.js code
+          title="$TITLE"
+          if [ -z "$title" ]; then
+            title="回滚到 $TARGET_REF"
+          fi
+          python3 scripts/generate_signed_manifest.py --yes --title "$title" --change "$CHANGE"
+          echo "$branch" > .rollback_branch
+          echo "$title" > .rollback_title
+
+      - name: Verify rollback branch
+        shell: bash
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_manifest.py
+          python3 scripts/verify_toolapp_single_root.py
+          python3 scripts/verify_toolapp_adaptive_size.py
+          python3 scripts/verify_button_editor_layout.py
+          python3 scripts/verify_schema_validator.py
+          python3 .github/scripts/verify_manifest_signature.py
+          git diff --check
+
+      - name: Push rollback branch and create PR
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANGE: ${{ inputs.change }}
+        run: |
+          branch="$(cat .rollback_branch)"
+          title="$(cat .rollback_title)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ToolHub.js ToolHub.js.sha256 manifest.json manifest.sig code
+          if git diff --cached --quiet; then
+            echo "No rollback changes"
+            exit 1
+          fi
+          git commit -m "$title"
+          git push origin "HEAD:$branch"
+          gh pr create --base main --head "$branch" --title "$title" --body "$CHANGE"

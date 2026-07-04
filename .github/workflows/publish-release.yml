@@ -1,0 +1,80 @@
+name: publish-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag，留空使用 v<manifest.version>'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: publish-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Build release metadata
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = json.loads(Path('manifest.json').read_text(encoding='utf-8'))
+          tag = (os.environ.get('INPUT_TAG') or '').strip() or ('v%s' % manifest.get('version'))
+          release = manifest.get('release') or {}
+          title = str(release.get('title') or ('ToolHub ' + tag))
+          changes = release.get('changes') or []
+          lines = []
+          if changes:
+              for item in changes:
+                  text = str(item).strip()
+                  if text:
+                      lines.append('- ' + text)
+          if not lines:
+              lines.append('- ToolHub 更新。')
+          Path('.release_tag').write_text(tag + '\n', encoding='utf-8')
+          Path('.release_title').write_text(title + '\n', encoding='utf-8')
+          Path('.release_notes').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          print('release_tag=' + tag)
+          print('release_title=' + title)
+          PY
+
+      - name: Publish GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(cat .release_tag)"
+          title="$(cat .release_title)"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --title "$title" --notes-file .release_notes --target main
+            gh release upload "$tag" ToolHub.js ToolHub.js.sha256 manifest.json manifest.sig --clobber
+          else
+            gh release create "$tag" ToolHub.js ToolHub.js.sha256 manifest.json manifest.sig --target main --title "$title" --notes-file .release_notes
+          fi
+
+      - name: Mirror release tag to Gitea
+        shell: bash
+        env:
+          GITEA_PUSH_URL: ${{ secrets.GITEA_PUSH_URL }}
+        run: |
+          if [ -z "$GITEA_PUSH_URL" ]; then
+            echo "GITEA_PUSH_URL is empty, skip Gitea tag mirror"
+            exit 0
+          fi
+          tag="$(cat .release_tag)"
+          git remote add gitea "$GITEA_PUSH_URL"
+          git push gitea "refs/tags/$tag:refs/tags/$tag"

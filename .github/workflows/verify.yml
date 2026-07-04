@@ -1,0 +1,47 @@
+name: verify
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run ToolHub verification
+        shell: bash
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_manifest.py
+          python3 scripts/verify_toolapp_single_root.py
+          python3 scripts/verify_toolapp_adaptive_size.py
+          python3 scripts/verify_button_editor_layout.py
+          python3 scripts/verify_schema_validator.py
+          python3 .github/scripts/verify_manifest_signature.py
+
+      - name: Check git whitespace
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags origin "${{ github.base_ref }}" --depth=1
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          else
+            git show --check --pretty=oneline --summary HEAD
+          fi

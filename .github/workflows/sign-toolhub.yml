@@ -1,0 +1,96 @@
+name: sign-toolhub
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: '发布标题，写入 manifest.release.title'
+        required: true
+        type: string
+      change:
+        description: '更新记录，写入 manifest.release.changes'
+        required: true
+        type: string
+      date:
+        description: '发布日期，留空由脚本保持为空'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  sign:
+    name: sign-toolhub
+    runs-on: ubuntu-latest
+    environment: signing
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Guard branch
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "sign-toolhub runs on feature branches only"
+            exit 1
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install signing key
+        shell: bash
+        env:
+          TOOLHUB_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.TOOLHUB_SIGNING_PRIVATE_KEY_PEM }}
+        run: |
+          if [ -z "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" ]; then
+            echo "TOOLHUB_SIGNING_PRIVATE_KEY_PEM is empty"
+            exit 1
+          fi
+          mkdir -p "$HOME/.hermes/toolhub_signing"
+          printf '%s\n' "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" > "$HOME/.hermes/toolhub_signing/private_key.pem"
+          chmod 600 "$HOME/.hermes/toolhub_signing/private_key.pem"
+
+      - name: Generate signed manifest
+        shell: bash
+        env:
+          TITLE: ${{ inputs.title }}
+          CHANGE: ${{ inputs.change }}
+          RELEASE_DATE: ${{ inputs.date }}
+        run: |
+          args=(--yes --title "$TITLE" --change "$CHANGE")
+          if [ -n "$RELEASE_DATE" ]; then
+            args+=(--date "$RELEASE_DATE")
+          fi
+          python3 scripts/generate_signed_manifest.py "${args[@]}"
+
+      - name: Verify generated artifacts
+        shell: bash
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_manifest.py
+          python3 scripts/verify_toolapp_single_root.py
+          python3 scripts/verify_toolapp_adaptive_size.py
+          python3 scripts/verify_button_editor_layout.py
+          python3 scripts/verify_schema_validator.py
+          python3 .github/scripts/verify_manifest_signature.py
+          git diff --check
+
+      - name: Commit generated artifacts
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json manifest.sig ToolHub.js.sha256
+          if git diff --cached --quiet; then
+            echo "No generated artifact changes"
+            exit 0
+          fi
+          git commit -m "签名 ToolHub 更新"
+          git push origin "HEAD:$GITHUB_REF_NAME"
