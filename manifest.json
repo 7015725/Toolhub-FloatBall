@@ -108,6 +108,12 @@
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
+  "release": {
+    "changes": [
+      "优化工具管理列表布局"
+    ],
+    "title": "优化工具管理列表布局"
+  },
   "schema": 3,
-  "version": 20260704040346
+  "version": 20260704040506
 }
