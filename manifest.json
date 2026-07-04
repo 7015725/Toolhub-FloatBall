@@ -110,10 +110,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化按钮管理更多菜单的标题、图标、说明文字和间距"
+      "优化按钮管理下拉菜单 UI"
     ],
     "title": "优化按钮管理下拉菜单 UI"
   },
   "schema": 3,
-  "version": 20260704032255
+  "version": 20260704032448
 }
