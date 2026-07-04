@@ -76,5 +76,8 @@ jobs:
             exit 0
           fi
           tag="$(cat .release_tag)"
+          if ! git show-ref --verify --quiet "refs/tags/$tag"; then
+            git fetch origin "refs/tags/$tag:refs/tags/$tag"
+          fi
           git remote add gitea "$GITEA_PUSH_URL"
           git push gitea "refs/tags/$tag:refs/tags/$tag"
