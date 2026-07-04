@@ -667,7 +667,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var searchRow = new android.widget.LinearLayout(context);
     searchRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     searchRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    var searchInput = self.ui.createInputGroup(self, "寻找工具", self.state.buttonManagerQuery || "", false, "名称 / 类型 / 包名 / 命令");
+    var searchInput = self.ui.createInputGroup(self, "搜索工具", self.state.buttonManagerQuery || "", false, "名称 / 类型 / 包名 / 命令");
     var searchInputLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     searchInputLp.weight = 1;
     searchRow.addView(searchInput.view, searchInputLp);
@@ -679,7 +679,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var btnSearchLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     btnSearchLp.leftMargin = self.dp(8);
     searchRow.addView(btnSearch, btnSearchLp);
-    var btnClearSearch = self.createButtonManagerActionChip("重置", subTextColor, self.withAlpha(subTextColor, 0.24), function() {
+    var btnClearSearch = self.createButtonManagerActionChip("清空", subTextColor, self.withAlpha(subTextColor, 0.24), function() {
       self.state.buttonManagerQuery = "";
       self.state.buttonManagerFilter = "all";
       self.state.btnEditorListScrollY = 0;
@@ -888,7 +888,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         emptyBox.addView(emptyIcon);
 
         var emptyTv = new android.widget.TextView(context);
-        var emptyMsg = activeQuery ? "没有匹配的工具，点重置查看全部" : (activeFilter !== "all" ? "当前筛选没有工具，切回全部查看" : "暂无按钮，点击右上角添加");
+        var emptyMsg = activeQuery ? "没有匹配的工具，点清空查看全部" : (activeFilter !== "all" ? "当前筛选没有工具，切回全部查看" : "暂无按钮，点击右上角添加");
         emptyTv.setText(emptyMsg);
         emptyTv.setTextColor(subTextColor);
         emptyTv.setPadding(0, self.dp(16), 0, 0);
