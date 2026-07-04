@@ -62,8 +62,8 @@
       "version": "1.0.0"
     },
     "th_14_button_editor.js": {
-      "sha256": "9220ed189eca422c8076fcbf19d787fdab77dacf6b575d413e54c62693e87e35",
-      "size": 51074,
+      "sha256": "ac7d0ec9beede1694adb0c980d269a25f1bf8c11c8221c890e88927d934f6140",
+      "size": 60680,
       "version": "0.0.0"
     },
     "th_14_button_icon_editor.js": {
@@ -110,12 +110,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因更新重启关闭未等待完成导致旧 UI 残留的问题",
-      "优化重启前实例清理，先广播关闭并等待旧悬浮窗释放后再启动新 UI"
+      "优化设置页按钮管理列表布局"
     ],
-    "date": "2026-07-03",
-    "title": "修复旧 UI 残留"
+    "title": "优化设置页按钮管理列表布局"
   },
   "schema": 3,
-  "version": 20260703110021
+  "version": 20260704020123
 }
