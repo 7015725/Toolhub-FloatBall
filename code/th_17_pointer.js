@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -121,12 +121,12 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
   }
   var st = this.state.pointerTool;
   var dp = function(v) { return Math.max(1, Math.floor(Number(v) * (Number(this.state.density || 1) || 1))); };
-  st.pointerW = dp.call(this, 36);
-  st.pointerH = dp.call(this, 48);
-  st.anchorLocalX = dp.call(this, 18);
-  st.anchorLocalY = dp.call(this, 18);
-  st.handleLocalX = st.anchorLocalX;
-  st.handleLocalY = st.anchorLocalY;
+  st.pointerW = dp.call(this, 60);
+  st.pointerH = dp.call(this, 88);
+  st.anchorLocalX = dp.call(this, 17);
+  st.anchorLocalY = dp.call(this, 8);
+  st.handleLocalX = dp.call(this, 30);
+  st.handleLocalY = dp.call(this, 66);
   return st;
 };
 
@@ -444,11 +444,28 @@ FloatBallAppWM.prototype.pointerRectInside = function(x, y, rect) {
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 };
 
-FloatBallAppWM.prototype.getPointerActiveRoot = function() {
+FloatBallAppWM.prototype.pointerRectNear = function(x, y, rect) {
+  if (!rect) return false;
+  var padX = Math.max(1, this.dp(4));
+  var padY = Math.max(1, this.dp(6));
+  return x >= rect.left - padX && x <= rect.right + padX && y >= rect.top - padY && y <= rect.bottom + padY;
+};
+
+FloatBallAppWM.prototype.getPointerUiAutomation = function() {
   try {
-    if (typeof ui === "undefined" || !ui) return null;
-    try { return ui.getRootInActiveWindow(); } catch (e0) {}
-  } catch (e1) {}
+    if (typeof shortx !== "undefined" && shortx && shortx.getUiAutomation) {
+      var a = shortx.getUiAutomation();
+      if (a) return a;
+    }
+  } catch (e0) {}
+  try { if (typeof ui !== "undefined" && ui) return ui; } catch (e1) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.getPointerActiveRoot = function() {
+  var a = this.getPointerUiAutomation();
+  if (!a) return null;
+  try { return a.getRootInActiveWindow(); } catch (e0) {}
   return null;
 };
 
@@ -466,7 +483,7 @@ FloatBallAppWM.prototype.findPointerTextNodeAt = function(root, x, y) {
   function dfs(node, depth) {
     if (!node || depth > 40) return;
     var rect = th17NodeBounds(node);
-    var contains = rect && self.pointerRectInside(x, y, rect);
+    var contains = rect && self.pointerRectNear(x, y, rect);
     if (contains) {
       var txt = th17NodeText(node);
       if (txt && String(txt).replace(/\s+/g, "").length > 0) {
@@ -501,10 +518,33 @@ FloatBallAppWM.prototype.updatePointerInspect = function(force) {
   if (force !== true && !moved) return;
   st.lastQueryX = hp.x;
   st.lastQueryY = hp.y;
-  var root = this.getPointerActiveRoot();
-  var result = null;
-  try { if (root) result = this.findPointerTextNodeAt(root, hp.x, hp.y); } catch (eFind) { result = null; }
-  try { if (root) root.recycle(); } catch (eRecycleRoot) {}
+  var a = this.getPointerUiAutomation();
+  try {
+    if (a && a.getWindows) {
+      var wins = a.getWindows();
+      if (wins) {
+        for (var wi = 0; wi < wins.size(); wi++) {
+          var win = null;
+          var rootFromWin = null;
+          try {
+            win = wins.get(wi);
+            if (win) rootFromWin = win.getRoot();
+            if (rootFromWin) result = this.findPointerTextNodeAt(rootFromWin, hp.x, hp.y);
+          } catch (eWin) {
+            result = null;
+          } finally {
+            try { if (rootFromWin) rootFromWin.recycle(); } catch (eRootRecycle) {}
+          }
+          if (result && result.text && result.rect) break;
+        }
+      }
+    }
+  } catch (eWindows) {}
+  if (!result || !result.text || !result.rect) {
+    var root = this.getPointerActiveRoot();
+    try { if (root) result = this.findPointerTextNodeAt(root, hp.x, hp.y); } catch (eFind) { result = null; }
+    try { if (root) root.recycle(); } catch (eRecycleRoot) {}
+  }
   var now = th17Now();
   if (result && result.text && result.rect) {
     var key = this.pointerTextKeyOf(result);
