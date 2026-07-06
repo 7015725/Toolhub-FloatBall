@@ -115,11 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因吸边拖出未激活指针导致拖动悬浮球无法直接取字的问题"
+      "Fix edge drag pointer trigger"
     ],
-    "date": "2026-07-06",
-    "title": "指针拖出触发修复"
+    "title": "Fix edge drag pointer trigger"
   },
   "schema": 3,
-  "version": 20260706095406
+  "version": 20260706100150
 }
