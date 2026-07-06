@@ -107,18 +107,19 @@
       "version": "1.0.3"
     },
     "th_17_pointer.js": {
-      "sha256": "fb7a01fcfbd8c0171a228e940b4d13aedbc3336c2b481d99bed4fb06ef5d37f9",
-      "size": 29717,
-      "version": "1.0.2"
+      "sha256": "2ccf8b5a2682c1ddaef6ca24acac16ed93a945ba863e4451725b6fc84495effb",
+      "size": 31052,
+      "version": "1.0.3"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针命中点偏移"
+      "修复了因指针热点使用悬浮球中心导致端点附近文本识别失效的问题",
+      "恢复以指针箭头端点为取字和框选坐标，并补充附近文本命中容差"
     ],
-    "title": "修复指针命中点偏移"
+    "title": "修复指针端点取字"
   },
   "schema": 3,
-  "version": 20260706114000
+  "version": 20260706115413
 }
