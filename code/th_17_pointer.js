@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -151,6 +151,15 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       hoverX: 0,
       hoverY: 0,
       hoverMinMs: 800,
+      areaHoldToken: 0,
+      areaHoldAnchorX: -100000,
+      areaHoldAnchorY: -100000,
+      areaHoldSince: 0,
+      areaHoldDelay: 1000,
+      areaHoldStableSlop: 0,
+      areaHoldBreakSlop: 0,
+      areaCaptureInset: 0,
+      areaMinSize: 0,
       hot: false,
       clickCount: 0,
       lastClickTime: 0,
@@ -173,6 +182,10 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
   st.anchorLocalY = dp.call(this, 8);
   st.handleLocalX = dp.call(this, 30);
   st.handleLocalY = dp.call(this, 66);
+  st.areaHoldStableSlop = dp.call(this, 5);
+  st.areaHoldBreakSlop = dp.call(this, 14);
+  st.areaCaptureInset = dp.call(this, 3);
+  st.areaMinSize = dp.call(this, 8);
   return st;
 };
 
@@ -215,6 +228,10 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.hoverKey = "";
   st.hoverX = 0;
   st.hoverY = 0;
+  st.areaHoldToken++;
+  st.areaHoldAnchorX = -100000;
+  st.areaHoldAnchorY = -100000;
+  st.areaHoldSince = 0;
   st.hot = false;
   st.clickCount = 0;
   st.lastClickTime = 0;
@@ -277,6 +294,7 @@ FloatBallAppWM.prototype.removePointerCallbacks = function(st) {
   st.draggingInspectPosted = false;
   st.inspectPending = false;
   st.inspectFinishAfterResult = false;
+  st.areaHoldToken++;
   st.inspectSeq++;
 };
 
@@ -499,10 +517,106 @@ FloatBallAppWM.prototype.schedulePointerMove = function(x, y) {
       st.pointerY = st.lp.y;
       try { st.wm.updateViewLayout(st.root, st.lp); } catch (eU) { safeLog(self.L, 'e', "pointer update fail: " + String(eU)); }
       if (st.mode === "area_capture") self.updatePointerAreaSelection();
-      else self.scheduleDraggingInspect();
+      else {
+        self.updatePointerAreaHoldCandidate();
+        self.scheduleDraggingInspect();
+      }
     } catch (eRun) { safeLog(self.L, 'e', "schedulePointerMove run fail: " + String(eRun)); }
   }});
   try { st.handler.postDelayed(st.moveRunnable, 16); } catch (ePost) { st.dragUpdatePosted = false; }
+};
+
+
+FloatBallAppWM.prototype.resetPointerAreaHold = function() {
+  var st = this.ensurePointerToolState();
+  st.areaHoldToken++;
+  st.areaHoldAnchorX = -100000;
+  st.areaHoldAnchorY = -100000;
+  st.areaHoldSince = 0;
+};
+
+FloatBallAppWM.prototype.updatePointerAreaHoldCandidate = function() {
+  var st = this.ensurePointerToolState();
+  if (!st.active || st.closed || !st.dragging || st.mode !== "text_pick") return;
+  var hp = this.getPointerHotspot();
+  if (st.areaHoldAnchorX < -90000 || st.areaHoldAnchorY < -90000) {
+    st.areaHoldAnchorX = hp.x;
+    st.areaHoldAnchorY = hp.y;
+    st.areaHoldSince = th17Now();
+    st.areaHoldToken++;
+    this.schedulePointerAreaHoldCheck(st.areaHoldToken);
+    return;
+  }
+  var dx = hp.x - st.areaHoldAnchorX;
+  var dy = hp.y - st.areaHoldAnchorY;
+  var dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist > Math.max(1, Number(st.areaHoldBreakSlop || this.dp(14)))) {
+    st.areaHoldAnchorX = hp.x;
+    st.areaHoldAnchorY = hp.y;
+    st.areaHoldSince = th17Now();
+    st.areaHoldToken++;
+    this.schedulePointerAreaHoldCheck(st.areaHoldToken);
+    return;
+  }
+  if (dist > Math.max(1, Number(st.areaHoldStableSlop || this.dp(5)))) {
+    st.areaHoldAnchorX = Math.round(st.areaHoldAnchorX * 0.75 + hp.x * 0.25);
+    st.areaHoldAnchorY = Math.round(st.areaHoldAnchorY * 0.75 + hp.y * 0.25);
+  }
+};
+
+FloatBallAppWM.prototype.schedulePointerAreaHoldCheck = function(token) {
+  var st = this.ensurePointerToolState();
+  if (!st.active || st.closed || st.mode !== "text_pick" || !st.dragging) return;
+  if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
+  var self = this;
+  try {
+    st.handler.postDelayed(new java.lang.Runnable({ run: function() {
+      try {
+        var s = self.ensurePointerToolState();
+        if (!s.active || s.closed || s.mode !== "text_pick" || !s.dragging) return;
+        if (token !== s.areaHoldToken) return;
+        var hp = self.getPointerHotspot();
+        var dx = hp.x - s.areaHoldAnchorX;
+        var dy = hp.y - s.areaHoldAnchorY;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= Math.max(1, Number(s.areaHoldBreakSlop || self.dp(14)))) self.enterPointerAreaMode();
+        else self.updatePointerAreaHoldCandidate();
+      } catch (eRun) { safeLog(self.L, 'e', "schedulePointerAreaHoldCheck run fail: " + String(eRun)); }
+    }}), Math.max(300, Number(st.areaHoldDelay || 1000)));
+  } catch (ePost) {}
+};
+
+FloatBallAppWM.prototype.enterPointerAreaMode = function() {
+  var st = this.ensurePointerToolState();
+  if (!st.active || st.closed || st.mode !== "text_pick" || !st.dragging) return false;
+  var hp = this.getPointerHotspot();
+  st.mode = "area_capture";
+  st.areaHoldToken++;
+  st.inspectSeq++;
+  st.inspectPending = false;
+  st.inspectFinishAfterResult = false;
+  st.inspectLatestReason = "";
+  st.currentText = "";
+  st.currentRect = null;
+  st.currentKey = "";
+  st.hoverKey = "";
+  st.hoverSince = 0;
+  st.hot = false;
+  st.areaStartX = hp.x;
+  st.areaStartY = hp.y;
+  st.areaEndX = hp.x;
+  st.areaEndY = hp.y;
+  st.areaSelecting = true;
+  st.areaReady = false;
+  try { if (st.handler && st.inspectRunnable) st.handler.removeCallbacks(st.inspectRunnable); } catch (eRemoveInspect) {}
+  st.inspectPosted = false;
+  st.draggingInspectPosted = false;
+  this.updatePointerVisualHot(false);
+  this.updatePointerAreaSelection(hp.x, hp.y);
+  try { if (st.root) st.root.invalidate(); } catch (eInv) {}
+  try { this.toast("拖动框选区域"); } catch (eToast) {}
+  safeLog(this.L, 'i', "pointer enter area_capture by hover");
+  return true;
 };
 
 FloatBallAppWM.prototype.scheduleDraggingInspect = function() {
@@ -937,6 +1051,7 @@ FloatBallAppWM.prototype.scheduleFinishPointerTextPick = function() {
 };
 
 FloatBallAppWM.prototype.normalizePointerCaptureRect = function(rect) {
+  var st = this.ensurePointerToolState();
   if (!rect) return null;
   var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
   var sh = Math.max(1, Number(this.state.screen && this.state.screen.h || 0));
@@ -947,7 +1062,7 @@ FloatBallAppWM.prototype.normalizePointerCaptureRect = function(rect) {
   var t = Math.min(th17Int(rect.top), th17Int(rect.bottom));
   var r = Math.max(th17Int(rect.left), th17Int(rect.right));
   var b = Math.max(th17Int(rect.top), th17Int(rect.bottom));
-  var minSize = Math.max(1, this.dp(8));
+  var minSize = Math.max(1, Number(st.areaMinSize || this.dp(8)));
   if (r - l < minSize) {
     var cx = Math.round((l + r) / 2);
     l = cx - Math.floor(minSize / 2);
@@ -1055,17 +1170,31 @@ FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed) return { ok: false, err: "指针未启动" };
   this.updatePointerAreaSelection();
+  var visualRect = this.normalizePointerCaptureRect(st.visualRect || st.captureRect);
   var captureRect = this.normalizePointerCaptureRect(st.captureRect || st.visualRect);
+  if (visualRect) {
+    var inset = Math.max(0, Number(st.areaCaptureInset || this.dp(3)));
+    var inner = {
+      left: visualRect.left + inset,
+      top: visualRect.top + inset,
+      right: visualRect.right - inset,
+      bottom: visualRect.bottom - inset
+    };
+    captureRect = this.normalizePointerCaptureRect(inner);
+  }
   if (!captureRect) {
     this.setPointerToolResult({ ok: false, type: "pointer_error", code: "EMPTY_RECT", message: "框选区域为空" });
     this.toast("框选区域为空");
     this.closePointerTool("框选区域为空", true);
     return { ok: false, err: "框选区域为空" };
   }
-  var visualRect = st.visualRect || captureRect;
+  if (!visualRect) visualRect = st.visualRect || captureRect;
   this.setPointerToolResult({
     ok: true,
     type: "area_capture",
+    code: "AREA_CAPTURE_SUCCESS",
+    message: "框选完成",
+    value: "",
     captureRect: captureRect,
     visualRect: visualRect
   });
@@ -1096,6 +1225,7 @@ FloatBallAppWM.prototype.onPointerBallDragStart = function(rawX, rawY) {
   st.dragStarted = false;
   st.moved = false;
   st.hot = false;
+  this.resetPointerAreaHold();
   if (st.mode === "area_capture") {
     var hp = this.getPointerHotspot();
     st.areaStartX = hp.x;
@@ -1111,6 +1241,7 @@ FloatBallAppWM.prototype.onPointerBallDragStart = function(rawX, rawY) {
     st.hoverKey = "";
     st.hoverSince = 0;
     this.hidePointerAreaFrame();
+    this.updatePointerAreaHoldCandidate();
   }
   try { if (st.root) st.root.invalidate(); } catch (eInv) {}
   return true;
@@ -1124,7 +1255,10 @@ FloatBallAppWM.prototype.onPointerBallDragging = function(ballX, ballY, rawX, ra
   st.moved = true;
   this.schedulePointerMove(ballX, ballY);
   if (st.mode === "area_capture") this.updatePointerAreaSelection();
-  else this.scheduleDraggingInspect();
+  else {
+    this.updatePointerAreaHoldCandidate();
+    this.scheduleDraggingInspect();
+  }
   return true;
 };
 
