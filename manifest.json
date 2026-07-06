@@ -107,18 +107,18 @@
       "version": "1.0.3"
     },
     "th_17_pointer.js": {
-      "sha256": "665904a35c72836de506f643fb7b5133b8045f63d3126743fa2cc7f4ba8c9e9b",
-      "size": 29513,
-      "version": "1.0.1"
+      "sha256": "fb7a01fcfbd8c0171a228e940b4d13aedbc3336c2b481d99bed4fb06ef5d37f9",
+      "size": 29717,
+      "version": "1.0.2"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针模块更新校验"
+      "修复指针命中点偏移"
     ],
-    "title": "修复指针模块更新校验"
+    "title": "修复指针命中点偏移"
   },
   "schema": 3,
-  "version": 20260706112230
+  "version": 20260706114000
 }
