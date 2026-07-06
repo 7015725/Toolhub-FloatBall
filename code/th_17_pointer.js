@@ -1,4 +1,4 @@
-// @version 1.0.8
+// @version 1.0.9
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1198,7 +1198,8 @@ FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
     captureRect: captureRect,
     visualRect: visualRect
   });
-  this.toast("框选完成");
+  safeLog(this.L, 'i', "pointer area_capture result captureRect=" + th17RectKey(captureRect) + " visualRect=" + th17RectKey(visualRect));
+  this.toast("框选完成: " + th17RectKey(captureRect));
   this.closePointerTool("框选完成", true);
   return { ok: true, captureRect: captureRect, visualRect: visualRect };
 };
