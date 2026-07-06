@@ -34,7 +34,7 @@ STRUCTURE.md
 
 ## 核心特性
 
-- **模块化加载**：入口文件只做启动、同步、校验与汇总返回；当前实际加载 21 个子模块。
+- **模块化加载**：入口文件只做启动、同步、校验与汇总返回；当前实际加载 22 个子模块。
 - **更新源切换**：入口支持在 Gitea 主源与 GitHub 镜像之间切换。
 - **安全更新模式**：默认使用 `UPDATE_SECURITY_MODE = 2`，启用 manifest 哈希校验、`manifest.sig` RSA 验签、keyId 校验和防回滚。
 - **SHA256 文件校验**：每个子模块按清单中的 `sha256` 和 `size` 校验，通过后才覆盖本地文件。
@@ -70,7 +70,7 @@ STRUCTURE.md
 2. 下载或读取 `manifest.json`
 3. 完整验签模式下下载并校验 `manifest.sig`
 4. 按安全模式记录清单版本与校验状态
-5. 按清单下载 21 个子模块到临时文件
+5. 按清单下载 22 个子模块到临时文件
 6. 校验模块 `size` 与 `sha256`
 7. 校验通过后覆盖本地模块
 8. `eval` 加载模块
@@ -139,6 +139,7 @@ shortx.getShortXDir()/
     │   ├── th_14_schema_editor.js
     │   ├── th_15_extra.js
     │   ├── th_16_entry.js
+    │   ├── th_17_pointer.js
     │   ├── .trusted_manifest_version
     │   └── .trusted_sha_<module>
     ├── logs/
@@ -181,7 +182,8 @@ Toolhub-FloatBall/
 │   ├── th_14_icon_picker.js
 │   ├── th_14_schema_editor.js
 │   ├── th_15_extra.js
-│   └── th_16_entry.js
+│   ├── th_16_entry.js
+│   └── th_17_pointer.js
 └── scripts/
     ├── generate_signed_manifest.py
     ├── verify_manifest.py
@@ -287,24 +289,25 @@ toolhub-targets-20260703-rsa3072
 | `th_08_content.js` | ContentProvider 查询、Content 类型按钮读取 |
 | `th_09_animation.js` | 悬浮球动画、吸边、面板显示隐藏、Mask、系统返回、预测性返回、缓存清理 |
 | `th_10_shell.js` | Shell 广播桥执行层 |
-| `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut |
+| `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut、Content、Pointer |
 | `th_12_rebuild.js` | 悬浮球重建、尺寸 / 图标 / 配置变化刷新 |
 | `th_13_panel_ui.js` | 设置项基础 UI：section、bool、int、float、action、文本输入等 |
 | `th_14_panels.js` | 设置主页、设置分组、按钮管理入口、弹窗基础、主题适配、更新状态展示 |
 | `th_14_button_shortcut.js` | 内联快捷方式选择、快捷方式图标异步加载与回填 |
-| `th_14_button_icon_editor.js` | 按钮图标编辑、图标来源选择与颜色联动 |
-| `th_14_button_editor.js` | 按钮编辑页、动作参数、保存校验与页面内反馈 |
+| `th_14_button_icon_editor.js` | 按钮图标来源、ShortX 图标预览、图标调色内联编辑与颜色联动 |
+| `th_14_button_editor.js` | 按钮管理紧凑列表、搜索筛选、状态 chip、更多菜单、排序模式、按钮编辑页、动作参数、保存校验与页面内反馈 |
 | `th_14_color_picker.js` | 颜色选择器：最近色、常用色、RGB、透明度、实时预览 |
 | `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
 | `th_14_schema_editor.js` | 设置结构编辑器 |
 | `th_15_extra.js` | 主面板构建、ToolApp Shell、页面栈、响应式布局、左右滑返回预览 |
 | `th_16_entry.js` | 主线程同步、广播注册、`startAsync`、`close`、`dispose`、生命周期管理 |
+| `th_17_pointer.js` | 指针取字、框选截图区域、OCR rect 输出与三连击取消 |
 
 ---
 
 ## 子模块命名规则
 
-当前 `manifest.json` 实际包含 **21 个子模块**。`th_07_shortcut.js` 已退役，编号从 `th_06` 跳到 `th_08` 是有意保留的历史空洞，不是遗漏。
+当前 `manifest.json` 实际包含 **22 个子模块**。`th_07_shortcut.js` 已退役，编号从 `th_06` 跳到 `th_08` 是有意保留的历史空洞。
 
 ### 文件名格式
 
@@ -446,6 +449,7 @@ execButtonAction(btn, idx)
 | `shell` | 通过 shell 广播桥发送 base64 命令，默认 root |
 | `broadcast` | 发送自定义广播，兼容 `extra` / `extras` |
 | `shortcut` | 执行 `shortcutJsCode`，用于锁定主 / 分身快捷方式 |
+| `pointer` | 启动屏幕指针，支持 `mode: "text_pick"` 取字和 `mode: "area_capture"` 框选区域 |
 
 ---
 
@@ -580,7 +584,7 @@ ARCHITECTURE.md
 base → core → icon / theme / persistence / parser / content
 → animation / shell / action / rebuild
 → panel_ui → panels → button_shortcut / button_icon_editor / button_editor
-→ color_picker / icon_picker / schema_editor → extra → entry
+→ extra → entry → pointer
 ```
 
 注意：
@@ -590,6 +594,7 @@ base → core → icon / theme / persistence / parser / content
 - `th_14_icon_picker.js` 应位于 `th_14_panels.js` 之后、`th_15_extra.js` 之前。
 - `th_15_extra.js` 依赖前面 UI、主题、设置、页面构建能力。
 - `th_16_entry.js` 最后加载，负责真正启动实例。
+- `th_17_pointer.js` 位于入口生命周期之后，接入按钮动作分发和悬浮球拖动路径。
 
 ---
 

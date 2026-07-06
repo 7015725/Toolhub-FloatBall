@@ -81,6 +81,10 @@ FloatBallAppWM.prototype.close = function() {
   } catch (eS) {}
   try { FileIO.flushDebouncedWrites(); } catch (eFlushCfg) { safeLog(this.L, 'e', "flushDebouncedWrites fail: " + String(eFlushCfg)); }
 
+  try {
+    if (typeof this.closePointerTool === "function") this.closePointerTool("ToolHub 关闭", true);
+  } catch (ePointerClose) { safeLog(this.L, 'e', "closePointerTool fail: " + String(ePointerClose)); }
+
   this.hideAllPanels();
 
   if (this.state.addedBall && this.state.ballRoot) this.safeRemoveView(this.state.ballRoot, "ballRoot");
