@@ -262,8 +262,6 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         var dp = function(v) { return self.dp(v); };
         var tipX = st.anchorLocalX;
         var tipY = st.anchorLocalY;
-        var hx = st.handleLocalX;
-        var hy = st.handleLocalY;
         var active = !!(st.hot || st.areaSelecting || st.areaReady);
         var dragging = !!st.dragging;
         var accentR = st.mode === "area_capture" ? 59 : (st.hot ? 245 : 76);
@@ -306,32 +304,6 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         p.setARGB(active ? 245 : 205, accentR, accentG, accentB);
         canvas.drawCircle(tipX, tipY, dp(1.6), p);
 
-        var pillW = dragging ? dp(28) : dp(26);
-        var pillH = dragging ? dp(24) : dp(22);
-        var left = hx - pillW / 2;
-        var top = hy - pillH / 2;
-        var right = hx + pillW / 2;
-        var bottom = hy + pillH / 2;
-        var radius = pillH / 2;
-        var rf = new android.graphics.RectF(left, top, right, bottom);
-
-        p.setStyle(android.graphics.Paint.Style.FILL);
-        try { p.setShadowLayer(dp(4), 0, dp(1.5), th17Color(46, 0, 0, 0)); } catch (e3) {}
-        if (active) p.setARGB(232, 239, 246, 255);
-        else if (dragging) p.setARGB(232, 244, 248, 255);
-        else p.setARGB(224, 248, 250, 252);
-        canvas.drawRoundRect(rf, radius, radius, p);
-        try { p.clearShadowLayer(); } catch (e4) {}
-
-        p.setStyle(android.graphics.Paint.Style.STROKE);
-        p.setStrokeWidth(dp(1.35));
-        p.setARGB(active ? 232 : 200, accentR, accentG, accentB);
-        canvas.drawRoundRect(rf, radius, radius, p);
-
-        p.setStrokeWidth(dp(1.45));
-        p.setARGB(active ? 215 : 165, accentR, accentG, accentB);
-        canvas.drawLine(hx - dp(4.8), hy - dp(2.4), hx + dp(4.8), hy - dp(2.4), p);
-        canvas.drawLine(hx - dp(4.8), hy + dp(2.4), hx + dp(4.8), hy + dp(2.4), p);
       } catch (drawError) {}
     }
   }, context);
