@@ -107,18 +107,18 @@
       "version": "1.0.3"
     },
     "th_17_pointer.js": {
-      "sha256": "8519e16e85104dcd03a7e931bcec208b76c7737e66fc8b1cc463fd4fef080bd4",
+      "sha256": "665904a35c72836de506f643fb7b5133b8045f63d3126743fa2cc7f4ba8c9e9b",
       "size": 29513,
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因指针工具额外显示独立手柄导致悬浮球手柄重复的问题"
+      "修复指针模块更新校验"
     ],
-    "title": "取消指针独立手柄"
+    "title": "修复指针模块更新校验"
   },
   "schema": 3,
-  "version": 20260706110808
+  "version": 20260706112230
 }
