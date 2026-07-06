@@ -97,8 +97,8 @@
       "version": "0.0.0"
     },
     "th_15_extra.js": {
-      "sha256": "73b3fb0d79a72ecb7ccce88a9df151a0584fa870636bac1444334c72c2dea97b",
-      "size": 134762,
+      "sha256": "310543eb6298df7909a2fbda397a2cfd8f7a142cf1f386048634d98c7c8d2cbd",
+      "size": 137933,
       "version": "1.0.0"
     },
     "th_16_entry.js": {
@@ -115,11 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "新增指针取字、框选截图区域和 OCR rect 输出能力",
-      "优化按钮动作分发，支持 Pointer 类型工具"
+      "Fix edge drag pointer trigger"
     ],
-    "title": "新增指针取字子模块"
+    "title": "Fix edge drag pointer trigger"
   },
   "schema": 3,
-  "version": 20260706073039
+  "version": 20260706100150
 }
