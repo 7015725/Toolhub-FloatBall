@@ -107,9 +107,9 @@
       "version": "1.0.3"
     },
     "th_17_pointer.js": {
-      "sha256": "0e7fc68749d85956f5a278c0c1cb4013403cc96cbba5f91232389fc97bc23137",
-      "size": 32920,
-      "version": "1.0.5"
+      "sha256": "a4040476b86904d9069e1c1fdbc2748b6b9495ee7e887d915923a1407439f30f",
+      "size": 43973,
+      "version": "1.0.7"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
@@ -120,5 +120,5 @@
     "title": "修复指针拖动卡顿"
   },
   "schema": 3,
-  "version": 20260706124023
+  "version": 20260706135628
 }
