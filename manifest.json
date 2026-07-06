@@ -107,18 +107,18 @@
       "version": "1.0.3"
     },
     "th_17_pointer.js": {
-      "sha256": "b6735640bd8ba2f048d1fee55ad2292c71061db7f61224fb73bd3fd5824b4c01",
-      "size": 30811,
+      "sha256": "8519e16e85104dcd03a7e931bcec208b76c7737e66fc8b1cc463fd4fef080bd4",
+      "size": 29513,
       "version": "1.0.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Fix edge drag pointer trigger"
+      "修复了因指针工具额外显示独立手柄导致悬浮球手柄重复的问题"
     ],
-    "title": "Fix edge drag pointer trigger"
+    "title": "取消指针独立手柄"
   },
   "schema": 3,
-  "version": 20260706100150
+  "version": 20260706110808
 }
