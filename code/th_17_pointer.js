@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -55,6 +55,29 @@ function th17NodeBounds(node) {
   } catch (e0) {}
   return null;
 }
+
+FloatBallAppWM.prototype.copyPointerTextToClipboard = function(textValue) {
+  var text = String(textValue || "");
+  if (!text) return false;
+  try {
+    var appCtx = null;
+    try {
+      if (typeof context !== "undefined" && context) appCtx = context;
+    } catch (eCtx0) {}
+    if (!appCtx) {
+      try { appCtx = android.app.ActivityThread.currentApplication(); } catch (eCtx1) { appCtx = null; }
+    }
+    if (!appCtx) return false;
+    var cm = appCtx.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+    if (!cm) return false;
+    var clip = android.content.ClipData.newPlainText("ToolHub指针取字", text);
+    cm.setPrimaryClip(clip);
+    return true;
+  } catch (e0) {
+    safeLog(this.L, 'e', "copyPointerTextToClipboard fail: " + String(e0));
+  }
+  return false;
+};
 
 FloatBallAppWM.prototype.ensurePointerToolState = function() {
   if (!this.state.pointerTool) {
@@ -575,31 +598,25 @@ FloatBallAppWM.prototype.extractCurrentPointerText = function() {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed) return { ok: false, err: "指针未启动" };
   this.updatePointerInspect(true);
-  var now = th17Now();
-  var waited = st.hoverSince > 0 ? (now - st.hoverSince) : 0;
   if (!st.currentText || !st.currentRect) {
     this.setPointerToolResult({ ok: false, type: "pointer_error", code: "NO_TEXT", message: "未命中文本" });
     this.toast("未命中文本");
     this.closePointerTool("未命中文本", true);
     return { ok: false, err: "未命中文本" };
   }
-  if (waited < 780) {
-    this.setPointerToolResult({ ok: false, type: "pointer_error", code: "HOVER_TOO_SHORT", message: "请悬停后松手" });
-    this.toast("请悬停后松手");
-    this.closePointerTool("悬停过短", true);
-    return { ok: false, err: "请悬停后松手" };
-  }
   var rect = st.currentRect;
   var textValue = String(st.currentText);
+  var copied = this.copyPointerTextToClipboard(textValue);
   this.setPointerToolResult({
     ok: true,
     type: "text_pick",
     value: textValue,
+    clipboard: copied === true,
     rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }
   });
-  this.toast(textValue);
-  this.closePointerTool("取字完成", true);
-  return { ok: true, text: textValue };
+  this.toast(copied ? "已复制: " + textValue : textValue);
+  this.closePointerTool(copied ? "已复制到剪贴板" : "取字完成", true);
+  return { ok: true, text: textValue, clipboard: copied === true };
 };
 
 FloatBallAppWM.prototype.normalizePointerCaptureRect = function(rect) {
