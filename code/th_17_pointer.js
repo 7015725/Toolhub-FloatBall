@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -121,12 +121,12 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
   }
   var st = this.state.pointerTool;
   var dp = function(v) { return Math.max(1, Math.floor(Number(v) * (Number(this.state.density || 1) || 1))); };
-  st.pointerW = dp.call(this, 60);
-  st.pointerH = dp.call(this, 88);
-  st.anchorLocalX = dp.call(this, 17);
-  st.anchorLocalY = dp.call(this, 8);
-  st.handleLocalX = dp.call(this, 30);
-  st.handleLocalY = dp.call(this, 66);
+  st.pointerW = dp.call(this, 36);
+  st.pointerH = dp.call(this, 48);
+  st.anchorLocalX = dp.call(this, 18);
+  st.anchorLocalY = dp.call(this, 18);
+  st.handleLocalX = st.anchorLocalX;
+  st.handleLocalY = st.anchorLocalY;
   return st;
 };
 
@@ -700,19 +700,24 @@ FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
   return { ok: true, captureRect: captureRect, visualRect: visualRect };
 };
 
+FloatBallAppWM.prototype.flushPointerPositionFromBall = function() {
+  var st = this.ensurePointerToolState();
+  if (!this.state.ballLp) return false;
+  var pos = this.pointerPositionFromBall(this.state.ballLp.x, this.state.ballLp.y);
+  st.pendingPointerX = pos.x;
+  st.pendingPointerY = pos.y;
+  st.pointerX = pos.x;
+  st.pointerY = pos.y;
+  if (st.lp) { st.lp.x = pos.x; st.lp.y = pos.y; }
+  try { if (st.root && st.wm && st.lp) st.wm.updateViewLayout(st.root, st.lp); } catch (eFlush) {}
+  return true;
+};
+
 FloatBallAppWM.prototype.onPointerBallDragStart = function(rawX, rawY) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed) return false;
   if (!st.root || !st.lp) this.showPointerWindow(st);
-  if (this.state.ballLp) {
-    var pos = this.pointerPositionFromBall(this.state.ballLp.x, this.state.ballLp.y);
-    st.pointerX = pos.x;
-    st.pointerY = pos.y;
-    st.pendingPointerX = pos.x;
-    st.pendingPointerY = pos.y;
-    if (st.lp) { st.lp.x = pos.x; st.lp.y = pos.y; }
-    try { if (st.root && st.wm && st.lp) st.wm.updateViewLayout(st.root, st.lp); } catch (eU) {}
-  }
+  this.flushPointerPositionFromBall();
   st.dragging = false;
   st.dragStarted = false;
   st.moved = false;
@@ -752,6 +757,7 @@ FloatBallAppWM.prototype.onPointerBallDragging = function(ballX, ballY, rawX, ra
 FloatBallAppWM.prototype.onPointerBallDragEnd = function(rawX, rawY, action) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed) return false;
+  this.flushPointerPositionFromBall();
   st.dragging = false;
   try { if (st.root) st.root.invalidate(); } catch (eInv) {}
   if (action === android.view.MotionEvent.ACTION_CANCEL) {
