@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -117,7 +117,9 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       pendingPointerY: 0,
       dragUpdatePosted: false,
       inspectPosted: false,
+      draggingInspectPosted: false,
       lastInspectTs: 0,
+      lastDragInspectTs: 0,
       lastQueryX: -100000,
       lastQueryY: -100000,
       currentText: "",
@@ -165,7 +167,9 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.closed = false;
   st.dragUpdatePosted = false;
   st.inspectPosted = false;
+  st.draggingInspectPosted = false;
   st.lastInspectTs = 0;
+  st.lastDragInspectTs = 0;
   st.lastQueryX = -100000;
   st.lastQueryY = -100000;
   st.currentText = "";
@@ -233,6 +237,7 @@ FloatBallAppWM.prototype.removePointerCallbacks = function(st) {
   st.stopInspectRunnable = null;
   st.dragUpdatePosted = false;
   st.inspectPosted = false;
+  st.draggingInspectPosted = false;
 };
 
 FloatBallAppWM.prototype.closePointerTool = function(reason, suppressCancel) {
@@ -387,6 +392,7 @@ FloatBallAppWM.prototype.getPointerHotspot = function() {
 
 FloatBallAppWM.prototype.updatePointerVisualHot = function(isHot) {
   var st = this.ensurePointerToolState();
+  if (st.hot === (isHot === true)) return;
   st.hot = isHot === true;
   try { if (st.root) st.root.invalidate(); } catch (e0) {}
 };
@@ -416,11 +422,31 @@ FloatBallAppWM.prototype.schedulePointerMove = function(x, y) {
       st.pointerY = st.lp.y;
       try { st.wm.updateViewLayout(st.root, st.lp); } catch (eU) { safeLog(self.L, 'e', "pointer update fail: " + String(eU)); }
       if (st.mode === "area_capture") self.updatePointerAreaSelection();
-      else self.scheduleInspect(false);
-      try { st.root.invalidate(); } catch (eInv) {}
+      else self.scheduleDraggingInspect();
     } catch (eRun) { safeLog(self.L, 'e', "schedulePointerMove run fail: " + String(eRun)); }
   }});
   try { st.handler.postDelayed(st.moveRunnable, 16); } catch (ePost) { st.dragUpdatePosted = false; }
+};
+
+FloatBallAppWM.prototype.scheduleDraggingInspect = function() {
+  var st = this.ensurePointerToolState();
+  if (!st.active || st.closed || st.mode !== "text_pick") return;
+  if (!st.dragging) return;
+  if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
+  var now = th17Now();
+  if (now - st.lastDragInspectTs < 220) return;
+  st.lastDragInspectTs = now;
+  if (st.draggingInspectPosted || st.inspectPosted) return;
+  st.draggingInspectPosted = true;
+  var self = this;
+  st.inspectRunnable = new java.lang.Runnable({ run: function() {
+    try {
+      st.draggingInspectPosted = false;
+      if (!st.active || st.closed || !st.dragging) return;
+      self.updatePointerInspect(false);
+    } catch (eRun) { safeLog(self.L, 'e', "scheduleDraggingInspect run fail: " + String(eRun)); }
+  }});
+  try { st.handler.postDelayed(st.inspectRunnable, 80); } catch (ePost) { st.draggingInspectPosted = false; }
 };
 
 FloatBallAppWM.prototype.scheduleInspect = function(force) {
@@ -429,11 +455,16 @@ FloatBallAppWM.prototype.scheduleInspect = function(force) {
   if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
   if (force === true) {
     st.inspectPosted = false;
+    st.draggingInspectPosted = false;
     this.updatePointerInspect(true);
     return;
   }
   var now = th17Now();
-  if (now - st.lastInspectTs < 80) return;
+  if (st.dragging) {
+    this.scheduleDraggingInspect();
+    return;
+  }
+  if (now - st.lastInspectTs < 150) return;
   st.lastInspectTs = now;
   if (st.inspectPosted) return;
   st.inspectPosted = true;
@@ -445,7 +476,7 @@ FloatBallAppWM.prototype.scheduleInspect = function(force) {
       self.updatePointerInspect(false);
     } catch (eRun) { safeLog(self.L, 'e', "scheduleInspect run fail: " + String(eRun)); }
   }});
-  try { st.handler.postDelayed(st.inspectRunnable, 0); } catch (ePost) { st.inspectPosted = false; }
+  try { st.handler.postDelayed(st.inspectRunnable, 40); } catch (ePost) { st.inspectPosted = false; }
 };
 
 FloatBallAppWM.prototype.scheduleStopInspect = function() {
@@ -459,7 +490,7 @@ FloatBallAppWM.prototype.scheduleStopInspect = function() {
       self.updatePointerInspect(true);
     } catch (eRun) { safeLog(self.L, 'e', "scheduleStopInspect run fail: " + String(eRun)); }
   }});
-  try { st.handler.postDelayed(st.stopInspectRunnable, 40); } catch (ePost) {}
+  try { st.handler.postDelayed(st.stopInspectRunnable, 80); } catch (ePost) {}
 };
 
 FloatBallAppWM.prototype.pointerRectInside = function(x, y, rect) {
@@ -807,7 +838,7 @@ FloatBallAppWM.prototype.onPointerBallDragging = function(ballX, ballY, rawX, ra
   st.moved = true;
   this.schedulePointerMove(ballX, ballY);
   if (st.mode === "area_capture") this.updatePointerAreaSelection();
-  else this.scheduleInspect(false);
+  else this.scheduleDraggingInspect();
   return true;
 };
 
@@ -827,6 +858,7 @@ FloatBallAppWM.prototype.onPointerBallDragEnd = function(rawX, rawY, action) {
     this.finishPointerAreaCapture();
   } else if (st.mode === "text_pick") {
     this.scheduleInspect(true);
+    this.scheduleStopInspect();
     this.extractCurrentPointerText();
   }
   return true;
