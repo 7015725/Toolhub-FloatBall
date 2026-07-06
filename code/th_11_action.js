@@ -281,6 +281,22 @@ return;
     return;
   }
 
+  if (t === "pointer") {
+    if (typeof this.execPointerAction !== "function") {
+      this.toast("指针模块未加载");
+      safeLog(this.L, 'e', "pointer action missing execPointerAction idx=" + String(idx));
+      return;
+    }
+
+    var pr = this.execPointerAction(btn);
+    if (pr && pr.ok) return;
+
+    var perr = pr && pr.err ? String(pr.err) : "未知错误";
+    this.toast("指针启动失败: " + perr);
+    safeLog(this.L, 'e', "pointer action fail idx=" + String(idx) + " err=" + perr);
+    return;
+  }
+
   if (t === "shortcut") {
   // 这段代码的主要内容/用途：仅使用 JavaScript(startActivityAsUser) 执行快捷方式，取消 Shell 与所有兜底，避免弹出主/分身选择器。
   // 说明：

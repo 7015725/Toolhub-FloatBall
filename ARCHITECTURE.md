@@ -2,7 +2,7 @@
 
 更新时间：2026-07-03
 
-本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **21 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载。
+本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **22 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载。
 
 ---
 
@@ -24,7 +24,7 @@ ShortX JS 任务入口
 - `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
 - `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
 - `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
-- `code/th_*.js`：入口按顺序加载的子模块，当前为 21 个。
+- `code/th_*.js`：入口按顺序加载的子模块，当前为 22 个。
 
 ---
 
@@ -85,14 +85,15 @@ ballRoot / ballContent Touch
                  ├─ shell         → Shell 广播桥
                  ├─ broadcast     → 自定义广播
                  ├─ shortcut      → shortcutJsCode
-                 └─ content       → ContentProvider 查询 / 展示
+                 ├─ content       → ContentProvider 查询 / 展示
+                 └─ pointer       → 屏幕指针取字 / 框选区域
 ```
 
 ---
 
 ## 3. 模块分层
 
-当前实际加载 21 个子模块，入口 `modules[]` 顺序如下：
+当前实际加载 22 个子模块，入口 `modules[]` 顺序如下：
 
 ```text
 基础能力层
@@ -123,6 +124,9 @@ UI 基础与页面层
 
 生命周期入口层
   th_16_entry.js
+
+指针交互层
+  th_17_pointer.js
 ```
 
 模块职责：
@@ -156,7 +160,7 @@ th_10_shell.js
   Shell 广播桥执行层。
 
 th_11_action.js
-  execButtonAction(btn, idx)，按钮动作分发：设置、查看器、Toast、App、Shell、Broadcast、Shortcut、Content。
+  execButtonAction(btn, idx)，按钮动作分发：设置、查看器、Toast、App、Shell、Broadcast、Shortcut、Content、Pointer。
 
 th_12_rebuild.js
   悬浮球重建，尺寸 / 图标 / 配置变化刷新。
@@ -171,7 +175,7 @@ th_14_button_shortcut.js
   内联快捷方式选择、快捷方式图标异步加载与回填。
 
 th_14_button_icon_editor.js
-  按钮图标编辑、图标来源选择与颜色联动。
+  按钮图标来源、ShortX 图标预览、图标调色内联编辑与颜色联动。
 
 th_14_button_editor.js
   按钮管理紧凑列表、搜索筛选、状态 chip、更多菜单、排序模式、按钮编辑页、动作参数、保存校验与页面内反馈。
@@ -190,6 +194,9 @@ th_15_extra.js
 
 th_16_entry.js
   runOnMainSync、registerReceiverOnMain、startAsync、close、dispose、实例注册、设置页重启与生命周期收尾。
+
+th_17_pointer.js
+  指针取字、框选截图区域、OCR rect 输出与三连击取消。
 ```
 
 说明：
@@ -330,8 +337,9 @@ UPDATE_SECURITY_MODE = 2
 shortx.getShortXDir()/ToolHub/
 ├── code/
 │   ├── th_01_base.js
-│   ├── ... 21 个当前子模块
+│   ├── ... 22 个当前子模块
 │   ├── th_16_entry.js
+│   ├── th_17_pointer.js
 │   ├── .trusted_manifest_version
 │   └── .trusted_sha_<module>
 ├── logs/
@@ -1124,7 +1132,7 @@ th_<两位编号>_<模块名>.js
 当前实际情况：
 
 ```text
-当前模块数量：21
+当前模块数量：22
 已退役模块：th_07_shortcut.js
 当前历史空洞：th_07
 当前偏历史的 UI 编号：th_13 / th_14 / th_15 / th_16
@@ -1137,8 +1145,8 @@ th_<两位编号>_<模块名>.js
 当前可见风险点：
 
 ```text
-th_14_panels.js 偏大
-  当前承担设置主页、设置分组、按钮管理、按钮编辑、内联快捷方式选择、弹窗基础、主题适配等多类职责。
+th_14_panels.js 仍需关注
+  当前承担设置主页、设置分组、弹窗基础、主题适配等职责。
 
 th_15_extra.js 偏大
   当前承担主面板、ToolApp Shell、页面栈、响应式布局、左右滑返回预览等职责。
@@ -1166,10 +1174,13 @@ ToolAppBackGesture
   从 th_15_extra.js / th_09_animation.js 边界中拆出 ToolApp 横滑返回、返回预览、surface / edge 模式。
 
 ButtonManagerPage
-  从 th_14_panels.js 拆出按钮管理列表、搜索、排序、启用禁用、删除。
+  已拆入 th_14_button_editor.js，后续可继续细分搜索、排序、启用禁用、删除。
 
 ButtonEditorPage
-  从 th_14_panels.js 拆出一页式按钮编辑表单、动作参数区、底部暂存。
+  已拆入 th_14_button_editor.js / th_14_button_icon_editor.js，后续可继续细分动作参数区和底部暂存。
+
+ShortcutPicker
+  已拆入 th_14_button_shortcut.js，后续可继续细分快捷方式缓存与图标持久化。
 
 SettingsHomePage / SettingsGroupPage
   从 th_14_panels.js 拆出设置主页与设置分组页。
