@@ -2536,6 +2536,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
   var grabOffsetX = 0;
   var grabOffsetY = 0;
   var pointerActiveDown = false;
+  var edgePointerDrag = false;
 
   function recycleVelocityTracker() {
     try { if (velocityTracker) velocityTracker.recycle(); } catch (e) { safeLog(null, "e", "velocityTracker recycle fail: " + String(e)); }
@@ -2563,6 +2564,43 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
       }
       return self.state.ballLp.x;
     } catch (e) { return 0; }
+  }
+
+  function startEdgePointerDrag(di, edgeY, dx, curRawX, curRawY) {
+    try {
+      if (!downDocked) return false;
+      if (edgePointerDrag) return true;
+      if (typeof self.startPointerTool !== "function") return false;
+      var side = String(downDockSide || self.state.dockSide || "");
+      if (side === "left" && dx <= 0) return false;
+      if (side === "right" && dx >= 0) return false;
+      var pull = Math.abs(dx);
+      var trigger = Math.max(slop, Math.round(Number(di.hiddenPx || 0) * 0.55));
+      if (trigger < self.dp(8)) trigger = self.dp(8);
+      if (pull < trigger) return false;
+
+      self.state.docked = false;
+      self.state.dockSide = null;
+      self.state.ballLp.width = di.ballSize;
+      self.state.ballLp.y = self.clamp(edgeY, 0, self.state.screen.h - di.ballSize);
+      if (side === "right") self.state.ballLp.x = self.state.screen.w - di.ballSize;
+      else self.state.ballLp.x = 0;
+      try { self.state.ballContent.setX(0); } catch (eX) {}
+      try { self.state.ballContent.setAlpha(1.0); } catch (eA) {}
+      try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp); } catch (eU) { safeLog(null, "e", "edge pointer undock update fail: " + String(eU)); }
+
+      var pr = self.startPointerTool({ mode: "text_pick", source: "edge_drag" });
+      if (!pr || pr.ok === false) return false;
+      edgePointerDrag = true;
+      pointerActiveDown = true;
+      try { self.onPointerBallDragStart(startRawX, startRawY); } catch (ePtStart) { safeLog(null, "e", "edge pointer drag start fail: " + String(ePtStart)); }
+      try { self.onPointerBallDragging(self.state.ballLp.x, self.state.ballLp.y, curRawX, curRawY); } catch (ePtDrag) { safeLog(null, "e", "edge pointer first drag fail: " + String(ePtDrag)); }
+      safeLog(self.L, "i", "edge drag -> pointer side=" + side);
+      return true;
+    } catch (e0) {
+      safeLog(null, "e", "startEdgePointerDrag fail: " + String(e0));
+      return false;
+    }
   }
 
 
@@ -2595,6 +2633,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         grabOffsetX = startRawX - logicalDownX;
         grabOffsetY = startRawY - logicalDownY;
         pointerActiveDown = false;
+        edgePointerDrag = false;
         try { pointerActiveDown = (typeof self.isPointerToolActive === "function" && self.isPointerToolActive()); } catch (ePtActive0) { pointerActiveDown = false; }
         if (pointerActiveDown) {
           try { self.onPointerBallDragStart(startRawX, startRawY); } catch (ePtDown) { safeLog(null, "e", "pointer drag start fail: " + String(ePtDown)); }
@@ -2650,6 +2689,17 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         if (self.state.dragging) {
           if (downDocked) {
             var edgeY = self.clamp(logicalDownY + dy, 0, self.state.screen.h - di.ballSize);
+            if (startEdgePointerDrag(di, edgeY, dx, curRawX, curRawY)) {
+              var edgeTargetX = Math.round(curRawX - grabOffsetX);
+              var edgeTargetY = Math.round(curRawY - grabOffsetY);
+              self.state.docked = false;
+              self.state.dockSide = null;
+              self.state.ballLp.width = di.ballSize;
+              self.state.ballLp.x = self.clamp(edgeTargetX, 0, self.state.screen.w - di.ballSize);
+              self.state.ballLp.y = self.clamp(edgeTargetY, 0, self.state.screen.h - di.ballSize);
+              try { self.state.ballContent.setX(0); } catch (eEdgeX) {}
+              try { self.state.ballContent.setAlpha(1.0); } catch (eEdgeA) {}
+            } else {
             self.state.docked = true;
             self.state.dockSide = downDockSide || self.state.dockSide || "right";
             self.state.ballLp.width = di.visiblePx;
@@ -2662,6 +2712,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
               try { self.state.ballContent.setX(0); } catch (eRX) {}
             }
             try { self.state.ballContent.setAlpha(1.0); } catch (eAEdge) {}
+            }
           } else {
             var targetX = Math.round(curRawX - grabOffsetX);
             var targetY = Math.round(curRawY - grabOffsetY);
@@ -2718,6 +2769,12 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
           }
           recycleVelocityTracker();
           self.state.dragging = false;
+          if (edgePointerDrag && self.config.ENABLE_SNAP_TO_EDGE) {
+            try { self.snapToEdgeDocked(true, downDockSide || null); } catch (eEdgeDock) { safeLog(null, "e", "edge pointer dock fail: " + String(eEdgeDock)); }
+          } else if (edgePointerDrag) {
+            try { self.savePos(self.state.ballLp.x, self.state.ballLp.y); } catch (eEdgeSave) {}
+          }
+          edgePointerDrag = false;
           self.resetLongPressState();
           return true;
         }
