@@ -47,8 +47,8 @@
       "version": "1.0.1"
     },
     "th_11_action.js": {
-      "sha256": "9334263d45c83e1e0e1955de357e1debddb70a6bfcceb56704b7f3217e152299",
-      "size": 14912,
+      "sha256": "5ea0234cc3342b8f3a88f0ff354f655d093ead857ca6008e484fde6ec4011747",
+      "size": 15432,
       "version": "1.0.2"
     },
     "th_12_rebuild.js": {
@@ -97,23 +97,29 @@
       "version": "0.0.0"
     },
     "th_15_extra.js": {
-      "sha256": "fbf0fbce6326981aae2a709909d13c796bb8094a01cdaf2628a20324b4e517bf",
-      "size": 133075,
+      "sha256": "73b3fb0d79a72ecb7ccce88a9df151a0584fa870636bac1444334c72c2dea97b",
+      "size": 134762,
       "version": "1.0.0"
     },
     "th_16_entry.js": {
-      "sha256": "2e84cca7e57c59817bbdfef7bae86ef010506a371d68b00256f59aeabf1270e8",
-      "size": 12338,
+      "sha256": "e07e751e9e1ab71ad270f8e00c344632fdf547847088f501b7db74448a954bdb",
+      "size": 12550,
       "version": "1.0.3"
+    },
+    "th_17_pointer.js": {
+      "sha256": "b6735640bd8ba2f048d1fee55ad2292c71061db7f61224fb73bd3fd5824b4c01",
+      "size": 30811,
+      "version": "1.0.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化工具管理列表布局"
+      "新增指针取字、框选截图区域和 OCR rect 输出能力",
+      "优化按钮动作分发，支持 Pointer 类型工具"
     ],
-    "title": "优化工具管理列表布局"
+    "title": "新增指针取字子模块"
   },
   "schema": 3,
-  "version": 20260704040506
+  "version": 20260706073039
 }

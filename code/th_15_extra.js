@@ -2535,6 +2535,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
   var logicalDownY = 0;
   var grabOffsetX = 0;
   var grabOffsetY = 0;
+  var pointerActiveDown = false;
 
   function recycleVelocityTracker() {
     try { if (velocityTracker) velocityTracker.recycle(); } catch (e) { safeLog(null, "e", "velocityTracker recycle fail: " + String(e)); }
@@ -2593,6 +2594,11 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         logicalDownY = self.state.ballLp.y;
         grabOffsetX = startRawX - logicalDownX;
         grabOffsetY = startRawY - logicalDownY;
+        pointerActiveDown = false;
+        try { pointerActiveDown = (typeof self.isPointerToolActive === "function" && self.isPointerToolActive()); } catch (ePtActive0) { pointerActiveDown = false; }
+        if (pointerActiveDown) {
+          try { self.onPointerBallDragStart(startRawX, startRawY); } catch (ePtDown) { safeLog(null, "e", "pointer drag start fail: " + String(ePtDown)); }
+        }
 
         self.state.dragging = false;
         lastUpdateTs = 0;
@@ -2604,7 +2610,7 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
           try { v.animate().cancel(); v.setScaleX(1.0); v.setScaleY(1.0); } catch (eS1) {}
         }
 
-        self.armLongPress();
+        if (!pointerActiveDown) self.armLongPress();
         return true;
       }
 
@@ -2674,6 +2680,11 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
             catch (eU) { safeLog(null, "e", "drag updateViewLayout fail: " + String(eU)); }
             lastUpdateTs = now;
           }
+          try {
+            if (typeof self.isPointerToolActive === "function" && self.isPointerToolActive()) {
+              self.onPointerBallDragging(self.state.ballLp.x, self.state.ballLp.y, curRawX, curRawY);
+            }
+          } catch (ePtMove) { safeLog(null, "e", "pointer drag move fail: " + String(ePtMove)); }
         }
         return true;
       }
@@ -2693,6 +2704,21 @@ FloatBallAppWM.prototype.setupTouchListener = function() {
         if (self.state.longPressTriggered) {
           self.resetLongPressState();
           recycleVelocityTracker();
+          return true;
+        }
+
+        var pointerActiveUp = false;
+        try { pointerActiveUp = (typeof self.isPointerToolActive === "function" && self.isPointerToolActive()); } catch (ePtActive1) { pointerActiveUp = false; }
+        if (pointerActiveUp) {
+          if (!self.state.dragging && a === android.view.MotionEvent.ACTION_UP) {
+            try { self.onPointerBallTap(e.getRawX(), e.getRawY()); } catch (ePtTap) { safeLog(null, "e", "pointer tap fail: " + String(ePtTap)); }
+          } else {
+            try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp); } catch (ePtU) {}
+            try { self.onPointerBallDragEnd(e.getRawX(), e.getRawY(), a); } catch (ePtEnd) { safeLog(null, "e", "pointer drag end fail: " + String(ePtEnd)); }
+          }
+          recycleVelocityTracker();
+          self.state.dragging = false;
+          self.resetLongPressState();
           return true;
         }
 

@@ -66,7 +66,8 @@ Toolhub-FloatBall/
 │   ├── th_14_icon_picker.js
 │   ├── th_14_schema_editor.js
 │   ├── th_15_extra.js
-│   └── th_16_entry.js
+│   ├── th_16_entry.js
+│   └── th_17_pointer.js
 └── scripts/
     ├── generate_signed_manifest.py
     ├── verify_manifest.py
@@ -76,9 +77,9 @@ Toolhub-FloatBall/
     └── verify_toolapp_single_root.py
 ```
 
-当前实际加载 **21 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；`th_14_button_editor.js` 承载按钮管理紧凑列表、筛选、状态菜单和排序模式，快捷方式选择能力由 `th_14_button_shortcut.js` 承载。
+当前实际加载 **22 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；`th_14_button_editor.js` 承载按钮管理紧凑列表、筛选、状态菜单和排序模式，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载。
 
-当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而有意保留，不是遗漏；本仓库不会为了填补空号重命名历史文件，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
+当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而保留的历史编号；本仓库延续现有文件名，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
 
 ---
 
@@ -147,6 +148,7 @@ shortx.getShortXDir()/ToolHub/
 │   ├── th_01_base.js
 │   ├── ...
 │   ├── th_16_entry.js
+│   ├── th_17_pointer.js
 │   ├── .trusted_manifest_version
 │   └── .trusted_sha_<module>
 ├── logs/
@@ -208,18 +210,19 @@ th_16_entry.js
 | `th_08_content.js` | ContentProvider 查询、Content 类型按钮读取 |
 | `th_09_animation.js` | 悬浮球动画、吸边、面板显示隐藏、Mask、系统返回、预测性返回、缓存清理 |
 | `th_10_shell.js` | Shell 广播桥执行层 |
-| `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut |
+| `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut、Content、Pointer |
 | `th_12_rebuild.js` | 悬浮球重建、尺寸 / 图标 / 配置变化刷新 |
 | `th_13_panel_ui.js` | 设置项基础 UI：section、bool、int、float、action、文本输入等 |
 | `th_14_panels.js` | 设置主页、设置分组、按钮管理入口、弹窗基础、主题适配、更新状态展示 |
 | `th_14_button_shortcut.js` | 内联快捷方式选择、快捷方式图标异步加载与回填 |
-| `th_14_button_icon_editor.js` | 按钮图标编辑、图标来源选择与颜色联动 |
-| `th_14_button_editor.js` | 按钮编辑页、动作参数、保存校验与页面内反馈 |
+| `th_14_button_icon_editor.js` | 按钮图标来源、ShortX 图标预览、图标调色内联编辑与颜色联动 |
+| `th_14_button_editor.js` | 按钮管理紧凑列表、搜索筛选、状态 chip、更多菜单、排序模式、按钮编辑页、动作参数、保存校验与页面内反馈 |
 | `th_14_color_picker.js` | 颜色选择器：最近色、常用色、RGB、透明度、实时预览 |
 | `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
 | `th_14_schema_editor.js` | 设置结构编辑器 |
 | `th_15_extra.js` | 主面板构建、ToolApp Shell、页面栈、响应式布局、左右滑返回预览 |
 | `th_16_entry.js` | 主线程同步、广播注册、实例注册、`startAsync`、`close`、`dispose`、设置页重启 |
+| `th_17_pointer.js` | 指针取字、框选截图区域、OCR rect 输出与三连击取消 |
 
 ---
 
@@ -531,7 +534,7 @@ schema: 3
 version: 20260703110021
 alg: SHA256withRSA
 keyId: toolhub-targets-20260703-rsa3072
-files: 21 个模块
+files: 22 个模块
 ```
 
 ---
@@ -558,7 +561,7 @@ ToolHub.js.sha256
 base → core → icon/theme/persistence/parser/content
 → animation/shell/action/rebuild
 → panel_ui → panels → button_shortcut / button_icon_editor / button_editor
-→ color_picker / icon_picker / schema_editor → extra → entry
+→ color_picker / icon_picker / schema_editor → extra → entry → pointer
 ```
 
 尤其注意：
@@ -566,7 +569,8 @@ base → core → icon/theme/persistence/parser/content
 - `th_14_color_picker.js` 依赖 `th_14_panels.js` 的弹窗基础能力。
 - `th_14_icon_picker.js` 应位于 `th_14_panels.js` 之后、`th_15_extra.js` 之前。
 - `th_15_extra.js` 依赖前面 UI、主题、设置、页面构建能力。
-- `th_16_entry.js` 最后加载，负责启动实例。
+- `th_16_entry.js` 负责启动实例。
+- `th_17_pointer.js` 位于入口生命周期之后，接入按钮动作分发和悬浮球拖动路径。
 
 ---
 
