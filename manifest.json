@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "00b6cc6f40fec8472c3b819383d48af4f239324d09a5ae42ffa6df19f7049042",
-      "size": 58630,
-      "version": "1.0.3"
+      "sha256": "baf5be68a41296c6d423f7cb42cfbf150119365b44f90d2113dfe1395b74c926",
+      "size": 59018,
+      "version": "1.0.4"
     },
     "th_02_core.js": {
       "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
@@ -107,23 +107,23 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "3f014f3cea59e2cdf5ce62d47e157c7aa5746330c57f92a1b579b7870918ccb7",
-      "size": 60659,
-      "version": "1.1.5"
+      "sha256": "6026d23ea6929c8a957a3d63df5a59bcf1e2d3838dab647faec99ba81d8da0bc",
+      "size": 61561,
+      "version": "1.1.6"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "8bfa8e2eb21f306b7536bf6c97ea74fdb552ed4c0b222b4296a1df8df140af4e",
-      "size": 34263,
-      "version": "1.0.10"
+      "sha256": "a1a1342207ac17819ad4b756a3410c7566072c26772c2a70d1e7c614ae380a4f",
+      "size": 34606,
+      "version": "1.0.11"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "增强指针颜色设置效果"
+      "接入五状态指针颜色"
     ],
-    "title": "增强指针颜色设置效果"
+    "title": "接入五状态指针颜色"
   },
   "schema": 3,
-  "version": 20260707132237
+  "version": 20260707134031
 }
