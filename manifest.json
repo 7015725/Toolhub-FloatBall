@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "f76368c882191631ee6ba78f66495bf15bbeaf37d423709b814ef585af6e3617",
-      "size": 56551,
-      "version": "1.0.1"
+      "sha256": "76b412810dae28a24f8306290e7e9a6a4528456a96c47fd6e77752c9f2143b92",
+      "size": 57781,
+      "version": "1.0.2"
     },
     "th_02_core.js": {
       "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
@@ -87,9 +87,9 @@
       "version": "1.0.0"
     },
     "th_14_panels.js": {
-      "sha256": "e401e06db62db0232a694d832a0f8054f8d98203adc0ff3a06e257e625d29f24",
-      "size": 117016,
-      "version": "1.0.3"
+      "sha256": "bc40539638614b51f685d853a5b2104cf11f3ba8083f4651790813c91792285d",
+      "size": 117260,
+      "version": "1.0.4"
     },
     "th_14_schema_editor.js": {
       "sha256": "903fb69f973af2a722ea2536bd86099005bb07605616028d5ae9c388fe2981e0",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "pointer movement update"
+      "新增指针设置分组"
     ],
-    "title": "pointer movement update"
+    "title": "新增指针设置分组"
   },
   "schema": 3,
-  "version": 20260707103808
+  "version": 20260707111958
 }
