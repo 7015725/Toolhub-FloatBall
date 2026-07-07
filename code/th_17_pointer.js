@@ -1,4 +1,4 @@
-// @version 1.1.8
+// @version 1.1.9
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -219,6 +219,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       areaReady: false,
       areaValid: false,
       areaFromText: false,
+      areaFallbackPreview: false,
       areaProcessing: false,
       captureRect: null,
       visualRect: null,
@@ -313,6 +314,7 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.areaReady = false;
   st.areaValid = false;
   st.areaFromText = false;
+  st.areaFallbackPreview = false;
   st.areaProcessing = false;
   st.captureRect = null;
   st.visualRect = null;
@@ -837,6 +839,7 @@ FloatBallAppWM.prototype.enterPointerAreaMode = function() {
   }
   st.areaFromText = !!(st.boundText && st.boundRect);
   st.areaValid = false;
+  st.areaFallbackPreview = false;
   st.currentText = "";
   st.currentRect = null;
   st.currentKey = "";
@@ -1439,7 +1442,17 @@ FloatBallAppWM.prototype.updatePointerAreaSelection = function(x, y) {
   st.visualRect = norm;
   st.areaValid = this.isPointerOcrRectValid(norm, st.areaStartX, st.areaStartY, st.areaEndX, st.areaEndY);
   st.areaReady = !!norm && st.areaValid;
-  if (norm) this.showPointerAreaFrame(norm, st.areaValid ? "area" : "area_armed");
+  st.areaFallbackPreview = false;
+  if (norm) {
+    if (st.areaValid) {
+      this.showPointerAreaFrame(norm, "area");
+    } else if (st.areaFromText === true && st.areaSmallFallbackText === true && st.boundRect) {
+      st.areaFallbackPreview = true;
+      this.showPointerAreaFrame(st.boundRect, "text_hit");
+    } else {
+      this.showPointerAreaFrame(norm, "area_armed");
+    }
+  }
 };
 
 FloatBallAppWM.prototype.createPointerFrameView = function(st) {
