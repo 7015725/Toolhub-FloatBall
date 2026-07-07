@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【WM 线程：按钮动作执行】======================
 FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
   // # 点击防抖
@@ -10,6 +10,18 @@ FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
     this.toast("按钮#" + idx + " 未配置");
     safeLog(this.L, 'w',  "btn#" + String(idx) + " no type");
     return;
+  }
+
+  function parseBoolLike(v, defVal) {
+    try {
+      if (v === undefined || v === null) return !!defVal;
+      if (typeof v === "boolean") return !!v;
+      if (typeof v === "number") return Number(v) !== 0;
+      var s = String(v).replace(/^\s+|\s+$/g, "").toLowerCase();
+      if (s === "true" || s === "1" || s === "yes" || s === "y" || s === "on") return true;
+      if (s === "false" || s === "0" || s === "no" || s === "n" || s === "off") return false;
+    } catch(eBool) {}
+    return !!defVal;
   }
 
   var t = String(btn.type);
@@ -100,12 +112,12 @@ return;
        } catch(eB64a) { safeLog(null, 'e', "catch " + String(eB64a)); }
     }
 
-    // # 2) cmd_b64 非空但无法解码：把它当作"明文命令"重新编码（保证广播桥/Action 都能吃到正确命令）
-    // # 说明：decodeBase64Utf8 返回空串通常意味着 b64 非法或被破坏；而真实命令不太可能是空串。
+    // # 2) cmd_b64 非空但无法解码：兼容旧配置，把它当作"明文命令"重新编码；同时记录日志，方便后续迁移。
     if (cmdB64 && cmdB64.length > 0) {
       try {
         var testPlain = decodeBase64Utf8(cmdB64);
         if ((!testPlain || testPlain.length === 0) && (!cmdPlain || cmdPlain.length === 0)) {
+          safeLog(this.L, 'w', "cmd_b64 invalid, compat re-encode as plain idx=" + String(idx));
           cmdPlain = String(cmdB64);
           cmdB64 = "";
         }
@@ -124,8 +136,9 @@ return;
       return;
     }
 
-    // # 广播桥接收端默认以 root 执行，强制使用 root
+    // # 旧按钮没有 root 字段时仍按 root 执行；新按钮可配置 root:false 走普通 shell。
     var needRoot = true;
+    if (btn.root !== undefined && btn.root !== null) needRoot = parseBoolLike(btn.root, true);
 
     var r = this.execShellSmart(cmdB64, needRoot);
     if (r && r.ok) {
@@ -148,6 +161,7 @@ return;
     if (!action) { this.toast("按钮#" + idx + " 缺少 action"); return; }
 
     var it2 = new android.content.Intent(action);
+    var shellBridgeBlockErr = "";
 
     // # 1) 兼容字段：extra / extras（两种都认）
     var ex = null;
@@ -174,6 +188,7 @@ return;
     // # 3) 对"Shell 广播桥"做额外兼容：
     //    - 你可以在 cfg 里写 extra.cmd（明文）或 extra.cmd_b64（Base64）
     //    - 同时会补齐 root/from，并且把 cmd 明文也塞一份，方便外部 MVEL 直接读取 cmd 进行验证
+    //    - 与 th_10_shell.js 保持一致：支持 setPackage / setComponent / token
     try {
       var bridgeAction = String(this.config.SHELL_BRIDGE_ACTION || "shortx.toolhub.SHELL");
       if (action === bridgeAction) {
@@ -181,45 +196,71 @@ return;
         var kFrom = String(this.config.SHELL_BRIDGE_EXTRA_FROM || "from");
         var kRoot = String(this.config.SHELL_BRIDGE_EXTRA_ROOT || "root");
 
-        var cmdPlain = "";
-        var cmdB64 = "";
+        var bridgeMode = String(this.config.SHELL_BRIDGE_MODE || "compat");
+        var targetPkg = String(this.config.SHELL_BRIDGE_TARGET_PACKAGE || "").replace(/^\s+|\s+$/g, "");
+        var targetCls = String(this.config.SHELL_BRIDGE_TARGET_CLASS || "").replace(/^\s+|\s+$/g, "");
+        var targetMode = "implicit";
 
-        try { cmdB64 = String(it2.getStringExtra(kCmdB64) || ""); } catch (eC0) { cmdB64 = ""; }
-        try { cmdPlain = String(it2.getStringExtra("cmd") || ""); } catch (eC1) { cmdPlain = ""; }
+        if (targetPkg && targetCls) {
+          if (targetCls.charAt(0) === ".") targetCls = targetPkg + targetCls;
+          it2.setComponent(new android.content.ComponentName(targetPkg, targetCls));
+          targetMode = "component";
+        } else if (targetPkg) {
+          it2.setPackage(targetPkg);
+          targetMode = "package";
+        } else if (bridgeMode === "strict" || bridgeMode === "explicit") {
+          shellBridgeBlockErr = "shell bridge target missing";
+        }
+
+        var tokenValue = String(this.config.SHELL_BRIDGE_TOKEN || "");
+        var tokenKey = String(this.config.SHELL_BRIDGE_EXTRA_TOKEN || "token");
+        if (tokenValue) {
+          if (!tokenKey) tokenKey = "token";
+          it2.putExtra(tokenKey, tokenValue);
+        } else if (this.config.SHELL_BRIDGE_REQUIRE_TOKEN === true) {
+          shellBridgeBlockErr = "shell bridge token missing";
+        }
+
+        var bridgeCmdPlain = "";
+        var bridgeCmdB64 = "";
+
+        try { bridgeCmdB64 = String(it2.getStringExtra(kCmdB64) || ""); } catch (eC0) { bridgeCmdB64 = ""; }
+        try { bridgeCmdPlain = String(it2.getStringExtra("cmd") || ""); } catch (eC1) { bridgeCmdPlain = ""; }
 
         // # 有明文但没 b64：自动补 b64
-        if ((!cmdB64 || cmdB64.length === 0) && cmdPlain && cmdPlain.length > 0) {
+        if ((!bridgeCmdB64 || bridgeCmdB64.length === 0) && bridgeCmdPlain && bridgeCmdPlain.length > 0) {
           try {
-            var b64x = encodeBase64Utf8(cmdPlain);
-            if (b64x && b64x.length > 0) {
-              cmdB64 = b64x;
-              it2.putExtra(kCmdB64, String(cmdB64));
+            var b64x2 = encodeBase64Utf8(bridgeCmdPlain);
+            if (b64x2 && b64x2.length > 0) {
+              bridgeCmdB64 = b64x2;
+              it2.putExtra(kCmdB64, String(bridgeCmdB64));
             }
            } catch(eC2) { safeLog(null, 'e', "catch " + String(eC2)); }
         }
 
         // # 有 b64 但没明文：也补一份明文（便于外部规则验证；真正执行仍建议用 cmd_b64）
-        if ((!cmdPlain || cmdPlain.length === 0) && cmdB64 && cmdB64.length > 0) {
+        if ((!bridgeCmdPlain || bridgeCmdPlain.length === 0) && bridgeCmdB64 && bridgeCmdB64.length > 0) {
           try {
-            var decoded = decodeBase64Utf8(cmdB64);
+            var decoded = decodeBase64Utf8(bridgeCmdB64);
             if (decoded && decoded.length > 0) {
-              cmdPlain = decoded;
-              it2.putExtra("cmd", String(cmdPlain));
+              bridgeCmdPlain = decoded;
+              it2.putExtra("cmd", String(bridgeCmdPlain));
             }
            } catch(eC3) { safeLog(null, 'e', "catch " + String(eC3)); }
         }
 
-        // # root：广播桥接收端默认以 root 执行，强制传递 true
+        // # root：旧广播按钮没有 root 字段时仍默认 root=true；新按钮可在 btn.root 或 extra.root 中配置 false。
         try {
           if (!it2.hasExtra(kRoot)) {
-            it2.putExtra(kRoot, true);
+            var bridgeNeedRoot = true;
+            if (btn.root !== undefined && btn.root !== null) bridgeNeedRoot = parseBoolLike(btn.root, true);
+            it2.putExtra(kRoot, bridgeNeedRoot);
           }
         } catch (eR0) {
           try {
             it2.putExtra(kRoot, true);
            } catch(eR1) { safeLog(null, 'e', "catch " + String(eR1)); }
         }
-
 
         // # root 类型纠正：如果外部 cfg 用了字符串 "true"/"false"，这里纠正为 boolean，避免外部 getBooleanExtra 读不到
         try {
@@ -228,10 +269,10 @@ return;
             if (bdl) {
               var raw = bdl.get(kRoot);
               if (raw != null) {
-                var rawStr = String(raw);
-                if (rawStr === "true" || rawStr === "false") {
+                var rawStr = String(raw).replace(/^\s+|\s+$/g, "").toLowerCase();
+                if (rawStr === "true" || rawStr === "false" || rawStr === "1" || rawStr === "0") {
                   it2.removeExtra(kRoot);
-                  it2.putExtra(kRoot, rawStr === "true");
+                  it2.putExtra(kRoot, parseBoolLike(rawStr, true));
                 }
               }
             }
@@ -245,12 +286,18 @@ return;
 
         if (this.L) {
           try {
-            this.L.i("broadcast(shell_bridge) action=" + action + " cmd_len=" + String(cmdPlain ? cmdPlain.length : 0) +
-              " cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " root=" + String(it2.getBooleanExtra(kRoot, false)));
+            this.L.i("broadcast(shell_bridge) action=" + action + " target=" + targetMode + (targetPkg ? " pkg=" + targetPkg : "") + " cmd_len=" + String(bridgeCmdPlain ? bridgeCmdPlain.length : 0) +
+              " cmd_b64_len=" + String(bridgeCmdB64 ? bridgeCmdB64.length : 0) + " root=" + String(it2.getBooleanExtra(kRoot, false)));
            } catch(eLg) { safeLog(null, 'e', "catch " + String(eLg)); }
         }
       }
-     } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
+     } catch(eSB) { shellBridgeBlockErr = String(eSB); safeLog(null, 'e', "catch " + String(eSB)); }
+
+    if (shellBridgeBlockErr) {
+      this.toast("Shell 广播桥配置错误");
+      safeLog(this.L, 'e', "broadcast shell bridge blocked action=" + action + " err=" + shellBridgeBlockErr);
+      return;
+    }
 
     try { context.sendBroadcast(it2); } catch (eB) { this.toast("广播失败"); safeLog(this.L, 'e',  "broadcast fail action=" + action + " err=" + String(eB)); }
     return;
@@ -371,4 +418,3 @@ return;
   }
 
 };
-
