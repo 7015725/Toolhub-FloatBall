@@ -112,18 +112,18 @@
       "version": "1.1.0"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "e646e0d5c8812e8b2af30babd8139e641d7f9c0ab6c2b10bf1bd2d6f243abf15",
-      "size": 18935,
-      "version": "1.0.3"
+      "sha256": "82521e3ccf8b9b082a35509e1f824523cd841d74bceac2dcaf546ede9f59b5e4",
+      "size": 28632,
+      "version": "1.0.4"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化指针流畅性"
+      "优化悬浮球指针状态"
     ],
-    "title": "优化指针流畅性"
+    "title": "优化悬浮球指针状态"
   },
   "schema": 3,
-  "version": 20260707072537
+  "version": 20260707081745
 }
