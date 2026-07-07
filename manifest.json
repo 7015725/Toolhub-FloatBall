@@ -107,23 +107,23 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "885561fc695c55cbfa31ab48ff925d4a724de51159817621a321fb69c7eaa57a",
-      "size": 60435,
-      "version": "1.1.4"
+      "sha256": "3f014f3cea59e2cdf5ce62d47e157c7aa5746330c57f92a1b579b7870918ccb7",
+      "size": 60659,
+      "version": "1.1.5"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "3948f338feddc17faea1c8d7bab38179cfdb1307429af76b038f57f5543c67fe",
-      "size": 33918,
-      "version": "1.0.9"
+      "sha256": "8bfa8e2eb21f306b7536bf6c97ea74fdb552ed4c0b222b4296a1df8df140af4e",
+      "size": 34263,
+      "version": "1.0.10"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "a"
+      "增强指针颜色设置效果"
     ],
-    "title": "a"
+    "title": "增强指针颜色设置效果"
   },
   "schema": 3,
-  "version": 20260707131143
+  "version": 20260707132237
 }
