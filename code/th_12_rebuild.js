@@ -1,4 +1,45 @@
-// @version 1.0.0
+// @version 1.0.1
+// =======================【安全兼容配置安装器】======================
+// 这段代码的主要内容/用途：在不改变现有执行逻辑的前提下，注入后续 Shell / Shortcut / Content 加固需要的配置项。
+// 默认值全部保持兼容：Shell=compat，Shortcut=compat，Content=audit，ToolApp 横滑比例仍为 1.08。
+(function() {
+  function putSchema(key, schema) {
+    try {
+      if (typeof ConfigValidator === "undefined" || !ConfigValidator || !ConfigValidator.schemas) return;
+      if (typeof ConfigValidator.schemas[key] === "undefined") ConfigValidator.schemas[key] = schema;
+    } catch(e) {}
+  }
+
+  function putDefault(key, value) {
+    try {
+      if (typeof ConfigManager === "undefined" || !ConfigManager || !ConfigManager.defaultSettings) return;
+      if (typeof ConfigManager.defaultSettings[key] === "undefined") ConfigManager.defaultSettings[key] = value;
+    } catch(e) {}
+  }
+
+  putSchema("TOOLAPP_BACK_SURFACE_DOMINANCE", { type: "float", min: 1.0, max: 3.0, default: 1.08 });
+  putSchema("SHELL_BRIDGE_MODE", { type: "enum", values: ["compat", "explicit", "strict"], default: "compat" });
+  putSchema("SHELL_BRIDGE_TARGET_PACKAGE", { type: "string", default: "" });
+  putSchema("SHELL_BRIDGE_TARGET_CLASS", { type: "string", default: "" });
+  putSchema("SHELL_BRIDGE_EXTRA_TOKEN", { type: "string", default: "token" });
+  putSchema("SHELL_BRIDGE_TOKEN", { type: "string", default: "" });
+  putSchema("SHELL_BRIDGE_REQUIRE_TOKEN", { type: "bool", default: false });
+  putSchema("SHORTCUT_EXEC_MODE", { type: "enum", values: ["compat", "strict"], default: "compat" });
+  putSchema("CONTENT_SECURITY_MODE", { type: "enum", values: ["off", "audit", "strict"], default: "audit" });
+  putSchema("CONTENT_URI_ALLOWLIST", { type: "string", default: "content://settings/system/|content://settings/secure/|content://settings/global/" });
+
+  putDefault("TOOLAPP_BACK_SURFACE_DOMINANCE", 1.08);
+  putDefault("SHELL_BRIDGE_MODE", "compat");
+  putDefault("SHELL_BRIDGE_TARGET_PACKAGE", "");
+  putDefault("SHELL_BRIDGE_TARGET_CLASS", "");
+  putDefault("SHELL_BRIDGE_EXTRA_TOKEN", "token");
+  putDefault("SHELL_BRIDGE_TOKEN", "");
+  putDefault("SHELL_BRIDGE_REQUIRE_TOKEN", false);
+  putDefault("SHORTCUT_EXEC_MODE", "compat");
+  putDefault("CONTENT_SECURITY_MODE", "audit");
+  putDefault("CONTENT_URI_ALLOWLIST", "content://settings/system/|content://settings/secure/|content://settings/global/");
+})();
+
 // =======================【新增：改大小后安全重建悬浮球】======================
 FloatBallAppWM.prototype.rebuildBallForNewSize = function(keepPanels) {
   if (this.state.closing) return false;
@@ -73,4 +114,3 @@ FloatBallAppWM.prototype.rebuildBallForNewSize = function(keepPanels) {
   safeLog(this.L, 'i',  "rebuildBall ok size=" + String(newSize) + " x=" + String(newX) + " y=" + String(newY));
   return true;
 };
-
