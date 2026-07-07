@@ -1,0 +1,50 @@
+name: pointer-ext-list-patch
+
+on:
+  push:
+    branches:
+      - fix/pointer-text-ext
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/pointer-text-ext
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch module lists
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          toolhub = Path('ToolHub.js')
+          s = toolhub.read_text(encoding='utf-8')
+          old = '"th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_16_entry.js", "th_17_pointer.js"];'
+          new = '"th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js"];'
+          if old not in s and '"th_18_pointer_ocr.js"' not in s:
+              raise SystemExit('ToolHub target not found')
+          if '"th_18_pointer_ocr.js"' not in s:
+              s = s.replace(old, new, 1)
+              toolhub.write_text(s, encoding='utf-8')
+
+          gen = Path('scripts/generate_signed_manifest.py')
+          g = gen.read_text(encoding='utf-8')
+          oldg = '    "th_17_pointer.js",\n]'
+          newg = '    "th_17_pointer.js", "th_18_pointer_ocr.js",\n]'
+          if oldg not in g and '"th_18_pointer_ocr.js"' not in g:
+              raise SystemExit('MODULES target not found')
+          if '"th_18_pointer_ocr.js"' not in g:
+              g = g.replace(oldg, newg, 1)
+              gen.write_text(g, encoding='utf-8')
+          PY
+          git rm .github/workflows/pointer_ext_list_patch.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ToolHub.js scripts/generate_signed_manifest.py
+          git commit -m "登记指针文本识别模块"
+          git push origin HEAD:fix/pointer-text-ext
