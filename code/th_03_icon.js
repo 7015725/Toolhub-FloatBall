@@ -1,25 +1,32 @@
-// @version 1.0.0
+// @version 1.0.1
 FloatBallAppWM.prototype._iconCache = {
   map: {},
   keys: [],
   max: 80,  // 减少缓存数量，降低内存压力
 
   get: function(key) {
-    var item = this.map[key];
+    var k = String(key || "");
+    if (!k) return null;
+    var item = this.map[k];
     if (!item) return null;
     // 移动到末尾（最近使用）
-    var idx = this.keys.indexOf(key);
+    var idx = this.keys.indexOf(k);
     if (idx > -1) {
       this.keys.splice(idx, 1);
-      this.keys.push(key);
+      this.keys.push(k);
     }
     return item.dr;
   },
 
   put: function(key, drawable) {
+    var k = String(key || "");
+    if (!k || drawable == null) return;
+
     // 清理旧的
-    if (this.map[key]) {
-      this._remove(key);
+    if (this.map[k]) {
+      this._remove(k);
+      var idxOld = this.keys.indexOf(k);
+      if (idxOld > -1) this.keys.splice(idxOld, 1);
     }
 
     // 空间检查：超过 80% 时批量清理 20%
@@ -31,12 +38,14 @@ FloatBallAppWM.prototype._iconCache = {
       }
     }
 
-    this.keys.push(key);
-    this.map[key] = {dr: drawable, ts: Date.now()};
+    this.keys.push(k);
+    this.map[k] = {dr: drawable, ts: (new Date()).getTime()};
   },
 
   _remove: function(key) {
-    var item = this.map[key];
+    var k = String(key || "");
+    if (!k) return;
+    var item = this.map[k];
     if (item && item.dr) {
       // 关键：回收 Bitmap，防止内存泄漏
       try {
@@ -45,54 +54,55 @@ FloatBallAppWM.prototype._iconCache = {
           if (bmp && !bmp.isRecycled()) bmp.recycle();
         }
        } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-      delete this.map[key];
     }
+    try { delete this.map[k]; } catch(eDel) { safeLog(null, 'e', "catch " + String(eDel)); }
   },
 
   clear: function() {
-    for (var i = 0; i < this.keys.length; i++) {
-      this._remove(this.keys[i]);
-    }
+    var oldKeys = [];
+    for (var i = 0; i < this.keys.length; i++) oldKeys.push(this.keys[i]);
+    for (var j = 0; j < oldKeys.length; j++) this._remove(oldKeys[j]);
     this.keys = [];
+    this.map = {};
   }
 };
 
 // 兼容性封装（保持原有调用方式不变）
-FloatBallAppWM.prototype._iconLruEnsure = function() {};
+// 这段代码的主要内容/用途：旧代码仍调用 _iconLru*，但真实缓存已经迁移到 _iconCache。
+// 修复点：不再访问旧的 this._iconLru.order / this._iconLru.map，避免 put 失败和重复解码。
+FloatBallAppWM.prototype._iconLruEnsure = function(max) {
+  try {
+    if (!this._iconCache) return;
+    if (max !== undefined && max !== null) {
+      var n = Math.floor(Number(max || 80));
+      if (isNaN(n)) n = 80;
+      this._iconCache.max = Math.max(20, n);
+    }
+  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+};
+
 FloatBallAppWM.prototype._iconLruGet = function(key) {
-  return this._iconCache.get(key);
+  try {
+    if (!this._iconCache) return null;
+    return this._iconCache.get(String(key || ""));
+  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+  return null;
 };
 
 FloatBallAppWM.prototype._iconLruPut = function(key, val) {
   try {
+    if (!this._iconCache) return;
     this._iconLruEnsure(120);
     var k = String(key || "");
-    if (!k) return;
-    if (val == null) return;
+    if (!k || val == null) return;
+    this._iconCache.put(k, val);
+  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+};
 
-    // # 若已存在，先移除旧顺序位置
-    try {
-      var ord = this._iconLru.order;
-      for (var i = ord.length - 1; i >= 0; i--) {
-        if (ord[i] === k) { ord.splice(i, 1); break; }
-      }
-      ord.push(k);
-     } catch(eLru3) { safeLog(null, 'e', "catch " + String(eLru3)); }
-
-    this._iconLru.map[k] = val;
-
-    // # 超限清理：按最久未使用淘汰
-    try {
-      var maxN = Math.max(20, Math.floor(Number(this._iconLru.max || 120)));
-      var ord2 = this._iconLru.order;
-      while (ord2.length > maxN) {
-        var oldK = ord2.shift();
-        if (oldK != null) {
-          try { delete this._iconLru.map[oldK];  } catch(eDel) { safeLog(null, 'e', "catch " + String(eDel)); }
-        }
-      }
-     } catch(eLru4) { safeLog(null, 'e', "catch " + String(eLru4)); }
-   } catch(eLru5) { safeLog(null, 'e', "catch " + String(eLru5)); }
+FloatBallAppWM.prototype._iconLruClear = function() {
+  try {
+    if (this._iconCache && this._iconCache.clear) this._iconCache.clear();
+  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 };
 
 
@@ -167,4 +177,3 @@ FloatBallAppWM.prototype.loadBallIconDrawableFromFile = function(path, targetPx,
     return null;
   }
 };
-
