@@ -112,18 +112,18 @@
       "version": "1.1.0"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "ee3ed65ba783d293ab7630a5c314fe7d608613facc79cdeefc8458f541e387bf",
-      "size": 13233,
-      "version": "1.0.1"
+      "sha256": "8f4e94461dbc3c89b0614e0d25adb1a89b8fdeba8bc01cacc762b62a1bdd2f1e",
+      "size": 11565,
+      "version": "1.0.2"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "完善框选文本复制"
+      "调整文本处理流程"
     ],
-    "title": "完善框选文本复制"
+    "title": "调整文本处理流程"
   },
   "schema": 3,
-  "version": 20260707065839
+  "version": 20260707071346
 }
