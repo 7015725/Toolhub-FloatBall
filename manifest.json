@@ -52,9 +52,9 @@
       "version": "1.0.5"
     },
     "th_12_rebuild.js": {
-      "sha256": "d882acfa9e8fc33e433fd1bc1865125fcc40bfda2a8e135a8313ff018cbb1caa",
-      "size": 4808,
-      "version": "1.0.1"
+      "sha256": "a309ab8c82e5376c1a7a7ed7b25e24eace36314c9d5ff60e6e0e3d48c50d3c4f",
+      "size": 5125,
+      "version": "1.0.2"
     },
     "th_13_panel_ui.js": {
       "sha256": "608de028b04a9bda7627d5e4681d323697fe70b934538265ead7fcbc00a769c3",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Shell 广播桥返回结构增强"
+      "指针框选截图后支持文本识别"
     ],
-    "title": "Shell 广播桥返回结构增强"
+    "title": "指针框选截图后支持文本识别"
   },
   "schema": 3,
-  "version": 20260707050137
+  "version": 20260707061911
 }
