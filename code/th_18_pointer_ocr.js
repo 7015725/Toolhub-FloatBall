@@ -1,8 +1,8 @@
-// @version 1.0.4
+// @version 1.0.5
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
-// OCR 方法：按 ShortX 实测可用方式，使用 OcrDetect + RectSourceRect 识别框选屏幕区域。
-// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；点击仍打开主面板，长按仍打开设置。
+// OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
+// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；识别只使用最终拖动位置。
 (function() {
   function log18(level, msg) {
     try { safeLog(null, level || 'i', String(msg)); } catch(eLog) {}
@@ -165,11 +165,9 @@
       if (!st) return null;
       if (st.__th18PerfDefaults !== true) {
         st.__th18PerfDefaults = true;
-        st.__th18FrameKey = "";
         st.__th18FrameTs = 0;
         st.__th18FrameRect = null;
         st.__th18LastDragInspectCall = 0;
-        st.__th18LastMoveApply = 0;
         st.__th18MoveMinIntervalText = 24;
         st.__th18MoveMinIntervalArea = 18;
         st.__th18FrameMinInterval = 28;
@@ -234,7 +232,20 @@
     return null;
   }
 
-  function schedulePointerMoveRaw18(appObj, rawX, rawY) {
+  function clearPointerTextCandidate18(st) {
+    try {
+      st.currentText = "";
+      st.currentRect = null;
+      st.currentKey = "";
+      st.hoverKey = "";
+      st.hoverSince = 0;
+      st.lastQueryX = -100000;
+      st.lastQueryY = -100000;
+      st.hot = false;
+    } catch(e0) {}
+  }
+
+  function schedulePointerMoveRaw18(appObj, rawX, rawY, immediate) {
     try {
       if (!appObj || !appObj.ensurePointerToolState) return false;
       var st = appObj.ensurePointerToolState();
@@ -252,6 +263,15 @@
       st.pendingPointerY = Math.round(y);
       st.pointerX = st.pendingPointerX;
       st.pointerY = st.pendingPointerY;
+      if (immediate === true && st.lp) {
+        try {
+          st.lp.x = st.pendingPointerX;
+          st.lp.y = st.pendingPointerY;
+          st.pointerX = st.lp.x;
+          st.pointerY = st.lp.y;
+          if (st.root && st.wm) st.wm.updateViewLayout(st.root, st.lp);
+        } catch(eNow) { safeLog(appObj.L, 'e', 'pointer immediate update fail: ' + String(eNow)); }
+      }
       if (!st.handler) st.handler = appObj.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
       if (st.dragUpdatePosted) return true;
       st.dragUpdatePosted = true;
@@ -346,10 +366,9 @@
       if (!proto || proto.__toolHubFixedEdgePointerPatchInstalled === true) return true;
       if (typeof proto.setupTouchListener !== "function") return false;
       if (typeof proto.startPointerTool !== "function") return false;
-      if (typeof proto.onPointerBallDragStart !== "function") return false;
       if (typeof proto.onPointerBallDragEnd !== "function") return false;
 
-      proto.schedulePointerMoveRaw18 = function(rawX, rawY) { return schedulePointerMoveRaw18(this, rawX, rawY); };
+      proto.schedulePointerMoveRaw18 = function(rawX, rawY, immediate) { return schedulePointerMoveRaw18(this, rawX, rawY, immediate); };
 
       var oldPointerDragging = proto.onPointerBallDragging;
       proto.onPointerBallDragging = function(ballX, ballY, rawX, rawY) {
@@ -358,7 +377,11 @@
           st.dragging = true;
           st.dragStarted = true;
           st.moved = true;
-          this.schedulePointerMoveRaw18(rawX, rawY);
+          this.schedulePointerMoveRaw18(rawX, rawY, true);
+          if (st.__th18SkipFirstDetect === true) {
+            st.__th18SkipFirstDetect = false;
+            return true;
+          }
           if (st.mode === "area_capture") this.updatePointerAreaSelection();
           else {
             this.updatePointerAreaHoldCandidate();
@@ -367,6 +390,26 @@
           return true;
         }
         return oldPointerDragging.call(this, ballX, ballY, rawX, rawY);
+      };
+
+      var oldPointerDragEnd = proto.onPointerBallDragEnd;
+      proto.onPointerBallDragEnd = function(rawX, rawY, action) {
+        var st = this.ensurePointerToolState ? this.ensurePointerToolState() : null;
+        if (st && st.__th18FixedEdgePointerMode === true && rawX !== undefined && rawY !== undefined) {
+          this.schedulePointerMoveRaw18(rawX, rawY, true);
+          st.dragging = false;
+          try { if (st.root) st.root.invalidate(); } catch(eInv) {}
+          if (action === android.view.MotionEvent.ACTION_CANCEL) {
+            this.setPointerToolResult({ ok: false, type: "cancel", code: "ACTION_CANCEL", message: "指针取消" });
+            try { this.toast("指针已取消"); } catch(eToast) {}
+            this.closePointerTool("ACTION_CANCEL", true);
+            return true;
+          }
+          if (st.mode === "area_capture") this.finishPointerAreaCapture();
+          else if (st.mode === "text_pick") this.scheduleFinishPointerTextPick();
+          return true;
+        }
+        return oldPointerDragEnd.call(this, rawX, rawY, action);
       };
 
       proto.onPointerBallTap = function(rawX, rawY) {
@@ -400,9 +443,15 @@
               pst.__th18FixedEdgePointerMode = true;
               pst.__th18FixedEdgeSide = fixedSide;
               pst.__th18FixedEdgeY = fixedY;
+              pst.__th18SkipFirstDetect = true;
+              pst.dragging = true;
+              pst.dragStarted = true;
+              pst.moved = true;
+              clearPointerTextCandidate18(pst);
+              try { self.resetPointerAreaHold(); } catch(eHold) {}
             }
             pointerStarted = true;
-            try { self.onPointerBallDragStart(startRawX, startRawY); } catch(eStart) { safeLog(self.L, 'e', 'fixed pointer start fail: ' + String(eStart)); }
+            try { self.schedulePointerMoveRaw18(rawX, rawY, true); } catch(eMoveNow) { safeLog(self.L, 'e', 'fixed pointer first position fail: ' + String(eMoveNow)); }
             try { self.onPointerBallDragging(self.state.ballLp.x, self.state.ballLp.y, rawX, rawY); } catch(eDrag0) { safeLog(self.L, 'e', 'fixed pointer first drag fail: ' + String(eDrag0)); }
             safeLog(self.L, 'i', 'ball drag -> fixed-edge pointer side=' + fixedSide);
             return true;
