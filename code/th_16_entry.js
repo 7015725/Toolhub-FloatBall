@@ -1,4 +1,50 @@
-// @version 1.0.3
+// @version 1.0.4
+
+// =======================【兼容补丁：快捷方式保存默认数据化】=======================
+// 这段代码的主要内容/用途：保存按钮配置时，把带 intentUri 的快捷方式按钮默认标记为 intent 数据化执行。
+// 旧字段 shortcutJsCode 仍保留，方便回滚/复制/兼容；但运行时会优先按 shortcutExecMode=intent 禁用 eval 回退。
+(function() {
+  try {
+    if (typeof ConfigManager === "undefined" || !ConfigManager) return;
+    if (ConfigManager.__toolHubShortcutIntentSavePatchInstalled === true) return;
+    if (typeof ConfigManager.saveButtons !== "function") return;
+
+    ConfigManager.normalizeShortcutIntentButtons = function(buttons) {
+      try {
+        if (!buttons || buttons.length === undefined) return buttons;
+        for (var i = 0; i < buttons.length; i++) {
+          var b = buttons[i];
+          if (!b) continue;
+          var t = "";
+          try { t = String(b.type || ""); } catch(eT) { t = ""; }
+          if (t !== "shortcut") continue;
+          var iu = "";
+          try { iu = String(b.intentUri || ""); } catch(eIu) { iu = ""; }
+          if (!iu || iu.length === 0) continue;
+
+          // 新保存/重保存的快捷方式默认走数据化 intentUri。
+          // 保留 shortcutJsCode 字段不删，便于兼容旧配置或手动回滚。
+          b.shortcutExecMode = "intent";
+          b.shortcutRunMode = "intent";
+        }
+      } catch(eNorm) {
+        try { safeLog(null, 'e', "normalize shortcut intent buttons fail: " + String(eNorm)); } catch(eLog) {}
+      }
+      return buttons;
+    };
+
+    var oldSaveButtons = ConfigManager.saveButtons;
+    ConfigManager.saveButtons = function(buttons) {
+      try { buttons = ConfigManager.normalizeShortcutIntentButtons(buttons); } catch(ePatch) {}
+      return oldSaveButtons.call(this, buttons);
+    };
+
+    ConfigManager.__toolHubShortcutIntentSavePatchInstalled = true;
+  } catch(eInstall) {
+    try { safeLog(null, 'e', "install shortcut intent save patch fail: " + String(eInstall)); } catch(eLog2) {}
+  }
+})();
+
 function runOnMainSync(fn, timeoutMs) {
   if (!fn) return { ok: false, error: "empty-fn" };
   try {
@@ -353,4 +399,3 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
     }
   };
 };
-
