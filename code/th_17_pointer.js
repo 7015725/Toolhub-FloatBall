@@ -1,4 +1,4 @@
-// @version 1.1.3
+// @version 1.1.4
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -177,6 +177,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       hoverX: 0,
       hoverY: 0,
       hoverMinMs: 800,
+      releaseTs: 0,
       areaHoldToken: 0,
       areaHoldAnchorX: -100000,
       areaHoldAnchorY: -100000,
@@ -260,6 +261,7 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.hoverKey = "";
   st.hoverX = 0;
   st.hoverY = 0;
+  st.releaseTs = 0;
   st.areaHoldToken++;
   st.areaHoldAnchorX = -100000;
   st.areaHoldAnchorY = -100000;
@@ -1099,7 +1101,7 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     }
   } catch (eLog) {}
   if (pack.finishAfterResult === true && st.active && !st.closed) {
-    this.extractCurrentPointerText(true);
+    this.finishPointerTextPickAfterRelease();
   }
 };
 
@@ -1183,7 +1185,35 @@ FloatBallAppWM.prototype.updatePointerInspect = function(force) {
   this.applyPointerInspectResult(pack);
 };
 
-FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect) {
+FloatBallAppWM.prototype.getPointerTextHoverLimitMs = function() {
+  var st = this.ensurePointerToolState();
+  var limit = 800;
+  try { limit = Number(st.hoverMinMs || 800); } catch (e0) { limit = 800; }
+  if (isNaN(limit) || limit < 0) limit = 800;
+  return limit;
+};
+
+FloatBallAppWM.prototype.isPointerTextHoverReady = function(atTs) {
+  var st = this.ensurePointerToolState();
+  if (!st.currentText || !st.currentRect) return false;
+  if (!st.hoverSince || Number(st.hoverSince || 0) <= 0) return false;
+  if (st.currentKey && st.hoverKey && String(st.currentKey) !== String(st.hoverKey)) return false;
+  var ts = Number(atTs || th17Now());
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+  return ts - Number(st.hoverSince || 0) >= this.getPointerTextHoverLimitMs();
+};
+
+FloatBallAppWM.prototype.getPointerTextHoverRemainMs = function(atTs) {
+  var st = this.ensurePointerToolState();
+  var ts = Number(atTs || th17Now());
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+  var elapsed = st.hoverSince ? (ts - Number(st.hoverSince || 0)) : 0;
+  var remain = this.getPointerTextHoverLimitMs() - elapsed;
+  if (isNaN(remain) || remain < 0) remain = 0;
+  return Math.ceil(remain);
+};
+
+FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect, hoverAtTs) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed) return { ok: false, err: "指针未启动" };
   if (skipInspect !== true) this.updatePointerInspect(true);
@@ -1192,6 +1222,23 @@ FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect) {
     this.toast("未命中文本");
     this.closePointerTool("未命中文本", true);
     return { ok: false, err: "未命中文本" };
+  }
+  if (!this.isPointerTextHoverReady(hoverAtTs)) {
+    var remainMs = this.getPointerTextHoverRemainMs(hoverAtTs);
+    this.setPointerToolResult({
+      ok: false,
+      type: "cancel",
+      code: "TEXT_HOVER_NOT_READY",
+      message: "悬停时间不足",
+      value: "",
+      data: {
+        remainMs: remainMs,
+        hoverMinMs: this.getPointerTextHoverLimitMs()
+      }
+    });
+    this.toast("悬停时间不足");
+    this.closePointerTool("悬停时间不足", true);
+    return { ok: false, err: "悬停时间不足", code: "TEXT_HOVER_NOT_READY" };
   }
   var rect = st.currentRect;
   var textValue = String(st.currentText);
@@ -1211,8 +1258,10 @@ FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect) {
 FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "text_pick") return;
+  var releaseTs = Number(st.releaseTs || th17Now());
+  if (isNaN(releaseTs) || releaseTs <= 0) releaseTs = th17Now();
   if (st.currentText && st.currentRect) {
-    this.extractCurrentPointerText(true);
+    this.extractCurrentPointerText(true, releaseTs);
     return;
   }
   this.schedulePointerInspectAsync(true, "release_final", true);
@@ -1221,6 +1270,7 @@ FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
 FloatBallAppWM.prototype.scheduleFinishPointerTextPick = function() {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "text_pick") return;
+  st.releaseTs = th17Now();
   if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
   if (st.stopInspectRunnable) {
     try { st.handler.removeCallbacks(st.stopInspectRunnable); } catch (eRemove) {}

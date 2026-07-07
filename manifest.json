@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "f2b3067dd97501e93b48ef71186b52a29c137e900072f02e4e92e34507cda651",
-      "size": 58479,
-      "version": "1.1.3"
+      "sha256": "885561fc695c55cbfa31ab48ff925d4a724de51159817621a321fb69c7eaa57a",
+      "size": 60435,
+      "version": "1.1.4"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "3948f338feddc17faea1c8d7bab38179cfdb1307429af76b038f57f5543c67fe",
@@ -125,5 +125,5 @@
     "title": "a"
   },
   "schema": 3,
-  "version": 20260707124953
+  "version": 20260707131143
 }
