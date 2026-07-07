@@ -157,50 +157,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
     preferAllVisible: true,
     onDismiss: onDismiss,
     builder: function(content, closePopup) {
-      // 图标预览区
-      var previewRow = new android.widget.LinearLayout(context);
-      previewRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-      previewRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      previewRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
-      previewRow.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.24 : 0.18), self.dp(1), self.dp(18)));
-
-      var previewIv = new android.widget.ImageView(context);
-      previewIv.setLayoutParams(new android.widget.LinearLayout.LayoutParams(self.dp(44), self.dp(44)));
-      previewIv.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-      previewRow.addView(previewIv);
-
-      var previewLabel = new android.widget.TextView(context);
-      previewLabel.setText("小图标试衣间");
-      previewLabel.setTextColor(subTextColor);
-      previewLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-      previewLabel.setPadding(self.dp(12), 0, 0, 0);
-      previewRow.addView(previewLabel);
-
-      content.addView(previewRow);
-
-      function updatePreview() {
-        try {
-          var dr = null;
-          if (currentIconName) {
-            try { dr = self.getShortXIconDrawable(currentIconName);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-          }
-          if (dr) {
-            if (!isFollowTheme && selectedColor) {
-              try {
-                var parsed = android.graphics.Color.parseColor(selectedColor);
-                dr.setColorFilter(parsed, android.graphics.PorterDuff.Mode.SRC_IN);
-              } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-            } else {
-              try { dr.clearColorFilter();  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-            }
-            previewIv.setImageDrawable(dr);
-          } else {
-            previewIv.setImageDrawable(null);
-          }
-        } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-      }
+      // 颜色面板只保留颜色选择内容，不再显示悬浮球/图标预览。
+      function updatePreview() {}
       updatePreviewFn = updatePreview;
-      updatePreview();
 
       // ========== 最近使用颜色 ==========
       var recentTitle = new android.widget.TextView(context);
