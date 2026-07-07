@@ -42,9 +42,9 @@
       "version": "1.0.1"
     },
     "th_10_shell.js": {
-      "sha256": "deed0a7fbbfb5e503e1135846de3640d85c3703a18aaaf3a077723cbb70f4a3b",
-      "size": 2341,
-      "version": "1.0.2"
+      "sha256": "d16fda02259f58ace47c3296e1d2c18b674bbee8462f19dbbec5abf5454ec784",
+      "size": 3338,
+      "version": "1.0.3"
     },
     "th_11_action.js": {
       "sha256": "d4e71a4433eefc0cf1ef722c53de3c06281ecddfee413b5f6a3497cc53850a9e",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Shell 按钮诊断增强"
+      "Shell 广播桥返回结构增强"
     ],
-    "title": "Shell 按钮诊断增强"
+    "title": "Shell 广播桥返回结构增强"
   },
   "schema": 3,
-  "version": 20260707045511
+  "version": 20260707050137
 }
