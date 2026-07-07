@@ -1,4 +1,4 @@
-// @version 1.1.1
+// @version 1.1.2
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -31,6 +31,22 @@ function th17ConfigNumber(appObj, key, defVal, minVal, maxVal) {
   if (minVal !== undefined && v < minVal) v = minVal;
   if (maxVal !== undefined && v > maxVal) v = maxVal;
   return v;
+}
+
+function th17PointerColorRgb(appObj, key, fallbackR, fallbackG, fallbackB) {
+  try {
+    var h = String(appObj && appObj.config ? (appObj.config[key] || "") : "");
+    h = h.replace(/^\s+|\s+$/g, "");
+    if (h.charAt(0) === "#") h = h.substring(1);
+    if (h.length === 8) h = h.substring(2);
+    if (h.length === 6) {
+      var r = parseInt(h.substring(0, 2), 16);
+      var g = parseInt(h.substring(2, 4), 16);
+      var b = parseInt(h.substring(4, 6), 16);
+      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) return { r: r, g: g, b: b };
+    }
+  } catch(e0) {}
+  return { r: fallbackR, g: fallbackG, b: fallbackB };
 }
 
 function th17RectObj(rect) {
@@ -194,8 +210,8 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
   st.anchorLocalY = sdp.call(this, 8);
   st.handleLocalX = sdp.call(this, 30);
   st.handleLocalY = sdp.call(this, 66);
-  st.hoverMinMs = th17ConfigNumber(this, "POINTER_TEXT_HOVER_MS", 800, 300, 1500);
-  st.areaHoldDelay = th17ConfigNumber(this, "POINTER_AREA_HOVER_MS", 1000, 500, 2000);
+  st.hoverMinMs = th17ConfigNumber(this, "POINTER_TEXT_HOVER_MS", 800, 300, 10000);
+  st.areaHoldDelay = th17ConfigNumber(this, "POINTER_AREA_HOVER_MS", 1000, 500, 10000);
   st.areaHoldStableSlop = dp.call(this, 5);
   st.areaHoldBreakSlop = dp.call(this, 14);
   st.areaCaptureInset = dp.call(this, 3);
@@ -536,9 +552,17 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         var tipY = st.anchorLocalY;
         var active = !!(st.hot || st.areaSelecting || st.areaReady);
         var dragging = !!st.dragging;
-        var accentR = st.mode === "area_capture" ? 59 : (st.hot ? 245 : 76);
-        var accentG = st.mode === "area_capture" ? 130 : (st.hot ? 158 : 124);
-        var accentB = st.mode === "area_capture" ? 246 : (st.hot ? 11 : 160);
+        var rgb = null;
+        if (st.mode === "area_capture" || st.areaSelecting || st.areaReady) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        } else if (st.hot) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HIT_HEX", 245, 158, 11);
+        } else {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_NORMAL_HEX", 76, 124, 160);
+        }
+        var accentR = rgb.r;
+        var accentG = rgb.g;
+        var accentB = rgb.b;
         p.setAntiAlias(true);
         p.setStrokeCap(android.graphics.Paint.Cap.ROUND);
         p.setStrokeJoin(android.graphics.Paint.Join.ROUND);
