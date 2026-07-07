@@ -47,9 +47,9 @@
       "version": "1.0.2"
     },
     "th_11_action.js": {
-      "sha256": "deb703e38b56bd630b9e827cecaa4fdb6a13eab9b8480d227e8f752c4eb77e7e",
-      "size": 18427,
-      "version": "1.0.4"
+      "sha256": "d4e71a4433eefc0cf1ef722c53de3c06281ecddfee413b5f6a3497cc53850a9e",
+      "size": 20495,
+      "version": "1.0.5"
     },
     "th_12_rebuild.js": {
       "sha256": "d882acfa9e8fc33e433fd1bc1865125fcc40bfda2a8e135a8313ff018cbb1caa",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Shell 按钮支持 root 字段和桥接参数"
+      "快捷方式优先使用 intentUri 启动"
     ],
-    "title": "Shell 按钮支持 root 字段和桥接参数"
+    "title": "快捷方式优先使用 intentUri 启动"
   },
   "schema": 3,
-  "version": 20260707031911
+  "version": 20260707034508
 }
