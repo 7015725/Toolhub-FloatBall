@@ -1,7 +1,8 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：按 ShortX 实测可用方式，使用 OcrDetect + RectSourceRect 识别框选屏幕区域。
+// 性能补丁：节流拖动更新、框选绘制、拖动检索，并复用框选绘制 Paint。
 (function() {
   function log18(level, msg) {
     try { safeLog(null, level || 'i', String(msg)); } catch(eLog) {}
@@ -16,6 +17,11 @@
       }
     } catch(e0) {}
     return out;
+  }
+
+  function now18() {
+    try { if (typeof th17Now === "function") return th17Now(); } catch(e0) {}
+    return (new Date()).getTime();
   }
 
   function int18(v) {
@@ -42,6 +48,15 @@
     try { if (b <= t && rect.height) b = t + int18(rect.height); } catch(e1) {}
     if (r <= l || b <= t) return null;
     return { left: l, top: t, right: r, bottom: b };
+  }
+
+  function sameRect18(a, b, slop) {
+    if (!a || !b) return false;
+    var s = Math.max(0, Number(slop || 0));
+    return Math.abs(int18(a.left) - int18(b.left)) <= s &&
+      Math.abs(int18(a.top) - int18(b.top)) <= s &&
+      Math.abs(int18(a.right) - int18(b.right)) <= s &&
+      Math.abs(int18(a.bottom) - int18(b.bottom)) <= s;
   }
 
   function getContext18() {
@@ -140,14 +155,161 @@
     return rect;
   }
 
+  function applyPerfDefaults18(appObj) {
+    try {
+      if (!appObj || !appObj.ensurePointerToolState) return null;
+      var st = appObj.ensurePointerToolState();
+      if (!st) return null;
+      if (st.__th18PerfDefaults !== true) {
+        st.__th18PerfDefaults = true;
+        st.__th18FrameKey = "";
+        st.__th18FrameTs = 0;
+        st.__th18FrameRect = null;
+        st.__th18LastDragInspectCall = 0;
+        st.__th18LastMoveApply = 0;
+        st.__th18MoveMinIntervalText = 24;
+        st.__th18MoveMinIntervalArea = 18;
+        st.__th18FrameMinInterval = 28;
+        st.__th18DragInspectInterval = 300;
+      }
+      try { st.inspectMaxDragMs = Math.min(Number(st.inspectMaxDragMs || 60), 36); } catch(e0) { st.inspectMaxDragMs = 36; }
+      try { st.inspectMaxDragNodes = Math.min(Number(st.inspectMaxDragNodes || 120), 80); } catch(e1) { st.inspectMaxDragNodes = 80; }
+      return st;
+    } catch(e2) {}
+    return null;
+  }
+
+  function installPointerPerf18(proto) {
+    try {
+      if (!proto || proto.__toolHubPointerPerfPatchInstalled === true) return true;
+      if (typeof proto.schedulePointerMove !== "function") return false;
+
+      if (typeof proto.createPointerFrameView === "function") {
+        proto.createPointerFrameView = function(st) {
+          var self = this;
+          var p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+          var FrameView = new JavaAdapter(android.view.View, {
+            onDraw: function(canvas) {
+              try {
+                var rect = st.frameRect;
+                if (!rect) return;
+                var rf = new android.graphics.RectF(rect.left, rect.top, rect.right, rect.bottom);
+                p.setAntiAlias(true);
+                p.setStyle(android.graphics.Paint.Style.FILL);
+                p.setARGB(28, 59, 130, 246);
+                canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
+                p.setStyle(android.graphics.Paint.Style.STROKE);
+                p.setStrokeWidth(self.dp(2));
+                p.setARGB(235, 59, 130, 246);
+                canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
+              } catch(eDraw) {}
+            }
+          }, context);
+          return FrameView;
+        };
+      }
+
+      if (typeof proto.showPointerAreaFrame === "function") {
+        var oldShowFrame = proto.showPointerAreaFrame;
+        proto.showPointerAreaFrame = function(rect) {
+          var st = applyPerfDefaults18(this);
+          if (!st || !rect) return oldShowFrame.call(this, rect);
+          var now = now18();
+          var norm = normalizeRect18(rect) || rect;
+          var key = rectKey18(norm);
+          if (st.frameAdded && st.frame && st.__th18FrameRect && sameRect18(st.__th18FrameRect, norm, 1) && now - Number(st.__th18FrameTs || 0) < 80) {
+            return;
+          }
+          if (st.frameAdded && st.frame && st.__th18FrameRect && sameRect18(st.__th18FrameRect, norm, 2) && now - Number(st.__th18FrameTs || 0) < Number(st.__th18FrameMinInterval || 28)) {
+            return;
+          }
+          st.__th18FrameKey = key;
+          st.__th18FrameRect = { left: int18(norm.left), top: int18(norm.top), right: int18(norm.right), bottom: int18(norm.bottom) };
+          st.__th18FrameTs = now;
+          return oldShowFrame.call(this, rect);
+        };
+      }
+
+      if (typeof proto.scheduleDraggingInspect === "function") {
+        var oldDraggingInspect = proto.scheduleDraggingInspect;
+        proto.scheduleDraggingInspect = function() {
+          var st = applyPerfDefaults18(this);
+          if (!st) return oldDraggingInspect.call(this);
+          var now = now18();
+          var interval = Math.max(220, Number(st.__th18DragInspectInterval || 300));
+          if (now - Number(st.__th18LastDragInspectCall || 0) < interval) return;
+          st.__th18LastDragInspectCall = now;
+          return oldDraggingInspect.call(this);
+        };
+      }
+
+      var oldScheduleMove = proto.schedulePointerMove;
+      proto.schedulePointerMove = function(x, y) {
+        var st = applyPerfDefaults18(this);
+        if (!st) return oldScheduleMove.call(this, x, y);
+        if (!st.active || st.closed) return;
+        if (!st.root || !st.lp) {
+          if (!this.showPointerWindow(st)) return;
+        }
+        var pos = this.pointerPositionFromBall(x, y);
+        var pendingDx = Math.abs(Number(pos.x || 0) - Number(st.pendingPointerX || 0));
+        var pendingDy = Math.abs(Number(pos.y || 0) - Number(st.pendingPointerY || 0));
+        if (pendingDx <= 0 && pendingDy <= 0 && st.dragUpdatePosted) return;
+        st.pendingPointerX = pos.x;
+        st.pendingPointerY = pos.y;
+        st.pointerX = pos.x;
+        st.pointerY = pos.y;
+        if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
+        if (st.dragUpdatePosted) return;
+        st.dragUpdatePosted = true;
+        var self = this;
+        var delay = st.mode === "area_capture" ? Number(st.__th18MoveMinIntervalArea || 18) : Number(st.__th18MoveMinIntervalText || 24);
+        if (isNaN(delay) || delay < 12) delay = 16;
+        st.moveRunnable = new java.lang.Runnable({ run: function() {
+          try {
+            st.dragUpdatePosted = false;
+            if (!st.active || st.closed || !st.root || !st.lp) return;
+            var dx = Math.abs(Number(st.pendingPointerX || 0) - Number(st.lp.x || 0));
+            var dy = Math.abs(Number(st.pendingPointerY || 0) - Number(st.lp.y || 0));
+            if (dx <= 0 && dy <= 0) return;
+            st.lp.x = st.pendingPointerX;
+            st.lp.y = st.pendingPointerY;
+            st.pointerX = st.lp.x;
+            st.pointerY = st.lp.y;
+            st.__th18LastMoveApply = now18();
+            try { st.wm.updateViewLayout(st.root, st.lp); } catch(eU) { safeLog(self.L, 'e', "pointer update fail: " + String(eU)); }
+            if (st.mode === "area_capture") self.updatePointerAreaSelection();
+            else {
+              self.updatePointerAreaHoldCandidate();
+              self.scheduleDraggingInspect();
+            }
+          } catch(eRun) { safeLog(self.L, 'e', "th18 schedulePointerMove run fail: " + String(eRun)); }
+        }});
+        try { st.handler.postDelayed(st.moveRunnable, delay); } catch(ePost) { st.dragUpdatePosted = false; }
+      };
+
+      proto.__toolHubPointerPerfPatchInstalled = true;
+      log18('i', "pointer performance patch installed");
+      return true;
+    } catch(ePerf) {
+      log18('e', "pointer performance patch install fail: " + String(ePerf));
+    }
+    return false;
+  }
+
   function install18() {
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (proto.__toolHubPointerTextPatchInstalled === true) return true;
+      if (proto.__toolHubPointerTextPatchInstalled === true) {
+        installPointerPerf18(proto);
+        return true;
+      }
       if (typeof proto.startPointerTool !== "function") return false;
       if (typeof proto.finishPointerAreaCapture !== "function") return false;
       if (typeof proto.execPointerAction !== "function") return false;
+
+      installPointerPerf18(proto);
 
       proto.runPointerAreaTextByRect = function(rect) {
         return runShortxRectOcr18(rect);
@@ -170,12 +332,15 @@
             if (st) {
               st.areaOcrRequested = true;
               st.areaOcrSource = String((options && options.source) || "");
+              applyPerfDefaults18(this);
             }
           } catch(eSt) {}
           try { this.toast("悬停后拖动框选识别"); } catch(eToast) {}
           return { ok: !!(ret && ret.ok), type: "pointer_started", mode: "area_ocr", base: ret || null };
         }
-        return oldStartPointerTool.call(this, options);
+        var normalRet = oldStartPointerTool.call(this, options);
+        try { applyPerfDefaults18(this); } catch(ePerfStart) {}
+        return normalRet;
       };
 
       var oldExecPointerAction = proto.execPointerAction;
