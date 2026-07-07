@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -811,6 +811,14 @@ var ConfigManager = {
         BALL_ICON_TINT_HEX: "",
         BALL_BG_COLOR_HEX: "",
         BALL_IDLE_ALPHA: 0.6,
+        POINTER_SCALE_PERCENT: 100,
+        POINTER_EDGE_ZONE_X_DP: 48,
+        POINTER_EDGE_ZONE_Y_DP: 72,
+        POINTER_TEXT_HOVER_MS: 800,
+        POINTER_AREA_HOVER_MS: 1000,
+        POINTER_COLOR_NORMAL_HEX: "",
+        POINTER_COLOR_HIT_HEX: "",
+        POINTER_COLOR_AREA_HEX: "",
         PANEL_POS_GRAVITY: "bottom",
         PANEL_CUSTOM_OFFSET_Y: 0,
         PANEL_COLS: 1,
@@ -869,6 +877,16 @@ var ConfigManager = {
         { key: "BALL_ICON_SIZE_DP", name: "图标大小", type: "int", min: 12, max: 80, step: 1 },
         { key: "BALL_BG_COLOR_HEX", name: "球体背景", type: "ball_color" },
         { key: "BALL_IDLE_ALPHA", name: "安静时透明度", type: "float", min: 0.1, max: 1.0, step: 0.05 },
+
+        { type: "section", name: "指针" },
+        { key: "POINTER_SCALE_PERCENT", name: "指针大小(%)", type: "int", min: 70, max: 140, step: 5 },
+        { key: "POINTER_EDGE_ZONE_X_DP", name: "横向贴边范围(dp)", type: "int", min: 16, max: 96, step: 1 },
+        { key: "POINTER_EDGE_ZONE_Y_DP", name: "纵向贴边范围(dp)", type: "int", min: 24, max: 128, step: 1 },
+        { key: "POINTER_TEXT_HOVER_MS", name: "悬停取字时间(ms)", type: "int", min: 300, max: 1500, step: 50 },
+        { key: "POINTER_AREA_HOVER_MS", name: "悬停框选时间(ms)", type: "int", min: 500, max: 2000, step: 50 },
+        { key: "POINTER_COLOR_NORMAL_HEX", name: "指针普通颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_HIT_HEX", name: "取字命中颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_AREA_HEX", name: "框选状态颜色", type: "ball_color" },
 
         { type: "section", name: "面板布局" },
         { key: "PANEL_ROWS", name: "面板可视行数", type: "int", min: 1, max: 10, step: 1 },
@@ -954,7 +972,7 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0) {
             needReset = true;
         }
         if (!needReset && (sStr.indexOf("ENABLE_TOOLAPP_INNER_BACK_STRIPS") >= 0 || sStr.indexOf("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") >= 0)) {

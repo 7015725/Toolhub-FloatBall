@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -89,6 +89,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
   if (this.isSettingsMonetTheme && this.isSettingsMonetTheme(cfgTpl)) {
     return [
       { key: "ball", title: "悬浮球", desc: "大小、图标、颜色和跟随距离", sections: ["悬浮球"] },
+      { key: "pointer", title: "指针", desc: "大小、贴边、悬停和状态颜色", sections: ["指针"] },
       { key: "panel", title: "面板", desc: "排列、文字、位置和吸边行为", sections: ["面板布局", "面板文字", "吸边与位置"] },
       { key: "theme", title: "外观", desc: "颜色、背景、透明度和动态取色", sections: ["外观"] },
       { key: "motion", title: "动作与手势", desc: "点击、长按、动画和贴边回弹", sections: ["动画", "动作与手势"] },
@@ -97,6 +98,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
   }
   return [
     { key: "ball", title: "悬浮球", desc: "调整悬浮球大小、图标和面板距离", sections: ["悬浮球"] },
+    { key: "pointer", title: "指针", desc: "调整指针大小、贴边范围、悬停时间和颜色", sections: ["指针"] },
     { key: "panel", title: "工具面板", desc: "调整面板排列、文字、位置和吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
     { key: "theme", title: "换装与装饰", desc: "更换颜色、背景和透明度", sections: ["外观"] },
     { key: "motion", title: "动作与手势", desc: "调整点击、长按和贴边回弹效果", sections: ["动画", "动作与手势"] },
