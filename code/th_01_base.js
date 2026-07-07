@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -110,8 +110,10 @@ var ConfigValidator = {
     POINTER_TEXT_HOVER_MS: { type: "int", min: 300, max: 10000, default: 800 },
     POINTER_AREA_HOVER_MS: { type: "int", min: 500, max: 10000, default: 1000 },
     POINTER_COLOR_NORMAL_HEX: { type: "string", default: "" },
+    POINTER_COLOR_HOVER_HEX: { type: "string", default: "" },
     POINTER_COLOR_HIT_HEX: { type: "string", default: "" },
     POINTER_COLOR_AREA_HEX: { type: "string", default: "" },
+    POINTER_COLOR_CAPTURE_HEX: { type: "string", default: "" },
 
     // 交互配置
     LONG_PRESS_MS: { type: "int", min: 200, max: 2000, default: 600 },
@@ -827,8 +829,10 @@ var ConfigManager = {
         POINTER_TEXT_HOVER_MS: 800,
         POINTER_AREA_HOVER_MS: 1000,
         POINTER_COLOR_NORMAL_HEX: "",
+        POINTER_COLOR_HOVER_HEX: "",
         POINTER_COLOR_HIT_HEX: "",
         POINTER_COLOR_AREA_HEX: "",
+        POINTER_COLOR_CAPTURE_HEX: "",
         PANEL_POS_GRAVITY: "bottom",
         PANEL_CUSTOM_OFFSET_Y: 0,
         PANEL_COLS: 1,
@@ -895,8 +899,10 @@ var ConfigManager = {
         { key: "POINTER_TEXT_HOVER_MS", name: "悬停取字时间(ms)", type: "int", min: 300, max: 10000, step: 100 },
         { key: "POINTER_AREA_HOVER_MS", name: "悬停框选时间(ms)", type: "int", min: 500, max: 10000, step: 100 },
         { key: "POINTER_COLOR_NORMAL_HEX", name: "指针普通颜色", type: "ball_color" },
-        { key: "POINTER_COLOR_HIT_HEX", name: "取字命中颜色", type: "ball_color" },
-        { key: "POINTER_COLOR_AREA_HEX", name: "框选状态颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_HOVER_HEX", name: "指针悬停颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_HIT_HEX", name: "指针命中颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_AREA_HEX", name: "框选区域颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_CAPTURE_HEX", name: "截图识别颜色", type: "ball_color" },
 
         { type: "section", name: "面板布局" },
         { key: "PANEL_ROWS", name: "面板可视行数", type: "int", min: 1, max: 10, step: 1 },

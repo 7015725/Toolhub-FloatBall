@@ -1,4 +1,4 @@
-// @version 1.1.5
+// @version 1.1.6
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -196,6 +196,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       areaEndY: 0,
       areaSelecting: false,
       areaReady: false,
+      areaProcessing: false,
       captureRect: null,
       visualRect: null,
       paint: null
@@ -275,6 +276,7 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.areaEndY = 0;
   st.areaSelecting = false;
   st.areaReady = false;
+  st.areaProcessing = false;
   st.captureRect = null;
   st.visualRect = null;
 };
@@ -556,13 +558,19 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         var dp = function(v) { return self.dp(Number(v) * pointerScale); };
         var tipX = st.anchorLocalX;
         var tipY = st.anchorLocalY;
-        var active = !!(st.hot || st.areaSelecting || st.areaReady);
+        var hoverCandidate = !!(st.currentText && st.currentRect && st.hoverSince && !st.hot);
+        var processing = !!st.areaProcessing;
+        var active = !!(st.hot || hoverCandidate || st.areaSelecting || st.areaReady || processing);
         var dragging = !!st.dragging;
         var rgb = null;
-        if (st.mode === "area_capture" || st.areaSelecting || st.areaReady) {
+        if (processing) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
+        } else if (st.mode === "area_capture" || st.areaSelecting || st.areaReady) {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
         } else if (st.hot) {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_HIT_HEX", 245, 158, 11);
+        } else if (hoverCandidate) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
         } else {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_NORMAL_HEX", 76, 124, 160);
         }
@@ -795,6 +803,7 @@ FloatBallAppWM.prototype.enterPointerAreaMode = function() {
   st.areaEndY = hp.y;
   st.areaSelecting = true;
   st.areaReady = false;
+  st.areaProcessing = false;
   try { if (st.handler && st.inspectRunnable) st.handler.removeCallbacks(st.inspectRunnable); } catch (eRemoveInspect) {}
   st.inspectPosted = false;
   st.draggingInspectPosted = false;
@@ -1345,9 +1354,11 @@ FloatBallAppWM.prototype.createPointerFrameView = function(st) {
         if (!rect) return;
         var p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         var rf = new android.graphics.RectF(rect.left, rect.top, rect.right, rect.bottom);
-        var rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        var rgb = st.areaProcessing === true
+          ? th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247)
+          : th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
         p.setStyle(android.graphics.Paint.Style.FILL);
-        p.setARGB(42, rgb.r, rgb.g, rgb.b);
+        p.setARGB(st.areaProcessing === true ? 56 : 42, rgb.r, rgb.g, rgb.b);
         canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
         p.setStyle(android.graphics.Paint.Style.STROKE);
         p.setStrokeWidth(self.dp(2));
@@ -1425,6 +1436,10 @@ FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
     return { ok: false, err: "框选区域为空" };
   }
   if (!visualRect) visualRect = st.visualRect || captureRect;
+  st.areaProcessing = true;
+  try { this.showPointerAreaFrame(visualRect || captureRect); } catch (eProcessFrame) {}
+  try { if (st.root) st.root.invalidate(); } catch (eProcessInv) {}
+  try { java.lang.Thread.sleep(90); } catch (eProcessSleep) {}
   var screenshotPath = "";
   var screenshotError = "";
   try {
