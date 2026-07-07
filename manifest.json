@@ -42,9 +42,9 @@
       "version": "1.0.1"
     },
     "th_10_shell.js": {
-      "sha256": "0ed793079c2f6ba7d29f4c0d411705cb72419f45f572cbe37ed32ac16527a8bc",
-      "size": 1094,
-      "version": "1.0.1"
+      "sha256": "deed0a7fbbfb5e503e1135846de3640d85c3703a18aaaf3a077723cbb70f4a3b",
+      "size": 2341,
+      "version": "1.0.2"
     },
     "th_11_action.js": {
       "sha256": "ad3d08803c6c47c2d4e6c149a419ebbcb9fd598554d52203ee4cbf72fed76b09",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "更新完成后自动重启生效"
+      "Shell 广播桥支持显式目标"
     ],
-    "title": "更新完成后自动重启生效"
+    "title": "Shell 广播桥支持显式目标"
   },
   "schema": 3,
-  "version": 20260707022744
+  "version": 20260707023537
 }
