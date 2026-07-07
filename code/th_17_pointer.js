@@ -1,4 +1,4 @@
-// @version 1.1.6
+// @version 1.1.7
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -199,6 +199,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       areaProcessing: false,
       captureRect: null,
       visualRect: null,
+      frameKind: "",
       paint: null
     };
   }
@@ -279,6 +280,7 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.areaProcessing = false;
   st.captureRect = null;
   st.visualRect = null;
+  st.frameKind = "";
 };
 
 FloatBallAppWM.prototype.setPointerToolResult = function(obj) {
@@ -1095,7 +1097,7 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     st.currentRect = result.rect;
     st.currentKey = key;
     var ready = now - st.hoverSince >= st.hoverMinMs;
-    this.showPointerAreaFrame(result.rect);
+    this.showPointerAreaFrame(result.rect, ready ? "text_hit" : "text_hover");
     this.updatePointerVisualHot(ready);
   } else {
     st.currentText = "";
@@ -1342,7 +1344,7 @@ FloatBallAppWM.prototype.updatePointerAreaSelection = function(x, y) {
   st.captureRect = norm;
   st.visualRect = norm;
   st.areaReady = !!norm;
-  if (norm) this.showPointerAreaFrame(norm);
+  if (norm) this.showPointerAreaFrame(norm, "area");
 };
 
 FloatBallAppWM.prototype.createPointerFrameView = function(st) {
@@ -1354,15 +1356,36 @@ FloatBallAppWM.prototype.createPointerFrameView = function(st) {
         if (!rect) return;
         var p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         var rf = new android.graphics.RectF(rect.left, rect.top, rect.right, rect.bottom);
-        var rgb = st.areaProcessing === true
-          ? th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247)
-          : th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        var kind = "";
+        try { kind = String(st.frameKind || ""); } catch(eKind) { kind = ""; }
+        var rgb = null;
+        var fillAlpha = 42;
+        var strokeAlpha = 235;
+        var strokeWidth = self.dp(2);
+        if (kind === "capture" || st.areaProcessing === true) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
+          fillAlpha = 56;
+          strokeAlpha = 245;
+          strokeWidth = self.dp(2.4);
+        } else if (kind === "text_hit") {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HIT_HEX", 245, 158, 11);
+          fillAlpha = 34;
+          strokeAlpha = 245;
+          strokeWidth = self.dp(2.2);
+        } else if (kind === "text_hover") {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
+          fillAlpha = 26;
+          strokeAlpha = 215;
+          strokeWidth = self.dp(1.8);
+        } else {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        }
         p.setStyle(android.graphics.Paint.Style.FILL);
-        p.setARGB(st.areaProcessing === true ? 56 : 42, rgb.r, rgb.g, rgb.b);
+        p.setARGB(fillAlpha, rgb.r, rgb.g, rgb.b);
         canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
         p.setStyle(android.graphics.Paint.Style.STROKE);
-        p.setStrokeWidth(self.dp(2));
-        p.setARGB(235, rgb.r, rgb.g, rgb.b);
+        p.setStrokeWidth(strokeWidth);
+        p.setARGB(strokeAlpha, rgb.r, rgb.g, rgb.b);
         canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
       } catch (eDraw) {}
     }
@@ -1370,10 +1393,11 @@ FloatBallAppWM.prototype.createPointerFrameView = function(st) {
   return FrameView;
 };
 
-FloatBallAppWM.prototype.showPointerAreaFrame = function(rect) {
+FloatBallAppWM.prototype.showPointerAreaFrame = function(rect, kind) {
   var st = this.ensurePointerToolState();
   if (!rect) return;
   st.frameRect = th17RectObj(rect);
+  try { st.frameKind = String(kind || "area"); } catch(eKindSet) { st.frameKind = "area"; }
   try {
     var wm = this.state.wm || st.wm || context.getSystemService(android.content.Context.WINDOW_SERVICE);
     if (!st.frame) st.frame = this.createPointerFrameView(st);
@@ -1437,7 +1461,7 @@ FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
   }
   if (!visualRect) visualRect = st.visualRect || captureRect;
   st.areaProcessing = true;
-  try { this.showPointerAreaFrame(visualRect || captureRect); } catch (eProcessFrame) {}
+  try { this.showPointerAreaFrame(visualRect || captureRect, "capture"); } catch (eProcessFrame) {}
   try { if (st.root) st.root.invalidate(); } catch (eProcessInv) {}
   try { java.lang.Thread.sleep(90); } catch (eProcessSleep) {}
   var screenshotPath = "";
