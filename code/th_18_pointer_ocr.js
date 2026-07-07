@@ -1,8 +1,8 @@
-// @version 1.0.7
+// @version 1.0.8
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
-// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；识别只使用最终拖动位置；指针热点可渐进贴边到达四边。
+// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；识别只使用最终拖动位置；指针热点四边统一渐进贴边。
 (function() {
   function log18(level, msg) {
     try { safeLog(null, level || 'i', String(msg)); } catch(eLog) {}
@@ -265,10 +265,13 @@
 
       var xByHandle = int18(rawX) - hx;
       var yByHandle = int18(rawY) - hy;
-      var xByAnchor = rx - ax;
-      var yByAnchor = ry - ay;
       var x = xByHandle;
       var y = yByHandle;
+
+      var leftTarget = -ax;
+      var rightTarget = sw - 1 - ax;
+      var topTarget = -ay;
+      var bottomTarget = sh - 1 - ay;
 
       var zoneX = 48;
       var zoneY = 72;
@@ -287,19 +290,19 @@
       }
 
       if (rx <= zoneX) {
-        x = mix18(xByHandle, xByAnchor, (zoneX - rx) / zoneX);
+        x = mix18(xByHandle, leftTarget, (zoneX - rx) / zoneX);
       } else if (rx >= sw - 1 - zoneX) {
-        x = mix18(xByHandle, xByAnchor, (rx - (sw - 1 - zoneX)) / zoneX);
+        x = mix18(xByHandle, rightTarget, (rx - (sw - 1 - zoneX)) / zoneX);
       }
 
       if (ry <= zoneY) {
-        y = mix18(yByHandle, yByAnchor, (zoneY - ry) / zoneY);
+        y = mix18(yByHandle, topTarget, (zoneY - ry) / zoneY);
       } else if (ry >= sh - 1 - zoneY) {
-        y = mix18(yByHandle, yByAnchor, (ry - (sh - 1 - zoneY)) / zoneY);
+        y = mix18(yByHandle, bottomTarget, (ry - (sh - 1 - zoneY)) / zoneY);
       }
 
-      x = clamp18(appObj, x, -ax, Math.max(-ax, sw - 1 - ax));
-      y = clamp18(appObj, y, -ay, Math.max(-ay, sh - 1 - ay));
+      x = clamp18(appObj, x, leftTarget, rightTarget);
+      y = clamp18(appObj, y, topTarget, bottomTarget);
       st.pendingPointerX = Math.round(x);
       st.pendingPointerY = Math.round(y);
       st.pointerX = st.pendingPointerX;
