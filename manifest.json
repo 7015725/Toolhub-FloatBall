@@ -112,18 +112,18 @@
       "version": "1.1.0"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "34fcd65168b1d8e8e00ddc035dd8141da91356fa0ee20f1722ed0f886dc839d3",
-      "size": 7864,
-      "version": "1.0.0"
+      "sha256": "ee3ed65ba783d293ab7630a5c314fe7d608613facc79cdeefc8458f541e387bf",
+      "size": 13233,
+      "version": "1.0.1"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "新增文本扩展模块"
+      "完善框选文本复制"
     ],
-    "title": "新增文本扩展模块"
+    "title": "完善框选文本复制"
   },
   "schema": 3,
-  "version": 20260707064000
+  "version": 20260707065839
 }
