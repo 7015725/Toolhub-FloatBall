@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // =======================【Content：解析 settings URI】======================
 // 这段代码的主要内容/用途：识别 content://settings/(system|secure|global)/KEY 并用 Settings.* get/put 更稳
 FloatBallAppWM.prototype.parseSettingsUri = function(uriStr) {
@@ -38,6 +38,74 @@ FloatBallAppWM.prototype.settingsPutStringByTable = function(table, key, value) 
     if (table === "global") return android.provider.Settings.Global.putString(cr, String(key), String(value));
     return false;
   } catch (e) { return false; }
+};
+
+// =======================【Content：安全审计】======================
+// 这段代码的主要内容/用途：为 ContentResolver 访问增加 audit / strict / off 三档安全模式。
+// 默认 audit：只记录非 allowlist URI，不阻断旧按钮。
+FloatBallAppWM.prototype.getContentSecurityMode = function() {
+  var mode = "audit";
+  try {
+    if (this.config && this.config.CONTENT_SECURITY_MODE !== undefined && this.config.CONTENT_SECURITY_MODE !== null) {
+      mode = String(this.config.CONTENT_SECURITY_MODE || "audit");
+    }
+  } catch (eMode) { mode = "audit"; }
+  try { mode = mode.replace(/^\s+|\s+$/g, "").toLowerCase(); } catch (eTrim) { mode = "audit"; }
+  if (mode !== "audit" && mode !== "strict" && mode !== "off") mode = "audit";
+  return mode;
+};
+
+FloatBallAppWM.prototype.getContentUriAllowlist = function() {
+  var raw = "content://settings/system/|content://settings/secure/|content://settings/global/";
+  try {
+    if (this.config && this.config.CONTENT_URI_ALLOWLIST !== undefined && this.config.CONTENT_URI_ALLOWLIST !== null) {
+      raw = String(this.config.CONTENT_URI_ALLOWLIST || raw);
+    }
+  } catch (eAllow) {}
+  return String(raw || "");
+};
+
+FloatBallAppWM.prototype.isContentUriAllowlisted = function(uriStr) {
+  try {
+    var uri = String(uriStr || "");
+    if (!uri) return false;
+    var raw = this.getContentUriAllowlist ? this.getContentUriAllowlist() : "";
+    var parts = String(raw || "").split("|");
+    for (var i = 0; i < parts.length; i++) {
+      var p = String(parts[i] || "").replace(/^\s+|\s+$/g, "");
+      if (!p) continue;
+      if (uri.indexOf(p) === 0) return true;
+    }
+  } catch (e) {}
+  return false;
+};
+
+FloatBallAppWM.prototype.checkContentUriSecurity = function(uriStr, modeName, btn) {
+  var out = { ok: true, mode: "audit", allowed: false, uri: String(uriStr || ""), err: "" };
+  try {
+    out.mode = this.getContentSecurityMode ? this.getContentSecurityMode() : "audit";
+    if (out.mode === "off") return out;
+
+    out.allowed = this.isContentUriAllowlisted ? this.isContentUriAllowlisted(uriStr) : false;
+    if (out.allowed) return out;
+
+    var msg = "content uri not in allowlist mode=" + out.mode + " action=" + String(modeName || "") + " uri=" + String(uriStr || "");
+    if (out.mode === "strict") {
+      out.ok = false;
+      out.err = msg;
+      safeLog(this.L, 'e', msg);
+      return out;
+    }
+
+    // audit：只记录，不阻断。
+    safeLog(this.L, 'w', msg);
+    return out;
+  } catch (eSec) {
+    out.ok = true;
+    out.err = String(eSec);
+    try { safeLog(this.L, 'w', "content security check failed compat allow err=" + String(eSec)); } catch(eLog) {}
+  }
+  return out;
 };
 
 // =======================【Content：通用 query】======================
@@ -125,6 +193,9 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
   var uri = btn.uri ? String(btn.uri) : "";
   if (!uri) return { ok: false, err: "missing uri" };
 
+  var sec = this.checkContentUriSecurity ? this.checkContentUriSecurity(uri, mode, btn) : { ok: true };
+  if (sec && !sec.ok) return { ok: false, mode: mode, kind: "security", err: sec.err || "content uri blocked" };
+
   // settings uri 优先走 Settings API
   var su = this.parseSettingsUri(uri);
 
@@ -206,4 +277,3 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
 /* =======================
    下面开始：WM 动画、面板、触摸、启动、输出
    ======================= */
-
