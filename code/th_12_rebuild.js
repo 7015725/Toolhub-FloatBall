@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.1
 // =======================【安全兼容配置安装器】======================
 // 这段代码的主要内容/用途：在不改变现有执行逻辑的前提下，注入后续 Shell / Shortcut / Content 加固需要的配置项。
 // 默认值全部保持兼容：Shell=compat，Shortcut=compat，Content=audit，ToolApp 横滑比例仍为 1.08。
@@ -114,10 +114,3 @@ FloatBallAppWM.prototype.rebuildBallForNewSize = function(keepPanels) {
   safeLog(this.L, 'i',  "rebuildBall ok size=" + String(newSize) + " x=" + String(newX) + " y=" + String(newY));
   return true;
 };
-
-// =======================【可选扩展：指针文本识别】======================
-try {
-  if (typeof loadScript === "function") loadScript("th_18_pointer_ocr.js");
-} catch(ePointerTextExt) {
-  try { safeLog(null, 'w', "optional pointer text extension skipped: " + String(ePointerTextExt)); } catch(eLog) {}
-}
