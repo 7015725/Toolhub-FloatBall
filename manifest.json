@@ -12,9 +12,9 @@
       "version": "1.0.0"
     },
     "th_03_icon.js": {
-      "sha256": "0fee3be2608c1c1c5e29521252dcba331cebef4e9a0a2951ebc231f3fe2ad395",
-      "size": 6110,
-      "version": "1.0.2"
+      "sha256": "6857df4aff11128f25abc3abd53c89b1b9aa0cbad7fcab3afe1931eb216686b9",
+      "size": 9922,
+      "version": "1.0.3"
     },
     "th_04_theme.js": {
       "sha256": "e1dcfc9b95571dcfc9a17570ed551d2fe2ad5a62fc87f236493daadd1f278f39",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复快捷方式图标缓存后空白"
+      "更新完成后自动重启生效"
     ],
-    "title": "修复快捷方式图标缓存后空白"
+    "title": "更新完成后自动重启生效"
   },
   "schema": 3,
-  "version": 20260707021646
+  "version": 20260707022744
 }
