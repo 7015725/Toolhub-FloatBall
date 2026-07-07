@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 FloatBallAppWM.prototype._iconCache = {
   map: {},
   keys: [],
@@ -22,7 +22,8 @@ FloatBallAppWM.prototype._iconCache = {
     var k = String(key || "");
     if (!k || drawable == null) return;
 
-    // 清理旧的
+    // 清理旧的缓存引用，不主动 recycle Drawable。
+    // 快捷方式图标可能同时被 ImageView、file| 缓存 key、sc| 缓存 key 复用；主动 recycle 会导致图标空白。
     if (this.map[k]) {
       this._remove(k);
       var idxOld = this.keys.indexOf(k);
@@ -45,16 +46,8 @@ FloatBallAppWM.prototype._iconCache = {
   _remove: function(key) {
     var k = String(key || "");
     if (!k) return;
-    var item = this.map[k];
-    if (item && item.dr) {
-      // 关键：回收 Bitmap，防止内存泄漏
-      try {
-        if (item.dr instanceof android.graphics.drawable.BitmapDrawable) {
-          var bmp = item.dr.getBitmap();
-          if (bmp && !bmp.isRecycled()) bmp.recycle();
-        }
-       } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-    }
+    // 这里只删除缓存引用，不 recycle BitmapDrawable。
+    // WindowManager / ImageView 仍可能持有同一个 Drawable，回收底层 Bitmap 会造成快捷方式图标消失。
     try { delete this.map[k]; } catch(eDel) { safeLog(null, 'e', "catch " + String(eDel)); }
   },
 
