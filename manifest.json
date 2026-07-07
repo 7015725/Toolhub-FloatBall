@@ -102,9 +102,9 @@
       "version": "1.0.0"
     },
     "th_16_entry.js": {
-      "sha256": "e07e751e9e1ab71ad270f8e00c344632fdf547847088f501b7db74448a954bdb",
-      "size": 12550,
-      "version": "1.0.3"
+      "sha256": "6ba3a083f479adf4f99205b4f9ff9b74a281a83683262b098f2e140a91979f68",
+      "size": 14619,
+      "version": "1.0.4"
     },
     "th_17_pointer.js": {
       "sha256": "3761b68803a9e78524efc704a4c85b2cc70c6c0de39cc03ee93915ff1966a087",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "快捷方式优先使用 intentUri 启动"
+      "保存快捷方式时默认使用 intent 模式"
     ],
-    "title": "快捷方式优先使用 intentUri 启动"
+    "title": "保存快捷方式时默认使用 intent 模式"
   },
   "schema": 3,
-  "version": 20260707034508
+  "version": 20260707040509
 }
