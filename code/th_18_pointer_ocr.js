@@ -1,8 +1,8 @@
-// @version 1.0.6
+// @version 1.0.7
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
-// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；识别只使用最终拖动位置；指针热点可到达四边。
+// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；识别只使用最终拖动位置；指针热点可渐进贴边到达四边。
 (function() {
   function log18(level, msg) {
     try { safeLog(null, level || 'i', String(msg)); } catch(eLog) {}
@@ -260,23 +260,46 @@
       var ax = int18(st.anchorLocalX);
       var ay = int18(st.anchorLocalY);
 
-      var x = int18(rawX) - hx;
-      var y = int18(rawY) - hy;
-
-      var edgeSlop = 10;
-      try { edgeSlop = appObj.dp ? appObj.dp(10) : 10; } catch(eEdgeDp) { edgeSlop = 10; }
-
       var rx = clamp18(appObj, int18(rawX), 0, Math.max(0, sw - 1));
       var ry = clamp18(appObj, int18(rawY), 0, Math.max(0, sh - 1));
 
+      var xByHandle = int18(rawX) - hx;
+      var yByHandle = int18(rawY) - hy;
+      var xByAnchor = rx - ax;
+      var yByAnchor = ry - ay;
+      var x = xByHandle;
+      var y = yByHandle;
+
+      var zoneX = 48;
+      var zoneY = 72;
+      try { zoneX = appObj.dp ? appObj.dp(48) : 48; } catch(eZoneX) { zoneX = 48; }
+      try { zoneY = appObj.dp ? appObj.dp(72) : 72; } catch(eZoneY) { zoneY = 72; }
+
+      function ease18(t) {
+        if (t < 0) t = 0;
+        if (t > 1) t = 1;
+        return t * t * (3 - 2 * t);
+      }
+
+      function mix18(a, b, t) {
+        var e = ease18(t);
+        return a + (b - a) * e;
+      }
+
+      if (rx <= zoneX) {
+        x = mix18(xByHandle, xByAnchor, (zoneX - rx) / zoneX);
+      } else if (rx >= sw - 1 - zoneX) {
+        x = mix18(xByHandle, xByAnchor, (rx - (sw - 1 - zoneX)) / zoneX);
+      }
+
+      if (ry <= zoneY) {
+        y = mix18(yByHandle, yByAnchor, (zoneY - ry) / zoneY);
+      } else if (ry >= sh - 1 - zoneY) {
+        y = mix18(yByHandle, yByAnchor, (ry - (sh - 1 - zoneY)) / zoneY);
+      }
+
       x = clamp18(appObj, x, -ax, Math.max(-ax, sw - 1 - ax));
       y = clamp18(appObj, y, -ay, Math.max(-ay, sh - 1 - ay));
-
-      if (rx <= edgeSlop) x = -ax;
-      else if (rx >= sw - 1 - edgeSlop) x = sw - 1 - ax;
-
-      if (ry <= edgeSlop) y = -ay;
-      else if (ry >= sh - 1 - edgeSlop) y = sh - 1 - ay;
       st.pendingPointerX = Math.round(x);
       st.pendingPointerY = Math.round(y);
       st.pointerX = st.pendingPointerX;
