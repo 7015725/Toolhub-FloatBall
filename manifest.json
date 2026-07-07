@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "390272061bfea0926382517b5c9f1ab9863e5c45caf221009f233bdc44482c39",
-      "size": 67844,
-      "version": "1.1.8"
+      "sha256": "03295ebbe8ae4dec58d90b64291a3f63b926842ae7b5aaaa19819e2d6972e7f7",
+      "size": 68250,
+      "version": "1.1.9"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a1a1342207ac17819ad4b756a3410c7566072c26772c2a70d1e7c614ae380a4f",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "新增小框回退取字设置"
+      "优化小框回退取字预览"
     ],
-    "title": "新增小框回退取字设置"
+    "title": "优化小框回退取字预览"
   },
   "schema": 3,
-  "version": 20260707151815
+  "version": 20260707152701
 }
