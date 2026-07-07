@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -89,7 +89,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
   if (this.isSettingsMonetTheme && this.isSettingsMonetTheme(cfgTpl)) {
     return [
       { key: "ball", title: "悬浮球", desc: "大小、图标、颜色和跟随距离", sections: ["悬浮球"] },
-      { key: "pointer", title: "指针", desc: "大小、贴边、悬停和状态颜色", sections: ["指针"] },
+      { key: "pointer", title: "指针", desc: "大小、贴边、悬停、取字保护、OCR阈值和颜色", sections: ["指针"] },
       { key: "panel", title: "面板", desc: "排列、文字、位置和吸边行为", sections: ["面板布局", "面板文字", "吸边与位置"] },
       { key: "theme", title: "外观", desc: "颜色、背景、透明度和动态取色", sections: ["外观"] },
       { key: "motion", title: "动作与手势", desc: "点击、长按、动画和贴边回弹", sections: ["动画", "动作与手势"] },
@@ -98,7 +98,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
   }
   return [
     { key: "ball", title: "悬浮球", desc: "调整悬浮球大小、图标和面板距离", sections: ["悬浮球"] },
-    { key: "pointer", title: "指针", desc: "调整指针大小、贴边范围、悬停时间和颜色", sections: ["指针"] },
+    { key: "pointer", title: "指针", desc: "调整指针大小、贴边范围、悬停、取字保护、OCR阈值和颜色", sections: ["指针"] },
     { key: "panel", title: "工具面板", desc: "调整面板排列、文字、位置和吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
     { key: "theme", title: "换装与装饰", desc: "更换颜色、背景和透明度", sections: ["外观"] },
     { key: "motion", title: "动作与手势", desc: "调整点击、长按和贴边回弹效果", sections: ["动画", "动作与手势"] },
@@ -130,6 +130,99 @@ FloatBallAppWM.prototype.isSchemaSectionInSettingsGroup = function(sectionName, 
   return false;
 };
 
+
+FloatBallAppWM.prototype.getPointerSettingsBlocks = function() {
+  return [
+    {
+      key: "base",
+      title: "基础",
+      desc: "指针大小和贴边范围",
+      keys: [
+        "POINTER_SCALE_PERCENT",
+        "POINTER_EDGE_ZONE_X_DP",
+        "POINTER_EDGE_ZONE_Y_DP"
+      ]
+    },
+    {
+      key: "hover",
+      title: "悬停",
+      desc: "取字和框选的悬停触发时间",
+      keys: [
+        "POINTER_TEXT_HOVER_MS",
+        "POINTER_AREA_HOVER_MS"
+      ]
+    },
+    {
+      key: "text_guard",
+      title: "取字保护",
+      desc: "小框误触时回退复制原文字",
+      keys: [
+        "POINTER_AREA_SMALL_FALLBACK_TEXT"
+      ]
+    },
+    {
+      key: "ocr_threshold",
+      title: "框选 OCR",
+      desc: "大于阈值才执行截图 OCR",
+      keys: [
+        "POINTER_AREA_MIN_WIDTH_DP",
+        "POINTER_AREA_MIN_HEIGHT_DP",
+        "POINTER_AREA_MIN_AREA_DP2",
+        "POINTER_AREA_MIN_MOVE_DP"
+      ]
+    },
+    {
+      key: "pointer_color",
+      title: "指针颜色",
+      desc: "普通、悬停和命中状态颜色",
+      keys: [
+        "POINTER_COLOR_NORMAL_HEX",
+        "POINTER_COLOR_HOVER_HEX",
+        "POINTER_COLOR_HIT_HEX"
+      ]
+    },
+    {
+      key: "ocr_color",
+      title: "框选 OCR 颜色",
+      desc: "框选区域和识别中状态颜色",
+      keys: [
+        "POINTER_COLOR_AREA_HEX",
+        "POINTER_COLOR_CAPTURE_HEX"
+      ]
+    }
+  ];
+};
+
+FloatBallAppWM.prototype.getPointerSettingsBlockDefForItem = function(item) {
+  if (!item || item.type === "section") return null;
+  var k = String(item.key || "");
+  var blocks = this.getPointerSettingsBlocks ? this.getPointerSettingsBlocks() : [];
+  for (var i = 0; i < blocks.length; i++) {
+    var b = blocks[i];
+    if (!b || !b.keys) continue;
+    for (var j = 0; j < b.keys.length; j++) {
+      if (String(b.keys[j]) === k) return b;
+    }
+  }
+  return { key: "other", title: "其他", desc: "", keys: [] };
+};
+
+FloatBallAppWM.prototype.createPointerSettingsBlockDesc = function(parent, blockDef) {
+  if (!parent || !blockDef || !blockDef.desc) return;
+  try {
+    var isDark = this.isDarkTheme();
+    var C = this.ui.colors;
+    var T = this.getAnimalIslandTheme();
+    var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
+    this.applySettingsTheme(T, isDark, C, cfgTpl);
+    var tv = new android.widget.TextView(context);
+    tv.setText(String(blockDef.desc || ""));
+    tv.setTextColor(T.sub);
+    tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    tv.setPadding(this.dp(16), 0, this.dp(16), this.dp(8));
+    parent.addView(tv, new android.widget.LinearLayout.LayoutParams(-1, -2));
+  } catch(eDesc) { safeLog(null, 'e', "catch " + String(eDesc)); }
+};
 
 FloatBallAppWM.prototype.getBallSettingsSubtabs = function() {
   return [
@@ -1220,11 +1313,17 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   var activeGroupKey = String(groupKey || "");
   var activeBallSubtab = activeGroupKey === "ball" && this.getActiveBallSettingsSubtab ? this.getActiveBallSettingsSubtab() : "";
   var activeBallSubtabDef = activeGroupKey === "ball" && this.getBallSettingsSubtabDef ? this.getBallSettingsSubtabDef(activeBallSubtab) : null;
+  var activePointerBlockKey = "";
   for (var i = 0; i < schema.length; i++) {
     (function(item) {
       if (item && String(item.type) === "section") {
         includeSection = self.isSchemaSectionInSettingsGroup(String(item.name || ""), activeGroupKey);
         if (!includeSection) { currentCard = null; return; }
+        if (activeGroupKey === "pointer") {
+          currentCard = null;
+          activePointerBlockKey = "";
+          return;
+        }
         currentCard = createCard();
         box.addView(currentCard);
         if (activeGroupKey === "ball" && activeBallSubtabDef) self.createSectionHeader({ type: "section", name: String(activeBallSubtabDef.title || "悬浮球") }, currentCard);
@@ -1232,6 +1331,21 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
       } else {
         if (!includeSection) return;
         if (activeGroupKey === "ball" && self.isSchemaItemInBallSubtab && !self.isSchemaItemInBallSubtab(item, activeBallSubtab)) return;
+        if (activeGroupKey === "pointer" && self.getPointerSettingsBlockDefForItem) {
+          var pBlock = self.getPointerSettingsBlockDefForItem(item);
+          var nextBlockKey = pBlock ? String(pBlock.key || "other") : "other";
+          if (!currentCard || String(activePointerBlockKey || "") !== nextBlockKey) {
+            currentCard = createCard();
+            box.addView(currentCard);
+            activePointerBlockKey = nextBlockKey;
+            self.createSectionHeader({ type: "section", name: pBlock ? String(pBlock.title || "其他") : "其他" }, currentCard);
+            if (self.createPointerSettingsBlockDesc) self.createPointerSettingsBlockDesc(currentCard, pBlock);
+          }
+          var needDividerPointer = (currentCard.getChildCount() > 0);
+          if (currentCard.getChildCount() <= 2) needDividerPointer = false;
+          self.createSettingItemView(item, currentCard, needDividerPointer);
+          return;
+        }
         if (!currentCard) { currentCard = createCard(); box.addView(currentCard); }
         var needDivider = (currentCard.getChildCount() > 0);
         if (currentCard.getChildCount() === 1) needDivider = false;

@@ -87,9 +87,9 @@
       "version": "1.0.0"
     },
     "th_14_panels.js": {
-      "sha256": "bc40539638614b51f685d853a5b2104cf11f3ba8083f4651790813c91792285d",
-      "size": 117260,
-      "version": "1.0.4"
+      "sha256": "48e504fc3de6037290a452319c9a9cb6353dc5850ead1682afd9babad5a225b0",
+      "size": 121168,
+      "version": "1.0.5"
     },
     "th_14_schema_editor.js": {
       "sha256": "903fb69f973af2a722ea2536bd86099005bb07605616028d5ae9c388fe2981e0",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化小框回退取字预览"
+      "设置页指针分类增加子块"
     ],
-    "title": "优化小框回退取字预览"
+    "title": "设置页指针分类增加子块"
   },
   "schema": 3,
-  "version": 20260707152701
+  "version": 20260707153740
 }
