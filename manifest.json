@@ -47,9 +47,9 @@
       "version": "1.0.1"
     },
     "th_11_action.js": {
-      "sha256": "5ea0234cc3342b8f3a88f0ff354f655d093ead857ca6008e484fde6ec4011747",
-      "size": 15432,
-      "version": "1.0.2"
+      "sha256": "ad3d08803c6c47c2d4e6c149a419ebbcb9fd598554d52203ee4cbf72fed76b09",
+      "size": 15702,
+      "version": "1.0.3"
     },
     "th_12_rebuild.js": {
       "sha256": "7b820e813d2dd8866778fefe8bfeb6aca227bb1a32a89d318de830178f19824f",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针框选结果反馈"
+      "修复区域截图启动反馈"
     ],
-    "title": "修复指针框选结果反馈"
+    "title": "修复区域截图启动反馈"
   },
   "schema": 3,
-  "version": 20260707000010
+  "version": 20260707003209
 }

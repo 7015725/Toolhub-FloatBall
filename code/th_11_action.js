@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【WM 线程：按钮动作执行】======================
 FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
   // # 点击防抖
@@ -128,7 +128,14 @@ return;
     var needRoot = true;
 
     var r = this.execShellSmart(cmdB64, needRoot);
-    if (r && r.ok) return;
+    if (r && r.ok) {
+      try {
+        if (btn.toastOnRun !== undefined && btn.toastOnRun !== null && String(btn.toastOnRun).length > 0) {
+          this.toast(String(btn.toastOnRun));
+        }
+      } catch (eToastRun) { safeLog(null, 'e', "catch " + String(eToastRun)); }
+      return;
+    }
 
     this.toast("shell 广播桥发送失败");
     safeLog(this.L, 'e',  "shell all failed cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " ret=" + JSON.stringify(r || {}));
