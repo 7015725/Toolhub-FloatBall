@@ -1,8 +1,8 @@
-// @version 1.0.5
+// @version 1.0.6
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
-// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；识别只使用最终拖动位置。
+// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；识别只使用最终拖动位置；指针热点可到达四边。
 (function() {
   function log18(level, msg) {
     try { safeLog(null, level || 'i', String(msg)); } catch(eLog) {}
@@ -255,10 +255,28 @@
       }
       var sw = Math.max(1, Number(appObj.state.screen && appObj.state.screen.w || 0));
       var sh = Math.max(1, Number(appObj.state.screen && appObj.state.screen.h || 0));
-      var x = int18(rawX) - int18(st.handleLocalX);
-      var y = int18(rawY) - int18(st.handleLocalY);
-      x = clamp18(appObj, x, 0, Math.max(0, sw - Number(st.pointerW || 0)));
-      y = clamp18(appObj, y, 0, Math.max(0, sh - Number(st.pointerH || 0)));
+      var hx = int18(st.handleLocalX);
+      var hy = int18(st.handleLocalY);
+      var ax = int18(st.anchorLocalX);
+      var ay = int18(st.anchorLocalY);
+
+      var x = int18(rawX) - hx;
+      var y = int18(rawY) - hy;
+
+      var edgeSlop = 10;
+      try { edgeSlop = appObj.dp ? appObj.dp(10) : 10; } catch(eEdgeDp) { edgeSlop = 10; }
+
+      var rx = clamp18(appObj, int18(rawX), 0, Math.max(0, sw - 1));
+      var ry = clamp18(appObj, int18(rawY), 0, Math.max(0, sh - 1));
+
+      x = clamp18(appObj, x, -ax, Math.max(-ax, sw - 1 - ax));
+      y = clamp18(appObj, y, -ay, Math.max(-ay, sh - 1 - ay));
+
+      if (rx <= edgeSlop) x = -ax;
+      else if (rx >= sw - 1 - edgeSlop) x = sw - 1 - ax;
+
+      if (ry <= edgeSlop) y = -ay;
+      else if (ry >= sh - 1 - edgeSlop) y = sh - 1 - ay;
       st.pendingPointerX = Math.round(x);
       st.pendingPointerY = Math.round(y);
       st.pointerX = st.pendingPointerX;
@@ -369,6 +387,34 @@
       if (typeof proto.onPointerBallDragEnd !== "function") return false;
 
       proto.schedulePointerMoveRaw18 = function(rawX, rawY, immediate) { return schedulePointerMoveRaw18(this, rawX, rawY, immediate); };
+
+      if (typeof proto.createPointerLayoutParams === "function") {
+        var oldCreatePointerLayoutParams18 = proto.createPointerLayoutParams;
+        proto.createPointerLayoutParams = function(st) {
+          var lp = oldCreatePointerLayoutParams18.call(this, st);
+          try {
+            lp.flags = lp.flags | android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+          } catch(eNoLimits) {}
+          return lp;
+        };
+      }
+
+      if (typeof proto.getPointerHotspot === "function") {
+        var oldGetPointerHotspot18 = proto.getPointerHotspot;
+        proto.getPointerHotspot = function() {
+          var st = this.ensurePointerToolState ? this.ensurePointerToolState() : null;
+          if (st && st.__th18FixedEdgePointerMode === true) {
+            var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
+            var sh = Math.max(1, Number(this.state.screen && this.state.screen.h || 0));
+            var x = int18(st.pointerX + st.anchorLocalX + st.queryOffsetX);
+            var y = int18(st.pointerY + st.anchorLocalY + st.queryOffsetY);
+            x = clamp18(this, x, 0, Math.max(0, sw - 1));
+            y = clamp18(this, y, 0, Math.max(0, sh - 1));
+            return { x: x, y: y };
+          }
+          return oldGetPointerHotspot18.call(this);
+        };
+      }
 
       var oldPointerDragging = proto.onPointerBallDragging;
       proto.onPointerBallDragging = function(ballX, ballY, rawX, rawY) {

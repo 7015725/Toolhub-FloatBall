@@ -112,18 +112,18 @@
       "version": "1.1.0"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "6bfbd9ecbcc7bf2ef38a980be2f5c20d384a8c9fede8f77ac45fcc0455de4869",
-      "size": 30659,
-      "version": "1.0.5"
+      "sha256": "46507ba1382fa40f746dd4181e5f8c496cc7203f9f7fa5f1a089076c71fff03c",
+      "size": 32621,
+      "version": "1.0.6"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针最终位置识别"
+      "支持指针热点到达屏幕边缘"
     ],
-    "title": "修复指针最终位置识别"
+    "title": "支持指针热点到达屏幕边缘"
   },
   "schema": 3,
-  "version": 20260707083316
+  "version": 20260707094910
 }
