@@ -1,4 +1,90 @@
-// @version 1.0.7
+// @version 1.0.8
+
+// =======================【诊断补丁：Shell 按钮执行日志增强】=======================
+// 这段代码的主要内容/用途：只增强 Shell 按钮诊断日志，不改变执行路径、不阻断旧按钮。
+(function() {
+  try {
+    if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
+    var proto = FloatBallAppWM.prototype;
+    if (proto.__toolHubShellActionDiagPatchInstalled === true) return;
+
+    proto.getShellDiagPreviewText = function(cmdPlain, cmdB64) {
+      var p = "";
+      try { p = cmdPlain ? String(cmdPlain) : ""; } catch(eP0) { p = ""; }
+      if ((!p || p.length <= 0) && cmdB64 && typeof decodeBase64Utf8 === "function") {
+        try { p = String(decodeBase64Utf8(String(cmdB64)) || ""); } catch(eP1) { p = ""; }
+      }
+      if (!p || p.length <= 0) p = "[cmd_b64 only]";
+      try { p = p.replace(/[\r\n\t]+/g, " ").replace(/^\s+|\s+$/g, ""); } catch(eP2) {}
+      if (p.length > 220) p = p.substring(0, 220) + "...";
+      return p;
+    };
+
+    proto.logShellButtonDiagnostics = function(btn, idx) {
+      try {
+        var title = "";
+        try { title = String(btn && btn.title ? btn.title : ""); } catch(eTitle) { title = ""; }
+        var cmdB64 = "";
+        var cmdPlain = "";
+        try { cmdB64 = (btn && btn.cmd_b64 !== undefined && btn.cmd_b64 !== null) ? String(btn.cmd_b64) : ""; } catch(eB64) { cmdB64 = ""; }
+        try { cmdPlain = (btn && btn.cmd !== undefined && btn.cmd !== null) ? String(btn.cmd) : ""; } catch(eCmd) { cmdPlain = ""; }
+
+        var root = true;
+        try {
+          if (btn && btn.root !== undefined && btn.root !== null) {
+            var rs = String(btn.root).replace(/^\s+|\s+$/g, "").toLowerCase();
+            root = !(rs === "false" || rs === "0" || rs === "no" || rs === "off");
+          }
+        } catch(eRoot) { root = true; }
+
+        var preview = this.getShellDiagPreviewText ? this.getShellDiagPreviewText(cmdPlain, cmdB64) : String(cmdPlain || "");
+        safeLog(this.L, 'i', "shell diag idx=" + String(idx) + " title=" + title + " root=" + String(root) + " cmd_len=" + String(cmdPlain ? cmdPlain.length : 0) + " cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " preview=" + preview);
+
+        var normalized = preview.replace(/\s+/g, " ");
+        if (normalized.indexOf("am shortx run SHARED-DA-") >= 0) {
+          safeLog(this.L, 'i', "shell diag shared-da idx=" + String(idx) + " title=" + title + " note=SHARED-DA is suitable for ToolHub invocation");
+        } else if (normalized.indexOf("am shortx run DA-") >= 0) {
+          safeLog(this.L, 'w', "shell diag private-da idx=" + String(idx) + " title=" + title + " note=private DA may not exist or may fail outside original ShortX rule");
+        }
+      } catch(eDiag) {
+        try { safeLog(this.L, 'w', "shell diag fail idx=" + String(idx) + " err=" + String(eDiag)); } catch(eLog) {}
+      }
+    };
+
+    if (typeof proto.execButtonAction === "function") {
+      var oldExecButtonAction = proto.execButtonAction;
+      proto.execButtonAction = function(btn, idx) {
+        try {
+          if (btn && String(btn.type || "") === "shell" && this.logShellButtonDiagnostics) this.logShellButtonDiagnostics(btn, idx);
+        } catch(eBefore) {
+          try { safeLog(this.L, 'w', "shell diag before exec fail idx=" + String(idx) + " err=" + String(eBefore)); } catch(eLog0) {}
+        }
+        return oldExecButtonAction.call(this, btn, idx);
+      };
+    }
+
+    if (typeof proto.execShellSmart === "function") {
+      var oldExecShellSmart = proto.execShellSmart;
+      proto.execShellSmart = function(cmdB64, needRoot) {
+        var r = oldExecShellSmart.call(this, cmdB64, needRoot);
+        try {
+          var via = r && r.via ? String(r.via) : "";
+          safeLog(this.L, (r && r.ok) ? 'i' : 'w', "shell diag result ok=" + String(!!(r && r.ok)) + " via=" + via + " root=" + String(!!needRoot) + " cmd_b64_len=" + String(cmdB64 ? String(cmdB64).length : 0) + " ret=" + JSON.stringify(r || {}));
+          if (via.indexOf("BroadcastBridge") >= 0) {
+            safeLog(this.L, 'i', "shell diag bridge sent note=BroadcastBridge sent only means broadcast was sent; it does not prove ShortX task executed successfully");
+          }
+        } catch(eAfter) {
+          try { safeLog(this.L, 'w', "shell diag after exec fail err=" + String(eAfter)); } catch(eLog1) {}
+        }
+        return r;
+      };
+    }
+
+    proto.__toolHubShellActionDiagPatchInstalled = true;
+  } catch(eInstallShellDiag) {
+    try { safeLog(null, 'e', "install shell action diag patch fail: " + String(eInstallShellDiag)); } catch(eLog2) {}
+  }
+})();
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
