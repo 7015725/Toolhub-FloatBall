@@ -1,4 +1,4 @@
-// @version 1.1.7
+// @version 1.1.8
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -30,6 +30,18 @@ function th17ConfigNumber(appObj, key, defVal, minVal, maxVal) {
   if (isNaN(v)) v = defVal;
   if (minVal !== undefined && v < minVal) v = minVal;
   if (maxVal !== undefined && v > maxVal) v = maxVal;
+  return v;
+}
+
+function th17ConfigBool(appObj, key, defVal) {
+  var v = defVal === true;
+  try {
+    var raw = appObj && appObj.config ? appObj.config[key] : defVal;
+    if (raw === true || raw === false) return raw === true;
+    var s = String(raw == null ? "" : raw).replace(/^\s+|\s+$/g, "").toLowerCase();
+    if (s === "1" || s === "true" || s === "yes" || s === "on") return true;
+    if (s === "0" || s === "false" || s === "no" || s === "off" || s === "") return false;
+  } catch(e0) {}
   return v;
 }
 
@@ -172,6 +184,10 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       currentText: "",
       currentRect: null,
       currentKey: "",
+      boundText: "",
+      boundRect: null,
+      boundKey: "",
+      boundAt: 0,
       hoverSince: 0,
       hoverKey: "",
       hoverX: 0,
@@ -183,6 +199,11 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       areaHoldAnchorY: -100000,
       areaHoldSince: 0,
       areaHoldDelay: 1000,
+      areaSmallFallbackText: true,
+      areaMinWidthPx: 0,
+      areaMinHeightPx: 0,
+      areaMinAreaPx: 0,
+      areaMinMovePx: 0,
       areaHoldStableSlop: 0,
       areaHoldBreakSlop: 0,
       areaCaptureInset: 0,
@@ -196,6 +217,8 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       areaEndY: 0,
       areaSelecting: false,
       areaReady: false,
+      areaValid: false,
+      areaFromText: false,
       areaProcessing: false,
       captureRect: null,
       visualRect: null,
@@ -217,6 +240,13 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
   st.handleLocalY = sdp.call(this, 66);
   st.hoverMinMs = th17ConfigNumber(this, "POINTER_TEXT_HOVER_MS", 800, 300, 10000);
   st.areaHoldDelay = th17ConfigNumber(this, "POINTER_AREA_HOVER_MS", 1000, 500, 10000);
+  st.areaSmallFallbackText = th17ConfigBool(this, "POINTER_AREA_SMALL_FALLBACK_TEXT", true);
+  st.areaMinWidthPx = dp.call(this, th17ConfigNumber(this, "POINTER_AREA_MIN_WIDTH_DP", 56, 20, 240));
+  st.areaMinHeightPx = dp.call(this, th17ConfigNumber(this, "POINTER_AREA_MIN_HEIGHT_DP", 20, 8, 160));
+  var areaDp2 = th17ConfigNumber(this, "POINTER_AREA_MIN_AREA_DP2", 1200, 200, 30000);
+  var oneDp = Math.max(1, dp.call(this, 1));
+  st.areaMinAreaPx = Math.max(1, Math.round(areaDp2 * oneDp * oneDp));
+  st.areaMinMovePx = dp.call(this, th17ConfigNumber(this, "POINTER_AREA_MIN_MOVE_DP", 24, 0, 160));
   st.areaHoldStableSlop = dp.call(this, 5);
   st.areaHoldBreakSlop = dp.call(this, 14);
   st.areaCaptureInset = dp.call(this, 3);
@@ -259,6 +289,10 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.currentText = "";
   st.currentRect = null;
   st.currentKey = "";
+  st.boundText = "";
+  st.boundRect = null;
+  st.boundKey = "";
+  st.boundAt = 0;
   st.hoverSince = 0;
   st.hoverKey = "";
   st.hoverX = 0;
@@ -277,6 +311,8 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.areaEndY = 0;
   st.areaSelecting = false;
   st.areaReady = false;
+  st.areaValid = false;
+  st.areaFromText = false;
   st.areaProcessing = false;
   st.captureRect = null;
   st.visualRect = null;
@@ -793,6 +829,14 @@ FloatBallAppWM.prototype.enterPointerAreaMode = function() {
   st.inspectPending = false;
   st.inspectFinishAfterResult = false;
   st.inspectLatestReason = "";
+  if (st.currentText && st.currentRect) {
+    st.boundText = String(st.currentText);
+    st.boundRect = th17RectObj(st.currentRect);
+    st.boundKey = String(st.currentKey || "");
+    st.boundAt = th17Now();
+  }
+  st.areaFromText = !!(st.boundText && st.boundRect);
+  st.areaValid = false;
   st.currentText = "";
   st.currentRect = null;
   st.currentKey = "";
@@ -1096,6 +1140,10 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     st.currentText = String(result.text);
     st.currentRect = result.rect;
     st.currentKey = key;
+    st.boundText = st.currentText;
+    st.boundRect = th17RectObj(result.rect);
+    st.boundKey = key;
+    st.boundAt = now;
     var ready = now - st.hoverSince >= st.hoverMinMs;
     this.showPointerAreaFrame(result.rect, ready ? "text_hit" : "text_hover");
     this.updatePointerVisualHot(ready);
@@ -1326,6 +1374,52 @@ FloatBallAppWM.prototype.normalizePointerCaptureRect = function(rect) {
   return { left: l, top: t, right: r, bottom: b };
 };
 
+FloatBallAppWM.prototype.isPointerOcrRectValid = function(rect, startX, startY, endX, endY) {
+  var st = this.ensurePointerToolState();
+  if (!rect) return false;
+  var w = Math.max(0, th17Int(rect.right) - th17Int(rect.left));
+  var h = Math.max(0, th17Int(rect.bottom) - th17Int(rect.top));
+  var area = w * h;
+  var dx = th17Int(endX) - th17Int(startX);
+  var dy = th17Int(endY) - th17Int(startY);
+  var move = Math.sqrt(dx * dx + dy * dy);
+  if (w < Math.max(1, Number(st.areaMinWidthPx || this.dp(56)))) return false;
+  if (h < Math.max(1, Number(st.areaMinHeightPx || this.dp(20)))) return false;
+  if (area < Math.max(1, Number(st.areaMinAreaPx || (this.dp(1) * this.dp(1) * 1200)))) return false;
+  if (move < Math.max(0, Number(st.areaMinMovePx || this.dp(24)))) return false;
+  return true;
+};
+
+FloatBallAppWM.prototype.finishPointerFallbackText = function() {
+  var st = this.ensurePointerToolState();
+  if (!st.boundText || !st.boundRect) {
+    this.setPointerToolResult({ ok: false, type: "cancel", code: "AREA_TOO_SMALL", message: "框选区域过小", value: "", data: {} });
+    this.toast("框选区域过小");
+    this.closePointerTool("框选区域过小", true);
+    return { ok: false, err: "框选区域过小", code: "AREA_TOO_SMALL" };
+  }
+  var rect = th17RectObj(st.boundRect);
+  var textValue = String(st.boundText || "");
+  st.currentText = textValue;
+  st.currentRect = rect;
+  st.currentKey = String(st.boundKey || "");
+  try { this.showPointerAreaFrame(rect, "text_hit"); } catch (eFrame) {}
+  var copied = this.copyPointerTextToClipboard(textValue);
+  this.setPointerToolResult({
+    ok: true,
+    type: "text_pick",
+    code: "TEXT_PICK_FALLBACK_FROM_SMALL_AREA",
+    message: "框选区域过小，已回退取字",
+    value: textValue,
+    clipboard: copied === true,
+    fallback: true,
+    rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }
+  });
+  this.toast(copied ? "已回退取字并复制" : "已回退取字");
+  this.closePointerTool("已回退取字", true);
+  return { ok: true, text: textValue, clipboard: copied === true, fallback: true };
+};
+
 FloatBallAppWM.prototype.updatePointerAreaSelection = function(x, y) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "area_capture") return;
@@ -1343,8 +1437,9 @@ FloatBallAppWM.prototype.updatePointerAreaSelection = function(x, y) {
   var norm = this.normalizePointerCaptureRect(raw);
   st.captureRect = norm;
   st.visualRect = norm;
-  st.areaReady = !!norm;
-  if (norm) this.showPointerAreaFrame(norm, "area");
+  st.areaValid = this.isPointerOcrRectValid(norm, st.areaStartX, st.areaStartY, st.areaEndX, st.areaEndY);
+  st.areaReady = !!norm && st.areaValid;
+  if (norm) this.showPointerAreaFrame(norm, st.areaValid ? "area" : "area_armed");
 };
 
 FloatBallAppWM.prototype.createPointerFrameView = function(st) {
@@ -1377,6 +1472,11 @@ FloatBallAppWM.prototype.createPointerFrameView = function(st) {
           fillAlpha = 26;
           strokeAlpha = 215;
           strokeWidth = self.dp(1.8);
+        } else if (kind === "area_armed") {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+          fillAlpha = 18;
+          strokeAlpha = 150;
+          strokeWidth = self.dp(1.4);
         } else {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
         }
@@ -1460,6 +1560,30 @@ FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
     return { ok: false, err: "框选区域为空" };
   }
   if (!visualRect) visualRect = st.visualRect || captureRect;
+  var ocrRectValid = this.isPointerOcrRectValid(visualRect || captureRect, st.areaStartX, st.areaStartY, st.areaEndX, st.areaEndY);
+  st.areaValid = ocrRectValid;
+  st.areaReady = ocrRectValid;
+  if (!ocrRectValid) {
+    if (st.areaFromText === true && st.areaSmallFallbackText === true && st.boundText && st.boundRect) {
+      return this.finishPointerFallbackText();
+    }
+    this.setPointerToolResult({
+      ok: false,
+      type: "cancel",
+      code: "AREA_TOO_SMALL",
+      message: "框选区域过小",
+      value: "",
+      data: {
+        minWidthPx: st.areaMinWidthPx,
+        minHeightPx: st.areaMinHeightPx,
+        minAreaPx: st.areaMinAreaPx,
+        minMovePx: st.areaMinMovePx
+      }
+    });
+    this.toast("框选区域过小");
+    this.closePointerTool("框选区域过小", true);
+    return { ok: false, err: "框选区域过小", code: "AREA_TOO_SMALL" };
+  }
   st.areaProcessing = true;
   try { this.showPointerAreaFrame(visualRect || captureRect, "capture"); } catch (eProcessFrame) {}
   try { if (st.root) st.root.invalidate(); } catch (eProcessInv) {}

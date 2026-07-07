@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -114,6 +114,11 @@ var ConfigValidator = {
     POINTER_COLOR_HIT_HEX: { type: "string", default: "" },
     POINTER_COLOR_AREA_HEX: { type: "string", default: "" },
     POINTER_COLOR_CAPTURE_HEX: { type: "string", default: "" },
+    POINTER_AREA_SMALL_FALLBACK_TEXT: { type: "bool", default: true },
+    POINTER_AREA_MIN_WIDTH_DP: { type: "int", min: 20, max: 240, default: 56 },
+    POINTER_AREA_MIN_HEIGHT_DP: { type: "int", min: 8, max: 160, default: 20 },
+    POINTER_AREA_MIN_AREA_DP2: { type: "int", min: 200, max: 30000, default: 1200 },
+    POINTER_AREA_MIN_MOVE_DP: { type: "int", min: 0, max: 160, default: 24 },
 
     // 交互配置
     LONG_PRESS_MS: { type: "int", min: 200, max: 2000, default: 600 },
@@ -833,6 +838,11 @@ var ConfigManager = {
         POINTER_COLOR_HIT_HEX: "",
         POINTER_COLOR_AREA_HEX: "",
         POINTER_COLOR_CAPTURE_HEX: "",
+        POINTER_AREA_SMALL_FALLBACK_TEXT: true,
+        POINTER_AREA_MIN_WIDTH_DP: 56,
+        POINTER_AREA_MIN_HEIGHT_DP: 20,
+        POINTER_AREA_MIN_AREA_DP2: 1200,
+        POINTER_AREA_MIN_MOVE_DP: 24,
         PANEL_POS_GRAVITY: "bottom",
         PANEL_CUSTOM_OFFSET_Y: 0,
         PANEL_COLS: 1,
@@ -898,6 +908,11 @@ var ConfigManager = {
         { key: "POINTER_EDGE_ZONE_Y_DP", name: "纵向贴边范围(dp)", type: "int", min: 24, max: 128, step: 1 },
         { key: "POINTER_TEXT_HOVER_MS", name: "悬停取字时间(ms)", type: "int", min: 300, max: 10000, step: 100 },
         { key: "POINTER_AREA_HOVER_MS", name: "悬停框选时间(ms)", type: "int", min: 500, max: 10000, step: 100 },
+        { key: "POINTER_AREA_SMALL_FALLBACK_TEXT", name: "小框回退取字", type: "bool" },
+        { key: "POINTER_AREA_MIN_WIDTH_DP", name: "OCR最小宽度(dp)", type: "int", min: 20, max: 240, step: 2 },
+        { key: "POINTER_AREA_MIN_HEIGHT_DP", name: "OCR最小高度(dp)", type: "int", min: 8, max: 160, step: 2 },
+        { key: "POINTER_AREA_MIN_AREA_DP2", name: "OCR最小面积(dp²)", type: "int", min: 200, max: 30000, step: 100 },
+        { key: "POINTER_AREA_MIN_MOVE_DP", name: "OCR最小拖动距离(dp)", type: "int", min: 0, max: 160, step: 2 },
         { key: "POINTER_COLOR_NORMAL_HEX", name: "指针普通颜色", type: "ball_color" },
         { key: "POINTER_COLOR_HOVER_HEX", name: "指针悬停颜色", type: "ball_color" },
         { key: "POINTER_COLOR_HIT_HEX", name: "指针命中颜色", type: "ball_color" },
@@ -988,7 +1003,7 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
             needReset = true;
         }
         if (!needReset && (sStr.indexOf("ENABLE_TOOLAPP_INNER_BACK_STRIPS") >= 0 || sStr.indexOf("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") >= 0)) {
@@ -1030,6 +1045,11 @@ var ConfigManager = {
                 schemaItemDiffers("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("POINTER_TEXT_HOVER_MS", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("POINTER_AREA_HOVER_MS", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("POINTER_AREA_SMALL_FALLBACK_TEXT", ["name", "type"]) ||
+                schemaItemDiffers("POINTER_AREA_MIN_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("POINTER_AREA_MIN_HEIGHT_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("POINTER_AREA_MIN_AREA_DP2", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("POINTER_AREA_MIN_MOVE_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("POINTER_COLOR_NORMAL_HEX", ["name", "type"]) ||
                 schemaItemDiffers("POINTER_COLOR_HOVER_HEX", ["name", "type"]) ||
                 schemaItemDiffers("POINTER_COLOR_HIT_HEX", ["name", "type"]) ||
