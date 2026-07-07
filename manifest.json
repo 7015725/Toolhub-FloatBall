@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "edge easing"
+      "优化指针边缘渐进贴边"
     ],
-    "title": "edge easing"
+    "title": "优化指针边缘渐进贴边"
   },
   "schema": 3,
-  "version": 20260707100207
+  "version": 20260707100225
 }
