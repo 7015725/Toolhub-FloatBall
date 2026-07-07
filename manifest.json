@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "baf5be68a41296c6d423f7cb42cfbf150119365b44f90d2113dfe1395b74c926",
-      "size": 59018,
-      "version": "1.0.4"
+      "sha256": "8752cad2287f4794576936e93c4c4d3a73399c8093f40cc852a37f9f9c1abfc1",
+      "size": 59524,
+      "version": "1.0.5"
     },
     "th_02_core.js": {
       "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "接入五状态指针颜色"
+      "修复指针颜色设置项未同步"
     ],
-    "title": "接入五状态指针颜色"
+    "title": "修复指针颜色设置项未同步"
   },
   "schema": 3,
-  "version": 20260707134031
+  "version": 20260707134809
 }
