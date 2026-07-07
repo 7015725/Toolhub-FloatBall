@@ -102,9 +102,9 @@
       "version": "1.0.0"
     },
     "th_16_entry.js": {
-      "sha256": "a629d881b2ea133fbe58fd3b69c827fd1e37487bf69d3fc9cf197d406c7a9b87",
-      "size": 14860,
-      "version": "1.0.6"
+      "sha256": "e720c34083e83898f22406d691334f2922a0b4fc5cbcab97b3b7208b3d0d3a54",
+      "size": 16242,
+      "version": "1.0.7"
     },
     "th_17_pointer.js": {
       "sha256": "3761b68803a9e78524efc704a4c85b2cc70c6c0de39cc03ee93915ff1966a087",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复按钮添加后列表不刷新"
+      "快捷方式暂存时标记 intent 模式"
     ],
-    "title": "修复按钮添加后列表不刷新"
+    "title": "快捷方式暂存时标记 intent 模式"
   },
   "schema": 3,
-  "version": 20260707042701
+  "version": 20260707043547
 }

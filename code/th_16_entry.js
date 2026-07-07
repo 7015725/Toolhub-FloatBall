@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -10,10 +10,43 @@
     if (proto.__toolHubButtonEditSaveStatePatchInstalled === true) return;
     if (typeof proto.popToolAppPage !== "function") return;
 
+    proto.normalizeButtonEditorShortcutIntentModes = function() {
+      try {
+        var arr = this.state && this.state.tempButtons ? this.state.tempButtons : null;
+        if (!arr || arr.length === undefined) return false;
+        var changed = false;
+        for (var i = 0; i < arr.length; i++) {
+          var b = arr[i];
+          if (!b) continue;
+          var t = "";
+          try { t = String(b.type || ""); } catch(eT) { t = ""; }
+          if (t !== "shortcut") continue;
+          var iu = "";
+          try { iu = String(b.intentUri || ""); } catch(eIu) { iu = ""; }
+          if (!iu || iu.length <= 0) continue;
+          b.shortcutExecMode = "intent";
+          b.shortcutRunMode = "intent";
+          changed = true;
+        }
+        if (changed) {
+          try { safeLog(this.L, 'i', "shortcut intent mode normalized on button_edit_save"); } catch(eLogNorm) {}
+        }
+        return changed;
+      } catch(eNorm) {
+        try { safeLog(this.L, 'w', "normalize shortcut intent mode fail: " + String(eNorm)); } catch(eLogNorm2) {}
+      }
+      return false;
+    };
+
     var oldPopToolAppPage = proto.popToolAppPage;
     proto.popToolAppPage = function(reason) {
       var rs = String(reason || "");
       if (rs === "button_edit_save") {
+        try {
+          if (this.normalizeButtonEditorShortcutIntentModes) this.normalizeButtonEditorShortcutIntentModes();
+        } catch(eNormCall) {
+          try { safeLog(this.L, 'w', "button edit shortcut mode normalize call fail: " + String(eNormCall)); } catch(eLogN) {}
+        }
         try {
           var st = this.state && this.state.toolAppNavStack ? this.state.toolAppNavStack : null;
           if (st && st.length > 1) {
