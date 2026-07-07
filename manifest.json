@@ -107,18 +107,18 @@
       "version": "1.0.3"
     },
     "th_17_pointer.js": {
-      "sha256": "cd86a230f2f71185ae34e99901360150b9824d20677e334d32f2b53fde5a6738",
-      "size": 48879,
-      "version": "1.0.8"
+      "sha256": "3f98d45acb13376b42029f1aa8d23e291c2e8323c11b13d03e83b1df124e7f3c",
+      "size": 49046,
+      "version": "1.0.9"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针悬停框选截图"
+      "修复指针框选结果反馈"
     ],
-    "title": "修复指针悬停框选截图"
+    "title": "修复指针框选结果反馈"
   },
   "schema": 3,
-  "version": 20260706142614
+  "version": 20260707000010
 }
