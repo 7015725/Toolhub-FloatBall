@@ -112,18 +112,18 @@
       "version": "1.1.0"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "f4fc31f7cdc3c255901a933a4cd0e3ef722e939472e5995757910dd2629cefd9",
-      "size": 33319,
-      "version": "1.0.7"
+      "sha256": "20ed5370e1c5e73d981b5611df56f607c0b7fb4de3bcae75422de2c4751d2496",
+      "size": 33375,
+      "version": "1.0.8"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "优化指针边缘渐进贴边"
+      "update"
     ],
-    "title": "优化指针边缘渐进贴边"
+    "title": "update"
   },
   "schema": 3,
-  "version": 20260707100225
+  "version": 20260707103754
 }
