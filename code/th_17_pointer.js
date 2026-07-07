@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.1.0
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -274,6 +274,141 @@ FloatBallAppWM.prototype.getPointerOcrRectJson = function() {
     });
   } catch (e0) {}
   return "{}";
+};
+
+FloatBallAppWM.prototype.getPointerScreenshotDir = function() {
+  var base = "";
+  try {
+    if (typeof shortx !== "undefined" && shortx && shortx.getShortXDir) {
+      base = String(shortx.getShortXDir() || "");
+    }
+  } catch (e0) {}
+  if (!base) {
+    try {
+      var ctx = getToolHubAndroidContext ? getToolHubAndroidContext() : null;
+      if (ctx && ctx.getFilesDir) base = String(ctx.getFilesDir().getAbsolutePath());
+    } catch (e1) {}
+  }
+  if (!base) throw new Error("无法获取 ShortX 私有目录");
+  var dir = new java.io.File(base + "/data/screenshots");
+  if (!dir.exists()) dir.mkdirs();
+  return dir;
+};
+
+FloatBallAppWM.prototype.createPointerScreenshotFile = function() {
+  var d = new Date();
+  function z(n) { return n < 10 ? "0" + n : String(n); }
+  var ymd = String(d.getFullYear()) + z(d.getMonth() + 1) + z(d.getDate());
+  return new java.io.File(this.getPointerScreenshotDir(), "ToolHub_" + ymd + "_" + String(d.getTime()) + ".png");
+};
+
+FloatBallAppWM.prototype.savePointerBitmapToFile = function(bitmap, file) {
+  if (!bitmap || !file) throw new Error("Bitmap 或文件对象为空");
+  var out = null;
+  try {
+    try { file.getParentFile().mkdirs(); } catch (eMkdir) {}
+    out = new java.io.FileOutputStream(file);
+    bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out);
+    out.flush();
+  } finally {
+    try { if (out) out.close(); } catch (eClose) {}
+  }
+};
+
+FloatBallAppWM.prototype.pointerBitmapFromCaptureBuffer = function(buffer) {
+  if (!buffer) return null;
+  try {
+    var b = buffer.asBitmap();
+    if (b) return b;
+  } catch (e0) {}
+  try {
+    var hb = buffer.getHardwareBuffer ? buffer.getHardwareBuffer() : null;
+    if (hb) {
+      return android.graphics.Bitmap.wrapHardwareBuffer(hb, android.graphics.ColorSpace.get(android.graphics.ColorSpace.Named.SRGB));
+    }
+  } catch (e1) {}
+  try {
+    var gb = buffer.getGraphicBuffer ? buffer.getGraphicBuffer() : null;
+    if (gb) {
+      return android.graphics.Bitmap.wrapHardwareBuffer(gb, android.graphics.ColorSpace.get(android.graphics.ColorSpace.Named.SRGB));
+    }
+  } catch (e2) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.capturePointerRectToPng = function(rect) {
+  if (!rect) throw new Error("截图区域为空");
+  var left = th17Int(rect.left);
+  var top = th17Int(rect.top);
+  var right = th17Int(rect.right);
+  var bottom = th17Int(rect.bottom);
+  var minSize = Math.max(1, this.dp(8));
+  if (right < left) { var tx = left; left = right; right = tx; }
+  if (bottom < top) { var ty = top; top = bottom; bottom = ty; }
+  if (right - left < minSize || bottom - top < minSize) throw new Error("框选区域太小");
+  var cropRect = new android.graphics.Rect(left, top, right, bottom);
+  var api = 0;
+  try { api = android.os.Build.VERSION.SDK_INT; } catch (eApi) { api = 0; }
+  var bitmap = null;
+  var lastError = null;
+
+  if (!bitmap && api >= 34) {
+    try {
+      var surfaceFlingerService = android.os.ServiceManager.getService("SurfaceFlingerAIDL");
+      var displayInfo = android.hardware.display.DisplayManagerGlobal.getInstance().getDisplayInfo(0);
+      var displayId = displayInfo.address.getPhysicalDisplayId();
+      var parcelData = android.os.Parcel.obtain();
+      var parcelReply = android.os.Parcel.obtain();
+      try {
+        parcelData.writeInterfaceToken("android.gui.ISurfaceComposer");
+        parcelData.writeLong(displayId);
+        surfaceFlingerService.transact(android.os.IBinder.FIRST_CALL_TRANSACTION + 6, parcelData, parcelReply, 0);
+        parcelReply.readException();
+        var displayToken = parcelReply.readStrongBinder();
+        try {
+          var builder = new android.window.ScreenCapture.DisplayCaptureArgs.Builder(displayToken);
+          builder.setPixelFormat(android.graphics.PixelFormat.RGBA_8888).setSourceCrop(cropRect).setSize(cropRect.width(), cropRect.height()).setFrameScale(1.0).setCaptureSecureLayers(true).setAllowProtected(true).setGrayscale(false).setExcludeLayers(null).setHintForSeamlessTransition(false);
+          bitmap = this.pointerBitmapFromCaptureBuffer(android.window.ScreenCapture.captureDisplay(builder.build()));
+        } catch (e14a) {
+          var builder2 = new android.window.ScreenCaptureInternal.DisplayCaptureArgs.Builder(displayToken);
+          builder2.setPixelFormat(android.graphics.PixelFormat.RGBA_8888).setSourceCrop(cropRect).setSize(cropRect.width(), cropRect.height()).setFrameScale(1.0).setSecureContentPolicy(0).setProtectedContentPolicy(0).setGrayscale(false).setExcludeLayers(null);
+          bitmap = this.pointerBitmapFromCaptureBuffer(android.window.ScreenCaptureInternal.captureDisplay(builder2.build()));
+        }
+      } finally {
+        try { parcelData.recycle(); } catch (ePd) {}
+        try { parcelReply.recycle(); } catch (ePr) {}
+      }
+    } catch (e14) { lastError = e14; bitmap = null; }
+  }
+
+  if (!bitmap && api >= 32) {
+    try {
+      var displayToken32 = android.view.SurfaceControl.getInternalDisplayToken();
+      if (displayToken32 == null) throw new Error("无法获取 displayToken");
+      var builder32 = new android.view.SurfaceControl.DisplayCaptureArgs.Builder(displayToken32);
+      builder32.setPixelFormat(android.graphics.PixelFormat.RGBA_8888).setSourceCrop(cropRect).setSize(cropRect.width(), cropRect.height()).setFrameScale(1.0).setCaptureSecureLayers(true).setAllowProtected(true).setGrayscale(false);
+      bitmap = this.pointerBitmapFromCaptureBuffer(android.view.SurfaceControl.captureDisplay(builder32.build()));
+    } catch (e32) { lastError = e32; bitmap = null; }
+  }
+
+  if (!bitmap && api >= 29) {
+    try {
+      var displayToken29 = android.view.SurfaceControl.getInternalDisplayToken();
+      if (displayToken29 == null) throw new Error("无法获取 displayToken");
+      bitmap = this.pointerBitmapFromCaptureBuffer(android.view.SurfaceControl.screenshotToBufferWithSecureLayersUnsafe(displayToken29, cropRect, cropRect.width(), cropRect.height(), false, 0));
+    } catch (e29) { lastError = e29; bitmap = null; }
+  }
+
+  if (!bitmap) {
+    try {
+      bitmap = this.pointerBitmapFromCaptureBuffer(android.view.SurfaceControl.screenshotToBuffer(cropRect, cropRect.width(), cropRect.height(), 0, java.lang.Integer.MAX_VALUE, false, 0));
+    } catch (eOld) { lastError = eOld; bitmap = null; }
+  }
+
+  if (!bitmap) throw new Error("截图失败" + (lastError ? ": " + String(lastError) : ""));
+  var file = this.createPointerScreenshotFile();
+  this.savePointerBitmapToFile(bitmap, file);
+  return String(file.getAbsolutePath());
 };
 
 FloatBallAppWM.prototype.isPointerToolActive = function() {
@@ -1189,19 +1324,36 @@ FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
     return { ok: false, err: "框选区域为空" };
   }
   if (!visualRect) visualRect = st.visualRect || captureRect;
+  var screenshotPath = "";
+  var screenshotError = "";
+  try {
+    try { this.hidePointerAreaFrame(); } catch (eHideFrame) {}
+    try { if (st.root) st.root.setVisibility(android.view.View.GONE); } catch (eHideRoot) {}
+    try { java.lang.Thread.sleep(80); } catch (eSleep) {}
+    screenshotPath = this.capturePointerRectToPng(captureRect);
+  } catch (eShot) {
+    screenshotError = String(eShot);
+    safeLog(this.L, 'e', "pointer area screenshot fail rect=" + th17RectKey(captureRect) + " err=" + screenshotError);
+  }
   this.setPointerToolResult({
-    ok: true,
+    ok: screenshotPath ? true : false,
     type: "area_capture",
-    code: "AREA_CAPTURE_SUCCESS",
-    message: "框选完成",
-    value: "",
+    code: screenshotPath ? "AREA_CAPTURE_SUCCESS" : "AREA_SCREENSHOT_FAILED",
+    message: screenshotPath ? "框选截图完成" : "框选完成，截图失败",
+    value: screenshotPath,
     captureRect: captureRect,
-    visualRect: visualRect
+    visualRect: visualRect,
+    screenshotFilePath: screenshotPath,
+    data: {
+      path: screenshotPath,
+      error: screenshotError
+    }
   });
-  safeLog(this.L, 'i', "pointer area_capture result captureRect=" + th17RectKey(captureRect) + " visualRect=" + th17RectKey(visualRect));
-  this.toast("框选完成: " + th17RectKey(captureRect));
+  safeLog(this.L, 'i', "pointer area_capture result captureRect=" + th17RectKey(captureRect) + " visualRect=" + th17RectKey(visualRect) + " screenshot=" + screenshotPath);
+  if (screenshotPath) this.toast("框选截图完成: " + screenshotPath);
+  else this.toast("框选完成，截图失败");
   this.closePointerTool("框选完成", true);
-  return { ok: true, captureRect: captureRect, visualRect: visualRect };
+  return { ok: screenshotPath ? true : false, captureRect: captureRect, visualRect: visualRect, screenshotFilePath: screenshotPath, err: screenshotError };
 };
 
 FloatBallAppWM.prototype.flushPointerPositionFromBall = function() {

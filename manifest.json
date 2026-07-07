@@ -107,18 +107,18 @@
       "version": "1.0.3"
     },
     "th_17_pointer.js": {
-      "sha256": "3f98d45acb13376b42029f1aa8d23e291c2e8323c11b13d03e83b1df124e7f3c",
-      "size": 49046,
-      "version": "1.0.9"
+      "sha256": "3761b68803a9e78524efc704a4c85b2cc70c6c0de39cc03ee93915ff1966a087",
+      "size": 56521,
+      "version": "1.1.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复区域截图启动反馈"
+      "修复指针框选截图"
     ],
-    "title": "修复区域截图启动反馈"
+    "title": "修复指针框选截图"
   },
   "schema": 3,
-  "version": 20260707003209
+  "version": 20260707010347
 }
