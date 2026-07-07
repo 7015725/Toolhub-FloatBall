@@ -112,18 +112,18 @@
       "version": "1.1.0"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "8f4e94461dbc3c89b0614e0d25adb1a89b8fdeba8bc01cacc762b62a1bdd2f1e",
-      "size": 11565,
-      "version": "1.0.2"
+      "sha256": "e646e0d5c8812e8b2af30babd8139e641d7f9c0ab6c2b10bf1bd2d6f243abf15",
+      "size": 18935,
+      "version": "1.0.3"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "调整文本处理流程"
+      "优化指针流畅性"
     ],
-    "title": "调整文本处理流程"
+    "title": "优化指针流畅性"
   },
   "schema": 3,
-  "version": 20260707071346
+  "version": 20260707072537
 }
