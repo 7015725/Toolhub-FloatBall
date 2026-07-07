@@ -12,9 +12,9 @@
       "version": "1.0.0"
     },
     "th_03_icon.js": {
-      "sha256": "717f7f37474d3616c2cd944581455f600020a850ec8812100d0546ec1302c987",
-      "size": 5598,
-      "version": "1.0.0"
+      "sha256": "0a368c96ab8178f387602242bb7f8f0406fad38ae7e45c11c4af8012684a79b9",
+      "size": 6108,
+      "version": "1.0.1"
     },
     "th_04_theme.js": {
       "sha256": "e1dcfc9b95571dcfc9a17570ed551d2fe2ad5a62fc87f236493daadd1f278f39",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "feat: add security compatibility config defaults"
+      "fix: route icon lru compatibility layer to icon cache"
     ],
-    "title": "feat: add security compatibility config defaults"
+    "title": "fix: route icon lru compatibility layer to icon cache"
   },
   "schema": 3,
-  "version": 20260707020334
+  "version": 20260707020915
 }
