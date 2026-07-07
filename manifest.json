@@ -47,9 +47,9 @@
       "version": "1.0.2"
     },
     "th_11_action.js": {
-      "sha256": "ad3d08803c6c47c2d4e6c149a419ebbcb9fd598554d52203ee4cbf72fed76b09",
-      "size": 15702,
-      "version": "1.0.3"
+      "sha256": "deb703e38b56bd630b9e827cecaa4fdb6a13eab9b8480d227e8f752c4eb77e7e",
+      "size": 18427,
+      "version": "1.0.4"
     },
     "th_12_rebuild.js": {
       "sha256": "d882acfa9e8fc33e433fd1bc1865125fcc40bfda2a8e135a8313ff018cbb1caa",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Shell 广播桥支持显式目标"
+      "Shell 按钮支持 root 字段和桥接参数"
     ],
-    "title": "Shell 广播桥支持显式目标"
+    "title": "Shell 按钮支持 root 字段和桥接参数"
   },
   "schema": 3,
-  "version": 20260707023537
+  "version": 20260707031911
 }
