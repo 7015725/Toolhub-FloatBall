@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "6026d23ea6929c8a957a3d63df5a59bcf1e2d3838dab647faec99ba81d8da0bc",
-      "size": 61561,
-      "version": "1.1.6"
+      "sha256": "c9e195fd5b486d7f07dc5320635a020f2ed47cf12201227e006838aa858761a2",
+      "size": 62546,
+      "version": "1.1.7"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a1a1342207ac17819ad4b756a3410c7566072c26772c2a70d1e7c614ae380a4f",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针颜色设置项未同步"
+      "修复文字边框悬停颜色"
     ],
-    "title": "修复指针颜色设置项未同步"
+    "title": "修复文字边框悬停颜色"
   },
   "schema": 3,
-  "version": 20260707134809
+  "version": 20260707141114
 }
