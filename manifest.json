@@ -12,9 +12,9 @@
       "version": "1.0.0"
     },
     "th_03_icon.js": {
-      "sha256": "0a368c96ab8178f387602242bb7f8f0406fad38ae7e45c11c4af8012684a79b9",
-      "size": 6108,
-      "version": "1.0.1"
+      "sha256": "0fee3be2608c1c1c5e29521252dcba331cebef4e9a0a2951ebc231f3fe2ad395",
+      "size": 6110,
+      "version": "1.0.2"
     },
     "th_04_theme.js": {
       "sha256": "e1dcfc9b95571dcfc9a17570ed551d2fe2ad5a62fc87f236493daadd1f278f39",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "fix: route icon lru compatibility layer to icon cache"
+      "修复快捷方式图标缓存后空白"
     ],
-    "title": "fix: route icon lru compatibility layer to icon cache"
+    "title": "修复快捷方式图标缓存后空白"
   },
   "schema": 3,
-  "version": 20260707020915
+  "version": 20260707021646
 }
