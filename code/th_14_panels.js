@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -1324,6 +1324,11 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
           activePointerBlockKey = "";
           return;
         }
+        if (activeGroupKey === "pointer") {
+          currentCard = null;
+          activePointerBlockKey = "";
+          return;
+        }
         currentCard = createCard();
         box.addView(currentCard);
         if (activeGroupKey === "ball" && activeBallSubtabDef) self.createSectionHeader({ type: "section", name: String(activeBallSubtabDef.title || "悬浮球") }, currentCard);
@@ -1942,6 +1947,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   var activeBallSubtabDef = activeGroupKey === "ball" && this.getBallSettingsSubtabDef ? this.getBallSettingsSubtabDef(activeBallSubtab) : null;
   var currentCard = null;
   var includeSection = false;
+  var activePointerBlockKey = "";
 
   function createCard() {
       var c = new android.widget.LinearLayout(context);
@@ -1978,6 +1984,21 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
       } else {
         if (!includeSection) return;
         if (activeGroupKey === "ball" && self.isSchemaItemInBallSubtab && !self.isSchemaItemInBallSubtab(item, activeBallSubtab)) return;
+        if (activeGroupKey === "pointer" && self.getPointerSettingsBlockDefForItem) {
+          var pBlock = self.getPointerSettingsBlockDefForItem(item);
+          var nextBlockKey = pBlock ? String(pBlock.key || "other") : "other";
+          if (!currentCard || String(activePointerBlockKey || "") !== nextBlockKey) {
+            currentCard = createCard();
+            box.addView(currentCard);
+            activePointerBlockKey = nextBlockKey;
+            self.createSectionHeader({ type: "section", name: pBlock ? String(pBlock.title || "其他") : "其他" }, currentCard);
+            if (self.createPointerSettingsBlockDesc) self.createPointerSettingsBlockDesc(currentCard, pBlock);
+          }
+          var needDividerPointer = (currentCard.getChildCount() > 0);
+          if (currentCard.getChildCount() <= 2) needDividerPointer = false;
+          self.createSettingItemView(item, currentCard, needDividerPointer);
+          return;
+        }
         if (!currentCard) {
             currentCard = createCard();
             box.addView(currentCard);
