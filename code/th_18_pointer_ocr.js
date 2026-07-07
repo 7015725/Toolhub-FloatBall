@@ -1,6 +1,7 @@
-// @version 1.0.1
+// @version 1.0.2
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
+// OCR 方法：按 ShortX 实测可用方式，使用 OcrDetect + RectSourceRect 识别框选屏幕区域。
 (function() {
   function log18(level, msg) {
     try { safeLog(null, level || 'i', String(msg)); } catch(eLog) {}
@@ -21,132 +22,103 @@
     try {
       if (typeof th17Int === "function") return th17Int(v);
     } catch(e0) {}
-    var n = 0;
-    try { n = Math.round(Number(v || 0)); } catch(e1) { n = 0; }
-    if (isNaN(n)) n = 0;
+    var n = parseInt(String(v), 10);
+    if (isNaN(n)) return 0;
     return n;
   }
 
   function rectKey18(rect) {
-    try {
-      if (typeof th17RectKey === "function") return th17RectKey(rect);
-    } catch(e0) {}
     if (!rect) return "";
     return String(int18(rect.left)) + "," + String(int18(rect.top)) + "," + String(int18(rect.right)) + "," + String(int18(rect.bottom));
   }
 
-  function getContext18() {
-    try { if (typeof context !== "undefined" && context) return context; } catch(e0) {}
-    try { if (typeof getToolHubAndroidContext === "function") return getToolHubAndroidContext(); } catch(e1) {}
-    try {
-      var app = Packages.android.app.ActivityThread.currentApplication();
-      if (app) return app.getApplicationContext ? app.getApplicationContext() : app;
-    } catch(e2) {}
-    return null;
-  }
-
-  function copyClipboard18(text) {
-    var value = String(text == null ? "" : text);
-    if (!value) return false;
-    var ctx = getContext18();
-    if (!ctx) throw new Error("context 不可用");
-    var cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
-    if (!cm) throw new Error("ClipboardManager 不可用");
-    var clip = android.content.ClipData.newPlainText("ToolHub OCR", value);
-    cm.setPrimaryClip(clip);
-    return true;
-  }
-
-  function cleanText18(raw) {
-    var text = String(raw == null ? "" : raw);
-    if (!text) return "";
-    try {
-      var t = text.replace(/^\s+|\s+$/g, "");
-      if (t.charAt(0) === "{" || t.charAt(0) === "[") {
-        var obj = JSON.parse(t);
-        if (obj) {
-          if (typeof obj.text !== "undefined") return String(obj.text || "");
-          if (typeof obj.value !== "undefined") return String(obj.value || "");
-          if (obj.data && typeof obj.data.text !== "undefined") return String(obj.data.text || "");
-          if (obj.result && typeof obj.result.text !== "undefined") return String(obj.result.text || "");
-          if (obj.blocks && obj.blocks.length) {
-            var arr = [];
-            for (var i = 0; i < obj.blocks.length; i++) {
-              var b = obj.blocks[i];
-              if (b && typeof b.text !== "undefined") arr.push(String(b.text || ""));
-            }
-            if (arr.length) return arr.join("\n");
-          }
-        }
-      }
-    } catch(e0) {}
-    return text;
-  }
-
-  function classArray18(types) {
-    var arr = java.lang.reflect.Array.newInstance(java.lang.Class.forName("java.lang.Class"), types.length);
-    for (var i = 0; i < types.length; i++) java.lang.reflect.Array.set(arr, i, types[i]);
-    return arr;
-  }
-
-  function objArray18(values) {
-    var arr = java.lang.reflect.Array.newInstance(java.lang.Object, values.length);
-    for (var i = 0; i < values.length; i++) java.lang.reflect.Array.set(arr, i, values[i]);
-    return arr;
-  }
-
-  function invokeStaticBitmapOcr18(className, methodName, bitmap) {
-    var cls = java.lang.Class.forName(className);
-    var m = cls.getDeclaredMethod(methodName, classArray18([android.graphics.Bitmap.class]));
-    m.setAccessible(true);
-    return String(m.invoke(null, objArray18([bitmap])) || "");
-  }
-
-  function runBitmapTextDetect18(path) {
-    var p = String(path || "");
-    if (!p) throw new Error("截图路径为空");
-    var f = new java.io.File(p);
-    if (!f.exists()) throw new Error("截图文件不存在: " + p);
-    var bitmap = android.graphics.BitmapFactory.decodeFile(p);
-    if (!bitmap) throw new Error("截图解码失败");
-
-    var errors = [];
-    var classes = [
-      "tornaco.apps.shortx.ext.api.ocr.ShortXPaddleApi",
-      "tornaco.apps.shortx.ext.api.ocr.ShortXTessApi"
-    ];
-    var methods = ["recognizeTextJson", "recognizeText"];
-    for (var ci = 0; ci < classes.length; ci++) {
-      for (var mi = 0; mi < methods.length; mi++) {
-        try {
-          var raw = invokeStaticBitmapOcr18(classes[ci], methods[mi], bitmap);
-          raw = cleanText18(raw);
-          if (raw) return raw;
-        } catch(e0) {
-          errors.push(classes[ci] + "." + methods[mi] + ": " + String(e0));
-        }
-      }
-    }
-    throw new Error("截图 OCR 不可用: " + errors.join(" | ").substring(0, 900));
-  }
-
-  function runTextDetect18(rect) {
-    if (!rect) throw new Error("识别区域为空");
+  function normalizeRect18(rect) {
+    if (!rect) return null;
     var l = int18(rect.left);
     var t = int18(rect.top);
     var r = int18(rect.right);
     var b = int18(rect.bottom);
-    if (r <= l || b <= t) throw new Error("识别区域无效");
-    if (typeof shortx === "undefined" || !shortx || !shortx.executeAction) throw new Error("shortx.executeAction 不可用");
+    try { if (r <= l && rect.width) r = l + int18(rect.width); } catch(e0) {}
+    try { if (b <= t && rect.height) b = t + int18(rect.height); } catch(e1) {}
+    if (r <= l || b <= t) return null;
+    return { left: l, top: t, right: r, bottom: b };
+  }
 
-    var OcrDetect = Packages.tornaco.apps.shortx.core.proto.action.OcrDetect;
-    var OcrDetectOutputType = Packages.tornaco.apps.shortx.core.proto.action.OcrDetectOutputType;
-    var RectSourceRect = Packages.tornaco.apps.shortx.core.proto.common.RectSourceRect;
-    var Rect = Packages.tornaco.apps.shortx.core.proto.common.Rect;
-    var Any = Packages.com.google.protobuf.Any;
+  function getContext18() {
+    try { if (typeof context !== "undefined" && context) return context; } catch(e0) {}
+    try {
+      var app = Packages.android.app.ActivityThread.currentApplication();
+      if (app) return app.getApplicationContext ? app.getApplicationContext() : app;
+    } catch(e1) {}
+    return null;
+  }
+
+  function runOnMain18(fn, timeoutMs) {
+    try {
+      var ml = android.os.Looper.getMainLooper();
+      var my = android.os.Looper.myLooper();
+      if (ml !== null && my !== null && ml === my) return fn();
+    } catch(e0) {}
+    var box = { ok: false, value: null, error: null };
+    var latch = new java.util.concurrent.CountDownLatch(1);
+    try {
+      var h = new android.os.Handler(android.os.Looper.getMainLooper());
+      h.post(new java.lang.Runnable({ run: function() {
+        try { box.value = fn(); box.ok = true; } catch(eRun) { box.error = eRun; }
+        try { latch.countDown(); } catch(eCount) {}
+      }}));
+      var done = latch["await"](timeoutMs || 1500, java.util.concurrent.TimeUnit.MILLISECONDS);
+      if (!done) throw new Error("main thread timeout");
+      if (!box.ok) throw box.error;
+      return box.value;
+    } catch(ePost) {
+      throw ePost;
+    }
+  }
+
+  function copyClipboard18(text) {
+    var value = String(text === null || text === undefined ? "" : text);
+    if (!value) return false;
+    return runOnMain18(function() {
+      var ctx = getContext18();
+      if (!ctx) throw new Error("context 不可用");
+      var cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+      if (!cm) throw new Error("ClipboardManager 不可用");
+      var clip = android.content.ClipData.newPlainText("ToolHub OCR", value);
+      cm.setPrimaryClip(clip);
+      return true;
+    }, 2000) === true;
+  }
+
+  function runShortxRectOcr18(rect) {
+    var rr = normalizeRect18(rect);
+    if (!rr) throw new Error("OCR区域无效");
+    var l = int18(rr.left);
+    var t = int18(rr.top);
+    var r = int18(rr.right);
+    var b = int18(rr.bottom);
+
+    importClass(Packages.tornaco.apps.shortx.core.proto.action.OcrDetect);
+    importClass(Packages.tornaco.apps.shortx.core.proto.action.OcrDetectOutputType);
+    importClass(Packages.tornaco.apps.shortx.core.proto.common.RectSourceRect);
+    importClass(Packages.tornaco.apps.shortx.core.proto.common.Rect);
+    importClass(com.google.protobuf.Any);
 
     var action = OcrDetect.newBuilder()
-      .setRectSrc(Any.pack(RectSourceRect.newBuilder().setRect(Rect.newBuilder().setLeft(l).setTop(t).setRight(r).setBottom(b).build()).build()))
+      .setRectSrc(
+        Any.pack(
+          RectSourceRect.newBuilder()
+            .setRect(
+              Rect.newBuilder()
+                .setLeft(l)
+                .setTop(t)
+                .setRight(r)
+                .setBottom(b)
+                .build()
+            )
+            .build()
+        )
+      )
       .setThreads(4)
       .setUseSlim(false)
       .setSeparator("\n")
@@ -154,13 +126,18 @@
       .build();
 
     var result = shortx.executeAction(action);
-    var ctxData = null;
-    try { ctxData = result.contextData; } catch(eCd0) { ctxData = null; }
-    if (!ctxData) {
-      try { ctxData = result.getContextData(); } catch(eCd1) { ctxData = null; }
-    }
-    if (!ctxData) return "";
-    return cleanText18(String(ctxData.get("ocrResult") || ""));
+    return String(result.contextData.get("ocrResult") || "");
+  }
+
+  function pickOcrRect18(obj, ret) {
+    var rect = null;
+    try { if (obj && obj.data && obj.data.captureRect) rect = normalizeRect18(obj.data.captureRect); } catch(e0) {}
+    try { if (!rect && obj && obj.captureRect) rect = normalizeRect18(obj.captureRect); } catch(e1) {}
+    try { if (!rect && obj && obj.data && obj.data.visualRect) rect = normalizeRect18(obj.data.visualRect); } catch(e2) {}
+    try { if (!rect && obj && obj.visualRect) rect = normalizeRect18(obj.visualRect); } catch(e3) {}
+    try { if (!rect && ret && ret.captureRect) rect = normalizeRect18(ret.captureRect); } catch(e4) {}
+    try { if (!rect && ret && ret.visualRect) rect = normalizeRect18(ret.visualRect); } catch(e5) {}
+    return rect;
   }
 
   function install18() {
@@ -173,11 +150,7 @@
       if (typeof proto.execPointerAction !== "function") return false;
 
       proto.runPointerAreaTextByRect = function(rect) {
-        return runTextDetect18(rect);
-      };
-
-      proto.runPointerAreaTextByScreenshot = function(path) {
-        return runBitmapTextDetect18(path);
+        return runShortxRectOcr18(rect);
       };
 
       proto.copyPointerAreaTextToClipboard = function(text) {
@@ -220,7 +193,7 @@
         var wantText = false;
         try {
           st = this.ensurePointerToolState ? this.ensurePointerToolState() : null;
-          wantText = !!(st && st.areaOcrRequested === true);
+          wantText = !!(st && (st.areaOcrRequested === true || st.mode === "area_capture"));
         } catch(eWant) { wantText = false; }
 
         var ret = oldFinishPointerAreaCapture.call(this);
@@ -232,33 +205,22 @@
           if (!obj) obj = {};
           var path = "";
           try { path = String(obj.screenshotFilePath || obj.value || (obj.data && obj.data.path) || ""); } catch(ePath) { path = ""; }
-          var rect = obj.captureRect || obj.visualRect || (ret && ret.captureRect) || (ret && ret.visualRect) || null;
+          var rect = pickOcrRect18(obj, ret);
           var textValue = "";
           var textError = "";
           var textOk = false;
-          var textSource = "";
           var clipboardOk = false;
           var clipboardError = "";
 
-          if (path) {
-            try {
-              textValue = this.runPointerAreaTextByScreenshot(path);
-              textOk = true;
-              textSource = "screenshot";
-            } catch(eShotText) {
-              textError = String(eShotText);
-            }
-          }
-          if (!textOk && rect) {
+          if (rect) {
             try {
               textValue = this.runPointerAreaTextByRect(rect);
               textOk = true;
-              textSource = "rect";
             } catch(eText) {
-              textError = textError ? (textError + " | rect: " + String(eText)) : String(eText);
+              textError = String(eText);
             }
-          } else if (!path && !rect) {
-            textError = "截图文件和识别区域均为空";
+          } else {
+            textError = "OCR区域为空";
           }
 
           if (textOk && textValue) {
@@ -273,24 +235,26 @@
           obj.code = path ? (textOk ? "AREA_OCR_SUCCESS" : "AREA_OCR_FAILED") : "AREA_SCREENSHOT_FAILED";
           obj.message = path ? (textOk ? (clipboardOk ? "框选识别完成，已复制" : "框选识别完成") : "框选截图完成，识别失败") : "框选完成，截图失败";
           obj.value = textValue;
+          obj.captureRect = rect || obj.captureRect || null;
+          obj.screenshotFilePath = path;
           obj.ocrText = textValue;
           obj.ocrError = textOk ? "" : textError;
-          obj.ocrSource = textSource;
+          obj.ocrSource = "rect";
           obj.clipboardOk = clipboardOk;
           obj.clipboardError = clipboardError;
           if (!obj.data) obj.data = {};
+          obj.data.path = path;
           obj.data.ocrText = textValue;
           obj.data.ocrError = textOk ? "" : textError;
-          obj.data.ocrSource = textSource;
+          obj.data.ocrSource = "rect";
           obj.data.clipboardOk = clipboardOk;
           obj.data.clipboardError = clipboardError;
-          try { if (!obj.data.path) obj.data.path = path; } catch(eDataPath) {}
           this.setPointerToolResult(obj);
 
-          try { safeLog(this.L, textOk ? 'i' : 'w', "pointer area_ocr result ok=" + String(textOk) + " source=" + textSource + " clip=" + String(clipboardOk) + " rect=" + rectKey18(rect) + " path=" + path + " err=" + textError + " clipErr=" + clipboardError); } catch(eLog2) {}
+          try { safeLog(this.L, textOk ? 'i' : 'w', "pointer area_ocr result ok=" + String(textOk) + " clip=" + String(clipboardOk) + " rect=" + rectKey18(rect) + " path=" + path + " err=" + textError + " clipErr=" + clipboardError); } catch(eLog2) {}
           try {
             if (textOk && clipboardOk) this.toast("识别完成，已复制");
-            else if (textOk) this.toast("识别完成");
+            else if (textOk) this.toast("识别完成，复制失败");
             else this.toast("截图完成，识别失败");
           } catch(eToast2) {}
 
@@ -299,7 +263,7 @@
             ret.code = obj.code;
             ret.ocrText = textValue;
             ret.ocrError = obj.ocrError;
-            ret.ocrSource = textSource;
+            ret.ocrSource = "rect";
             ret.clipboardOk = clipboardOk;
             ret.clipboardError = clipboardError;
           }
