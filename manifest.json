@@ -87,9 +87,9 @@
       "version": "1.0.0"
     },
     "th_14_panels.js": {
-      "sha256": "48e504fc3de6037290a452319c9a9cb6353dc5850ead1682afd9babad5a225b0",
-      "size": 121168,
-      "version": "1.0.5"
+      "sha256": "d7e7c7ecf3df818fc40f933d0dcf797ededa8e32f9bf2bf32192db3940298d3e",
+      "size": 122296,
+      "version": "1.0.6"
     },
     "th_14_schema_editor.js": {
       "sha256": "903fb69f973af2a722ea2536bd86099005bb07605616028d5ae9c388fe2981e0",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "设置页指针分类增加子块"
+      "修复手机设置页指针子块显示"
     ],
-    "title": "设置页指针分类增加子块"
+    "title": "修复手机设置页指针子块显示"
   },
   "schema": 3,
-  "version": 20260707153740
+  "version": 20260707154929
 }
