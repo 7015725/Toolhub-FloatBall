@@ -32,9 +32,9 @@
       "version": "1.0.0"
     },
     "th_08_content.js": {
-      "sha256": "8a76f15dfd1292081cba4b2dd218424be66540350e2807065421a6176a86c2db",
-      "size": 7938,
-      "version": "1.0.0"
+      "sha256": "52afe5f33728229a0f3d69b30c13e677b19a0e601957be46035a3c3beedf8fa7",
+      "size": 10833,
+      "version": "1.0.1"
     },
     "th_09_animation.js": {
       "sha256": "649d0f49695cea41e65a770d9cef04b64279db56d8127d082d0dc656f13854d2",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "快捷方式暂存时标记 intent 模式"
+      "ContentResolver 增加安全审计"
     ],
-    "title": "快捷方式暂存时标记 intent 模式"
+    "title": "ContentResolver 增加安全审计"
   },
   "schema": 3,
-  "version": 20260707043547
+  "version": 20260707044001
 }
