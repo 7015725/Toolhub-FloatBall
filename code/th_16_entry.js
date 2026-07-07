@@ -1,4 +1,59 @@
-// @version 1.0.5
+// @version 1.0.6
+
+// =======================【热修：按钮编辑保存返回保留临时按钮】=======================
+// 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
+// 只处理 button_edit_save 场景，不影响普通返回/取消编辑。
+(function() {
+  try {
+    if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
+    var proto = FloatBallAppWM.prototype;
+    if (proto.__toolHubButtonEditSaveStatePatchInstalled === true) return;
+    if (typeof proto.popToolAppPage !== "function") return;
+
+    var oldPopToolAppPage = proto.popToolAppPage;
+    proto.popToolAppPage = function(reason) {
+      var rs = String(reason || "");
+      if (rs === "button_edit_save") {
+        try {
+          var st = this.state && this.state.toolAppNavStack ? this.state.toolAppNavStack : null;
+          if (st && st.length > 1) {
+            var prev = st[st.length - 2];
+            if (prev && String(prev.route || "") === "btn_editor") {
+              prev.editingButtonIndex = null;
+              prev.keepBtnEditorState = true;
+              prev.toolAppScrollY = 0;
+            }
+          }
+          if (this.state) {
+            this.state.editingButtonIndex = null;
+            this.state.keepBtnEditorState = true;
+          }
+        } catch(ePatchBefore) {
+          try { safeLog(this.L, 'w', "button edit save state patch before pop fail: " + String(ePatchBefore)); } catch(eLog0) {}
+        }
+      }
+
+      var ret = oldPopToolAppPage.call(this, reason);
+
+      if (rs === "button_edit_save") {
+        try {
+          if (this.state && String(this.state.toolAppRoute || "") === "btn_editor") {
+            this.state.editingButtonIndex = null;
+            this.state.keepBtnEditorState = true;
+          }
+        } catch(ePatchAfter) {
+          try { safeLog(this.L, 'w', "button edit save state patch after pop fail: " + String(ePatchAfter)); } catch(eLog1) {}
+        }
+      }
+      return ret;
+    };
+
+    proto.__toolHubButtonEditSaveStatePatchInstalled = true;
+  } catch(eInstall) {
+    try { safeLog(null, 'e', "install button edit save state patch fail: " + String(eInstall)); } catch(eLog2) {}
+  }
+})();
+
 function runOnMainSync(fn, timeoutMs) {
   if (!fn) return { ok: false, error: "empty-fn" };
   try {
