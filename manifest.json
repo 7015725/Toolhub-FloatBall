@@ -77,8 +77,8 @@
       "version": "0.0.0"
     },
     "th_14_color_picker.js": {
-      "sha256": "8c94ef5c8b1b7dccbf880707797660794087b35ade59dad623040a35433a9398",
-      "size": 27511,
+      "sha256": "cd06190ee61e0871ff3f5fd34bfb9f254165a0cc1c6dc2548bf9e7e9e3306100",
+      "size": 25600,
       "version": "0.0.0"
     },
     "th_14_icon_picker.js": {
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针大小设置不生效"
+      "fix"
     ],
-    "title": "修复指针大小设置不生效"
+    "title": "fix"
   },
   "schema": 3,
-  "version": 20260707123456
+  "version": 20260707124303
 }
