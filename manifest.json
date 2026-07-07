@@ -110,15 +110,20 @@
       "sha256": "3761b68803a9e78524efc704a4c85b2cc70c6c0de39cc03ee93915ff1966a087",
       "size": 56521,
       "version": "1.1.0"
+    },
+    "th_18_pointer_ocr.js": {
+      "sha256": "34fcd65168b1d8e8e00ddc035dd8141da91356fa0ee20f1722ed0f886dc839d3",
+      "size": 7864,
+      "version": "1.0.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "移除不存在的指针扩展加载"
+      "新增文本扩展模块"
     ],
-    "title": "移除不存在的指针扩展加载"
+    "title": "新增文本扩展模块"
   },
   "schema": 3,
-  "version": 20260707062743
+  "version": 20260707064000
 }
