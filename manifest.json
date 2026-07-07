@@ -112,18 +112,18 @@
       "version": "1.1.0"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "46507ba1382fa40f746dd4181e5f8c496cc7203f9f7fa5f1a089076c71fff03c",
-      "size": 32621,
-      "version": "1.0.6"
+      "sha256": "f4fc31f7cdc3c255901a933a4cd0e3ef722e939472e5995757910dd2629cefd9",
+      "size": 33319,
+      "version": "1.0.7"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "支持指针热点到达屏幕边缘"
+      "优化指针边缘渐进贴边"
     ],
-    "title": "支持指针热点到达屏幕边缘"
+    "title": "优化指针边缘渐进贴边"
   },
   "schema": 3,
-  "version": 20260707094910
+  "version": 20260707100225
 }
