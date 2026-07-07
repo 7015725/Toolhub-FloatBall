@@ -47,9 +47,9 @@
       "version": "1.0.1"
     },
     "th_11_action.js": {
-      "sha256": "5ea0234cc3342b8f3a88f0ff354f655d093ead857ca6008e484fde6ec4011747",
-      "size": 15432,
-      "version": "1.0.2"
+      "sha256": "ad3d08803c6c47c2d4e6c149a419ebbcb9fd598554d52203ee4cbf72fed76b09",
+      "size": 15702,
+      "version": "1.0.3"
     },
     "th_12_rebuild.js": {
       "sha256": "7b820e813d2dd8866778fefe8bfeb6aca227bb1a32a89d318de830178f19824f",
@@ -115,11 +115,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因指针框选只输出坐标且按钮文案混用原生截图导致框选后看起来不起作用的问题"
+      "修复了因按钮配置被覆盖、截图按钮字段不匹配和截图启动后无即时提示导致框选截图看起来不起作用的问题"
     ],
     "date": "2026-07-07",
-    "title": "指针框选结果反馈修复"
+    "title": "指针框选与截图反馈修复"
   },
   "schema": 3,
-  "version": 20260706235945
+  "version": 20260707001710
 }
