@@ -1,8 +1,8 @@
-// @version 1.0.8
+// @version 1.0.9
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
-// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；识别只使用最终拖动位置；指针热点四边统一渐进贴边。
+// 状态补丁：拖动悬浮球时球体固定边缘，指针跟随手指；识别只使用最终拖动位置；指针热点四边统一渐进贴边；支持设置页调整贴边范围。
 (function() {
   function log18(level, msg) {
     try { safeLog(null, level || 'i', String(msg)); } catch(eLog) {}
@@ -273,10 +273,18 @@
       var topTarget = -ay;
       var bottomTarget = sh - 1 - ay;
 
+      var zoneXdp = 48;
+      var zoneYdp = 72;
+      try { zoneXdp = Number(appObj.config && appObj.config.POINTER_EDGE_ZONE_X_DP || 48); } catch(eCfgX) { zoneXdp = 48; }
+      try { zoneYdp = Number(appObj.config && appObj.config.POINTER_EDGE_ZONE_Y_DP || 72); } catch(eCfgY) { zoneYdp = 72; }
+      if (isNaN(zoneXdp)) zoneXdp = 48;
+      if (isNaN(zoneYdp)) zoneYdp = 72;
+      zoneXdp = clamp18(appObj, zoneXdp, 16, 96);
+      zoneYdp = clamp18(appObj, zoneYdp, 24, 128);
       var zoneX = 48;
       var zoneY = 72;
-      try { zoneX = appObj.dp ? appObj.dp(48) : 48; } catch(eZoneX) { zoneX = 48; }
-      try { zoneY = appObj.dp ? appObj.dp(72) : 72; } catch(eZoneY) { zoneY = 72; }
+      try { zoneX = appObj.dp ? appObj.dp(zoneXdp) : zoneXdp; } catch(eZoneX) { zoneX = zoneXdp; }
+      try { zoneY = appObj.dp ? appObj.dp(zoneYdp) : zoneYdp; } catch(eZoneY) { zoneY = zoneYdp; }
 
       function ease18(t) {
         if (t < 0) t = 0;

@@ -107,23 +107,23 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "3761b68803a9e78524efc704a4c85b2cc70c6c0de39cc03ee93915ff1966a087",
-      "size": 56521,
-      "version": "1.1.0"
+      "sha256": "8beb277fdc54333f0eb4bdce5744581d87daae20a44c35f094bfa632f0f88b36",
+      "size": 57267,
+      "version": "1.1.1"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "20ed5370e1c5e73d981b5611df56f607c0b7fb4de3bcae75422de2c4751d2496",
-      "size": 33375,
-      "version": "1.0.8"
+      "sha256": "3948f338feddc17faea1c8d7bab38179cfdb1307429af76b038f57f5543c67fe",
+      "size": 33918,
+      "version": "1.0.9"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "新增指针设置分组"
+      "接入指针数值设置"
     ],
-    "title": "新增指针设置分组"
+    "title": "接入指针数值设置"
   },
   "schema": 3,
-  "version": 20260707111958
+  "version": 20260707112415
 }

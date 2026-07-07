@@ -1,4 +1,4 @@
-// @version 1.1.0
+// @version 1.1.1
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -22,6 +22,15 @@ function th17Int(v) {
 function th17Color(a, r, g, b) {
   try { return android.graphics.Color.argb(th17Int(a), th17Int(r), th17Int(g), th17Int(b)); } catch (e0) {}
   return 0;
+}
+
+function th17ConfigNumber(appObj, key, defVal, minVal, maxVal) {
+  var v = defVal;
+  try { v = Number(appObj && appObj.config ? appObj.config[key] : defVal); } catch(e0) { v = defVal; }
+  if (isNaN(v)) v = defVal;
+  if (minVal !== undefined && v < minVal) v = minVal;
+  if (maxVal !== undefined && v > maxVal) v = maxVal;
+  return v;
 }
 
 function th17RectObj(rect) {
@@ -176,12 +185,17 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
   }
   var st = this.state.pointerTool;
   var dp = function(v) { return Math.max(1, Math.floor(Number(v) * (Number(this.state.density || 1) || 1))); };
-  st.pointerW = dp.call(this, 60);
-  st.pointerH = dp.call(this, 88);
-  st.anchorLocalX = dp.call(this, 17);
-  st.anchorLocalY = dp.call(this, 8);
-  st.handleLocalX = dp.call(this, 30);
-  st.handleLocalY = dp.call(this, 66);
+  var scalePct = th17ConfigNumber(this, "POINTER_SCALE_PERCENT", 100, 70, 140);
+  var scale = scalePct / 100.0;
+  var sdp = function(v) { return Math.max(1, Math.floor(Number(v) * scale * (Number(this.state.density || 1) || 1))); };
+  st.pointerW = sdp.call(this, 60);
+  st.pointerH = sdp.call(this, 88);
+  st.anchorLocalX = sdp.call(this, 17);
+  st.anchorLocalY = sdp.call(this, 8);
+  st.handleLocalX = sdp.call(this, 30);
+  st.handleLocalY = sdp.call(this, 66);
+  st.hoverMinMs = th17ConfigNumber(this, "POINTER_TEXT_HOVER_MS", 800, 300, 1500);
+  st.areaHoldDelay = th17ConfigNumber(this, "POINTER_AREA_HOVER_MS", 1000, 500, 2000);
   st.areaHoldStableSlop = dp.call(this, 5);
   st.areaHoldBreakSlop = dp.call(this, 14);
   st.areaCaptureInset = dp.call(this, 3);
