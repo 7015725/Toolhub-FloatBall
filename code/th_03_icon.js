@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 FloatBallAppWM.prototype._iconCache = {
   map: {},
   keys: [],
@@ -170,3 +170,83 @@ FloatBallAppWM.prototype.loadBallIconDrawableFromFile = function(path, targetPx,
     return null;
   }
 };
+
+// =======================【更新完成后自动重启生效】======================
+// 这段代码的主要内容/用途：点击“立即更新”后，后台等待子模块更新完成；若检测到 needRestart=true，自动调用设置页已有的重启流程。
+// 放在本模块中做延迟补丁，避免直接重写设置页大文件。
+(function() {
+  function installAutoRestartPatchOnce() {
+    try {
+      if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
+      var proto = FloatBallAppWM.prototype;
+      if (proto.__toolHubAutoRestartPatchInstalled === true) return true;
+      if (typeof proto.startToolHubModuleUpdateFromSettings !== "function") return false;
+
+      if (typeof proto.__toolHubWatchRestartAfterUpdate !== "function") {
+        proto.__toolHubWatchRestartAfterUpdate = function(anchorView) {
+          var self = this;
+          try {
+            if (!self.state) return;
+            if (self.state.toolHubAutoRestartWatcherRunning === true) return;
+            self.state.toolHubAutoRestartWatcherRunning = true;
+          } catch(eFlag0) {}
+
+          try {
+            new java.lang.Thread(new java.lang.Runnable({ run: function() {
+              var shouldRestart = false;
+              try {
+                for (var i = 0; i < 80; i++) {
+                  try { java.lang.Thread.sleep(500); } catch(eSleep) {}
+                  var st = null;
+                  try { if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) st = TOOLHUB_UPDATE_STATE; } catch(eState0) { st = null; }
+                  if (!st) continue;
+                  var statusText = String(st.status || "");
+                  if (statusText === "error") break;
+                  if (statusText === "installing" || statusText === "checking" || statusText === "restarting") continue;
+                  if (st.needRestart === true) { shouldRestart = true; break; }
+                }
+              } catch(eLoop) {}
+
+              try { if (self.state) self.state.toolHubAutoRestartWatcherRunning = false; } catch(eFlag1) {}
+              if (!shouldRestart) return;
+
+              try {
+                self.runOnUiThreadSafe(function() {
+                  try { self.toast("更新完成，正在重启生效"); } catch(eToast) {}
+                  try {
+                    if (self.startToolHubRestartFromSettings) self.startToolHubRestartFromSettings(anchorView);
+                    else if (typeof restartToolHubFromSettings === "function") restartToolHubFromSettings();
+                  } catch(eRestart) {
+                    try { self.toast("自动重启失败，请手动重启 ToolHub"); safeLog(self.L, "e", "auto restart after update fail err=" + String(eRestart)); } catch(eLog) {}
+                  }
+                });
+              } catch(eUi) {}
+            }})).start();
+          } catch(eThread) {
+            try { if (self.state) self.state.toolHubAutoRestartWatcherRunning = false; } catch(eFlag2) {}
+          }
+        };
+      }
+
+      var oldStart = proto.startToolHubModuleUpdateFromSettings;
+      proto.startToolHubModuleUpdateFromSettings = function(anchorView) {
+        var ret = null;
+        try { ret = oldStart.call(this, anchorView); } catch(eOld) { throw eOld; }
+        try { this.__toolHubWatchRestartAfterUpdate(anchorView); } catch(eWatch) {}
+        return ret;
+      };
+      proto.__toolHubAutoRestartPatchInstalled = true;
+      return true;
+    } catch(eInstallPatch) {}
+    return false;
+  }
+
+  try {
+    new java.lang.Thread(new java.lang.Runnable({ run: function() {
+      for (var i = 0; i < 60; i++) {
+        if (installAutoRestartPatchOnce()) return;
+        try { java.lang.Thread.sleep(250); } catch(eSleep) {}
+      }
+    }})).start();
+  } catch(ePatchThread) {}
+})();
