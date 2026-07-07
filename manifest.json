@@ -77,9 +77,9 @@
       "version": "0.0.0"
     },
     "th_14_color_picker.js": {
-      "sha256": "cd06190ee61e0871ff3f5fd34bfb9f254165a0cc1c6dc2548bf9e7e9e3306100",
-      "size": 25600,
-      "version": "0.0.0"
+      "sha256": "11ef97af1d11b53a8ec0d79798bb50b76bee28844f83aad3084259074ed0ae09",
+      "size": 25618,
+      "version": "0.0.1"
     },
     "th_14_icon_picker.js": {
       "sha256": "586210ef0c2418803edc0b1939658fcba6623dd04ece9b96b55b29f9eb9cbe1b",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "fix"
+      "a"
     ],
-    "title": "fix"
+    "title": "a"
   },
   "schema": 3,
-  "version": 20260707124303
+  "version": 20260707124953
 }
