@@ -1,4 +1,4 @@
-// @version 1.1.4
+// @version 1.1.5
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -586,25 +586,27 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
 
         try { p.setShadowLayer(dp(3), dp(1), dp(1.5), th17Color(74, 0, 0, 0)); } catch (e1) {}
         p.setStyle(android.graphics.Paint.Style.FILL);
-        p.setARGB(active ? 250 : 248, 255, 255, 255);
+        p.setARGB(active ? 92 : (dragging ? 76 : 58), accentR, accentG, accentB);
+        canvas.drawPath(path, p);
+
+        p.setStyle(android.graphics.Paint.Style.FILL);
+        p.setARGB(active ? 230 : 210, 255, 255, 255);
         canvas.drawPath(path, p);
         try { p.clearShadowLayer(); } catch (e2) {}
 
         p.setStyle(android.graphics.Paint.Style.STROKE);
-        p.setStrokeWidth(dp(1.7));
-        p.setARGB(245, active ? accentR : 20, active ? accentG : 24, active ? accentB : 32);
+        p.setStrokeWidth(dp(active ? 2.2 : 2.0));
+        p.setARGB(active ? 255 : 235, accentR, accentG, accentB);
         canvas.drawPath(path, p);
 
-        if (active || dragging) {
-          p.setStrokeWidth(dp(1.2));
-          p.setARGB(active ? 225 : 175, accentR, accentG, accentB);
-          canvas.drawLine(tipX + dp(2.5), tipY + dp(7), tipX + dp(2.5), tipY + dp(20), p);
-          canvas.drawLine(tipX + dp(3.5), tipY + dp(20), tipX + dp(8.5), tipY + dp(16), p);
-        }
+        p.setStrokeWidth(dp(active ? 1.45 : 1.25));
+        p.setARGB(active ? 245 : 210, accentR, accentG, accentB);
+        canvas.drawLine(tipX + dp(2.5), tipY + dp(7), tipX + dp(2.5), tipY + dp(20), p);
+        canvas.drawLine(tipX + dp(3.5), tipY + dp(20), tipX + dp(8.5), tipY + dp(16), p);
 
         p.setStyle(android.graphics.Paint.Style.FILL);
-        p.setARGB(active ? 245 : 205, accentR, accentG, accentB);
-        canvas.drawCircle(tipX, tipY, dp(1.6), p);
+        p.setARGB(255, accentR, accentG, accentB);
+        canvas.drawCircle(tipX, tipY, dp(active ? 2.2 : 1.8), p);
 
       } catch (drawError) {}
     }
@@ -1343,12 +1345,13 @@ FloatBallAppWM.prototype.createPointerFrameView = function(st) {
         if (!rect) return;
         var p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         var rf = new android.graphics.RectF(rect.left, rect.top, rect.right, rect.bottom);
+        var rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
         p.setStyle(android.graphics.Paint.Style.FILL);
-        p.setARGB(28, 59, 130, 246);
+        p.setARGB(42, rgb.r, rgb.g, rgb.b);
         canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
         p.setStyle(android.graphics.Paint.Style.STROKE);
         p.setStrokeWidth(self.dp(2));
-        p.setARGB(235, 59, 130, 246);
+        p.setARGB(235, rgb.r, rgb.g, rgb.b);
         canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
       } catch (eDraw) {}
     }

@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.0.10
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -366,13 +366,20 @@
                 var rect = st.frameRect;
                 if (!rect) return;
                 var rf = new android.graphics.RectF(rect.left, rect.top, rect.right, rect.bottom);
+                var rgb = null;
+                try {
+                  if (typeof th17PointerColorRgb === "function") {
+                    rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                  }
+                } catch(eColor18) {}
+                if (!rgb) rgb = { r: 59, g: 130, b: 246 };
                 p.setAntiAlias(true);
                 p.setStyle(android.graphics.Paint.Style.FILL);
-                p.setARGB(28, 59, 130, 246);
+                p.setARGB(42, rgb.r, rgb.g, rgb.b);
                 canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
                 p.setStyle(android.graphics.Paint.Style.STROKE);
                 p.setStrokeWidth(self.dp(2));
-                p.setARGB(235, 59, 130, 246);
+                p.setARGB(235, rgb.r, rgb.g, rgb.b);
                 canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
               } catch(eDraw) {}
             }
