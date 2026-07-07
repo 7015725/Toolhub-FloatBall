@@ -52,9 +52,9 @@
       "version": "1.0.3"
     },
     "th_12_rebuild.js": {
-      "sha256": "7b820e813d2dd8866778fefe8bfeb6aca227bb1a32a89d318de830178f19824f",
-      "size": 2362,
-      "version": "1.0.0"
+      "sha256": "d882acfa9e8fc33e433fd1bc1865125fcc40bfda2a8e135a8313ff018cbb1caa",
+      "size": 4808,
+      "version": "1.0.1"
     },
     "th_13_panel_ui.js": {
       "sha256": "608de028b04a9bda7627d5e4681d323697fe70b934538265ead7fcbc00a769c3",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针框选截图"
+      "feat: add security compatibility config defaults"
     ],
-    "title": "修复指针框选截图"
+    "title": "feat: add security compatibility config defaults"
   },
   "schema": 3,
-  "version": 20260707010347
+  "version": 20260707020334
 }
