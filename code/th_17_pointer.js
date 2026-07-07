@@ -1,4 +1,4 @@
-// @version 1.1.2
+// @version 1.1.3
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -151,6 +151,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       inspectMaxFinalNodes: 260,
       pointerW: 0,
       pointerH: 0,
+      pointerScale: 1,
       anchorLocalX: 0,
       anchorLocalY: 0,
       handleLocalX: 0,
@@ -203,6 +204,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
   var dp = function(v) { return Math.max(1, Math.floor(Number(v) * (Number(this.state.density || 1) || 1))); };
   var scalePct = th17ConfigNumber(this, "POINTER_SCALE_PERCENT", 100, 70, 140);
   var scale = scalePct / 100.0;
+  st.pointerScale = scale;
   var sdp = function(v) { return Math.max(1, Math.floor(Number(v) * scale * (Number(this.state.density || 1) || 1))); };
   st.pointerW = sdp.call(this, 60);
   st.pointerH = sdp.call(this, 88);
@@ -547,7 +549,9 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
     onDraw: function(canvas) {
       try {
         var p = st.paint;
-        var dp = function(v) { return self.dp(v); };
+        var pointerScale = Number(st.pointerScale || 1);
+        if (isNaN(pointerScale) || pointerScale <= 0) pointerScale = 1;
+        var dp = function(v) { return self.dp(Number(v) * pointerScale); };
         var tipX = st.anchorLocalX;
         var tipY = st.anchorLocalY;
         var active = !!(st.hot || st.areaSelecting || st.areaReady);
@@ -639,6 +643,12 @@ FloatBallAppWM.prototype.showPointerWindow = function(st) {
     st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
     if (!st.root) st.root = this.createPointerCanvasView(st);
     if (!st.lp) st.lp = this.createPointerLayoutParams(st);
+    else {
+      try {
+        st.lp.width = st.pointerW;
+        st.lp.height = st.pointerH;
+      } catch (eResizeLp) {}
+    }
     if (!st.added) {
       st.wm.addView(st.root, st.lp);
       st.added = true;
