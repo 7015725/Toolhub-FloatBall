@@ -102,9 +102,9 @@
       "version": "1.0.0"
     },
     "th_16_entry.js": {
-      "sha256": "3dce4fd03d31b4b5957f4ad16d41777b1287b1b26010e859febb0785b7f0fb78",
-      "size": 12548,
-      "version": "1.0.5"
+      "sha256": "a629d881b2ea133fbe58fd3b69c827fd1e37487bf69d3fc9cf197d406c7a9b87",
+      "size": 14860,
+      "version": "1.0.6"
     },
     "th_17_pointer.js": {
       "sha256": "3761b68803a9e78524efc704a4c85b2cc70c6c0de39cc03ee93915ff1966a087",
@@ -115,10 +115,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "撤销快捷方式保存包装"
+      "修复按钮添加后列表不刷新"
     ],
-    "title": "撤销快捷方式保存包装"
+    "title": "修复按钮添加后列表不刷新"
   },
   "schema": 3,
-  "version": 20260707042120
+  "version": 20260707042701
 }
