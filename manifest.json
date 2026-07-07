@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "8752cad2287f4794576936e93c4c4d3a73399c8093f40cc852a37f9f9c1abfc1",
-      "size": 59524,
-      "version": "1.0.5"
+      "sha256": "feaec18cbad5706a21923c8e8464bc1fdbdb54c15d0eb54f2d837460116f5d42",
+      "size": 61461,
+      "version": "1.0.6"
     },
     "th_02_core.js": {
       "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "c9e195fd5b486d7f07dc5320635a020f2ed47cf12201227e006838aa858761a2",
-      "size": 62546,
-      "version": "1.1.7"
+      "sha256": "390272061bfea0926382517b5c9f1ab9863e5c45caf221009f233bdc44482c39",
+      "size": 67844,
+      "version": "1.1.8"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a1a1342207ac17819ad4b756a3410c7566072c26772c2a70d1e7c614ae380a4f",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复文字边框悬停颜色"
+      "新增小框回退取字设置"
     ],
-    "title": "修复文字边框悬停颜色"
+    "title": "新增小框回退取字设置"
   },
   "schema": 3,
-  "version": 20260707141114
+  "version": 20260707151815
 }
