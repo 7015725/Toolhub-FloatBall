@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "a"
+      "接入指针数值设置"
     ],
-    "title": "a"
+    "title": "接入指针数值设置"
   },
   "schema": 3,
-  "version": 20260707112358
+  "version": 20260707112415
 }
