@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "a"
+      "Fix pointer release final text scan"
     ],
-    "title": "a"
+    "title": "Fix pointer release final text scan"
   },
   "schema": 3,
-  "version": 20260708110720
+  "version": 20260708110735
 }
