@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "710b018a3d56f6da9763eb31301410c87fa1e51e23b8c292b55b50b6bdb32b4e",
-      "size": 76488,
-      "version": "1.1.13"
+      "sha256": "3f12706d86f832c298f9a3f2ebb661b1a6e17db9f54c9dc9379753fdbda078b5",
+      "size": 78419,
+      "version": "1.1.14"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "7e2360ee7eb9c65466b4d8024d6b8f49128b8e4fcd59a1b1f74ae3a08ea159c3",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Fix pointer accessibility control text hit"
+      "update"
     ],
-    "title": "Fix pointer accessibility control text hit"
+    "title": "update"
   },
   "schema": 3,
-  "version": 20260708112139
+  "version": 20260708113401
 }
