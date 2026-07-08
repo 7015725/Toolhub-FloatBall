@@ -52,9 +52,9 @@
       "version": "1.0.5"
     },
     "th_12_rebuild.js": {
-      "sha256": "d882acfa9e8fc33e433fd1bc1865125fcc40bfda2a8e135a8313ff018cbb1caa",
-      "size": 4808,
-      "version": "1.0.1"
+      "sha256": "7b75eec86c65fb1de255f95cb85c0d261eff61f00a49ce279a8ef260798c6248",
+      "size": 15036,
+      "version": "1.0.2"
     },
     "th_13_panel_ui.js": {
       "sha256": "608de028b04a9bda7627d5e4681d323697fe70b934538265ead7fcbc00a769c3",
@@ -120,10 +120,12 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "统一 ToolHub 根目录并加固子模块启动流程"
+      "修复 THEME_MODE 单选值保存后被回退的问题",
+      "补齐主题、面板、指针设置保存后的即时生效刷新",
+      "修复 PANEL_PADDING_DP 默认值与校验范围冲突"
     ],
-    "title": "统一 ToolHub 根目录并加固子模块启动流程"
+    "title": "修复设置项保存类型与即时生效链路"
   },
   "schema": 3,
-  "version": 20260708073756
+  "version": 20260708083058
 }
