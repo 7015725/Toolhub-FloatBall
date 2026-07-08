@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -15,6 +15,77 @@ FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   h.setPadding(this.dp(16), this.dp(24), this.dp(16), this.dp(8));
   parent.addView(h);
 };
+
+
+// =======================【设置项：颜色预览】======================
+// 这段代码的主要内容/用途：在设置项本身显示颜色预览色块，不修改颜色选择面板。
+FloatBallAppWM.prototype.isSettingColorPreviewItem = function(item) {
+  var key = String((item && item.key) || "");
+  var type = String((item && item.type) || "");
+
+  if (type === "ball_color") return true;
+
+  if (key === "THEME_DAY_BG_HEX") return true;
+  if (key === "THEME_DAY_TEXT_HEX") return true;
+  if (key === "THEME_NIGHT_BG_HEX") return true;
+  if (key === "THEME_NIGHT_TEXT_HEX") return true;
+
+  if (key === "BALL_ICON_TINT_HEX") return true;
+  if (key === "BALL_BG_COLOR_HEX") return true;
+
+  if (key.indexOf("POINTER_COLOR_") === 0 && key.indexOf("_HEX") > 0) return true;
+
+  return false;
+};
+
+FloatBallAppWM.prototype.parseSettingColorPreview = function(raw) {
+  try {
+    var s = String(raw == null ? "" : raw).replace(/^\s+|\s+$/g, "");
+    if (!s) return null;
+    if (s.charAt(0) !== "#") s = "#" + s;
+
+    if (/^#[0-9a-fA-F]{6}$/.test(s)) return android.graphics.Color.parseColor(s);
+    if (/^#[0-9a-fA-F]{8}$/.test(s)) return android.graphics.Color.parseColor(s);
+  } catch(e) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.createSettingColorPreviewView = function(hex, strokeColor) {
+  var v = new android.view.View(context);
+  var size = this.dp(28);
+  var lp = new android.widget.LinearLayout.LayoutParams(size, size);
+  lp.leftMargin = this.dp(8);
+  lp.rightMargin = this.dp(4);
+  v.setLayoutParams(lp);
+  this.refreshSettingColorPreviewView(v, hex, strokeColor);
+  return v;
+};
+
+FloatBallAppWM.prototype.refreshSettingColorPreviewView = function(v, hex, strokeColor) {
+  try {
+    if (!v) return;
+
+    var color = this.parseSettingColorPreview(hex);
+    var stroke = strokeColor;
+
+    if (!stroke && this.ui && this.ui.colors) stroke = this.ui.colors.dividerLight;
+    if (!stroke) stroke = android.graphics.Color.parseColor("#999999");
+
+    if (color === null) {
+      var emptyBg = this.withAlpha ? this.withAlpha(stroke, 0.10) : android.graphics.Color.TRANSPARENT;
+      if (this.ui && this.ui.createStrokeDrawable) {
+        v.setBackground(this.ui.createStrokeDrawable(emptyBg, stroke, this.dp(1), this.dp(14)));
+      }
+    } else {
+      if (this.ui && this.ui.createStrokeDrawable) {
+        v.setBackground(this.ui.createStrokeDrawable(color, stroke, this.dp(1), this.dp(14)));
+      }
+    }
+  } catch(e) {
+    safeLog(null, "e", "refreshSettingColorPreviewView fail " + String(e));
+  }
+};
+
 
 FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivider) {
   var isDark = this.isDarkTheme();
@@ -293,11 +364,25 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     parent.addView(row);
   } else if (item.type === "text") {
     // === 文本输入 ===
+    var titleLine = new android.widget.LinearLayout(context);
+    titleLine.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    titleLine.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
     tv.setTextColor(textColor);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
-    row.addView(tv);
+    var titleTvLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+    tv.setLayoutParams(titleTvLp);
+    titleLine.addView(tv);
+
+    var textColorPreviewDot = null;
+    if (self.isSettingColorPreviewItem && self.isSettingColorPreviewItem(item)) {
+      textColorPreviewDot = self.createSettingColorPreviewView(self.getPendingValue(item.key), dividerColor);
+      titleLine.addView(textColorPreviewDot);
+    }
+
+    row.addView(titleLine);
 
     var et = new android.widget.EditText(context);
     var curVal = self.getPendingValue(item.key);
@@ -334,7 +419,11 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
         afterTextChanged: function(s) {
             try {
                 self.touchActivity();
-                self.setPendingValue(item.key, String(s));
+                var textColorPreviewValue = String(s);
+                self.setPendingValue(item.key, textColorPreviewValue);
+                if (textColorPreviewDot && self.refreshSettingColorPreviewView) {
+                  self.refreshSettingColorPreviewView(textColorPreviewDot, textColorPreviewValue, dividerColor);
+                }
              } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         }
     }));
@@ -477,6 +566,9 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     colorRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
     colorRow.setPadding(0, self.dp(8), 0, 0);
 
+    var previewDot = self.createSettingColorPreviewView(self.getPendingValue(item.key), dividerColor);
+    colorRow.addView(previewDot);
+
     var colorValueTv = new android.widget.TextView(context);
     colorValueTv.setTextColor(secColor);
     colorValueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
@@ -488,8 +580,14 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
       try {
         var curHex0 = String(self.getPendingValue(item.key) || "");
         colorValueTv.setText(curHex0 || "默认");
+        if (previewDot && self.refreshSettingColorPreviewView) {
+          self.refreshSettingColorPreviewView(previewDot, curHex0, dividerColor);
+        }
       } catch(eDot0) {
         colorValueTv.setText("默认");
+        if (previewDot && self.refreshSettingColorPreviewView) {
+          self.refreshSettingColorPreviewView(previewDot, "", dividerColor);
+        }
       }
     }
     refreshBallColorPreview();
