@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "af20e045840ca0156d12b4ba0a437194e2e9b6075851c362ebc506054501d9d1",
-      "size": 80563,
-      "version": "1.1.15"
+      "sha256": "7f34e430e6e9323ca3d55e2f4ffae7d7d74ff4459465bc69b7deb9bb10491588",
+      "size": 81715,
+      "version": "1.1.16"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "7e2360ee7eb9c65466b4d8024d6b8f49128b8e4fcd59a1b1f74ae3a08ea159c3",
@@ -125,5 +125,5 @@
     "title": "update"
   },
   "schema": 3,
-  "version": 20260708114755
+  "version": 20260708134559
 }
