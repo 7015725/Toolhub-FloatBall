@@ -1,4 +1,4 @@
-// @version 1.1.15
+// @version 1.1.16
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1498,6 +1498,32 @@ FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, f
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "text_pick") return false;
   var hp = this.getPointerHotspot();
+  var reasonText = String(reason || "");
+
+  // release_final / area_small_text_final 必须走当前线程同步扫描。
+  // 实测后台 inspect worker 可能拿不到 UiAutomation root，表现为 cost 很低但 nodes=0。
+  if (force === true && finishAfterResult === true) {
+    st.inspectLatestX = hp.x;
+    st.inspectLatestY = hp.y;
+    st.inspectLatestSeq = ++st.inspectSeq;
+    st.inspectLatestForce = true;
+    st.inspectLatestReason = reasonText;
+
+    var pack = null;
+    try {
+      pack = this.findPointerTextAtSnapshot(hp.x, hp.y, true, reasonText + "_sync", st.inspectLatestSeq, st.inspectSession);
+      pack.finishAfterResult = true;
+      try {
+        safeLog(this.L, 'i', "pointer release sync inspect cost=" + String(pack.costMs) + " nodes=" + String(pack.nodes) + " windows=" + String(pack.windows) + " reason=" + String(pack.reason) + " timeout=" + String(pack.timedOut === true));
+      } catch (eLogSync) {}
+      this.applyPointerInspectResult(pack);
+      return true;
+    } catch (eSync) {
+      try { safeLog(this.L, 'e', "pointer release sync inspect fail: " + String(eSync)); } catch (eLogFail) {}
+      return false;
+    }
+  }
+
   var moved = Math.abs(hp.x - st.lastQueryX) > this.dp(4) || Math.abs(hp.y - st.lastQueryY) > this.dp(4);
   if (force !== true && !moved) return false;
   if (force !== true) {
@@ -1510,7 +1536,7 @@ FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, f
   st.inspectLatestY = hp.y;
   st.inspectLatestSeq = ++st.inspectSeq;
   st.inspectLatestForce = force === true;
-  st.inspectLatestReason = String(reason || "");
+  st.inspectLatestReason = reasonText;
   if (finishAfterResult === true) st.inspectFinishAfterResult = true;
   st.inspectPending = true;
   if (!st.inspectRunning) this.runPointerInspectWorker(st);
