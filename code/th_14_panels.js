@@ -174,11 +174,13 @@ FloatBallAppWM.prototype.getPointerSettingsBlocks = function() {
     {
       key: "pointer_color",
       title: "指针颜色",
-      desc: "普通、悬停和命中状态颜色",
+      desc: "普通、悬停、命中和取字就绪状态颜色",
       keys: [
         "POINTER_COLOR_NORMAL_HEX",
         "POINTER_COLOR_HOVER_HEX",
-        "POINTER_COLOR_HIT_HEX"
+        "POINTER_COLOR_HIT_HEX",
+        "POINTER_COLOR_TEXT_READY_HEX",
+        "POINTER_FRAME_TEXT_READY_HEX"
       ]
     },
     {

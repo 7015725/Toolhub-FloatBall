@@ -112,6 +112,8 @@ var ConfigValidator = {
     POINTER_COLOR_NORMAL_HEX: { type: "string", default: "" },
     POINTER_COLOR_HOVER_HEX: { type: "string", default: "" },
     POINTER_COLOR_HIT_HEX: { type: "string", default: "" },
+    POINTER_COLOR_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
+    POINTER_FRAME_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
     POINTER_COLOR_AREA_HEX: { type: "string", default: "" },
     POINTER_COLOR_CAPTURE_HEX: { type: "string", default: "" },
     POINTER_AREA_SMALL_FALLBACK_TEXT: { type: "bool", default: true },

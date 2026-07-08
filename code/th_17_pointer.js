@@ -61,6 +61,30 @@ function th17PointerColorRgb(appObj, key, fallbackR, fallbackG, fallbackB) {
   return { r: fallbackR, g: fallbackG, b: fallbackB };
 }
 
+function th17PointerColorRgbWithFallback(appObj, primaryKey, fallbackKey, fallbackR, fallbackG, fallbackB) {
+  function parseColorKey(key) {
+    try {
+      var h = String(appObj && appObj.config ? (appObj.config[key] || "") : "");
+      h = h.replace(/^\s+|\s+$/g, "");
+      if (!h) return null;
+      if (h.charAt(0) === "#") h = h.substring(1);
+      if (h.length === 8) h = h.substring(2);
+      if (h.length === 6) {
+        var r = parseInt(h.substring(0, 2), 16);
+        var g = parseInt(h.substring(2, 4), 16);
+        var b = parseInt(h.substring(4, 6), 16);
+        if (!isNaN(r) && !isNaN(g) && !isNaN(b)) return { r: r, g: g, b: b };
+      }
+    } catch(e0) {}
+    return null;
+  }
+  var rgb = parseColorKey(primaryKey);
+  if (rgb) return rgb;
+  rgb = parseColorKey(fallbackKey);
+  if (rgb) return rgb;
+  return { r: fallbackR, g: fallbackG, b: fallbackB };
+}
+
 function th17RectObj(rect) {
   if (!rect) return null;
   return {
@@ -755,6 +779,7 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         var dp = function(v) { return self.dp(Number(v) * pointerScale); };
         var tipX = st.anchorLocalX;
         var tipY = st.anchorLocalY;
+        var textReady = !!(st.currentText && st.currentRect && st.hot);
         var hoverCandidate = !!(st.currentText && st.currentRect && st.hoverSince && !st.hot);
         var processing = !!st.areaProcessing;
         var active = !!(st.hot || hoverCandidate || st.areaSelecting || st.areaReady || processing);
@@ -764,6 +789,8 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
         } else if (st.mode === "area_capture" || st.areaSelecting || st.areaReady) {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        } else if (textReady) {
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_COLOR_TEXT_READY_HEX", "POINTER_COLOR_HIT_HEX", 34, 197, 94);
         } else if (st.hot) {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_HIT_HEX", 245, 158, 11);
         } else if (hoverCandidate) {
@@ -1907,10 +1934,10 @@ FloatBallAppWM.prototype.createPointerFrameView = function(st) {
           strokeAlpha = 245;
           strokeWidth = self.dp(2.4);
         } else if (kind === "text_hit") {
-          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HIT_HEX", 245, 158, 11);
-          fillAlpha = 34;
-          strokeAlpha = 245;
-          strokeWidth = self.dp(2.2);
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_COLOR_TEXT_READY_HEX", 34, 197, 94);
+          fillAlpha = 38;
+          strokeAlpha = 248;
+          strokeWidth = self.dp(2.3);
         } else if (kind === "text_hover") {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
           fillAlpha = 26;
