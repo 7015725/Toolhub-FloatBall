@@ -1,4 +1,4 @@
-// @version 1.1.13
+// @version 1.1.14
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1548,6 +1548,10 @@ FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
     this.extractCurrentPointerText(true, releaseTs);
     return;
   }
+  try {
+    safeLog(this.L, 'i', "pointer release final no accessibility text cost=" + String(st.inspectLastCostMs || 0) + " nodes=" + String(st.inspectLastNodes || 0) + " reason=" + String(st.inspectLatestReason || ""));
+  } catch (eNoTextLog) {}
+
   this.setPointerToolResult({
     ok: false,
     type: "cancel",
@@ -1794,6 +1798,44 @@ FloatBallAppWM.prototype.hidePointerAreaFrame = function() {
   st.frameRect = null;
 };
 
+FloatBallAppWM.prototype.finishPointerAreaSmallAsTextPick = function(reason) {
+  var st = this.ensurePointerToolState();
+  if (!st.active || st.closed || st.mode !== "area_capture") return false;
+
+  try {
+    safeLog(this.L, 'i', "pointer area small -> accessibility text final reason=" + String(reason || "") + " rect=" + th17RectKey(st.visualRect || st.captureRect));
+  } catch (eLog) {}
+
+  try { this.hidePointerAreaFrame(); } catch (eHide) {}
+  try { if (st.root) st.root.invalidate(); } catch (eInv) {}
+
+  // 关键：不要走 OCR，不要直接 AREA_TOO_SMALL。
+  // 切回 text_pick，在当前指针热点上做一次无障碍最终命中。
+  st.mode = "text_pick";
+  st.dragging = false;
+  st.areaSelecting = false;
+  st.areaReady = false;
+  st.areaValid = false;
+  st.areaProcessing = false;
+  st.releaseTs = th17Now();
+
+  st.currentText = "";
+  st.currentRect = null;
+  st.currentKey = "";
+
+  try {
+    st.inspectMaxFinalMs = Math.max(Number(st.inspectMaxFinalMs || 180), 240);
+    st.inspectMaxFinalNodes = Math.max(Number(st.inspectMaxFinalNodes || 420), 1200);
+  } catch (eBudget) {
+    st.inspectMaxFinalMs = 240;
+    st.inspectMaxFinalNodes = 1200;
+  }
+
+  var scheduled = this.schedulePointerInspectAsync(true, "area_small_text_final", true);
+  if (scheduled !== true) this.finishPointerTextPickAfterRelease();
+  return true;
+};
+
 FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed) return { ok: false, err: "指针未启动" };
@@ -1824,6 +1866,13 @@ FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
     if (st.areaFromText === true && st.areaSmallFallbackText === true && st.boundText && st.boundRect) {
       return this.finishPointerFallbackText();
     }
+
+    // 自动悬停进入 area_capture 后，如果用户并未真正框选出有效区域，
+    // 不直接 AREA_TOO_SMALL；先回到 text_pick 做无障碍控件最终命中。
+    if (this.finishPointerAreaSmallAsTextPick("area_too_small")) {
+      return { ok: false, pending: true, code: "TEXT_PICK_FINAL_PENDING" };
+    }
+
     this.setPointerToolResult({
       ok: false,
       type: "cancel",
