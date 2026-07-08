@@ -1,4 +1,4 @@
-// @version 1.1.11
+// @version 1.1.12
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -220,9 +220,9 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       inspectLastCostMs: 0,
       inspectLastNodes: 0,
       inspectMaxDragMs: 60,
-      inspectMaxFinalMs: 120,
+      inspectMaxFinalMs: 180,
       inspectMaxDragNodes: 120,
-      inspectMaxFinalNodes: 260,
+      inspectMaxFinalNodes: 420,
       pointerW: 0,
       pointerH: 0,
       pointerScale: 1,
@@ -1161,13 +1161,13 @@ FloatBallAppWM.prototype.findPointerTextNodeAtBudget = function(root, x, y, star
 FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reason, seq, session) {
   var start = th17Now();
   var isFinal = force === true;
-  var limitMs = isFinal ? 120 : 60;
-  var maxNodes = isFinal ? 260 : 120;
+  var limitMs = isFinal ? 180 : 60;
+  var maxNodes = isFinal ? 420 : 120;
   var st = this.ensurePointerToolState();
   try { limitMs = isFinal ? Number(st.inspectMaxFinalMs || 120) : Number(st.inspectMaxDragMs || 60); } catch (eLimit) {}
   try { maxNodes = isFinal ? Number(st.inspectMaxFinalNodes || 260) : Number(st.inspectMaxDragNodes || 120); } catch (eNodes) {}
-  if (isNaN(limitMs) || limitMs < 20) limitMs = isFinal ? 120 : 60;
-  if (isNaN(maxNodes) || maxNodes < 40) maxNodes = isFinal ? 260 : 120;
+  if (isNaN(limitMs) || limitMs < 20) limitMs = isFinal ? 180 : 60;
+  if (isNaN(maxNodes) || maxNodes < 40) maxNodes = isFinal ? 420 : 120;
   var count = { n: 0 };
   var result = null;
   var windowsCount = 0;
@@ -1236,11 +1236,26 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
   st.lastQueryY = pack.y;
   var result = pack.result;
   var now = th17Now();
+  var finishAfterRelease = pack.finishAfterResult === true;
   if (result && result.text && result.rect) {
     var key = this.pointerTextKeyOf(result);
     if (key !== st.hoverKey) {
       st.hoverKey = key;
-      st.hoverSince = now;
+      var releaseTsForHover = 0;
+      var stableSince = 0;
+      try { releaseTsForHover = Number(st.releaseTs || 0); } catch (eReleaseTs) { releaseTsForHover = 0; }
+      try { stableSince = Number(st.areaHoldSince || 0); } catch (eStableSince) { stableSince = 0; }
+
+      // 松手最终补扫命中新文本时，不能绕过“悬停取字时间”。
+      // 如果指针热点已经稳定停留足够久，则用稳定起点计算悬停时间；
+      // 否则从松手时间开始计算，后续 extract 会返回 TEXT_HOVER_NOT_READY。
+      if (finishAfterRelease && releaseTsForHover > 0 && stableSince > 0 && releaseTsForHover - stableSince >= Number(st.hoverMinMs || 800)) {
+        st.hoverSince = stableSince;
+      } else if (finishAfterRelease && releaseTsForHover > 0) {
+        st.hoverSince = releaseTsForHover;
+      } else {
+        st.hoverSince = now;
+      }
       st.hoverX = pack.x;
       st.hoverY = pack.y;
     }
@@ -1321,16 +1336,16 @@ FloatBallAppWM.prototype.runPointerInspectWorker = function(st) {
 
 FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, finishAfterResult) {
   var st = this.ensurePointerToolState();
-  if (!st.active || st.closed || st.mode !== "text_pick") return;
+  if (!st.active || st.closed || st.mode !== "text_pick") return false;
   var hp = this.getPointerHotspot();
   var moved = Math.abs(hp.x - st.lastQueryX) > this.dp(4) || Math.abs(hp.y - st.lastQueryY) > this.dp(4);
-  if (force !== true && !moved) return;
+  if (force !== true && !moved) return false;
   if (force !== true) {
     var now = th17Now();
-    if (now - st.inspectLastRequestTs < 80) return;
+    if (now - st.inspectLastRequestTs < 80) return false;
     st.inspectLastRequestTs = now;
   }
-  if (!this.ensurePointerInspectWorker(st)) return;
+  if (!this.ensurePointerInspectWorker(st)) return false;
   st.inspectLatestX = hp.x;
   st.inspectLatestY = hp.y;
   st.inspectLatestSeq = ++st.inspectSeq;
@@ -1339,6 +1354,7 @@ FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, f
   if (finishAfterResult === true) st.inspectFinishAfterResult = true;
   st.inspectPending = true;
   if (!st.inspectRunning) this.runPointerInspectWorker(st);
+  return true;
 };
 
 FloatBallAppWM.prototype.updatePointerInspect = function(force) {
@@ -1454,16 +1470,17 @@ FloatBallAppWM.prototype.finishPointerTextPickOnRelease = function() {
     return true;
   }
 
-  // 无文字候选：空白处松手，立即关闭，不 Toast，不再做最终补扫。
-  this.setPointerToolResult({
-    ok: false,
-    type: "cancel",
-    code: "POINTER_RELEASE_EMPTY",
-    message: "空白处松手，已关闭指针",
-    value: "",
-    data: {}
-  });
-  this.closePointerTool("空白处松手", true);
+  // 无文字候选：不要立刻判空。松手时执行一次 release_final 强制补扫。
+  // 解决拖动扫描异步返回滞后导致的 POINTER_RELEASE_EMPTY。
+  try {
+    st.inspectMaxFinalMs = Math.max(Number(st.inspectMaxFinalMs || 120), 180);
+    st.inspectMaxFinalNodes = Math.max(Number(st.inspectMaxFinalNodes || 260), 420);
+  } catch (eBudget) {
+    st.inspectMaxFinalMs = 180;
+    st.inspectMaxFinalNodes = 420;
+  }
+  var scheduled = this.schedulePointerInspectAsync(true, "release_final", true);
+  if (scheduled !== true) this.finishPointerTextPickAfterRelease();
   return true;
 };
 

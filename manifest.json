@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "a38464b38d55e02b464b50f5ada10262a6b070e8b29a5575771d95f8f1574cf2",
-      "size": 71372,
-      "version": "1.1.11"
+      "sha256": "f2642b2cd40475b40df330eab8ec63a937c464effb09d4bfa87410b793d2283c",
+      "size": 72590,
+      "version": "1.1.12"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a1a1342207ac17819ad4b756a3410c7566072c26772c2a70d1e7c614ae380a4f",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "回滚指针松手运行时补丁"
+      "Fix pointer release final text scan"
     ],
-    "title": "回滚指针松手运行时补丁"
+    "title": "Fix pointer release final text scan"
   },
   "schema": 3,
-  "version": 20260708104335
+  "version": 20260708110735
 }
