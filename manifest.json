@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "9232bca55d44c8d14bbecad53074fb7c9e6e386b4a1823c876c5e00df93c9e8e",
-      "size": 68659,
-      "version": "1.1.10"
+      "sha256": "a38464b38d55e02b464b50f5ada10262a6b070e8b29a5575771d95f8f1574cf2",
+      "size": 71372,
+      "version": "1.1.11"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a1a1342207ac17819ad4b756a3410c7566072c26772c2a70d1e7c614ae380a4f",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复空白处松手指针滞留"
+      "增强指针无障碍文本命中"
     ],
-    "title": "修复空白处松手指针滞留"
+    "title": "增强指针无障碍文本命中"
   },
   "schema": 3,
-  "version": 20260708002102
+  "version": 20260708010946
 }
