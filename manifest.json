@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "update"
+      "Fix pointer accessibility control text hit"
     ],
-    "title": "update"
+    "title": "Fix pointer accessibility control text hit"
   },
   "schema": 3,
-  "version": 20260708112127
+  "version": 20260708112139
 }
