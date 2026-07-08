@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "设置项增加颜色预览"
+      "回滚指针松手运行时补丁"
     ],
-    "title": "设置项增加颜色预览"
+    "title": "回滚指针松手运行时补丁"
   },
   "schema": 3,
-  "version": 20260708094232
+  "version": 20260708104335
 }
