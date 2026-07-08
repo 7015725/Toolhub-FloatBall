@@ -1,4 +1,4 @@
-// @version 1.1.9
+// @version 1.1.10
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1328,23 +1328,46 @@ FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
     this.extractCurrentPointerText(true, releaseTs);
     return;
   }
-  this.schedulePointerInspectAsync(true, "release_final", true);
+  this.setPointerToolResult({
+    ok: false,
+    type: "cancel",
+    code: "POINTER_RELEASE_EMPTY",
+    message: "空白处松手，已关闭指针",
+    value: "",
+    data: {}
+  });
+  this.closePointerTool("空白处松手", true);
+};
+
+FloatBallAppWM.prototype.finishPointerTextPickOnRelease = function() {
+  var st = this.ensurePointerToolState();
+  if (!st.active || st.closed || st.mode !== "text_pick") return false;
+  st.releaseTs = th17Now();
+
+  // 有明确文字候选：立即判断悬停时间并取字 / 取消。
+  if (st.currentText && st.currentRect) {
+    this.extractCurrentPointerText(true, st.releaseTs);
+    return true;
+  }
+
+  // 无文字候选：空白处松手，立即关闭，不 Toast，不再做最终补扫。
+  this.setPointerToolResult({
+    ok: false,
+    type: "cancel",
+    code: "POINTER_RELEASE_EMPTY",
+    message: "空白处松手，已关闭指针",
+    value: "",
+    data: {}
+  });
+  this.closePointerTool("空白处松手", true);
+  return true;
 };
 
 FloatBallAppWM.prototype.scheduleFinishPointerTextPick = function() {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "text_pick") return;
   st.releaseTs = th17Now();
-  if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
-  if (st.stopInspectRunnable) {
-    try { st.handler.removeCallbacks(st.stopInspectRunnable); } catch (eRemove) {}
-  }
-  var self = this;
-  st.stopInspectRunnable = new java.lang.Runnable({ run: function() {
-    try { self.finishPointerTextPickAfterRelease(); }
-    catch (eRun) { safeLog(self.L, 'e', "scheduleFinishPointerTextPick run fail: " + String(eRun)); }
-  }});
-  try { st.handler.postDelayed(st.stopInspectRunnable, 260); } catch (ePost) {}
+  this.finishPointerTextPickOnRelease();
 };
 
 FloatBallAppWM.prototype.normalizePointerCaptureRect = function(rect) {
@@ -1707,7 +1730,7 @@ FloatBallAppWM.prototype.onPointerBallDragEnd = function(rawX, rawY, action) {
   if (st.mode === "area_capture") {
     this.finishPointerAreaCapture();
   } else if (st.mode === "text_pick") {
-    this.scheduleFinishPointerTextPick();
+    this.finishPointerTextPickOnRelease();
   }
   return true;
 };
