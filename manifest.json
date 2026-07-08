@@ -57,9 +57,9 @@
       "version": "1.0.2"
     },
     "th_13_panel_ui.js": {
-      "sha256": "608de028b04a9bda7627d5e4681d323697fe70b934538265ead7fcbc00a769c3",
-      "size": 21287,
-      "version": "1.0.0"
+      "sha256": "d422d0798168d307ba81a6ad212bcc1d670d0d24bf36237725ee2b1e286c76a4",
+      "size": 25212,
+      "version": "1.0.1"
     },
     "th_14_button_editor.js": {
       "sha256": "51852a01ef97927aa952f68ae8d6dd8ddc699ec425ee234ece309f2958d947ed",
@@ -120,12 +120,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复 THEME_MODE 单选值保存后被回退的问题",
-      "补齐主题、面板、指针设置保存后的即时生效刷新",
-      "修复 PANEL_PADDING_DP 默认值与校验范围冲突"
+      "在颜色设置项中增加实时颜色预览色块",
+      "支持悬浮球颜色、指针颜色、主题日夜颜色预览"
     ],
-    "title": "修复设置项保存类型与即时生效链路"
+    "title": "设置项增加颜色预览"
   },
   "schema": 3,
-  "version": 20260708083058
+  "version": 20260708094124
 }
