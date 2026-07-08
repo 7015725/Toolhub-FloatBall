@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【安全兼容配置安装器】======================
 // 这段代码的主要内容/用途：在不改变现有执行逻辑的前提下，注入后续 Shell / Shortcut / Content 加固需要的配置项。
 // 默认值全部保持兼容：Shell=compat，Shortcut=compat，Content=audit，ToolApp 横滑比例仍为 1.08。
@@ -344,6 +344,157 @@ FloatBallAppWM.prototype.rebuildBallForNewSize = function(keepPanels) {
       new java.lang.Thread(new java.lang.Runnable({ run: function() {
         for (var i = 0; i < 40; i++) {
           if (installSettingsEffectPatch()) return;
+          try { java.lang.Thread.sleep(250); } catch(eSleep) {}
+        }
+      }})).start();
+    } catch(eThread) {}
+  }
+})();
+
+// =======================【修复：指针松手取字最终命中补丁】======================
+// 这段代码的主要内容/用途：修复松手瞬间拖动扫描尚未返回时被误判为空白，导致无法获取文本控件的问题。
+(function() {
+  function installPointerReleaseFinalPatch() {
+    try {
+      if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
+      var proto = FloatBallAppWM.prototype;
+      if (proto.__toolHubPointerReleaseFinalPatchInstalled === true) return true;
+      if (typeof proto.ensurePointerToolState !== "function") return false;
+      if (typeof proto.finishPointerTextPickOnRelease !== "function") return false;
+      if (typeof proto.finishPointerTextPickAfterRelease !== "function") return false;
+      if (typeof proto.schedulePointerInspectAsync !== "function") return false;
+      if (typeof proto.updatePointerInspect !== "function") return false;
+      if (typeof proto.copyPointerTextToClipboard !== "function") return false;
+
+      if (proto.__toolHubPointerEnsureBudgetPatched !== true) {
+        var oldEnsurePointerToolState = proto.ensurePointerToolState;
+        proto.ensurePointerToolState = function() {
+          var st = oldEnsurePointerToolState.call(this);
+          try {
+            if (st) {
+              if (isNaN(Number(st.inspectMaxFinalMs)) || Number(st.inspectMaxFinalMs) < 180) st.inspectMaxFinalMs = 180;
+              if (isNaN(Number(st.inspectMaxFinalNodes)) || Number(st.inspectMaxFinalNodes) < 420) st.inspectMaxFinalNodes = 420;
+            }
+          } catch(eBudget) {}
+          return st;
+        };
+        proto.__toolHubPointerEnsureBudgetPatched = true;
+      }
+
+      proto.finishPointerReleaseCopyTextNow = function(reason) {
+        var st = this.ensurePointerToolState();
+        if (!st || !st.active || st.closed || st.mode !== "text_pick") return false;
+        if (!st.currentText || !st.currentRect) return false;
+        var rect = st.currentRect;
+        var textValue = String(st.currentText || "");
+        if (!textValue) return false;
+        var copied = this.copyPointerTextToClipboard(textValue);
+        this.setPointerToolResult({
+          ok: true,
+          type: "text_pick",
+          code: "TEXT_PICK_SUCCESS",
+          message: "取字成功",
+          value: textValue,
+          clipboard: copied === true,
+          rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+          data: { releaseFinal: String(reason || "") }
+        });
+        this.toast(copied ? "已复制: " + textValue : textValue);
+        this.closePointerTool(copied ? "已复制到剪贴板" : "取字完成", true);
+        return true;
+      };
+
+      proto.closePointerReleaseEmpty = function() {
+        this.setPointerToolResult({
+          ok: false,
+          type: "cancel",
+          code: "POINTER_RELEASE_EMPTY",
+          message: "空白处松手，已关闭指针",
+          value: "",
+          data: {}
+        });
+        this.closePointerTool("空白处松手", true);
+        return true;
+      };
+
+      proto.schedulePointerInspectAsync = function(force, reason, finishAfterResult) {
+        var st = this.ensurePointerToolState();
+        if (!st.active || st.closed || st.mode !== "text_pick") return false;
+        var hp = this.getPointerHotspot();
+        var moved = Math.abs(hp.x - st.lastQueryX) > this.dp(4) || Math.abs(hp.y - st.lastQueryY) > this.dp(4);
+        if (force !== true && !moved) return false;
+        if (force !== true) {
+          var now = th17Now();
+          if (now - st.inspectLastRequestTs < 80) return false;
+          st.inspectLastRequestTs = now;
+        }
+        if (!this.ensurePointerInspectWorker(st)) return false;
+        st.inspectLatestX = hp.x;
+        st.inspectLatestY = hp.y;
+        st.inspectLatestSeq = ++st.inspectSeq;
+        st.inspectLatestForce = force === true;
+        st.inspectLatestReason = String(reason || "");
+        if (finishAfterResult === true) st.inspectFinishAfterResult = true;
+        st.inspectPending = true;
+        if (!st.inspectRunning) this.runPointerInspectWorker(st);
+        return true;
+      };
+
+      proto.finishPointerTextPickAfterRelease = function() {
+        var st = this.ensurePointerToolState();
+        if (!st.active || st.closed || st.mode !== "text_pick") return;
+        var releaseTs = Number(st.releaseTs || th17Now());
+        if (isNaN(releaseTs) || releaseTs <= 0) releaseTs = th17Now();
+        st.releaseTs = releaseTs;
+        if (st.currentText && st.currentRect) {
+          this.finishPointerReleaseCopyTextNow("after_release_final");
+          return;
+        }
+        this.closePointerReleaseEmpty();
+      };
+
+      proto.finishPointerTextPickOnRelease = function() {
+        var st = this.ensurePointerToolState();
+        if (!st.active || st.closed || st.mode !== "text_pick") return false;
+        st.releaseTs = th17Now();
+        if (st.currentText && st.currentRect) {
+          this.finishPointerReleaseCopyTextNow("release_cached");
+          return true;
+        }
+        var scheduled = false;
+        try {
+          scheduled = this.schedulePointerInspectAsync(true, "release_final", true) === true;
+        } catch(eSchedule) {
+          scheduled = false;
+          safeLog(this.L, "e", "pointer release_final schedule fail: " + String(eSchedule));
+        }
+        if (scheduled) return true;
+        try {
+          this.updatePointerInspect(true);
+        } catch(eSync) {
+          safeLog(this.L, "e", "pointer release_final sync inspect fail: " + String(eSync));
+        }
+        if (st.currentText && st.currentRect) {
+          this.finishPointerReleaseCopyTextNow("release_sync_fallback");
+          return true;
+        }
+        this.closePointerReleaseEmpty();
+        return true;
+      };
+
+      proto.__toolHubPointerReleaseFinalPatchInstalled = true;
+      return true;
+    } catch(eInstall) {
+      try { safeLog(null, 'e', "install pointer release final patch fail: " + String(eInstall)); } catch(eLog) {}
+    }
+    return false;
+  }
+
+  if (!installPointerReleaseFinalPatch()) {
+    try {
+      new java.lang.Thread(new java.lang.Runnable({ run: function() {
+        for (var i = 0; i < 60; i++) {
+          if (installPointerReleaseFinalPatch()) return;
           try { java.lang.Thread.sleep(250); } catch(eSleep) {}
         }
       }})).start();
