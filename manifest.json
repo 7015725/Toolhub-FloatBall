@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "03295ebbe8ae4dec58d90b64291a3f63b926842ae7b5aaaa19819e2d6972e7f7",
-      "size": 68250,
-      "version": "1.1.9"
+      "sha256": "9232bca55d44c8d14bbecad53074fb7c9e6e386b4a1823c876c5e00df93c9e8e",
+      "size": 68659,
+      "version": "1.1.10"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a1a1342207ac17819ad4b756a3410c7566072c26772c2a70d1e7c614ae380a4f",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复手机设置页指针子块显示"
+      "修复空白处松手指针滞留"
     ],
-    "title": "修复手机设置页指针子块显示"
+    "title": "修复空白处松手指针滞留"
   },
   "schema": 3,
-  "version": 20260707154929
+  "version": 20260708002102
 }
