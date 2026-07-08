@@ -86,36 +86,49 @@ function canWriteDirPath(path) {
     } catch (eProbe) { return false; }
 }
 
+function assertWritableDirPath(path, label) {
+    try {
+        if (!path) throw String(label || "dir") + " path empty";
+        var dir = new java.io.File(String(path));
+        if (!dir.exists() && !dir.mkdirs()) throw String(label || "dir") + " mkdirs failed: " + path;
+        if (!dir.isDirectory()) throw String(label || "dir") + " is not directory: " + path;
+
+        var probe = new java.io.File(dir, ".write_probe_" + java.lang.System.currentTimeMillis());
+        var out = new java.io.FileOutputStream(probe, false);
+        try {
+            out.write(49);
+            out.flush();
+        } finally {
+            try { out.close(); } catch (eCloseProbe) {}
+        }
+        try { probe.delete(); } catch (eDelProbe) {}
+
+        return true;
+    } catch (e) {
+        throw String(label || "dir") + " not writable: " + String(path) + " / " + String(e);
+    }
+}
+
 function getToolHubRootDir() {
     if (__toolHubRootDir) return __toolHubRootDir;
-    var candidates = [];
+
+    var base = "";
     try {
-        if (typeof shortx !== "undefined" && shortx && typeof shortx.getShortXDir === "function") {
-            var sx = String(shortx.getShortXDir() || "");
-            if (sx) candidates.push(sx + "/ToolHub");
-        }
-    } catch (eSxRoot) {}
-    try {
-        var ctx = getAndroidContext();
-        if (ctx) {
-            var ext = ctx.getExternalFilesDir(null);
-            if (ext) candidates.push(String(ext.getAbsolutePath()) + "/ToolHub");
-            var files = ctx.getFilesDir();
-            if (files) candidates.push(String(files.getAbsolutePath()) + "/ToolHub");
-        }
-    } catch (eCtxRoot) {}
-    candidates.push("/sdcard/Android/data/tornaco.apps.shortx/files/ToolHub");
-    candidates.push("/data/system/ShortX_ToolHub");
-    for (var i = 0; i < candidates.length; i++) {
-        var p = String(candidates[i]);
-        if (canWriteDirPath(p)) {
-            __toolHubRootDir = p;
-            return __toolHubRootDir;
-        }
+        if (typeof shortx === "undefined" || !shortx) throw "shortx is undefined";
+        if (typeof shortx.getShortXDir !== "function") throw "shortx.getShortXDir is not function";
+        base = String(shortx.getShortXDir() || "");
+    } catch (eShortXDir) {
+        throw "无法获取 ShortX 根目录: " + String(eShortXDir);
     }
-    __toolHubRootDir = String(candidates[0] || "/data/system/ShortX_ToolHub");
+
+    if (!base || base.length <= 0) throw "shortx.getShortXDir() 返回空";
+
+    __toolHubRootDir = base + "/ToolHub";
+    assertWritableDirPath(__toolHubRootDir, "ToolHub root");
     return __toolHubRootDir;
 }
+
+var TOOLHUB_BOOT_ROOT_DIR = getToolHubRootDir();
 
 function getLogPath() { return getToolHubRootDir() + "/logs/init.log"; }
 function getCodeDirPath() { return getToolHubRootDir() + "/code/"; }
@@ -877,6 +890,81 @@ function checkToolHubModuleUpdatesNow() {
     }
 }
 
+
+function checkModuleManifestConsistency() {
+    var ret = {
+        ok: true,
+        missingInManifest: [],
+        unusedInManifest: [],
+        error: ""
+    };
+
+    try {
+        if (UPDATE_SECURITY_MODE === 0) return ret;
+        if (!__trustedManifest || !__trustedManifest.files) {
+            ret.ok = false;
+            ret.error = "trusted manifest missing";
+            return ret;
+        }
+
+        var moduleMap = {};
+        var i;
+        for (i = 0; i < modules.length; i++) {
+            moduleMap[String(modules[i])] = true;
+        }
+
+        for (i = 0; i < modules.length; i++) {
+            var rel = String(modules[i]);
+            if (!__trustedManifest.files[rel]) ret.missingInManifest.push(rel);
+        }
+
+        for (var k in __trustedManifest.files) {
+            if (!__trustedManifest.files.hasOwnProperty(k)) continue;
+            var ks = String(k);
+            if (ks.indexOf("th_") === 0 && ks.lastIndexOf(".js") === ks.length - 3) {
+                if (!moduleMap[ks]) ret.unusedInManifest.push(ks);
+            }
+        }
+
+        if (ret.missingInManifest.length > 0) {
+            ret.ok = false;
+            ret.error = "modules not in manifest: " + ret.missingInManifest.join(",");
+        }
+
+        if (ret.unusedInManifest.length > 0) {
+            writeLog("WARN manifest has unused modules: " + ret.unusedInManifest.join(","));
+        }
+
+        return ret;
+    } catch (e) {
+        ret.ok = false;
+        ret.error = String(e);
+        return ret;
+    }
+}
+
+function verifyLocalModuleBeforeEval(relPath, fileObj) {
+    if (!fileObj || !fileObj.exists()) throw "本地模块不存在: " + relPath;
+    if (UPDATE_SECURITY_MODE === 0) return true;
+
+    var actualHash = sha256File(fileObj.getAbsolutePath());
+    if (!actualHash) throw "无法计算模块 SHA256: " + relPath;
+
+    var info = getManifestInfo(relPath);
+    if (info && info.sha256) {
+        var expectedHash = String(info.sha256).toLowerCase();
+        if (hashesEqual(actualHash, expectedHash)) return true;
+    }
+
+    var trustedHash = getTrustedSha(relPath);
+    if (trustedHash && hashesEqual(actualHash, trustedHash)) return true;
+
+    var installedHash = getInstalledSha(relPath);
+    if (installedHash && hashesEqual(actualHash, installedHash)) return true;
+
+    throw "本地模块未通过安全校验: " + relPath;
+}
+
 function loadScript(relPath) {
     try {
         var dir = ensureCodeDir();
@@ -915,8 +1003,13 @@ var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.j
 var __moduleUpdates = [];
 var __pendingModuleUpdates = [];
 var loadErrors = [];
-var criticalModules = { "th_01_base.js": true, "th_16_entry.js": true };
+var criticalModules = { "th_01_base.js": true, "th_02_core.js": true, "th_05_persistence.js": true, "th_16_entry.js": true };
 fetchTrustedManifest();
+
+var __manifestCheck = checkModuleManifestConsistency();
+if (!__manifestCheck.ok) {
+    throw "模块清单自检失败: " + String(__manifestCheck.error || "");
+}
 
 for (var i = 0; i < modules.length; i++) {
     try {
@@ -1095,10 +1188,27 @@ function closeToolHubAppsForRestart(primaryApp) {
 
 function reloadLocalToolHubModulesForRestart() {
   var dir = ensureCodeDir();
+
+  if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) {
+    fetchTrustedManifest();
+  }
+
+  if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) {
+    throw (__securityStatus && __securityStatus.msg ? __securityStatus.msg : "更新清单不可用");
+  }
+
+  var checkRet = checkModuleManifestConsistency();
+  if (!checkRet.ok) {
+    throw "模块清单自检失败: " + String(checkRet.error || "");
+  }
+
   for (var i = 0; i < modules.length; i++) {
     var relPath = String(modules[i]);
     var f = new java.io.File(dir, relPath);
     if (!f.exists()) throw "本地模块不存在: " + relPath;
+
+    verifyLocalModuleBeforeEval(relPath, f);
+
     var code = readTextFile(f.getAbsolutePath());
     if (code === null) throw "读取模块失败: " + relPath;
     var geval = eval;
