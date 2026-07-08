@@ -1,4 +1,4 @@
-// @version 1.1.12
+// @version 1.1.13
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -154,6 +154,96 @@ function th17NodeBounds(node) {
   } catch (e0) {}
   return null;
 }
+
+function th17NodeClassName(node) {
+  try {
+    var c = node && node.getClassName ? node.getClassName() : "";
+    return String(c || "");
+  } catch (e0) {}
+  return "";
+}
+
+function th17AppendUniqueText(arr, value) {
+  var txt = th17CleanNodeText(value);
+  if (!txt) return;
+  if (String(txt).replace(/\s+/g, "").length <= 0) return;
+  for (var i = 0; i < arr.length; i++) {
+    if (String(arr[i]) === String(txt)) return;
+  }
+  arr.push(String(txt));
+}
+
+FloatBallAppWM.prototype.pointerNodeLooksLikeTextControl = function(node, rect, depth) {
+  if (!node || !th17RectValid(rect)) return false;
+
+  var w = Math.max(1, th17Int(rect.right) - th17Int(rect.left));
+  var h = Math.max(1, th17Int(rect.bottom) - th17Int(rect.top));
+  var sw = Math.max(1, Number(this.state.screen && this.state.screen.w || 0));
+
+  // 太大的根容器/整屏容器不要收集，避免误把整页文字拼起来。
+  if (h > this.dp(180)) return false;
+  if (w >= sw - this.dp(8) && h > this.dp(120)) return false;
+
+  try { if (node.isClickable && node.isClickable() === true) return true; } catch (eClick) {}
+  try { if (node.isLongClickable && node.isLongClickable() === true) return true; } catch (eLongClick) {}
+  try { if (node.isCheckable && node.isCheckable() === true) return true; } catch (eCheck) {}
+  try { if (node.isFocusable && node.isFocusable() === true) return true; } catch (eFocus) {}
+  try { if (node.isSelected && node.isSelected() === true) return true; } catch (eSelected) {}
+
+  var cls = th17NodeClassName(node);
+  if (cls.indexOf("Button") >= 0) return true;
+  if (cls.indexOf("CheckBox") >= 0) return true;
+  if (cls.indexOf("RadioButton") >= 0) return true;
+  if (cls.indexOf("Switch") >= 0) return true;
+  if (cls.indexOf("CompoundButton") >= 0) return true;
+  if (cls.indexOf("CheckedTextView") >= 0) return true;
+  if (cls.indexOf("Tab") >= 0) return true;
+  if (cls.indexOf("Chip") >= 0) return true;
+
+  // 常见列表行 / 卡片 / 横向行容器：本体没 text，文字在子 TextView。
+  if (depth >= 2 && h <= this.dp(96)) {
+    if (cls.indexOf("ViewGroup") >= 0) return true;
+    if (cls.indexOf("LinearLayout") >= 0) return true;
+    if (cls.indexOf("RelativeLayout") >= 0) return true;
+    if (cls.indexOf("FrameLayout") >= 0) return true;
+    if (cls.indexOf("ConstraintLayout") >= 0) return true;
+  }
+
+  return false;
+};
+
+FloatBallAppWM.prototype.collectPointerControlDescendantText = function(node, maxDepth, maxItems) {
+  var arr = [];
+  var limitDepth = Math.max(1, Number(maxDepth || 4));
+  var limitItems = Math.max(1, Number(maxItems || 8));
+
+  function walk(n, depth) {
+    if (!n || depth > limitDepth || arr.length >= limitItems) return;
+
+    try {
+      var t = th17NodeText(n);
+      th17AppendUniqueText(arr, t);
+    } catch (eText) {}
+
+    var childCount = 0;
+    try { childCount = n.getChildCount(); } catch (eCount) { childCount = 0; }
+
+    for (var i = 0; i < childCount; i++) {
+      if (arr.length >= limitItems) break;
+      var child = null;
+      try { child = n.getChild(i); } catch (eChild) { child = null; }
+      if (child) {
+        try { walk(child, depth + 1); }
+        finally { try { child.recycle(); } catch (eRecycle) {} }
+      }
+    }
+  }
+
+  try { walk(node, 0); } catch (eWalk) {}
+
+  return arr.join(" ").replace(/^\s+|\s+$/g, "");
+};
+
 
 FloatBallAppWM.prototype.copyPointerTextToClipboard = function(textValue) {
   var text = String(textValue || "");
@@ -1078,8 +1168,13 @@ FloatBallAppWM.prototype.findPointerTextNodeAt = function(root, x, y) {
 
     if (contains) {
       var txt = th17NodeText(node);
+      var fromControl = false;
+      if ((!txt || String(txt).replace(/\s+/g, "").length <= 0) && self.pointerNodeLooksLikeTextControl(node, rect, depth)) {
+        txt = self.collectPointerControlDescendantText(node, 4, 8);
+        fromControl = !!txt;
+      }
       if (txt && String(txt).replace(/\s+/g, "").length > 0) {
-        better({ text: String(txt), rect: rect, depth: depth, score: score });
+        better({ text: String(txt), rect: rect, depth: depth, score: score + (fromControl ? 0.35 : 0) });
       }
     }
 
@@ -1134,8 +1229,13 @@ FloatBallAppWM.prototype.findPointerTextNodeAtBudget = function(root, x, y, star
 
     if (contains) {
       var textValue = th17NodeText(node);
+      var fromControl = false;
+      if ((!textValue || String(textValue).replace(/\s+/g, "").length <= 0) && self.pointerNodeLooksLikeTextControl(node, rect, depth)) {
+        textValue = self.collectPointerControlDescendantText(node, 4, 8);
+        fromControl = !!textValue;
+      }
       if (textValue && String(textValue).replace(/\s+/g, "").length > 0) {
-        better({ text: String(textValue), rect: rect, depth: depth, score: score });
+        better({ text: String(textValue), rect: rect, depth: depth, score: score + (fromControl ? 0.35 : 0) });
       }
     }
 

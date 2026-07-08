@@ -1,4 +1,4 @@
-// @version 1.0.11
+// @version 1.0.12
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -173,8 +173,28 @@
         st.__th18FrameMinInterval = 28;
         st.__th18DragInspectInterval = 300;
       }
-      try { st.inspectMaxDragMs = Math.min(Number(st.inspectMaxDragMs || 60), 36); } catch(e0) { st.inspectMaxDragMs = 36; }
-      try { st.inspectMaxDragNodes = Math.min(Number(st.inspectMaxDragNodes || 120), 80); } catch(e1) { st.inspectMaxDragNodes = 80; }
+      // 不再把无障碍取字扫描压到 36ms / 80 nodes。
+      // 复杂页面中，控件文本常在较深的子 TextView，预算过低会导致 text_pick 无法命中。
+      try {
+        var dragMs = Number(st.inspectMaxDragMs || 60);
+        if (isNaN(dragMs) || dragMs < 80) dragMs = 80;
+        st.inspectMaxDragMs = dragMs;
+      } catch(e0) { st.inspectMaxDragMs = 80; }
+      try {
+        var dragNodes = Number(st.inspectMaxDragNodes || 120);
+        if (isNaN(dragNodes) || dragNodes < 360) dragNodes = 360;
+        st.inspectMaxDragNodes = dragNodes;
+      } catch(e1) { st.inspectMaxDragNodes = 360; }
+      try {
+        var finalMs = Number(st.inspectMaxFinalMs || 180);
+        if (isNaN(finalMs) || finalMs < 180) finalMs = 180;
+        st.inspectMaxFinalMs = finalMs;
+      } catch(e2) { st.inspectMaxFinalMs = 180; }
+      try {
+        var finalNodes = Number(st.inspectMaxFinalNodes || 420);
+        if (isNaN(finalNodes) || finalNodes < 720) finalNodes = 720;
+        st.inspectMaxFinalNodes = finalNodes;
+      } catch(e3) { st.inspectMaxFinalNodes = 720; }
       return st;
     } catch(e2) {}
     return null;
