@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "update"
+      "Fix pointer release sync accessibility scan"
     ],
-    "title": "update"
+    "title": "Fix pointer release sync accessibility scan"
   },
   "schema": 3,
-  "version": 20260708134559
+  "version": 20260708134615
 }
