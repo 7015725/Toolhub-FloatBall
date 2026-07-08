@@ -1,4 +1,4 @@
-// @version 1.1.16
+// @version 1.1.17
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1187,22 +1187,87 @@ FloatBallAppWM.prototype.pointerRectNear = function(x, y, rect) {
   return this.pointerRectHitScore(x, y, rect) >= 0;
 };
 
-FloatBallAppWM.prototype.getPointerUiAutomation = function() {
+FloatBallAppWM.prototype.getPointerSdkInt = function() {
+  try { return Number(android.os.Build.VERSION.SDK_INT || 0); } catch (e0) {}
+  return 0;
+};
+
+FloatBallAppWM.prototype.getPointerPrefetchFlags = function() {
+  var f = 0;
+  try { f = f | android.view.accessibility.AccessibilityNodeInfo.FLAG_PREFETCH_DESCENDANTS_DEPTH_FIRST; } catch (e0) {}
+  try { f = f | android.view.accessibility.AccessibilityNodeInfo.FLAG_PREFETCH_SIBLINGS; } catch (e1) {}
+  return f;
+};
+
+FloatBallAppWM.prototype.ensurePointerUiAutomationReady = function(a, reason) {
+  if (!a) return null;
+
+  try {
+    if (a.isConnected && !a.isConnected()) a.connect();
+  } catch (eConn0) {
+    try { if (a.connect) a.connect(); } catch (eConn1) {}
+  }
+
+  try {
+    if (a.getServiceInfo && a.setServiceInfo) {
+      var info = a.getServiceInfo();
+      if (info) {
+        var flags = 0;
+        try { flags = Number(info.flags || 0); } catch (eFlags0) { flags = 0; }
+        try { flags = flags | android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS; } catch (eF1) {}
+        try { flags = flags | android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS; } catch (eF2) {}
+        try { flags = flags | android.accessibilityservice.AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS; } catch (eF3) {}
+        try { info.flags = flags; } catch (eSetFlags) {}
+        try { a.setServiceInfo(info); } catch (eSetInfo) {}
+      }
+    }
+  } catch (eInfo) {}
+
+  if (String(reason || "") === "final") {
+    try { if (a.clearCache) a.clearCache(); } catch (eClear) {}
+  }
+
+  return a;
+};
+
+FloatBallAppWM.prototype.getPointerUiAutomation = function(reason) {
   try {
     if (typeof shortx !== "undefined" && shortx && shortx.getUiAutomation) {
       var a = shortx.getUiAutomation();
-      if (a) return a;
+      if (a) return this.ensurePointerUiAutomationReady(a, reason);
     }
   } catch (e0) {}
-  try { if (typeof ui !== "undefined" && ui) return ui; } catch (e1) {}
+  try {
+    if (typeof ui !== "undefined" && ui) return this.ensurePointerUiAutomationReady(ui, reason);
+  } catch (e1) {}
   return null;
 };
 
-FloatBallAppWM.prototype.getPointerActiveRoot = function() {
-  var a = this.getPointerUiAutomation();
+FloatBallAppWM.prototype.getPointerWindowRoot = function(win) {
+  if (!win) return null;
+  var root = null;
+  var flags = this.getPointerPrefetchFlags();
+  try {
+    if (this.getPointerSdkInt() >= 33 && flags !== 0 && win.getRoot) root = win.getRoot(flags);
+  } catch (e0) { root = null; }
+  if (!root) {
+    try { root = win.getRoot(); } catch (e1) { root = null; }
+  }
+  return root;
+};
+
+FloatBallAppWM.prototype.getPointerActiveRoot = function(reason) {
+  var a = this.getPointerUiAutomation(reason);
   if (!a) return null;
-  try { return a.getRootInActiveWindow(); } catch (e0) {}
-  return null;
+  var root = null;
+  var flags = this.getPointerPrefetchFlags();
+  try {
+    if (this.getPointerSdkInt() >= 33 && flags !== 0 && a.getRootInActiveWindow) root = a.getRootInActiveWindow(flags);
+  } catch (e0) { root = null; }
+  if (!root) {
+    try { root = a.getRootInActiveWindow(); } catch (e1) { root = null; }
+  }
+  return root;
 };
 
 FloatBallAppWM.prototype.findPointerTextNodeAt = function(root, x, y) {
@@ -1331,7 +1396,7 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
   var count = { n: 0 };
   var result = null;
   var windowsCount = 0;
-  var a = this.getPointerUiAutomation();
+  var a = this.getPointerUiAutomation(isFinal ? "final" : "scan");
   try {
     if (a && a.getWindows) {
       var wins = a.getWindows();
@@ -1343,7 +1408,7 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
           var rootFromWin = null;
           try {
             win = wins.get(wi);
-            if (win) rootFromWin = win.getRoot();
+            if (win) rootFromWin = this.getPointerWindowRoot(win);
             if (rootFromWin) result = this.findPointerTextNodeAtBudget(rootFromWin, x, y, start, limitMs, maxNodes, count);
           } catch (eWin) {
             result = null;
@@ -1358,7 +1423,7 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
   if (!result || !result.text || !result.rect) {
     var root = null;
     try {
-      root = this.getPointerActiveRoot();
+      root = this.getPointerActiveRoot(isFinal ? "final" : "scan");
       if (root) result = this.findPointerTextNodeAtBudget(root, x, y, start, limitMs, maxNodes, count);
     } catch (eFind) {
       result = null;
