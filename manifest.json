@@ -107,23 +107,23 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "f2642b2cd40475b40df330eab8ec63a937c464effb09d4bfa87410b793d2283c",
-      "size": 72590,
-      "version": "1.1.12"
+      "sha256": "710b018a3d56f6da9763eb31301410c87fa1e51e23b8c292b55b50b6bdb32b4e",
+      "size": 76488,
+      "version": "1.1.13"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "a1a1342207ac17819ad4b756a3410c7566072c26772c2a70d1e7c614ae380a4f",
-      "size": 34606,
-      "version": "1.0.11"
+      "sha256": "7e2360ee7eb9c65466b4d8024d6b8f49128b8e4fcd59a1b1f74ae3a08ea159c3",
+      "size": 35440,
+      "version": "1.0.12"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Fix pointer release final text scan"
+      "update"
     ],
-    "title": "Fix pointer release final text scan"
+    "title": "update"
   },
   "schema": 3,
-  "version": 20260708110735
+  "version": 20260708112127
 }
