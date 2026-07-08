@@ -360,42 +360,31 @@ function getToolHubAndroidContext() {
 }
 
 function resolveToolHubRootDir() {
-  var candidates = [];
   try {
-    if (typeof shortx !== "undefined" && shortx && typeof shortx.getShortXDir === "function") {
-      var shortxDir = String(shortx.getShortXDir() || "");
-      if (shortxDir) candidates.push(shortxDir + "/ToolHub");
+    if (typeof TOOLHUB_BOOT_ROOT_DIR !== "undefined" && TOOLHUB_BOOT_ROOT_DIR) {
+      var bootRoot = String(TOOLHUB_BOOT_ROOT_DIR || "");
+      if (!bootRoot) throw "TOOLHUB_BOOT_ROOT_DIR empty";
+      if (!canWriteToolHubDir(bootRoot)) throw "TOOLHUB_BOOT_ROOT_DIR not writable: " + bootRoot;
+      return bootRoot;
     }
-  } catch (eShortX) {}
-
-  try {
-    var ctx = getToolHubAndroidContext();
-    if (ctx) {
-      var ext = ctx.getExternalFilesDir(null);
-      if (ext) candidates.push(String(ext.getAbsolutePath()) + "/ToolHub");
-      var files = ctx.getFilesDir();
-      if (files) candidates.push(String(files.getAbsolutePath()) + "/ToolHub");
-    }
-  } catch (eCtxRoot) {}
-
-  try {
-    var logDirFile = new java.io.File(
-      Packages.tornaco.apps.shortx.core.OooO0O0.OooO00o().getLogDir()
-    );
-    var parent = logDirFile.getParentFile();
-    if (parent == null) candidates.push(String(logDirFile.getAbsolutePath()) + "/ToolHub");
-    else candidates.push(String(parent.getAbsolutePath()) + "/ToolHub");
-  } catch (eRoot2) {}
-
-  candidates.push("/sdcard/Android/data/tornaco.apps.shortx/files/ToolHub");
-  candidates.push("/data/system/ShortX_ToolHub");
-
-  for (var i = 0; i < candidates.length; i++) {
-    var p = String(candidates[i]);
-    if (canWriteToolHubDir(p)) return p;
+  } catch (eBootRoot) {
+    throw "入口 ToolHub 根目录异常: " + String(eBootRoot);
   }
 
-  return String(candidates[0] || "/data/system/ShortX_ToolHub");
+  var base = "";
+  try {
+    if (typeof shortx === "undefined" || !shortx) throw "shortx is undefined";
+    if (typeof shortx.getShortXDir !== "function") throw "shortx.getShortXDir is not function";
+    base = String(shortx.getShortXDir() || "");
+  } catch (eShortX) {
+    throw "无法获取 ShortX 根目录: " + String(eShortX);
+  }
+
+  if (!base || base.length <= 0) throw "shortx.getShortXDir() 返回空";
+
+  var root = base + "/ToolHub";
+  if (!canWriteToolHubDir(root)) throw "ToolHub 根目录不可写: " + root;
+  return root;
 }
 
 
