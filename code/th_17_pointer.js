@@ -1,4 +1,4 @@
-// @version 1.1.10
+// @version 1.1.11
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -76,12 +76,74 @@ function th17RectKey(rect) {
   return String(th17Int(rect.left)) + "," + String(th17Int(rect.top)) + "," + String(th17Int(rect.right)) + "," + String(th17Int(rect.bottom));
 }
 
+function th17CleanNodeText(v) {
+  if (v === null || v === undefined) return "";
+  var s = "";
+  try { s = String(v); } catch (e0) { s = ""; }
+  s = s.replace(/^\s+|\s+$/g, "");
+  return s;
+}
+
 function th17NodeText(node) {
+  var txt = "";
   try {
-    var txt = node.getText();
-    if (txt !== null && txt !== undefined) return String(txt);
+    txt = th17CleanNodeText(node.getText());
+    if (txt) return txt;
   } catch (e0) {}
+
+  try {
+    txt = th17CleanNodeText(node.getContentDescription());
+    if (txt) return txt;
+  } catch (e1) {}
+
+  try {
+    if (node.getHintText) {
+      txt = th17CleanNodeText(node.getHintText());
+      if (txt) return txt;
+    }
+  } catch (e2) {}
+
+  try {
+    if (node.getStateDescription) {
+      txt = th17CleanNodeText(node.getStateDescription());
+      if (txt) return txt;
+    }
+  } catch (e3) {}
+
+  try {
+    if (node.getTooltipText) {
+      txt = th17CleanNodeText(node.getTooltipText());
+      if (txt) return txt;
+    }
+  } catch (e4) {}
+
+  try {
+    if (node.getPaneTitle) {
+      txt = th17CleanNodeText(node.getPaneTitle());
+      if (txt) return txt;
+    }
+  } catch (e5) {}
+
+  try {
+    if (node.getContainerTitle) {
+      txt = th17CleanNodeText(node.getContainerTitle());
+      if (txt) return txt;
+    }
+  } catch (e6) {}
+
   return "";
+}
+
+function th17RectValid(rect) {
+  if (!rect) return false;
+  return th17Int(rect.right) > th17Int(rect.left) && th17Int(rect.bottom) > th17Int(rect.top);
+}
+
+function th17NodeVisible(node) {
+  try {
+    if (node && node.isVisibleToUser) return node.isVisibleToUser() === true;
+  } catch (e0) {}
+  return true;
 }
 
 function th17NodeBounds(node) {
@@ -946,11 +1008,33 @@ FloatBallAppWM.prototype.pointerRectInside = function(x, y, rect) {
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 };
 
+FloatBallAppWM.prototype.pointerRectHitScore = function(x, y, rect) {
+  if (!th17RectValid(rect)) return -1;
+
+  var l = th17Int(rect.left);
+  var t = th17Int(rect.top);
+  var r = th17Int(rect.right);
+  var b = th17Int(rect.bottom);
+  var w = Math.max(1, r - l);
+  var h = Math.max(1, b - t);
+
+  // 对短文本、小按钮、Tab 文本放宽命中范围，减少指针尖端略偏时无法取字。
+  var padX = Math.max(this.dp(8), Math.min(this.dp(32), Math.floor(w * 0.35)));
+  var padY = Math.max(this.dp(8), Math.min(this.dp(28), Math.floor(h * 0.45)));
+
+  var dx = 0;
+  var dy = 0;
+  if (x < l) dx = l - x;
+  else if (x > r) dx = x - r;
+  if (y < t) dy = t - y;
+  else if (y > b) dy = y - b;
+
+  if (dx <= padX && dy <= padY) return dx * dx + dy * dy;
+  return -1;
+};
+
 FloatBallAppWM.prototype.pointerRectNear = function(x, y, rect) {
-  if (!rect) return false;
-  var padX = Math.max(1, this.dp(4));
-  var padY = Math.max(1, this.dp(6));
-  return x >= rect.left - padX && x <= rect.right + padX && y >= rect.top - padY && y <= rect.bottom + padY;
+  return this.pointerRectHitScore(x, y, rect) >= 0;
 };
 
 FloatBallAppWM.prototype.getPointerUiAutomation = function() {
@@ -979,22 +1063,32 @@ FloatBallAppWM.prototype.findPointerTextNodeAt = function(root, x, y) {
     var area = Math.max(1, (item.rect.right - item.rect.left) * (item.rect.bottom - item.rect.top));
     item.area = area;
     if (!best) { best = item; return; }
-    if (item.area < best.area) { best = item; return; }
-    if (item.area === best.area && item.depth > best.depth) best = item;
+    if (item.score < best.score) { best = item; return; }
+    if (item.score === best.score && item.area < best.area) { best = item; return; }
+    if (item.score === best.score && item.area === best.area && item.depth > best.depth) best = item;
   }
   function dfs(node, depth) {
     if (!node || depth > 40) return;
+    if (!th17NodeVisible(node)) return;
+
     var rect = th17NodeBounds(node);
-    var contains = rect && self.pointerRectNear(x, y, rect);
+    var rectOk = th17RectValid(rect);
+    var score = rectOk ? self.pointerRectHitScore(x, y, rect) : -1;
+    var contains = score >= 0;
+
     if (contains) {
       var txt = th17NodeText(node);
       if (txt && String(txt).replace(/\s+/g, "").length > 0) {
-        better({ text: String(txt), rect: rect, depth: depth });
+        better({ text: String(txt), rect: rect, depth: depth, score: score });
       }
     }
+
     var childCount = 0;
     try { childCount = node.getChildCount(); } catch (eCount) { childCount = 0; }
-    if (!contains && depth > 1) return;
+
+    // 父节点 bounds 异常时继续向下扫；避免自定义布局父节点为 0 或不准时漏掉子 TextView。
+    if (!contains && rectOk && depth > 1) return;
+
     for (var i = 0; i < childCount; i++) {
       var child = null;
       try { child = node.getChild(i); } catch (eChild) { child = null; }
@@ -1020,8 +1114,9 @@ FloatBallAppWM.prototype.findPointerTextNodeAtBudget = function(root, x, y, star
     var area = Math.max(1, (item.rect.right - item.rect.left) * (item.rect.bottom - item.rect.top));
     item.area = area;
     if (!best) { best = item; return; }
-    if (item.area < best.area) { best = item; return; }
-    if (item.area === best.area && item.depth > best.depth) best = item;
+    if (item.score < best.score) { best = item; return; }
+    if (item.score === best.score && item.area < best.area) { best = item; return; }
+    if (item.score === best.score && item.area === best.area && item.depth > best.depth) best = item;
   }
   function overBudget() {
     try { if (th17Now() - start > limitMs) return true; } catch (e0) {}
@@ -1030,17 +1125,26 @@ FloatBallAppWM.prototype.findPointerTextNodeAtBudget = function(root, x, y, star
   function dfs(node, depth) {
     if (!node || depth > 40 || overBudget()) return;
     count.n++;
+    if (!th17NodeVisible(node)) return;
+
     var rect = th17NodeBounds(node);
-    var contains = rect && self.pointerRectNear(x, y, rect);
+    var rectOk = th17RectValid(rect);
+    var score = rectOk ? self.pointerRectHitScore(x, y, rect) : -1;
+    var contains = score >= 0;
+
     if (contains) {
       var textValue = th17NodeText(node);
       if (textValue && String(textValue).replace(/\s+/g, "").length > 0) {
-        better({ text: String(textValue), rect: rect, depth: depth });
+        better({ text: String(textValue), rect: rect, depth: depth, score: score });
       }
     }
+
     var childCount = 0;
     try { childCount = node.getChildCount(); } catch (eCount) { childCount = 0; }
-    if (!contains && depth > 1) return;
+
+    // 父节点 bounds 异常时继续向下扫；父节点 bounds 正常且明显不在指针附近时才剪枝。
+    if (!contains && rectOk && depth > 1) return;
+
     for (var i = 0; i < childCount; i++) {
       if (overBudget()) break;
       var child = null;
