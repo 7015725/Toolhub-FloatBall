@@ -1,4 +1,4 @@
-// @version 1.1.17
+// @version 1.1.18
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1559,6 +1559,37 @@ FloatBallAppWM.prototype.runPointerInspectWorker = function(st) {
   }));
 };
 
+FloatBallAppWM.prototype.preparePointerAccessibilityFinalScan = function(reason) {
+  var st = this.ensurePointerToolState();
+
+  // 关键：无障碍 final scan 前隐藏自身 overlay。
+  // 否则部分 ROM / ShortX UiAutomation 在 overlay 可见时会返回 windows=0 / nodes=0。
+  try { this.hidePointerAreaFrame(); } catch (eFrame) {}
+
+  try {
+    if (st.root) {
+      st.root.setVisibility(android.view.View.GONE);
+      safeLog(this.L, 'i', "pointer accessibility final scan hide overlay reason=" + String(reason || ""));
+    }
+  } catch (eHide) {
+    try { safeLog(this.L, 'w', "pointer accessibility final scan hide overlay fail: " + String(eHide)); } catch (eLogHide) {}
+  }
+
+  try { java.lang.Thread.sleep(90); } catch (eSleep) {}
+
+  try {
+    var a = this.getPointerUiAutomation("final");
+    if (a) {
+      try { if (a.clearCache) a.clearCache(); } catch (eClear) {}
+      try { if (a.waitForIdle) a.waitForIdle(50, 350); } catch (eIdle) {}
+    }
+  } catch (eUi) {
+    try { safeLog(this.L, 'w', "pointer accessibility final scan ui prepare fail: " + String(eUi)); } catch (eLogUi) {}
+  }
+
+  return true;
+};
+
 FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, finishAfterResult) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "text_pick") return false;
@@ -1568,6 +1599,7 @@ FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, f
   // release_final / area_small_text_final 必须走当前线程同步扫描。
   // 实测后台 inspect worker 可能拿不到 UiAutomation root，表现为 cost 很低但 nodes=0。
   if (force === true && finishAfterResult === true) {
+    this.preparePointerAccessibilityFinalScan(reasonText);
     st.inspectLatestX = hp.x;
     st.inspectLatestY = hp.y;
     st.inspectLatestSeq = ++st.inspectSeq;
