@@ -52,9 +52,9 @@
       "version": "1.0.5"
     },
     "th_12_rebuild.js": {
-      "sha256": "7b75eec86c65fb1de255f95cb85c0d261eff61f00a49ce279a8ef260798c6248",
-      "size": 15036,
-      "version": "1.0.2"
+      "sha256": "33245a302718e3a2a49413b658c7e8591c11ec3464e662d0f080b1ea3a0cfd84",
+      "size": 21481,
+      "version": "1.0.3"
     },
     "th_13_panel_ui.js": {
       "sha256": "d422d0798168d307ba81a6ad212bcc1d670d0d24bf36237725ee2b1e286c76a4",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "设置项增加颜色预览"
+      "修复指针松手取字最终命中"
     ],
-    "title": "设置项增加颜色预览"
+    "title": "修复指针松手取字最终命中"
   },
   "schema": 3,
-  "version": 20260708094232
+  "version": 20260708102650
 }
