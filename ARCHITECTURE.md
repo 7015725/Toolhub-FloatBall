@@ -1,8 +1,8 @@
 # ToolHub 技术架构
 
-更新时间：2026-07-03
+更新时间：2026-07-09
 
-本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **22 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载。
+本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **23 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 与指针边框颜色状态由 `th_18_pointer_ocr.js` 承载。
 
 ---
 
@@ -24,7 +24,7 @@ ShortX JS 任务入口
 - `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
 - `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
 - `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
-- `code/th_*.js`：入口按顺序加载的子模块，当前为 22 个。
+- `code/th_*.js`：入口按顺序加载的子模块，当前为 23 个。
 
 ---
 
@@ -93,7 +93,7 @@ ballRoot / ballContent Touch
 
 ## 3. 模块分层
 
-当前实际加载 22 个子模块，入口 `modules[]` 顺序如下：
+当前实际加载 23 个子模块，入口 `modules[]` 顺序如下：
 
 ```text
 基础能力层
@@ -127,13 +127,14 @@ UI 基础与页面层
 
 指针交互层
   th_17_pointer.js
+  th_18_pointer_ocr.js
 ```
 
 模块职责：
 
 ```text
 th_01_base.js
-  基础工具、路径常量、配置校验、ConfigManager、ConfigValidator、FileIO、日志基础、Base64、默认配置。
+  基础工具、路径常量、配置校验、ConfigManager、ConfigValidator、FileIO、日志基础、Base64、默认配置、默认 schema、旧 schema 自动刷新。
 
 th_02_core.js
   FloatBallAppWM 构造函数、this.state 初始化、dp/sp/now/clamp、runOnUiThreadSafe、UI 工具对象初始化。
@@ -169,7 +170,7 @@ th_13_panel_ui.js
   设置项基础 UI：section、bool、int、float、action、文本输入等组件。
 
 th_14_panels.js
-  设置主页、设置分组、按钮管理入口、弹窗基础、主题适配、更新状态展示。
+  设置主页、设置分组、指针设置子块、按钮管理入口、弹窗基础、主题适配、更新状态展示。
 
 th_14_button_shortcut.js
   内联快捷方式选择、快捷方式图标异步加载与回填。
@@ -196,7 +197,10 @@ th_16_entry.js
   runOnMainSync、registerReceiverOnMain、startAsync、close、dispose、实例注册、设置页重启与生命周期收尾。
 
 th_17_pointer.js
-  指针取字、框选截图区域、OCR rect 输出与三连击取消。
+  屏幕指针、悬停取字、取字就绪视觉状态、框选区域、小框回退取字、OCR rect 输出。
+
+th_18_pointer_ocr.js
+  框选截图 OCR 处理、截图区域覆盖层、OCR 任务衔接、指针边框颜色状态补充。
 ```
 
 说明：

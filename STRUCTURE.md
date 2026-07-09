@@ -1,6 +1,6 @@
 # ToolHub-FloatBall 整体结构说明
 
-更新时间：2026-07-03
+更新时间：2026-07-09
 
 本文档用于整理 `7015725/Toolhub-FloatBall` 当前代码结构、启动链路、模块职责和主要状态流。项目运行环境为 **ShortX / Rhino ES5 JavaScript**，入口文件负责安全更新和模块加载，核心业务集中挂载到 `FloatBallAppWM.prototype`。
 
@@ -67,7 +67,8 @@ Toolhub-FloatBall/
 │   ├── th_14_schema_editor.js
 │   ├── th_15_extra.js
 │   ├── th_16_entry.js
-│   └── th_17_pointer.js
+│   ├── th_17_pointer.js
+│   └── th_18_pointer_ocr.js
 └── scripts/
     ├── generate_signed_manifest.py
     ├── verify_manifest.py
@@ -77,7 +78,7 @@ Toolhub-FloatBall/
     └── verify_toolapp_single_root.py
 ```
 
-当前实际加载 **22 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；`th_14_button_editor.js` 承载按钮管理紧凑列表、筛选、状态菜单和排序模式，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载。
+当前实际加载 **23 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；`th_14_button_editor.js` 承载按钮管理紧凑列表、筛选、状态菜单和排序模式，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 处理与颜色状态补充由 `th_18_pointer_ocr.js` 承载。
 
 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而保留的历史编号；本仓库延续现有文件名，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
 
@@ -149,6 +150,7 @@ shortx.getShortXDir()/ToolHub/
 │   ├── ...
 │   ├── th_16_entry.js
 │   ├── th_17_pointer.js
+│   ├── th_18_pointer_ocr.js
 │   ├── .trusted_manifest_version
 │   └── .trusted_sha_<module>
 ├── logs/
@@ -201,7 +203,7 @@ th_16_entry.js
 
 | 模块 | 职责 |
 |---|---|
-| `th_01_base.js` | 基础工具、配置校验、路径常量、文件 IO、原子写、防抖写、日志基础 |
+| `th_01_base.js` | 基础工具、配置校验、路径常量、文件 IO、原子写、防抖写、日志基础、默认配置与设置 schema、旧 schema 自动刷新 |
 | `th_02_core.js` | `FloatBallAppWM` 构造函数、核心 state 初始化、基础方法、UI 工具对象初始化 |
 | `th_03_icon.js` | 图标加载、图标缓存、Drawable / Bitmap 处理、悬浮球图标解析 |
 | `th_04_theme.js` | 屏幕尺寸、旋转、Toast、振动、动物岛主题、Monet 颜色、Drawable 工具 |
@@ -213,7 +215,7 @@ th_16_entry.js
 | `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut、Content、Pointer |
 | `th_12_rebuild.js` | 悬浮球重建、尺寸 / 图标 / 配置变化刷新 |
 | `th_13_panel_ui.js` | 设置项基础 UI：section、bool、int、float、action、文本输入等 |
-| `th_14_panels.js` | 设置主页、设置分组、按钮管理入口、弹窗基础、主题适配、更新状态展示 |
+| `th_14_panels.js` | 设置主页、设置分组、指针设置子块、按钮管理入口、弹窗基础、主题适配、更新状态展示 |
 | `th_14_button_shortcut.js` | 内联快捷方式选择、快捷方式图标异步加载与回填 |
 | `th_14_button_icon_editor.js` | 按钮图标来源、ShortX 图标预览、图标调色内联编辑与颜色联动 |
 | `th_14_button_editor.js` | 按钮管理紧凑列表、搜索筛选、状态 chip、更多菜单、排序模式、按钮编辑页、动作参数、保存校验与页面内反馈 |
@@ -222,7 +224,8 @@ th_16_entry.js
 | `th_14_schema_editor.js` | 设置结构编辑器 |
 | `th_15_extra.js` | 主面板构建、ToolApp Shell、页面栈、响应式布局、左右滑返回预览 |
 | `th_16_entry.js` | 主线程同步、广播注册、实例注册、`startAsync`、`close`、`dispose`、设置页重启 |
-| `th_17_pointer.js` | 指针取字、框选截图区域、OCR rect 输出与三连击取消 |
+| `th_17_pointer.js` | 屏幕指针、悬停取字、取字就绪视觉状态、框选区域、小框回退取字、OCR rect 输出 |
+| `th_18_pointer_ocr.js` | 框选截图 OCR 处理、截图区域覆盖层、OCR 任务衔接、指针边框颜色状态补充 |
 
 ---
 
