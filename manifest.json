@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "9ac1228c91430f4a828ba04b14803883af6616f334e9756fd13c2a139d8ab1b0",
-      "size": 61863,
-      "version": "1.0.7"
+      "sha256": "2e303a4f838f19cba2f6c07b3c68cbcb907ca8f80f8dc0af682a218d592f6327",
+      "size": 62447,
+      "version": "1.0.8"
     },
     "th_02_core.js": {
       "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Fix pointer text-ready timing"
+      "refresh old schema cache when pointer edge and scale settings are missing or stale"
     ],
-    "title": "Fix pointer text-ready timing"
+    "title": "Fix pointer schema refresh"
   },
   "schema": 3,
-  "version": 20260709091038
+  "version": 20260709101239
 }
