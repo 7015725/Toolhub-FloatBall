@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "only show text-ready pointer color after POINTER_TEXT_HOVER_MS is satisfied"
+      "Fix pointer text-ready timing"
     ],
     "title": "Fix pointer text-ready timing"
   },
   "schema": 3,
-  "version": 20260709090959
+  "version": 20260709091038
 }
