@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "bump th_17_pointer.js and th_18_pointer_ocr.js versions so update check can detect #79"
+      "Bump pointer module versions after #79"
     ],
     "title": "Bump pointer module versions after #79"
   },
   "schema": 3,
-  "version": 20260709053456
+  "version": 20260709053539
 }
