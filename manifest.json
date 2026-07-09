@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "11b9b471b1538b66b79e5bf84143ae69d4928f74ba443fd09f0f54bd51a8467f",
-      "size": 86495,
-      "version": "1.1.19"
+      "sha256": "6406aa522d80b1062875a395c7a855accb6f667b95b60e2c52548e7752942159",
+      "size": 88593,
+      "version": "1.1.20"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "45d65f78f178ac0171180494a0655a646faa46d1701caf9ec73c6f1cfb4a7b1f",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Bump pointer module versions after #79"
+      "only show text-ready pointer color after POINTER_TEXT_HOVER_MS is satisfied"
     ],
-    "title": "Bump pointer module versions after #79"
+    "title": "Fix pointer text-ready timing"
   },
   "schema": 3,
-  "version": 20260709053121
+  "version": 20260709090959
 }
