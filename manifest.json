@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "refresh old schema cache when pointer edge and scale settings are missing or stale"
+      "Fix pointer schema refresh"
     ],
     "title": "Fix pointer schema refresh"
   },
   "schema": 3,
-  "version": 20260709101239
+  "version": 20260709101324
 }
