@@ -107,26 +107,23 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "310138a54d52714aaf0a0e36975805611a2989ed53a2731c4087fe90587fc4e1",
+      "sha256": "11b9b471b1538b66b79e5bf84143ae69d4928f74ba443fd09f0f54bd51a8467f",
       "size": 86495,
-      "version": "1.1.18"
+      "version": "1.1.19"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "d90734674a9dae892dd37c831b3c3f8785330dc189c6d0d27c521f077861f5ab",
+      "sha256": "45d65f78f178ac0171180494a0655a646faa46d1701caf9ec73c6f1cfb4a7b1f",
       "size": 37086,
-      "version": "1.0.12"
+      "version": "1.0.13"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "add pointer text-ready color settings",
-      "add text-ready frame color support",
-      "preserve pointer frame kind in th_18 patch",
-      "update signed manifest"
+      "Bump pointer module versions after #79"
     ],
-    "title": "Add pointer text-ready colors"
+    "title": "Bump pointer module versions after #79"
   },
   "schema": 3,
-  "version": 20260709051758
+  "version": 20260709053121
 }

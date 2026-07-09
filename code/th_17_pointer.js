@@ -1,4 +1,4 @@
-// @version 1.1.18
+// @version 1.1.19
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
