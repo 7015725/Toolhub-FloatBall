@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -174,11 +174,13 @@ FloatBallAppWM.prototype.getPointerSettingsBlocks = function() {
     {
       key: "pointer_color",
       title: "指针颜色",
-      desc: "普通、悬停和命中状态颜色",
+      desc: "普通、悬停、命中和取字就绪状态颜色",
       keys: [
         "POINTER_COLOR_NORMAL_HEX",
         "POINTER_COLOR_HOVER_HEX",
-        "POINTER_COLOR_HIT_HEX"
+        "POINTER_COLOR_HIT_HEX",
+        "POINTER_COLOR_TEXT_READY_HEX",
+        "POINTER_FRAME_TEXT_READY_HEX"
       ]
     },
     {

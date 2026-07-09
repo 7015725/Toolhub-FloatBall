@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "6a4a47cd14c751c9f97cc8460c346a6d44097fa28d5f0ecc28dd468819fd6ed4",
-      "size": 61133,
-      "version": "1.0.6"
+      "sha256": "9ac1228c91430f4a828ba04b14803883af6616f334e9756fd13c2a139d8ab1b0",
+      "size": 61863,
+      "version": "1.0.7"
     },
     "th_02_core.js": {
       "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
@@ -87,9 +87,9 @@
       "version": "1.0.0"
     },
     "th_14_panels.js": {
-      "sha256": "d7e7c7ecf3df818fc40f933d0dcf797ededa8e32f9bf2bf32192db3940298d3e",
-      "size": 122296,
-      "version": "1.0.6"
+      "sha256": "a878eb3cf37e1c30f5ac22f05f151ba47270e446a7101901e7c1a4fa2beb7c11",
+      "size": 122391,
+      "version": "1.0.7"
     },
     "th_14_schema_editor.js": {
       "sha256": "903fb69f973af2a722ea2536bd86099005bb07605616028d5ae9c388fe2981e0",
@@ -107,23 +107,26 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "568d12677affc25501747efe71953d5ff91e21c1193f734ac4f4e8a3d4270763",
-      "size": 85341,
+      "sha256": "310138a54d52714aaf0a0e36975805611a2989ed53a2731c4087fe90587fc4e1",
+      "size": 86495,
       "version": "1.1.18"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "7e2360ee7eb9c65466b4d8024d6b8f49128b8e4fcd59a1b1f74ae3a08ea159c3",
-      "size": 35440,
+      "sha256": "d90734674a9dae892dd37c831b3c3f8785330dc189c6d0d27c521f077861f5ab",
+      "size": 37086,
       "version": "1.0.12"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "update"
+      "add pointer text-ready color settings",
+      "add text-ready frame color support",
+      "preserve pointer frame kind in th_18 patch",
+      "update signed manifest"
     ],
-    "title": "update"
+    "title": "Add pointer text-ready colors"
   },
   "schema": 3,
-  "version": 20260708140600
+  "version": 20260709051758
 }
