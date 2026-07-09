@@ -1,4 +1,4 @@
-// @version 1.1.19
+// @version 1.1.20
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -779,8 +779,9 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         var dp = function(v) { return self.dp(Number(v) * pointerScale); };
         var tipX = st.anchorLocalX;
         var tipY = st.anchorLocalY;
-        var textReady = !!(st.currentText && st.currentRect && st.hot);
-        var hoverCandidate = !!(st.currentText && st.currentRect && st.hoverSince && !st.hot);
+        var textReady = false;
+        try { textReady = self.isPointerTextHoverReady(th17Now()) === true; } catch(eReadyDraw) { textReady = false; }
+        var hoverCandidate = !!(st.currentText && st.currentRect && st.hoverSince && !textReady);
         var processing = !!st.areaProcessing;
         var active = !!(st.hot || hoverCandidate || st.areaSelecting || st.areaReady || processing);
         var dragging = !!st.dragging;
@@ -1518,10 +1519,13 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     st.boundRect = th17RectObj(result.rect);
     st.boundKey = key;
     st.boundAt = now;
-    var ready = now - st.hoverSince >= st.hoverMinMs;
-    this.showPointerAreaFrame(result.rect, ready ? "text_hit" : "text_hover");
-    this.updatePointerVisualHot(ready);
+    this.refreshPointerTextReadyVisualState();
+    this.schedulePointerTextReadyVisualRefresh();
   } else {
+    try {
+      st.textReadyToken = Number(st.textReadyToken || 0) + 1;
+      if (st.handler && st.textReadyRunnable) st.handler.removeCallbacks(st.textReadyRunnable);
+    } catch(eClearReadyTimer) {}
     st.currentText = "";
     st.currentRect = null;
     st.currentKey = "";
@@ -1705,6 +1709,57 @@ FloatBallAppWM.prototype.getPointerTextHoverRemainMs = function(atTs) {
   var remain = this.getPointerTextHoverLimitMs() - elapsed;
   if (isNaN(remain) || remain < 0) remain = 0;
   return Math.ceil(remain);
+};
+
+FloatBallAppWM.prototype.refreshPointerTextReadyVisualState = function() {
+  var st = this.ensurePointerToolState();
+  if (!st.active || st.closed || st.mode !== "text_pick") return false;
+  if (!st.currentText || !st.currentRect) {
+    this.updatePointerVisualHot(false);
+    return false;
+  }
+  var ready = this.isPointerTextHoverReady(th17Now()) === true;
+  try { this.showPointerAreaFrame(st.currentRect, ready ? "text_hit" : "text_hover"); } catch(eFrameReady) {}
+  this.updatePointerVisualHot(ready);
+  try { if (st.root) st.root.invalidate(); } catch(eInvReady) {}
+  return ready;
+};
+
+FloatBallAppWM.prototype.schedulePointerTextReadyVisualRefresh = function() {
+  var st = this.ensurePointerToolState();
+  if (!st.active || st.closed || st.mode !== "text_pick") return false;
+  if (!st.currentText || !st.currentRect || !st.hoverSince) return false;
+  if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
+
+  try {
+    if (st.textReadyRunnable) st.handler.removeCallbacks(st.textReadyRunnable);
+  } catch(eRemoveReady) {}
+
+  st.textReadyToken = Number(st.textReadyToken || 0) + 1;
+  var token = st.textReadyToken;
+  var delay = this.getPointerTextHoverRemainMs(th17Now());
+  if (delay <= 0) {
+    this.refreshPointerTextReadyVisualState();
+    return true;
+  }
+
+  var self = this;
+  st.textReadyRunnable = new java.lang.Runnable({ run: function() {
+    try {
+      if (!st.active || st.closed || st.mode !== "text_pick") return;
+      if (Number(st.textReadyToken || 0) !== token) return;
+      self.refreshPointerTextReadyVisualState();
+    } catch(eRunReady) {
+      safeLog(self.L, 'e', "pointer text ready visual refresh fail: " + String(eRunReady));
+    }
+  }});
+
+  try {
+    st.handler.postDelayed(st.textReadyRunnable, Math.max(20, Number(delay || 0) + 10));
+    return true;
+  } catch(ePostReady) {
+    return false;
+  }
 };
 
 FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect, hoverAtTs) {
