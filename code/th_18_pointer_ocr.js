@@ -388,22 +388,47 @@
                 var rf = new android.graphics.RectF(rect.left, rect.top, rect.right, rect.bottom);
                 var rgb = null;
                 var processing = false;
+                var kind = "";
+                var fillAlpha = 42;
+                var strokeAlpha = 235;
+                var strokeWidth = self.dp(2);
                 try { processing = st && st.areaProcessing === true; } catch(eProcessing18) { processing = false; }
+                try { kind = String(st && st.frameKind || ""); } catch(eKind18) { kind = ""; }
+
                 try {
-                  if (typeof th17PointerColorRgb === "function") {
-                    rgb = processing
-                      ? th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247)
-                      : th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                  if (typeof th17PointerColorRgbWithFallback === "function" && kind === "text_hit") {
+                    rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_COLOR_TEXT_READY_HEX", 34, 197, 94);
+                    fillAlpha = 38;
+                    strokeAlpha = 248;
+                    strokeWidth = self.dp(2.3);
+                  } else if (typeof th17PointerColorRgb === "function") {
+                    if (processing || kind === "capture") {
+                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
+                      fillAlpha = 56;
+                      strokeAlpha = 245;
+                    } else if (kind === "text_hover") {
+                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
+                      fillAlpha = 26;
+                      strokeAlpha = 215;
+                      strokeWidth = self.dp(1.8);
+                    } else if (kind === "area_armed") {
+                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                      fillAlpha = 18;
+                      strokeAlpha = 150;
+                      strokeWidth = self.dp(1.4);
+                    } else {
+                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                    }
                   }
                 } catch(eColor18) {}
                 if (!rgb) rgb = processing ? { r: 168, g: 85, b: 247 } : { r: 59, g: 130, b: 246 };
                 p.setAntiAlias(true);
                 p.setStyle(android.graphics.Paint.Style.FILL);
-                p.setARGB(processing ? 56 : 42, rgb.r, rgb.g, rgb.b);
+                p.setARGB(fillAlpha, rgb.r, rgb.g, rgb.b);
                 canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
                 p.setStyle(android.graphics.Paint.Style.STROKE);
-                p.setStrokeWidth(self.dp(2));
-                p.setARGB(235, rgb.r, rgb.g, rgb.b);
+                p.setStrokeWidth(strokeWidth);
+                p.setARGB(strokeAlpha, rgb.r, rgb.g, rgb.b);
                 canvas.drawRoundRect(rf, self.dp(6), self.dp(6), p);
               } catch(eDraw) {}
             }
@@ -413,16 +438,20 @@
       }
       if (typeof proto.showPointerAreaFrame === "function") {
         var oldShowFrame = proto.showPointerAreaFrame;
-        proto.showPointerAreaFrame = function(rect) {
+        proto.showPointerAreaFrame = function(rect, kind) {
           var st = applyPerfDefaults18(this);
-          if (!st || !rect) return oldShowFrame.call(this, rect);
+          if (!st || !rect) return oldShowFrame.call(this, rect, kind);
           var now = now18();
           var norm = normalizeRect18(rect) || rect;
-          if (st.frameAdded && st.frame && st.__th18FrameRect && sameRect18(st.__th18FrameRect, norm, 1) && now - Number(st.__th18FrameTs || 0) < 80) return;
-          if (st.frameAdded && st.frame && st.__th18FrameRect && sameRect18(st.__th18FrameRect, norm, 2) && now - Number(st.__th18FrameTs || 0) < Number(st.__th18FrameMinInterval || 28)) return;
+          var nextKind = String(kind || "area");
+          var oldKind = "";
+          try { oldKind = String(st.frameKind || ""); } catch(eOldKind18) { oldKind = ""; }
+          if (st.frameAdded && st.frame && oldKind === nextKind && st.__th18FrameRect && sameRect18(st.__th18FrameRect, norm, 1) && now - Number(st.__th18FrameTs || 0) < 80) return;
+          if (st.frameAdded && st.frame && oldKind === nextKind && st.__th18FrameRect && sameRect18(st.__th18FrameRect, norm, 2) && now - Number(st.__th18FrameTs || 0) < Number(st.__th18FrameMinInterval || 28)) return;
           st.__th18FrameRect = { left: int18(norm.left), top: int18(norm.top), right: int18(norm.right), bottom: int18(norm.bottom) };
           st.__th18FrameTs = now;
-          return oldShowFrame.call(this, rect);
+          try { st.frameKind = nextKind; } catch(eSetKind18) {}
+          return oldShowFrame.call(this, rect, nextKind);
         };
       }
       if (typeof proto.scheduleDraggingInspect === "function") {

@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -827,6 +827,8 @@ var ConfigManager = {
         POINTER_COLOR_NORMAL_HEX: "",
         POINTER_COLOR_HOVER_HEX: "",
         POINTER_COLOR_HIT_HEX: "",
+        POINTER_COLOR_TEXT_READY_HEX: "#22C55E",
+        POINTER_FRAME_TEXT_READY_HEX: "#22C55E",
         POINTER_COLOR_AREA_HEX: "",
         POINTER_COLOR_CAPTURE_HEX: "",
         POINTER_AREA_SMALL_FALLBACK_TEXT: true,
@@ -907,6 +909,8 @@ var ConfigManager = {
         { key: "POINTER_COLOR_NORMAL_HEX", name: "指针普通颜色", type: "ball_color" },
         { key: "POINTER_COLOR_HOVER_HEX", name: "指针悬停颜色", type: "ball_color" },
         { key: "POINTER_COLOR_HIT_HEX", name: "指针命中颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_TEXT_READY_HEX", name: "取字就绪指针颜色", type: "ball_color" },
+        { key: "POINTER_FRAME_TEXT_READY_HEX", name: "取字就绪边框颜色", type: "ball_color" },
         { key: "POINTER_COLOR_AREA_HEX", name: "框选区域颜色", type: "ball_color" },
         { key: "POINTER_COLOR_CAPTURE_HEX", name: "截图识别颜色", type: "ball_color" },
 
@@ -994,7 +998,7 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
             needReset = true;
         }
         if (!needReset && (sStr.indexOf("ENABLE_TOOLAPP_INNER_BACK_STRIPS") >= 0 || sStr.indexOf("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") >= 0)) {
@@ -1044,6 +1048,8 @@ var ConfigManager = {
                 schemaItemDiffers("POINTER_COLOR_NORMAL_HEX", ["name", "type"]) ||
                 schemaItemDiffers("POINTER_COLOR_HOVER_HEX", ["name", "type"]) ||
                 schemaItemDiffers("POINTER_COLOR_HIT_HEX", ["name", "type"]) ||
+                schemaItemDiffers("POINTER_COLOR_TEXT_READY_HEX", ["name", "type"]) ||
+                schemaItemDiffers("POINTER_FRAME_TEXT_READY_HEX", ["name", "type"]) ||
                 schemaItemDiffers("POINTER_COLOR_AREA_HEX", ["name", "type"]) ||
                 schemaItemDiffers("POINTER_COLOR_CAPTURE_HEX", ["name", "type"])) {
                 needReset = true;
