@@ -112,18 +112,18 @@
       "version": "1.1.25"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "76b87b0a7ca972da948fc89e85cb7931afa40128bf1667991c92982b42d52518",
-      "size": 53812,
-      "version": "1.0.17"
+      "sha256": "5cca7fcd14a7a2c7c0b07e15db3e9e29ae5b0f1c914eecd8985ad3fa8209447c",
+      "size": 54883,
+      "version": "1.0.18"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "异步执行指针框选截图与文件保存"
+      "统一指针 OCR 空文本状态"
     ],
-    "title": "异步执行指针框选截图与文件保存"
+    "title": "统一指针 OCR 空文本状态"
   },
   "schema": 3,
-  "version": 20260710053556
+  "version": 20260710060449
 }
