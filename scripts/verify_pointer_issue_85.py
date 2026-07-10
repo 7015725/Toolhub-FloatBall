@@ -97,14 +97,65 @@ def main():
     )
 
     async_ocr = section(ocr, "function scheduleAreaOcrAsync18", "function install18()")
+    token_helper = section(
+        ocr,
+        "function isAreaOcrTokenCurrent18(st, token)",
+        "function clearAreaOcrWorkerRefs18",
+    )
+    legacy_token_guard = "Number(st.areaOcrSeq || 0) !== Number(token)" in async_ocr
+    helper_token_guard = (
+        "Number(st.areaOcrSeq || 0) !== Number(token)" in token_helper
+        and "Number(st.areaOcrDoneToken || 0) === Number(token)" in token_helper
+        and "isAreaOcrTokenCurrent18(st, token)" in async_ocr
+    )
     result.require(
         "W3 area OCR is asynchronous and token timed",
         "new android.os.HandlerThread" in async_ocr
         and "areaOcrTimeoutRunnable" in async_ocr
         and "AREA_OCR_TIMEOUT" in async_ocr
-        and "Number(st.areaOcrSeq || 0) !== Number(token)" in async_ocr
+        and (legacy_token_guard or helper_token_guard)
         and "scheduleAreaOcrAsync18(this, st, obj, rect, path, ret)" in finish_wrapper,
         "async HandlerThread, token guard, timeout code, or dispatch is missing",
+    )
+
+    clipboard_call = async_ocr.find("copyPointerAreaTextToClipboard(textValue)")
+    guard_before_clipboard = async_ocr.rfind(
+        "if (!isAreaOcrTokenCurrent18(st, token)) return;",
+        0,
+        clipboard_call,
+    )
+    guard_after_clipboard = async_ocr.find(
+        "if (!isAreaOcrTokenCurrent18(st, token)) return;",
+        clipboard_call + 1,
+    )
+    result.require(
+        "N1 stale OCR cannot overwrite clipboard",
+        clipboard_call >= 0
+        and guard_before_clipboard >= 0
+        and guard_before_clipboard < clipboard_call
+        and guard_after_clipboard > clipboard_call,
+        "clipboard write must be guarded by current-token checks before and after copying",
+    )
+
+    stop_ocr_worker = section(
+        ocr,
+        "function stopAreaOcrWorker18(appObj, st, reason)",
+        "function scheduleAreaOcrAsync18",
+    )
+    start_pointer_wrapper = section(
+        ocr,
+        "var oldStartPointerTool = proto.startPointerTool;",
+        "var oldExecPointerAction = proto.execPointerAction;",
+    )
+    result.require(
+        "N2 cancelled OCR worker is cleaned up",
+        "removeCallbacks(timeoutRunnable)" in stop_ocr_worker
+        and "removeCallbacksAndMessages(null)" in stop_ocr_worker
+        and "quitHandlerThread18(ht)" in stop_ocr_worker
+        and 'stopAreaOcrWorker18(this, stCancelOcr, "start_pointer_tool")' in start_pointer_wrapper
+        and "clearAreaOcrWorkerRefs18(st, ht, workerH, timeoutRunnable, token)" in async_ocr
+        and "finally {" in async_ocr,
+        "cancel path must remove timeout/worker callbacks, quit the HandlerThread, and clear owned references",
     )
 
     ocr_rect = section(
