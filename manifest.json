@@ -118,6 +118,12 @@
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
+  "release": {
+    "changes": [
+      "统一指针 OCR 空文本状态"
+    ],
+    "title": "统一指针 OCR 空文本状态"
+  },
   "schema": 3,
-  "version": 20260710060431
+  "version": 20260710060449
 }
