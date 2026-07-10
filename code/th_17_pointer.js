@@ -1,4 +1,4 @@
-// @version 1.1.20
+// @version 1.1.21
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -371,6 +371,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       hoverMinMs: 800,
       releaseTs: 0,
       areaHoldToken: 0,
+      areaHoldRunnable: null,
       areaHoldAnchorX: -100000,
       areaHoldAnchorY: -100000,
       areaHoldSince: 0,
@@ -475,6 +476,8 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.hoverX = 0;
   st.hoverY = 0;
   st.releaseTs = 0;
+  try { if (st.handler && st.areaHoldRunnable) st.handler.removeCallbacks(st.areaHoldRunnable); } catch (eRemoveAreaHoldReset) {}
+  st.areaHoldRunnable = null;
   st.areaHoldToken++;
   st.areaHoldAnchorX = -100000;
   st.areaHoldAnchorY = -100000;
@@ -519,9 +522,12 @@ FloatBallAppWM.prototype.getPointerToolResult = function() {
 FloatBallAppWM.prototype.getPointerOcrRectJson = function() {
   var st = this.ensurePointerToolState();
   var obj = st.lastResult || null;
-  if (!obj || obj.type !== "area_capture") return "{}";
+  if (!obj || (obj.type !== "area_capture" && obj.type !== "area_ocr")) return "{}";
   try {
-    var rect = obj.captureRect || obj.visualRect || null;
+    var rect = obj.captureRect || null;
+    try { if (!rect && obj.data && obj.data.captureRect) rect = obj.data.captureRect; } catch (eDataRect) {}
+    try { if (!rect && obj.visualRect) rect = obj.visualRect; } catch (eVisualRect) {}
+    try { if (!rect && obj.data && obj.data.visualRect) rect = obj.data.visualRect; } catch (eDataVisualRect) {}
     if (!rect) return "{}";
     return JSON.stringify({
       left: th17Int(rect.left),
@@ -565,7 +571,8 @@ FloatBallAppWM.prototype.savePointerBitmapToFile = function(bitmap, file) {
   try {
     try { file.getParentFile().mkdirs(); } catch (eMkdir) {}
     out = new java.io.FileOutputStream(file);
-    bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out);
+    var compressed = bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out);
+    if (compressed !== true && String(compressed) !== "true") throw new Error("Bitmap PNG 压缩失败");
     out.flush();
   } finally {
     try { if (out) out.close(); } catch (eClose) {}
@@ -593,6 +600,25 @@ FloatBallAppWM.prototype.pointerBitmapFromCaptureBuffer = function(buffer) {
   return null;
 };
 
+FloatBallAppWM.prototype.releasePointerCaptureBuffer = function(buffer) {
+  if (!buffer) return;
+  try { if (buffer.close) buffer.close(); } catch (eClose) {}
+  try {
+    var hb = buffer.getHardwareBuffer ? buffer.getHardwareBuffer() : null;
+    if (hb && hb.close) hb.close();
+  } catch (eHbClose) {}
+  try {
+    var gb = buffer.getGraphicBuffer ? buffer.getGraphicBuffer() : null;
+    if (gb && gb.destroy) gb.destroy();
+  } catch (eGbDestroy) {}
+};
+
+FloatBallAppWM.prototype.recyclePointerBitmap = function(bitmap) {
+  try {
+    if (bitmap && bitmap.recycle && (!bitmap.isRecycled || bitmap.isRecycled() !== true)) bitmap.recycle();
+  } catch (eRecycleBitmap) {}
+};
+
 FloatBallAppWM.prototype.capturePointerRectToPng = function(rect) {
   if (!rect) throw new Error("截图区域为空");
   var left = th17Int(rect.left);
@@ -607,6 +633,7 @@ FloatBallAppWM.prototype.capturePointerRectToPng = function(rect) {
   var api = 0;
   try { api = android.os.Build.VERSION.SDK_INT; } catch (eApi) { api = 0; }
   var bitmap = null;
+  var captureBuffer = null;
   var lastError = null;
 
   if (!bitmap && api >= 34) {
@@ -625,11 +652,17 @@ FloatBallAppWM.prototype.capturePointerRectToPng = function(rect) {
         try {
           var builder = new android.window.ScreenCapture.DisplayCaptureArgs.Builder(displayToken);
           builder.setPixelFormat(android.graphics.PixelFormat.RGBA_8888).setSourceCrop(cropRect).setSize(cropRect.width(), cropRect.height()).setFrameScale(1.0).setCaptureSecureLayers(true).setAllowProtected(true).setGrayscale(false).setExcludeLayers(null).setHintForSeamlessTransition(false);
-          bitmap = this.pointerBitmapFromCaptureBuffer(android.window.ScreenCapture.captureDisplay(builder.build()));
+          var cap14 = android.window.ScreenCapture.captureDisplay(builder.build());
+          bitmap = this.pointerBitmapFromCaptureBuffer(cap14);
+          if (bitmap) captureBuffer = cap14;
+          else this.releasePointerCaptureBuffer(cap14);
         } catch (e14a) {
           var builder2 = new android.window.ScreenCaptureInternal.DisplayCaptureArgs.Builder(displayToken);
           builder2.setPixelFormat(android.graphics.PixelFormat.RGBA_8888).setSourceCrop(cropRect).setSize(cropRect.width(), cropRect.height()).setFrameScale(1.0).setSecureContentPolicy(0).setProtectedContentPolicy(0).setGrayscale(false).setExcludeLayers(null);
-          bitmap = this.pointerBitmapFromCaptureBuffer(android.window.ScreenCaptureInternal.captureDisplay(builder2.build()));
+          var cap14b = android.window.ScreenCaptureInternal.captureDisplay(builder2.build());
+          bitmap = this.pointerBitmapFromCaptureBuffer(cap14b);
+          if (bitmap) captureBuffer = cap14b;
+          else this.releasePointerCaptureBuffer(cap14b);
         }
       } finally {
         try { parcelData.recycle(); } catch (ePd) {}
@@ -644,7 +677,10 @@ FloatBallAppWM.prototype.capturePointerRectToPng = function(rect) {
       if (displayToken32 == null) throw new Error("无法获取 displayToken");
       var builder32 = new android.view.SurfaceControl.DisplayCaptureArgs.Builder(displayToken32);
       builder32.setPixelFormat(android.graphics.PixelFormat.RGBA_8888).setSourceCrop(cropRect).setSize(cropRect.width(), cropRect.height()).setFrameScale(1.0).setCaptureSecureLayers(true).setAllowProtected(true).setGrayscale(false);
-      bitmap = this.pointerBitmapFromCaptureBuffer(android.view.SurfaceControl.captureDisplay(builder32.build()));
+      var cap32 = android.view.SurfaceControl.captureDisplay(builder32.build());
+      bitmap = this.pointerBitmapFromCaptureBuffer(cap32);
+      if (bitmap) captureBuffer = cap32;
+      else this.releasePointerCaptureBuffer(cap32);
     } catch (e32) { lastError = e32; bitmap = null; }
   }
 
@@ -652,20 +688,31 @@ FloatBallAppWM.prototype.capturePointerRectToPng = function(rect) {
     try {
       var displayToken29 = android.view.SurfaceControl.getInternalDisplayToken();
       if (displayToken29 == null) throw new Error("无法获取 displayToken");
-      bitmap = this.pointerBitmapFromCaptureBuffer(android.view.SurfaceControl.screenshotToBufferWithSecureLayersUnsafe(displayToken29, cropRect, cropRect.width(), cropRect.height(), false, 0));
+      var cap29 = android.view.SurfaceControl.screenshotToBufferWithSecureLayersUnsafe(displayToken29, cropRect, cropRect.width(), cropRect.height(), false, 0);
+      bitmap = this.pointerBitmapFromCaptureBuffer(cap29);
+      if (bitmap) captureBuffer = cap29;
+      else this.releasePointerCaptureBuffer(cap29);
     } catch (e29) { lastError = e29; bitmap = null; }
   }
 
   if (!bitmap) {
     try {
-      bitmap = this.pointerBitmapFromCaptureBuffer(android.view.SurfaceControl.screenshotToBuffer(cropRect, cropRect.width(), cropRect.height(), 0, java.lang.Integer.MAX_VALUE, false, 0));
+      var capOld = android.view.SurfaceControl.screenshotToBuffer(cropRect, cropRect.width(), cropRect.height(), 0, java.lang.Integer.MAX_VALUE, false, 0);
+      bitmap = this.pointerBitmapFromCaptureBuffer(capOld);
+      if (bitmap) captureBuffer = capOld;
+      else this.releasePointerCaptureBuffer(capOld);
     } catch (eOld) { lastError = eOld; bitmap = null; }
   }
 
   if (!bitmap) throw new Error("截图失败" + (lastError ? ": " + String(lastError) : ""));
   var file = this.createPointerScreenshotFile();
-  this.savePointerBitmapToFile(bitmap, file);
-  return String(file.getAbsolutePath());
+  try {
+    this.savePointerBitmapToFile(bitmap, file);
+    return String(file.getAbsolutePath());
+  } finally {
+    try { this.releasePointerCaptureBuffer(captureBuffer); } catch (eReleaseCap) {}
+    try { this.recyclePointerBitmap(bitmap); } catch (eRecycleCapBitmap) {}
+  }
 };
 
 FloatBallAppWM.prototype.isPointerToolActive = function() {
@@ -677,16 +724,22 @@ FloatBallAppWM.prototype.removePointerCallbacks = function(st) {
   try { if (st.handler && st.moveRunnable) st.handler.removeCallbacks(st.moveRunnable); } catch (e0) {}
   try { if (st.handler && st.inspectRunnable) st.handler.removeCallbacks(st.inspectRunnable); } catch (e1) {}
   try { if (st.handler && st.stopInspectRunnable) st.handler.removeCallbacks(st.stopInspectRunnable); } catch (e2) {}
+  try { if (st.handler && st.areaHoldRunnable) st.handler.removeCallbacks(st.areaHoldRunnable); } catch (eAreaHoldRemove) {}
+  try { if (st.handler && st.textReadyRunnable) st.handler.removeCallbacks(st.textReadyRunnable); } catch (eTextReadyRemove) {}
   try { if (st.inspectH) st.inspectH.removeCallbacksAndMessages(null); } catch (e3) {}
   st.moveRunnable = null;
   st.inspectRunnable = null;
   st.stopInspectRunnable = null;
+  st.areaHoldRunnable = null;
+  st.textReadyRunnable = null;
   st.dragUpdatePosted = false;
   st.inspectPosted = false;
   st.draggingInspectPosted = false;
   st.inspectPending = false;
   st.inspectFinishAfterResult = false;
   st.areaHoldToken++;
+  try { if (st.handler && st.areaHoldRunnable) st.handler.removeCallbacks(st.areaHoldRunnable); } catch (eRemoveAreaHoldEnter) {}
+  st.areaHoldRunnable = null;
   st.inspectSeq++;
 };
 
@@ -949,6 +1002,8 @@ FloatBallAppWM.prototype.schedulePointerMove = function(x, y) {
 
 FloatBallAppWM.prototype.resetPointerAreaHold = function() {
   var st = this.ensurePointerToolState();
+  try { if (st.handler && st.areaHoldRunnable) st.handler.removeCallbacks(st.areaHoldRunnable); } catch (eRemoveAreaHold) {}
+  st.areaHoldRunnable = null;
   st.areaHoldToken++;
   st.areaHoldAnchorX = -100000;
   st.areaHoldAnchorY = -100000;
@@ -1032,22 +1087,29 @@ FloatBallAppWM.prototype.schedulePointerAreaHoldCheck = function(token) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "text_pick" || !st.dragging) return;
   if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
-  var self = this;
   try {
-    st.handler.postDelayed(new java.lang.Runnable({ run: function() {
-      try {
-        var s = self.ensurePointerToolState();
-        if (!s.active || s.closed || s.mode !== "text_pick" || !s.dragging) return;
-        if (token !== s.areaHoldToken) return;
-        var hp = self.getPointerHotspot();
-        var dx = hp.x - s.areaHoldAnchorX;
-        var dy = hp.y - s.areaHoldAnchorY;
-        var dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist <= Math.max(1, Number(s.areaHoldBreakSlop || self.dp(14)))) self.armPointerAreaMode(token);
-        else self.updatePointerAreaHoldCandidate();
-      } catch (eRun) { safeLog(self.L, 'e', "schedulePointerAreaHoldCheck run fail: " + String(eRun)); }
-    }}), Math.max(300, Number(st.areaHoldDelay || 1000)));
-  } catch (ePost) {}
+    if (st.areaHoldRunnable) st.handler.removeCallbacks(st.areaHoldRunnable);
+  } catch (eRemoveOldHold) {}
+  var self = this;
+  st.areaHoldRunnable = new java.lang.Runnable({ run: function() {
+    try {
+      var s = self.ensurePointerToolState();
+      if (!s.active || s.closed || s.mode !== "text_pick" || !s.dragging) return;
+      if (token !== s.areaHoldToken) return;
+      s.areaHoldRunnable = null;
+      var hp = self.getPointerHotspot();
+      var dx = hp.x - s.areaHoldAnchorX;
+      var dy = hp.y - s.areaHoldAnchorY;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist <= Math.max(1, Number(s.areaHoldBreakSlop || self.dp(14)))) self.armPointerAreaMode(token);
+      else self.updatePointerAreaHoldCandidate();
+    } catch (eRun) { safeLog(self.L, 'e', "schedulePointerAreaHoldCheck run fail: " + String(eRun)); }
+  }});
+  try {
+    st.handler.postDelayed(st.areaHoldRunnable, Math.max(300, Number(st.areaHoldDelay || 1000)));
+  } catch (ePost) {
+    st.areaHoldRunnable = null;
+  }
 };
 
 FloatBallAppWM.prototype.enterPointerAreaMode = function() {
@@ -1547,14 +1609,18 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
 FloatBallAppWM.prototype.runPointerInspectWorker = function(st) {
   var self = this;
   if (!st || !st.inspectH || st.inspectRunning) return;
+  var workerH = st.inspectH;
+  var workerHt = st.inspectHt;
+  var workerSession = st.inspectSession;
   st.inspectRunning = true;
-  st.inspectH.post(new JavaAdapter(java.lang.Runnable, {
+  workerH.post(new JavaAdapter(java.lang.Runnable, {
     run: function() {
       var pack = null;
       var seq = 0;
-      var session = 0;
+      var session = workerSession;
       var finishAfter = false;
       try {
+        if (workerSession !== st.inspectSession || workerH !== st.inspectH || workerHt !== st.inspectHt) return;
         if (!st.active || st.closed || st.inspectClosed) return;
         st.inspectPending = false;
         seq = st.inspectLatestSeq;
@@ -1574,16 +1640,21 @@ FloatBallAppWM.prototype.runPointerInspectWorker = function(st) {
           var h = st.handler || self.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
           h.post(new JavaAdapter(java.lang.Runnable, {
             run: function() {
-              try { if (pack) self.applyPointerInspectResult(pack); }
-              catch (eApply) { safeLog(self.L, 'e', "applyPointerInspectResult fail: " + String(eApply)); }
               try {
+                if (workerSession !== st.inspectSession || workerH !== st.inspectH || workerHt !== st.inspectHt) return;
+                if (pack) self.applyPointerInspectResult(pack);
+              } catch (eApply) { safeLog(self.L, 'e', "applyPointerInspectResult fail: " + String(eApply)); }
+              try {
+                if (workerSession !== st.inspectSession || workerH !== st.inspectH || workerHt !== st.inspectHt) return;
                 st.inspectRunning = false;
                 if (st.inspectPending && st.active && !st.closed && !st.inspectClosed) self.runPointerInspectWorker(st);
               } catch (eNext) {}
             }
           }));
         } catch (ePost) {
-          st.inspectRunning = false;
+          try {
+            if (workerSession === st.inspectSession && workerH === st.inspectH && workerHt === st.inspectHt) st.inspectRunning = false;
+          } catch (ePostReset) {}
         }
       }
     }

@@ -1,4 +1,4 @@
-// @version 1.0.13
+// @version 1.0.14
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -533,6 +533,7 @@
       };
 
       var oldPointerDragEnd = proto.onPointerBallDragEnd;
+      var oldPointerBallTap18 = proto.onPointerBallTap;
       proto.onPointerBallDragEnd = function(rawX, rawY, action) {
         var st = this.ensurePointerToolState ? this.ensurePointerToolState() : null;
         if (st && st.__th18FixedEdgePointerMode === true && rawX !== undefined && rawY !== undefined) {
@@ -553,6 +554,12 @@
       };
 
       proto.onPointerBallTap = function(rawX, rawY) {
+        var st = null;
+        try { st = this.ensurePointerToolState ? this.ensurePointerToolState() : null; } catch(eStTap) { st = null; }
+        if (st && st.active && !st.closed && typeof oldPointerBallTap18 === "function") {
+          try { return oldPointerBallTap18.call(this, rawX, rawY); }
+          catch(eOldTap) { try { safeLog(this.L, 'e', 'fixed pointer tap fallback fail: ' + String(eOldTap)); } catch(eLogTap) {} }
+        }
         try { this.toast("拖动指针取字，悬停后框选识别"); } catch(eToast) {}
         return true;
       };
@@ -750,6 +757,10 @@
           wantText = !!(st && (st.areaOcrRequested === true || st.mode === "area_capture"));
         } catch(eWant) { wantText = false; }
         var ret = oldFinishPointerAreaCapture.call(this);
+        if (ret && (ret.pending === true || String(ret.code || "") === "TEXT_PICK_FINAL_PENDING")) {
+          try { safeLog(this.L, 'i', "pointer area_ocr skip pending fallback code=" + String(ret.code || "")); } catch(ePendingLog) {}
+          return ret;
+        }
         if (!wantText) return ret;
         try {
           if (!st && this.ensurePointerToolState) st = this.ensurePointerToolState();
@@ -784,6 +795,8 @@
           obj.clipboardError = clipboardError;
           if (!obj.data) obj.data = {};
           obj.data.path = path;
+          obj.data.captureRect = obj.captureRect || null;
+          obj.data.visualRect = obj.visualRect || null;
           obj.data.ocrText = textValue;
           obj.data.ocrError = textOk ? "" : textError;
           obj.data.ocrSource = "rect";
