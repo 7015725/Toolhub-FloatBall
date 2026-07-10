@@ -1,4 +1,4 @@
-// @version 1.0.8
+// @version 1.0.9
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -230,7 +230,7 @@ FloatBallAppWM.prototype.getBallSettingsSubtabs = function() {
   return [
     { key: "shape", title: "外形", desc: "大小、背景、透明度和距离", keys: ["BALL_SIZE_DP", "BALL_BG_COLOR_HEX", "BALL_IDLE_ALPHA", "BALL_PANEL_GAP_DP"] },
     { key: "badge", title: "徽章", desc: "图标来源、岛上图标、颜色和大小", keys: ["BALL_ICON_TYPE", "BALL_ICON_FILE_PATH", "BALL_ICON_RES_NAME", "BALL_ICON_TINT_HEX", "BALL_ICON_SIZE_DP"] },
-    { key: "position", title: "位置", desc: "选择停靠边缘和自定义高低位置", keys: ["BALL_POSITION_SIDE", "BALL_POSITION_LEVEL", "BALL_POSITION_HIGH_PERCENT", "BALL_POSITION_LOW_PERCENT"] }
+    { key: "position", title: "位置", desc: "选择停靠边缘和统一高度位置", keys: ["BALL_POSITION_SIDE", "BALL_POSITION_PERCENT"] }
   ];
 };
 

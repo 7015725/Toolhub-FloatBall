@@ -1,4 +1,4 @@
-// @version 1.1.0
+// @version 1.1.1
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -3139,9 +3139,7 @@ FloatBallAppWM.prototype.createBallLayoutParams = function() {
     proto.isBallPositionEffectKey = function(k) {
       var key = String(k || "");
       return key === "BALL_POSITION_SIDE" ||
-             key === "BALL_POSITION_LEVEL" ||
-             key === "BALL_POSITION_HIGH_PERCENT" ||
-             key === "BALL_POSITION_LOW_PERCENT";
+             key === "BALL_POSITION_PERCENT";
     };
 
     proto.getConfiguredBallPosition = function(cfg) {
@@ -3150,14 +3148,10 @@ FloatBallAppWM.prototype.createBallLayoutParams = function() {
       var sw = Number(this.state && this.state.screen ? this.state.screen.w : 0);
       var sh = Number(this.state && this.state.screen ? this.state.screen.h : 0);
       var side = String(c.BALL_POSITION_SIDE || "right");
-      var level = String(c.BALL_POSITION_LEVEL || "high");
       if (side !== "left") side = "right";
-      if (level !== "low") level = "high";
 
-      var percent = level === "low"
-        ? Number(c.BALL_POSITION_LOW_PERCENT)
-        : Number(c.BALL_POSITION_HIGH_PERCENT);
-      if (isNaN(percent)) percent = level === "low" ? 72 : 22;
+      var percent = Number(c.BALL_POSITION_PERCENT);
+      if (isNaN(percent)) percent = 22;
       percent = this.clamp(percent, 0, 100);
 
       var maxX = Math.max(0, sw - di.ballSize);
@@ -3167,7 +3161,6 @@ FloatBallAppWM.prototype.createBallLayoutParams = function() {
 
       return {
         side: side,
-        level: level,
         percent: percent,
         logicalX: logicalX,
         dockWindowX: side === "left" ? 0 : Math.max(0, sw - di.visiblePx),
@@ -3230,7 +3223,6 @@ FloatBallAppWM.prototype.createBallLayoutParams = function() {
         safeLog(this.L, "i",
           "apply configured ball position reason=" + String(reason || "") +
           " side=" + pos.side +
-          " level=" + pos.level +
           " percent=" + String(pos.percent) +
           " y=" + String(pos.y)
         );
@@ -3289,7 +3281,7 @@ FloatBallAppWM.prototype.createBallLayoutParams = function() {
       return lp;
     };
 
-    // 固定位置模式下，所有吸边入口统一回到设置中的边缘和高/低位置。
+    // 固定位置模式下，所有吸边入口统一回到设置中的边缘和高度位置。
     proto.snapToEdgeDocked = function(withAnim, forceSide) {
       return this.applyConfiguredBallPosition(!!withAnim, "snap");
     };

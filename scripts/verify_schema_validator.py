@@ -26,9 +26,7 @@ EXPECTED = {
     "EDGE_VISIBLE_RATIO": {"type": "float", "name": "吸边露出比例", "min": 0.30, "max": 1.00},
     "CLICK_SLOP_DP": {"type": "int", "name": "点击位移阈值(dp)", "min": 2, "max": 20},
     "BALL_POSITION_SIDE": {"type": "single_choice", "validator_type": "enum", "name": "停靠边缘", "labels": ["左侧", "右侧"]},
-    "BALL_POSITION_LEVEL": {"type": "single_choice", "validator_type": "enum", "name": "当前高度", "labels": ["高位", "低位"]},
-    "BALL_POSITION_HIGH_PERCENT": {"type": "int", "name": "高位 Y 位置(%)", "min": 0, "max": 49},
-    "BALL_POSITION_LOW_PERCENT": {"type": "int", "name": "低位 Y 位置(%)", "min": 50, "max": 100},
+    "BALL_POSITION_PERCENT": {"type": "int", "name": "高度位置(%)", "min": 0, "max": 100},
 }
 
 LEGACY_TEXT = [
