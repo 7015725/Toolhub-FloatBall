@@ -118,6 +118,12 @@
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
+  "release": {
+    "changes": [
+      "异步执行指针框选截图与文件保存"
+    ],
+    "title": "异步执行指针框选截图与文件保存"
+  },
   "schema": 3,
-  "version": 20260710053539
+  "version": 20260710053556
 }
