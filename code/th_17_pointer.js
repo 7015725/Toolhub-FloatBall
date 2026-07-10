@@ -1,4 +1,4 @@
-// @version 1.1.23
+// @version 1.1.24
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -998,12 +998,60 @@ FloatBallAppWM.prototype.onPointerScreenChangedReflow = function(reason, oldW, o
   }
 
   if (st.mode === "text_pick") {
+    // 旋转后 Accessibility 节点布局可能完全变化。
+    // 映射旧矩形不能证明旧文本仍位于指针热点下，因此必须废弃旧候选。
+    try {
+      st.textReadyToken = Number(st.textReadyToken || 0) + 1;
+      if (st.handler && st.textReadyRunnable) {
+        st.handler.removeCallbacks(st.textReadyRunnable);
+      }
+    } catch(eClearReadyReflow) {}
+    st.textReadyRunnable = null;
+
+    st.currentText = "";
+    st.currentRect = null;
+    st.currentKey = "";
+
+    st.boundText = "";
+    st.boundRect = null;
+    st.boundKey = "";
+    st.boundAt = 0;
+
+    st.hoverKey = "";
+    st.hoverSince = 0;
+    st.hoverX = 0;
+    st.hoverY = 0;
+
     st.lastQueryX = -100000;
     st.lastQueryY = -100000;
     st.inspectLastTimedOut = false;
-    if (st.currentText && st.currentRect) st.hoverSince = th17Now();
-    try { this.schedulePointerInspectAsync(true, "screen_reflow:" + String(reason || ""), false); }
-    catch (eRescan) { safeLog(this.L, 'w', "pointer screen reflow rescan fail: " + String(eRescan)); }
+    st.inspectLastCostMs = 0;
+    st.inspectLastNodes = 0;
+    st.inspectLastWindows = 0;
+    st.inspectLastReason = "";
+
+    try { this.updatePointerVisualHot(false); } catch(eClearHotReflow) {}
+    try { this.hidePointerAreaFrame(); } catch(eHideFrameReflow) {}
+    try { this.resetPointerAreaHold(); } catch(eResetHoldReflow) {}
+
+    try {
+      this.schedulePointerInspectAsync(
+        true,
+        "screen_reflow:" + String(reason || ""),
+        false
+      );
+    } catch(eRescan) {
+      safeLog(
+        this.L,
+        'w',
+        "pointer screen reflow rescan fail: " + String(eRescan)
+      );
+    }
+
+    // 仍处于拖动状态时，以旋转后的热点重新开始悬停计时。
+    try {
+      if (st.dragging) this.updatePointerAreaHoldCandidate();
+    } catch(eRestartHoldReflow) {}
   }
 
   try { if (st.root) st.root.invalidate(); } catch (ePointerInvalidate) {}
@@ -1785,10 +1833,45 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     this.schedulePointerTextReadyVisualRefresh();
   } else {
     var recoveredByLastCandidate = false;
+    var timeoutReason = String(pack.reason || "");
+    var finalTimeoutReason =
+      timeoutReason.indexOf("release_final") === 0 ||
+      timeoutReason.indexOf("area_small_text_final") === 0;
+    var finalTimeout =
+      pack.timedOut === true &&
+      finishAfterRelease === true &&
+      finalTimeoutReason;
 
-    // W5：final scan 如果因为预算耗尽而没有返回新结果，不要立刻清空最近候选。
-    // 复杂窗口中深层 TextView 可能尚未遍历到；此时保留 boundText 可避免把“预算耗尽”误判为空白。
-    if (pack.timedOut === true && st.boundText && st.boundRect) {
+    var candidateStillHit = false;
+    try {
+      candidateStillHit =
+        !!st.boundRect &&
+        this.pointerRectHitScore(pack.x, pack.y, st.boundRect) >= 0;
+    } catch(eCandidateHit) {
+      candidateStillHit = false;
+    }
+
+    var hoverLimitForReuse = Number(st.hoverMinMs || 800);
+    if (isNaN(hoverLimitForReuse) || hoverLimitForReuse < 0) hoverLimitForReuse = 800;
+    var candidateReuseMaxMs = Math.max(
+      2000,
+      Math.min(10000, hoverLimitForReuse * 4)
+    );
+    var candidateBoundAt = Number(st.boundAt || 0);
+    var candidateAgeMs = candidateBoundAt > 0 ? now - candidateBoundAt : -1;
+    var candidateFresh =
+      candidateAgeMs >= 0 &&
+      candidateAgeMs <= candidateReuseMaxMs;
+
+    // 仅允许松手最终补扫在预算耗尽时复用仍位于当前热点下的近期候选。
+    // drag、idle、screen_reflow 等扫描超时不能提升旧候选为 currentText。
+    if (
+      finalTimeout &&
+      candidateStillHit &&
+      candidateFresh &&
+      st.boundText &&
+      st.boundRect
+    ) {
       try {
         st.currentText = String(st.boundText);
         st.currentRect = th17RectObj(st.boundRect);
@@ -1806,7 +1889,9 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
             " cost=" + String(pack.costMs) +
             " nodes=" + String(pack.nodes) +
             " windows=" + String(pack.windows) +
-            " reason=" + String(pack.reason || "")
+            " reason=" + String(pack.reason || "") +
+            " ageMs=" + String(candidateAgeMs) +
+            " maxAgeMs=" + String(candidateReuseMaxMs)
           );
         } catch(eReuseLog) {}
       } catch(eReuse) {

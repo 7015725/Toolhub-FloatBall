@@ -183,11 +183,23 @@ def main():
     empty_code = finish_text.find('code: "POINTER_RELEASE_EMPTY"')
     result.require(
         "W5 final timeout is distinct from an empty release",
-        "pack.timedOut === true && st.boundText && st.boundRect" in apply_inspect
+        "var finalTimeout =" in apply_inspect
         and "st.inspectLastTimedOut === true" in finish_text
         and timeout_code >= 0
         and empty_code > timeout_code,
         "timeout fallback or TEXT_SCAN_TIMEOUT ordering is missing",
+    )
+
+    result.require(
+        "N3 stale candidate reuse is final-scan scoped",
+        'timeoutReason.indexOf("release_final") === 0' in apply_inspect
+        and 'timeoutReason.indexOf("area_small_text_final") === 0' in apply_inspect
+        and "finishAfterRelease === true" in apply_inspect
+        and "this.pointerRectHitScore(pack.x, pack.y, st.boundRect) >= 0" in apply_inspect
+        and "candidateFresh" in apply_inspect
+        and "finalTimeout &&" in apply_inspect
+        and "candidateStillHit &&" in apply_inspect,
+        "timeout reuse must be limited to final scans with a fresh candidate still under the hotspot",
     )
 
     save_bitmap = section(
@@ -267,8 +279,22 @@ def main():
         and "st.boundRect = this.mapPointerRectForScreenReflow" in pointer_reflow
         and "st.frameLp.width" in pointer_reflow
         and "st.frameLp.height" in pointer_reflow
-        and 'this.schedulePointerInspectAsync(true, "screen_reflow:"' in pointer_reflow,
+        and '"screen_reflow:" + String(reason || "")' in pointer_reflow,
         "pointer reflow helpers, mapped state, frame size, or text rescan is missing",
+    )
+
+    result.require(
+        "N5 screen reflow invalidates stale text candidates",
+        'if (st.mode === "text_pick")' in pointer_reflow
+        and 'st.currentText = "";' in pointer_reflow
+        and "st.currentRect = null;" in pointer_reflow
+        and 'st.boundText = "";' in pointer_reflow
+        and "st.boundRect = null;" in pointer_reflow
+        and "st.boundAt = 0;" in pointer_reflow
+        and "st.hoverSince = 0;" in pointer_reflow
+        and "this.resetPointerAreaHold()" in pointer_reflow
+        and '"screen_reflow:" + String(reason || "")' in pointer_reflow,
+        "text_pick reflow must clear pre-rotation candidates and restart inspection",
     )
 
     screen_reflow = section(
