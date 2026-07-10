@@ -1,4 +1,4 @@
-// @version 1.1.0
+// @version 1.1.1
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -82,9 +82,7 @@ var ConfigValidator = {
     BALL_POS_DOCK_SIDE: { type: "enum", values: ["", "left", "right"], default: "" },
     BUTTONS_MIGRATION_VERSION: { type: "int", min: 0, max: 9999, default: 0 },
     BALL_POSITION_SIDE: { type: "enum", values: ["left", "right"], default: "right" },
-    BALL_POSITION_LEVEL: { type: "enum", values: ["high", "low"], default: "high" },
-    BALL_POSITION_HIGH_PERCENT: { type: "int", min: 0, max: 49, default: 22 },
-    BALL_POSITION_LOW_PERCENT: { type: "int", min: 50, max: 100, default: 72 },
+    BALL_POSITION_PERCENT: { type: "int", min: 0, max: 100, default: 22 },
     BALL_POSITION_MIGRATION_VERSION: { type: "int", min: 0, max: 9999, default: 0 },
 
     // 面板布局配置
@@ -827,9 +825,7 @@ var ConfigManager = {
         BALL_BG_COLOR_HEX: "",
         BALL_IDLE_ALPHA: 0.6,
         BALL_POSITION_SIDE: "right",
-        BALL_POSITION_LEVEL: "high",
-        BALL_POSITION_HIGH_PERCENT: 22,
-        BALL_POSITION_LOW_PERCENT: 72,
+        BALL_POSITION_PERCENT: 22,
         BALL_POSITION_MIGRATION_VERSION: 0,
         POINTER_SCALE_PERCENT: 100,
         POINTER_EDGE_ZONE_X_DP: 48,
@@ -915,12 +911,7 @@ var ConfigManager = {
             { label: "左侧", value: "left" },
             { label: "右侧", value: "right" }
         ]},
-        { key: "BALL_POSITION_LEVEL", name: "当前高度", type: "single_choice", options: [
-            { label: "高位", value: "high" },
-            { label: "低位", value: "low" }
-        ]},
-        { key: "BALL_POSITION_HIGH_PERCENT", name: "高位 Y 位置(%)", type: "int", min: 0, max: 49, step: 1 },
-        { key: "BALL_POSITION_LOW_PERCENT", name: "低位 Y 位置(%)", type: "int", min: 50, max: 100, step: 1 },
+        { key: "BALL_POSITION_PERCENT", name: "高度位置(%)", type: "int", min: 0, max: 100, step: 1 },
 
         { type: "section", name: "指针" },
         { key: "POINTER_SCALE_PERCENT", name: "指针大小(%)", type: "int", min: 70, max: 140, step: 5 },
@@ -1025,9 +1016,10 @@ var ConfigManager = {
         }
         if (!needReset && (
             sStr.indexOf("BALL_POSITION_SIDE") < 0 ||
-            sStr.indexOf("BALL_POSITION_LEVEL") < 0 ||
-            sStr.indexOf("BALL_POSITION_HIGH_PERCENT") < 0 ||
-            sStr.indexOf("BALL_POSITION_LOW_PERCENT") < 0 ||
+            sStr.indexOf("BALL_POSITION_PERCENT") < 0 ||
+            sStr.indexOf("BALL_POSITION_LEVEL") >= 0 ||
+            sStr.indexOf("BALL_POSITION_HIGH_PERCENT") >= 0 ||
+            sStr.indexOf("BALL_POSITION_LOW_PERCENT") >= 0 ||
             sStr.indexOf("ENABLE_LONG_PRESS") >= 0
         )) {
             needReset = true;
@@ -1063,6 +1055,7 @@ var ConfigManager = {
             if (schemaItemDiffers("BALL_ICON_TINT_HEX", ["name", "type"]) ||
                 schemaItemDiffers("BALL_ICON_SIZE_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("BALL_BG_COLOR_HEX", ["name", "type"]) ||
+                schemaItemDiffers("BALL_POSITION_PERCENT", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_GESTURE_MODE", ["name", "type"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_EDGE_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_COMMIT_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
@@ -1146,46 +1139,68 @@ var ConfigManager = {
         }
 
 
-        // 旧自由坐标一次性迁移为“左/右 + 高/低百分比”。
+        // 旧自由坐标或高/低预设一次性迁移为“左/右 + 单一高度百分比”。
         var positionMigrationDirty = false;
         try {
             var positionMigrationVersion = Number(merged.BALL_POSITION_MIGRATION_VERSION || 0);
             if (isNaN(positionMigrationVersion)) positionMigrationVersion = 0;
 
+            var userHasPositionSide = false;
+            var userHasPositionPercent = false;
+            var hasLegacyPositionKeys = false;
+            try {
+                userHasPositionSide = !!(user && typeof user.BALL_POSITION_SIDE !== "undefined");
+                userHasPositionPercent = !!(user && typeof user.BALL_POSITION_PERCENT !== "undefined");
+                hasLegacyPositionKeys = !!(user && (
+                    typeof user.BALL_POSITION_LEVEL !== "undefined" ||
+                    typeof user.BALL_POSITION_HIGH_PERCENT !== "undefined" ||
+                    typeof user.BALL_POSITION_LOW_PERCENT !== "undefined"
+                ));
+            } catch (ePositionUser) {}
+
             if (!loaded) {
-                merged.BALL_POSITION_MIGRATION_VERSION = 1;
+                merged.BALL_POSITION_MIGRATION_VERSION = 2;
                 positionMigrationDirty = true;
-            } else if (positionMigrationVersion < 1) {
-                var oldSide = String(merged.BALL_POS_DOCK_SIDE || "");
+            } else if (positionMigrationVersion < 2 || hasLegacyPositionKeys) {
+                var oldSide = userHasPositionSide
+                    ? String(merged.BALL_POSITION_SIDE || "")
+                    : String(merged.BALL_POS_DOCK_SIDE || "");
                 if (oldSide !== "left" && oldSide !== "right") {
                     var oldXRatio = Number(merged.BALL_POS_X_RATIO);
                     if (isNaN(oldXRatio)) oldXRatio = 0;
                     oldSide = oldXRatio >= 0.5 ? "right" : "left";
                 }
 
-                var oldYRatio = Number(merged.BALL_POS_Y_RATIO);
-                var oldScreenH = Number(merged.BALL_POS_SCREEN_H || 0);
-                var oldPercent;
-                if (!isNaN(oldYRatio) && (oldScreenH > 0 || oldYRatio > 0)) {
-                    oldPercent = Math.round(Math.max(0, Math.min(1, oldYRatio)) * 100);
-                } else {
-                    var oldYDp = Number(merged.BALL_INIT_Y_DP || 220);
-                    if (isNaN(oldYDp)) oldYDp = 220;
-                    oldPercent = Math.round(oldYDp / 8);
-                }
-                oldPercent = Math.max(0, Math.min(100, oldPercent));
+                var oldPercent = userHasPositionPercent
+                    ? Number(merged.BALL_POSITION_PERCENT)
+                    : NaN;
 
-                merged.BALL_POSITION_SIDE = oldSide;
-                if (oldPercent < 50) {
-                    merged.BALL_POSITION_LEVEL = "high";
-                    merged.BALL_POSITION_HIGH_PERCENT = Math.max(0, Math.min(49, oldPercent));
-                    merged.BALL_POSITION_LOW_PERCENT = 72;
-                } else {
-                    merged.BALL_POSITION_LEVEL = "low";
-                    merged.BALL_POSITION_HIGH_PERCENT = 22;
-                    merged.BALL_POSITION_LOW_PERCENT = Math.max(50, Math.min(100, oldPercent));
+                if (isNaN(oldPercent) && hasLegacyPositionKeys) {
+                    var oldLevel = String(merged.BALL_POSITION_LEVEL || "high");
+                    oldPercent = oldLevel === "low"
+                        ? Number(merged.BALL_POSITION_LOW_PERCENT)
+                        : Number(merged.BALL_POSITION_HIGH_PERCENT);
                 }
-                merged.BALL_POSITION_MIGRATION_VERSION = 1;
+
+                if (isNaN(oldPercent)) {
+                    var oldYRatio = Number(merged.BALL_POS_Y_RATIO);
+                    var oldScreenH = Number(merged.BALL_POS_SCREEN_H || 0);
+                    if (!isNaN(oldYRatio) && (oldScreenH > 0 || oldYRatio > 0)) {
+                        oldPercent = Math.round(Math.max(0, Math.min(1, oldYRatio)) * 100);
+                    } else {
+                        var oldYDp = Number(merged.BALL_INIT_Y_DP || 220);
+                        if (isNaN(oldYDp)) oldYDp = 220;
+                        oldPercent = Math.round(oldYDp / 8);
+                    }
+                }
+
+                oldPercent = Math.max(0, Math.min(100, Math.round(oldPercent)));
+                merged.BALL_POSITION_SIDE = oldSide;
+                merged.BALL_POSITION_PERCENT = oldPercent;
+                try { delete merged.BALL_POSITION_LEVEL; } catch (eDeleteLevel) {}
+                try { delete merged.BALL_POSITION_HIGH_PERCENT; } catch (eDeleteHigh) {}
+                try { delete merged.BALL_POSITION_LOW_PERCENT; } catch (eDeleteLow) {}
+                merged.BALL_POSITION_MIGRATION_VERSION = 2;
                 positionMigrationDirty = true;
             }
         } catch (ePositionMigration) {}

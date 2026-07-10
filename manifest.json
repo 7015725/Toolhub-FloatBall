@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "af5caeee0f198fed81b53a61e59c3003e29819de27a189f547a433c8d82c191e",
-      "size": 68511,
-      "version": "1.1.0"
+      "sha256": "67975c4e88015a3254f4514b444ba7dbf292db0d1351a31f6a9d2d980d693d86",
+      "size": 69332,
+      "version": "1.1.1"
     },
     "th_02_core.js": {
       "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
@@ -87,9 +87,9 @@
       "version": "1.0.0"
     },
     "th_14_panels.js": {
-      "sha256": "b3a0ddf05ef34e20d416f08abdcbcb2d2a49123eaccbbf47f7743e73720ec871",
-      "size": 122615,
-      "version": "1.0.8"
+      "sha256": "5445f3916e81abbb2b2cb0193a598a34337cb118206b2871da9fbc0be5d1bd2f",
+      "size": 122555,
+      "version": "1.0.9"
     },
     "th_14_schema_editor.js": {
       "sha256": "903fb69f973af2a722ea2536bd86099005bb07605616028d5ae9c388fe2981e0",
@@ -97,9 +97,9 @@
       "version": "0.0.0"
     },
     "th_15_extra.js": {
-      "sha256": "440e1bba32b99d26e96c7e7272151cec246a78aef2d3d73883cd9ca06924d8b9",
-      "size": 154382,
-      "version": "1.1.0"
+      "sha256": "3a3d2dcb06897b0b83342521e9b658b56c9fdb4fa019b1cbe3149d957d2e0896",
+      "size": 154020,
+      "version": "1.1.1"
     },
     "th_16_entry.js": {
       "sha256": "0e8e80c06d693953e144a0cd12c44f513ba5b6053d78191c6d06e10c8d2f8409",
@@ -120,14 +120,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "增加左/右边缘与高/低位置设置",
-      "支持用户自定义高位和低位百分比",
-      "移除自由移动与长按设置入口",
-      "指针结束、旋转和重建后恢复配置位置"
+      "悬浮球位置改为左／右边缘与单一高度百分比",
+      "移除高位、低位与当前高度切换",
+      "自动迁移现有高低位置到统一高度",
+      "指针结束、旋转和重建后继续恢复固定位置"
     ],
-    "date": "2026-07-10",
-    "title": "悬浮球固定位置预设"
+    "title": "统一悬浮球高度设置"
   },
   "schema": 3,
-  "version": 20260710112026
+  "version": 20260710125719
 }
