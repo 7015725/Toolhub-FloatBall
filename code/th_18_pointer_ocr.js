@@ -1,4 +1,4 @@
-// @version 1.0.16
+// @version 1.0.17
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -1204,6 +1204,99 @@
       };
 
       var oldFinishPointerAreaCapture = proto.finishPointerAreaCapture;
+      var oldOnPointerAreaCaptureCompleted18 =
+        proto.onPointerAreaCaptureCompleted;
+
+      proto.onPointerAreaCaptureCompleted = function(st, token, obj, ret) {
+        var oldRet = false;
+        try {
+          if (typeof oldOnPointerAreaCaptureCompleted18 === "function") {
+            oldRet = oldOnPointerAreaCaptureCompleted18.call(
+              this,
+              st,
+              token,
+              obj,
+              ret
+            );
+          }
+        } catch (eOldCompleted) {
+          try {
+            safeLog(
+              this.L,
+              'w',
+              "old area capture completion hook fail: " +
+              String(eOldCompleted)
+            );
+          } catch (eOldCompletedLog) {}
+        }
+
+        try {
+          if (!st || !obj) return oldRet;
+
+          var code = String(obj.code || "");
+          if (
+            code === "AREA_CAPTURE_TIMEOUT" ||
+            code === "AREA_CAPTURE_WORKER_FAILED"
+          ) {
+            return oldRet;
+          }
+
+          var wantText = !!(
+            st.areaOcrRequested === true ||
+            String(obj.type || "") === "area_capture"
+          );
+          if (!wantText) return oldRet;
+
+          var path = "";
+          try {
+            path = String(
+              obj.screenshotFilePath ||
+              obj.value ||
+              (obj.data && obj.data.path) ||
+              ""
+            );
+          } catch (ePathCompleted) {
+            path = "";
+          }
+
+          var rect = pickOcrRect18(obj, ret);
+
+          var scheduled = scheduleAreaOcrAsync18(
+            this,
+            st,
+            obj,
+            rect,
+            path,
+            ret
+          );
+
+          try {
+            safeLog(
+              this.L,
+              scheduled ? 'i' : 'w',
+              "pointer area_ocr dispatch after async capture" +
+              " token=" + String(token) +
+              " scheduled=" + String(scheduled) +
+              " rect=" + rectKey18(rect) +
+              " path=" + path
+            );
+          } catch (eLogCompleted) {}
+
+          return scheduled === true || oldRet === true;
+        } catch (eCompleted) {
+          try {
+            safeLog(
+              this.L,
+              'e',
+              "pointer async capture OCR dispatch fail: " +
+              String(eCompleted)
+            );
+          } catch (eCompletedLog) {}
+        }
+
+        return oldRet;
+      };
+
       proto.finishPointerAreaCapture = function() {
         var st = null;
         var wantText = false;
@@ -1212,8 +1305,22 @@
           wantText = !!(st && (st.areaOcrRequested === true || st.mode === "area_capture"));
         } catch(eWant) { wantText = false; }
         var ret = oldFinishPointerAreaCapture.call(this);
-        if (ret && (ret.pending === true || String(ret.code || "") === "TEXT_PICK_FINAL_PENDING")) {
-          try { safeLog(this.L, 'i', "pointer area_ocr skip pending fallback code=" + String(ret.code || "")); } catch(ePendingLog) {}
+        if (
+          ret &&
+          (
+            ret.pending === true ||
+            String(ret.code || "") === "TEXT_PICK_FINAL_PENDING" ||
+            String(ret.code || "") === "AREA_CAPTURE_PENDING"
+          )
+        ) {
+          try {
+            safeLog(
+              this.L,
+              'i',
+              "pointer area_ocr wait pending completion code=" +
+              String(ret.code || "")
+            );
+          } catch (ePendingLog) {}
           return ret;
         }
         if (!wantText) return ret;
