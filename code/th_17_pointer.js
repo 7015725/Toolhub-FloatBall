@@ -1,4 +1,4 @@
-// @version 1.1.24
+// @version 1.1.25
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -401,6 +401,11 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       areaFromText: false,
       areaFallbackPreview: false,
       areaProcessing: false,
+      areaCaptureSeq: 0,
+      areaCaptureRunningToken: 0,
+      areaCaptureDoneToken: 0,
+      areaCaptureThread: null,
+      areaCaptureTimeoutRunnable: null,
       captureRect: null,
       visualRect: null,
       frameKind: "",
@@ -2532,6 +2537,476 @@ FloatBallAppWM.prototype.finishPointerAreaSmallAsTextPick = function(reason) {
   return true;
 };
 
+FloatBallAppWM.prototype.isPointerAreaCaptureTokenCurrent = function(st, token) {
+  if (!st) return false;
+  if (Number(st.areaCaptureSeq || 0) !== Number(token)) return false;
+  if (Number(st.areaCaptureRunningToken || 0) !== Number(token)) return false;
+  if (Number(st.areaCaptureDoneToken || 0) === Number(token)) return false;
+  return true;
+};
+
+FloatBallAppWM.prototype.clearPointerAreaCaptureJobRefs = function(st, token, threadRef, timeoutRunnable) {
+  if (!st) return;
+  try {
+    if (st.areaCaptureThread === threadRef) st.areaCaptureThread = null;
+  } catch (eThreadRef) {}
+  try {
+    if (st.areaCaptureTimeoutRunnable === timeoutRunnable) {
+      st.areaCaptureTimeoutRunnable = null;
+    }
+  } catch (eTimeoutRef) {}
+  try {
+    if (Number(st.areaCaptureRunningToken || 0) === Number(token)) {
+      st.areaCaptureRunningToken = 0;
+    }
+  } catch (eRunningRef) {}
+};
+
+FloatBallAppWM.prototype.cancelPointerAreaCaptureJob = function(st, reason) {
+  if (!st) st = this.ensurePointerToolState();
+
+  var mainH = null;
+  var timeoutRunnable = null;
+  var threadRef = null;
+
+  try {
+    mainH = st.handler || this.state.h ||
+      new android.os.Handler(android.os.Looper.getMainLooper());
+  } catch (eMain) {
+    mainH = null;
+  }
+
+  try { timeoutRunnable = st.areaCaptureTimeoutRunnable || null; }
+  catch (eTimeoutGet) { timeoutRunnable = null; }
+
+  try { threadRef = st.areaCaptureThread || null; }
+  catch (eThreadGet) { threadRef = null; }
+
+  st.areaCaptureSeq = Number(st.areaCaptureSeq || 0) + 1;
+  st.areaCaptureRunningToken = 0;
+  st.areaCaptureDoneToken = 0;
+
+  try {
+    if (mainH && timeoutRunnable) mainH.removeCallbacks(timeoutRunnable);
+  } catch (eRemoveTimeout) {}
+
+  try {
+    if (threadRef && threadRef.interrupt) threadRef.interrupt();
+  } catch (eInterrupt) {}
+
+  st.areaCaptureTimeoutRunnable = null;
+  st.areaCaptureThread = null;
+
+  try {
+    if (timeoutRunnable || threadRef) {
+      safeLog(
+        this.L,
+        'i',
+        "pointer area capture cancelled reason=" + String(reason || "")
+      );
+    }
+  } catch (eLogCancel) {}
+
+  return Number(st.areaCaptureSeq || 0);
+};
+
+FloatBallAppWM.prototype.getPointerAreaCaptureTimeoutMs = function() {
+  var timeoutMs = 10000;
+  try {
+    timeoutMs = Number(
+      this.config && this.config.POINTER_AREA_CAPTURE_TIMEOUT_MS
+        ? this.config.POINTER_AREA_CAPTURE_TIMEOUT_MS
+        : 10000
+    );
+  } catch (e0) {
+    timeoutMs = 10000;
+  }
+  if (isNaN(timeoutMs)) timeoutMs = 10000;
+  return Math.max(2000, Math.min(30000, timeoutMs));
+};
+
+FloatBallAppWM.prototype.deletePointerScreenshotPath = function(path) {
+  var value = String(path || "");
+  if (!value) return false;
+  try {
+    var file = new java.io.File(value);
+    if (!file.exists()) return true;
+    return file.delete() === true;
+  } catch (e0) {
+    return false;
+  }
+};
+
+FloatBallAppWM.prototype.applyPointerAreaCaptureResult = function(
+  st,
+  token,
+  threadRef,
+  timeoutRunnable,
+  captureRect,
+  visualRect,
+  screenshotPath,
+  screenshotError
+) {
+  if (!this.isPointerAreaCaptureTokenCurrent(st, token)) {
+    if (screenshotPath) this.deletePointerScreenshotPath(screenshotPath);
+    return false;
+  }
+
+  st.areaCaptureDoneToken = Number(token);
+  st.areaCaptureRunningToken = 0;
+  st.areaProcessing = false;
+
+  try {
+    var mainH = st.handler || this.state.h ||
+      new android.os.Handler(android.os.Looper.getMainLooper());
+    if (mainH && timeoutRunnable) mainH.removeCallbacks(timeoutRunnable);
+  } catch (eRemoveTimeout) {}
+
+  var obj = {
+    ok: screenshotPath ? true : false,
+    type: "area_capture",
+    code: screenshotPath
+      ? "AREA_CAPTURE_SUCCESS"
+      : "AREA_SCREENSHOT_FAILED",
+    message: screenshotPath
+      ? "框选截图完成"
+      : "框选完成，截图失败",
+    value: String(screenshotPath || ""),
+    captureRect: captureRect,
+    visualRect: visualRect,
+    screenshotFilePath: String(screenshotPath || ""),
+    data: {
+      path: String(screenshotPath || ""),
+      error: String(screenshotError || ""),
+      async: true,
+      token: Number(token)
+    }
+  };
+
+  this.setPointerToolResult(obj);
+
+  try {
+    safeLog(
+      this.L,
+      screenshotPath ? 'i' : 'w',
+      "pointer area_capture async result token=" + String(token) +
+      " captureRect=" + th17RectKey(captureRect) +
+      " visualRect=" + th17RectKey(visualRect) +
+      " screenshot=" + String(screenshotPath || "") +
+      " err=" + String(screenshotError || "")
+    );
+  } catch (eLog) {}
+
+  try {
+    if (screenshotPath) this.toast("框选截图完成: " + screenshotPath);
+    else this.toast("框选完成，截图失败");
+  } catch (eToast) {}
+
+  var ret = {
+    ok: screenshotPath ? true : false,
+    pending: false,
+    type: "area_capture",
+    code: obj.code,
+    captureRect: captureRect,
+    visualRect: visualRect,
+    screenshotFilePath: String(screenshotPath || ""),
+    err: String(screenshotError || "")
+  };
+
+  try {
+    if (typeof this.onPointerAreaCaptureCompleted === "function") {
+      this.onPointerAreaCaptureCompleted(st, token, obj, ret);
+    }
+  } catch (eCompleted) {
+    try {
+      safeLog(
+        this.L,
+        'e',
+        "pointer area capture completion hook fail: " + String(eCompleted)
+      );
+    } catch (eCompletedLog) {}
+  }
+
+  this.clearPointerAreaCaptureJobRefs(
+    st,
+    token,
+    threadRef,
+    timeoutRunnable
+  );
+  return true;
+};
+
+FloatBallAppWM.prototype.schedulePointerAreaCaptureAsync = function(
+  captureRect,
+  visualRect
+) {
+  var st = this.ensurePointerToolState();
+  var self = this;
+  var threadRef = null;
+  var timeoutRunnable = null;
+
+  var token = this.cancelPointerAreaCaptureJob(
+    st,
+    "replace_area_capture"
+  );
+
+  st.areaCaptureRunningToken = Number(token);
+  st.areaCaptureDoneToken = 0;
+  st.areaProcessing = true;
+
+  var pending = {
+    ok: false,
+    pending: true,
+    type: "area_capture",
+    code: "AREA_CAPTURE_PENDING",
+    message: "框选完成，正在保存截图",
+    value: "",
+    captureRect: captureRect,
+    visualRect: visualRect,
+    screenshotFilePath: "",
+    data: {
+      path: "",
+      error: "",
+      async: true,
+      token: Number(token)
+    }
+  };
+
+  this.setPointerToolResult(pending);
+
+  try {
+    this.toast("框选完成，正在保存截图");
+  } catch (eToastPending) {}
+
+  // 立即关闭指针和框选 overlay，触摸结束回调不等待截图及 PNG 写盘。
+  this.closePointerTool("框选截图处理中", true);
+
+  var mainH = null;
+  try {
+    mainH = st.handler || this.state.h ||
+      new android.os.Handler(android.os.Looper.getMainLooper());
+  } catch (eMainHandler) {
+    mainH = new android.os.Handler(android.os.Looper.getMainLooper());
+  }
+
+  var timeoutMs = this.getPointerAreaCaptureTimeoutMs();
+
+  timeoutRunnable = new java.lang.Runnable({ run: function() {
+    try {
+      if (!self.isPointerAreaCaptureTokenCurrent(st, token)) return;
+
+      st.areaCaptureDoneToken = Number(token);
+      st.areaCaptureRunningToken = 0;
+      st.areaProcessing = false;
+
+      try {
+        if (threadRef && threadRef.interrupt) threadRef.interrupt();
+      } catch (eInterruptTimeout) {}
+
+      self.setPointerToolResult({
+        ok: false,
+        pending: false,
+        type: "area_capture",
+        code: "AREA_CAPTURE_TIMEOUT",
+        message: "框选截图超时",
+        value: "",
+        captureRect: captureRect,
+        visualRect: visualRect,
+        screenshotFilePath: "",
+        data: {
+          path: "",
+          error: "截图超时 " + String(timeoutMs) + "ms",
+          async: true,
+          token: Number(token)
+        }
+      });
+
+      try { self.toast("框选截图超时"); } catch (eToastTimeout) {}
+      try {
+        safeLog(
+          self.L,
+          'w',
+          "pointer area capture timeout token=" + String(token) +
+          " timeoutMs=" + String(timeoutMs) +
+          " rect=" + th17RectKey(captureRect)
+        );
+      } catch (eLogTimeout) {}
+    } catch (eTimeout) {
+      try {
+        safeLog(
+          self.L,
+          'e',
+          "pointer area capture timeout runnable fail: " +
+          String(eTimeout)
+        );
+      } catch (eLogTimeoutFail) {}
+    } finally {
+      self.clearPointerAreaCaptureJobRefs(
+        st,
+        token,
+        threadRef,
+        timeoutRunnable
+      );
+    }
+  }});
+
+  st.areaCaptureTimeoutRunnable = timeoutRunnable;
+
+  try {
+    mainH.postDelayed(timeoutRunnable, timeoutMs);
+  } catch (ePostTimeout) {
+    st.areaCaptureTimeoutRunnable = null;
+  }
+
+  threadRef = new java.lang.Thread(new java.lang.Runnable({
+    run: function() {
+      var screenshotPath = "";
+      var screenshotError = "";
+
+      try {
+        // overlay 已在主线程移除；后台等待短暂稳定后再截图。
+        try { java.lang.Thread.sleep(100); }
+        catch (eSleep) {}
+
+        if (!self.isPointerAreaCaptureTokenCurrent(st, token)) return;
+
+        try {
+          screenshotPath = self.capturePointerRectToPng(captureRect);
+        } catch (eShot) {
+          screenshotError = String(eShot);
+        }
+
+        try {
+          mainH.post(new java.lang.Runnable({ run: function() {
+            try {
+              self.applyPointerAreaCaptureResult(
+                st,
+                token,
+                threadRef,
+                timeoutRunnable,
+                captureRect,
+                visualRect,
+                screenshotPath,
+                screenshotError
+              );
+            } catch (eApply) {
+              try {
+                safeLog(
+                  self.L,
+                  'e',
+                  "pointer area capture async apply fail: " +
+                  String(eApply)
+                );
+              } catch (eLogApply) {}
+            }
+          }}));
+        } catch (ePostResult) {
+          if (screenshotPath) {
+            self.deletePointerScreenshotPath(screenshotPath);
+          }
+          self.clearPointerAreaCaptureJobRefs(
+            st,
+            token,
+            threadRef,
+            timeoutRunnable
+          );
+          try {
+            safeLog(
+              self.L,
+              'e',
+              "pointer area capture post result fail: " +
+              String(ePostResult)
+            );
+          } catch (eLogPost) {}
+        }
+      } catch (eWorker) {
+        screenshotError = String(eWorker);
+        try {
+          mainH.post(new java.lang.Runnable({ run: function() {
+            self.applyPointerAreaCaptureResult(
+              st,
+              token,
+              threadRef,
+              timeoutRunnable,
+              captureRect,
+              visualRect,
+              "",
+              screenshotError
+            );
+          }}));
+        } catch (ePostWorkerFail) {
+          self.clearPointerAreaCaptureJobRefs(
+            st,
+            token,
+            threadRef,
+            timeoutRunnable
+          );
+        }
+      }
+    }
+  }), "toolhub_area_capture_" + String(token));
+
+  st.areaCaptureThread = threadRef;
+
+  try {
+    threadRef.start();
+  } catch (eStartThread) {
+    try {
+      if (mainH && timeoutRunnable) mainH.removeCallbacks(timeoutRunnable);
+    } catch (eRemoveStartTimeout) {}
+
+    st.areaCaptureDoneToken = Number(token);
+    st.areaCaptureRunningToken = 0;
+    st.areaProcessing = false;
+
+    this.setPointerToolResult({
+      ok: false,
+      pending: false,
+      type: "area_capture",
+      code: "AREA_CAPTURE_WORKER_FAILED",
+      message: "截图任务启动失败",
+      value: "",
+      captureRect: captureRect,
+      visualRect: visualRect,
+      screenshotFilePath: "",
+      data: {
+        path: "",
+        error: String(eStartThread),
+        async: true,
+        token: Number(token)
+      }
+    });
+
+    this.clearPointerAreaCaptureJobRefs(
+      st,
+      token,
+      threadRef,
+      timeoutRunnable
+    );
+
+    try { this.toast("截图任务启动失败"); } catch (eToastStartFail) {}
+    return {
+      ok: false,
+      pending: false,
+      type: "area_capture",
+      code: "AREA_CAPTURE_WORKER_FAILED",
+      err: String(eStartThread)
+    };
+  }
+
+  try {
+    safeLog(
+      this.L,
+      'i',
+      "pointer area capture async scheduled token=" + String(token) +
+      " timeoutMs=" + String(timeoutMs) +
+      " rect=" + th17RectKey(captureRect)
+    );
+  } catch (eLogSchedule) {}
+
+  return pending;
+};
+
 FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed) return { ok: false, err: "指针未启动" };
@@ -2587,39 +3062,20 @@ FloatBallAppWM.prototype.finishPointerAreaCapture = function() {
     return { ok: false, err: "框选区域过小", code: "AREA_TOO_SMALL" };
   }
   st.areaProcessing = true;
-  try { this.showPointerAreaFrame(visualRect || captureRect, "capture"); } catch (eProcessFrame) {}
-  try { if (st.root) st.root.invalidate(); } catch (eProcessInv) {}
-  try { java.lang.Thread.sleep(90); } catch (eProcessSleep) {}
-  var screenshotPath = "";
-  var screenshotError = "";
   try {
-    try { this.hidePointerAreaFrame(); } catch (eHideFrame) {}
-    try { if (st.root) st.root.setVisibility(android.view.View.GONE); } catch (eHideRoot) {}
-    try { java.lang.Thread.sleep(80); } catch (eSleep) {}
-    screenshotPath = this.capturePointerRectToPng(captureRect);
-  } catch (eShot) {
-    screenshotError = String(eShot);
-    safeLog(this.L, 'e', "pointer area screenshot fail rect=" + th17RectKey(captureRect) + " err=" + screenshotError);
-  }
-  this.setPointerToolResult({
-    ok: screenshotPath ? true : false,
-    type: "area_capture",
-    code: screenshotPath ? "AREA_CAPTURE_SUCCESS" : "AREA_SCREENSHOT_FAILED",
-    message: screenshotPath ? "框选截图完成" : "框选完成，截图失败",
-    value: screenshotPath,
-    captureRect: captureRect,
-    visualRect: visualRect,
-    screenshotFilePath: screenshotPath,
-    data: {
-      path: screenshotPath,
-      error: screenshotError
-    }
-  });
-  safeLog(this.L, 'i', "pointer area_capture result captureRect=" + th17RectKey(captureRect) + " visualRect=" + th17RectKey(visualRect) + " screenshot=" + screenshotPath);
-  if (screenshotPath) this.toast("框选截图完成: " + screenshotPath);
-  else this.toast("框选完成，截图失败");
-  this.closePointerTool("框选完成", true);
-  return { ok: screenshotPath ? true : false, captureRect: captureRect, visualRect: visualRect, screenshotFilePath: screenshotPath, err: screenshotError };
+    this.showPointerAreaFrame(
+      visualRect || captureRect,
+      "capture"
+    );
+  } catch (eProcessFrame) {}
+  try { if (st.root) st.root.invalidate(); } catch (eProcessInv) {}
+
+  // N4：截图、PNG 压缩和文件写入全部移到后台线程。
+  // 当前触摸结束调用链只负责冻结矩形、写入 pending 状态和关闭 overlay。
+  return this.schedulePointerAreaCaptureAsync(
+    captureRect,
+    visualRect
+  );
 };
 
 FloatBallAppWM.prototype.flushPointerPositionFromBall = function() {
@@ -2722,6 +3178,21 @@ FloatBallAppWM.prototype.onPointerBallTap = function(rawX, rawY) {
 
 FloatBallAppWM.prototype.startPointerTool = function(options) {
   var st = this.ensurePointerToolState();
+  try {
+    this.cancelPointerAreaCaptureJob(
+      st,
+      "start_pointer_tool"
+    );
+  } catch (eCancelCaptureStart) {
+    try {
+      safeLog(
+        this.L,
+        'w',
+        "cancel previous area capture fail: " +
+        String(eCancelCaptureStart)
+      );
+    } catch (eCancelCaptureLog) {}
+  }
   if (st.active) this.closePointerTool("重新启动", true);
   st = this.ensurePointerToolState();
   var mode = String((options && options.mode) || "text_pick");

@@ -232,6 +232,37 @@ def main():
         "capture finally must release buffer and recycle bitmap",
     )
 
+    area_finish = section(
+        pointer,
+        "FloatBallAppWM.prototype.finishPointerAreaCapture = function()",
+        "FloatBallAppWM.prototype.flushPointerPositionFromBall = function()",
+    )
+    area_async = section(
+        pointer,
+        "FloatBallAppWM.prototype.schedulePointerAreaCaptureAsync = function(",
+        "FloatBallAppWM.prototype.finishPointerAreaCapture = function()",
+    )
+    area_complete_hook = section(
+        ocr,
+        "proto.onPointerAreaCaptureCompleted = function(st, token, obj, ret)",
+        "proto.finishPointerAreaCapture = function()",
+    )
+    result.require(
+        "N4 area screenshot and PNG save are asynchronous",
+        "java.lang.Thread.sleep" not in area_finish
+        and "capturePointerRectToPng" not in area_finish
+        and "schedulePointerAreaCaptureAsync" in area_finish
+        and "new java.lang.Thread" in area_async
+        and "java.lang.Thread.sleep(100)" in area_async
+        and "capturePointerRectToPng(captureRect)" in area_async
+        and '"AREA_CAPTURE_PENDING"' in area_async
+        and '"AREA_CAPTURE_TIMEOUT"' in area_async
+        and "isPointerAreaCaptureTokenCurrent" in area_async
+        and "mainH.post" in area_async
+        and "scheduleAreaOcrAsync18(" in area_complete_hook,
+        "touch-end capture must return pending while screenshot/save run in a guarded background thread",
+    )
+
     worker = section(
         pointer,
         "FloatBallAppWM.prototype.runPointerInspectWorker = function(st)",

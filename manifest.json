@@ -107,23 +107,23 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "4eacffec7c84c88f91d43c95ada06919bf74f79eb211f21a11afa895a808990a",
-      "size": 107336,
-      "version": "1.1.24"
+      "sha256": "0f31d6e8f3263cd9ab9e34171237242deb8a99637dd4c8cb776668ba4f4c5cb6",
+      "size": 118811,
+      "version": "1.1.25"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "c26bcd251fe8c57165d1fd850e4645c1e3653128e1976ea180c663506219045b",
-      "size": 51164,
-      "version": "1.0.16"
+      "sha256": "76b87b0a7ca972da948fc89e85cb7931afa40128bf1667991c92982b42d52518",
+      "size": 53812,
+      "version": "1.0.17"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "限制指针超时与旋转旧候选复用"
+      "异步执行指针框选截图与文件保存"
     ],
-    "title": "限制指针超时与旋转旧候选复用"
+    "title": "异步执行指针框选截图与文件保存"
   },
   "schema": 3,
-  "version": 20260710051948
+  "version": 20260710053556
 }
