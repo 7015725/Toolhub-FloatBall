@@ -112,18 +112,18 @@
       "version": "1.1.23"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "a1634b7e74b7bb9d7b9a5a699a1c33f70dfa84961a020a62e49b424ec8dbef2b",
-      "size": 45572,
-      "version": "1.0.15"
+      "sha256": "c26bcd251fe8c57165d1fd850e4645c1e3653128e1976ea180c663506219045b",
+      "size": 51164,
+      "version": "1.0.16"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "补齐指针横竖屏重排"
+      "修复异步 OCR 取消清理与迟到写入"
     ],
-    "title": "补齐指针横竖屏重排"
+    "title": "修复异步 OCR 取消清理与迟到写入"
   },
   "schema": 3,
-  "version": 20260710022350
+  "version": 20260710050515
 }
