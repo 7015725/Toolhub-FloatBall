@@ -1,4 +1,4 @@
-// @version 1.0.18
+// @version 1.0.19
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -1387,5 +1387,92 @@
     })).start();
   } catch(eThread) {
     try { install18(); } catch(eDirect) {}
+  }
+})();
+
+// =======================【启动反馈：子模块加载完成】=======================
+// 当前模块是 ToolHub modules 列表的最后一项；仅当前序模块均无加载异常时提示。
+(function() {
+  try {
+    var hasLoadError = false;
+    try {
+      hasLoadError = typeof loadErrors !== "undefined" &&
+                     loadErrors &&
+                     loadErrors.length > 0;
+    } catch (eLoadErrors) {
+      hasLoadError = false;
+    }
+    if (hasLoadError) return;
+
+    var moduleCount = 0;
+    try {
+      if (typeof modules !== "undefined" && modules) {
+        moduleCount = Number(modules.length || 0);
+      }
+    } catch (eModules) {
+      moduleCount = 0;
+    }
+
+    var toastText = moduleCount > 0
+      ? "ToolHub 子模块加载完成（" + String(moduleCount) + " 个）"
+      : "ToolHub 子模块加载完成";
+
+    var toastContext = null;
+    try {
+      if (typeof context !== "undefined" && context) {
+        toastContext = context.getApplicationContext
+          ? context.getApplicationContext()
+          : context;
+      }
+    } catch (eContext) {
+      toastContext = null;
+    }
+
+    if (!toastContext) {
+      try {
+        if (typeof getAndroidContext === "function") {
+          toastContext = getAndroidContext();
+        }
+      } catch (eGetContext) {
+        toastContext = null;
+      }
+    }
+    if (!toastContext) return;
+
+    var showToastTask = new java.lang.Runnable({
+      run: function() {
+        try {
+          android.widget.Toast.makeText(
+            toastContext,
+            String(toastText),
+            android.widget.Toast.LENGTH_SHORT
+          ).show();
+        } catch (eToast) {
+          try {
+            if (typeof writeLog === "function") {
+              writeLog("Submodules loaded toast failed: " + String(eToast));
+            }
+          } catch (eToastLog) {}
+        }
+      }
+    });
+
+    try {
+      new android.os.Handler(android.os.Looper.getMainLooper()).post(showToastTask);
+    } catch (ePost) {
+      try { showToastTask.run(); } catch (eDirect) {}
+    }
+
+    try {
+      if (typeof writeLog === "function") {
+        writeLog("Submodules loaded toast scheduled count=" + String(moduleCount));
+      }
+    } catch (eLog) {}
+  } catch (eNotice) {
+    try {
+      if (typeof writeLog === "function") {
+        writeLog("Submodules loaded notice failed: " + String(eNotice));
+      }
+    } catch (eNoticeLog) {}
   }
 })();
