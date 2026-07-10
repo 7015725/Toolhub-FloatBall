@@ -107,23 +107,23 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "6406aa522d80b1062875a395c7a855accb6f667b95b60e2c52548e7752942159",
-      "size": 88593,
-      "version": "1.1.20"
+      "sha256": "bab40f957a1893eb8cafc89cf204348b4d7554d8b1cfccbb5a1c7ffef25c95be",
+      "size": 92199,
+      "version": "1.1.21"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "45d65f78f178ac0171180494a0655a646faa46d1701caf9ec73c6f1cfb4a7b1f",
-      "size": 37086,
-      "version": "1.0.13"
+      "sha256": "a6c3c49ffbc9b482a6e26a3d2c354275bdd88349e960bbde18c34265636cca52",
+      "size": 37966,
+      "version": "1.0.14"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Fix pointer schema refresh"
+      "修复指针审查发现的竞态与资源问题"
     ],
-    "title": "Fix pointer schema refresh"
+    "title": "修复指针审查发现的竞态与资源问题"
   },
   "schema": 3,
-  "version": 20260709101324
+  "version": 20260710013108
 }
