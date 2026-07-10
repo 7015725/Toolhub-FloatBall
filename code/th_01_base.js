@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.1.0
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -7,11 +7,11 @@
 //
 // 1. 悬浮球手势
 //    - 单击: 打开/关闭主面板
-//    - 长按: 打开设置面板
-//    - 拖拽: 移动悬浮球位置
+//    - 从边缘向屏幕内拖动: 启动指针取字/框选 OCR
+//    - 其他方向拖动和长按: 不执行操作
 //
 // 2. 按钮编辑
-//    - 长按悬浮球 → 设置面板 → 按钮管理
+//    - 主面板 → 设置 → 按钮管理
 //    - 支持类型: Shell / App / Broadcast / Intent / Content / Shortcut
 //
 // ============================================================================
@@ -81,6 +81,11 @@ var ConfigValidator = {
     BALL_POS_DOCKED: { type: "bool", default: false },
     BALL_POS_DOCK_SIDE: { type: "enum", values: ["", "left", "right"], default: "" },
     BUTTONS_MIGRATION_VERSION: { type: "int", min: 0, max: 9999, default: 0 },
+    BALL_POSITION_SIDE: { type: "enum", values: ["left", "right"], default: "right" },
+    BALL_POSITION_LEVEL: { type: "enum", values: ["high", "low"], default: "high" },
+    BALL_POSITION_HIGH_PERCENT: { type: "int", min: 0, max: 49, default: 22 },
+    BALL_POSITION_LOW_PERCENT: { type: "int", min: 50, max: 100, default: 72 },
+    BALL_POSITION_MIGRATION_VERSION: { type: "int", min: 0, max: 9999, default: 0 },
 
     // 面板布局配置
     PANEL_COLS: { type: "int", min: 1, max: 6, default: 1 },
@@ -796,7 +801,7 @@ var ConfigManager = {
         SAVE_THROTTLE_MS: 220,
         LONG_PRESS_HAPTIC_ENABLE: true,
         LONG_PRESS_VIBRATE_MS: 18,
-        ENABLE_LONG_PRESS: true,
+        ENABLE_LONG_PRESS: false,
         LONG_PRESS_MS: 520,
         LONG_PRESS_TRIGGERED_MOVE_SLOP_DP: 28,
         CLICK_SLOP_DP: 6,
@@ -821,6 +826,11 @@ var ConfigManager = {
         BALL_ICON_TINT_HEX: "",
         BALL_BG_COLOR_HEX: "",
         BALL_IDLE_ALPHA: 0.6,
+        BALL_POSITION_SIDE: "right",
+        BALL_POSITION_LEVEL: "high",
+        BALL_POSITION_HIGH_PERCENT: 22,
+        BALL_POSITION_LOW_PERCENT: 72,
+        BALL_POSITION_MIGRATION_VERSION: 0,
         POINTER_SCALE_PERCENT: 100,
         POINTER_EDGE_ZONE_X_DP: 48,
         POINTER_EDGE_ZONE_Y_DP: 72,
@@ -901,6 +911,16 @@ var ConfigManager = {
         { key: "BALL_ICON_SIZE_DP", name: "图标大小", type: "int", min: 12, max: 80, step: 1 },
         { key: "BALL_BG_COLOR_HEX", name: "球体背景", type: "ball_color" },
         { key: "BALL_IDLE_ALPHA", name: "安静时透明度", type: "float", min: 0.1, max: 1.0, step: 0.05 },
+        { key: "BALL_POSITION_SIDE", name: "停靠边缘", type: "single_choice", options: [
+            { label: "左侧", value: "left" },
+            { label: "右侧", value: "right" }
+        ]},
+        { key: "BALL_POSITION_LEVEL", name: "当前高度", type: "single_choice", options: [
+            { label: "高位", value: "high" },
+            { label: "低位", value: "low" }
+        ]},
+        { key: "BALL_POSITION_HIGH_PERCENT", name: "高位 Y 位置(%)", type: "int", min: 0, max: 49, step: 1 },
+        { key: "BALL_POSITION_LOW_PERCENT", name: "低位 Y 位置(%)", type: "int", min: 50, max: 100, step: 1 },
 
         { type: "section", name: "指针" },
         { key: "POINTER_SCALE_PERCENT", name: "指针大小(%)", type: "int", min: 70, max: 140, step: 5 },
@@ -968,11 +988,6 @@ var ConfigManager = {
         { key: "TOOLAPP_BACK_COMMIT_DISTANCE_DP", name: "设置页返回触发距离", type: "int", min: 1, max: 480, step: 1 },
         { key: "TOOLAPP_BACK_SURFACE_SLOP_DP", name: "表面横滑起手阈值", type: "int", min: 8, max: 96, step: 1 },
         { key: "TOOLAPP_BACK_PROGRESS_DISTANCE_DP", name: "设置页返回动画距离", type: "int", min: 1, max: 720, step: 1 },
-        { key: "ENABLE_LONG_PRESS", name: "启用长按", type: "bool" },
-        { key: "LONG_PRESS_MS", name: "长按判定(ms)", type: "int", min: 200, max: 2000, step: 10 },
-        { key: "LONG_PRESS_TRIGGERED_MOVE_SLOP_DP", name: "长按后抖动容忍距离", type: "int", min: 8, max: 80, step: 1 },
-        { key: "LONG_PRESS_HAPTIC_ENABLE", name: "长按震动反馈", type: "bool" },
-        { key: "LONG_PRESS_VIBRATE_MS", name: "长按震动时长(ms)", type: "int", min: 10, max: 100, step: 1 },
 
         { type: "section", name: "日志" },
         { key: "LOG_ENABLE", name: "写文件日志", type: "bool" },
@@ -1006,6 +1021,15 @@ var ConfigManager = {
     if (s) {
         var sStr = JSON.stringify(s);
         if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_X_DP") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 || sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HIT_HEX") < 0 || sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_COLOR_AREA_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
+            needReset = true;
+        }
+        if (!needReset && (
+            sStr.indexOf("BALL_POSITION_SIDE") < 0 ||
+            sStr.indexOf("BALL_POSITION_LEVEL") < 0 ||
+            sStr.indexOf("BALL_POSITION_HIGH_PERCENT") < 0 ||
+            sStr.indexOf("BALL_POSITION_LOW_PERCENT") < 0 ||
+            sStr.indexOf("ENABLE_LONG_PRESS") >= 0
+        )) {
             needReset = true;
         }
         if (!needReset && (sStr.indexOf("ENABLE_TOOLAPP_INNER_BACK_STRIPS") >= 0 || sStr.indexOf("ENABLE_TOOLAPP_SCREEN_BACK_STRIPS") >= 0)) {
@@ -1119,6 +1143,57 @@ var ConfigManager = {
                 }
                 loaded = true;
             } catch (e) {}
+        }
+
+
+        // 旧自由坐标一次性迁移为“左/右 + 高/低百分比”。
+        var positionMigrationDirty = false;
+        try {
+            var positionMigrationVersion = Number(merged.BALL_POSITION_MIGRATION_VERSION || 0);
+            if (isNaN(positionMigrationVersion)) positionMigrationVersion = 0;
+
+            if (!loaded) {
+                merged.BALL_POSITION_MIGRATION_VERSION = 1;
+                positionMigrationDirty = true;
+            } else if (positionMigrationVersion < 1) {
+                var oldSide = String(merged.BALL_POS_DOCK_SIDE || "");
+                if (oldSide !== "left" && oldSide !== "right") {
+                    var oldXRatio = Number(merged.BALL_POS_X_RATIO);
+                    if (isNaN(oldXRatio)) oldXRatio = 0;
+                    oldSide = oldXRatio >= 0.5 ? "right" : "left";
+                }
+
+                var oldYRatio = Number(merged.BALL_POS_Y_RATIO);
+                var oldScreenH = Number(merged.BALL_POS_SCREEN_H || 0);
+                var oldPercent;
+                if (!isNaN(oldYRatio) && (oldScreenH > 0 || oldYRatio > 0)) {
+                    oldPercent = Math.round(Math.max(0, Math.min(1, oldYRatio)) * 100);
+                } else {
+                    var oldYDp = Number(merged.BALL_INIT_Y_DP || 220);
+                    if (isNaN(oldYDp)) oldYDp = 220;
+                    oldPercent = Math.round(oldYDp / 8);
+                }
+                oldPercent = Math.max(0, Math.min(100, oldPercent));
+
+                merged.BALL_POSITION_SIDE = oldSide;
+                if (oldPercent < 50) {
+                    merged.BALL_POSITION_LEVEL = "high";
+                    merged.BALL_POSITION_HIGH_PERCENT = Math.max(0, Math.min(49, oldPercent));
+                    merged.BALL_POSITION_LOW_PERCENT = 72;
+                } else {
+                    merged.BALL_POSITION_LEVEL = "low";
+                    merged.BALL_POSITION_HIGH_PERCENT = 22;
+                    merged.BALL_POSITION_LOW_PERCENT = Math.max(50, Math.min(100, oldPercent));
+                }
+                merged.BALL_POSITION_MIGRATION_VERSION = 1;
+                positionMigrationDirty = true;
+            }
+        } catch (ePositionMigration) {}
+
+        if (loaded && positionMigrationDirty) {
+            try {
+                FileIO.writeTextAtomic(PATH_SETTINGS, JSON.stringify(merged, null, 2));
+            } catch (ePositionMigrationWrite) {}
         }
 
         // # 仅当文件不存在时才写入默认值，避免因读取失败导致用户配置被覆盖

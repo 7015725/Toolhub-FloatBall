@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.1.0
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -3131,4 +3131,434 @@ FloatBallAppWM.prototype.createBallLayoutParams = function() {
 
   return lp;
 };
+// =======================【固定位置预设与悬浮球手势收敛】=======================
+(function() {
+  try {
+    var proto = FloatBallAppWM.prototype;
 
+    proto.isBallPositionEffectKey = function(k) {
+      var key = String(k || "");
+      return key === "BALL_POSITION_SIDE" ||
+             key === "BALL_POSITION_LEVEL" ||
+             key === "BALL_POSITION_HIGH_PERCENT" ||
+             key === "BALL_POSITION_LOW_PERCENT";
+    };
+
+    proto.getConfiguredBallPosition = function(cfg) {
+      var c = cfg || this.config || {};
+      var di = this.getDockInfo();
+      var sw = Number(this.state && this.state.screen ? this.state.screen.w : 0);
+      var sh = Number(this.state && this.state.screen ? this.state.screen.h : 0);
+      var side = String(c.BALL_POSITION_SIDE || "right");
+      var level = String(c.BALL_POSITION_LEVEL || "high");
+      if (side !== "left") side = "right";
+      if (level !== "low") level = "high";
+
+      var percent = level === "low"
+        ? Number(c.BALL_POSITION_LOW_PERCENT)
+        : Number(c.BALL_POSITION_HIGH_PERCENT);
+      if (isNaN(percent)) percent = level === "low" ? 72 : 22;
+      percent = this.clamp(percent, 0, 100);
+
+      var maxX = Math.max(0, sw - di.ballSize);
+      var maxY = Math.max(0, sh - di.ballSize);
+      var logicalX = side === "left" ? 0 : maxX;
+      var y = Math.round(maxY * percent / 100);
+
+      return {
+        side: side,
+        level: level,
+        percent: percent,
+        logicalX: logicalX,
+        dockWindowX: side === "left" ? 0 : Math.max(0, sw - di.visiblePx),
+        y: this.clamp(y, 0, maxY),
+        ballSize: di.ballSize,
+        visiblePx: di.visiblePx,
+        hiddenPx: di.hiddenPx
+      };
+    };
+
+    proto.cancelConfiguredBallPositionApply = function() {
+      try {
+        if (this.state && this.state.configuredBallPositionRunnable && this.state.h) {
+          this.state.h.removeCallbacks(this.state.configuredBallPositionRunnable);
+        }
+      } catch (e) {}
+      if (this.state) this.state.configuredBallPositionRunnable = null;
+    };
+
+    proto.applyConfiguredBallPosition = function(withAnim, reason) {
+      try {
+        if (!this.state || this.state.closing) return false;
+        if (!this.state.addedBall || !this.state.ballRoot || !this.state.ballContent || !this.state.ballLp) return false;
+
+        try {
+          var fresh = this.getScreenSizePx();
+          if (fresh && fresh.w > 0 && fresh.h > 0) this.state.screen = fresh;
+        } catch (eScreen) {}
+
+        var pos = this.getConfiguredBallPosition();
+        this.cancelDockTimer();
+        try {
+          if (this.state.ballAnimator) {
+            this.state.ballAnimator.cancel();
+            this.state.ballAnimator = null;
+          }
+        } catch (eAnimCancel) {}
+
+        this.state.docked = true;
+        this.state.dockSide = pos.side;
+        try { this.state.ballContent.setX(pos.side === "left" ? -pos.hiddenPx : 0); } catch (eX) {}
+        try { this.state.ballContent.setAlpha(Number(this.config.BALL_IDLE_ALPHA || 0.6)); } catch (eAlpha) {}
+
+        if (withAnim && this.config.ENABLE_ANIMATIONS) {
+          this.animateBallLayout(
+            pos.dockWindowX,
+            pos.y,
+            pos.visiblePx,
+            Number(this.config.DOCK_ANIM_MS || 260),
+            null
+          );
+        } else {
+          this.state.ballLp.x = pos.dockWindowX;
+          this.state.ballLp.y = pos.y;
+          this.state.ballLp.width = pos.visiblePx;
+          this.state.ballLp.height = pos.ballSize;
+          this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);
+        }
+
+        safeLog(this.L, "i",
+          "apply configured ball position reason=" + String(reason || "") +
+          " side=" + pos.side +
+          " level=" + pos.level +
+          " percent=" + String(pos.percent) +
+          " y=" + String(pos.y)
+        );
+        return true;
+      } catch (e) {
+        safeLog(this.L, "e", "applyConfiguredBallPosition fail: " + String(e));
+      }
+      return false;
+    };
+
+    proto.scheduleConfiguredBallPositionApply = function(reason, withAnim) {
+      try {
+        this.cancelConfiguredBallPositionApply();
+        var self = this;
+        var run = new java.lang.Runnable({
+          run: function() {
+            try {
+              self.state.configuredBallPositionRunnable = null;
+              self.applyConfiguredBallPosition(!!withAnim, reason);
+            } catch (eRun) {
+              safeLog(self.L, "e", "configured position runnable fail: " + String(eRun));
+            }
+          }
+        });
+        this.state.configuredBallPositionRunnable = run;
+        if (this.state.h) this.state.h.postDelayed(run, 60);
+        else run.run();
+        return true;
+      } catch (e) {
+        return this.applyConfiguredBallPosition(!!withAnim, reason);
+      }
+    };
+
+    proto.loadSavedPos = function() {
+      var pos = this.getConfiguredBallPosition();
+      return { x: pos.logicalX, y: pos.y };
+    };
+
+    proto.createBallLayoutParams = function() {
+      var pos = this.getConfiguredBallPosition();
+      var lp = new android.view.WindowManager.LayoutParams(
+        pos.visiblePx,
+        pos.ballSize,
+        android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+        android.graphics.PixelFormat.TRANSLUCENT
+      );
+      lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+      lp.x = pos.dockWindowX;
+      lp.y = pos.y;
+
+      this.state.docked = true;
+      this.state.dockSide = pos.side;
+      try { this.state.ballContent.setX(pos.side === "left" ? -pos.hiddenPx : 0); } catch (eX) {}
+      try { this.state.ballContent.setAlpha(Number(this.config.BALL_IDLE_ALPHA || 0.6)); } catch (eAlpha) {}
+      return lp;
+    };
+
+    // 固定位置模式下，所有吸边入口统一回到设置中的边缘和高/低位置。
+    proto.snapToEdgeDocked = function(withAnim, forceSide) {
+      return this.applyConfiguredBallPosition(!!withAnim, "snap");
+    };
+
+    // 长按不再承担设置入口或移动位置。
+    proto.armLongPress = function() {
+      try { this.cancelLongPressTimer(); } catch (eCancel) {}
+      try { this.resetLongPressState(); } catch (eReset) {}
+      return false;
+    };
+
+    proto.setupTouchListener = function() {
+      var self = this;
+      var slop = this.dp(Number(this.config.CLICK_SLOP_DP || 6));
+      var startRawX = 0;
+      var startRawY = 0;
+      var logicalDownX = 0;
+      var logicalDownY = 0;
+      var grabOffsetX = 0;
+      var grabOffsetY = 0;
+      var downSide = "right";
+      var pointerActiveDown = false;
+      var edgePointerDrag = false;
+
+      function cancelBallAnimator() {
+        try {
+          if (self.state.ballAnimator) {
+            self.state.ballAnimator.cancel();
+            self.state.ballAnimator = null;
+          }
+          if (self.state.ballContent) {
+            try { self.state.ballContent.animate().cancel(); } catch (eAnim) {}
+            try {
+              self.state.ballContent.setScaleX(1.0);
+              self.state.ballContent.setScaleY(1.0);
+            } catch (eScale) {}
+          }
+        } catch (e) {}
+      }
+
+      function setFreeBallAt(rawX, rawY) {
+        var pos = self.getConfiguredBallPosition();
+        var targetX = Math.round(rawX - grabOffsetX);
+        var targetY = Math.round(rawY - grabOffsetY);
+        self.state.docked = false;
+        self.state.dockSide = null;
+        self.state.ballLp.width = pos.ballSize;
+        self.state.ballLp.height = pos.ballSize;
+        self.state.ballLp.x = self.clamp(targetX, 0, self.state.screen.w - pos.ballSize);
+        self.state.ballLp.y = self.clamp(targetY, 0, self.state.screen.h - pos.ballSize);
+        try { self.state.ballContent.setX(0); } catch (eX) {}
+        try { self.state.ballContent.setAlpha(1.0); } catch (eAlpha) {}
+        try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp); } catch (eUpdate) {
+          safeLog(self.L, "e", "pointer ball update fail: " + String(eUpdate));
+        }
+      }
+
+      function startPointerFromEdge(rawX, rawY, dx, dy) {
+        if (edgePointerDrag) return true;
+        if (typeof self.startPointerTool !== "function") return false;
+
+        var pos = self.getConfiguredBallPosition();
+        var inward = downSide === "left" ? dx : -dx;
+        var adx = Math.abs(dx);
+        var ady = Math.abs(dy);
+        var trigger = Math.max(slop, Math.round(Number(pos.hiddenPx || 0) * 0.55));
+        if (trigger < self.dp(8)) trigger = self.dp(8);
+
+        if (inward < trigger) return false;
+        if (adx < ady * 1.10) return false;
+
+        try { self.hideAllPanels(); } catch (eHide) {}
+        cancelBallAnimator();
+
+        self.state.docked = false;
+        self.state.dockSide = null;
+        self.state.ballLp.width = pos.ballSize;
+        self.state.ballLp.height = pos.ballSize;
+        self.state.ballLp.x = logicalDownX;
+        self.state.ballLp.y = logicalDownY;
+        try { self.state.ballContent.setX(0); } catch (eX) {}
+        try { self.state.ballContent.setAlpha(1.0); } catch (eAlpha) {}
+        try { self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp); } catch (eUpdate) {}
+
+        var result = self.startPointerTool({ mode: "text_pick", source: "edge_drag" });
+        if (!result || result.ok === false) {
+          self.applyConfiguredBallPosition(true, "pointer_start_failed");
+          return false;
+        }
+
+        edgePointerDrag = true;
+        pointerActiveDown = true;
+        self.state.dragging = true;
+        try { self.onPointerBallDragStart(startRawX, startRawY); } catch (eStart) {}
+        setFreeBallAt(rawX, rawY);
+        try {
+          self.onPointerBallDragging(
+            self.state.ballLp.x,
+            self.state.ballLp.y,
+            rawX,
+            rawY
+          );
+        } catch (eDragging) {}
+        return true;
+      }
+
+      return new JavaAdapter(android.view.View.OnTouchListener, {
+        onTouch: function(v, e) {
+          if (self.state.closing) return false;
+          var action = e.getAction();
+          var rawX = e.getRawX();
+          var rawY = e.getRawY();
+
+          if (action === android.view.MotionEvent.ACTION_DOWN) {
+            self.touchActivity();
+            cancelBallAnimator();
+            try { self.cancelLongPressTimer(); } catch (eLong) {}
+            try { v.setPressed(true); v.setAlpha(1.0); } catch (ePressed) {}
+
+            var pos = self.getConfiguredBallPosition();
+            startRawX = rawX;
+            startRawY = rawY;
+            downSide = String(self.state.dockSide || pos.side || "right");
+            logicalDownX = self.state.docked ? pos.logicalX : Number(self.state.ballLp.x || pos.logicalX);
+            logicalDownY = Number(self.state.ballLp.y || pos.y);
+            grabOffsetX = startRawX - logicalDownX;
+            grabOffsetY = startRawY - logicalDownY;
+            pointerActiveDown = false;
+            edgePointerDrag = false;
+            self.state.dragging = false;
+
+            try {
+              pointerActiveDown = typeof self.isPointerToolActive === "function" &&
+                                  self.isPointerToolActive();
+            } catch (eActive) {
+              pointerActiveDown = false;
+            }
+            if (pointerActiveDown) {
+              try { self.onPointerBallDragStart(startRawX, startRawY); } catch (ePointerStart) {}
+            }
+            return true;
+          }
+
+          if (action === android.view.MotionEvent.ACTION_MOVE) {
+            self.touchActivity();
+            var dx = Math.round(rawX - startRawX);
+            var dy = Math.round(rawY - startRawY);
+            var moved = Math.abs(dx) > slop || Math.abs(dy) > slop;
+
+            if (pointerActiveDown) {
+              if (moved) self.state.dragging = true;
+              if (self.state.dragging) {
+                setFreeBallAt(rawX, rawY);
+                try {
+                  self.onPointerBallDragging(
+                    self.state.ballLp.x,
+                    self.state.ballLp.y,
+                    rawX,
+                    rawY
+                  );
+                } catch (ePointerMove) {}
+              }
+              return true;
+            }
+
+            if (startPointerFromEdge(rawX, rawY, dx, dy)) return true;
+
+            // 非向内指针手势只消费，不移动悬浮球。
+            if (moved) self.state.dragging = true;
+            return true;
+          }
+
+          if (action === android.view.MotionEvent.ACTION_UP ||
+              action === android.view.MotionEvent.ACTION_CANCEL) {
+            self.touchActivity();
+            try { v.setPressed(false); } catch (eRelease) {}
+            try {
+              if (self.config.ENABLE_ANIMATIONS) {
+                v.animate().cancel();
+                v.animate().scaleX(1.0).scaleY(1.0).setDuration(120).start();
+              } else {
+                v.setScaleX(1.0);
+                v.setScaleY(1.0);
+              }
+            } catch (eScale) {}
+
+            var pointerActiveUp = false;
+            try {
+              pointerActiveUp = typeof self.isPointerToolActive === "function" &&
+                                self.isPointerToolActive();
+            } catch (ePointerActive) {
+              pointerActiveUp = false;
+            }
+
+            if (pointerActiveUp) {
+              if (!self.state.dragging && action === android.view.MotionEvent.ACTION_UP) {
+                try { self.onPointerBallTap(rawX, rawY); } catch (eTap) {}
+              } else {
+                try { self.onPointerBallDragEnd(rawX, rawY, action); } catch (eEnd) {
+                  safeLog(self.L, "e", "pointer drag end fail: " + String(eEnd));
+                }
+              }
+              self.state.dragging = false;
+              edgePointerDrag = false;
+              pointerActiveDown = false;
+              self.applyConfiguredBallPosition(true, "pointer_end");
+              return true;
+            }
+
+            if (!self.state.dragging && action === android.view.MotionEvent.ACTION_UP) {
+              try { self.playBounce(v); } catch (eBounce) {}
+              if (self.state.addedPanel) {
+                self.hideMainPanel();
+                self.applyConfiguredBallPosition(true, "main_panel_close");
+              } else {
+                self.showPanelAvoidBall("main");
+              }
+              safeLog(self.L, "i", "click -> toggle main");
+            } else {
+              self.applyConfiguredBallPosition(true, "gesture_cancel");
+            }
+
+            self.state.dragging = false;
+            edgePointerDrag = false;
+            pointerActiveDown = false;
+            try { self.resetLongPressState(); } catch (eReset) {}
+            return true;
+          }
+
+          return false;
+        }
+      });
+    };
+
+    if (typeof proto.applyImmediateEffectsForKey === "function") {
+      var oldApplyImmediateEffectsForKey = proto.applyImmediateEffectsForKey;
+      proto.applyImmediateEffectsForKey = function(k) {
+        if (this.isBallPositionEffectKey && this.isBallPositionEffectKey(k)) {
+          return this.scheduleConfiguredBallPositionApply("settings:" + String(k || ""), true);
+        }
+        return oldApplyImmediateEffectsForKey.call(this, k);
+      };
+    }
+
+    if (typeof proto.onScreenChangedReflow === "function") {
+      var oldOnScreenChangedReflow = proto.onScreenChangedReflow;
+      proto.onScreenChangedReflow = function(reason) {
+        var ret = oldOnScreenChangedReflow.call(this, reason);
+        var pointerActive = false;
+        try {
+          pointerActive = typeof this.isPointerToolActive === "function" &&
+                          this.isPointerToolActive();
+        } catch (ePointer) {}
+        if (!pointerActive && this.state && this.state.addedBall) {
+          this.applyConfiguredBallPosition(false, "screen_reflow:" + String(reason || ""));
+        }
+        return ret;
+      };
+    }
+
+    if (typeof proto.rebuildBallForNewSize === "function") {
+      var oldRebuildBallForNewSize = proto.rebuildBallForNewSize;
+      proto.rebuildBallForNewSize = function(keepPanels) {
+        var ret = oldRebuildBallForNewSize.call(this, keepPanels);
+        if (ret) this.applyConfiguredBallPosition(false, "ball_rebuild");
+        return ret;
+      };
+    }
+  } catch (eInstall) {
+    try { safeLog(null, "e", "install fixed ball position patch fail: " + String(eInstall)); } catch (eLog) {}
+  }
+})();
