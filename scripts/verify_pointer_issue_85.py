@@ -263,6 +263,25 @@ def main():
         "touch-end capture must return pending while screenshot/save run in a guarded background thread",
     )
 
+    apply_ocr = section(
+        ocr,
+        "function applyAreaOcrResult18",
+        "function isAreaOcrTokenCurrent18",
+    )
+    result.require(
+        "N6 empty OCR result is not reported as success",
+        '"AREA_OCR_EMPTY"' in apply_ocr
+        and "var hasText = textOk === true && normalizedText.length > 0;" in apply_ocr
+        and "obj.ok = hasText;" in apply_ocr
+        and "obj.ocrEmpty = textOk === true && !hasText;" in apply_ocr
+        and "obj.clipboardOk = hasText && clipboardOk === true;" in apply_ocr
+        and '.replace(/^\\s+|\\s+$/g, "");' in async_ocr
+        and 'var code = !textOk' in async_ocr
+        and '"AREA_OCR_EMPTY"' in async_ocr
+        and "if (textOk && textValue)" in async_ocr,
+        "empty or whitespace-only OCR must use AREA_OCR_EMPTY and skip clipboard success",
+    )
+
     worker = section(
         pointer,
         "FloatBallAppWM.prototype.runPointerInspectWorker = function(st)",

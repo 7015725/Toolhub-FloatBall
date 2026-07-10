@@ -1,4 +1,4 @@
-// @version 1.0.17
+// @version 1.0.18
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -749,18 +749,33 @@
       if (!obj) obj = {};
       if (!obj.data) obj.data = {};
 
-      obj.ok = textOk === true && !!textValue;
+      var normalizedText = String(textValue || "").replace(/^\s+|\s+$/g, "");
+      var hasText = textOk === true && normalizedText.length > 0;
+      var resultCode = String(code || "");
+      var resultMessage = String(message || "");
+
+      // N6：OCR 正常执行但没有文字，不得返回成功码。
+      if (textOk === true && !hasText) {
+        resultCode = "AREA_OCR_EMPTY";
+        resultMessage = "框选完成，未识别到文字";
+      } else {
+        if (!resultCode) resultCode = hasText ? "AREA_OCR_SUCCESS" : "AREA_OCR_FAILED";
+        if (!resultMessage) resultMessage = hasText ? "框选识别完成" : "框选识别失败";
+      }
+
+      obj.ok = hasText;
       obj.type = "area_ocr";
-      obj.code = String(code || (textOk ? "AREA_OCR_SUCCESS" : "AREA_OCR_FAILED"));
-      obj.message = String(message || (textOk ? "框选识别完成" : "框选识别失败"));
-      obj.value = String(textValue || "");
+      obj.code = resultCode;
+      obj.message = resultMessage;
+      obj.value = normalizedText;
       obj.captureRect = cloneRect18(rect || obj.captureRect || obj.data.captureRect);
-      obj.screenshotFilePath = String(path || obj.screenshotFilePath || obj.value || "");
-      obj.ocrText = String(textValue || "");
-      obj.ocrError = textOk ? "" : String(textError || "");
+      obj.screenshotFilePath = String(path || obj.screenshotFilePath || "");
+      obj.ocrText = normalizedText;
+      obj.ocrError = textOk === true ? "" : String(textError || "");
+      obj.ocrEmpty = textOk === true && !hasText;
       obj.ocrSource = String(source || "rect_async");
       obj.ocrPending = false;
-      obj.clipboardOk = clipboardOk === true;
+      obj.clipboardOk = hasText && clipboardOk === true;
       obj.clipboardError = String(clipboardError || "");
 
       obj.data.path = obj.screenshotFilePath;
@@ -768,6 +783,7 @@
       obj.data.visualRect = obj.visualRect || obj.data.visualRect || null;
       obj.data.ocrText = obj.ocrText;
       obj.data.ocrError = obj.ocrError;
+      obj.data.ocrEmpty = obj.ocrEmpty;
       obj.data.ocrSource = obj.ocrSource;
       obj.data.ocrPending = false;
       obj.data.clipboardOk = obj.clipboardOk;
@@ -776,10 +792,11 @@
       appObj.setPointerToolResult(obj);
 
       try {
-        safeLog(appObj.L, textOk ? 'i' : 'w',
+        safeLog(appObj.L, hasText ? 'i' : 'w',
           "pointer area_ocr async result token=" + String(token) +
-          " ok=" + String(textOk === true) +
-          " clip=" + String(clipboardOk === true) +
+          " ok=" + String(hasText === true) +
+          " empty=" + String(obj.ocrEmpty === true) +
+          " clip=" + String(obj.clipboardOk === true) +
           " rect=" + rectKey18(obj.captureRect) +
           " path=" + String(obj.screenshotFilePath || "") +
           " code=" + String(obj.code || "") +
@@ -789,9 +806,10 @@
       } catch(eLog) {}
 
       try {
-        if (textOk && clipboardOk) appObj.toast("识别完成，已复制");
-        else if (textOk) appObj.toast("识别完成，复制失败");
-        else if (String(code || "") === "AREA_OCR_TIMEOUT") appObj.toast("OCR 超时，已保留截图");
+        if (hasText && obj.clipboardOk) appObj.toast("识别完成，已复制");
+        else if (hasText) appObj.toast("识别完成，复制失败");
+        else if (resultCode === "AREA_OCR_EMPTY") appObj.toast("未识别到文字，已保留截图");
+        else if (resultCode === "AREA_OCR_TIMEOUT") appObj.toast("OCR 超时，已保留截图");
         else appObj.toast("截图完成，识别失败");
       } catch(eToast) {}
 
@@ -1019,7 +1037,8 @@
           if (!isAreaOcrTokenCurrent18(st, token)) return;
 
           try {
-            textValue = appObj.runPointerAreaTextByRect(rr);
+            textValue = String(appObj.runPointerAreaTextByRect(rr) || "")
+              .replace(/^\s+|\s+$/g, "");
             textOk = true;
           } catch(eOcr) {
             textError = String(eOcr);
@@ -1048,10 +1067,17 @@
               // 防止复制过程中发生重入或新会话切换。
               if (!isAreaOcrTokenCurrent18(st, token)) return;
 
-              var code = textOk ? "AREA_OCR_SUCCESS" : "AREA_OCR_FAILED";
-              var msg = textOk
-                ? (clipboardOk ? "框选识别完成，已复制" : "框选识别完成")
-                : "框选截图完成，识别失败";
+              var hasText = textOk === true && !!textValue;
+              var code = !textOk
+                ? "AREA_OCR_FAILED"
+                : (hasText ? "AREA_OCR_SUCCESS" : "AREA_OCR_EMPTY");
+              var msg = !textOk
+                ? "框选截图完成，识别失败"
+                : (
+                  hasText
+                    ? (clipboardOk ? "框选识别完成，已复制" : "框选识别完成")
+                    : "框选完成，未识别到文字"
+                );
 
               applyAreaOcrResult18(
                 appObj,
