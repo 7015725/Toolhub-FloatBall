@@ -1,4 +1,4 @@
-// @version 1.1.21
+// @version 1.1.22
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -329,6 +329,9 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       inspectLatestForce: false,
       inspectLatestReason: "",
       inspectFinishAfterResult: false,
+      inspectLastWindows: 0,
+      inspectLastTimedOut: false,
+      inspectLastReason: "",
       inspectLastResultSeq: 0,
       inspectLastRequestTs: 0,
       inspectLastCostMs: 0,
@@ -456,6 +459,9 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.inspectLatestForce = false;
   st.inspectLatestReason = "";
   st.inspectFinishAfterResult = false;
+  st.inspectLastWindows = 0;
+  st.inspectLastTimedOut = false;
+  st.inspectLastReason = "";
   st.inspectLastResultSeq = 0;
   st.inspectLastRequestTs = 0;
   st.inspectLastCostMs = 0;
@@ -1547,6 +1553,9 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
   st.inspectLastResultSeq = pack.seq;
   st.inspectLastCostMs = Number(pack.costMs || 0);
   st.inspectLastNodes = Number(pack.nodes || 0);
+  st.inspectLastWindows = Number(pack.windows || 0);
+  st.inspectLastTimedOut = pack.timedOut === true;
+  st.inspectLastReason = String(pack.reason || "");
   st.lastQueryX = pack.x;
   st.lastQueryY = pack.y;
   var result = pack.result;
@@ -1584,17 +1593,49 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     this.refreshPointerTextReadyVisualState();
     this.schedulePointerTextReadyVisualRefresh();
   } else {
-    try {
-      st.textReadyToken = Number(st.textReadyToken || 0) + 1;
-      if (st.handler && st.textReadyRunnable) st.handler.removeCallbacks(st.textReadyRunnable);
-    } catch(eClearReadyTimer) {}
-    st.currentText = "";
-    st.currentRect = null;
-    st.currentKey = "";
-    st.hoverKey = "";
-    st.hoverSince = 0;
-    this.updatePointerVisualHot(false);
-    this.hidePointerAreaFrame();
+    var recoveredByLastCandidate = false;
+
+    // W5：final scan 如果因为预算耗尽而没有返回新结果，不要立刻清空最近候选。
+    // 复杂窗口中深层 TextView 可能尚未遍历到；此时保留 boundText 可避免把“预算耗尽”误判为空白。
+    if (pack.timedOut === true && st.boundText && st.boundRect) {
+      try {
+        st.currentText = String(st.boundText);
+        st.currentRect = th17RectObj(st.boundRect);
+        st.currentKey = st.boundKey || this.pointerTextKeyOf({ text: st.currentText, rect: st.currentRect });
+        st.hoverKey = st.currentKey;
+        if (!st.hoverSince || Number(st.hoverSince || 0) <= 0) st.hoverSince = Number(st.boundAt || now);
+        st.hoverX = pack.x;
+        st.hoverY = pack.y;
+        recoveredByLastCandidate = true;
+        this.refreshPointerTextReadyVisualState();
+        this.schedulePointerTextReadyVisualRefresh();
+        try {
+          safeLog(this.L, 'w',
+            "pointer inspect timeout reuse last candidate textLen=" + String(st.currentText.length) +
+            " cost=" + String(pack.costMs) +
+            " nodes=" + String(pack.nodes) +
+            " windows=" + String(pack.windows) +
+            " reason=" + String(pack.reason || "")
+          );
+        } catch(eReuseLog) {}
+      } catch(eReuse) {
+        recoveredByLastCandidate = false;
+      }
+    }
+
+    if (!recoveredByLastCandidate) {
+      try {
+        st.textReadyToken = Number(st.textReadyToken || 0) + 1;
+        if (st.handler && st.textReadyRunnable) st.handler.removeCallbacks(st.textReadyRunnable);
+      } catch(eClearReadyTimer) {}
+      st.currentText = "";
+      st.currentRect = null;
+      st.currentKey = "";
+      st.hoverKey = "";
+      st.hoverSince = 0;
+      this.updatePointerVisualHot(false);
+      this.hidePointerAreaFrame();
+    }
   }
   try {
     if (Number(pack.costMs || 0) > 80 || pack.timedOut === true) {
@@ -1880,12 +1921,50 @@ FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
   if (!st.active || st.closed || st.mode !== "text_pick") return;
   var releaseTs = Number(st.releaseTs || th17Now());
   if (isNaN(releaseTs) || releaseTs <= 0) releaseTs = th17Now();
+
   if (st.currentText && st.currentRect) {
     this.extractCurrentPointerText(true, releaseTs);
     return;
   }
+
+  // W5：如果 final scan 是预算耗尽，不再报告为空白处松手。
+  // 没有可复用候选时返回专用错误码，方便 ShortX 后续区分“没文本”和“扫描没扫完”。
+  if (st.inspectLastTimedOut === true) {
+    try {
+      safeLog(this.L, 'w',
+        "pointer release final scan timeout cost=" + String(st.inspectLastCostMs || 0) +
+        " nodes=" + String(st.inspectLastNodes || 0) +
+        " windows=" + String(st.inspectLastWindows || 0) +
+        " reason=" + String(st.inspectLastReason || st.inspectLatestReason || "")
+      );
+    } catch (eTimeoutLog) {}
+
+    this.setPointerToolResult({
+      ok: false,
+      type: "pointer_error",
+      code: "TEXT_SCAN_TIMEOUT",
+      message: "取字扫描超时，未确认是否为空白",
+      value: "",
+      data: {
+        costMs: Number(st.inspectLastCostMs || 0),
+        nodes: Number(st.inspectLastNodes || 0),
+        windows: Number(st.inspectLastWindows || 0),
+        reason: String(st.inspectLastReason || st.inspectLatestReason || ""),
+        hint: "扫描预算耗尽，不等同于无文本"
+      }
+    });
+    this.toast("取字扫描超时");
+    this.closePointerTool("取字扫描超时", true);
+    return;
+  }
+
   try {
-    safeLog(this.L, 'i', "pointer release final no accessibility text cost=" + String(st.inspectLastCostMs || 0) + " nodes=" + String(st.inspectLastNodes || 0) + " reason=" + String(st.inspectLatestReason || ""));
+    safeLog(this.L, 'i',
+      "pointer release final no accessibility text cost=" + String(st.inspectLastCostMs || 0) +
+      " nodes=" + String(st.inspectLastNodes || 0) +
+      " windows=" + String(st.inspectLastWindows || 0) +
+      " reason=" + String(st.inspectLastReason || st.inspectLatestReason || "")
+    );
   } catch (eNoTextLog) {}
 
   this.setPointerToolResult({
@@ -1894,7 +1973,12 @@ FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
     code: "POINTER_RELEASE_EMPTY",
     message: "空白处松手，已关闭指针",
     value: "",
-    data: {}
+    data: {
+      costMs: Number(st.inspectLastCostMs || 0),
+      nodes: Number(st.inspectLastNodes || 0),
+      windows: Number(st.inspectLastWindows || 0),
+      reason: String(st.inspectLastReason || st.inspectLatestReason || "")
+    }
   });
   this.closePointerTool("空白处松手", true);
 };
@@ -1913,11 +1997,11 @@ FloatBallAppWM.prototype.finishPointerTextPickOnRelease = function() {
   // 无文字候选：不要立刻判空。松手时执行一次 release_final 强制补扫。
   // 解决拖动扫描异步返回滞后导致的 POINTER_RELEASE_EMPTY。
   try {
-    st.inspectMaxFinalMs = Math.max(Number(st.inspectMaxFinalMs || 120), 180);
-    st.inspectMaxFinalNodes = Math.max(Number(st.inspectMaxFinalNodes || 260), 420);
+    st.inspectMaxFinalMs = Math.max(Number(st.inspectMaxFinalMs || 120), 220);
+    st.inspectMaxFinalNodes = Math.max(Number(st.inspectMaxFinalNodes || 260), 900);
   } catch (eBudget) {
-    st.inspectMaxFinalMs = 180;
-    st.inspectMaxFinalNodes = 420;
+    st.inspectMaxFinalMs = 220;
+    st.inspectMaxFinalNodes = 900;
   }
   var scheduled = this.schedulePointerInspectAsync(true, "release_final", true);
   if (scheduled !== true) this.finishPointerTextPickAfterRelease();
