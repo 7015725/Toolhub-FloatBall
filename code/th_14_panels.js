@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -88,7 +88,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
   try { cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config; } catch(eCfg) { cfgTpl = this.config; }
   if (this.isSettingsMonetTheme && this.isSettingsMonetTheme(cfgTpl)) {
     return [
-      { key: "ball", title: "悬浮球", desc: "大小、图标、颜色和跟随距离", sections: ["悬浮球"] },
+      { key: "ball", title: "悬浮球", desc: "大小、图标、颜色、位置和跟随距离", sections: ["悬浮球"] },
       { key: "pointer", title: "指针", desc: "大小、贴边、悬停、取字保护、OCR阈值和颜色", sections: ["指针"] },
       { key: "panel", title: "面板", desc: "排列、文字、位置和吸边行为", sections: ["面板布局", "面板文字", "吸边与位置"] },
       { key: "theme", title: "外观", desc: "颜色、背景、透明度和动态取色", sections: ["外观"] },
@@ -97,7 +97,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
     ];
   }
   return [
-    { key: "ball", title: "悬浮球", desc: "调整悬浮球大小、图标和面板距离", sections: ["悬浮球"] },
+    { key: "ball", title: "悬浮球", desc: "调整悬浮球大小、图标、位置和面板距离", sections: ["悬浮球"] },
     { key: "pointer", title: "指针", desc: "调整指针大小、贴边范围、悬停、取字保护、OCR阈值和颜色", sections: ["指针"] },
     { key: "panel", title: "工具面板", desc: "调整面板排列、文字、位置和吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
     { key: "theme", title: "换装与装饰", desc: "更换颜色、背景和透明度", sections: ["外观"] },
@@ -229,7 +229,8 @@ FloatBallAppWM.prototype.createPointerSettingsBlockDesc = function(parent, block
 FloatBallAppWM.prototype.getBallSettingsSubtabs = function() {
   return [
     { key: "shape", title: "外形", desc: "大小、背景、透明度和距离", keys: ["BALL_SIZE_DP", "BALL_BG_COLOR_HEX", "BALL_IDLE_ALPHA", "BALL_PANEL_GAP_DP"] },
-    { key: "badge", title: "徽章", desc: "图标来源、岛上图标、颜色和大小", keys: ["BALL_ICON_TYPE", "BALL_ICON_FILE_PATH", "BALL_ICON_RES_NAME", "BALL_ICON_TINT_HEX", "BALL_ICON_SIZE_DP"] }
+    { key: "badge", title: "徽章", desc: "图标来源、岛上图标、颜色和大小", keys: ["BALL_ICON_TYPE", "BALL_ICON_FILE_PATH", "BALL_ICON_RES_NAME", "BALL_ICON_TINT_HEX", "BALL_ICON_SIZE_DP"] },
+    { key: "position", title: "位置", desc: "选择停靠边缘和自定义高低位置", keys: ["BALL_POSITION_SIDE", "BALL_POSITION_LEVEL", "BALL_POSITION_HIGH_PERCENT", "BALL_POSITION_LOW_PERCENT"] }
   ];
 };
 
