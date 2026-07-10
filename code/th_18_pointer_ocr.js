@@ -1,4 +1,4 @@
-// @version 1.0.15
+// @version 1.0.16
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -802,14 +802,86 @@
     return false;
   }
 
+  function isAreaOcrTokenCurrent18(st, token) {
+    if (!st) return false;
+    if (Number(st.areaOcrSeq || 0) !== Number(token)) return false;
+    if (Number(st.areaOcrDoneToken || 0) === Number(token)) return false;
+    return true;
+  }
+
+  function clearAreaOcrWorkerRefs18(st, ht, workerH, timeoutRunnable, token) {
+    if (!st) return;
+    try {
+      if (st.areaOcrThread === ht) st.areaOcrThread = null;
+    } catch(eThreadRef) {}
+    try {
+      if (st.areaOcrHandler === workerH) st.areaOcrHandler = null;
+    } catch(eHandlerRef) {}
+    try {
+      if (st.areaOcrTimeoutRunnable === timeoutRunnable) st.areaOcrTimeoutRunnable = null;
+    } catch(eTimeoutRef) {}
+    try {
+      if (Number(st.areaOcrRunningToken || 0) === Number(token)) st.areaOcrRunningToken = 0;
+    } catch(eRunningRef) {}
+  }
+
+  function stopAreaOcrWorker18(appObj, st, reason) {
+    if (!st) return false;
+
+    var mainH = null;
+    var timeoutRunnable = null;
+    var workerH = null;
+    var ht = null;
+
+    try { mainH = st.handler || getMainHandler18(appObj); } catch(eMain) { mainH = null; }
+    try { timeoutRunnable = st.areaOcrTimeoutRunnable || null; } catch(eTimeoutGet) { timeoutRunnable = null; }
+    try { workerH = st.areaOcrHandler || null; } catch(eHandlerGet) { workerH = null; }
+    try { ht = st.areaOcrThread || null; } catch(eThreadGet) { ht = null; }
+
+    try {
+      if (mainH && timeoutRunnable) mainH.removeCallbacks(timeoutRunnable);
+    } catch(eRemoveTimeout) {}
+
+    try {
+      if (workerH) workerH.removeCallbacksAndMessages(null);
+    } catch(eRemoveWorker) {}
+
+    try { quitHandlerThread18(ht); } catch(eQuitWorker) {}
+
+    try { st.areaOcrTimeoutRunnable = null; } catch(eClearTimeout) {}
+    try { st.areaOcrHandler = null; } catch(eClearHandler) {}
+    try { st.areaOcrThread = null; } catch(eClearThread) {}
+    try { st.areaOcrRunningToken = 0; } catch(eClearRunning) {}
+
+    try {
+      if (timeoutRunnable || workerH || ht) {
+        safeLog(
+          appObj && appObj.L,
+          'i',
+          "pointer area_ocr worker stopped reason=" + String(reason || "")
+        );
+      }
+    } catch(eLogStop) {}
+
+    return true;
+  }
+
   function scheduleAreaOcrAsync18(appObj, st, obj, rect, path, ret) {
+    var ht = null;
+    var workerH = null;
+    var timeoutRunnable = null;
+
     try {
       if (!appObj || !st) return false;
 
       var rr = cloneRect18(rect);
       var screenshotPath = String(path || "");
+
+      // 新 token 先使旧任务失效，再清理旧 worker 和 timeout。
       var token = Number(st.areaOcrSeq || 0) + 1;
       st.areaOcrSeq = token;
+      stopAreaOcrWorker18(appObj, st, "replace_with_token_" + String(token));
+
       st.areaOcrRunningToken = token;
       st.areaOcrDoneToken = 0;
 
@@ -857,7 +929,22 @@
       }
 
       if (!screenshotPath || !rr) {
-        applyAreaOcrResult18(appObj, st, token, obj, screenshotPath, rr, false, "", rr ? "截图路径为空" : "OCR区域为空", false, "", screenshotPath ? "AREA_OCR_FAILED" : "AREA_SCREENSHOT_FAILED", screenshotPath ? "框选截图完成，识别失败" : "框选完成，截图失败", "rect_async");
+        applyAreaOcrResult18(
+          appObj,
+          st,
+          token,
+          obj,
+          screenshotPath,
+          rr,
+          false,
+          "",
+          rr ? "截图路径为空" : "OCR区域为空",
+          false,
+          "",
+          screenshotPath ? "AREA_OCR_FAILED" : "AREA_SCREENSHOT_FAILED",
+          screenshotPath ? "框选截图完成，识别失败" : "框选完成，截图失败",
+          "rect_async"
+        );
         return false;
       }
 
@@ -865,74 +952,191 @@
 
       var timeoutMs = getOcrTimeoutMs18(appObj);
       var workerName = "toolhub_area_ocr_" + String(token);
-      var ht = new android.os.HandlerThread(workerName);
+
+      ht = new android.os.HandlerThread(workerName);
       ht.start();
-      var workerH = new android.os.Handler(ht.getLooper());
+      workerH = new android.os.Handler(ht.getLooper());
 
       st.areaOcrThread = ht;
       st.areaOcrHandler = workerH;
 
-      st.areaOcrTimeoutRunnable = new java.lang.Runnable({ run: function() {
+      timeoutRunnable = new java.lang.Runnable({ run: function() {
         try {
-          if (Number(st.areaOcrSeq || 0) !== Number(token)) return;
-          if (Number(st.areaOcrDoneToken || 0) === Number(token)) return;
-          applyAreaOcrResult18(appObj, st, token, obj, screenshotPath, rr, false, "", "OCR超时 " + String(timeoutMs) + "ms", false, "", "AREA_OCR_TIMEOUT", "OCR 超时，已保留截图", "rect_async_timeout");
-          try { quitHandlerThread18(ht); } catch(eQuitTimeout) {}
+          if (!isAreaOcrTokenCurrent18(st, token)) return;
+
+          applyAreaOcrResult18(
+            appObj,
+            st,
+            token,
+            obj,
+            screenshotPath,
+            rr,
+            false,
+            "",
+            "OCR超时 " + String(timeoutMs) + "ms",
+            false,
+            "",
+            "AREA_OCR_TIMEOUT",
+            "OCR 超时，已保留截图",
+            "rect_async_timeout"
+          );
         } catch(eTimeout) {
-          try { safeLog(appObj.L, 'e', "pointer area_ocr timeout runnable fail: " + String(eTimeout)); } catch(eLogTimeout) {}
+          try {
+            safeLog(
+              appObj.L,
+              'e',
+              "pointer area_ocr timeout runnable fail: " + String(eTimeout)
+            );
+          } catch(eLogTimeout) {}
+        } finally {
+          // token 已失效时同样必须清理旧 worker，不能直接泄漏 Looper。
+          try {
+            if (workerH) workerH.removeCallbacksAndMessages(null);
+          } catch(eRemoveTimeoutWorker) {}
+          try { quitHandlerThread18(ht); } catch(eQuitTimeout) {}
+          clearAreaOcrWorkerRefs18(st, ht, workerH, timeoutRunnable, token);
         }
       }});
 
-      try { mainH.postDelayed(st.areaOcrTimeoutRunnable, timeoutMs); } catch(ePostTimeout) {}
+      st.areaOcrTimeoutRunnable = timeoutRunnable;
+
+      try {
+        mainH.postDelayed(timeoutRunnable, timeoutMs);
+      } catch(ePostTimeout) {
+        try { if (workerH) workerH.removeCallbacksAndMessages(null); } catch(eRemovePostTimeout) {}
+        try { quitHandlerThread18(ht); } catch(eQuitPostTimeout) {}
+        clearAreaOcrWorkerRefs18(st, ht, workerH, timeoutRunnable, token);
+        throw ePostTimeout;
+      }
 
       workerH.post(new java.lang.Runnable({ run: function() {
         var textValue = "";
         var textError = "";
         var textOk = false;
-        var clipboardOk = false;
-        var clipboardError = "";
-        try {
-          if (Number(st.areaOcrSeq || 0) !== Number(token)) return;
-          textValue = appObj.runPointerAreaTextByRect(rr);
-          textOk = true;
-        } catch(eOcr) {
-          textError = String(eOcr);
-        }
-
-        if (textOk && textValue) {
-          try { clipboardOk = appObj.copyPointerAreaTextToClipboard(textValue) === true; }
-          catch(eClip) { clipboardError = String(eClip); }
-        }
+        var postedToMain = false;
 
         try {
+          if (!isAreaOcrTokenCurrent18(st, token)) return;
+
+          try {
+            textValue = appObj.runPointerAreaTextByRect(rr);
+            textOk = true;
+          } catch(eOcr) {
+            textError = String(eOcr);
+          }
+
+          // OCR 执行期间可能已超时或被新会话取消。
+          // 必须在回主线程前再次检查，迟到结果不能继续处理。
+          if (!isAreaOcrTokenCurrent18(st, token)) return;
+
           mainH.post(new java.lang.Runnable({ run: function() {
+            var clipboardOk = false;
+            var clipboardError = "";
+
             try {
+              // 剪贴板写入必须位于最终 token 校验之后。
+              if (!isAreaOcrTokenCurrent18(st, token)) return;
+
+              if (textOk && textValue) {
+                try {
+                  clipboardOk = appObj.copyPointerAreaTextToClipboard(textValue) === true;
+                } catch(eClip) {
+                  clipboardError = String(eClip);
+                }
+              }
+
+              // 防止复制过程中发生重入或新会话切换。
+              if (!isAreaOcrTokenCurrent18(st, token)) return;
+
               var code = textOk ? "AREA_OCR_SUCCESS" : "AREA_OCR_FAILED";
-              var msg = textOk ? (clipboardOk ? "框选识别完成，已复制" : "框选识别完成") : "框选截图完成，识别失败";
-              applyAreaOcrResult18(appObj, st, token, obj, screenshotPath, rr, textOk, textValue, textError, clipboardOk, clipboardError, code, msg, "rect_async");
+              var msg = textOk
+                ? (clipboardOk ? "框选识别完成，已复制" : "框选识别完成")
+                : "框选截图完成，识别失败";
+
+              applyAreaOcrResult18(
+                appObj,
+                st,
+                token,
+                obj,
+                screenshotPath,
+                rr,
+                textOk,
+                textValue,
+                textError,
+                clipboardOk,
+                clipboardError,
+                code,
+                msg,
+                "rect_async"
+              );
             } catch(eApply) {
-              try { safeLog(appObj.L, 'e', "pointer area_ocr async apply fail: " + String(eApply)); } catch(eLogApply) {}
+              try {
+                safeLog(
+                  appObj.L,
+                  'e',
+                  "pointer area_ocr async apply fail: " + String(eApply)
+                );
+              } catch(eLogApply) {}
             } finally {
-              try { quitHandlerThread18(ht); } catch(eQuitApply) {}
+              clearAreaOcrWorkerRefs18(st, ht, workerH, timeoutRunnable, token);
             }
           }}));
-        } catch(ePostResult) {
-          try { safeLog(appObj.L, 'e', "pointer area_ocr post result fail: " + String(ePostResult)); } catch(eLogPost) {}
-          try { quitHandlerThread18(ht); } catch(eQuitPost) {}
+
+          postedToMain = true;
+        } catch(eWorker) {
+          try {
+            safeLog(
+              appObj.L,
+              'e',
+              "pointer area_ocr worker fail: " + String(eWorker)
+            );
+          } catch(eLogWorker) {}
+        } finally {
+          // 无论正常、失效、异常还是尚未执行 OCR，都必须退出 Looper。
+          try { quitHandlerThread18(ht); } catch(eQuitWorker) {}
+
+          if (!postedToMain) {
+            try {
+              if (st.areaOcrTimeoutRunnable === timeoutRunnable && st.handler) {
+                st.handler.removeCallbacks(timeoutRunnable);
+              }
+            } catch(eRemoveStaleTimeout) {}
+
+            clearAreaOcrWorkerRefs18(st, ht, workerH, timeoutRunnable, token);
+          }
         }
-      } }));
+      }}));
 
       try {
-        safeLog(appObj.L, 'i', "pointer area_ocr async scheduled token=" + String(token) + " timeoutMs=" + String(timeoutMs) + " rect=" + rectKey18(rr) + " path=" + screenshotPath);
+        safeLog(
+          appObj.L,
+          'i',
+          "pointer area_ocr async scheduled token=" + String(token) +
+          " timeoutMs=" + String(timeoutMs) +
+          " rect=" + rectKey18(rr) +
+          " path=" + screenshotPath
+        );
       } catch(eLogSchedule) {}
 
       return true;
     } catch(e0) {
-      try { safeLog(appObj.L, 'e', "scheduleAreaOcrAsync18 fail: " + String(e0)); } catch(eLog) {}
+      try {
+        if (workerH) workerH.removeCallbacksAndMessages(null);
+      } catch(eRemoveFail) {}
+      try { quitHandlerThread18(ht); } catch(eQuitFail) {}
+      clearAreaOcrWorkerRefs18(st, ht, workerH, timeoutRunnable, Number(st && st.areaOcrRunningToken || 0));
+
+      try {
+        safeLog(
+          appObj && appObj.L,
+          'e',
+          "scheduleAreaOcrAsync18 fail: " + String(e0)
+        );
+      } catch(eLog) {}
     }
+
     return false;
   }
-
 
   function install18() {
     try {
@@ -960,11 +1164,16 @@
         try {
           var stCancelOcr = this.ensurePointerToolState ? this.ensurePointerToolState() : null;
           if (stCancelOcr) {
+            // 先递增 token，使正在运行的旧 OCR 结果立即失效；
+            // 再移除 timeout、worker 队列并关闭旧 HandlerThread。
             stCancelOcr.areaOcrSeq = Number(stCancelOcr.areaOcrSeq || 0) + 1;
-            stCancelOcr.areaOcrRunningToken = 0;
-            stCancelOcr.areaOcrTimeoutRunnable = null;
+            stopAreaOcrWorker18(this, stCancelOcr, "start_pointer_tool");
           }
-        } catch(eCancelOcrStart) {}
+        } catch(eCancelOcrStart) {
+          try {
+            safeLog(this.L, 'w', "cancel previous area_ocr fail: " + String(eCancelOcrStart));
+          } catch(eCancelOcrLog) {}
+        }
         if (rawMode === "area_ocr") {
           var opt = copy18(options || {});
           opt.mode = "text_pick";
