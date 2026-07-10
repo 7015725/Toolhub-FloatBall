@@ -1,4 +1,4 @@
-// @version 1.0.8
+// @version 1.0.9
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -80,6 +80,7 @@ var ConfigValidator = {
     BALL_POS_Y_RATIO: { type: "float", min: 0, max: 1, default: 0 },
     BALL_POS_DOCKED: { type: "bool", default: false },
     BALL_POS_DOCK_SIDE: { type: "enum", values: ["", "left", "right"], default: "" },
+    BUTTONS_MIGRATION_VERSION: { type: "int", min: 0, max: 9999, default: 0 },
 
     // 面板布局配置
     PANEL_COLS: { type: "int", min: 1, max: 6, default: 1 },
@@ -799,6 +800,7 @@ var ConfigManager = {
         LONG_PRESS_MS: 520,
         LONG_PRESS_TRIGGERED_MOVE_SLOP_DP: 28,
         CLICK_SLOP_DP: 6,
+        BUTTONS_MIGRATION_VERSION: 0,
         TOOLAPP_BACK_GESTURE_MODE: "surface",
         TOOLAPP_BACK_EDGE_WIDTH_DP: 72,
         TOOLAPP_BACK_COMMIT_DISTANCE_DP: 36,
@@ -860,8 +862,13 @@ var ConfigManager = {
         LOG_KEEP_DAYS: 3
     },
     defaultButtons: [
-        // # 默认按钮已迁移至 buttons.json
-        // # Default buttons migrated to buttons.json
+        {
+            id: "builtin_settings",
+            title: "设置",
+            type: "open_settings",
+            enabled: true,
+            iconResName: "ic_menu_preferences"
+        }
     ],
     defaultSchema: [
         { type: "section", name: "外观" },
@@ -1161,6 +1168,7 @@ var ConfigManager = {
         }
 
         var dirty = false;
+        var rescueMode = false;
         if (!btns) {
             // # 仅当文件不存在时才使用默认值并写入
             try {
@@ -1175,9 +1183,24 @@ var ConfigManager = {
             if (!btns) {
                 // # 救援模式：如果配置文件损坏，提供一个"关闭"按钮，防止无法退出
                 btns = [
-                    { title: "Rescue: Close", type: "broadcast", action: "shortx.wm.floatball.CLOSE", iconResName: "ic_menu_close_clear_cancel" }
+                    {
+                        id: "rescue_settings",
+                        title: "设置",
+                        type: "open_settings",
+                        enabled: true,
+                        iconResName: "ic_menu_preferences"
+                    },
+                    {
+                        id: "rescue_close",
+                        title: "关闭",
+                        type: "broadcast",
+                        action: "shortx.wm.floatball.CLOSE",
+                        enabled: true,
+                        iconResName: "ic_menu_close_clear_cancel"
+                    }
                 ];
-                // dirty = false; // 默认就是 false
+                rescueMode = true;
+                // dirty = false; // 配置文件存在但读取失败时不覆盖原文件
             }
         }
 
@@ -1197,6 +1220,49 @@ var ConfigManager = {
                     b.cmd_b64 = encodeBase64Utf8(b.cmd);
                     dirty = true;
                 }
+            }
+        }
+
+
+        // 旧用户一次性补充设置按钮；迁移完成后，用户后续主动删除不会再次补回。
+        if (btns && !rescueMode) {
+            var buttonMigrationVersion = 0;
+            var cfgForButtonMigration = null;
+            try {
+                cfgForButtonMigration = this.loadSettings();
+                buttonMigrationVersion = Number(cfgForButtonMigration.BUTTONS_MIGRATION_VERSION || 0);
+                if (isNaN(buttonMigrationVersion)) buttonMigrationVersion = 0;
+            } catch (eMigRead) {
+                buttonMigrationVersion = 0;
+            }
+
+            if (buttonMigrationVersion < 1) {
+                var hasSettingsButton = false;
+                for (var mi = 0; mi < btns.length; mi++) {
+                    try {
+                        if (btns[mi] && String(btns[mi].type || "") === "open_settings") {
+                            hasSettingsButton = true;
+                            break;
+                        }
+                    } catch (eMigCheck) {}
+                }
+
+                if (!hasSettingsButton) {
+                    btns.push({
+                        id: "builtin_settings",
+                        title: "设置",
+                        type: "open_settings",
+                        enabled: true,
+                        iconResName: "ic_menu_preferences"
+                    });
+                    dirty = true;
+                }
+
+                try {
+                    if (!cfgForButtonMigration) cfgForButtonMigration = this.loadSettings();
+                    cfgForButtonMigration.BUTTONS_MIGRATION_VERSION = 1;
+                    this.saveSettings(cfgForButtonMigration);
+                } catch (eMigSave) {}
             }
         }
 

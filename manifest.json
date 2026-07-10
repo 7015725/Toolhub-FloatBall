@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "2e303a4f838f19cba2f6c07b3c68cbcb907ca8f80f8dc0af682a218d592f6327",
-      "size": 62447,
-      "version": "1.0.8"
+      "sha256": "e1b499ae0604af426f7adb4631daf8c9dfd502f66d7ef616cb0f8890dc2824d6",
+      "size": 64963,
+      "version": "1.0.9"
     },
     "th_02_core.js": {
       "sha256": "f6df2228583444edc71677b57f228799072afa445247c55858630861537e36da",
@@ -62,9 +62,9 @@
       "version": "1.0.1"
     },
     "th_14_button_editor.js": {
-      "sha256": "51852a01ef97927aa952f68ae8d6dd8ddc699ec425ee234ece309f2958d947ed",
-      "size": 70664,
-      "version": "0.0.0"
+      "sha256": "48518fad82339c19bd71611cbb6da364e7cc629bcdefe2f26b8ba1e3e1896ab9",
+      "size": 70898,
+      "version": "1.0.1"
     },
     "th_14_button_icon_editor.js": {
       "sha256": "41675d1a34e073425f1e5f4a54118f5f7bddc6e52092c51c9c635bcc8c212494",
@@ -120,10 +120,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "统一指针 OCR 空文本状态"
+      "默认按钮加入设置入口",
+      "旧用户仅自动补充一次设置按钮",
+      "按钮管理支持设置类型"
     ],
-    "title": "统一指针 OCR 空文本状态"
+    "date": "2026-07-10",
+    "title": "设置入口迁移为默认按钮"
   },
   "schema": 3,
-  "version": 20260710060449
+  "version": 20260710110014
 }

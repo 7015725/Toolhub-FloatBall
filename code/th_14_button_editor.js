@@ -1,3 +1,4 @@
+// @version 1.0.1
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -67,6 +68,7 @@ FloatBallAppWM.prototype.createButtonManagerTextAction = function(text, textColo
 FloatBallAppWM.prototype.getButtonManagerTypeLabel = function(btnCfg) {
   try {
     var t = String((btnCfg && btnCfg.type) ? btnCfg.type : "shell");
+    if (t === "open_settings") return "设置";
     if (t === "app") return "应用";
     if (t === "broadcast") return "广播";
     if (t === "shortcut") return "快捷方式";
@@ -79,6 +81,7 @@ FloatBallAppWM.prototype.getButtonManagerSummary = function(btnCfg) {
   try {
     var b = btnCfg || {};
     var t = String(b.type || "shell");
+    if (t === "open_settings") return "打开 ToolHub 设置";
     if (t === "app") return String(b.pkg || "未填写包名");
     if (t === "broadcast") return String(b.action || "未填写 Action");
     if (t === "shortcut") return String(b.shortcutName || b.title || b.pkg || "快捷方式");
@@ -702,6 +705,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
       { key: "disabled", label: "暂停" },
       { key: "app", label: "应用" },
       { key: "shell", label: "Shell" },
+      { key: "open_settings", label: "设置" },
       { key: "shortcut", label: "快捷方式" },
       { key: "broadcast", label: "广播" }
     ];
@@ -999,7 +1003,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var actionSectionBody = self.createButtonEditorCollapsibleSection(form, "动作设置", "点击后做什么", true);
 
     // 2. 动作类型（自动换行：用 GridLayout 稳定实现）
-    // 这段代码的主要内容/用途：把「Shell/App/广播/Intent/快捷方式」做成会自动换行的单选框区域。
+    // 这段代码的主要内容/用途：把「Shell/App/广播/快捷方式/设置」做成会自动换行的单选框区域。
     // 说明：之前用"多行 LinearLayout + 手工测量"在部分 ROM/布局时序下会出现宽度为 0 或不渲染，导致"单选框看不见"。
     //      改为 GridLayout：先计算列数(1~3)，再按固定单元宽度填充，保证必定可见且可换行。
     var typeWrap = new android.widget.LinearLayout(context);
@@ -1043,7 +1047,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         { id: 1, val: "shell", txt: "Shell" },
         { id: 2, val: "app", txt: "App" },
         { id: 3, val: "broadcast", txt: "发送广播" },
-        { id: 4, val: "shortcut", txt: "快捷方式" }
+        { id: 4, val: "shortcut", txt: "快捷方式" },
+        { id: 5, val: "open_settings", txt: "设置" }
     ];
 
     // 初始化选中值
