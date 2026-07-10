@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 FloatBallAppWM.prototype.animateBallLayout = function(toX, toY, toW, durMs, endCb) {
   var st = this.state;
   if (!st.addedBall || !st.ballRoot || !st.ballLp) { if (endCb) endCb(); return; }
@@ -955,6 +955,14 @@ FloatBallAppWM.prototype.onScreenChangedReflow = function(reason) {
   if (oldH <= 0) oldH = newH;
 
   this.state.screen = { w: newW, h: newH };
+
+  try {
+    if (typeof this.onPointerScreenChangedReflow === "function") {
+      this.onPointerScreenChangedReflow(reason, oldW, oldH, newW, newH);
+    }
+  } catch (ePointerReflow) {
+    safeLog(this.L, 'w', "pointer screen reflow hook fail reason=" + String(reason || "") + " err=" + String(ePointerReflow));
+  }
 
   var di = this.getDockInfo();
 

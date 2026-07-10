@@ -1,4 +1,4 @@
-// @version 1.1.22
+// @version 1.1.23
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -824,6 +824,197 @@ FloatBallAppWM.prototype.pointerPositionFromBall = function(ballX, ballY) {
   x = this.clamp(x, 0, Math.max(0, sw - st.pointerW));
   y = this.clamp(y, 0, Math.max(0, sh - st.pointerH));
   return { x: x, y: y };
+};
+
+FloatBallAppWM.prototype.mapPointerScreenCoord = function(value, oldSize, newSize, includeEdge) {
+  var n = Number(value || 0);
+  var oldN = Math.max(1, Number(oldSize || 0));
+  var newN = Math.max(1, Number(newSize || 0));
+  if (isNaN(n)) n = 0;
+  if (isNaN(oldN) || oldN <= 0) oldN = newN;
+  if (isNaN(newN) || newN <= 0) newN = oldN;
+  var oldMax = includeEdge === true ? oldN : Math.max(0, oldN - 1);
+  var newMax = includeEdge === true ? newN : Math.max(0, newN - 1);
+  if (oldMax <= 0) return 0;
+  n = this.clamp(n, 0, oldMax);
+  return th17Int(this.clamp(Math.round(n * newMax / oldMax), 0, newMax));
+};
+
+FloatBallAppWM.prototype.mapPointerMaybeCoordForReflow = function(value, oldSize, newSize, includeEdge) {
+  if (value === null || value === undefined) return value;
+  var n = Number(value);
+  if (isNaN(n)) return value;
+  if (n < -90000) return value;
+  return this.mapPointerScreenCoord(n, oldSize, newSize, includeEdge === true);
+};
+
+FloatBallAppWM.prototype.mapPointerScreenPointForReflow = function(x, y, oldW, oldH, newW, newH) {
+  return {
+    x: this.mapPointerScreenCoord(x, oldW, newW, false),
+    y: this.mapPointerScreenCoord(y, oldH, newH, false)
+  };
+};
+
+FloatBallAppWM.prototype.mapPointerWindowPointForReflow = function(x, y, oldW, oldH, newW, newH) {
+  var st = this.state && this.state.pointerTool ? this.state.pointerTool : null;
+  var pointerW = Math.max(1, Number(st && st.pointerW || 1));
+  var pointerH = Math.max(1, Number(st && st.pointerH || 1));
+  var oldMaxX = Math.max(0, Number(oldW || 0) - pointerW);
+  var oldMaxY = Math.max(0, Number(oldH || 0) - pointerH);
+  var newMaxX = Math.max(0, Number(newW || 0) - pointerW);
+  var newMaxY = Math.max(0, Number(newH || 0) - pointerH);
+  var nx = Number(x || 0);
+  var ny = Number(y || 0);
+  if (isNaN(nx)) nx = 0;
+  if (isNaN(ny)) ny = 0;
+
+  var fixedEdge = !!(st && st.__th18FixedEdgePointerMode === true);
+  if (nx < 0 || ny < 0 || nx > oldMaxX || ny > oldMaxY) fixedEdge = true;
+  if (fixedEdge) {
+    var anchorX = Math.max(0, Number(st && st.anchorLocalX || 0));
+    var anchorY = Math.max(0, Number(st && st.anchorLocalY || 0));
+    var hotspot = this.mapPointerScreenPointForReflow(nx + anchorX, ny + anchorY, oldW, oldH, newW, newH);
+    return {
+      x: th17Int(this.clamp(hotspot.x - anchorX, -anchorX, Math.max(-anchorX, Number(newW || 0) - 1 - anchorX))),
+      y: th17Int(this.clamp(hotspot.y - anchorY, -anchorY, Math.max(-anchorY, Number(newH || 0) - 1 - anchorY)))
+    };
+  }
+
+  var mappedX = oldMaxX > 0 ? Math.round(this.clamp(nx, 0, oldMaxX) * newMaxX / oldMaxX) : 0;
+  var mappedY = oldMaxY > 0 ? Math.round(this.clamp(ny, 0, oldMaxY) * newMaxY / oldMaxY) : 0;
+  return {
+    x: th17Int(this.clamp(mappedX, 0, newMaxX)),
+    y: th17Int(this.clamp(mappedY, 0, newMaxY))
+  };
+};
+
+FloatBallAppWM.prototype.mapPointerRectForScreenReflow = function(rect, oldW, oldH, newW, newH) {
+  if (!rect) return null;
+  var left = this.mapPointerScreenCoord(Math.min(Number(rect.left || 0), Number(rect.right || 0)), oldW, newW, true);
+  var top = this.mapPointerScreenCoord(Math.min(Number(rect.top || 0), Number(rect.bottom || 0)), oldH, newH, true);
+  var right = this.mapPointerScreenCoord(Math.max(Number(rect.left || 0), Number(rect.right || 0)), oldW, newW, true);
+  var bottom = this.mapPointerScreenCoord(Math.max(Number(rect.top || 0), Number(rect.bottom || 0)), oldH, newH, true);
+  left = this.clamp(left, 0, Math.max(0, Number(newW || 0) - 1));
+  top = this.clamp(top, 0, Math.max(0, Number(newH || 0) - 1));
+  right = this.clamp(right, left + 1, Math.max(left + 1, Number(newW || 0)));
+  bottom = this.clamp(bottom, top + 1, Math.max(top + 1, Number(newH || 0)));
+  return { left: th17Int(left), top: th17Int(top), right: th17Int(right), bottom: th17Int(bottom) };
+};
+
+FloatBallAppWM.prototype.onPointerScreenChangedReflow = function(reason, oldW, oldH, newW, newH) {
+  var st = this.state && this.state.pointerTool ? this.state.pointerTool : null;
+  if (!st || !st.active || st.closed) return false;
+  oldW = Math.max(1, Number(oldW || 0));
+  oldH = Math.max(1, Number(oldH || 0));
+  newW = Math.max(1, Number(newW || 0));
+  newH = Math.max(1, Number(newH || 0));
+  if (oldW === newW && oldH === newH) return false;
+
+  try {
+    if (st.handler && st.moveRunnable) st.handler.removeCallbacks(st.moveRunnable);
+  } catch (eRemoveMove) {}
+  st.moveRunnable = null;
+  st.dragUpdatePosted = false;
+
+  var windowX = st.lp ? Number(st.lp.x || 0) : Number(st.pointerX || 0);
+  var windowY = st.lp ? Number(st.lp.y || 0) : Number(st.pointerY || 0);
+  var windowPoint = this.mapPointerWindowPointForReflow(windowX, windowY, oldW, oldH, newW, newH);
+  st.pointerX = windowPoint.x;
+  st.pointerY = windowPoint.y;
+  st.pendingPointerX = windowPoint.x;
+  st.pendingPointerY = windowPoint.y;
+  if (st.lp) {
+    st.lp.x = windowPoint.x;
+    st.lp.y = windowPoint.y;
+    st.lp.width = st.pointerW;
+    st.lp.height = st.pointerH;
+    try {
+      if (st.added && st.root && st.wm) st.wm.updateViewLayout(st.root, st.lp);
+    } catch (ePointerLayout) {
+      safeLog(this.L, 'w', "pointer window reflow update fail: " + String(ePointerLayout));
+    }
+  }
+
+  st.areaStartX = this.mapPointerMaybeCoordForReflow(st.areaStartX, oldW, newW, false);
+  st.areaStartY = this.mapPointerMaybeCoordForReflow(st.areaStartY, oldH, newH, false);
+  st.areaEndX = this.mapPointerMaybeCoordForReflow(st.areaEndX, oldW, newW, false);
+  st.areaEndY = this.mapPointerMaybeCoordForReflow(st.areaEndY, oldH, newH, false);
+  st.hoverX = this.mapPointerMaybeCoordForReflow(st.hoverX, oldW, newW, false);
+  st.hoverY = this.mapPointerMaybeCoordForReflow(st.hoverY, oldH, newH, false);
+  st.areaHoldAnchorX = this.mapPointerMaybeCoordForReflow(st.areaHoldAnchorX, oldW, newW, false);
+  st.areaHoldAnchorY = this.mapPointerMaybeCoordForReflow(st.areaHoldAnchorY, oldH, newH, false);
+  st.areaArmX = this.mapPointerMaybeCoordForReflow(st.areaArmX, oldW, newW, false);
+  st.areaArmY = this.mapPointerMaybeCoordForReflow(st.areaArmY, oldH, newH, false);
+  st.inspectLatestX = this.mapPointerMaybeCoordForReflow(st.inspectLatestX, oldW, newW, false);
+  st.inspectLatestY = this.mapPointerMaybeCoordForReflow(st.inspectLatestY, oldH, newH, false);
+  st.lastQueryX = this.mapPointerMaybeCoordForReflow(st.lastQueryX, oldW, newW, false);
+  st.lastQueryY = this.mapPointerMaybeCoordForReflow(st.lastQueryY, oldH, newH, false);
+  if (st.__th18FixedEdgeY !== undefined) st.__th18FixedEdgeY = this.mapPointerMaybeCoordForReflow(st.__th18FixedEdgeY, oldH, newH, false);
+
+  st.currentRect = this.mapPointerRectForScreenReflow(st.currentRect, oldW, oldH, newW, newH);
+  st.boundRect = this.mapPointerRectForScreenReflow(st.boundRect, oldW, oldH, newW, newH);
+  st.captureRect = this.mapPointerRectForScreenReflow(st.captureRect, oldW, oldH, newW, newH);
+  st.visualRect = this.mapPointerRectForScreenReflow(st.visualRect, oldW, oldH, newW, newH);
+  st.frameRect = this.mapPointerRectForScreenReflow(st.frameRect, oldW, oldH, newW, newH);
+  if (st.__th18FrameRect) st.__th18FrameRect = this.mapPointerRectForScreenReflow(st.__th18FrameRect, oldW, oldH, newW, newH);
+
+  if (st.frameLp) {
+    st.frameLp.width = th17Int(newW);
+    st.frameLp.height = th17Int(newH);
+    st.frameLp.x = 0;
+    st.frameLp.y = 0;
+    try {
+      if (st.frameAdded && st.frame) {
+        var frameWm = this.state.wm || st.wm;
+        if (frameWm) frameWm.updateViewLayout(st.frame, st.frameLp);
+      }
+    } catch (eFrameLayout) {
+      safeLog(this.L, 'w', "pointer frame reflow update fail: " + String(eFrameLayout));
+    }
+  }
+
+  if (st.mode === "area_capture" && (st.areaSelecting || st.captureRect || st.visualRect)) {
+    var rawRect = { left: st.areaStartX, top: st.areaStartY, right: st.areaEndX, bottom: st.areaEndY };
+    var areaRect = this.normalizePointerCaptureRect(rawRect);
+    st.captureRect = areaRect;
+    st.visualRect = areaRect;
+    st.areaValid = this.isPointerOcrRectValid(areaRect, st.areaStartX, st.areaStartY, st.areaEndX, st.areaEndY);
+    st.areaReady = !!areaRect && st.areaValid;
+    st.areaFallbackPreview = false;
+    if (areaRect) {
+      if (st.areaProcessing === true) {
+        this.showPointerAreaFrame(areaRect, "capture");
+      } else if (st.areaValid) {
+        this.showPointerAreaFrame(areaRect, "area");
+      } else if (st.areaFromText === true && st.areaSmallFallbackText === true && st.boundRect) {
+        st.areaFallbackPreview = true;
+        this.showPointerAreaFrame(st.boundRect, "text_hit");
+      } else {
+        this.showPointerAreaFrame(areaRect, "area_armed");
+      }
+    }
+  } else {
+    try { if (st.frame) st.frame.invalidate(); } catch (eFrameInvalidate) {}
+  }
+
+  if (st.mode === "text_pick") {
+    st.lastQueryX = -100000;
+    st.lastQueryY = -100000;
+    st.inspectLastTimedOut = false;
+    if (st.currentText && st.currentRect) st.hoverSince = th17Now();
+    try { this.schedulePointerInspectAsync(true, "screen_reflow:" + String(reason || ""), false); }
+    catch (eRescan) { safeLog(this.L, 'w', "pointer screen reflow rescan fail: " + String(eRescan)); }
+  }
+
+  try { if (st.root) st.root.invalidate(); } catch (ePointerInvalidate) {}
+  safeLog(this.L, 'i',
+    "pointer screen reflow reason=" + String(reason || "") +
+    " old=" + String(oldW) + "x" + String(oldH) +
+    " new=" + String(newW) + "x" + String(newH) +
+    " mode=" + String(st.mode || "") +
+    " pointer=" + String(st.pointerX) + "," + String(st.pointerY)
+  );
+  return true;
 };
 
 FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
