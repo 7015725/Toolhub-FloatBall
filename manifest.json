@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "776315059602ccac1f479e67d5e4cfce783d0ecba570e2de736ff8e1b6a7ca46",
-      "size": 104983,
-      "version": "1.1.23"
+      "sha256": "4eacffec7c84c88f91d43c95ada06919bf74f79eb211f21a11afa895a808990a",
+      "size": 107336,
+      "version": "1.1.24"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "c26bcd251fe8c57165d1fd850e4645c1e3653128e1976ea180c663506219045b",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复异步 OCR 取消清理与迟到写入"
+      "限制指针超时与旋转旧候选复用"
     ],
-    "title": "修复异步 OCR 取消清理与迟到写入"
+    "title": "限制指针超时与旋转旧候选复用"
   },
   "schema": 3,
-  "version": 20260710050515
+  "version": 20260710051948
 }
