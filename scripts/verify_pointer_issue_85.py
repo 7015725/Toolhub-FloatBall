@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""Verify the pointer fixes tracked by GitHub issue #85."""
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+POINTER = ROOT / "code" / "th_17_pointer.js"
+POINTER_OCR = ROOT / "code" / "th_18_pointer_ocr.js"
+ANIMATION = ROOT / "code" / "th_09_animation.js"
+VERIFY_MANIFEST = ROOT / "scripts" / "verify_manifest.py"
+
+
+def read_text(path):
+    return path.read_text(encoding="utf-8")
+
+
+def section(text, start_marker, end_marker):
+    start = text.find(start_marker)
+    if start < 0:
+        return ""
+    end = text.find(end_marker, start + len(start_marker))
+    if end < 0:
+        return text[start:]
+    return text[start:end]
+
+
+class CheckResult:
+    def __init__(self):
+        self.passed = []
+        self.failed = []
+
+    def require(self, name, condition, detail):
+        if condition:
+            self.passed.append(name)
+        else:
+            self.failed.append((name, detail))
+
+
+def verify_manifest(result):
+    proc = subprocess.run(
+        [sys.executable, str(VERIFY_MANIFEST)],
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    output = proc.stdout.strip()
+    if len(output) > 2000:
+        output = output[-2000:]
+    result.require(
+        "manifest",
+        proc.returncode == 0,
+        "scripts/verify_manifest.py failed:\n" + output,
+    )
+
+
+def main():
+    required = [POINTER, POINTER_OCR, ANIMATION, VERIFY_MANIFEST]
+    missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
+    if missing:
+        print("FAIL missing files: " + ", ".join(missing))
+        return 1
+
+    pointer = read_text(POINTER)
+    ocr = read_text(POINTER_OCR)
+    animation = read_text(ANIMATION)
+    result = CheckResult()
+
+    finish_wrapper = section(
+        ocr,
+        "var oldFinishPointerAreaCapture = proto.finishPointerAreaCapture;",
+        "proto.__toolHubPointerTextPatchInstalled = true;",
+    )
+    old_finish = finish_wrapper.find("var ret = oldFinishPointerAreaCapture.call(this);")
+    pending_guard = finish_wrapper.find("ret.pending === true", old_finish + 1)
+    pending_return = finish_wrapper.find("return ret;", pending_guard + 1)
+    ocr_dispatch = finish_wrapper.find("scheduleAreaOcrAsync18", pending_return + 1)
+    result.require(
+        "W1 pending fallback stops OCR override",
+        min(old_finish, pending_guard, pending_return, ocr_dispatch) >= 0
+        and old_finish < pending_guard < pending_return < ocr_dispatch,
+        "pending fallback must return before scheduleAreaOcrAsync18",
+    )
+
+    tap_wrapper = section(
+        ocr,
+        "var oldPointerBallTap18 = proto.onPointerBallTap;",
+        "proto.setupTouchListener = function()",
+    )
+    tap_override = tap_wrapper.find("proto.onPointerBallTap = function(rawX, rawY)")
+    tap_delegate = tap_wrapper.find("return oldPointerBallTap18.call(this, rawX, rawY)", tap_override + 1)
+    result.require(
+        "W2 triple tap cancellation delegates to core",
+        tap_override >= 0 and tap_delegate > tap_override,
+        "fixed-edge tap wrapper must delegate active taps to oldPointerBallTap18",
+    )
+
+    async_ocr = section(ocr, "function scheduleAreaOcrAsync18", "function install18()")
+    result.require(
+        "W3 area OCR is asynchronous and token timed",
+        "new android.os.HandlerThread" in async_ocr
+        and "areaOcrTimeoutRunnable" in async_ocr
+        and "AREA_OCR_TIMEOUT" in async_ocr
+        and "Number(st.areaOcrSeq || 0) !== Number(token)" in async_ocr
+        and "scheduleAreaOcrAsync18(this, st, obj, rect, path, ret)" in finish_wrapper,
+        "async HandlerThread, token guard, timeout code, or dispatch is missing",
+    )
+
+    ocr_rect = section(
+        pointer,
+        "FloatBallAppWM.prototype.getPointerOcrRectJson = function()",
+        "FloatBallAppWM.prototype.resolvePointerExportDir = function()",
+    )
+    result.require(
+        "W4 OCR rect supports area_ocr",
+        'obj.type !== "area_capture" && obj.type !== "area_ocr"' in ocr_rect,
+        "getPointerOcrRectJson must accept area_capture and area_ocr",
+    )
+
+    apply_inspect = section(
+        pointer,
+        "FloatBallAppWM.prototype.applyPointerInspectResult = function(pack)",
+        "FloatBallAppWM.prototype.runPointerInspectWorker = function(st)",
+    )
+    finish_text = section(
+        pointer,
+        "FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function()",
+        "FloatBallAppWM.prototype.finishPointerTextPickOnRelease = function()",
+    )
+    timeout_code = finish_text.find('code: "TEXT_SCAN_TIMEOUT"')
+    empty_code = finish_text.find('code: "POINTER_RELEASE_EMPTY"')
+    result.require(
+        "W5 final timeout is distinct from an empty release",
+        "pack.timedOut === true && st.boundText && st.boundRect" in apply_inspect
+        and "st.inspectLastTimedOut === true" in finish_text
+        and timeout_code >= 0
+        and empty_code > timeout_code,
+        "timeout fallback or TEXT_SCAN_TIMEOUT ordering is missing",
+    )
+
+    save_bitmap = section(
+        pointer,
+        "FloatBallAppWM.prototype.savePointerBitmapToFile = function(bitmap, file)",
+        "FloatBallAppWM.prototype.pointerBitmapFromCaptureBuffer = function(buffer)",
+    )
+    compress_call = save_bitmap.find("var compressed = bitmap.compress")
+    compress_check = save_bitmap.find("if (compressed !== true", compress_call + 1)
+    result.require(
+        "W6 bitmap.compress return value is checked",
+        compress_call >= 0 and compress_check > compress_call,
+        "bitmap.compress result must be validated before flush",
+    )
+
+    capture = section(
+        pointer,
+        "FloatBallAppWM.prototype.capturePointerRectToPng = function(rect)",
+        "FloatBallAppWM.prototype.isPointerToolActive = function()",
+    )
+    cleanup_finally = capture.rfind("finally")
+    release_buffer = capture.rfind("this.releasePointerCaptureBuffer(captureBuffer)")
+    recycle_bitmap = capture.rfind("this.recyclePointerBitmap(bitmap)")
+    result.require(
+        "W6 screenshot resources are released",
+        cleanup_finally >= 0
+        and cleanup_finally < release_buffer < recycle_bitmap
+        and "FloatBallAppWM.prototype.releasePointerCaptureBuffer" in pointer
+        and "FloatBallAppWM.prototype.recyclePointerBitmap" in pointer,
+        "capture finally must release buffer and recycle bitmap",
+    )
+
+    worker = section(
+        pointer,
+        "FloatBallAppWM.prototype.runPointerInspectWorker = function(st)",
+        "FloatBallAppWM.prototype.preparePointerAccessibilityFinalScan = function(reason)",
+    )
+    identity_guard = "workerSession !== st.inspectSession || workerH !== st.inspectH || workerHt !== st.inspectHt"
+    guarded_reset = "workerSession === st.inspectSession && workerH === st.inspectH && workerHt === st.inspectHt"
+    result.require(
+        "W7 inspect worker cleanup is session scoped",
+        "finally" in worker
+        and worker.count(identity_guard) >= 3
+        and guarded_reset in worker,
+        "worker finally must validate session, Handler, and HandlerThread identities",
+    )
+
+    remove_callbacks = section(
+        pointer,
+        "FloatBallAppWM.prototype.removePointerCallbacks = function(st)",
+        "FloatBallAppWM.prototype.closePointerInspectWorker = function(st)",
+    )
+    result.require(
+        "S3 hover-area runnable is removable",
+        "removeCallbacks(st.areaHoldRunnable)" in remove_callbacks
+        and "st.areaHoldRunnable = null" in remove_callbacks,
+        "areaHoldRunnable must be stored, removed, and cleared",
+    )
+
+    reflow_names = [
+        "mapPointerScreenCoord",
+        "mapPointerScreenPointForReflow",
+        "mapPointerWindowPointForReflow",
+        "mapPointerRectForScreenReflow",
+        "mapPointerMaybeCoordForReflow",
+        "onPointerScreenChangedReflow",
+    ]
+    pointer_reflow = section(
+        pointer,
+        "FloatBallAppWM.prototype.onPointerScreenChangedReflow = function(reason, oldW, oldH, newW, newH)",
+        "FloatBallAppWM.prototype.createPointerCanvasView = function(st)",
+    )
+    result.require(
+        "S1 pointer state reflows with the screen",
+        all("FloatBallAppWM.prototype." + name in pointer for name in reflow_names)
+        and "st.captureRect = this.mapPointerRectForScreenReflow" in pointer_reflow
+        and "st.boundRect = this.mapPointerRectForScreenReflow" in pointer_reflow
+        and "st.frameLp.width" in pointer_reflow
+        and "st.frameLp.height" in pointer_reflow
+        and 'this.schedulePointerInspectAsync(true, "screen_reflow:"' in pointer_reflow,
+        "pointer reflow helpers, mapped state, frame size, or text rescan is missing",
+    )
+
+    screen_reflow = section(
+        animation,
+        "FloatBallAppWM.prototype.onScreenChangedReflow = function(reason)",
+        "FloatBallAppWM.prototype.scheduleScreenReflow = function(reason)",
+    )
+    screen_assignment = screen_reflow.find("this.state.screen = { w: newW, h: newH };")
+    pointer_hook = screen_reflow.find("this.onPointerScreenChangedReflow(reason, oldW, oldH, newW, newH)")
+    result.require(
+        "S1 screen reflow calls the pointer hook",
+        screen_assignment >= 0 and pointer_hook > screen_assignment,
+        "onScreenChangedReflow must call the pointer hook after updating screen size",
+    )
+
+    verify_manifest(result)
+
+    for name in result.passed:
+        print("PASS " + name)
+    if result.failed:
+        for name, detail in result.failed:
+            print("FAIL " + name + ": " + detail)
+        print("FAIL pointer_issue_85 passed=%d failed=%d" % (len(result.passed), len(result.failed)))
+        return 1
+
+    print("OK pointer_issue_85 checks=%d" % len(result.passed))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
