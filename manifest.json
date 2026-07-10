@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "bab40f957a1893eb8cafc89cf204348b4d7554d8b1cfccbb5a1c7ffef25c95be",
-      "size": 92199,
-      "version": "1.1.21"
+      "sha256": "80ebc1eb71c8656cc3e38baf8deca53f150fd4d1f4c6c0eb93d8ed527c9f69cf",
+      "size": 95541,
+      "version": "1.1.22"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a1634b7e74b7bb9d7b9a5a699a1c33f70dfa84961a020a62e49b424ec8dbef2b",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "异步执行指针框选 OCR 并增加超时保护"
+      "区分指针最终扫描超时与空白结果"
     ],
-    "title": "异步执行指针框选 OCR 并增加超时保护"
+    "title": "区分指针最终扫描超时与空白结果"
   },
   "schema": 3,
-  "version": 20260710015453
+  "version": 20260710020103
 }
