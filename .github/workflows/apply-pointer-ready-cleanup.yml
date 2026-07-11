@@ -54,21 +54,33 @@ jobs:
             --title "清理指针就绪链路冗余代码" \
             --change "移除已停用的绿色候选缓存与就绪快照提交链"
 
-      - name: Verify
+      - name: Verify ES5
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: Verify pointer position state
+        run: python3 scripts/verify_ball_position_state.py
+
+      - name: Verify pointer issue 85
+        run: python3 scripts/verify_pointer_issue_85.py
+
+      - name: Verify pointer text release
+        run: python3 scripts/verify_pointer_text_release.py
+
+      - name: Verify manifest and signature
         shell: bash
         run: |
-          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_manifest.py
+          python3 .github/scripts/verify_manifest_signature.py
+
+      - name: Verify remaining checks
+        shell: bash
+        run: |
           python3 scripts/verify_sqlite_persistence.py
           python3 scripts/verify_button_icon_blob.py
-          python3 scripts/verify_ball_position_state.py
-          python3 scripts/verify_manifest.py
           python3 scripts/verify_toolapp_single_root.py
           python3 scripts/verify_toolapp_adaptive_size.py
           python3 scripts/verify_button_editor_layout.py
           python3 scripts/verify_schema_validator.py
-          python3 scripts/verify_pointer_issue_85.py
-          python3 scripts/verify_pointer_text_release.py
-          python3 .github/scripts/verify_manifest_signature.py
           git diff --check
 
       - name: Commit cleanup
