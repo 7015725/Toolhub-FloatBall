@@ -50,10 +50,8 @@ jobs:
       - name: Commit fix
         shell: bash
         run: |
-          rm -f .github/scripts/apply_pointer_text_fix.py
-          rm -f .github/workflows/apply-pointer-text-fix.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add ToolHub.js ToolHub.js.sha256 scripts/verify_pointer_text_release.py .github/workflows/verify.yml
           git commit -m "彻底修复指针无障碍取字提交链路"
           git push origin HEAD:agent/fix-pointer-accessibility-text-pick
