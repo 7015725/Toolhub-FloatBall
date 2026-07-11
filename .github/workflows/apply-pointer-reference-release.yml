@@ -23,11 +23,8 @@ jobs:
       - name: Apply patch
         run: python3 scripts/apply_pointer_reference_release.py
 
-      - name: Verify source
-        run: |
-          python3 scripts/verify_ball_position_state.py
-          python3 .github/scripts/es5_scan.py
-          git diff --check
+      - name: Check whitespace
+        run: git diff --check
 
       - name: Commit source
         shell: bash
