@@ -3,6 +3,8 @@ name: apply-pointer-reference-release
 on:
   push:
     branches: [fix/pointer-reference-release]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
