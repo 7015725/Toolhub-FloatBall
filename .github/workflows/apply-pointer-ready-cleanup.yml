@@ -58,7 +58,19 @@ jobs:
         run: python3 .github/scripts/es5_scan.py
 
       - name: Verify pointer position state
-        run: python3 scripts/verify_ball_position_state.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/verify_ball_position_state.py 2>&1 | tee pointer-ready-cleanup.log
+
+      - name: Upload cleanup assertion log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pointer-ready-cleanup-log
+          path: pointer-ready-cleanup.log
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Verify pointer issue 85
         run: python3 scripts/verify_pointer_issue_85.py
