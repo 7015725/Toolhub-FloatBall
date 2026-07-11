@@ -240,7 +240,7 @@ def main() -> None:
         fail("screen reflow does not cancel pending semantic task")
 
     for marker in (
-        "// @version 1.1.29",
+        "// @version 1.1.30",
         "copyPointerTextToClipboard = function",
         "cm.setPrimaryClip(clip)",
         "rememberPointerValidPick",
@@ -251,9 +251,36 @@ def main() -> None:
         "data.clipboardAccepted = copied === true",
         "accessibility_current",
         "small_area_fallback",
+        "syncPointerTextHoverFromStableHold",
+        "pointer text hover reuse stable hold",
     ):
         if marker not in pointer_core:
             fail("reference-compatible text-pick flow missing: " + marker)
+    stable_hover = section(
+        pointer_core,
+        "FloatBallAppWM.prototype.syncPointerTextHoverFromStableHold = function",
+        "FloatBallAppWM.prototype.isPointerTextHoverReady = function",
+    )
+    for marker in (
+        "areaHoldSince",
+        "areaHoldAnchorX",
+        "areaHoldAnchorY",
+        "pointerRectHitScore(anchorX, anchorY, st.currentRect)",
+        "pointerRectHitScore(hp.x, hp.y, st.currentRect)",
+        "st.hoverSince = stableSince",
+    ):
+        if marker not in stable_hover:
+            fail("stable text-hover reconciliation is incomplete: " + marker)
+    ready_section = section(
+        pointer_core,
+        "FloatBallAppWM.prototype.isPointerTextHoverReady = function",
+        "FloatBallAppWM.prototype.getPointerTextHoverRemainMs = function",
+    )
+    if "syncPointerTextHoverFromStableHold(ts)" not in ready_section:
+        fail("text hover readiness does not count verified stable hold time")
+    if "areaHoldDelay: 2000" not in pointer_core:
+        fail("pointer state area hover default is not 2000ms")
+
     extract_section = section(
         pointer_core,
         "FloatBallAppWM.prototype.extractCurrentPointerText = function",

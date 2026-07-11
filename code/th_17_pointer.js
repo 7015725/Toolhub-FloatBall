@@ -1,4 +1,4 @@
-// @version 1.1.29
+// @version 1.1.30
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -499,7 +499,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       areaHoldAnchorX: -100000,
       areaHoldAnchorY: -100000,
       areaHoldSince: 0,
-      areaHoldDelay: 1000,
+      areaHoldDelay: 2000,
       areaSmallFallbackText: true,
       areaMinWidthPx: 0,
       areaMinHeightPx: 0,
@@ -2212,6 +2212,46 @@ FloatBallAppWM.prototype.getPointerTextHoverLimitMs = function() {
   return limit;
 };
 
+FloatBallAppWM.prototype.syncPointerTextHoverFromStableHold = function(atTs) {
+  var st = this.ensurePointerToolState();
+  if (!st.currentText || !st.currentRect) return false;
+  if (st.currentKey && st.hoverKey && String(st.currentKey) !== String(st.hoverKey)) return false;
+
+  var stableSince = 0;
+  var ts = Number(atTs || th17Now());
+  try { stableSince = Number(st.areaHoldSince || 0); } catch (eStableSince) { stableSince = 0; }
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+  if (isNaN(stableSince) || stableSince <= 0 || stableSince > ts) return false;
+
+  var anchorX = Number(st.areaHoldAnchorX || -100000);
+  var anchorY = Number(st.areaHoldAnchorY || -100000);
+  if (isNaN(anchorX) || isNaN(anchorY) || anchorX < -90000 || anchorY < -90000) return false;
+
+  var hp = null;
+  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+  if (!hp) return false;
+
+  var anchorHit = false;
+  var hotspotHit = false;
+  try { anchorHit = this.pointerRectHitScore(anchorX, anchorY, st.currentRect) >= 0; } catch (eAnchorHit) { anchorHit = false; }
+  try { hotspotHit = this.pointerRectHitScore(hp.x, hp.y, st.currentRect) >= 0; } catch (eHotspotHit) { hotspotHit = false; }
+  if (!anchorHit || !hotspotHit) return false;
+
+  var currentSince = Number(st.hoverSince || 0);
+  if (!isNaN(currentSince) && currentSince > 0 && currentSince <= stableSince) return false;
+
+  st.hoverSince = stableSince;
+  st.hoverX = anchorX;
+  st.hoverY = anchorY;
+  try {
+    safeLog(this.L, 'i',
+      "pointer text hover reuse stable hold elapsed=" + String(Math.max(0, ts - stableSince)) +
+      " hoverMinMs=" + String(this.getPointerTextHoverLimitMs())
+    );
+  } catch (eLogStableHover) {}
+  return true;
+};
+
 FloatBallAppWM.prototype.isPointerTextHoverReady = function(atTs) {
   var st = this.ensurePointerToolState();
   if (!st.currentText || !st.currentRect) return false;
@@ -2219,6 +2259,7 @@ FloatBallAppWM.prototype.isPointerTextHoverReady = function(atTs) {
   if (st.currentKey && st.hoverKey && String(st.currentKey) !== String(st.hoverKey)) return false;
   var ts = Number(atTs || th17Now());
   if (isNaN(ts) || ts <= 0) ts = th17Now();
+  try { this.syncPointerTextHoverFromStableHold(ts); } catch (eStableHover) {}
   return ts - Number(st.hoverSince || 0) >= this.getPointerTextHoverLimitMs();
 };
 
