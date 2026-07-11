@@ -128,6 +128,7 @@ vp = remove_exact_lines(vp, [
     '        "getRecentReadyPointerPick",\n',
     '        "restoreRecentReadyPointerPick",\n',
     '        "lastValidPickReadyAt",\n',
+    '        "lastValidPickReadyAt",\n',
     '        "syncPointerTextHoverFromStableHold",\n',
     '        "pointer text hover reuse stable hold",\n',
 ])
