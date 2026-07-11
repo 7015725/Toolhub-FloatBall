@@ -38,6 +38,7 @@ jobs:
           python3 scripts/verify_button_editor_layout.py
           python3 scripts/verify_schema_validator.py
           python3 scripts/verify_pointer_issue_85.py
+          python3 scripts/verify_pointer_text_release.py
           python3 .github/scripts/verify_manifest_signature.py
 
       - name: Check git whitespace
