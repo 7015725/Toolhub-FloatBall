@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -357,6 +357,175 @@
     proto.__toolHubPointerEdgeLayoutWrapped = true;
   }
 
+  proto.invalidatePointerInspectForRelease = function(st) {
+    var pointerState = st || null;
+    try {
+      if (!pointerState && this.ensurePointerToolState) pointerState = this.ensurePointerToolState();
+    } catch (eState) { pointerState = null; }
+    if (!pointerState) return false;
+
+    try {
+      if (pointerState.handler && pointerState.inspectRunnable) {
+        pointerState.handler.removeCallbacks(pointerState.inspectRunnable);
+      }
+    } catch (eInspectRunnable) {}
+    try {
+      if (pointerState.handler && pointerState.stopInspectRunnable) {
+        pointerState.handler.removeCallbacks(pointerState.stopInspectRunnable);
+      }
+    } catch (eStopRunnable) {}
+
+    pointerState.inspectRunnable = null;
+    pointerState.stopInspectRunnable = null;
+    pointerState.inspectPosted = false;
+    pointerState.draggingInspectPosted = false;
+    pointerState.inspectPending = false;
+    pointerState.inspectFinishAfterResult = false;
+    pointerState.inspectLatestSeq = Number(pointerState.inspectSeq || 0) + 1;
+    pointerState.inspectSeq = pointerState.inspectLatestSeq;
+    return true;
+  };
+
+  proto.storeReadyPointerSnapshot = function(st) {
+    var pointerState = st || null;
+    try {
+      if (!pointerState && this.ensurePointerToolState) pointerState = this.ensurePointerToolState();
+    } catch (eState) { pointerState = null; }
+    if (!pointerState || !pointerState.currentText || !pointerState.currentRect) return false;
+
+    var ready = false;
+    try { ready = this.isPointerTextHoverReady(nowPosition()) === true; } catch (eReady) { ready = pointerState.hot === true; }
+    if (!ready) return false;
+
+    var hp = null;
+    try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+    pointerState.__toolHubReadyTextSnapshot = {
+      text: String(pointerState.currentText),
+      rect: {
+        left: Number(pointerState.currentRect.left),
+        top: Number(pointerState.currentRect.top),
+        right: Number(pointerState.currentRect.right),
+        bottom: Number(pointerState.currentRect.bottom)
+      },
+      key: String(pointerState.currentKey || ""),
+      hoverSince: Number(pointerState.hoverSince || 0),
+      readyAt: nowPosition(),
+      session: Number(pointerState.inspectSession || 0),
+      hotspotX: hp ? Number(hp.x || 0) : 0,
+      hotspotY: hp ? Number(hp.y || 0) : 0
+    };
+    return true;
+  };
+
+  if (typeof proto.refreshPointerTextReadyVisualState === "function" && proto.__toolHubReadySnapshotVisualWrapped !== true) {
+    var oldRefreshPointerTextReadyVisualStatePosition = proto.refreshPointerTextReadyVisualState;
+    proto.refreshPointerTextReadyVisualState = function() {
+      var ready = oldRefreshPointerTextReadyVisualStatePosition.call(this) === true;
+      if (ready) {
+        try { this.storeReadyPointerSnapshot(this.ensurePointerToolState()); } catch (eSnapshot) {}
+      }
+      return ready;
+    };
+    proto.__toolHubReadySnapshotVisualWrapped = true;
+  }
+
+  proto.getReadyPointerSnapshotForRelease = function(st) {
+    var pointerState = st || null;
+    try {
+      if (!pointerState && this.ensurePointerToolState) pointerState = this.ensurePointerToolState();
+    } catch (eState) { pointerState = null; }
+    if (!pointerState) return null;
+
+    var snap = pointerState.__toolHubReadyTextSnapshot || null;
+    if (!snap || !snap.text || !snap.rect) return null;
+    if (Number(snap.session || 0) !== Number(pointerState.inspectSession || 0)) return null;
+
+    var now = nowPosition();
+    var hoverLimit = 800;
+    try { hoverLimit = Number(this.getPointerTextHoverLimitMs()); } catch (eLimit) { hoverLimit = 800; }
+    if (isNaN(hoverLimit) || hoverLimit < 0) hoverLimit = 800;
+    var maxAge = Math.max(1800, Math.min(6000, hoverLimit * 4));
+    var age = now - Number(snap.readyAt || 0);
+    if (age < 0 || age > maxAge) return null;
+
+    var hp = null;
+    try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+    if (!hp) return null;
+
+    var hit = false;
+    try {
+      if (typeof this.pointerRectHitScore === "function") {
+        hit = Number(this.pointerRectHitScore(hp.x, hp.y, snap.rect)) >= 0;
+      } else {
+        hit = hp.x >= Number(snap.rect.left) && hp.x <= Number(snap.rect.right) &&
+          hp.y >= Number(snap.rect.top) && hp.y <= Number(snap.rect.bottom);
+      }
+    } catch (eHit) { hit = false; }
+    if (!hit) return null;
+
+    return {
+      text: String(snap.text),
+      rect: {
+        left: Number(snap.rect.left),
+        top: Number(snap.rect.top),
+        right: Number(snap.rect.right),
+        bottom: Number(snap.rect.bottom)
+      },
+      key: String(snap.key || ""),
+      hoverSince: Number(snap.hoverSince || 0),
+      readyAt: Number(snap.readyAt || 0),
+      session: Number(snap.session || 0),
+      hotspotX: Number(snap.hotspotX || 0),
+      hotspotY: Number(snap.hotspotY || 0)
+    };
+  };
+
+  proto.finishReadyPointerSnapshot = function(st, snapshot) {
+    var pointerState = st || null;
+    var snap = snapshot || null;
+    if (!pointerState || !snap || !snap.text || !snap.rect) return false;
+
+    var textValue = String(snap.text);
+    var rect = {
+      left: Number(snap.rect.left),
+      top: Number(snap.rect.top),
+      right: Number(snap.rect.right),
+      bottom: Number(snap.rect.bottom)
+    };
+    var copied = false;
+    try { copied = this.copyPointerTextToClipboard(textValue) === true; } catch (eCopy) { copied = false; }
+
+    pointerState.currentText = textValue;
+    pointerState.currentRect = rect;
+    pointerState.currentKey = String(snap.key || "");
+    pointerState.hoverKey = pointerState.currentKey;
+    pointerState.hoverSince = Number(snap.hoverSince || snap.readyAt || nowPosition());
+    pointerState.releaseTs = nowPosition();
+
+    this.setPointerToolResult({
+      ok: true,
+      type: "text_pick",
+      code: "TEXT_PICK_READY_SNAPSHOT",
+      message: "取字成功",
+      value: textValue,
+      clipboard: copied === true,
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom
+      },
+      data: {
+        source: "ready_visual_snapshot",
+        readyAt: Number(snap.readyAt || 0),
+        session: Number(snap.session || 0)
+      }
+    });
+    try { this.toast(copied ? "已复制: " + textValue : textValue); } catch (eToast) {}
+    try { this.closePointerTool(copied ? "已复制到剪贴板" : "取字完成", true); } catch (eClose) {}
+    return true;
+  };
+
   proto.pointerCandidateMatchesFinalHotspot = function(st) {
     var pointerState = st || null;
     try {
@@ -415,6 +584,7 @@
           st.__toolHubPointerSemanticToken = Number(st.__toolHubPointerSemanticToken || 0) + 1;
           st.__toolHubPointerSemanticPosted = false;
           st.__toolHubPointerSemanticRunnable = null;
+          st.__toolHubReadyTextSnapshot = null;
         } catch (eInitSemantic) {}
         return ret;
       };
@@ -427,8 +597,11 @@
     try { st = this.ensurePointerToolState ? this.ensurePointerToolState() : null; } catch (eState) { st = null; }
     if (!st || !st.active || st.closed) return false;
 
+    var readySnapshot = null;
+    try { readySnapshot = this.getReadyPointerSnapshotForRelease(st); } catch (eReadySnapshot) { readySnapshot = null; }
+
     this.cancelPointerSemanticUpdate(st, "pointer_release");
-    if (!this.movePointerFromRaw(rawX, rawY, true, true)) return false;
+    this.invalidatePointerInspectForRelease(st);
     st.releaseTs = nowPosition();
 
     if (action === android.view.MotionEvent.ACTION_CANCEL) {
@@ -438,6 +611,19 @@
       try { this.closePointerTool("ACTION_CANCEL", true); } catch (eClose) {}
       return true;
     }
+
+    if (st.mode === "text_pick" && readySnapshot) {
+      st.dragging = false;
+      try {
+        logPosition(this, "i",
+          "pointer release commit ready visual snapshot age=" +
+          String(nowPosition() - Number(readySnapshot.readyAt || 0))
+        );
+      } catch (eReadyLog) {}
+      return this.finishReadyPointerSnapshot(st, readySnapshot);
+    }
+
+    if (!this.movePointerFromRaw(rawX, rawY, true, true)) return false;
 
     if (st.mode === "area_capture") {
       try { this.updatePointerAreaSelection(); } catch (eAreaUpdate) {}
