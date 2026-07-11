@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "67975c4e88015a3254f4514b444ba7dbf292db0d1351a31f6a9d2d980d693d86",
+      "sha256": "78b7b0bb108b698b05a7cf556ac9b983c0f6e958b2d2386907d44a4d47483c16",
       "size": 69332,
-      "version": "1.1.1"
+      "version": "1.1.2"
     },
     "th_02_core.js": {
       "sha256": "59a1bb996e968055319994c89c47eb0ab8294e7dbec33e0060094dfbfdda3462",
@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "4cadcb2aae23e6899376af901cf24edfbed940ab410741e0fbdb54789ed52dbe",
+      "sha256": "dedb17b32e92cadf4dff5026fe9ba1dd8c0b52e3274c93244fb03b1f3eb9c02e",
       "size": 124230,
-      "version": "1.1.28"
+      "version": "1.1.29"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "d7120c1eeef177d957499898eaa0822b481713a3cc38a1f8d02b33f475787efd",
-      "size": 44529,
-      "version": "1.0.6"
+      "sha256": "71d38aadb5ecda94167de8fec7560cb18b7fcebc90c626b9abc9bf10cb247ce5",
+      "size": 44173,
+      "version": "1.0.7"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复取字悬停门槛并调整框选时间"
+      "修复取字悬停门槛并统一默认时间"
     ],
-    "title": "修复取字悬停门槛并调整框选时间"
+    "title": "修复取字悬停门槛并统一默认时间"
   },
   "schema": 3,
-  "version": 20260711114603
+  "version": 20260711123317
 }
