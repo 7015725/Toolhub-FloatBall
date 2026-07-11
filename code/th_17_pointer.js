@@ -1,4 +1,4 @@
-// @version 1.1.32
+// @version 1.1.33
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -56,7 +56,8 @@ function th17PointerColorRgb(appObj, key, fallbackR, fallbackG, fallbackB) {
       var g = parseInt(h.substring(2, 4), 16);
       var b = parseInt(h.substring(4, 6), 16);
       if (!isNaN(r) && !isNaN(g) && !isNaN(b)) return { r: r, g: g, b: b };
-    } catch(e0) {}
+    }
+  } catch(e0) {}
   return { r: fallbackR, g: fallbackG, b: fallbackB };
 }
 
@@ -304,7 +305,6 @@ FloatBallAppWM.prototype.rememberPointerValidPick = function(st) {
   }));
   if (!key) return false;
   var now = th17Now();
-  }
   pointerState.lastValidPickText = String(pointerState.currentText);
   pointerState.lastValidPickRect = th17RectObj(pointerState.currentRect);
   pointerState.lastValidPickKey = key;
