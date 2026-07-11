@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -652,18 +652,38 @@
       try { candidateAtFinalHotspot = this.pointerCandidateMatchesFinalHotspot(st) === true; }
       catch (eCandidate) { candidateAtFinalHotspot = false; }
       if (candidateAtFinalHotspot) {
+        var candidateHoverReady = false;
+        try {
+          candidateHoverReady = this.isPointerTextHoverReady ?
+            this.isPointerTextHoverReady(st.releaseTs) === true : false;
+        } catch (eCandidateReady) { candidateHoverReady = false; }
         try {
           logPosition(this, "i",
-            "pointer release use confirmed candidate ready=" +
-            String(this.isPointerTextHoverReady ? this.isPointerTextHoverReady(st.releaseTs) === true : false)
+            "pointer release commit confirmed candidate hoverReady=" +
+            String(candidateHoverReady) +
+            " areaArmed=" + String(st.areaArmReady === true)
           );
         } catch (eCandidateLog) {}
-        try { this.extractCurrentPointerText(true, st.releaseTs); }
-        catch (eExtract) {
-          logPosition(this, "e", "confirmed pointer candidate extract fail: " + String(eExtract));
+        try {
+          return this.completePointerTextCopy(
+            String(st.currentText),
+            {
+              left: Number(st.currentRect.left),
+              top: Number(st.currentRect.top),
+              right: Number(st.currentRect.right),
+              bottom: Number(st.currentRect.bottom)
+            },
+            "TEXT_PICK_SUCCESS",
+            {
+              source: "confirmed_final_candidate",
+              hoverReady: candidateHoverReady,
+              areaArmed: st.areaArmReady === true
+            }
+          ) === true;
+        } catch (eCommitCandidate) {
+          logPosition(this, "e", "confirmed pointer candidate commit fail: " + String(eCommitCandidate));
           return false;
         }
-        return true;
       }
 
       // 最终热点已经离开旧候选时才执行补扫，避免复制上一个位置的文字。
