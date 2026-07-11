@@ -1,4 +1,4 @@
-// @version 1.0.10
+// @version 1.0.11
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -1327,11 +1327,6 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
           activePointerBlockKey = "";
           return;
         }
-        if (activeGroupKey === "pointer") {
-          currentCard = null;
-          activePointerBlockKey = "";
-          return;
-        }
         currentCard = createCard();
         box.addView(currentCard);
         if (activeGroupKey === "ball" && activeBallSubtabDef) self.createSectionHeader({ type: "section", name: String(activeBallSubtabDef.title || "悬浮球") }, currentCard);
@@ -1892,7 +1887,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   header.addView(previewBox);
 
   // [恢复] 保存按钮（放在最后一位）
-  var btnOk = this.ui.createSolidButton(this, "保存装扮", T.primary, T.onPrimary, function() {
+  var btnOk = this.ui.createSolidButton(this, "保存设置", T.primary, T.onPrimary, function() {
       try {
         self.touchActivity();
         if (self.L) self.L.i("settings confirm click");
@@ -1980,6 +1975,11 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
       if (item && String(item.type) === "section") {
         includeSection = self.isSchemaSectionInSettingsGroup(String(item.name || ""), activeGroupKey);
         if (!includeSection) { currentCard = null; return; }
+        if (activeGroupKey === "pointer") {
+          currentCard = null;
+          activePointerBlockKey = "";
+          return;
+        }
         currentCard = createCard();
         box.addView(currentCard);
         if (activeGroupKey === "ball" && activeBallSubtabDef) self.createSectionHeader({ type: "section", name: String(activeBallSubtabDef.title || "悬浮球") }, currentCard);
