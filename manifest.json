@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "6c6b51d12a208edab0321ada33b8de0b10ad8586edf02ba85f3043c3d1c65532",
-      "size": 127685,
-      "version": "1.1.26"
+      "sha256": "6b35b20b6b43b5805bf6e8c55b851790c90a52e89a7bfe00d995d942489d8237",
+      "size": 126121,
+      "version": "1.1.27"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复取字剪贴板写入并清理临时补丁"
+      "修复无障碍取字的主线程剪贴板完成链"
     ],
-    "title": "修复取字剪贴板写入并清理临时补丁"
+    "title": "修复无障碍取字的主线程剪贴板完成链"
   },
   "schema": 3,
-  "version": 20260711090838
+  "version": 20260711094350
 }
