@@ -19,12 +19,15 @@ jobs:
   apply:
     if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    environment: signing
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: agent/fix-pointer-accessibility-text-pick
           fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -51,11 +54,18 @@ jobs:
           python3 .github/scripts/verify_manifest_signature.py
           git diff --check
 
-      - name: Commit to generated branch
+      - name: Commit fix
         shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ToolHub.js ToolHub.js.sha256 scripts/verify_pointer_text_release.py .github/workflows/verify.yml
           git commit -m "彻底修复指针无障碍取字提交链路"
-          git push --force origin HEAD:generated/pointer-text-fix
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:agent/fix-pointer-accessibility-text-pick"
