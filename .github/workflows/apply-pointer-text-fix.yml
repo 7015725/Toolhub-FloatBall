@@ -1,9 +1,6 @@
 name: apply pointer text fix
 
 on:
-  push:
-    branches:
-      - agent/fix-pointer-accessibility-text-pick
   pull_request:
     branches:
       - main
@@ -17,7 +14,7 @@ concurrency:
 
 jobs:
   apply:
-    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     environment: signing
     steps:
