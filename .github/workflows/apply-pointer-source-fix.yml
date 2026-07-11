@@ -61,25 +61,25 @@ jobs:
         run: python3 .github/scripts/es5_scan.py
 
       - name: Verify pointer position state
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/verify_ball_position_state.py 2>&1 | tee pointer-position-verify.log
-
-      - name: Upload pointer position log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pointer-position-verify-log
-          path: pointer-position-verify.log
-          if-no-files-found: error
-          retention-days: 1
+        run: python3 scripts/verify_ball_position_state.py
 
       - name: Verify pointer issue 85
         run: python3 scripts/verify_pointer_issue_85.py
 
       - name: Verify pointer text release
-        run: python3 scripts/verify_pointer_text_release.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/verify_pointer_text_release.py 2>&1 | tee pointer-text-release-verify.log
+
+      - name: Upload pointer text release log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pointer-text-release-verify-log
+          path: pointer-text-release-verify.log
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Verify manifest and signature
         shell: bash
