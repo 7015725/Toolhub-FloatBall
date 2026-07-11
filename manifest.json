@@ -57,9 +57,9 @@
       "version": "1.0.2"
     },
     "th_13_panel_ui.js": {
-      "sha256": "d422d0798168d307ba81a6ad212bcc1d670d0d24bf36237725ee2b1e286c76a4",
-      "size": 25212,
-      "version": "1.0.1"
+      "sha256": "7154bb5fe7c9d5da74f3ee3e1378fe6b092c771379d31f377a0d32901d47c9a9",
+      "size": 26054,
+      "version": "1.0.2"
     },
     "th_14_button_editor.js": {
       "sha256": "48518fad82339c19bd71611cbb6da364e7cc629bcdefe2f26b8ba1e3e1896ab9",
@@ -87,9 +87,9 @@
       "version": "1.0.0"
     },
     "th_14_panels.js": {
-      "sha256": "5445f3916e81abbb2b2cb0193a598a34337cb118206b2871da9fbc0be5d1bd2f",
-      "size": 122555,
-      "version": "1.0.9"
+      "sha256": "2ff1c7b22c1cbc9307180c82d069d5e5c69d379cedcd569ae88fff827093be77",
+      "size": 122476,
+      "version": "1.0.10"
     },
     "th_14_schema_editor.js": {
       "sha256": "903fb69f973af2a722ea2536bd86099005bb07605616028d5ae9c388fe2981e0",
@@ -120,12 +120,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "所有子模块成功加载后显示短 Toast",
-      "Toast 显示实际加载的子模块数量",
-      "存在模块加载异常时不显示成功提示"
+      "缩小设置首页入口卡片与悬浮球子标签",
+      "统一设置项标题、间距和控件尺寸",
+      "数值设置增加紧凑型当前值胶囊",
+      "弱化分割线、卡片描边和阴影层级"
     ],
-    "title": "增加子模块加载完成提示"
+    "title": "紧凑化设置页视觉层级"
   },
   "schema": 3,
-  "version": 20260710131340
+  "version": 20260711001732
 }

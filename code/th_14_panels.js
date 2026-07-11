@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.0.10
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -280,7 +280,7 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
   var row = new android.widget.LinearLayout(context);
   row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  row.setPadding(this.dp(2), this.dp(2), this.dp(2), this.dp(2));
+  row.setPadding(this.dp(1), this.dp(1), this.dp(1), this.dp(1));
   wrap.addView(row, new android.widget.FrameLayout.LayoutParams(-2, -2));
 
   for (var i = 0; i < tabs.length; i++) {
@@ -293,15 +293,15 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
       chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
       chip.setTypeface(null, selected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
       chip.setTextColor(selected ? T.onPrimary : T.primaryDeep);
-      chip.setPadding(self.dp(14), self.dp(8), self.dp(14), self.dp(8));
-      try { chip.setMinHeight(self.dp(48)); chip.setMinimumHeight(self.dp(48)); } catch(eMinH) {}
-      try { chip.setMinWidth(self.dp(48)); chip.setMinimumWidth(self.dp(48)); } catch(eMinW) {}
+      chip.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
+      try { chip.setMinHeight(self.dp(44)); chip.setMinimumHeight(self.dp(44)); } catch(eMinH) {}
+      try { chip.setMinWidth(self.dp(44)); chip.setMinimumWidth(self.dp(44)); } catch(eMinW) {}
       try { chip.setIncludeFontPadding(false); } catch(eFontPad) {}
       try { chip.setContentDescription("切换到" + String(tab.title || tab.key)); } catch(eDesc) {}
       try { chip.setClickable(true); chip.setFocusable(true); } catch(eClickable) {}
       var bg = selected ? T.primary : self.withAlpha(T.primarySoft, isDark ? 0.70 : 0.94);
       var stroke = selected ? T.primary : self.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.18);
-      chip.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(18)));
+      chip.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(16)));
       chip.setOnClickListener(new JavaAdapter(android.view.View.OnClickListener, { onClick: function(v) {
         try {
           self.touchActivity();
@@ -311,13 +311,13 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
           if (onChange) onChange(nextKey);
         } catch(eClick) { safeLog(null, 'e', "catch " + String(eClick)); }
       }}));
-      var lp = new android.widget.LinearLayout.LayoutParams(-2, self.dp(48));
-      lp.setMargins(0, 0, self.dp(8), 0);
+      var lp = new android.widget.LinearLayout.LayoutParams(-2, self.dp(44));
+      lp.setMargins(0, 0, self.dp(6), 0);
       row.addView(chip, lp);
     })(tabs[i]);
   }
   var wrapLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-  wrapLp.setMargins(this.dp(2), this.dp(0), this.dp(2), this.dp(8));
+  wrapLp.setMargins(this.dp(2), this.dp(0), this.dp(2), this.dp(6));
   parent.addView(wrap, wrapLp);
 };
 
@@ -362,14 +362,14 @@ FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function(parent, icon
   var row = new android.widget.LinearLayout(context);
   row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  row.setPadding(this.dp(4), this.dp(12), this.dp(4), this.dp(6));
+  row.setPadding(this.dp(4), this.dp(10), this.dp(4), this.dp(5));
   var tvIcon = new android.widget.TextView(context);
   tvIcon.setText(String(icon || "✦"));
-  tvIcon.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+  tvIcon.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
   tvIcon.setTextColor(T.primaryDeep);
   tvIcon.setGravity(android.view.Gravity.CENTER);
   tvIcon.setBackground(this.ui.createRoundDrawable(T.primarySoft, this.dp(10)));
-  var iconLp = new android.widget.LinearLayout.LayoutParams(this.dp(28), this.dp(28));
+  var iconLp = new android.widget.LinearLayout.LayoutParams(this.dp(26), this.dp(26));
   iconLp.setMargins(0, 0, this.dp(8), 0);
   row.addView(tvIcon, iconLp);
   var tv = new android.widget.TextView(context);
@@ -419,20 +419,20 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   row.setGravity(android.view.Gravity.CENTER_VERTICAL);
   var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
   var itemRadius = spec ? spec.itemRadius : this.dp(18);
-  row.setPadding(this.dp(14), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(10) : this.dp(12), this.dp(12), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(10) : this.dp(12));
-  row.setMinimumHeight(spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(76) : this.dp(82));
+  row.setPadding(this.dp(12), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(8) : this.dp(10), this.dp(10), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(8) : this.dp(10));
+  row.setMinimumHeight(spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(72) : this.dp(76));
   row.setBackground(this.ui.createRippleDrawable(T.card, this.withAlpha(T.primary, isDark ? 0.18 : 0.12), itemRadius));
-  try { row.setElevation(this.dp(useMonet ? 1 : ((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 1 : 3))); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
+  try { row.setElevation(this.dp(1)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   var badge = new android.widget.TextView(context);
   badge.setText(this.getSettingsHomeIcon ? this.getSettingsHomeIcon(title) : "✦");
   badge.setTextColor(T.primaryDeep);
-  badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20);
+  badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   badge.setGravity(android.view.Gravity.CENTER);
   badge.setTypeface(null, android.graphics.Typeface.BOLD);
-  badge.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(14)));
-  var iconSize = spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(42) : this.dp(44);
+  badge.setBackground(this.ui.createStrokeDrawable(T.primarySoft, this.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), this.dp(1), this.dp(13)));
+  var iconSize = spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(38) : this.dp(40);
   var badgeLp = new android.widget.LinearLayout.LayoutParams(iconSize, iconSize);
-  badgeLp.setMargins(0, 0, this.dp(12), 0);
+  badgeLp.setMargins(0, 0, this.dp(10), 0);
   row.addView(badge, badgeLp);
   var texts = new android.widget.LinearLayout(context);
   texts.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -446,17 +446,17 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   tvDesc.setText(String(desc || ""));
   tvDesc.setTextColor(T.sub);
   tvDesc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-  tvDesc.setPadding(0, this.dp(3), this.dp(8), 0);
+  tvDesc.setPadding(0, this.dp(2), this.dp(6), 0);
   try { tvDesc.setSingleLine(false); } catch(eSL) { safeLog(null, 'e', "catch " + String(eSL)); }
   texts.addView(tvDesc);
   row.addView(texts, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
   var tvGo = new android.widget.TextView(context);
   tvGo.setText("›");
   tvGo.setTextColor(T.primaryDeep);
-  tvGo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24);
+  tvGo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
   tvGo.setTypeface(null, android.graphics.Typeface.BOLD);
   tvGo.setGravity(android.view.Gravity.CENTER);
-  row.addView(tvGo, new android.widget.LinearLayout.LayoutParams(this.dp(26), -1));
+  row.addView(tvGo, new android.widget.LinearLayout.LayoutParams(this.dp(24), -1));
   row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
     try { self.touchActivity(); } catch(eT) {}
     try { if (onClick) onClick(); } catch(eC) { try { self.toast("打开失败: " + String(eC)); } catch(eToast) {} }
@@ -1223,7 +1223,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
 
   var top = new android.widget.LinearLayout(context);
   top.setOrientation(android.widget.LinearLayout.VERTICAL);
-  top.setPadding(this.dp(2), 0, this.dp(2), this.dp(10));
+  top.setPadding(this.dp(2), 0, this.dp(2), this.dp(8));
   var crumb = new android.widget.TextView(context);
   crumb.setText("‹ 返回分类");
   crumb.setTextColor(T.primaryDeep);
@@ -1285,7 +1285,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER); scroll.setVerticalScrollBarEnabled(false); } catch(eOS) {}
   var box = columns > 1 ? this.createSettingsGridContainer(columns) : new android.widget.LinearLayout(context);
   if (columns <= 1) box.setOrientation(android.widget.LinearLayout.VERTICAL);
-  box.setPadding(0, this.dp(4), 0, this.dp(20));
+  box.setPadding(0, this.dp(2), 0, this.dp(16));
   scroll.addView(box);
   scroll.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, { onTouch: function(v, e) { self.touchActivity(); return false; }}));
 
@@ -1295,7 +1295,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   function createCard() {
     var c = new android.widget.LinearLayout(context);
     c.setOrientation(android.widget.LinearLayout.VERTICAL);
-    c.setBackground(self.ui.createStrokeDrawable(T.card, self.withAlpha(T.stroke, isDark ? 0.22 : 0.30), self.dp(1), cardRadius));
+    c.setBackground(self.ui.createStrokeDrawable(T.card, self.withAlpha(T.stroke, isDark ? 0.18 : 0.24), self.dp(1), cardRadius));
     try { c.setElevation(self.dp(1)); } catch(e) {}
     try { c.setClipToOutline(true); } catch(e2) {}
     if (columns > 1) {
@@ -1303,14 +1303,14 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
       glp.width = 0;
       glp.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT;
       glp.columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1, 1);
-      glp.setMargins(self.dp(6), self.dp(6), self.dp(6), self.dp(8));
+      glp.setMargins(self.dp(4), self.dp(4), self.dp(4), self.dp(6));
       c.setLayoutParams(glp);
     } else {
       var lp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-      lp.setMargins(self.dp(2), self.dp(6), self.dp(2), self.dp(8));
+      lp.setMargins(self.dp(2), self.dp(4), self.dp(2), self.dp(6));
       c.setLayoutParams(lp);
     }
-    c.setPadding(0, 0, 0, self.dp(4));
+    c.setPadding(0, 0, 0, self.dp(2));
     return c;
   }
   var activeGroupKey = String(groupKey || "");
@@ -1437,8 +1437,8 @@ FloatBallAppWM.prototype.createSettingsMasterMenuItem = function(parent, cat, se
   var row = new android.widget.LinearLayout(context);
   row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  row.setPadding(this.dp(10), this.dp(8), this.dp(10), this.dp(8));
-  row.setMinimumHeight(this.dp(68));
+  row.setPadding(this.dp(10), this.dp(7), this.dp(10), this.dp(7));
+  row.setMinimumHeight(this.dp(64));
   var bg = selected ? T.primarySoft : T.card;
   var stroke = selected ? this.withAlpha(T.primaryDeep, isDark ? 0.52 : 0.36) : this.withAlpha(T.stroke, isDark ? 0.20 : 0.24);
   row.setBackground(this.ui.createStrokeDrawable(bg, stroke, this.dp(1), this.dp(18)));
@@ -1450,12 +1450,12 @@ FloatBallAppWM.prototype.createSettingsMasterMenuItem = function(parent, cat, se
   row.addView(mark, markLp);
   var icon = new android.widget.TextView(context);
   icon.setText(String(cat && cat.icon || "✦"));
-  icon.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+  icon.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
   icon.setTextColor(selected ? T.primaryDeep : T.text);
   icon.setGravity(android.view.Gravity.CENTER);
-  icon.setBackground(this.ui.createRoundDrawable(selected ? T.card : T.primarySoft, this.dp(14)));
-  var iconLp = new android.widget.LinearLayout.LayoutParams(this.dp(42), this.dp(42));
-  iconLp.setMargins(0, 0, this.dp(10), 0);
+  icon.setBackground(this.ui.createRoundDrawable(selected ? T.card : T.primarySoft, this.dp(13)));
+  var iconLp = new android.widget.LinearLayout.LayoutParams(this.dp(38), this.dp(38));
+  iconLp.setMargins(0, 0, this.dp(8), 0);
   row.addView(icon, iconLp);
   var texts = new android.widget.LinearLayout(context);
   texts.setOrientation(android.widget.LinearLayout.VERTICAL);
