@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "30eb25a91091f3d274bd8c12d37d1eb43515ca5fea769aead9a383c696e7d38c",
-      "size": 31693,
-      "version": "1.0.1"
+      "sha256": "b25fabd33ccf516945b9f079c6405ce1eaa5359215367933d5d46f3d2ca57137",
+      "size": 36326,
+      "version": "1.0.2"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针松手最终坐标与补丁竞态"
+      "修复可取字松手失败与指针贴边"
     ],
-    "title": "修复指针松手最终坐标与补丁竞态"
+    "title": "修复可取字松手失败与指针贴边"
   },
   "schema": 3,
-  "version": 20260711081022
+  "version": 20260711083022
 }
