@@ -1,0 +1,35 @@
+name: apply-pointer-ready-snapshot
+
+on:
+  push:
+    branches: [fix/pointer-ready-snapshot]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/pointer-ready-snapshot
+          fetch-depth: 0
+
+      - name: Apply patch
+        run: python3 scripts/apply_pointer_ready_snapshot.py
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet -- code/th_19_position_state.js scripts/verify_ball_position_state.py; then
+            echo "No source changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_19_position_state.js scripts/verify_ball_position_state.py
+          git commit -m "冻结可取字状态并修复松手提交"
+          git push origin HEAD:fix/pointer-ready-snapshot
