@@ -30,6 +30,10 @@ def patch_default_line(text, key, old_default, new_default):
             r'\g<1>' + str(new_default) + r'\g<2>'
         ),
         (
+            r'(' + re.escape(key) + r'\s*:\s*)' + str(old_default) + r'(\s*,)',
+            r'\g<1>' + str(new_default) + r'\g<2>'
+        ),
+        (
             r'(' + re.escape(key) + r'\s*:\s*\{[^}\n]*?default\s*:\s*)' + str(old_default) + r'([^}\n]*\})',
             r'\g<1>' + str(new_default) + r'\g<2>'
         ),
@@ -155,7 +159,7 @@ def final_scan():
     leftovers = []
     for path in files:
         for no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            if "POINTER_AREA_HOVER_MS" in line and "1000" in line:
+            if "POINTER_AREA_HOVER_MS" in line and re.search(r'\b1000\b', line):
                 leftovers.append("%s:%d:%s" % (path.relative_to(ROOT), no, line.strip()))
     if leftovers:
         raise SystemExit("old 1000ms area-hover defaults remain: " + " | ".join(leftovers))
