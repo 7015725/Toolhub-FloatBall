@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "dedb17b32e92cadf4dff5026fe9ba1dd8c0b52e3274c93244fb03b1f3eb9c02e",
-      "size": 124230,
-      "version": "1.1.29"
+      "sha256": "a9254ede2d5489a970dd65c9d4374920ed688133ba24703b6c47f54c3b4e7a79",
+      "size": 126015,
+      "version": "1.1.30"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复取字悬停门槛并统一默认时间"
+      "修复异步候选未计入稳定悬停时间"
     ],
-    "title": "修复取字悬停门槛并统一默认时间"
+    "title": "修复异步候选未计入稳定悬停时间"
   },
   "schema": 3,
-  "version": 20260711123317
+  "version": 20260711124644
 }
