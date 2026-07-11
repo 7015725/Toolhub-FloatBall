@@ -1,4 +1,4 @@
-// @version 1.1.30
+// @version 1.1.31
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -373,6 +373,76 @@ FloatBallAppWM.prototype.restoreRecentReadyPointerPick = function(st, atTs) {
   try { this.showPointerAreaFrame(pointerState.currentRect, "text_hit"); } catch (eFrame) {}
   try { this.updatePointerVisualHot(true); } catch (eHot) {}
   return true;
+};
+
+FloatBallAppWM.prototype.getRecentPointerPickForRelease = function(st, atTs) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  if (!pointerState || !pointerState.lastValidPickText || !pointerState.lastValidPickRect) return null;
+  if (Number(pointerState.lastValidPickSession || 0) !== Number(pointerState.inspectSession || 0)) return null;
+
+  var now = Number(atTs || th17Now());
+  if (isNaN(now) || now <= 0) now = th17Now();
+  var hitAt = Number(pointerState.lastValidPickAt || 0);
+  if (isNaN(hitAt) || hitAt <= 0) return null;
+  var age = now - hitAt;
+  var maxAge = 500;
+  if (age < 0 || age > maxAge) return null;
+
+  var hp = null;
+  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+  if (!hp) return null;
+  var hit = false;
+  try { hit = this.pointerRectHitScore(hp.x, hp.y, pointerState.lastValidPickRect) >= 0; }
+  catch (eHit) { hit = false; }
+  if (!hit) return null;
+
+  return {
+    text: String(pointerState.lastValidPickText),
+    rect: th17RectObj(pointerState.lastValidPickRect),
+    key: String(pointerState.lastValidPickKey || ""),
+    hitAt: hitAt,
+    ageMs: age,
+    session: Number(pointerState.lastValidPickSession || 0)
+  };
+};
+
+FloatBallAppWM.prototype.restoreRecentPointerPickForRelease = function(st, recent) {
+  var pointerState = st || null;
+  var item = recent || null;
+  if (!pointerState || !item || !item.text || !item.rect) return false;
+  pointerState.currentText = String(item.text);
+  pointerState.currentRect = th17RectObj(item.rect);
+  pointerState.currentKey = String(item.key || "");
+  pointerState.hoverKey = pointerState.currentKey;
+  pointerState.hoverSince = Number(item.hitAt || th17Now());
+  try { this.showPointerAreaFrame(pointerState.currentRect, "text_hit"); } catch (eFrame) {}
+  try { this.updatePointerVisualHot(true); } catch (eHot) {}
+  return true;
+};
+
+FloatBallAppWM.prototype.completePointerCandidateOnRelease = function(st, successCode, source, extraData) {
+  var pointerState = st || null;
+  if (!pointerState || !pointerState.currentText || !pointerState.currentRect) return false;
+  var data = { source: String(source || "accessibility_release") };
+  try {
+    if (extraData) {
+      for (var k in extraData) data[k] = extraData[k];
+    }
+  } catch (eData) {}
+  try {
+    safeLog(this.L, 'i',
+      "pointer text release commit source=" + data.source +
+      " textLen=" + String(String(pointerState.currentText).length));
+  } catch (eLog) {}
+  return this.completePointerTextCopy(
+    String(pointerState.currentText),
+    th17RectObj(pointerState.currentRect),
+    String(successCode || "TEXT_PICK_SUCCESS"),
+    data
+  ) === true;
 };
 
 FloatBallAppWM.prototype.completePointerTextCopy = function(textValue, rect, successCode, extraData) {
@@ -2259,8 +2329,9 @@ FloatBallAppWM.prototype.isPointerTextHoverReady = function(atTs) {
   if (st.currentKey && st.hoverKey && String(st.currentKey) !== String(st.hoverKey)) return false;
   var ts = Number(atTs || th17Now());
   if (isNaN(ts) || ts <= 0) ts = th17Now();
-  try { this.syncPointerTextHoverFromStableHold(ts); } catch (eStableHover) {}
-  return ts - Number(st.hoverSince || 0) >= this.getPointerTextHoverLimitMs();
+  var since = Number(st.hoverSince || 0);
+  if (isNaN(since) || since <= 0 || since > ts) return false;
+  return ts - since >= this.getPointerTextHoverLimitMs();
 };
 
 FloatBallAppWM.prototype.getPointerTextHoverRemainMs = function(atTs) {
@@ -2327,45 +2398,48 @@ FloatBallAppWM.prototype.schedulePointerTextReadyVisualRefresh = function() {
   }
 };
 
-FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect, hoverAtTs) {
+FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect, releaseAtTs) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed) return { ok: false, err: "指针未启动" };
   if (skipInspect !== true) this.updatePointerInspect(true);
+
+  var releaseTs = Number(releaseAtTs || th17Now());
+  if (isNaN(releaseTs) || releaseTs <= 0) releaseTs = th17Now();
+  var recent = null;
   if (!st.currentText || !st.currentRect) {
-    try { this.restoreRecentReadyPointerPick(st, hoverAtTs); } catch (eRestoreRecent) {}
+    try { recent = this.getRecentPointerPickForRelease(st, releaseTs); } catch (eRecent) { recent = null; }
+    if (recent) {
+      try { this.restoreRecentPointerPickForRelease(st, recent); } catch (eRestoreRecent) {}
+    }
   }
   if (!st.currentText || !st.currentRect) {
     this.setPointerToolResult({ ok: false, type: "pointer_error", code: "NO_TEXT", message: "未命中文本" });
     this.toast("未命中文本");
     this.closePointerTool("未命中文本", true);
-    return { ok: false, err: "未命中文本" };
+    return { ok: false, err: "未命中文本", code: "NO_TEXT" };
   }
-  if (!this.isPointerTextHoverReady(hoverAtTs)) {
-    var remainMs = this.getPointerTextHoverRemainMs(hoverAtTs);
-    this.setPointerToolResult({
-      ok: false,
-      type: "cancel",
-      code: "TEXT_HOVER_NOT_READY",
-      message: "悬停时间不足",
-      value: "",
-      data: {
-        remainMs: remainMs,
-        hoverMinMs: this.getPointerTextHoverLimitMs()
-      }
-    });
-    this.toast("悬停时间不足");
-    this.closePointerTool("悬停时间不足", true);
-    return { ok: false, err: "悬停时间不足", code: "TEXT_HOVER_NOT_READY" };
+
+  var reason = String(st.inspectLastReason || st.inspectLatestReason || "");
+  var successCode = "TEXT_PICK_SUCCESS";
+  var source = "accessibility_current";
+  var extra = { releaseTs: releaseTs };
+  if (recent) {
+    successCode = "TEXT_PICK_RECENT_CANDIDATE";
+    source = "accessibility_recent_candidate";
+    extra.ageMs = Number(recent.ageMs || 0);
+  } else if (reason.indexOf("release_final") === 0 || reason.indexOf("area_small_text_final") === 0) {
+    successCode = "TEXT_PICK_FINAL_SCAN";
+    source = "accessibility_final_scan";
+    extra.costMs = Number(st.inspectLastCostMs || 0);
+    extra.nodes = Number(st.inspectLastNodes || 0);
+    extra.windows = Number(st.inspectLastWindows || 0);
   }
-  var rect = st.currentRect;
+
   var textValue = String(st.currentText);
-  var started = this.completePointerTextCopy(
-    textValue,
-    { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
-    "TEXT_PICK_SUCCESS",
-    { source: "accessibility_current" }
-  );
-  return { ok: started === true, pending: started === true, text: textValue, clipboard: false };
+  var completed = this.completePointerCandidateOnRelease(st, successCode, source, extra);
+  var copied = false;
+  try { copied = !!(st.lastResult && st.lastResult.clipboard === true); } catch (eCopied) { copied = false; }
+  return { ok: completed === true, pending: false, text: textValue, clipboard: copied };
 };
 
 FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
@@ -2375,7 +2449,10 @@ FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
   if (isNaN(releaseTs) || releaseTs <= 0) releaseTs = th17Now();
 
   if (!st.currentText || !st.currentRect) {
-    try { this.restoreRecentReadyPointerPick(st, releaseTs); } catch (eRestoreRelease) {}
+    try {
+      var recentRelease = this.getRecentPointerPickForRelease(st, releaseTs);
+      if (recentRelease) this.restoreRecentPointerPickForRelease(st, recentRelease);
+    } catch (eRestoreRelease) {}
   }
   if (st.currentText && st.currentRect) {
     this.extractCurrentPointerText(true, releaseTs);
@@ -2443,7 +2520,7 @@ FloatBallAppWM.prototype.finishPointerTextPickOnRelease = function() {
   if (!st.active || st.closed || st.mode !== "text_pick") return false;
   st.releaseTs = th17Now();
 
-  // 有明确文字候选：立即判断悬停时间并取字 / 取消。
+  // 有明确文字候选：普通取字松手立即提交；悬停时间只控制就绪颜色。
   if (st.currentText && st.currentRect) {
     this.extractCurrentPointerText(true, st.releaseTs);
     return true;

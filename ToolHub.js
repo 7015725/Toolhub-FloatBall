@@ -1039,6 +1039,7 @@ function notifyToolHubModulesLoaded() {
     return true;
 }
 notifyToolHubModulesLoaded();
+
 if (__trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveInstalledManifestFromLocal();
 if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveTrustedVersion(__trustedManifest.version);
 

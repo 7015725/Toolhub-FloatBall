@@ -87,9 +87,9 @@
       "version": "1.0.0"
     },
     "th_14_panels.js": {
-      "sha256": "e3493eab317c4f24fafbafc6789b8285e6b648f5e9ba8647f82d52ed2ef3cd4f",
-      "size": 122476,
-      "version": "1.0.11"
+      "sha256": "b9a23604096aadf3ccea728fecc7125e96eac1b1f8f5014e816d815615aea46c",
+      "size": 122523,
+      "version": "1.0.12"
     },
     "th_14_schema_editor.js": {
       "sha256": "903fb69f973af2a722ea2536bd86099005bb07605616028d5ae9c388fe2981e0",
@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "a9254ede2d5489a970dd65c9d4374920ed688133ba24703b6c47f54c3b4e7a79",
-      "size": 126015,
-      "version": "1.1.30"
+      "sha256": "45b771b8a64e4c47e8e7c3d75af664ddffbb3aa2609f632d593d5944a16af28a",
+      "size": 129301,
+      "version": "1.1.31"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "71d38aadb5ecda94167de8fec7560cb18b7fcebc90c626b9abc9bf10cb247ce5",
-      "size": 44173,
-      "version": "1.0.7"
+      "sha256": "5ea678437dc26ee62a6fa59f25cfd8a0262b7f03ce3a823bd1654e40499eb235",
+      "size": 43194,
+      "version": "1.0.8"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复异步候选未计入稳定悬停时间"
+      "统一取字时间源并恢复命中候选松手提交"
     ],
-    "title": "修复异步候选未计入稳定悬停时间"
+    "title": "彻底修复指针无障碍取字提交链路"
   },
   "schema": 3,
-  "version": 20260711124644
+  "version": 20260711141806
 }

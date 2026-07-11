@@ -13,7 +13,7 @@ MANIFEST = ROOT / "manifest.json"
 TOOLHUB = ROOT / "ToolHub.js"
 
 REQUIRED = [
-    "// @version 1.0.7",
+    "// @version 1.0.8",
     "__toolHubPositionStateMachineInstalled",
     "__toolHubFixedEdgePointerPatchInstalled = true",
     "BALL_POSITION_SIDE",
@@ -143,22 +143,20 @@ def main() -> None:
         fail("finalizer must not derive pointer position from fixed ball")
     if finalizer.index("cancelPointerSemanticUpdate") > finalizer.index("movePointerFromRaw(rawX, rawY, true, true)"):
         fail("pending semantic task must be cancelled before final raw position")
-    snapshot_at = finalizer.index("getReadyPointerSnapshotForRelease")
-    recent_at = finalizer.index("getRecentReadyPointerPick")
+    cancel_at = finalizer.index("cancelPointerSemanticUpdate")
     invalidate_at = finalizer.index("invalidatePointerInspectForRelease")
-    snapshot_finish_at = finalizer.index("finishReadyPointerSnapshot")
-    recent_finish_at = finalizer.index("restoreRecentReadyPointerPick")
     final_move_at = finalizer.index("movePointerFromRaw(rawX, rawY, true, true)")
-    if not (snapshot_at < recent_at < invalidate_at < snapshot_finish_at < recent_finish_at < final_move_at):
-        fail("ready snapshot and recent valid pick must be committed before final raw move")
     candidate_at = finalizer.index("pointerCandidateMatchesFinalHotspot")
+    recent_at = finalizer.index("getRecentPointerPickForRelease")
+    scan_at = finalizer.index('schedulePointerInspectAsync(true, "release_final", true)')
+    if not (cancel_at < invalidate_at < final_move_at < candidate_at < recent_at < scan_at):
+        fail("release order must be cancel -> invalidate -> final raw -> candidate -> recent -> final scan")
     candidate_extract_at = finalizer.index("extractCurrentPointerText(true, st.releaseTs)", candidate_at)
-    scan_at = finalizer.index('schedulePointerInspectAsync(true, "release_final", true)', candidate_extract_at)
-    if not (candidate_at < candidate_extract_at < scan_at):
-        fail("confirmed final candidate must pass the hover-gated extraction before fallback final scan")
+    if not (candidate_at < candidate_extract_at < recent_at < scan_at):
+        fail("confirmed candidate and recent candidate must be tried before final scan")
     candidate_section = finalizer[candidate_at:scan_at]
     if "completePointerTextCopy(" in candidate_section:
-        fail("confirmed final candidate bypasses the hover-gated extraction")
+        fail("confirmed final candidate bypasses unified extraction")
     if "isPointerTextHoverReady" not in candidate_section:
         fail("confirmed final candidate does not record hover readiness")
     if "TEXT_FINAL_SCAN_FAILED" not in finalizer:
@@ -240,12 +238,15 @@ def main() -> None:
         fail("screen reflow does not cancel pending semantic task")
 
     for marker in (
-        "// @version 1.1.30",
+        "// @version 1.1.31",
         "copyPointerTextToClipboard = function",
         "cm.setPrimaryClip(clip)",
         "rememberPointerValidPick",
         "getRecentReadyPointerPick",
         "restoreRecentReadyPointerPick",
+        "getRecentPointerPickForRelease",
+        "restoreRecentPointerPickForRelease",
+        "completePointerCandidateOnRelease",
         "lastValidPickReadyAt",
         "completePointerTextCopy",
         "data.clipboardAccepted = copied === true",
@@ -276,8 +277,8 @@ def main() -> None:
         "FloatBallAppWM.prototype.isPointerTextHoverReady = function",
         "FloatBallAppWM.prototype.getPointerTextHoverRemainMs = function",
     )
-    if "syncPointerTextHoverFromStableHold(ts)" not in ready_section:
-        fail("text hover readiness does not count verified stable hold time")
+    if "syncPointerTextHoverFromStableHold(ts)" in ready_section:
+        fail("text hover readiness must not reuse OCR area hold timing")
     if "areaHoldDelay: 2000" not in pointer_core:
         fail("pointer state area hover default is not 2000ms")
 
@@ -288,10 +289,10 @@ def main() -> None:
     )
     if "copyPointerTextToClipboard(textValue)" in extract_section:
         fail("extractCurrentPointerText still treats synchronous clipboard write as success")
-    if "restoreRecentReadyPointerPick" not in extract_section:
-        fail("extractCurrentPointerText does not restore the recent ready candidate")
-    if "completePointerTextCopy(" not in extract_section:
-        fail("extractCurrentPointerText does not use the unified text completion path")
+    if "getRecentPointerPickForRelease" not in extract_section:
+        fail("extractCurrentPointerText does not restore a recent valid release candidate")
+    if "completePointerCandidateOnRelease(" not in extract_section:
+        fail("extractCurrentPointerText does not use the unified release completion path")
     clipboard_section = section(
         pointer_core,
         "FloatBallAppWM.prototype.copyPointerTextToClipboard = function",
