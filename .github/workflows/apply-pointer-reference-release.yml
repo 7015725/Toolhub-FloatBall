@@ -1,0 +1,41 @@
+name: apply-pointer-reference-release
+
+on:
+  push:
+    branches: [fix/pointer-reference-release]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/pointer-reference-release
+          fetch-depth: 0
+
+      - name: Apply patch
+        run: python3 scripts/apply_pointer_reference_release.py
+
+      - name: Verify source
+        run: |
+          python3 scripts/verify_ball_position_state.py
+          python3 .github/scripts/es5_scan.py
+          git diff --check
+
+      - name: Commit source
+        shell: bash
+        run: |
+          if git diff --quiet -- code/th_17_pointer.js code/th_19_position_state.js scripts/verify_ball_position_state.py; then
+            echo "No source changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_17_pointer.js code/th_19_position_state.js scripts/verify_ball_position_state.py
+          git commit -m "按参考实现修复无障碍取字提交"
+          git push origin HEAD:fix/pointer-reference-release
