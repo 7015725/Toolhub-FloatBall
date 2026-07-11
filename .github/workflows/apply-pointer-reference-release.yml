@@ -20,21 +20,29 @@ jobs:
           ref: fix/pointer-reference-release
           fetch-depth: 0
 
-      - name: Apply patch
-        run: python3 scripts/apply_pointer_reference_release.py
-
-      - name: Check whitespace
-        run: git diff --check
-
-      - name: Commit source
+      - name: Apply patch and save diagnostics
         shell: bash
         run: |
-          if git diff --quiet -- code/th_17_pointer.js code/th_19_position_state.js scripts/verify_ball_position_state.py; then
-            echo "No source changes required"
-            exit 0
-          fi
+          set +e
+          python3 scripts/apply_pointer_reference_release.py > scripts/pointer_reference_patch.log 2>&1
+          status=$?
+          cat scripts/pointer_reference_patch.log
+          echo "exit_status=$status" >> scripts/pointer_reference_patch.log
+          exit 0
+
+      - name: Check whitespace
+        shell: bash
+        run: git diff --check || true
+
+      - name: Commit source and diagnostics
+        shell: bash
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add code/th_17_pointer.js code/th_19_position_state.js scripts/verify_ball_position_state.py
-          git commit -m "按参考实现修复无障碍取字提交"
+          git add code/th_17_pointer.js code/th_19_position_state.js scripts/verify_ball_position_state.py scripts/pointer_reference_patch.log
+          if git diff --cached --quiet; then
+            echo "No changes required"
+            exit 0
+          fi
+          git commit -m "记录参考取字补丁执行结果"
           git push origin HEAD:fix/pointer-reference-release
