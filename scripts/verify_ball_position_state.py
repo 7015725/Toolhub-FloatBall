@@ -12,7 +12,7 @@ MANIFEST = ROOT / "manifest.json"
 TOOLHUB = ROOT / "ToolHub.js"
 
 REQUIRED = [
-    "// @version 1.0.2",
+    "// @version 1.0.3",
     "__toolHubPositionStateMachineInstalled",
     "__toolHubFixedEdgePointerPatchInstalled = true",
     "BALL_POSITION_SIDE",
@@ -26,6 +26,11 @@ REQUIRED = [
     "proto.finishPointerGestureFromRaw = function",
     "movePointerFromRaw(rawX, rawY, true, true)",
     "pointerCandidateMatchesFinalHotspot",
+    "proto.storeReadyPointerSnapshot = function",
+    "proto.getReadyPointerSnapshotForRelease = function",
+    "proto.finishReadyPointerSnapshot = function",
+    "TEXT_PICK_READY_SNAPSHOT",
+    "ready_visual_snapshot",
     "extractCurrentPointerText(true, st.releaseTs)",
     "schedulePointerInspectAsync(true, \"release_final\", true)",
     "FLAG_LAYOUT_NO_LIMITS",
@@ -131,6 +136,12 @@ def main() -> None:
         fail("finalizer must not derive pointer position from fixed ball")
     if finalizer.index("cancelPointerSemanticUpdate") > finalizer.index("movePointerFromRaw(rawX, rawY, true, true)"):
         fail("pending semantic task must be cancelled before final raw position")
+    snapshot_at = finalizer.index("getReadyPointerSnapshotForRelease")
+    invalidate_at = finalizer.index("invalidatePointerInspectForRelease")
+    snapshot_finish_at = finalizer.index("finishReadyPointerSnapshot")
+    final_move_at = finalizer.index("movePointerFromRaw(rawX, rawY, true, true)")
+    if not (snapshot_at < invalidate_at < snapshot_finish_at < final_move_at):
+        fail("ready visual snapshot must be captured and committed before final raw move")
     candidate_at = finalizer.index("pointerCandidateMatchesFinalHotspot")
     extract_at = finalizer.index("extractCurrentPointerText(true, st.releaseTs)")
     scan_at = finalizer.index('schedulePointerInspectAsync(true, "release_final", true)')
@@ -170,6 +181,10 @@ def main() -> None:
         "proto.createPointerLayoutParams = function(st)",
         "proto.pointerCandidateMatchesFinalHotspot = function(st)",
         "pointerRectHitScore(hp.x, hp.y, pointerState.currentRect)",
+        "proto.storeReadyPointerSnapshot = function(st)",
+        "proto.getReadyPointerSnapshotForRelease = function(st)",
+        "proto.finishReadyPointerSnapshot = function(st, snapshot)",
+        "__toolHubReadyTextSnapshot",
     ):
         if marker not in edge_helper:
             fail("pointer edge/candidate helper missing: " + marker)
@@ -184,6 +199,7 @@ def main() -> None:
         "__toolHubPointerSemanticPosted = false",
         "proto.removePointerCallbacks = function",
         "proto.resetPointerToolState = function",
+        "st.__toolHubReadyTextSnapshot = null",
     ):
         if marker not in cleanup:
             fail("semantic cleanup hook missing: " + marker)

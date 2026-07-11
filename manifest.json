@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "b25fabd33ccf516945b9f079c6405ce1eaa5359215367933d5d46f3d2ca57137",
-      "size": 36326,
-      "version": "1.0.2"
+      "sha256": "f1f8b940829f2a21e94e0c1da2058042d6f2c2e5d1191a0d65a3c92b4a62f21f",
+      "size": 43381,
+      "version": "1.0.3"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复可取字松手失败与指针贴边"
+      "冻结可取字状态并修复松手提交"
     ],
-    "title": "修复可取字松手失败与指针贴边"
+    "title": "冻结可取字状态并修复松手提交"
   },
   "schema": 3,
-  "version": 20260711083022
+  "version": 20260711084419
 }
