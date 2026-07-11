@@ -12,7 +12,7 @@ MANIFEST = ROOT / "manifest.json"
 TOOLHUB = ROOT / "ToolHub.js"
 
 REQUIRED = [
-    "// @version 1.0.1",
+    "// @version 1.0.2",
     "__toolHubPositionStateMachineInstalled",
     "__toolHubFixedEdgePointerPatchInstalled = true",
     "BALL_POSITION_SIDE",
@@ -25,7 +25,11 @@ REQUIRED = [
     "proto.movePointerFromRaw = function(rawX, rawY, immediate, skipSemantic)",
     "proto.finishPointerGestureFromRaw = function",
     "movePointerFromRaw(rawX, rawY, true, true)",
+    "pointerCandidateMatchesFinalHotspot",
+    "extractCurrentPointerText(true, st.releaseTs)",
     "schedulePointerInspectAsync(true, \"release_final\", true)",
+    "FLAG_LAYOUT_NO_LIMITS",
+    "LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES",
     "cancelPointerSemanticUpdate",
     "__toolHubPointerSemanticSession",
     "var inward = downSide === \"left\" ? dx : -dx",
@@ -127,6 +131,11 @@ def main() -> None:
         fail("finalizer must not derive pointer position from fixed ball")
     if finalizer.index("cancelPointerSemanticUpdate") > finalizer.index("movePointerFromRaw(rawX, rawY, true, true)"):
         fail("pending semantic task must be cancelled before final raw position")
+    candidate_at = finalizer.index("pointerCandidateMatchesFinalHotspot")
+    extract_at = finalizer.index("extractCurrentPointerText(true, st.releaseTs)")
+    scan_at = finalizer.index('schedulePointerInspectAsync(true, "release_final", true)')
+    if not (candidate_at < extract_at < scan_at):
+        fail("confirmed final candidate must be extracted before fallback final scan")
     if "TEXT_FINAL_SCAN_FAILED" not in finalizer:
         fail("final text scan failure path missing")
 
@@ -141,9 +150,29 @@ def main() -> None:
         "__toolHubPointerSemanticSession",
         "st.inspectSession",
         "st.__toolHubPointerSemanticRunnable !== semanticRun",
+        "configurePointerEdgeLayoutParams(st.lp)",
+        "if (rx <= snapX) x = leftTarget",
+        "else if (rx >= sw - 1 - snapX) x = rightTarget",
+        "if (ry <= snapY) y = topTarget",
+        "else if (ry >= sh - 1 - snapY) y = bottomTarget",
     ):
         if marker not in mover:
             fail("semantic scheduling guard missing: " + marker)
+
+    edge_helper = section(
+        text,
+        "proto.configurePointerEdgeLayoutParams = function",
+        "proto.cancelPointerSemanticUpdate = function",
+    )
+    for marker in (
+        "FLAG_LAYOUT_NO_LIMITS",
+        "layoutInDisplayCutoutMode",
+        "proto.createPointerLayoutParams = function(st)",
+        "proto.pointerCandidateMatchesFinalHotspot = function(st)",
+        "pointerRectHitScore(hp.x, hp.y, pointerState.currentRect)",
+    ):
+        if marker not in edge_helper:
+            fail("pointer edge/candidate helper missing: " + marker)
 
     cleanup = section(
         text,

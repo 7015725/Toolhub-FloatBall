@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -318,6 +318,65 @@
   };
 
 
+  proto.configurePointerEdgeLayoutParams = function(lp) {
+    if (!lp) return false;
+    var changed = false;
+    try {
+      var noLimits = android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+      var flags = Number(lp.flags || 0);
+      if ((flags & noLimits) === 0) {
+        lp.flags = flags | noLimits;
+        changed = true;
+      }
+    } catch (eFlags) {}
+
+    try {
+      var sdk = Number(android.os.Build.VERSION.SDK_INT || 0);
+      if (sdk >= 28) {
+        var cutoutMode = null;
+        try { cutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS; } catch (eAlways) {}
+        if (cutoutMode === null || cutoutMode === undefined) {
+          try { cutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES; } catch (eShort) {}
+        }
+        if (cutoutMode !== null && cutoutMode !== undefined && Number(lp.layoutInDisplayCutoutMode) !== Number(cutoutMode)) {
+          lp.layoutInDisplayCutoutMode = cutoutMode;
+          changed = true;
+        }
+      }
+    } catch (eCutout) {}
+    return changed;
+  };
+
+  if (typeof proto.createPointerLayoutParams === "function" && proto.__toolHubPointerEdgeLayoutWrapped !== true) {
+    var oldCreatePointerLayoutParamsPosition = proto.createPointerLayoutParams;
+    proto.createPointerLayoutParams = function(st) {
+      var lp = oldCreatePointerLayoutParamsPosition.call(this, st);
+      try { this.configurePointerEdgeLayoutParams(lp); } catch (eEdgeFlags) {}
+      return lp;
+    };
+    proto.__toolHubPointerEdgeLayoutWrapped = true;
+  }
+
+  proto.pointerCandidateMatchesFinalHotspot = function(st) {
+    var pointerState = st || null;
+    try {
+      if (!pointerState && this.ensurePointerToolState) pointerState = this.ensurePointerToolState();
+    } catch (eState) { pointerState = null; }
+    if (!pointerState || !pointerState.currentText || !pointerState.currentRect) return false;
+
+    try {
+      var hp = this.getPointerHotspot();
+      if (!hp) return false;
+      if (typeof this.pointerRectHitScore === "function") {
+        return Number(this.pointerRectHitScore(hp.x, hp.y, pointerState.currentRect)) >= 0;
+      }
+      var rect = pointerState.currentRect;
+      return hp.x >= Number(rect.left) && hp.x <= Number(rect.right) &&
+        hp.y >= Number(rect.top) && hp.y <= Number(rect.bottom);
+    } catch (eHit) {}
+    return false;
+  };
+
   proto.cancelPointerSemanticUpdate = function(st, reason) {
     var pointerState = st || null;
     try {
@@ -392,6 +451,36 @@
 
     if (st.mode === "text_pick") {
       st.dragging = false;
+
+      // 指针和边框已经进入候选/可取字状态，并且最终热点仍在该文本范围内时，
+      // 直接按现有候选完成取字。不要再次隐藏 overlay 后强制重扫，避免部分页面
+      // UiAutomation 在松手瞬间返回 nodes=0，反而清掉已确认的可取字候选。
+      var candidateAtFinalHotspot = false;
+      try { candidateAtFinalHotspot = this.pointerCandidateMatchesFinalHotspot(st) === true; }
+      catch (eCandidate) { candidateAtFinalHotspot = false; }
+      if (candidateAtFinalHotspot) {
+        try {
+          logPosition(this, "i",
+            "pointer release use confirmed candidate ready=" +
+            String(this.isPointerTextHoverReady ? this.isPointerTextHoverReady(st.releaseTs) === true : false)
+          );
+        } catch (eCandidateLog) {}
+        try { this.extractCurrentPointerText(true, st.releaseTs); }
+        catch (eExtract) {
+          logPosition(this, "e", "confirmed pointer candidate extract fail: " + String(eExtract));
+          return false;
+        }
+        return true;
+      }
+
+      // 最终热点已经离开旧候选时才执行补扫，避免复制上一个位置的文字。
+      try {
+        st.inspectMaxFinalMs = Math.max(Number(st.inspectMaxFinalMs || 180), 220);
+        st.inspectMaxFinalNodes = Math.max(Number(st.inspectMaxFinalNodes || 720), 900);
+      } catch (eBudget) {
+        st.inspectMaxFinalMs = 220;
+        st.inspectMaxFinalNodes = 900;
+      }
       var scheduled = false;
       try { scheduled = this.schedulePointerInspectAsync(true, "release_final", true) === true; }
       catch (eFinalScan) { logPosition(this, "e", "final pointer scan fail: " + String(eFinalScan)); }
@@ -444,6 +533,13 @@
       var zoneYdp = this.clamp(numberOr(this.config.POINTER_EDGE_ZONE_Y_DP, 72), 24, 128);
       var zoneX = this.dp(zoneXdp);
       var zoneY = this.dp(zoneYdp);
+      var snapX = Math.max(1, Math.min(zoneX, this.dp(10)));
+      var snapY = Math.max(1, Math.min(zoneY, this.dp(10)));
+
+      try {
+        var edgeFlagsChanged = this.configurePointerEdgeLayoutParams(st.lp) === true;
+        if (edgeFlagsChanged && st.root && st.wm) st.wm.updateViewLayout(st.root, st.lp);
+      } catch (eEdgeLayout) {}
 
       function ease(t) {
         var v = t;
@@ -456,10 +552,17 @@
         return a + (b - a) * e;
       }
 
-      if (rx <= zoneX) x = mix(xByHandle, leftTarget, (zoneX - rx) / Math.max(1, zoneX));
-      else if (rx >= sw - 1 - zoneX) x = mix(xByHandle, rightTarget, (rx - (sw - 1 - zoneX)) / Math.max(1, zoneX));
-      if (ry <= zoneY) y = mix(yByHandle, topTarget, (zoneY - ry) / Math.max(1, zoneY));
-      else if (ry >= sh - 1 - zoneY) y = mix(yByHandle, bottomTarget, (ry - (sh - 1 - zoneY)) / Math.max(1, zoneY));
+      // 手指通常无法进入系统手势保留的最后几个像素，因此在 10dp 内完成平滑贴边，
+      // 让指针热点可以精确到达 0 / width-1 / height-1。
+      if (rx <= snapX) x = leftTarget;
+      else if (rx <= zoneX) x = mix(xByHandle, leftTarget, (zoneX - rx) / Math.max(1, zoneX - snapX));
+      else if (rx >= sw - 1 - snapX) x = rightTarget;
+      else if (rx >= sw - 1 - zoneX) x = mix(xByHandle, rightTarget, (rx - (sw - 1 - zoneX)) / Math.max(1, zoneX - snapX));
+
+      if (ry <= snapY) y = topTarget;
+      else if (ry <= zoneY) y = mix(yByHandle, topTarget, (zoneY - ry) / Math.max(1, zoneY - snapY));
+      else if (ry >= sh - 1 - snapY) y = bottomTarget;
+      else if (ry >= sh - 1 - zoneY) y = mix(yByHandle, bottomTarget, (ry - (sh - 1 - zoneY)) / Math.max(1, zoneY - snapY));
 
       st.pendingPointerX = Math.round(this.clamp(x, leftTarget, rightTarget));
       st.pendingPointerY = Math.round(this.clamp(y, topTarget, bottomTarget));
