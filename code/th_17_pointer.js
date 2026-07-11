@@ -1,4 +1,4 @@
-// @version 1.1.26
+// @version 1.1.27
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -280,7 +280,7 @@ FloatBallAppWM.prototype.getPointerClipboardContexts = function() {
     try {
       if (ctx.getApplicationContext) {
         var appCtx = ctx.getApplicationContext();
-        if (appCtx && appCtx !== ctx) out.push(appCtx);
+        if (appCtx && appCtx !== ctx) add(appCtx);
       }
     } catch (eAppCtx) {}
   }
@@ -291,10 +291,47 @@ FloatBallAppWM.prototype.getPointerClipboardContexts = function() {
   return out;
 };
 
+FloatBallAppWM.prototype.runPointerClipboardOnMain = function(fn, timeoutMs) {
+  if (!fn) return { ok: false, value: null, error: "empty clipboard task" };
+  try {
+    var mainLooper = android.os.Looper.getMainLooper();
+    var myLooper = android.os.Looper.myLooper();
+    if (mainLooper !== null && myLooper !== null && mainLooper === myLooper) {
+      return { ok: true, value: fn(), error: "" };
+    }
+  } catch (eLooper) {}
+
+  var box = { ok: false, value: null, error: "" };
+  var latch = null;
+  try {
+    latch = new java.util.concurrent.CountDownLatch(1);
+    var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    var posted = mainHandler.post(new java.lang.Runnable({ run: function() {
+      try {
+        box.value = fn();
+        box.ok = true;
+      } catch (eRun) {
+        box.error = String(eRun);
+      } finally {
+        try { latch.countDown(); } catch (eCount) {}
+      }
+    }}));
+    if (posted !== true && String(posted) !== "true") {
+      return { ok: false, value: null, error: "clipboard main-thread post failed" };
+    }
+    var waitMs = Math.max(200, Number(timeoutMs || 1800));
+    var done = latch.await(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+    if (!done) return { ok: false, value: null, error: "clipboard main-thread timeout" };
+    if (!box.ok) return { ok: false, value: null, error: String(box.error || "clipboard main-thread task failed") };
+    return { ok: true, value: box.value, error: "" };
+  } catch (eWait) {
+    return { ok: false, value: null, error: String(eWait) };
+  }
+};
+
 FloatBallAppWM.prototype.readPointerClipboardText = function(cm, ctx) {
-  if (!cm) return { ok: false, value: "", error: "ClipboardManager 不可用" };
+  if (!cm) return { available: false, value: "", error: "ClipboardManager unavailable" };
   var value = "";
-  var errors = [];
   try {
     var clip = cm.getPrimaryClip();
     if (clip && clip.getItemCount && clip.getItemCount() > 0) {
@@ -306,154 +343,102 @@ FloatBallAppWM.prototype.readPointerClipboardText = function(cm, ctx) {
       }
       if (chars !== null && chars !== undefined) value = String(chars);
     }
-  } catch (ePrimary) {
-    errors.push("getPrimaryClip=" + String(ePrimary));
+    return { available: true, value: value, error: "" };
+  } catch (eRead) {
+    return { available: false, value: "", error: String(eRead) };
   }
-  if (!value) {
-    try {
-      if (cm.getText) {
-        var legacy = cm.getText();
-        if (legacy !== null && legacy !== undefined) value = String(legacy);
-      }
-    } catch (eLegacy) {
-      errors.push("getText=" + String(eLegacy));
-    }
-  }
-  return { ok: true, value: value, error: errors.join("; ") };
 };
 
-FloatBallAppWM.prototype.writePointerClipboardOnce = function(textValue, preferLegacy) {
+FloatBallAppWM.prototype.writePointerClipboardMainSync = function(textValue) {
   var text = String(textValue === null || textValue === undefined ? "" : textValue);
-  var contexts = this.getPointerClipboardContexts();
-  var lastError = "";
-  for (var i = 0; i < contexts.length; i++) {
-    var ctx = contexts[i];
-    try {
-      var cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+  if (!text) return { ok: false, accepted: false, method: "", error: "empty text" };
+  var self = this;
+  var run = this.runPointerClipboardOnMain(function() {
+    var contexts = self.getPointerClipboardContexts();
+    var errors = [];
+    for (var i = 0; i < contexts.length; i++) {
+      var ctx = contexts[i];
+      var cm = null;
+      var pkg = "";
+      try { pkg = String(ctx.getPackageName ? ctx.getPackageName() : ""); } catch (ePkg) { pkg = ""; }
+      try { cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE); }
+      catch (eManager) { errors.push("manager[" + pkg + "]=" + String(eManager)); cm = null; }
       if (!cm) continue;
+
       var method = "setPrimaryClip";
-      if (preferLegacy === true && cm.setText) {
-        cm.setText(text);
-        method = "setText";
-      } else {
+      var accepted = false;
+      var writeError = "";
+      try {
         var clip = android.content.ClipData.newPlainText("ToolHub指针取字", text);
         cm.setPrimaryClip(clip);
+        accepted = true;
+      } catch (ePrimary) {
+        writeError = String(ePrimary);
+        try {
+          if (cm.setText) {
+            cm.setText(text);
+            method = "setText";
+            accepted = true;
+            writeError = "";
+          }
+        } catch (eLegacy) {
+          writeError = writeError + (writeError ? "; " : "") + String(eLegacy);
+        }
       }
-      return { ok: true, wrote: true, manager: cm, context: ctx, method: method, error: "" };
-    } catch (eWrite) {
-      lastError = String(eWrite);
+
+      if (accepted) {
+        var read = self.readPointerClipboardText(cm, ctx);
+        var observed = String(read && read.value || "");
+        return {
+          ok: true,
+          accepted: true,
+          method: method,
+          contextPackage: pkg,
+          readbackAvailable: !!(read && read.available === true),
+          readbackMatched: !!(read && read.available === true && observed === text),
+          observedLength: observed.length,
+          readbackError: String(read && read.error || ""),
+          error: ""
+        };
+      }
+      errors.push("write[" + pkg + "]=" + String(writeError || "failed"));
     }
+    return {
+      ok: false,
+      accepted: false,
+      method: "",
+      contextPackage: "",
+      readbackAvailable: false,
+      readbackMatched: false,
+      observedLength: 0,
+      readbackError: "",
+      error: errors.length > 0 ? errors.join(" | ") : "no available clipboard context"
+    };
+  }, 1800);
+
+  if (!run || run.ok !== true) {
+    return {
+      ok: false,
+      accepted: false,
+      method: "",
+      contextPackage: "",
+      readbackAvailable: false,
+      readbackMatched: false,
+      observedLength: 0,
+      readbackError: "",
+      error: String(run && run.error || "clipboard main-thread execution failed")
+    };
   }
-  return { ok: false, wrote: false, manager: null, context: null, method: "", error: lastError || "没有可用剪贴板上下文" };
+  return run.value || { ok: false, accepted: false, method: "", error: "empty clipboard result" };
 };
 
 FloatBallAppWM.prototype.copyPointerTextToClipboard = function(textValue) {
-  var text = String(textValue === null || textValue === undefined ? "" : textValue);
-  if (!text) return false;
-  var write = this.writePointerClipboardOnce(text, false);
-  if (!write || write.wrote !== true) {
-    try { safeLog(this.L, 'e', "copyPointerTextToClipboard write fail: " + String(write && write.error || "unknown")); } catch (eLogWrite) {}
-    return false;
-  }
-  var read = this.readPointerClipboardText(write.manager, write.context);
-  var verified = !!(read && String(read.value || "") === text);
+  var result = this.writePointerClipboardMainSync(textValue);
   try {
     var st = this.ensurePointerToolState();
-    st.lastClipboardAttempt = {
-      ok: verified,
-      wrote: true,
-      verified: verified,
-      method: String(write.method || ""),
-      observed: String(read && read.value || ""),
-      error: String(read && read.error || ""),
-      at: th17Now()
-    };
+    st.lastClipboardAttempt = result || null;
   } catch (eState) {}
-  return verified;
-};
-
-FloatBallAppWM.prototype.copyPointerTextToClipboardVerified = function(textValue, callback) {
-  var text = String(textValue === null || textValue === undefined ? "" : textValue);
-  var st = this.ensurePointerToolState();
-  if (!text || !st.active || st.closed) return false;
-  if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
-
-  st.clipboardCopyToken = Number(st.clipboardCopyToken || 0) + 1;
-  var token = st.clipboardCopyToken;
-  var session = Number(st.inspectSession || 0);
-  st.clipboardCopyPending = true;
-  var self = this;
-  var attemptNo = 0;
-  var last = { ok: false, wrote: false, verified: false, method: "", observed: "", error: "" };
-
-  function finish(result) {
-    if (token !== Number(st.clipboardCopyToken || 0)) return;
-    if (session !== Number(st.inspectSession || 0)) return;
-    if (!st.active || st.closed) return;
-    st.clipboardCopyPending = false;
-    st.lastClipboardAttempt = result;
-    try { if (callback) callback(result); } catch (eCallback) { safeLog(self.L, 'e', "clipboard callback fail: " + String(eCallback)); }
-  }
-
-  function verify(write) {
-    if (token !== Number(st.clipboardCopyToken || 0) || session !== Number(st.inspectSession || 0)) return;
-    var read = self.readPointerClipboardText(write.manager, write.context);
-    var observed = String(read && read.value || "");
-    var verified = observed === text;
-    last = {
-      ok: verified,
-      wrote: write && write.wrote === true,
-      verified: verified,
-      method: String(write && write.method || ""),
-      observed: observed,
-      error: String((write && write.error) || (read && read.error) || ""),
-      attempt: attemptNo,
-      at: th17Now()
-    };
-    if (verified) {
-      finish(last);
-      return;
-    }
-    if (attemptNo >= 3) {
-      if (!last.error) last.error = "剪贴板写入后回读不一致";
-      finish(last);
-      return;
-    }
-    try { st.handler.postDelayed(new java.lang.Runnable({ run: attempt }), 80 + attemptNo * 60); }
-    catch (eRetryPost) { last.error = String(eRetryPost); finish(last); }
-  }
-
-  function attempt() {
-    if (token !== Number(st.clipboardCopyToken || 0) || session !== Number(st.inspectSession || 0)) return;
-    if (!st.active || st.closed) return;
-    attemptNo++;
-    var write = self.writePointerClipboardOnce(text, attemptNo > 1);
-    if (!write || write.wrote !== true) {
-      last = {
-        ok: false,
-        wrote: false,
-        verified: false,
-        method: String(write && write.method || ""),
-        observed: "",
-        error: String(write && write.error || "剪贴板写入失败"),
-        attempt: attemptNo,
-        at: th17Now()
-      };
-      if (attemptNo >= 3) { finish(last); return; }
-      try { st.handler.postDelayed(new java.lang.Runnable({ run: attempt }), 80 + attemptNo * 60); }
-      catch (eRetry) { last.error = String(eRetry); finish(last); }
-      return;
-    }
-    try { st.handler.postDelayed(new java.lang.Runnable({ run: function() { verify(write); } }), attemptNo === 1 ? 60 : 100); }
-    catch (eVerifyPost) { last.error = String(eVerifyPost); finish(last); }
-  }
-
-  try { st.handler.post(new java.lang.Runnable({ run: attempt })); }
-  catch (ePost) {
-    st.clipboardCopyPending = false;
-    return false;
-  }
-  return true;
+  return !!(result && result.ok === true && result.accepted === true);
 };
 
 FloatBallAppWM.prototype.completePointerTextCopy = function(textValue, rect, successCode, extraData) {
@@ -461,69 +446,56 @@ FloatBallAppWM.prototype.completePointerTextCopy = function(textValue, rect, suc
   if (!st.active || st.closed) return false;
   var text = String(textValue === null || textValue === undefined ? "" : textValue);
   if (!text || !rect) return false;
-  var session = Number(st.inspectSession || 0);
-  var self = this;
-  var started = this.copyPointerTextToClipboardVerified(text, function(copyResult) {
-    if (!st.active || st.closed || Number(st.inspectSession || 0) !== session) return;
-    var data = {};
-    try {
-      if (extraData) {
-        for (var k in extraData) data[k] = extraData[k];
-      }
-    } catch (eData) {}
-    data.clipboardMethod = String(copyResult && copyResult.method || "");
-    data.clipboardAttempts = Number(copyResult && copyResult.attempt || 0);
-    data.clipboardObservedLength = String(copyResult && copyResult.observed || "").length;
 
-    if (copyResult && copyResult.ok === true && copyResult.verified === true) {
-      self.setPointerToolResult({
-        ok: true,
-        type: "text_pick",
-        code: String(successCode || "TEXT_PICK_SUCCESS"),
-        message: "取字并复制成功",
-        value: text,
-        clipboard: true,
-        clipboardVerified: true,
-        rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
-        data: data
-      });
-      self.toast("已复制: " + text);
-      self.closePointerTool("已复制到剪贴板", true);
-      return;
+  var copyResult = this.writePointerClipboardMainSync(text);
+  st.lastClipboardAttempt = copyResult || null;
+  var data = {};
+  try {
+    if (extraData) {
+      for (var k in extraData) data[k] = extraData[k];
     }
+  } catch (eData) {}
+  data.clipboardMethod = String(copyResult && copyResult.method || "");
+  data.clipboardContextPackage = String(copyResult && copyResult.contextPackage || "");
+  data.clipboardReadbackAvailable = !!(copyResult && copyResult.readbackAvailable === true);
+  data.clipboardReadbackMatched = !!(copyResult && copyResult.readbackMatched === true);
+  data.clipboardObservedLength = Number(copyResult && copyResult.observedLength || 0);
+  data.clipboardReadbackError = String(copyResult && copyResult.readbackError || "");
 
-    data.clipboardWrote = copyResult && copyResult.wrote === true;
-    data.clipboardError = String(copyResult && copyResult.error || "剪贴板写入后未能确认内容");
-    self.setPointerToolResult({
-      ok: false,
-      type: "pointer_error",
-      code: "CLIPBOARD_WRITE_FAILED",
-      message: "已识别文字，但复制到剪贴板失败",
+  if (copyResult && copyResult.ok === true && copyResult.accepted === true) {
+    this.setPointerToolResult({
+      ok: true,
+      type: "text_pick",
+      code: String(successCode || "TEXT_PICK_SUCCESS"),
+      message: "取字并复制成功",
       value: text,
-      clipboard: false,
-      clipboardVerified: false,
+      clipboard: true,
+      clipboardAccepted: true,
+      clipboardVerified: copyResult.readbackMatched === true,
       rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
       data: data
     });
-    self.toast("已识别文字，但复制失败");
-    self.closePointerTool("复制到剪贴板失败", true);
-  });
-
-  if (!started) {
-    this.setPointerToolResult({
-      ok: false,
-      type: "pointer_error",
-      code: "CLIPBOARD_WRITE_FAILED",
-      message: "已识别文字，但无法启动剪贴板写入",
-      value: text,
-      clipboard: false,
-      clipboardVerified: false
-    });
-    this.toast("无法启动剪贴板写入");
-    this.closePointerTool("复制到剪贴板失败", true);
-    return false;
+    this.toast("已复制: " + text);
+    this.closePointerTool("已复制到剪贴板", true);
+    return true;
   }
-  return true;
+
+  data.clipboardError = String(copyResult && copyResult.error || "clipboard write failed");
+  this.setPointerToolResult({
+    ok: false,
+    type: "pointer_error",
+    code: "CLIPBOARD_WRITE_FAILED",
+    message: "已识别文字，但复制到剪贴板失败",
+    value: text,
+    clipboard: false,
+    clipboardAccepted: false,
+    clipboardVerified: false,
+    rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+    data: data
+  });
+  this.toast("已识别文字，但复制失败");
+  this.closePointerTool("复制到剪贴板失败", true);
+  return false;
 };
 
 FloatBallAppWM.prototype.ensurePointerToolState = function() {
@@ -986,8 +958,6 @@ FloatBallAppWM.prototype.removePointerCallbacks = function(st) {
   try { if (st.handler && st.areaHoldRunnable) st.handler.removeCallbacks(st.areaHoldRunnable); } catch (eRemoveAreaHoldEnter) {}
   st.areaHoldRunnable = null;
   st.inspectSeq++;
-  st.clipboardCopyToken = Number(st.clipboardCopyToken || 0) + 1;
-  st.clipboardCopyPending = false;
 };
 
 FloatBallAppWM.prototype.closePointerInspectWorker = function(st) {
@@ -2588,20 +2558,13 @@ FloatBallAppWM.prototype.finishPointerFallbackText = function() {
   st.currentRect = rect;
   st.currentKey = String(st.boundKey || "");
   try { this.showPointerAreaFrame(rect, "text_hit"); } catch (eFrame) {}
-  var copied = this.copyPointerTextToClipboard(textValue);
-  this.setPointerToolResult({
-    ok: true,
-    type: "text_pick",
-    code: "TEXT_PICK_FALLBACK_FROM_SMALL_AREA",
-    message: "框选区域过小，已回退取字",
-    value: textValue,
-    clipboard: copied === true,
-    fallback: true,
-    rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }
-  });
-  this.toast(copied ? "已回退取字并复制" : "已回退取字");
-  this.closePointerTool("已回退取字", true);
-  return { ok: true, text: textValue, clipboard: copied === true, fallback: true };
+  var completed = this.completePointerTextCopy(
+    textValue,
+    rect,
+    "TEXT_PICK_FALLBACK_FROM_SMALL_AREA",
+    { source: "small_area_fallback", fallback: true }
+  );
+  return { ok: completed === true, text: textValue, clipboard: completed === true, fallback: true };
 };
 
 FloatBallAppWM.prototype.updatePointerAreaSelection = function(x, y) {

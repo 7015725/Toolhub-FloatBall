@@ -109,6 +109,8 @@ def main() -> None:
             fail("Rhino ES5 incompatible syntax in th_19: " + name)
         if re.search(pattern, ocr, flags=re.MULTILINE):
             fail("Rhino ES5 incompatible syntax in th_18: " + name)
+        if re.search(pattern, pointer_core, flags=re.MULTILINE):
+            fail("Rhino ES5 incompatible syntax in th_17: " + name)
 
     touch = section(
         text,
@@ -231,16 +233,20 @@ def main() -> None:
         fail("screen reflow does not cancel pending semantic task")
 
     for marker in (
-        "// @version 1.1.26",
-        "copyPointerTextToClipboardVerified",
+        "// @version 1.1.27",
+        "runPointerClipboardOnMain",
+        "android.os.Looper.getMainLooper()",
+        "java.util.concurrent.CountDownLatch",
+        "writePointerClipboardMainSync",
         "completePointerTextCopy",
+        "clipboardAccepted: true",
+        "clipboardReadbackMatched",
         "CLIPBOARD_WRITE_FAILED",
-        "clipboardVerified: true",
-        "clipboardCopyToken",
         "accessibility_current",
+        "small_area_fallback",
     ):
         if marker not in pointer_core:
-            fail("verified clipboard flow missing: " + marker)
+            fail("main-thread clipboard flow missing: " + marker)
     extract_section = section(
         pointer_core,
         "FloatBallAppWM.prototype.extractCurrentPointerText = function",
@@ -250,6 +256,51 @@ def main() -> None:
         fail("extractCurrentPointerText still treats synchronous clipboard write as success")
     if "completePointerTextCopy(" not in extract_section:
         fail("extractCurrentPointerText does not use verified clipboard completion")
+    clipboard_section = section(
+        pointer_core,
+        "FloatBallAppWM.prototype.getPointerClipboardContexts = function",
+        "FloatBallAppWM.prototype.ensurePointerToolState = function",
+    )
+    for forbidden in (
+        "copyPointerTextToClipboardVerified",
+        "clipboardCopyToken",
+        "clipboardCopyPending",
+        "copyResult.verified === true",
+        "st.handler.post",
+        "this.state.h",
+    ):
+        if forbidden in clipboard_section:
+            fail("obsolete/background clipboard flow remains: " + forbidden)
+    main_runner = section(
+        pointer_core,
+        "FloatBallAppWM.prototype.runPointerClipboardOnMain = function",
+        "FloatBallAppWM.prototype.readPointerClipboardText = function",
+    )
+    if "new android.os.Handler(android.os.Looper.getMainLooper())" not in main_runner:
+        fail("clipboard task is not explicitly posted to Android main looper")
+    writer = section(
+        pointer_core,
+        "FloatBallAppWM.prototype.writePointerClipboardMainSync = function",
+        "FloatBallAppWM.prototype.copyPointerTextToClipboard = function",
+    )
+    accepted_at = writer.index("cm.setPrimaryClip(clip)")
+    return_at = writer.index("accepted: true", accepted_at)
+    if return_at <= accepted_at:
+        fail("clipboard success is not based on accepted main-thread write")
+    complete = section(
+        pointer_core,
+        "FloatBallAppWM.prototype.completePointerTextCopy = function",
+        "FloatBallAppWM.prototype.ensurePointerToolState = function",
+    )
+    if "copyResult && copyResult.ok === true && copyResult.accepted === true" not in complete:
+        fail("text completion still depends on clipboard readback instead of accepted write")
+    fallback = section(
+        pointer_core,
+        "FloatBallAppWM.prototype.finishPointerFallbackText = function",
+        "FloatBallAppWM.prototype.updatePointerAreaSelection = function",
+    )
+    if "completePointerTextCopy(" not in fallback:
+        fail("small-area fallback bypasses the unified clipboard completion flow")
 
     if "// @version 1.0.20" not in ocr:
         fail("th_18 version was not bumped")
