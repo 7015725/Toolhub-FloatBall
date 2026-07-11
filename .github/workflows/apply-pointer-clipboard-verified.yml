@@ -3,6 +3,8 @@ name: apply-pointer-clipboard-verified
 on:
   push:
     branches: [fix/pointer-clipboard-verified]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
