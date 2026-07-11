@@ -112,23 +112,23 @@
       "version": "1.1.25"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "3e1c71cd5f153a87462ae66005c2907f60c8786fd34fd7f60d51d574ce8ea25b",
-      "size": 57303,
-      "version": "1.0.19"
+      "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
+      "size": 36854,
+      "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "19f87ab2237f57fd45c51fac7884c121d7fc6082037c9c27efaf5fb91f156fc8",
-      "size": 26819,
-      "version": "1.0.0"
+      "sha256": "30eb25a91091f3d274bd8c12d37d1eb43515ca5fea769aead9a383c696e7d38c",
+      "size": 31693,
+      "version": "1.0.1"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "收敛悬浮球定位与指针手势状态机"
+      "修复指针松手最终坐标与补丁竞态"
     ],
-    "title": "收敛悬浮球定位与指针手势状态机"
+    "title": "修复指针松手最终坐标与补丁竞态"
   },
   "schema": 3,
-  "version": 20260711072134
+  "version": 20260711081022
 }
