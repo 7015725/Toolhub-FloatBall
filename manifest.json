@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "6b35b20b6b43b5805bf6e8c55b851790c90a52e89a7bfe00d995d942489d8237",
-      "size": 126121,
-      "version": "1.1.27"
+      "sha256": "4cadcb2aae23e6899376af901cf24edfbed940ab410741e0fbdb54789ed52dbe",
+      "size": 124230,
+      "version": "1.1.28"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "f04c92dccbe8bd238af0ed11027395bbf3a76769f76dc1718c21de9700452d7d",
-      "size": 42801,
-      "version": "1.0.4"
+      "sha256": "029b6b00eb80c42bbce89db0c8c493b34061924de09ea773f2cb1430f97c452f",
+      "size": 43787,
+      "version": "1.0.5"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复无障碍取字的主线程剪贴板完成链"
+      "按正常参考实现修复无障碍取字"
     ],
-    "title": "修复无障碍取字的主线程剪贴板完成链"
+    "title": "按正常参考实现修复无障碍取字"
   },
   "schema": 3,
-  "version": 20260711094350
+  "version": 20260711103937
 }

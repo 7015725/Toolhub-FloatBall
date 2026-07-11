@@ -1,4 +1,4 @@
-// @version 1.1.27
+// @version 1.1.28
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -269,176 +269,110 @@ FloatBallAppWM.prototype.collectPointerControlDescendantText = function(node, ma
 };
 
 
-FloatBallAppWM.prototype.getPointerClipboardContexts = function() {
-  var out = [];
-  function add(ctx) {
-    if (!ctx) return;
-    for (var i = 0; i < out.length; i++) {
-      try { if (out[i] === ctx) return; } catch (eSame) {}
-    }
-    out.push(ctx);
-    try {
-      if (ctx.getApplicationContext) {
-        var appCtx = ctx.getApplicationContext();
-        if (appCtx && appCtx !== ctx) add(appCtx);
-      }
-    } catch (eAppCtx) {}
-  }
-  try { if (typeof context !== "undefined" && context) add(context); } catch (e0) {}
-  try { if (typeof getToolHubAndroidContext === "function") add(getToolHubAndroidContext()); } catch (e1) {}
-  try { add(android.app.ActivityThread.currentApplication()); } catch (e2) {}
-  try { add(android.app.AppGlobals.getInitialApplication()); } catch (e3) {}
-  return out;
-};
-
-FloatBallAppWM.prototype.runPointerClipboardOnMain = function(fn, timeoutMs) {
-  if (!fn) return { ok: false, value: null, error: "empty clipboard task" };
-  try {
-    var mainLooper = android.os.Looper.getMainLooper();
-    var myLooper = android.os.Looper.myLooper();
-    if (mainLooper !== null && myLooper !== null && mainLooper === myLooper) {
-      return { ok: true, value: fn(), error: "" };
-    }
-  } catch (eLooper) {}
-
-  var box = { ok: false, value: null, error: "" };
-  var latch = null;
-  try {
-    latch = new java.util.concurrent.CountDownLatch(1);
-    var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-    var posted = mainHandler.post(new java.lang.Runnable({ run: function() {
-      try {
-        box.value = fn();
-        box.ok = true;
-      } catch (eRun) {
-        box.error = String(eRun);
-      } finally {
-        try { latch.countDown(); } catch (eCount) {}
-      }
-    }}));
-    if (posted !== true && String(posted) !== "true") {
-      return { ok: false, value: null, error: "clipboard main-thread post failed" };
-    }
-    var waitMs = Math.max(200, Number(timeoutMs || 1800));
-    var done = latch.await(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS);
-    if (!done) return { ok: false, value: null, error: "clipboard main-thread timeout" };
-    if (!box.ok) return { ok: false, value: null, error: String(box.error || "clipboard main-thread task failed") };
-    return { ok: true, value: box.value, error: "" };
-  } catch (eWait) {
-    return { ok: false, value: null, error: String(eWait) };
-  }
-};
-
-FloatBallAppWM.prototype.readPointerClipboardText = function(cm, ctx) {
-  if (!cm) return { available: false, value: "", error: "ClipboardManager unavailable" };
-  var value = "";
-  try {
-    var clip = cm.getPrimaryClip();
-    if (clip && clip.getItemCount && clip.getItemCount() > 0) {
-      var item = clip.getItemAt(0);
-      var chars = null;
-      try { chars = item.getText(); } catch (eText) { chars = null; }
-      if (chars === null || chars === undefined) {
-        try { chars = item.coerceToText(ctx); } catch (eCoerce) { chars = null; }
-      }
-      if (chars !== null && chars !== undefined) value = String(chars);
-    }
-    return { available: true, value: value, error: "" };
-  } catch (eRead) {
-    return { available: false, value: "", error: String(eRead) };
-  }
-};
-
-FloatBallAppWM.prototype.writePointerClipboardMainSync = function(textValue) {
-  var text = String(textValue === null || textValue === undefined ? "" : textValue);
-  if (!text) return { ok: false, accepted: false, method: "", error: "empty text" };
-  var self = this;
-  var run = this.runPointerClipboardOnMain(function() {
-    var contexts = self.getPointerClipboardContexts();
-    var errors = [];
-    for (var i = 0; i < contexts.length; i++) {
-      var ctx = contexts[i];
-      var cm = null;
-      var pkg = "";
-      try { pkg = String(ctx.getPackageName ? ctx.getPackageName() : ""); } catch (ePkg) { pkg = ""; }
-      try { cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE); }
-      catch (eManager) { errors.push("manager[" + pkg + "]=" + String(eManager)); cm = null; }
-      if (!cm) continue;
-
-      var method = "setPrimaryClip";
-      var accepted = false;
-      var writeError = "";
-      try {
-        var clip = android.content.ClipData.newPlainText("ToolHub指针取字", text);
-        cm.setPrimaryClip(clip);
-        accepted = true;
-      } catch (ePrimary) {
-        writeError = String(ePrimary);
-        try {
-          if (cm.setText) {
-            cm.setText(text);
-            method = "setText";
-            accepted = true;
-            writeError = "";
-          }
-        } catch (eLegacy) {
-          writeError = writeError + (writeError ? "; " : "") + String(eLegacy);
-        }
-      }
-
-      if (accepted) {
-        var read = self.readPointerClipboardText(cm, ctx);
-        var observed = String(read && read.value || "");
-        return {
-          ok: true,
-          accepted: true,
-          method: method,
-          contextPackage: pkg,
-          readbackAvailable: !!(read && read.available === true),
-          readbackMatched: !!(read && read.available === true && observed === text),
-          observedLength: observed.length,
-          readbackError: String(read && read.error || ""),
-          error: ""
-        };
-      }
-      errors.push("write[" + pkg + "]=" + String(writeError || "failed"));
-    }
-    return {
-      ok: false,
-      accepted: false,
-      method: "",
-      contextPackage: "",
-      readbackAvailable: false,
-      readbackMatched: false,
-      observedLength: 0,
-      readbackError: "",
-      error: errors.length > 0 ? errors.join(" | ") : "no available clipboard context"
-    };
-  }, 1800);
-
-  if (!run || run.ok !== true) {
-    return {
-      ok: false,
-      accepted: false,
-      method: "",
-      contextPackage: "",
-      readbackAvailable: false,
-      readbackMatched: false,
-      observedLength: 0,
-      readbackError: "",
-      error: String(run && run.error || "clipboard main-thread execution failed")
-    };
-  }
-  return run.value || { ok: false, accepted: false, method: "", error: "empty clipboard result" };
-};
-
 FloatBallAppWM.prototype.copyPointerTextToClipboard = function(textValue) {
-  var result = this.writePointerClipboardMainSync(textValue);
+  var text = String(textValue === null || textValue === undefined ? "" : textValue);
+  if (!text) return false;
   try {
-    var st = this.ensurePointerToolState();
-    st.lastClipboardAttempt = result || null;
-  } catch (eState) {}
-  return !!(result && result.ok === true && result.accepted === true);
+    var appCtx = null;
+    try {
+      if (typeof context !== "undefined" && context) appCtx = context;
+    } catch (eCtx0) {}
+    if (!appCtx) {
+      try { appCtx = android.app.ActivityThread.currentApplication(); } catch (eCtx1) { appCtx = null; }
+    }
+    if (!appCtx) return false;
+    var cm = appCtx.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+    if (!cm) return false;
+    var clip = android.content.ClipData.newPlainText("ToolHub指针取字", text);
+    cm.setPrimaryClip(clip);
+    return true;
+  } catch (e0) {
+    try { safeLog(this.L, 'e', "copyPointerTextToClipboard fail: " + String(e0)); } catch (eLog) {}
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.rememberPointerValidPick = function(st, ready) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  if (!pointerState || !pointerState.currentText || !pointerState.currentRect) return false;
+
+  var key = String(pointerState.currentKey || this.pointerTextKeyOf({
+    text: pointerState.currentText,
+    rect: pointerState.currentRect
+  }));
+  if (!key) return false;
+  var now = th17Now();
+  if (String(pointerState.lastValidPickKey || "") !== key) {
+    pointerState.lastValidPickReadyAt = 0;
+  }
+  pointerState.lastValidPickText = String(pointerState.currentText);
+  pointerState.lastValidPickRect = th17RectObj(pointerState.currentRect);
+  pointerState.lastValidPickKey = key;
+  pointerState.lastValidPickAt = now;
+  pointerState.lastValidPickSession = Number(pointerState.inspectSession || 0);
+  if (ready === true) pointerState.lastValidPickReadyAt = now;
+  return true;
+};
+
+FloatBallAppWM.prototype.getRecentReadyPointerPick = function(st, atTs) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  if (!pointerState || !pointerState.lastValidPickText || !pointerState.lastValidPickRect) return null;
+  if (Number(pointerState.lastValidPickSession || 0) !== Number(pointerState.inspectSession || 0)) return null;
+  if (!pointerState.lastValidPickReadyAt || Number(pointerState.lastValidPickReadyAt || 0) <= 0) return null;
+
+  var now = Number(atTs || th17Now());
+  if (isNaN(now) || now <= 0) now = th17Now();
+  var hoverLimit = 800;
+  try { hoverLimit = Number(this.getPointerTextHoverLimitMs()); } catch (eLimit) { hoverLimit = 800; }
+  if (isNaN(hoverLimit) || hoverLimit < 0) hoverLimit = 800;
+  var maxAge = Math.max(1800, Math.min(6000, hoverLimit * 4));
+  var age = now - Number(pointerState.lastValidPickAt || 0);
+  if (age < 0 || age > maxAge) return null;
+
+  var hp = null;
+  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+  if (!hp) return null;
+  var hit = false;
+  try { hit = this.pointerRectHitScore(hp.x, hp.y, pointerState.lastValidPickRect) >= 0; }
+  catch (eHit) { hit = false; }
+  if (!hit) return null;
+
+  return {
+    text: String(pointerState.lastValidPickText),
+    rect: th17RectObj(pointerState.lastValidPickRect),
+    key: String(pointerState.lastValidPickKey || ""),
+    hitAt: Number(pointerState.lastValidPickAt || 0),
+    readyAt: Number(pointerState.lastValidPickReadyAt || 0),
+    session: Number(pointerState.lastValidPickSession || 0)
+  };
+};
+
+FloatBallAppWM.prototype.restoreRecentReadyPointerPick = function(st, atTs) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  if (!pointerState) return false;
+  var recent = this.getRecentReadyPointerPick(pointerState, atTs);
+  if (!recent) return false;
+
+  pointerState.currentText = String(recent.text);
+  pointerState.currentRect = th17RectObj(recent.rect);
+  pointerState.currentKey = String(recent.key || "");
+  pointerState.hoverKey = pointerState.currentKey;
+  var hoverLimit = 800;
+  try { hoverLimit = Number(this.getPointerTextHoverLimitMs()); } catch (eLimit) { hoverLimit = 800; }
+  if (isNaN(hoverLimit) || hoverLimit < 0) hoverLimit = 800;
+  pointerState.hoverSince = Math.max(1, Number(recent.readyAt || th17Now()) - hoverLimit);
+  try { this.showPointerAreaFrame(pointerState.currentRect, "text_hit"); } catch (eFrame) {}
+  try { this.updatePointerVisualHot(true); } catch (eHot) {}
+  return true;
 };
 
 FloatBallAppWM.prototype.completePointerTextCopy = function(textValue, rect, successCode, extraData) {
@@ -447,55 +381,30 @@ FloatBallAppWM.prototype.completePointerTextCopy = function(textValue, rect, suc
   var text = String(textValue === null || textValue === undefined ? "" : textValue);
   if (!text || !rect) return false;
 
-  var copyResult = this.writePointerClipboardMainSync(text);
-  st.lastClipboardAttempt = copyResult || null;
+  // 参考正常实现：无障碍取到文字即代表 text_pick 成功。
+  // 剪贴板只是附加动作，不能反过来把已识别文字判为失败。
+  var copied = this.copyPointerTextToClipboard(text) === true;
   var data = {};
   try {
     if (extraData) {
       for (var k in extraData) data[k] = extraData[k];
     }
   } catch (eData) {}
-  data.clipboardMethod = String(copyResult && copyResult.method || "");
-  data.clipboardContextPackage = String(copyResult && copyResult.contextPackage || "");
-  data.clipboardReadbackAvailable = !!(copyResult && copyResult.readbackAvailable === true);
-  data.clipboardReadbackMatched = !!(copyResult && copyResult.readbackMatched === true);
-  data.clipboardObservedLength = Number(copyResult && copyResult.observedLength || 0);
-  data.clipboardReadbackError = String(copyResult && copyResult.readbackError || "");
+  data.clipboardAccepted = copied === true;
 
-  if (copyResult && copyResult.ok === true && copyResult.accepted === true) {
-    this.setPointerToolResult({
-      ok: true,
-      type: "text_pick",
-      code: String(successCode || "TEXT_PICK_SUCCESS"),
-      message: "取字并复制成功",
-      value: text,
-      clipboard: true,
-      clipboardAccepted: true,
-      clipboardVerified: copyResult.readbackMatched === true,
-      rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
-      data: data
-    });
-    this.toast("已复制: " + text);
-    this.closePointerTool("已复制到剪贴板", true);
-    return true;
-  }
-
-  data.clipboardError = String(copyResult && copyResult.error || "clipboard write failed");
   this.setPointerToolResult({
-    ok: false,
-    type: "pointer_error",
-    code: "CLIPBOARD_WRITE_FAILED",
-    message: "已识别文字，但复制到剪贴板失败",
+    ok: true,
+    type: "text_pick",
+    code: String(successCode || "TEXT_PICK_SUCCESS"),
+    message: copied ? "取字并复制成功" : "取字成功，但复制到剪贴板失败",
     value: text,
-    clipboard: false,
-    clipboardAccepted: false,
-    clipboardVerified: false,
+    clipboard: copied === true,
     rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
     data: data
   });
-  this.toast("已识别文字，但复制失败");
-  this.closePointerTool("复制到剪贴板失败", true);
-  return false;
+  try { this.toast(copied ? "已复制: " + text : "已取字，但复制失败"); } catch (eToast) {}
+  try { this.closePointerTool(copied ? "已复制到剪贴板" : "取字完成", true); } catch (eClose) {}
+  return true;
 };
 
 FloatBallAppWM.prototype.ensurePointerToolState = function() {
@@ -569,6 +478,12 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       currentText: "",
       currentRect: null,
       currentKey: "",
+      lastValidPickText: "",
+      lastValidPickRect: null,
+      lastValidPickKey: "",
+      lastValidPickAt: 0,
+      lastValidPickReadyAt: 0,
+      lastValidPickSession: 0,
       boundText: "",
       boundRect: null,
       boundKey: "",
@@ -684,6 +599,12 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.currentText = "";
   st.currentRect = null;
   st.currentKey = "";
+  st.lastValidPickText = "";
+  st.lastValidPickRect = null;
+  st.lastValidPickKey = "";
+  st.lastValidPickAt = 0;
+  st.lastValidPickReadyAt = 0;
+  st.lastValidPickSession = Number(st.inspectSession || 0);
   st.boundText = "";
   st.boundRect = null;
   st.boundKey = "";
@@ -2040,6 +1961,7 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     st.boundRect = th17RectObj(result.rect);
     st.boundKey = key;
     st.boundAt = now;
+    try { this.rememberPointerValidPick(st, this.isPointerTextHoverReady(now) === true); } catch (eRemember) {}
     this.refreshPointerTextReadyVisualState();
     this.schedulePointerTextReadyVisualRefresh();
   } else {
@@ -2318,6 +2240,9 @@ FloatBallAppWM.prototype.refreshPointerTextReadyVisualState = function() {
     return false;
   }
   var ready = this.isPointerTextHoverReady(th17Now()) === true;
+  if (ready) {
+    try { this.rememberPointerValidPick(st, true); } catch (eRememberReady) {}
+  }
   try { this.showPointerAreaFrame(st.currentRect, ready ? "text_hit" : "text_hover"); } catch(eFrameReady) {}
   this.updatePointerVisualHot(ready);
   try { if (st.root) st.root.invalidate(); } catch(eInvReady) {}
@@ -2366,6 +2291,9 @@ FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect, hover
   if (!st.active || st.closed) return { ok: false, err: "指针未启动" };
   if (skipInspect !== true) this.updatePointerInspect(true);
   if (!st.currentText || !st.currentRect) {
+    try { this.restoreRecentReadyPointerPick(st, hoverAtTs); } catch (eRestoreRecent) {}
+  }
+  if (!st.currentText || !st.currentRect) {
     this.setPointerToolResult({ ok: false, type: "pointer_error", code: "NO_TEXT", message: "未命中文本" });
     this.toast("未命中文本");
     this.closePointerTool("未命中文本", true);
@@ -2405,6 +2333,9 @@ FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
   var releaseTs = Number(st.releaseTs || th17Now());
   if (isNaN(releaseTs) || releaseTs <= 0) releaseTs = th17Now();
 
+  if (!st.currentText || !st.currentRect) {
+    try { this.restoreRecentReadyPointerPick(st, releaseTs); } catch (eRestoreRelease) {}
+  }
   if (st.currentText && st.currentRect) {
     this.extractCurrentPointerText(true, releaseTs);
     return;
