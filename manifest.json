@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "64a1268fa1188ef014bcd3249671e09c8f672a11ef6916d506300104c7ae4bea",
+      "sha256": "06b96d0085731fd2e71b97c1709efb9205f15b5f8fc37c7c590459bec1118ed6",
       "size": 124645,
-      "version": "1.1.32"
+      "version": "1.1.33"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "移除已停用的绿色候选缓存与就绪快照提交链"
+      "修复 th_17_pointer.js 花括号结构并增加 JS 语法解析检查"
     ],
-    "title": "清理指针就绪链路冗余代码"
+    "title": "修复指针模块加载异常"
   },
   "schema": 3,
-  "version": 20260711150255
+  "version": 20260711152933
 }

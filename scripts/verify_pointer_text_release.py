@@ -32,7 +32,7 @@ p14 = TH14.read_text(encoding="utf-8")
 entry = ENTRY.read_text(encoding="utf-8")
 
 for marker in (
-    "// @version 1.1.32",
+    "// @version 1.1.33",
     "getRecentPointerPickForRelease = function",
     "var maxAge = 500",
     "restoreRecentPointerPickForRelease = function",
@@ -105,3 +105,6 @@ if expected not in sha_line:
     fail("ToolHub.js.sha256 mismatch")
 
 print("OK pointer_source_text_release sha256=" + expected)
+
+if "var now = th17Now();\n  }\n  pointerState.lastValidPickText" in p17:
+    fail("rememberPointerValidPick contains a stray closing brace")
