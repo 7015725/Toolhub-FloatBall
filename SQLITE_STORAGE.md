@@ -48,7 +48,7 @@ SQLite 适配器在 `th_02_core.js` 加载时运行：
 4. JSON 可正常解析时，以 `legacy-json` 来源写入 SQLite。
 5. 后续读写由 SQLite 接管。
 
-原 JSON 文件不会删除，作为 SQLite 无法打开时的只读回退。正常运行后不再同步更新这些旧 JSON，因此回退到旧文件时只能恢复到迁移时的状态。
+原 JSON 文件不会删除。SQLite 正常可用时不再同步更新这些旧文件；数据库无法打开或写入失败时，原 JSON 会重新作为回退存储接管本次读写。
 
 ## 兼容与回退
 
@@ -63,7 +63,7 @@ ConfigManager.loadSchema();
 ConfigManager.saveSchema(schema);
 ```
 
-SQLite 层透明接管 `FileIO.readText`、`writeText`、`writeTextAtomic`、`writeTextDebounced` 和 `flushDebouncedWrites` 对三个配置路径的操作。数据库不可用或写入失败时，会回退到原 JSON 文件写入，避免设置完全无法保存。
+SQLite 层透明接管 `FileIO.readText`、`writeText`、`writeTextAtomic`、`writeTextDebounced` 和 `flushDebouncedWrites` 对三个配置路径的操作。数据库不可用或写入失败时，会回退到原 JSON 文件，避免设置完全无法读取或保存。
 
 可通过以下方法查看运行状态：
 
@@ -88,4 +88,4 @@ ConfigManager.migrateLegacyJsonToSqlite();
 3. 删除或移走 `ToolHub/toolhub.db`。
 4. 重新启动 ToolHub。
 
-回滚后会读取保留的 `settings.json`、`buttons.json` 和 `schema.json`。数据库启用期间的新修改不会自动回写到这些旧文件。
+回滚后会读取保留的 `settings.json`、`buttons.json` 和 `schema.json`。若 SQLite 一直正常可用，数据库启用期间的新修改不会自动同步回这些旧文件。
