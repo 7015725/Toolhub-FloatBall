@@ -1,4 +1,4 @@
-// @version 1.1.1
+// @version 1.1.2
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -112,7 +112,7 @@ var ConfigValidator = {
     POINTER_EDGE_ZONE_X_DP: { type: "int", min: 16, max: 96, default: 48 },
     POINTER_EDGE_ZONE_Y_DP: { type: "int", min: 24, max: 128, default: 72 },
     POINTER_TEXT_HOVER_MS: { type: "int", min: 300, max: 10000, default: 800 },
-    POINTER_AREA_HOVER_MS: { type: "int", min: 500, max: 10000, default: 1000 },
+    POINTER_AREA_HOVER_MS: { type: "int", min: 500, max: 10000, default: 2000 },
     POINTER_COLOR_NORMAL_HEX: { type: "string", default: "" },
     POINTER_COLOR_HOVER_HEX: { type: "string", default: "" },
     POINTER_COLOR_HIT_HEX: { type: "string", default: "" },
@@ -831,7 +831,7 @@ var ConfigManager = {
         POINTER_EDGE_ZONE_X_DP: 48,
         POINTER_EDGE_ZONE_Y_DP: 72,
         POINTER_TEXT_HOVER_MS: 800,
-        POINTER_AREA_HOVER_MS: 1000,
+        POINTER_AREA_HOVER_MS: 2000,
         POINTER_COLOR_NORMAL_HEX: "",
         POINTER_COLOR_HOVER_HEX: "",
         POINTER_COLOR_HIT_HEX: "",
