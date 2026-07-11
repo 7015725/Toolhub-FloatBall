@@ -13,7 +13,7 @@ MANIFEST = ROOT / "manifest.json"
 TOOLHUB = ROOT / "ToolHub.js"
 
 REQUIRED = [
-    "// @version 1.0.6",
+    "// @version 1.0.7",
     "__toolHubPositionStateMachineInstalled",
     "__toolHubFixedEdgePointerPatchInstalled = true",
     "BALL_POSITION_SIDE",
@@ -152,14 +152,15 @@ def main() -> None:
     if not (snapshot_at < recent_at < invalidate_at < snapshot_finish_at < recent_finish_at < final_move_at):
         fail("ready snapshot and recent valid pick must be committed before final raw move")
     candidate_at = finalizer.index("pointerCandidateMatchesFinalHotspot")
-    candidate_commit_at = finalizer.index('source: "confirmed_final_candidate"', candidate_at)
-    candidate_copy_at = finalizer.rfind("completePointerTextCopy(", candidate_at, candidate_commit_at)
-    scan_at = finalizer.index('schedulePointerInspectAsync(true, "release_final", true)', candidate_commit_at)
-    if not (candidate_at < candidate_copy_at < candidate_commit_at < scan_at):
-        fail("confirmed final candidate must be committed directly before fallback final scan")
+    candidate_extract_at = finalizer.index("extractCurrentPointerText(true, st.releaseTs)", candidate_at)
+    scan_at = finalizer.index('schedulePointerInspectAsync(true, "release_final", true)', candidate_extract_at)
+    if not (candidate_at < candidate_extract_at < scan_at):
+        fail("confirmed final candidate must pass the hover-gated extraction before fallback final scan")
     candidate_section = finalizer[candidate_at:scan_at]
-    if "extractCurrentPointerText(true, st.releaseTs)" in candidate_section:
-        fail("confirmed final candidate still passes through hover-gated extraction")
+    if "completePointerTextCopy(" in candidate_section:
+        fail("confirmed final candidate bypasses the hover-gated extraction")
+    if "isPointerTextHoverReady" not in candidate_section:
+        fail("confirmed final candidate does not record hover readiness")
     if "TEXT_FINAL_SCAN_FAILED" not in finalizer:
         fail("final text scan failure path missing")
 
@@ -239,7 +240,7 @@ def main() -> None:
         fail("screen reflow does not cancel pending semantic task")
 
     for marker in (
-        "// @version 1.1.28",
+        "// @version 1.1.29",
         "copyPointerTextToClipboard = function",
         "cm.setPrimaryClip(clip)",
         "rememberPointerValidPick",
