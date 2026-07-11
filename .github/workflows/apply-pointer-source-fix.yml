@@ -32,7 +32,10 @@ jobs:
           python-version: '3.x'
 
       - name: Apply source fix
-        run: python3 .github/scripts/apply_pointer_source_fix.py
+        shell: bash
+        run: |
+          python3 .github/scripts/apply_pointer_source_fix.py
+          python3 .github/scripts/fix_pointer_source_verifier_v1.py
 
       - name: Install signing key
         shell: bash
