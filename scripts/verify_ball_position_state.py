@@ -8,11 +8,12 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "code" / "th_19_position_state.js"
 OCR_MODULE = ROOT / "code" / "th_18_pointer_ocr.js"
+POINTER_CORE = ROOT / "code" / "th_17_pointer.js"
 MANIFEST = ROOT / "manifest.json"
 TOOLHUB = ROOT / "ToolHub.js"
 
 REQUIRED = [
-    "// @version 1.0.3",
+    "// @version 1.0.4",
     "__toolHubPositionStateMachineInstalled",
     "__toolHubFixedEdgePointerPatchInstalled = true",
     "BALL_POSITION_SIDE",
@@ -31,6 +32,7 @@ REQUIRED = [
     "proto.finishReadyPointerSnapshot = function",
     "TEXT_PICK_READY_SNAPSHOT",
     "ready_visual_snapshot",
+    "return this.completePointerTextCopy(",
     "extractCurrentPointerText(true, st.releaseTs)",
     "schedulePointerInspectAsync(true, \"release_final\", true)",
     "FLAG_LAYOUT_NO_LIMITS",
@@ -84,11 +86,14 @@ def main() -> None:
         fail("missing code/th_19_position_state.js")
     if not OCR_MODULE.exists():
         fail("missing code/th_18_pointer_ocr.js")
+    if not POINTER_CORE.exists():
+        fail("missing code/th_17_pointer.js")
     if not TOOLHUB.exists():
         fail("missing ToolHub.js")
 
     text = TARGET.read_text(encoding="utf-8")
     ocr = OCR_MODULE.read_text(encoding="utf-8")
+    pointer_core = POINTER_CORE.read_text(encoding="utf-8")
     loader = TOOLHUB.read_text(encoding="utf-8")
 
     for marker in REQUIRED:
@@ -224,6 +229,27 @@ def main() -> None:
             fail("screen reflow still uses legacy coordinate mapping: " + forbidden)
     if "cancelPointerSemanticUpdate(null, \"screen_reflow\")" not in reflow:
         fail("screen reflow does not cancel pending semantic task")
+
+    for marker in (
+        "// @version 1.1.26",
+        "copyPointerTextToClipboardVerified",
+        "completePointerTextCopy",
+        "CLIPBOARD_WRITE_FAILED",
+        "clipboardVerified: true",
+        "clipboardCopyToken",
+        "accessibility_current",
+    ):
+        if marker not in pointer_core:
+            fail("verified clipboard flow missing: " + marker)
+    extract_section = section(
+        pointer_core,
+        "FloatBallAppWM.prototype.extractCurrentPointerText = function",
+        "FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function",
+    )
+    if "copyPointerTextToClipboard(textValue)" in extract_section:
+        fail("extractCurrentPointerText still treats synchronous clipboard write as success")
+    if "completePointerTextCopy(" not in extract_section:
+        fail("extractCurrentPointerText does not use verified clipboard completion")
 
     if "// @version 1.0.20" not in ocr:
         fail("th_18 version was not bumped")
