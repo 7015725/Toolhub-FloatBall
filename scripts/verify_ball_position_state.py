@@ -152,8 +152,8 @@ def main() -> None:
     if not (snapshot_at < recent_at < invalidate_at < snapshot_finish_at < recent_finish_at < final_move_at):
         fail("ready snapshot and recent valid pick must be committed before final raw move")
     candidate_at = finalizer.index("pointerCandidateMatchesFinalHotspot")
-    extract_at = finalizer.index("extractCurrentPointerText(true, st.releaseTs)")
-    scan_at = finalizer.index('schedulePointerInspectAsync(true, "release_final", true)')
+    extract_at = finalizer.index("extractCurrentPointerText(true, st.releaseTs)", candidate_at)
+    scan_at = finalizer.index('schedulePointerInspectAsync(true, "release_final", true)', extract_at)
     if not (candidate_at < extract_at < scan_at):
         fail("confirmed final candidate must be extracted before fallback final scan")
     if "TEXT_FINAL_SCAN_FAILED" not in finalizer:
