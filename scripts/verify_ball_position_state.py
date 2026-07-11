@@ -13,7 +13,7 @@ MANIFEST = ROOT / "manifest.json"
 TOOLHUB = ROOT / "ToolHub.js"
 
 REQUIRED = [
-    "// @version 1.0.8",
+    "// @version 1.0.9",
     "__toolHubPositionStateMachineInstalled",
     "__toolHubFixedEdgePointerPatchInstalled = true",
     "BALL_POSITION_SIDE",
@@ -27,12 +27,6 @@ REQUIRED = [
     "proto.finishPointerGestureFromRaw = function",
     "movePointerFromRaw(rawX, rawY, true, true)",
     "pointerCandidateMatchesFinalHotspot",
-    "proto.storeReadyPointerSnapshot = function",
-    "proto.getReadyPointerSnapshotForRelease = function",
-    "proto.finishReadyPointerSnapshot = function",
-    "TEXT_PICK_READY_SNAPSHOT",
-    "ready_visual_snapshot",
-    "return this.completePointerTextCopy(",
     "extractCurrentPointerText(true, st.releaseTs)",
     "schedulePointerInspectAsync(true, \"release_final\", true)",
     "FLAG_LAYOUT_NO_LIMITS",
@@ -193,10 +187,6 @@ def main() -> None:
         "proto.createPointerLayoutParams = function(st)",
         "proto.pointerCandidateMatchesFinalHotspot = function(st)",
         "pointerRectHitScore(hp.x, hp.y, pointerState.currentRect)",
-        "proto.storeReadyPointerSnapshot = function(st)",
-        "proto.getReadyPointerSnapshotForRelease = function(st)",
-        "proto.finishReadyPointerSnapshot = function(st, snapshot)",
-        "__toolHubReadyTextSnapshot",
     ):
         if marker not in edge_helper:
             fail("pointer edge/candidate helper missing: " + marker)
@@ -211,7 +201,6 @@ def main() -> None:
         "__toolHubPointerSemanticPosted = false",
         "proto.removePointerCallbacks = function",
         "proto.resetPointerToolState = function",
-        "st.__toolHubReadyTextSnapshot = null",
     ):
         if marker not in cleanup:
             fail("semantic cleanup hook missing: " + marker)
@@ -238,40 +227,20 @@ def main() -> None:
         fail("screen reflow does not cancel pending semantic task")
 
     for marker in (
-        "// @version 1.1.31",
+        "// @version 1.1.32",
         "copyPointerTextToClipboard = function",
         "cm.setPrimaryClip(clip)",
         "rememberPointerValidPick",
-        "getRecentReadyPointerPick",
-        "restoreRecentReadyPointerPick",
         "getRecentPointerPickForRelease",
         "restoreRecentPointerPickForRelease",
         "completePointerCandidateOnRelease",
-        "lastValidPickReadyAt",
         "completePointerTextCopy",
         "data.clipboardAccepted = copied === true",
         "accessibility_current",
         "small_area_fallback",
-        "syncPointerTextHoverFromStableHold",
-        "pointer text hover reuse stable hold",
     ):
         if marker not in pointer_core:
             fail("reference-compatible text-pick flow missing: " + marker)
-    stable_hover = section(
-        pointer_core,
-        "FloatBallAppWM.prototype.syncPointerTextHoverFromStableHold = function",
-        "FloatBallAppWM.prototype.isPointerTextHoverReady = function",
-    )
-    for marker in (
-        "areaHoldSince",
-        "areaHoldAnchorX",
-        "areaHoldAnchorY",
-        "pointerRectHitScore(anchorX, anchorY, st.currentRect)",
-        "pointerRectHitScore(hp.x, hp.y, st.currentRect)",
-        "st.hoverSince = stableSince",
-    ):
-        if marker not in stable_hover:
-            fail("stable text-hover reconciliation is incomplete: " + marker)
     ready_section = section(
         pointer_core,
         "FloatBallAppWM.prototype.isPointerTextHoverReady = function",
@@ -281,6 +250,21 @@ def main() -> None:
         fail("text hover readiness must not reuse OCR area hold timing")
     if "areaHoldDelay: 2000" not in pointer_core:
         fail("pointer state area hover default is not 2000ms")
+    for forbidden in (
+        "getRecentReadyPointerPick",
+        "restoreRecentReadyPointerPick",
+        "lastValidPickReadyAt",
+        "syncPointerTextHoverFromStableHold",
+        "storeReadyPointerSnapshot",
+        "getReadyPointerSnapshotForRelease",
+        "finishReadyPointerSnapshot",
+        "__toolHubReadyTextSnapshot",
+        "TEXT_PICK_READY_SNAPSHOT",
+        "ready_visual_snapshot",
+    ):
+        if forbidden in pointer_core or forbidden in text:
+            fail("obsolete pointer ready-chain symbol remains: " + forbidden)
+
 
     extract_section = section(
         pointer_core,
@@ -326,7 +310,6 @@ def main() -> None:
     for marker in (
         "lastValidPickText",
         "lastValidPickRect",
-        "lastValidPickReadyAt",
         "lastValidPickSession",
         "pointerRectHitScore",
     ):
