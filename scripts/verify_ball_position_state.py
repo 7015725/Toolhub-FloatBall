@@ -13,7 +13,7 @@ MANIFEST = ROOT / "manifest.json"
 TOOLHUB = ROOT / "ToolHub.js"
 
 REQUIRED = [
-    "// @version 1.0.4",
+    "// @version 1.0.5",
     "__toolHubPositionStateMachineInstalled",
     "__toolHubFixedEdgePointerPatchInstalled = true",
     "BALL_POSITION_SIDE",
@@ -144,11 +144,13 @@ def main() -> None:
     if finalizer.index("cancelPointerSemanticUpdate") > finalizer.index("movePointerFromRaw(rawX, rawY, true, true)"):
         fail("pending semantic task must be cancelled before final raw position")
     snapshot_at = finalizer.index("getReadyPointerSnapshotForRelease")
+    recent_at = finalizer.index("getRecentReadyPointerPick")
     invalidate_at = finalizer.index("invalidatePointerInspectForRelease")
     snapshot_finish_at = finalizer.index("finishReadyPointerSnapshot")
+    recent_finish_at = finalizer.index("restoreRecentReadyPointerPick")
     final_move_at = finalizer.index("movePointerFromRaw(rawX, rawY, true, true)")
-    if not (snapshot_at < invalidate_at < snapshot_finish_at < final_move_at):
-        fail("ready visual snapshot must be captured and committed before final raw move")
+    if not (snapshot_at < recent_at < invalidate_at < snapshot_finish_at < recent_finish_at < final_move_at):
+        fail("ready snapshot and recent valid pick must be committed before final raw move")
     candidate_at = finalizer.index("pointerCandidateMatchesFinalHotspot")
     extract_at = finalizer.index("extractCurrentPointerText(true, st.releaseTs)")
     scan_at = finalizer.index('schedulePointerInspectAsync(true, "release_final", true)')
@@ -233,20 +235,20 @@ def main() -> None:
         fail("screen reflow does not cancel pending semantic task")
 
     for marker in (
-        "// @version 1.1.27",
-        "runPointerClipboardOnMain",
-        "android.os.Looper.getMainLooper()",
-        "java.util.concurrent.CountDownLatch",
-        "writePointerClipboardMainSync",
+        "// @version 1.1.28",
+        "copyPointerTextToClipboard = function",
+        "cm.setPrimaryClip(clip)",
+        "rememberPointerValidPick",
+        "getRecentReadyPointerPick",
+        "restoreRecentReadyPointerPick",
+        "lastValidPickReadyAt",
         "completePointerTextCopy",
-        "clipboardAccepted: true",
-        "clipboardReadbackMatched",
-        "CLIPBOARD_WRITE_FAILED",
+        "data.clipboardAccepted = copied === true",
         "accessibility_current",
         "small_area_fallback",
     ):
         if marker not in pointer_core:
-            fail("main-thread clipboard flow missing: " + marker)
+            fail("reference-compatible text-pick flow missing: " + marker)
     extract_section = section(
         pointer_core,
         "FloatBallAppWM.prototype.extractCurrentPointerText = function",
@@ -254,46 +256,49 @@ def main() -> None:
     )
     if "copyPointerTextToClipboard(textValue)" in extract_section:
         fail("extractCurrentPointerText still treats synchronous clipboard write as success")
+    if "restoreRecentReadyPointerPick" not in extract_section:
+        fail("extractCurrentPointerText does not restore the recent ready candidate")
     if "completePointerTextCopy(" not in extract_section:
-        fail("extractCurrentPointerText does not use verified clipboard completion")
+        fail("extractCurrentPointerText does not use the unified text completion path")
     clipboard_section = section(
         pointer_core,
-        "FloatBallAppWM.prototype.getPointerClipboardContexts = function",
+        "FloatBallAppWM.prototype.copyPointerTextToClipboard = function",
         "FloatBallAppWM.prototype.ensurePointerToolState = function",
     )
     for forbidden in (
+        "runPointerClipboardOnMain",
+        "writePointerClipboardMainSync",
         "copyPointerTextToClipboardVerified",
         "clipboardCopyToken",
         "clipboardCopyPending",
-        "copyResult.verified === true",
-        "st.handler.post",
-        "this.state.h",
+        "clipboardReadbackMatched",
+        "java.util.concurrent.CountDownLatch",
     ):
         if forbidden in clipboard_section:
-            fail("obsolete/background clipboard flow remains: " + forbidden)
-    main_runner = section(
-        pointer_core,
-        "FloatBallAppWM.prototype.runPointerClipboardOnMain = function",
-        "FloatBallAppWM.prototype.readPointerClipboardText = function",
-    )
-    if "new android.os.Handler(android.os.Looper.getMainLooper())" not in main_runner:
-        fail("clipboard task is not explicitly posted to Android main looper")
-    writer = section(
-        pointer_core,
-        "FloatBallAppWM.prototype.writePointerClipboardMainSync = function",
-        "FloatBallAppWM.prototype.copyPointerTextToClipboard = function",
-    )
-    accepted_at = writer.index("cm.setPrimaryClip(clip)")
-    return_at = writer.index("accepted: true", accepted_at)
-    if return_at <= accepted_at:
-        fail("clipboard success is not based on accepted main-thread write")
+            fail("obsolete clipboard completion gate remains: " + forbidden)
+    if "cm.setPrimaryClip(clip)" not in clipboard_section:
+        fail("stable direct clipboard write is missing")
     complete = section(
         pointer_core,
         "FloatBallAppWM.prototype.completePointerTextCopy = function",
         "FloatBallAppWM.prototype.ensurePointerToolState = function",
     )
-    if "copyResult && copyResult.ok === true && copyResult.accepted === true" not in complete:
-        fail("text completion still depends on clipboard readback instead of accepted write")
+    if "ok: true" not in complete or "clipboard: copied === true" not in complete:
+        fail("accessibility success is still incorrectly gated by clipboard result")
+    recent = section(
+        pointer_core,
+        "FloatBallAppWM.prototype.rememberPointerValidPick = function",
+        "FloatBallAppWM.prototype.completePointerTextCopy = function",
+    )
+    for marker in (
+        "lastValidPickText",
+        "lastValidPickRect",
+        "lastValidPickReadyAt",
+        "lastValidPickSession",
+        "pointerRectHitScore",
+    ):
+        if marker not in recent:
+            fail("recent valid-pick cache is incomplete: " + marker)
     fallback = section(
         pointer_core,
         "FloatBallAppWM.prototype.finishPointerFallbackText = function",

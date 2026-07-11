@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -585,6 +585,10 @@
 
     var readySnapshot = null;
     try { readySnapshot = this.getReadyPointerSnapshotForRelease(st); } catch (eReadySnapshot) { readySnapshot = null; }
+    var recentReadyPick = null;
+    try {
+      if (this.getRecentReadyPointerPick) recentReadyPick = this.getRecentReadyPointerPick(st, nowPosition());
+    } catch (eRecentPick) { recentReadyPick = null; }
 
     this.cancelPointerSemanticUpdate(st, "pointer_release");
     this.invalidatePointerInspectForRelease(st);
@@ -607,6 +611,23 @@
         );
       } catch (eReadyLog) {}
       return this.finishReadyPointerSnapshot(st, readySnapshot);
+    }
+
+    // 参考正常独立实现的 commitRecentPick：松手时优先提交最近一次已进入
+    // 可取字状态的有效候选，不让一次空扫描或状态清理推翻已显示的绿色结果。
+    if (st.mode === "text_pick" && recentReadyPick) {
+      st.dragging = false;
+      try {
+        if (this.restoreRecentReadyPointerPick(st, st.releaseTs)) {
+          logPosition(this, "i",
+            "pointer release commit recent ready pick age=" +
+            String(nowPosition() - Number(recentReadyPick.hitAt || 0))
+          );
+          return this.extractCurrentPointerText(true, st.releaseTs).ok === true;
+        }
+      } catch (eRecentCommit) {
+        logPosition(this, "e", "recent ready pointer commit fail: " + String(eRecentCommit));
+      }
     }
 
     if (!this.movePointerFromRaw(rawX, rawY, true, true)) return false;
