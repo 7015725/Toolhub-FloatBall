@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 POINTER = ROOT / "code" / "th_17_pointer.js"
 POINTER_OCR = ROOT / "code" / "th_18_pointer_ocr.js"
+POSITION = ROOT / "code" / "th_19_position_state.js"
 ANIMATION = ROOT / "code" / "th_09_animation.js"
 VERIFY_MANIFEST = ROOT / "scripts" / "verify_manifest.py"
 
@@ -56,7 +57,7 @@ def verify_manifest(result):
 
 
 def main():
-    required = [POINTER, POINTER_OCR, ANIMATION, VERIFY_MANIFEST]
+    required = [POINTER, POINTER_OCR, POSITION, ANIMATION, VERIFY_MANIFEST]
     missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
     if missing:
         print("FAIL missing files: " + ", ".join(missing))
@@ -64,6 +65,7 @@ def main():
 
     pointer = read_text(POINTER)
     ocr = read_text(POINTER_OCR)
+    position = read_text(POSITION)
     animation = read_text(ANIMATION)
     result = CheckResult()
 
@@ -83,17 +85,17 @@ def main():
         "pending fallback must return before scheduleAreaOcrAsync18",
     )
 
-    tap_wrapper = section(
-        ocr,
-        "var oldPointerBallTap18 = proto.onPointerBallTap;",
+    touch_owner = section(
+        position,
         "proto.setupTouchListener = function()",
+        "proto.onScreenChangedReflow = function",
     )
-    tap_override = tap_wrapper.find("proto.onPointerBallTap = function(rawX, rawY)")
-    tap_delegate = tap_wrapper.find("return oldPointerBallTap18.call(this, rawX, rawY)", tap_override + 1)
     result.require(
         "W2 triple tap cancellation delegates to core",
-        tap_override >= 0 and tap_delegate > tap_override,
-        "fixed-edge tap wrapper must delegate active taps to oldPointerBallTap18",
+        "installFixedEdgePointer18" not in ocr
+        and "proto.setupTouchListener = function()" not in ocr
+        and "self.onPointerBallTap(rawX, rawY)" in touch_owner,
+        "th_19 must own touch handling and delegate active pointer taps to core onPointerBallTap",
     )
 
     async_ocr = section(ocr, "function scheduleAreaOcrAsync18", "function install18()")

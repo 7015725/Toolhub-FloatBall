@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -317,7 +317,105 @@
     return false;
   };
 
-  proto.movePointerFromRaw = function(rawX, rawY, immediate) {
+
+  proto.cancelPointerSemanticUpdate = function(st, reason) {
+    var pointerState = st || null;
+    try {
+      if (!pointerState && this.ensurePointerToolState) pointerState = this.ensurePointerToolState();
+    } catch (eState) { pointerState = null; }
+    if (!pointerState) return false;
+
+    pointerState.__toolHubPointerSemanticToken = Number(pointerState.__toolHubPointerSemanticToken || 0) + 1;
+    try {
+      if (pointerState.handler && pointerState.__toolHubPointerSemanticRunnable) {
+        pointerState.handler.removeCallbacks(pointerState.__toolHubPointerSemanticRunnable);
+      }
+    } catch (eRemove) {}
+    pointerState.__toolHubPointerSemanticRunnable = null;
+    pointerState.__toolHubPointerSemanticPosted = false;
+    try {
+      if (reason) logPosition(this, "d", "cancel pointer semantic update reason=" + String(reason));
+    } catch (eLog) {}
+    return true;
+  };
+
+  if (typeof proto.removePointerCallbacks === "function" && proto.__toolHubPointerSemanticCleanupWrapped !== true) {
+    var oldRemovePointerCallbacksPosition = proto.removePointerCallbacks;
+    proto.removePointerCallbacks = function(st) {
+      try { this.cancelPointerSemanticUpdate(st, "pointer_close"); } catch (eCancel) {}
+      return oldRemovePointerCallbacksPosition.call(this, st);
+    };
+
+    if (typeof proto.resetPointerToolState === "function") {
+      var oldResetPointerToolStatePosition = proto.resetPointerToolState;
+      proto.resetPointerToolState = function(st, mode, source) {
+        try { this.cancelPointerSemanticUpdate(st, "pointer_reset"); } catch (eCancelReset) {}
+        var ret = oldResetPointerToolStatePosition.call(this, st, mode, source);
+        try {
+          st.__toolHubPointerSemanticSession = Number(st.inspectSession || 0);
+          st.__toolHubPointerSemanticToken = Number(st.__toolHubPointerSemanticToken || 0) + 1;
+          st.__toolHubPointerSemanticPosted = false;
+          st.__toolHubPointerSemanticRunnable = null;
+        } catch (eInitSemantic) {}
+        return ret;
+      };
+    }
+    proto.__toolHubPointerSemanticCleanupWrapped = true;
+  }
+
+  proto.finishPointerGestureFromRaw = function(rawX, rawY, action) {
+    var st = null;
+    try { st = this.ensurePointerToolState ? this.ensurePointerToolState() : null; } catch (eState) { st = null; }
+    if (!st || !st.active || st.closed) return false;
+
+    this.cancelPointerSemanticUpdate(st, "pointer_release");
+    if (!this.movePointerFromRaw(rawX, rawY, true, true)) return false;
+    st.releaseTs = nowPosition();
+
+    if (action === android.view.MotionEvent.ACTION_CANCEL) {
+      st.dragging = false;
+      try { this.setPointerToolResult({ ok: false, type: "cancel", code: "ACTION_CANCEL", message: "指针取消" }); } catch (eResult) {}
+      try { this.toast("指针已取消"); } catch (eToast) {}
+      try { this.closePointerTool("ACTION_CANCEL", true); } catch (eClose) {}
+      return true;
+    }
+
+    if (st.mode === "area_capture") {
+      try { this.updatePointerAreaSelection(); } catch (eAreaUpdate) {}
+      st.dragging = false;
+      try { this.finishPointerAreaCapture(); } catch (eAreaFinish) {
+        logPosition(this, "e", "final area capture fail: " + String(eAreaFinish));
+        return false;
+      }
+      return true;
+    }
+
+    if (st.mode === "text_pick") {
+      st.dragging = false;
+      var scheduled = false;
+      try { scheduled = this.schedulePointerInspectAsync(true, "release_final", true) === true; }
+      catch (eFinalScan) { logPosition(this, "e", "final pointer scan fail: " + String(eFinalScan)); }
+      if (!scheduled && st.active && !st.closed) {
+        try {
+          this.setPointerToolResult({
+            ok: false,
+            type: "pointer_error",
+            code: "TEXT_FINAL_SCAN_FAILED",
+            message: "最终取字扫描失败",
+            value: ""
+          });
+          this.toast("最终取字扫描失败");
+          this.closePointerTool("最终取字扫描失败", true);
+        } catch (eFallback) {}
+      }
+      return scheduled;
+    }
+
+    st.dragging = false;
+    return false;
+  };
+
+  proto.movePointerFromRaw = function(rawX, rawY, immediate, skipSemantic) {
     try {
       if (!this.ensurePointerToolState) return false;
       var st = this.ensurePointerToolState();
@@ -377,14 +475,24 @@
         try { if (st.root && st.wm) st.wm.updateViewLayout(st.root, st.lp); } catch (eVisual) {}
       }
 
+      if (skipSemantic === true) return true;
+
       if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
       if (st.__toolHubPointerSemanticPosted === true) return true;
       st.__toolHubPointerSemanticPosted = true;
       var self = this;
       var delay = st.mode === "area_capture" ? 18 : 24;
-      st.__toolHubPointerSemanticRunnable = new java.lang.Runnable({ run: function() {
+      var semanticToken = Number(st.__toolHubPointerSemanticToken || 0) + 1;
+      var semanticSession = Number(st.inspectSession || 0);
+      st.__toolHubPointerSemanticToken = semanticToken;
+      st.__toolHubPointerSemanticSession = semanticSession;
+      var semanticRun = new java.lang.Runnable({ run: function() {
         try {
+          if (Number(st.__toolHubPointerSemanticToken || 0) !== semanticToken) return;
+          if (Number(st.inspectSession || 0) !== semanticSession) return;
+          if (st.__toolHubPointerSemanticRunnable !== semanticRun) return;
           st.__toolHubPointerSemanticPosted = false;
+          st.__toolHubPointerSemanticRunnable = null;
           if (!st.active || st.closed || !st.root || !st.lp) return;
           if (st.lp.x !== st.pendingPointerX || st.lp.y !== st.pendingPointerY) {
             st.lp.x = st.pendingPointerX;
@@ -403,8 +511,12 @@
           logPosition(self, "w", "pointer semantic update fail: " + String(eSemantic));
         }
       }});
-      try { st.handler.postDelayed(st.__toolHubPointerSemanticRunnable, delay); }
-      catch (ePost) { st.__toolHubPointerSemanticPosted = false; }
+      st.__toolHubPointerSemanticRunnable = semanticRun;
+      try { st.handler.postDelayed(semanticRun, delay); }
+      catch (ePost) {
+        if (st.__toolHubPointerSemanticRunnable === semanticRun) st.__toolHubPointerSemanticRunnable = null;
+        st.__toolHubPointerSemanticPosted = false;
+      }
       return true;
     } catch (eMove) {
       logPosition(this, "e", "move pointer from raw fail: " + String(eMove));
@@ -538,12 +650,11 @@
           catch (ePointerActive) { pointerActiveUp = false; }
 
           if (pointerActiveUp) {
-            self.movePointerFromRaw(rawX, rawY, true);
             if (!moved && action === android.view.MotionEvent.ACTION_UP) {
               try { self.onPointerBallTap(rawX, rawY); } catch (eTap) {}
             } else {
-              try { self.onPointerBallDragEnd(rawX, rawY, action); }
-              catch (eEnd) { logPosition(self, "e", "pointer drag end fail: " + String(eEnd)); }
+              try { self.finishPointerGestureFromRaw(rawX, rawY, action); }
+              catch (eEnd) { logPosition(self, "e", "pointer final gesture fail: " + String(eEnd)); }
             }
             try {
               var pointerState = self.ensurePointerToolState ? self.ensurePointerToolState() : null;
@@ -603,6 +714,8 @@
     if (oldW <= 0) oldW = newW;
     if (oldH <= 0) oldH = newH;
     this.state.screen = { w: newW, h: newH };
+
+    try { this.cancelPointerSemanticUpdate(null, "screen_reflow"); } catch (eSemanticReflow) {}
 
     try {
       if (typeof this.onPointerScreenChangedReflow === "function") {

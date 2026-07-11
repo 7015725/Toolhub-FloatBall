@@ -1003,7 +1003,7 @@ var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.j
 var __moduleUpdates = [];
 var __pendingModuleUpdates = [];
 var loadErrors = [];
-var criticalModules = { "th_01_base.js": true, "th_02_core.js": true, "th_05_persistence.js": true, "th_16_entry.js": true };
+var criticalModules = { "th_01_base.js": true, "th_02_core.js": true, "th_05_persistence.js": true, "th_16_entry.js": true, "th_19_position_state.js": true };
 fetchTrustedManifest();
 
 var __manifestCheck = checkModuleManifestConsistency();
@@ -1022,6 +1022,23 @@ for (var i = 0; i < modules.length; i++) {
         if (criticalModules[modules[i]]) throw "Critical module failed: " + modules[i] + " (" + String(e) + ")";
     }
 }
+
+function notifyToolHubModulesLoaded() {
+    if (loadErrors && loadErrors.length > 0) return false;
+    var moduleCount = modules ? Number(modules.length || 0) : 0;
+    var text = moduleCount > 0
+        ? "ToolHub 子模块加载完成（" + String(moduleCount) + " 个）"
+        : "ToolHub 子模块加载完成";
+    var task = new java.lang.Runnable({ run: function() {
+        try { android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show(); }
+        catch (eToast) { try { writeLog("Submodules loaded toast failed: " + String(eToast)); } catch (eLog) {} }
+    }});
+    try { new android.os.Handler(android.os.Looper.getMainLooper()).post(task); }
+    catch (ePost) { try { task.run(); } catch (eDirect) {} }
+    try { writeLog("All submodules loaded count=" + String(moduleCount)); } catch (eWrite) {}
+    return true;
+}
+notifyToolHubModulesLoaded();
 if (__trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveInstalledManifestFromLocal();
 if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveTrustedVersion(__trustedManifest.version);
 
