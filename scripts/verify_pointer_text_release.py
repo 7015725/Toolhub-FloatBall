@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import hashlib
-import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+TH17 = ROOT / "code" / "th_17_pointer.js"
+TH19 = ROOT / "code" / "th_19_position_state.js"
+TH14 = ROOT / "code" / "th_14_panels.js"
 ENTRY = ROOT / "ToolHub.js"
 ENTRY_SHA = ROOT / "ToolHub.js.sha256"
 
@@ -14,73 +16,75 @@ def fail(msg):
     sys.exit(1)
 
 
-text = ENTRY.read_text(encoding="utf-8")
-start = text.find("// =======================【指针无障碍取字提交链修复】")
-end = text.find("proto.__toolHubPointerReleaseFixInstalled = true;", start)
-if start < 0 or end < 0:
-    fail("pointer release fix block missing")
-block = text[start:end]
+def section(text, start, end):
+    a = text.find(start)
+    b = text.find(end, a + len(start))
+    if a < 0 or b < 0:
+        fail("section missing: " + start)
+    return text[a:b]
 
-required = [
-    "function installToolHubPointerAccessibilityTextReleaseFix(force)",
-    "java.lang.System.currentTimeMillis()",
-    "normalizePointerReleaseTs",
-    "getRecentPointerPickForRelease",
-    "var graceMs = 500",
-    "restorePointerPickForRelease",
-    "completePointerCandidateOnRelease",
-    "TEXT_PICK_CONFIRMED_CANDIDATE",
+
+p17 = TH17.read_text(encoding="utf-8")
+p19 = TH19.read_text(encoding="utf-8")
+p14 = TH14.read_text(encoding="utf-8")
+entry = ENTRY.read_text(encoding="utf-8")
+
+for marker in (
+    "// @version 1.1.31",
+    "getRecentPointerPickForRelease = function",
+    "var maxAge = 500",
+    "restoreRecentPointerPickForRelease = function",
+    "completePointerCandidateOnRelease = function",
     "TEXT_PICK_RECENT_CANDIDATE",
     "TEXT_PICK_FINAL_SCAN",
-    "accessibility_confirmed_candidate",
     "accessibility_recent_candidate",
     "accessibility_final_scan",
-    "movePointerFromRaw(rawX, rawY, true, true)",
-    "schedulePointerInspectAsync(true, \"release_final\", true)",
-    "松手取字不受提示时间限制",
-]
-for marker in required:
-    if marker not in block:
-        fail("missing marker: " + marker)
+):
+    if marker not in p17:
+        fail("th17 marker missing: " + marker)
 
-if "installToolHubPointerAccessibilityTextReleaseFix(false);" not in text:
-    fail("initial pointer release fix installation missing")
-
-if "SystemClock.uptimeMillis" in block:
-    fail("release fix still uses uptimeMillis")
-
-reload_start = text.find("function reloadLocalToolHubModulesForRestart()")
-restart_start = text.find("function restartToolHubFromSettings()", reload_start)
-if reload_start < 0 or restart_start < 0:
-    fail("settings restart reload chain missing")
-reload_block = text[reload_start:restart_start]
-if "installToolHubPointerAccessibilityTextReleaseFix(true);" not in reload_block:
-    fail("pointer release fix is not reinstalled after module reload")
-
-extract = block[block.find("proto.extractCurrentPointerText = function"):block.find("var oldFinishPointerTextPickAfterReleaseFix")]
+extract = section(p17, "FloatBallAppWM.prototype.extractCurrentPointerText = function", "FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function")
 if "TEXT_HOVER_NOT_READY" in extract or "悬停时间不足" in extract:
-    fail("ordinary text extraction is still hover-gated")
+    fail("ordinary accessibility extraction is still hover-gated")
 if "completePointerCandidateOnRelease" not in extract:
-    fail("ordinary text extraction does not use unified completion")
+    fail("ordinary extraction bypasses unified release completion")
 
-finalizer = block[block.find("proto.finishPointerGestureFromRaw = function"):block.find("if (typeof proto.getPointerSettingsBlocks")]
-order = [
+ready = section(p17, "FloatBallAppWM.prototype.isPointerTextHoverReady = function", "FloatBallAppWM.prototype.getPointerTextHoverRemainMs = function")
+if "syncPointerTextHoverFromStableHold" in ready or "areaHoldSince" in ready:
+    fail("text ready visual state is still coupled to OCR hold timing")
+
+clock = section(p19, "function nowPosition()", "function numberOr")
+if "SystemClock.uptimeMillis" in clock:
+    fail("th19 still uses uptimeMillis for pointer release state")
+if "th17Now" not in clock and "System.currentTimeMillis" not in clock:
+    fail("th19 wall-clock source missing")
+
+finalizer = section(p19, "proto.finishPointerGestureFromRaw = function", "proto.movePointerFromRaw = function")
+positions = [
     finalizer.find("cancelPointerSemanticUpdate"),
     finalizer.find("invalidatePointerInspectForRelease"),
     finalizer.find("movePointerFromRaw(rawX, rawY, true, true)"),
     finalizer.find("pointerCandidateMatchesFinalHotspot"),
     finalizer.find("getRecentPointerPickForRelease"),
-    finalizer.find("schedulePointerInspectAsync(true, \"release_final\", true)"),
+    finalizer.find('schedulePointerInspectAsync(true, "release_final", true)'),
 ]
-if any(pos < 0 for pos in order) or order != sorted(order):
-    fail("release finalizer order is unsafe")
+if any(pos < 0 for pos in positions) or positions != sorted(positions):
+    fail("unsafe release ordering")
+if "getRecentReadyPointerPick" in finalizer or "finishReadyPointerSnapshot" in finalizer:
+    fail("release finalizer still requires a ready-only candidate")
+if "extractCurrentPointerText(true, st.releaseTs)" not in finalizer:
+    fail("confirmed candidate does not use unified extraction")
+if "TEXT_PICK_RECENT_CANDIDATE" not in finalizer:
+    fail("recent valid candidate commit missing")
 
-if "isPointerTextHoverReady(st.releaseTs) === true" not in finalizer:
-    fail("hover readiness is not retained as diagnostic visual state")
+if "松手取字不受提示时间限制" not in p14:
+    fail("pointer setting description does not match release behavior")
+if "指针无障碍取字提交链修复" in entry or "installToolHubPointerAccessibilityTextReleaseFix" in entry:
+    fail("entry-level runtime pointer patch still remains")
 
 expected = hashlib.sha256(ENTRY.read_bytes()).hexdigest()
 sha_line = ENTRY_SHA.read_text(encoding="utf-8").strip()
 if expected not in sha_line:
-    fail("ToolHub.js.sha256 mismatch after pointer fix")
+    fail("ToolHub.js.sha256 mismatch")
 
-print("OK pointer_text_release_fix sha256=" + expected)
+print("OK pointer_source_text_release sha256=" + expected)

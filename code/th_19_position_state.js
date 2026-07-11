@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -20,7 +20,7 @@
   }
 
   function nowPosition() {
-    try { return Number(android.os.SystemClock.uptimeMillis()); } catch (e0) {}
+    try { if (typeof th17Now === "function") return Number(th17Now()); } catch (e0) {}
     try { return Number(java.lang.System.currentTimeMillis()); } catch (e1) {}
     return new Date().getTime();
   }
@@ -583,13 +583,6 @@
     try { st = this.ensurePointerToolState ? this.ensurePointerToolState() : null; } catch (eState) { st = null; }
     if (!st || !st.active || st.closed) return false;
 
-    var readySnapshot = null;
-    try { readySnapshot = this.getReadyPointerSnapshotForRelease(st); } catch (eReadySnapshot) { readySnapshot = null; }
-    var recentReadyPick = null;
-    try {
-      if (this.getRecentReadyPointerPick) recentReadyPick = this.getRecentReadyPointerPick(st, nowPosition());
-    } catch (eRecentPick) { recentReadyPick = null; }
-
     this.cancelPointerSemanticUpdate(st, "pointer_release");
     this.invalidatePointerInspectForRelease(st);
     st.releaseTs = nowPosition();
@@ -602,34 +595,7 @@
       return true;
     }
 
-    if (st.mode === "text_pick" && readySnapshot) {
-      st.dragging = false;
-      try {
-        logPosition(this, "i",
-          "pointer release commit ready visual snapshot age=" +
-          String(nowPosition() - Number(readySnapshot.readyAt || 0))
-        );
-      } catch (eReadyLog) {}
-      return this.finishReadyPointerSnapshot(st, readySnapshot);
-    }
-
-    // 参考正常独立实现的 commitRecentPick：松手时优先提交最近一次已进入
-    // 可取字状态的有效候选，不让一次空扫描或状态清理推翻已显示的绿色结果。
-    if (st.mode === "text_pick" && recentReadyPick) {
-      st.dragging = false;
-      try {
-        if (this.restoreRecentReadyPointerPick(st, st.releaseTs)) {
-          logPosition(this, "i",
-            "pointer release commit recent ready pick age=" +
-            String(nowPosition() - Number(recentReadyPick.hitAt || 0))
-          );
-          return this.extractCurrentPointerText(true, st.releaseTs).ok === true;
-        }
-      } catch (eRecentCommit) {
-        logPosition(this, "e", "recent ready pointer commit fail: " + String(eRecentCommit));
-      }
-    }
-
+    // 先落到 ACTION_UP 的最终原始坐标，再验证候选，避免提交上一帧位置的文字。
     if (!this.movePointerFromRaw(rawX, rawY, true, true)) return false;
 
     if (st.mode === "area_capture") {
@@ -645,9 +611,6 @@
     if (st.mode === "text_pick") {
       st.dragging = false;
 
-      // 指针和边框已经进入候选/可取字状态，并且最终热点仍在该文本范围内时，
-      // 直接按现有候选完成取字。不要再次隐藏 overlay 后强制重扫，避免部分页面
-      // UiAutomation 在松手瞬间返回 nodes=0，反而清掉已确认的可取字候选。
       var candidateAtFinalHotspot = false;
       try { candidateAtFinalHotspot = this.pointerCandidateMatchesFinalHotspot(st) === true; }
       catch (eCandidate) { candidateAtFinalHotspot = false; }
@@ -659,13 +622,12 @@
         } catch (eCandidateReady) { candidateHoverReady = false; }
         try {
           logPosition(this, "i",
-            "pointer release validate confirmed candidate hoverReady=" +
+            "pointer release commit confirmed candidate hoverReady=" +
             String(candidateHoverReady) +
             " areaArmed=" + String(st.areaArmReady === true)
           );
         } catch (eCandidateLog) {}
         try {
-          // 统一进入核心提取函数，由 POINTER_TEXT_HOVER_MS 决定是否允许取字。
           return this.extractCurrentPointerText(true, st.releaseTs).ok === true;
         } catch (eExtractCandidate) {
           logPosition(this, "e", "confirmed pointer candidate extract fail: " + String(eExtractCandidate));
@@ -673,13 +635,33 @@
         }
       }
 
-      // 最终热点已经离开旧候选时才执行补扫，避免复制上一个位置的文字。
+      var recent = null;
       try {
-        st.inspectMaxFinalMs = Math.max(Number(st.inspectMaxFinalMs || 180), 220);
-        st.inspectMaxFinalNodes = Math.max(Number(st.inspectMaxFinalNodes || 720), 900);
+        if (this.getRecentPointerPickForRelease) recent = this.getRecentPointerPickForRelease(st, st.releaseTs);
+      } catch (eRecent) { recent = null; }
+      if (recent) {
+        try {
+          if (this.restoreRecentPointerPickForRelease(st, recent)) {
+            logPosition(this, "i", "pointer release commit recent candidate age=" + String(recent.ageMs || 0));
+            return this.completePointerCandidateOnRelease(
+              st,
+              "TEXT_PICK_RECENT_CANDIDATE",
+              "accessibility_recent_candidate",
+              { ageMs: Number(recent.ageMs || 0) }
+            ) === true;
+          }
+        } catch (eRecentCommit) {
+          logPosition(this, "e", "recent pointer candidate commit fail: " + String(eRecentCommit));
+        }
+      }
+
+      // 最终热点确实没有可复用候选时才补扫，防止一次空扫描推翻已命中的文字。
+      try {
+        st.inspectMaxFinalMs = Math.max(Number(st.inspectMaxFinalMs || 180), 240);
+        st.inspectMaxFinalNodes = Math.max(Number(st.inspectMaxFinalNodes || 720), 1200);
       } catch (eBudget) {
-        st.inspectMaxFinalMs = 220;
-        st.inspectMaxFinalNodes = 900;
+        st.inspectMaxFinalMs = 240;
+        st.inspectMaxFinalNodes = 1200;
       }
       var scheduled = false;
       try { scheduled = this.schedulePointerInspectAsync(true, "release_final", true) === true; }
