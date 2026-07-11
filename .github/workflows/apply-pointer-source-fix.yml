@@ -36,6 +36,7 @@ jobs:
         run: |
           python3 .github/scripts/apply_pointer_source_fix.py
           python3 .github/scripts/fix_pointer_source_verifier_v1.py
+          python3 .github/scripts/fix_pointer_entry_cleanup.py
 
       - name: Install signing key
         shell: bash
@@ -67,19 +68,7 @@ jobs:
         run: python3 scripts/verify_pointer_issue_85.py
 
       - name: Verify pointer text release
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/verify_pointer_text_release.py 2>&1 | tee pointer-text-release-verify.log
-
-      - name: Upload pointer text release log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pointer-text-release-verify-log
-          path: pointer-text-release-verify.log
-          if-no-files-found: error
-          retention-days: 1
+        run: python3 scripts/verify_pointer_text_release.py
 
       - name: Verify manifest and signature
         shell: bash
