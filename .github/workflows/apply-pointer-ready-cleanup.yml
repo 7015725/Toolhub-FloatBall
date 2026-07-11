@@ -1,9 +1,9 @@
 name: apply pointer ready cleanup
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/cleanup-pointer-ready-redundancy
+      - main
 
 permissions:
   contents: write
