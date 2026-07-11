@@ -1,0 +1,37 @@
+name: apply-pointer-clipboard-verified
+
+on:
+  push:
+    branches: [fix/pointer-clipboard-verified]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/pointer-clipboard-verified
+          fetch-depth: 0
+
+      - name: Apply patch
+        run: python3 scripts/apply_pointer_clipboard_verified.py
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet -- code/th_17_pointer.js code/th_19_position_state.js scripts/verify_ball_position_state.py; then
+            echo "No source changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_17_pointer.js code/th_19_position_state.js scripts/verify_ball_position_state.py
+          git commit -m "校验剪贴板写入并修复成功误报"
+          git push origin HEAD:fix/pointer-clipboard-verified
