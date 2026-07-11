@@ -7,9 +7,9 @@
       "version": "1.1.1"
     },
     "th_02_core.js": {
-      "sha256": "7616e46078696520c81cb7243abb7d51c6e1dadcd374a84cb3369f9f8072ed4d",
-      "size": 27563,
-      "version": "1.2.0"
+      "sha256": "59a1bb996e968055319994c89c47eb0ab8294e7dbec33e0060094dfbfdda3462",
+      "size": 41244,
+      "version": "2.0.0"
     },
     "th_03_icon.js": {
       "sha256": "6857df4aff11128f25abc3abd53c89b1b9aa0cbad7fcab3afe1931eb216686b9",
@@ -120,10 +120,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复 SQLite 异常路径的数据安全问题"
+      "将配置改为完全结构化 SQLite 存储"
     ],
-    "title": "修复 SQLite 异常路径的数据安全问题"
+    "title": "将配置改为完全结构化 SQLite 存储"
   },
   "schema": 3,
-  "version": 20260711040200
+  "version": 20260711042355
 }

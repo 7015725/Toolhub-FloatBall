@@ -2,7 +2,7 @@
 
 ShortX ToolHub 是面向 **ShortX / Rhino ES5 JavaScript** 的模块化 Android 悬浮工具框架。
 
-`ToolHub.js` 负责安全更新、模块校验和启动；悬浮球、工具面板、设置页、按钮管理、主题、SQLite 持久化、图标与颜色选择器、屏幕取字和框选 OCR 等能力拆分在 `code/th_*.js` 中维护。
+`ToolHub.js` 负责安全更新、模块校验和启动；悬浮球、工具面板、设置页、按钮管理、主题、结构化 SQLite、图标与颜色选择器、屏幕取字和框选 OCR 等能力拆分在 `code/th_*.js` 中维护。
 
 ## 仓库
 
@@ -28,10 +28,12 @@ SQLITE_STORAGE.md
 - 模块化加载，入口负责下载、校验和按顺序加载子模块。
 - 默认启用 manifest RSA 验签、keyId、防回滚、SHA-256 和文件大小校验。
 - 网络或远端清单异常时，可以继续使用已验证的本地模块。
-- 设置、按钮和 Schema 使用 SQLite 主存储。
-- SQLite 正常保存后同步原子 JSON 镜像。
-- SQLite 写失败时保存待恢复日志，数据库恢复后自动回写。
-- 数据库读取异常时进入只读回退，禁止旧 JSON 覆盖较新数据库记录。
+- 设置、按钮和 Schema 使用完全结构化 SQLite 存储。
+- 数据库中不保存整段 JSON 文档，不创建 JSON 配置文件。
+- 设置按键值和真实类型分行保存。
+- 按钮使用主表和递归参数节点表保存。
+- Schema 使用递归关系节点保存数组、对象和选项。
+- 旧 JSON 文档表和配置文件会在迁移成功后删除。
 - ToolApp 设置页支持手机、横屏和平板宽屏布局。
 - 支持按钮搜索、筛选、启停、排序和编辑。
 - 支持悬浮球拖动唤出指针、悬停取字、小框回退和框选 OCR。
@@ -60,8 +62,9 @@ SQLITE_STORAGE.md
 6. 校验模块 SHA-256 与文件大小。
 7. 加载模块。
 8. 创建或打开 `toolhub.db`。
-9. 迁移已有 JSON，或刷新 JSON 镜像。
-10. 启动悬浮球。
+9. 将旧配置迁移到结构化表。
+10. 删除旧 JSON 文档表和配置文件。
+11. 启动悬浮球。
 
 ---
 
@@ -112,129 +115,182 @@ shortx.getShortXDir()/
     ├── logs/
     │   ├── init.log
     │   └── ShortX_ToolHub_yyyyMMdd.log
-    ├── toolhub.db
-    ├── settings.json
-    ├── buttons.json
-    ├── schema.json
-    ├── .sqlite_pending_settings.json   # 仅异常恢复期间出现
-    ├── .sqlite_pending_buttons.json    # 仅异常恢复期间出现
-    └── .sqlite_pending_schema.json     # 仅异常恢复期间出现
+    └── toolhub.db
 ```
 
-`settings.json`、`buttons.json` 和 `schema.json` 现在是 SQLite 的原子镜像备份，不再只是迁移前遗留文件。
+配置目录中不再保留：
+
+```text
+settings.json
+buttons.json
+schema.json
+.sqlite_pending_*.json
+```
+
+SQLite 可能生成 `toolhub.db-journal`。这是事务辅助文件，可以由 SQLite 自动创建和清理。
 
 ---
 
-## SQLite 持久化
+## 完全结构化 SQLite
 
-### 主存储
+### 数据库位置
 
 ```text
 shortx.getShortXDir()/ToolHub/toolhub.db
 ```
 
-| 数据键 | JSON 镜像 | 内容 |
-|---|---|---|
-| `settings` | `settings.json` | 悬浮球、指针、主题、位置等设置 |
-| `buttons` | `buttons.json` | 主面板按钮和动作参数 |
-| `schema` | `schema.json` | 设置页 Schema |
-
-### 三态读取
-
-数据库读取明确区分：
-
-| 状态 | 处理 |
-|---|---|
-| `found` | 使用 SQLite，并刷新 JSON 镜像 |
-| `missing` | 允许从有效旧 JSON 首次迁移 |
-| `error` | 只读 JSON 兜底，禁止反向写回 SQLite |
-
-这样可以避免数据库临时打不开时，用迁移前的旧 JSON 覆盖较新的设置。
-
-### 正常保存
+当前存储格式：
 
 ```text
-SQLite 事务提交完成
-        │
-        ▼
-原子更新 JSON 镜像
+storageFormat = structured
+storageFormatVersion = 2
 ```
 
-只有 `endTransaction()` 正常完成后，保存才返回成功。
-
-### 写失败恢复
-
-SQLite 写失败时，先原子保存完整待恢复内容：
+### 数据表
 
 ```text
-.sqlite_pending_settings.json
-.sqlite_pending_buttons.json
-.sqlite_pending_schema.json
+toolhub.db
+├── toolhub_meta
+├── toolhub_settings
+├── toolhub_buttons
+├── toolhub_button_values
+└── toolhub_schema_values
 ```
 
-下次启动优先恢复这些内容：
+### 设置
 
-- 数据库恢复：写回 SQLite，更新 JSON 镜像并清理待恢复文件。
-- 数据库仍不可用：继续使用待恢复内容。
-
-### 读取错误写保护
-
-没有待恢复文件且数据库读取失败时，对应文档进入：
+`toolhub_settings` 每行保存一个设置：
 
 ```text
-activeBackend = read-only-fallback
-blockedWrites.<document> = true
+setting_key
+value_type
+value_integer
+value_real
+value_text
+updated_at
 ```
 
-本会话不会保存默认值、Schema 重置或旧 JSON。重新启动并成功读取数据库后才恢复写入。
-
-### 查看状态
-
-```javascript
-var info = ConfigManager.getStorageInfo();
-```
-
-主要字段：
+示例：
 
 ```text
-activeBackend
- databaseExists
- databaseHealthy
- pendingWrites
- pendingRecovery
- blockedWrites
- legacyJsonAvailable
- legacyMirrorHealthy
- lastDbError
- lastMirrorError
- lastError
+BALL_SIZE_DP          integer  45
+PANEL_BG_ALPHA        real     0.85
+ENABLE_ANIMATIONS     boolean  1
+BALL_POSITION_SIDE    text     right
+THEME_DAY_BG_HEX      null
 ```
 
-详细设计和回滚方法见 [`SQLITE_STORAGE.md`](SQLITE_STORAGE.md)。
+### 按钮
+
+`toolhub_buttons` 保存：
+
+```text
+按钮 ID
+排序
+标题
+动作类型
+启用状态
+更新时间
+```
+
+`toolhub_button_values` 保存其他参数和嵌套结构，例如：
+
+```text
+图标
+包名
+用户 ID
+Shell 命令
+广播 Action
+快捷方式代码
+数组和对象参数
+```
+
+### Schema
+
+`toolhub_schema_values` 使用父子节点关系保存：
+
+```text
+section
+key
+name
+type
+min / max / step
+options
+children
+items
+```
+
+每个值都保存为 `boolean`、`integer`、`real`、`text`、`null`、`object` 或 `array`，不存在 JSON payload 列。
+
+---
+
+## 旧配置迁移
+
+首次升级到结构化版本时，迁移来源优先级为：
+
+```text
+旧待恢复 JSON
+        ↓
+旧 toolhub_documents 表
+        ↓
+旧 settings.json / buttons.json / schema.json
+        ↓
+内置默认值
+```
+
+旧数据只会读取一次。
+
+迁移成功后：
+
+1. 设置写入 `toolhub_settings`。
+2. 按钮写入 `toolhub_buttons` 和 `toolhub_button_values`。
+3. Schema 写入 `toolhub_schema_values`。
+4. 写入 `storage_format_version=2`。
+5. 删除 `toolhub_documents`。
+6. 执行 `VACUUM` 清理旧文档数据页。
+7. 删除旧 JSON 配置、备份和待恢复文件。
+
+迁移失败时不会删除旧数据，也不会用默认值覆盖数据库。
+
+---
+
+## 保存与故障保护
+
+保存使用 SQLite 事务：
+
+```text
+beginTransaction
+        ↓
+替换对应配置域的结构化行
+        ↓
+setTransactionSuccessful
+        ↓
+endTransaction
+```
+
+只有事务最终提交成功后才报告保存成功。
+
+数据库写入失败时：
+
+- 不生成 JSON 回退文件。
+- 保留内存待写任务。
+- 关闭前刷新返回失败。
+- 已提交数据保持不变。
+- 日志记录具体数据库错误。
+
+数据库读取失败时：
+
+```text
+activeBackend = sqlite-read-only
+```
+
+当前会话使用默认设置或救援按钮临时启动，并禁止写回，避免覆盖原数据库。
 
 ---
 
 ## 配置调用链
 
-```text
-ConfigManager.loadSettings()
-        │
-        ▼
-SQLite / 待恢复日志 / JSON只读回退
-        │
-        ▼
-ConfigValidator.sanitizeConfig()
-        │
-        ▼
-FloatBallAppWM.config
-        │
-        └── ConfigManager.saveSettings()
-                │
-                ▼
-        SQLite事务 + JSON原子镜像
-```
-
-上层接口保持不变：
+现有接口保持不变：
 
 ```javascript
 ConfigManager.loadSettings();
@@ -244,6 +300,61 @@ ConfigManager.saveButtons(buttons);
 ConfigManager.loadSchema();
 ConfigManager.saveSchema(schema);
 ```
+
+调用链：
+
+```text
+ConfigManager
+        │
+        ▼
+配置校验和兼容升级
+        │
+        ▼
+结构化 SQLite 适配器
+        │
+        ├── settings → typed rows
+        ├── buttons  → main rows + value tree
+        └── schema   → value tree
+```
+
+适配过程中可能在内存中生成临时 JSON 字符串，以兼容现有 `ConfigManager` 接口；这些字符串不会写入数据库或文件。
+
+---
+
+## 查看存储状态
+
+```javascript
+var info = ConfigManager.getStorageInfo();
+```
+
+主要字段：
+
+```text
+engine
+storageFormat
+storageFormatVersion
+activeBackend
+databasePath
+databaseExists
+databaseHealthy
+pendingWrites
+blockedWrites
+rowCounts
+migrationSource
+legacyConfigFileCount
+legacyFilesRemoved
+jsonConfigEnabled
+lastDbError
+lastError
+```
+
+正常日志：
+
+```text
+storage engine=sqlite format=structured backend=sqlite-structured path=... exists=true healthy=true pending=0 error=
+```
+
+详细说明见 [`SQLITE_STORAGE.md`](SQLITE_STORAGE.md)。
 
 ---
 
@@ -257,12 +368,6 @@ ConfigManager.saveSchema(schema);
 继续悬停并拖框   进入框选 OCR
 拖出有效区域松手 截图 OCR 并复制
 小框误触         回退复制原文字
-```
-
-指针设置按以下子块组织：
-
-```text
-基础 / 悬停 / 取字保护 / 框选 OCR / 指针颜色 / OCR颜色
 ```
 
 ---
@@ -288,7 +393,7 @@ ConfigManager.saveSchema(schema);
 | 文件 | 职责 |
 |---|---|
 | `th_01_base.js` | 路径、文件 IO、配置校验、默认设置和 Schema |
-| `th_02_core.js` | SQLite 三态读取、JSON 镜像、异常恢复、核心状态 |
+| `th_02_core.js` | 完全结构化 SQLite、旧配置迁移、核心状态 |
 | `th_03_icon.js` | 图标和 Bitmap 处理 |
 | `th_04_theme.js` | 屏幕、主题、颜色、Toast 和振动 |
 | `th_05_persistence.js` | 位置与设置保存、编辑缓存和预览刷新 |
@@ -314,11 +419,7 @@ ConfigManager.saveSchema(schema);
 运行日志: ToolHub/logs/ShortX_ToolHub_yyyyMMdd.log
 ```
 
-SQLite 状态示例：
-
-```text
-storage engine=sqlite backend=sqlite path=... exists=true healthy=true pending=0 error=
-```
+普通运行日志仍使用文本文件，便于数据库本身打不开时排查错误。
 
 ---
 
@@ -333,8 +434,6 @@ storage engine=sqlite backend=sqlite path=... exists=true healthy=true pending=0
 5. 由 `sign-toolhub` 自动更新 `manifest.json`、`manifest.sig` 和 `ToolHub.js.sha256`。
 6. 等待 `verify` 与 `sign-toolhub` 通过。
 7. 合并到 `main` 并确认手机端能正常检测更新。
-
-只修改文档时使用 `docs/*` 分支，不需要生成客户端更新。
 
 关键校验：
 
@@ -351,24 +450,15 @@ python3 .github/scripts/verify_manifest_signature.py
 
 ### 2026-07-11
 
-**SQLite 异常路径加固**
+**配置改为完全结构化 SQLite**
 
-- 将读取结果拆分为 `found / missing / error`。
-- 仅在明确缺少记录时导入旧 JSON。
-- 数据库读取错误时禁止反向覆盖。
-- SQLite 保存后同步原子 JSON 镜像。
-- 增加 `.sqlite_pending_*.json` 待恢复日志。
-- 修复事务提交失败仍返回成功的问题。
-- 写入和关闭前刷新失败时保留待写任务。
-- 扩展存储状态与静态校验。
-
-### 2026-07-11
-
-**配置存储迁移到 SQLite**
-
-- 在原 ToolHub 目录新增 `toolhub.db`。
-- 迁移 `settings`、`buttons` 和 `schema`。
-- 保持现有 `ConfigManager` 和设置 UI 接口不变。
+- 设置按键和真实类型逐行保存。
+- 按钮拆分为主表和递归参数节点。
+- Schema 拆分为递归关系节点。
+- 移除 JSON payload 文档存储。
+- 迁移成功后删除旧文档表和外部 JSON 配置。
+- 执行 `VACUUM` 清理旧文档数据页。
+- 数据库异常时只读救援，不再回退 JSON。
 
 ---
 
