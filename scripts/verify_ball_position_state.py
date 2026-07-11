@@ -8,6 +8,7 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "code" / "th_19_position_state.js"
 MANIFEST = ROOT / "manifest.json"
+TOOLHUB = ROOT / "ToolHub.js"
 
 REQUIRED = [
     "// @version 1.0.0",
@@ -101,6 +102,13 @@ def main() -> None:
     for forbidden in ("xRatio", "yRatio", ".savePos("):
         if forbidden in reflow:
             fail("screen reflow still uses legacy coordinate mapping: " + forbidden)
+
+    if not TOOLHUB.exists():
+        fail("missing ToolHub.js")
+    loader = TOOLHUB.read_text(encoding="utf-8")
+    module_marker = '"th_18_pointer_ocr.js", "th_19_position_state.js"'
+    if module_marker not in loader:
+        fail("ToolHub module list does not load th_19 after th_18")
 
     if MANIFEST.exists():
         data = json.loads(MANIFEST.read_text(encoding="utf-8"))
