@@ -1,4 +1,4 @@
-// @version 1.1.28
+// @version 1.1.29
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -546,7 +546,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
   st.handleLocalX = sdp.call(this, 30);
   st.handleLocalY = sdp.call(this, 66);
   st.hoverMinMs = th17ConfigNumber(this, "POINTER_TEXT_HOVER_MS", 800, 300, 10000);
-  st.areaHoldDelay = th17ConfigNumber(this, "POINTER_AREA_HOVER_MS", 1000, 500, 10000);
+  st.areaHoldDelay = th17ConfigNumber(this, "POINTER_AREA_HOVER_MS", 2000, 500, 10000);
   st.areaSmallFallbackText = th17ConfigBool(this, "POINTER_AREA_SMALL_FALLBACK_TEXT", true);
   st.areaMinWidthPx = dp.call(this, th17ConfigNumber(this, "POINTER_AREA_MIN_WIDTH_DP", 56, 20, 240));
   st.areaMinHeightPx = dp.call(this, th17ConfigNumber(this, "POINTER_AREA_MIN_HEIGHT_DP", 20, 8, 160));

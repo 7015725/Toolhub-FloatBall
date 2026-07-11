@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -659,29 +659,16 @@
         } catch (eCandidateReady) { candidateHoverReady = false; }
         try {
           logPosition(this, "i",
-            "pointer release commit confirmed candidate hoverReady=" +
+            "pointer release validate confirmed candidate hoverReady=" +
             String(candidateHoverReady) +
             " areaArmed=" + String(st.areaArmReady === true)
           );
         } catch (eCandidateLog) {}
         try {
-          return this.completePointerTextCopy(
-            String(st.currentText),
-            {
-              left: Number(st.currentRect.left),
-              top: Number(st.currentRect.top),
-              right: Number(st.currentRect.right),
-              bottom: Number(st.currentRect.bottom)
-            },
-            "TEXT_PICK_SUCCESS",
-            {
-              source: "confirmed_final_candidate",
-              hoverReady: candidateHoverReady,
-              areaArmed: st.areaArmReady === true
-            }
-          ) === true;
-        } catch (eCommitCandidate) {
-          logPosition(this, "e", "confirmed pointer candidate commit fail: " + String(eCommitCandidate));
+          // 统一进入核心提取函数，由 POINTER_TEXT_HOVER_MS 决定是否允许取字。
+          return this.extractCurrentPointerText(true, st.releaseTs).ok === true;
+        } catch (eExtractCandidate) {
+          logPosition(this, "e", "confirmed pointer candidate extract fail: " + String(eExtractCandidate));
           return false;
         }
       }
