@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -492,8 +492,6 @@
       right: Number(snap.rect.right),
       bottom: Number(snap.rect.bottom)
     };
-    var copied = false;
-    try { copied = this.copyPointerTextToClipboard(textValue) === true; } catch (eCopy) { copied = false; }
 
     pointerState.currentText = textValue;
     pointerState.currentRect = rect;
@@ -502,28 +500,16 @@
     pointerState.hoverSince = Number(snap.hoverSince || snap.readyAt || nowPosition());
     pointerState.releaseTs = nowPosition();
 
-    this.setPointerToolResult({
-      ok: true,
-      type: "text_pick",
-      code: "TEXT_PICK_READY_SNAPSHOT",
-      message: "取字成功",
-      value: textValue,
-      clipboard: copied === true,
-      rect: {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom
-      },
-      data: {
+    return this.completePointerTextCopy(
+      textValue,
+      rect,
+      "TEXT_PICK_READY_SNAPSHOT",
+      {
         source: "ready_visual_snapshot",
         readyAt: Number(snap.readyAt || 0),
         session: Number(snap.session || 0)
       }
-    });
-    try { this.toast(copied ? "已复制: " + textValue : textValue); } catch (eToast) {}
-    try { this.closePointerTool(copied ? "已复制到剪贴板" : "取字完成", true); } catch (eClose) {}
-    return true;
+    );
   };
 
   proto.pointerCandidateMatchesFinalHotspot = function(st) {

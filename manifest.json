@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "0f31d6e8f3263cd9ab9e34171237242deb8a99637dd4c8cb776668ba4f4c5cb6",
-      "size": 118811,
-      "version": "1.1.25"
+      "sha256": "6c6b51d12a208edab0321ada33b8de0b10ad8586edf02ba85f3043c3d1c65532",
+      "size": 127685,
+      "version": "1.1.26"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "f1f8b940829f2a21e94e0c1da2058042d6f2c2e5d1191a0d65a3c92b4a62f21f",
-      "size": 43381,
-      "version": "1.0.3"
+      "sha256": "f04c92dccbe8bd238af0ed11027395bbf3a76769f76dc1718c21de9700452d7d",
+      "size": 42801,
+      "version": "1.0.4"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复取字复制结果误报"
+      "修复取字剪贴板写入并清理临时补丁"
     ],
-    "title": "修复取字复制结果误报"
+    "title": "修复取字剪贴板写入并清理临时补丁"
   },
   "schema": 3,
-  "version": 20260711090128
+  "version": 20260711090838
 }
