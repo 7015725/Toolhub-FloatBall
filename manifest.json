@@ -115,15 +115,20 @@
       "sha256": "3e1c71cd5f153a87462ae66005c2907f60c8786fd34fd7f60d51d574ce8ea25b",
       "size": 57303,
       "version": "1.0.19"
+    },
+    "th_19_position_state.js": {
+      "sha256": "19f87ab2237f57fd45c51fac7884c121d7fc6082037c9c27efaf5fb91f156fc8",
+      "size": 26819,
+      "version": "1.0.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "将按钮图片存入 SQLite BLOB"
+      "收敛悬浮球定位与指针手势状态机"
     ],
-    "title": "将按钮图片存入 SQLite BLOB"
+    "title": "收敛悬浮球定位与指针手势状态机"
   },
   "schema": 3,
-  "version": 20260711050305
+  "version": 20260711072134
 }

@@ -31,6 +31,7 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_sqlite_persistence.py
           python3 scripts/verify_button_icon_blob.py
+          python3 scripts/verify_ball_position_state.py
           python3 scripts/verify_manifest.py
           python3 scripts/verify_toolapp_single_root.py
           python3 scripts/verify_toolapp_adaptive_size.py
