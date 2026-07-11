@@ -1,0 +1,2 @@
+FAIL: confirmed final candidate must be extracted before fallback final scan
+exit_status=1
