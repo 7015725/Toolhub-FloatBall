@@ -9,7 +9,7 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   apply:
@@ -47,11 +47,14 @@ jobs:
           python3 .github/scripts/verify_manifest_signature.py
           git diff --check
 
-      - name: Commit fix
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ToolHub.js ToolHub.js.sha256 scripts/verify_pointer_text_release.py .github/workflows/verify.yml
-          git commit -m "彻底修复指针无障碍取字提交链路"
-          git push origin HEAD:agent/fix-pointer-accessibility-text-pick
+      - name: Export verified files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pointer-text-fix-files
+          path: |
+            ToolHub.js
+            ToolHub.js.sha256
+            scripts/verify_pointer_text_release.py
+            .github/workflows/verify.yml
+          if-no-files-found: error
+          retention-days: 1
