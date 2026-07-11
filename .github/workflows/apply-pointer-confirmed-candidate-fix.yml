@@ -1,0 +1,42 @@
+name: apply-pointer-confirmed-candidate-fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/pointer-confirmed-candidate-hover
+          fetch-depth: 0
+
+      - name: Apply fix
+        run: python3 scripts/apply_pointer_confirmed_candidate_fix.py
+
+      - name: Verify source
+        run: |
+          python3 scripts/verify_ball_position_state.py
+          python3 scripts/verify_pointer_issue_85.py
+          python3 .github/scripts/es5_scan.py
+          git diff --check
+
+      - name: Commit source
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_19_position_state.js scripts/verify_ball_position_state.py
+          if git diff --cached --quiet; then
+            echo "No source changes required"
+            exit 0
+          fi
+          git commit -m "修复确认候选被悬停门槛拦截"
+          git push origin HEAD:fix/pointer-confirmed-candidate-hover
