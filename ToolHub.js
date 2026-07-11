@@ -1044,10 +1044,10 @@ notifyToolHubModulesLoaded();
 // =======================【指针无障碍取字提交链修复】=======================
 // 普通取字：当前候选或近期有效候选命中最终热点时，松手立即提交。
 // POINTER_TEXT_HOVER_MS 仅控制绿色“取字就绪”提示，不再阻断文字复制。
-(function installPointerAccessibilityTextReleaseFix() {
-  if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
+function installToolHubPointerAccessibilityTextReleaseFix(force) {
+  if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
   var proto = FloatBallAppWM.prototype;
-  if (proto.__toolHubPointerReleaseFixInstalled === true) return;
+  if (proto.__toolHubPointerReleaseFixInstalled === true && force !== true) return true;
 
   function pointerReleaseNow() {
     try { return Number(java.lang.System.currentTimeMillis()); } catch (e0) {}
@@ -1336,8 +1336,10 @@ notifyToolHubModulesLoaded();
   }
 
   proto.__toolHubPointerReleaseFixInstalled = true;
-  pointerReleaseLog(null, "i", "pointer accessibility text release fix installed");
-})();
+  pointerReleaseLog(null, "i", "pointer accessibility text release fix installed force=" + String(force === true));
+  return true;
+}
+installToolHubPointerAccessibilityTextReleaseFix(false);
 if (__trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveInstalledManifestFromLocal();
 if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0 && __pendingModuleUpdates.length === 0) saveTrustedVersion(__trustedManifest.version);
 
@@ -1529,6 +1531,11 @@ function reloadLocalToolHubModulesForRestart() {
     if (code === null) throw "读取模块失败: " + relPath;
     var geval = eval;
     geval(String(code));
+  }
+
+  // 模块热重载会重新定义指针原型，必须重新安装取字提交修复。
+  if (typeof installToolHubPointerAccessibilityTextReleaseFix === "function") {
+    installToolHubPointerAccessibilityTextReleaseFix(true);
   }
 }
 

@@ -22,6 +22,7 @@ if start < 0 or end < 0:
 block = text[start:end]
 
 required = [
+    "function installToolHubPointerAccessibilityTextReleaseFix(force)",
     "java.lang.System.currentTimeMillis()",
     "normalizePointerReleaseTs",
     "getRecentPointerPickForRelease",
@@ -42,8 +43,19 @@ for marker in required:
     if marker not in block:
         fail("missing marker: " + marker)
 
+if "installToolHubPointerAccessibilityTextReleaseFix(false);" not in text:
+    fail("initial pointer release fix installation missing")
+
 if "SystemClock.uptimeMillis" in block:
     fail("release fix still uses uptimeMillis")
+
+reload_start = text.find("function reloadLocalToolHubModulesForRestart()")
+restart_start = text.find("function restartToolHubFromSettings()", reload_start)
+if reload_start < 0 or restart_start < 0:
+    fail("settings restart reload chain missing")
+reload_block = text[reload_start:restart_start]
+if "installToolHubPointerAccessibilityTextReleaseFix(true);" not in reload_block:
+    fail("pointer release fix is not reinstalled after module reload")
 
 extract = block[block.find("proto.extractCurrentPointerText = function"):block.find("var oldFinishPointerTextPickAfterReleaseFix")]
 if "TEXT_HOVER_NOT_READY" in extract or "悬停时间不足" in extract:
