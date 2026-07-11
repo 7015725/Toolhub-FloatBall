@@ -26,11 +26,13 @@ def section(text, start, end):
 
 p17 = TH17.read_text(encoding="utf-8")
 p19 = TH19.read_text(encoding="utf-8")
+if "// @version 1.0.9" not in p19:
+    fail("th19 cleanup version missing")
 p14 = TH14.read_text(encoding="utf-8")
 entry = ENTRY.read_text(encoding="utf-8")
 
 for marker in (
-    "// @version 1.1.31",
+    "// @version 1.1.32",
     "getRecentPointerPickForRelease = function",
     "var maxAge = 500",
     "restoreRecentPointerPickForRelease = function",
@@ -72,6 +74,21 @@ if any(pos < 0 for pos in positions) or positions != sorted(positions):
     fail("unsafe release ordering")
 if "getRecentReadyPointerPick" in finalizer or "finishReadyPointerSnapshot" in finalizer:
     fail("release finalizer still requires a ready-only candidate")
+for forbidden in (
+    "getRecentReadyPointerPick",
+    "restoreRecentReadyPointerPick",
+    "lastValidPickReadyAt",
+    "syncPointerTextHoverFromStableHold",
+    "storeReadyPointerSnapshot",
+    "getReadyPointerSnapshotForRelease",
+    "finishReadyPointerSnapshot",
+    "__toolHubReadyTextSnapshot",
+    "TEXT_PICK_READY_SNAPSHOT",
+    "ready_visual_snapshot",
+):
+    if forbidden in p17 or forbidden in p19:
+        fail("obsolete ready-chain symbol remains: " + forbidden)
+
 if "extractCurrentPointerText(true, st.releaseTs)" not in finalizer:
     fail("confirmed candidate does not use unified extraction")
 if "TEXT_PICK_RECENT_CANDIDATE" not in finalizer:

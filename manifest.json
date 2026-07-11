@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "45b771b8a64e4c47e8e7c3d75af664ddffbb3aa2609f632d593d5944a16af28a",
-      "size": 129301,
-      "version": "1.1.31"
+      "sha256": "64a1268fa1188ef014bcd3249671e09c8f672a11ef6916d506300104c7ae4bea",
+      "size": 124645,
+      "version": "1.1.32"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "5ea678437dc26ee62a6fa59f25cfd8a0262b7f03ce3a823bd1654e40499eb235",
-      "size": 43194,
-      "version": "1.0.8"
+      "sha256": "d5a418b4bdd69a32a2c1e1bd4ae5e4d18b92048c26d4c5107ae9b7d63c404160",
+      "size": 38401,
+      "version": "1.0.9"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "统一取字时间源并恢复命中候选松手提交"
+      "移除已停用的绿色候选缓存与就绪快照提交链"
     ],
-    "title": "彻底修复指针无障碍取字提交链路"
+    "title": "清理指针就绪链路冗余代码"
   },
   "schema": 3,
-  "version": 20260711141806
+  "version": 20260711150255
 }

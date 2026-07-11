@@ -1,4 +1,4 @@
-// @version 1.0.8
+// @version 1.0.9
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -386,132 +386,6 @@
     return true;
   };
 
-  proto.storeReadyPointerSnapshot = function(st) {
-    var pointerState = st || null;
-    try {
-      if (!pointerState && this.ensurePointerToolState) pointerState = this.ensurePointerToolState();
-    } catch (eState) { pointerState = null; }
-    if (!pointerState || !pointerState.currentText || !pointerState.currentRect) return false;
-
-    var ready = false;
-    try { ready = this.isPointerTextHoverReady(nowPosition()) === true; } catch (eReady) { ready = pointerState.hot === true; }
-    if (!ready) return false;
-
-    var hp = null;
-    try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
-    pointerState.__toolHubReadyTextSnapshot = {
-      text: String(pointerState.currentText),
-      rect: {
-        left: Number(pointerState.currentRect.left),
-        top: Number(pointerState.currentRect.top),
-        right: Number(pointerState.currentRect.right),
-        bottom: Number(pointerState.currentRect.bottom)
-      },
-      key: String(pointerState.currentKey || ""),
-      hoverSince: Number(pointerState.hoverSince || 0),
-      readyAt: nowPosition(),
-      session: Number(pointerState.inspectSession || 0),
-      hotspotX: hp ? Number(hp.x || 0) : 0,
-      hotspotY: hp ? Number(hp.y || 0) : 0
-    };
-    return true;
-  };
-
-  if (typeof proto.refreshPointerTextReadyVisualState === "function" && proto.__toolHubReadySnapshotVisualWrapped !== true) {
-    var oldRefreshPointerTextReadyVisualStatePosition = proto.refreshPointerTextReadyVisualState;
-    proto.refreshPointerTextReadyVisualState = function() {
-      var ready = oldRefreshPointerTextReadyVisualStatePosition.call(this) === true;
-      if (ready) {
-        try { this.storeReadyPointerSnapshot(this.ensurePointerToolState()); } catch (eSnapshot) {}
-      }
-      return ready;
-    };
-    proto.__toolHubReadySnapshotVisualWrapped = true;
-  }
-
-  proto.getReadyPointerSnapshotForRelease = function(st) {
-    var pointerState = st || null;
-    try {
-      if (!pointerState && this.ensurePointerToolState) pointerState = this.ensurePointerToolState();
-    } catch (eState) { pointerState = null; }
-    if (!pointerState) return null;
-
-    var snap = pointerState.__toolHubReadyTextSnapshot || null;
-    if (!snap || !snap.text || !snap.rect) return null;
-    if (Number(snap.session || 0) !== Number(pointerState.inspectSession || 0)) return null;
-
-    var now = nowPosition();
-    var hoverLimit = 800;
-    try { hoverLimit = Number(this.getPointerTextHoverLimitMs()); } catch (eLimit) { hoverLimit = 800; }
-    if (isNaN(hoverLimit) || hoverLimit < 0) hoverLimit = 800;
-    var maxAge = Math.max(1800, Math.min(6000, hoverLimit * 4));
-    var age = now - Number(snap.readyAt || 0);
-    if (age < 0 || age > maxAge) return null;
-
-    var hp = null;
-    try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
-    if (!hp) return null;
-
-    var hit = false;
-    try {
-      if (typeof this.pointerRectHitScore === "function") {
-        hit = Number(this.pointerRectHitScore(hp.x, hp.y, snap.rect)) >= 0;
-      } else {
-        hit = hp.x >= Number(snap.rect.left) && hp.x <= Number(snap.rect.right) &&
-          hp.y >= Number(snap.rect.top) && hp.y <= Number(snap.rect.bottom);
-      }
-    } catch (eHit) { hit = false; }
-    if (!hit) return null;
-
-    return {
-      text: String(snap.text),
-      rect: {
-        left: Number(snap.rect.left),
-        top: Number(snap.rect.top),
-        right: Number(snap.rect.right),
-        bottom: Number(snap.rect.bottom)
-      },
-      key: String(snap.key || ""),
-      hoverSince: Number(snap.hoverSince || 0),
-      readyAt: Number(snap.readyAt || 0),
-      session: Number(snap.session || 0),
-      hotspotX: Number(snap.hotspotX || 0),
-      hotspotY: Number(snap.hotspotY || 0)
-    };
-  };
-
-  proto.finishReadyPointerSnapshot = function(st, snapshot) {
-    var pointerState = st || null;
-    var snap = snapshot || null;
-    if (!pointerState || !snap || !snap.text || !snap.rect) return false;
-
-    var textValue = String(snap.text);
-    var rect = {
-      left: Number(snap.rect.left),
-      top: Number(snap.rect.top),
-      right: Number(snap.rect.right),
-      bottom: Number(snap.rect.bottom)
-    };
-
-    pointerState.currentText = textValue;
-    pointerState.currentRect = rect;
-    pointerState.currentKey = String(snap.key || "");
-    pointerState.hoverKey = pointerState.currentKey;
-    pointerState.hoverSince = Number(snap.hoverSince || snap.readyAt || nowPosition());
-    pointerState.releaseTs = nowPosition();
-
-    return this.completePointerTextCopy(
-      textValue,
-      rect,
-      "TEXT_PICK_READY_SNAPSHOT",
-      {
-        source: "ready_visual_snapshot",
-        readyAt: Number(snap.readyAt || 0),
-        session: Number(snap.session || 0)
-      }
-    );
-  };
-
   proto.pointerCandidateMatchesFinalHotspot = function(st) {
     var pointerState = st || null;
     try {
@@ -570,7 +444,6 @@
           st.__toolHubPointerSemanticToken = Number(st.__toolHubPointerSemanticToken || 0) + 1;
           st.__toolHubPointerSemanticPosted = false;
           st.__toolHubPointerSemanticRunnable = null;
-          st.__toolHubReadyTextSnapshot = null;
         } catch (eInitSemantic) {}
         return ret;
       };

@@ -1,4 +1,4 @@
-// @version 1.1.31
+// @version 1.1.32
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -56,8 +56,7 @@ function th17PointerColorRgb(appObj, key, fallbackR, fallbackG, fallbackB) {
       var g = parseInt(h.substring(2, 4), 16);
       var b = parseInt(h.substring(4, 6), 16);
       if (!isNaN(r) && !isNaN(g) && !isNaN(b)) return { r: r, g: g, b: b };
-    }
-  } catch(e0) {}
+    } catch(e0) {}
   return { r: fallbackR, g: fallbackG, b: fallbackB };
 }
 
@@ -292,7 +291,7 @@ FloatBallAppWM.prototype.copyPointerTextToClipboard = function(textValue) {
   return false;
 };
 
-FloatBallAppWM.prototype.rememberPointerValidPick = function(st, ready) {
+FloatBallAppWM.prototype.rememberPointerValidPick = function(st) {
   var pointerState = st || null;
   try {
     if (!pointerState) pointerState = this.ensurePointerToolState();
@@ -305,73 +304,12 @@ FloatBallAppWM.prototype.rememberPointerValidPick = function(st, ready) {
   }));
   if (!key) return false;
   var now = th17Now();
-  if (String(pointerState.lastValidPickKey || "") !== key) {
-    pointerState.lastValidPickReadyAt = 0;
   }
   pointerState.lastValidPickText = String(pointerState.currentText);
   pointerState.lastValidPickRect = th17RectObj(pointerState.currentRect);
   pointerState.lastValidPickKey = key;
   pointerState.lastValidPickAt = now;
   pointerState.lastValidPickSession = Number(pointerState.inspectSession || 0);
-  if (ready === true) pointerState.lastValidPickReadyAt = now;
-  return true;
-};
-
-FloatBallAppWM.prototype.getRecentReadyPointerPick = function(st, atTs) {
-  var pointerState = st || null;
-  try {
-    if (!pointerState) pointerState = this.ensurePointerToolState();
-  } catch (eState) { pointerState = null; }
-  if (!pointerState || !pointerState.lastValidPickText || !pointerState.lastValidPickRect) return null;
-  if (Number(pointerState.lastValidPickSession || 0) !== Number(pointerState.inspectSession || 0)) return null;
-  if (!pointerState.lastValidPickReadyAt || Number(pointerState.lastValidPickReadyAt || 0) <= 0) return null;
-
-  var now = Number(atTs || th17Now());
-  if (isNaN(now) || now <= 0) now = th17Now();
-  var hoverLimit = 800;
-  try { hoverLimit = Number(this.getPointerTextHoverLimitMs()); } catch (eLimit) { hoverLimit = 800; }
-  if (isNaN(hoverLimit) || hoverLimit < 0) hoverLimit = 800;
-  var maxAge = Math.max(1800, Math.min(6000, hoverLimit * 4));
-  var age = now - Number(pointerState.lastValidPickAt || 0);
-  if (age < 0 || age > maxAge) return null;
-
-  var hp = null;
-  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
-  if (!hp) return null;
-  var hit = false;
-  try { hit = this.pointerRectHitScore(hp.x, hp.y, pointerState.lastValidPickRect) >= 0; }
-  catch (eHit) { hit = false; }
-  if (!hit) return null;
-
-  return {
-    text: String(pointerState.lastValidPickText),
-    rect: th17RectObj(pointerState.lastValidPickRect),
-    key: String(pointerState.lastValidPickKey || ""),
-    hitAt: Number(pointerState.lastValidPickAt || 0),
-    readyAt: Number(pointerState.lastValidPickReadyAt || 0),
-    session: Number(pointerState.lastValidPickSession || 0)
-  };
-};
-
-FloatBallAppWM.prototype.restoreRecentReadyPointerPick = function(st, atTs) {
-  var pointerState = st || null;
-  try {
-    if (!pointerState) pointerState = this.ensurePointerToolState();
-  } catch (eState) { pointerState = null; }
-  if (!pointerState) return false;
-  var recent = this.getRecentReadyPointerPick(pointerState, atTs);
-  if (!recent) return false;
-
-  pointerState.currentText = String(recent.text);
-  pointerState.currentRect = th17RectObj(recent.rect);
-  pointerState.currentKey = String(recent.key || "");
-  pointerState.hoverKey = pointerState.currentKey;
-  var hoverLimit = 800;
-  try { hoverLimit = Number(this.getPointerTextHoverLimitMs()); } catch (eLimit) { hoverLimit = 800; }
-  if (isNaN(hoverLimit) || hoverLimit < 0) hoverLimit = 800;
-  pointerState.hoverSince = Math.max(1, Number(recent.readyAt || th17Now()) - hoverLimit);
-  try { this.showPointerAreaFrame(pointerState.currentRect, "text_hit"); } catch (eFrame) {}
-  try { this.updatePointerVisualHot(true); } catch (eHot) {}
   return true;
 };
 
@@ -552,7 +490,6 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       lastValidPickRect: null,
       lastValidPickKey: "",
       lastValidPickAt: 0,
-      lastValidPickReadyAt: 0,
       lastValidPickSession: 0,
       boundText: "",
       boundRect: null,
@@ -673,7 +610,6 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.lastValidPickRect = null;
   st.lastValidPickKey = "";
   st.lastValidPickAt = 0;
-  st.lastValidPickReadyAt = 0;
   st.lastValidPickSession = Number(st.inspectSession || 0);
   st.boundText = "";
   st.boundRect = null;
@@ -2031,7 +1967,7 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     st.boundRect = th17RectObj(result.rect);
     st.boundKey = key;
     st.boundAt = now;
-    try { this.rememberPointerValidPick(st, this.isPointerTextHoverReady(now) === true); } catch (eRemember) {}
+    try { this.rememberPointerValidPick(st); } catch (eRemember) {}
     this.refreshPointerTextReadyVisualState();
     this.schedulePointerTextReadyVisualRefresh();
   } else {
@@ -2282,46 +2218,6 @@ FloatBallAppWM.prototype.getPointerTextHoverLimitMs = function() {
   return limit;
 };
 
-FloatBallAppWM.prototype.syncPointerTextHoverFromStableHold = function(atTs) {
-  var st = this.ensurePointerToolState();
-  if (!st.currentText || !st.currentRect) return false;
-  if (st.currentKey && st.hoverKey && String(st.currentKey) !== String(st.hoverKey)) return false;
-
-  var stableSince = 0;
-  var ts = Number(atTs || th17Now());
-  try { stableSince = Number(st.areaHoldSince || 0); } catch (eStableSince) { stableSince = 0; }
-  if (isNaN(ts) || ts <= 0) ts = th17Now();
-  if (isNaN(stableSince) || stableSince <= 0 || stableSince > ts) return false;
-
-  var anchorX = Number(st.areaHoldAnchorX || -100000);
-  var anchorY = Number(st.areaHoldAnchorY || -100000);
-  if (isNaN(anchorX) || isNaN(anchorY) || anchorX < -90000 || anchorY < -90000) return false;
-
-  var hp = null;
-  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
-  if (!hp) return false;
-
-  var anchorHit = false;
-  var hotspotHit = false;
-  try { anchorHit = this.pointerRectHitScore(anchorX, anchorY, st.currentRect) >= 0; } catch (eAnchorHit) { anchorHit = false; }
-  try { hotspotHit = this.pointerRectHitScore(hp.x, hp.y, st.currentRect) >= 0; } catch (eHotspotHit) { hotspotHit = false; }
-  if (!anchorHit || !hotspotHit) return false;
-
-  var currentSince = Number(st.hoverSince || 0);
-  if (!isNaN(currentSince) && currentSince > 0 && currentSince <= stableSince) return false;
-
-  st.hoverSince = stableSince;
-  st.hoverX = anchorX;
-  st.hoverY = anchorY;
-  try {
-    safeLog(this.L, 'i',
-      "pointer text hover reuse stable hold elapsed=" + String(Math.max(0, ts - stableSince)) +
-      " hoverMinMs=" + String(this.getPointerTextHoverLimitMs())
-    );
-  } catch (eLogStableHover) {}
-  return true;
-};
-
 FloatBallAppWM.prototype.isPointerTextHoverReady = function(atTs) {
   var st = this.ensurePointerToolState();
   if (!st.currentText || !st.currentRect) return false;
@@ -2353,7 +2249,7 @@ FloatBallAppWM.prototype.refreshPointerTextReadyVisualState = function() {
   }
   var ready = this.isPointerTextHoverReady(th17Now()) === true;
   if (ready) {
-    try { this.rememberPointerValidPick(st, true); } catch (eRememberReady) {}
+    try { this.rememberPointerValidPick(st); } catch (eRememberReady) {}
   }
   try { this.showPointerAreaFrame(st.currentRect, ready ? "text_hit" : "text_hover"); } catch(eFrameReady) {}
   this.updatePointerVisualHot(ready);
