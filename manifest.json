@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "029b6b00eb80c42bbce89db0c8c493b34061924de09ea773f2cb1430f97c452f",
-      "size": 43787,
-      "version": "1.0.5"
+      "sha256": "d7120c1eeef177d957499898eaa0822b481713a3cc38a1f8d02b33f475787efd",
+      "size": 44529,
+      "version": "1.0.6"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "按正常参考实现修复无障碍取字"
+      "修复确认候选被悬停门槛拦截"
     ],
-    "title": "按正常参考实现修复无障碍取字"
+    "title": "修复确认候选被悬停门槛拦截"
   },
   "schema": 3,
-  "version": 20260711103937
+  "version": 20260711105755
 }
