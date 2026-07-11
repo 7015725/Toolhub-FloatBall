@@ -1,0 +1,31 @@
+name: cleanup pointer temp branches
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    environment: signing
+    steps:
+      - name: Delete temporary branches
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          remote="https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push "$remote" --delete \
+            agent/cleanup-pointer-ready-redundancy-final \
+            agent/cleanup-pointer-ready-redundancy-run \
+            agent/cleanup-pointer-ready-redundancy-temp \
+            agent/cleanup-pointer-ready-redundancy-work
