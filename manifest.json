@@ -22,9 +22,9 @@
       "version": "1.0.0"
     },
     "th_05_persistence.js": {
-      "sha256": "14a53ea0e7bce639bf66e9b117bbc030cf10aa3177a88ad3de99f61454415d0c",
-      "size": 10998,
-      "version": "1.0.1"
+      "sha256": "39a47ce55cf30674229668a3ffa596d5e4a4bd122218891c67a412aab1a554ee",
+      "size": 16043,
+      "version": "1.0.2"
     },
     "th_06_icon_parser.js": {
       "sha256": "25b95a5df634a7ee359f3ab798e4d3154a71c24016f7b4bf8a658096644b2484",
@@ -52,9 +52,9 @@
       "version": "1.0.6"
     },
     "th_12_rebuild.js": {
-      "sha256": "9e61cc0d1c1425fd91f921585eb80a4905ea26143b1cc806f488ac16e339387c",
-      "size": 12692,
-      "version": "1.0.3"
+      "sha256": "87ba3af411c4e85537fc5c7501c3bdc545383b2eeeb18b4bbc3b206b63667230",
+      "size": 3901,
+      "version": "1.0.4"
     },
     "th_13_panel_ui.js": {
       "sha256": "7154bb5fe7c9d5da74f3ee3e1378fe6b092c771379d31f377a0d32901d47c9a9",
@@ -97,9 +97,9 @@
       "version": "0.0.0"
     },
     "th_15_extra.js": {
-      "sha256": "f01603956aa936afa50240ec586e6ce7d69f4b28b7f0ba3c4cc34b8ede31fe60",
-      "size": 124248,
-      "version": "1.1.6"
+      "sha256": "f0d62c0d4ea833ccf4dea1ea6e7cee83025677133b910a587fbcb72a52c6d093",
+      "size": 123318,
+      "version": "1.1.7"
     },
     "th_16_entry.js": {
       "sha256": "a0e2a50f5a3add761de9280df3bb8a00476e053514232389762639a62bc6c9e3",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "收敛 Shell 诊断包装"
+      "收敛设置与类型包装链"
     ],
-    "title": "收敛 Shell 诊断包装"
+    "title": "收敛设置与类型包装链"
   },
   "schema": 3,
-  "version": 20260712083231
+  "version": 20260712095513
 }
