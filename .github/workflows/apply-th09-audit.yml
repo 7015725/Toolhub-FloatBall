@@ -1,0 +1,83 @@
+name: apply-th09-audit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-th09-audit
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'audit/th09-animation-standalone' &&
+      github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/th09-animation-standalone
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate th_09 audit and refresh wording
+        shell: bash
+        run: |
+          python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/report_dead_module_symbols.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''    lines.append("1. 对 `th_15_extra.js` 的固定位置过渡方法做一次模块加载期调用审查和真机位置基线，再按一组清理。")
+              lines.append("2. 将 `armLongPress` 与长按辅助状态作为独立交互审查，不与位置方法混删。")
+              lines.append("3. 最后处理 `th_09_animation.js` 的旧动画、吸边和屏幕重排实现，必须包含旋转、尺寸变化和动画开关真机测试。")'''
+          new = '''    lines.append("1. 先完成 `th_09_animation.js` 独立审查，区分唯一实现、受保护链和后续覆盖候选。")
+              lines.append("2. 优先将 `onScreenChangedReflow` 与 `scheduleScreenReflow` 作为同一屏幕变化链定位、验证和处理。")
+              lines.append("3. 再分别审查 `animateBallLayout` 与 `snapToEdgeDocked`，必须包含动画开关、旋转、尺寸变化、面板和指针场景。")'''
+          if text.count(old) != 1:
+              raise SystemExit('FAIL: expected one stale recommendation block')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+
+      - name: Verify audit reports
+        shell: bash
+        run: |
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
+          python3 -m compileall -q scripts .github/scripts
+          git diff --check
+
+      - name: Remove temporary workflow
+        run: rm -f .github/workflows/apply-th09-audit.yml
+
+      - name: Commit audit report
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "生成 th_09 独立审查报告"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:audit/th09-animation-standalone
