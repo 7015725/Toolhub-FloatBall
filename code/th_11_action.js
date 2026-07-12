@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // =======================【Shell 按钮诊断】=======================
 FloatBallAppWM.prototype.getShellDiagPreviewText = function(cmdPlain, cmdB64) {
   var p = "";
@@ -409,12 +409,8 @@ return;
   }
 
   if (t === "shortcut") {
-  // 这段代码的主要内容/用途：快捷方式优先使用 intentUri 数据化启动；兼容模式下失败再回退旧 shortcutJsCode。
-  // 说明：
-  // 1) 默认 SHORTCUT_EXEC_MODE=compat：intentUri 成功直接返回，失败回退 JS。
-  // 2) strict/intent/data 模式：禁止 eval fallback，intentUri 失败即失败。
-  // 3) 目标 userId：launchUserId > userId（用于锁定主/分身）。
-
+  // 快捷方式默认只使用结构化 intentUri。只有显式 legacy_js 模式才允许执行旧 shortcutJsCode。
+  // 旧 compat/strict/data/未知值全部收敛为 intent，避免失败时静默进入 eval。
   var spkg = btn.pkg ? String(btn.pkg) : "";
   var sid = btn.shortcutId ? String(btn.shortcutId) : "";
   var iu = (btn.intentUri != null) ? String(btn.intentUri) : "";
@@ -422,22 +418,25 @@ return;
   var uid = 0;
   try { uid = (btn.userId != null) ? parseInt(String(btn.userId), 10) : 0; } catch(eUid0) { uid = 0; }
   if (isNaN(uid)) uid = 0;
-
-  // # 启动 userId 优先级：launchUserId > userId
   try {
     if (btn.launchUserId != null && String(btn.launchUserId).length > 0) {
       var lu0 = parseInt(String(btn.launchUserId), 10);
       if (!isNaN(lu0)) uid = lu0;
     }
-   } catch(eLu0) { safeLog(null, 'e', "catch " + String(eLu0)); }
+  } catch(eLu0) { safeLog(null, 'e', "catch " + String(eLu0)); }
 
-  var shortcutMode = "compat";
+  function normalizeShortcutExecMode(v) {
+    var mode = "intent";
+    try { mode = String(v == null ? "" : v).replace(/^\s+|\s+$/g, "").toLowerCase(); } catch(eNormalizeMode) { mode = "intent"; }
+    if (mode === "legacy_js" || mode === "legacy" || mode === "js") return "legacy_js";
+    return "intent";
+  }
+
+  var shortcutMode = "intent";
   try {
-    if (this.config && this.config.SHORTCUT_EXEC_MODE != null) shortcutMode = String(this.config.SHORTCUT_EXEC_MODE || "compat");
-    if (btn.shortcutExecMode != null) shortcutMode = String(btn.shortcutExecMode || shortcutMode);
-    shortcutMode = shortcutMode.replace(/^\s+|\s+$/g, "").toLowerCase();
-  } catch(eMode) { shortcutMode = "compat"; }
-  if (!shortcutMode) shortcutMode = "compat";
+    if (this.config && this.config.SHORTCUT_EXEC_MODE != null) shortcutMode = normalizeShortcutExecMode(this.config.SHORTCUT_EXEC_MODE);
+    if (btn.shortcutExecMode != null) shortcutMode = normalizeShortcutExecMode(btn.shortcutExecMode);
+  } catch(eMode) { shortcutMode = "intent"; }
 
   var dataErr = "";
   if (iu && iu.length > 0) {
@@ -446,63 +445,58 @@ return;
       dataIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
       var dataUserHandle = android.os.UserHandle.of(uid);
       context.startActivityAsUser(dataIntent, dataUserHandle);
-      safeLog(this.L, 'i',  "shortcut(intentUri) ok pkg=" + spkg + " id=" + sid + " user=" + String(uid));
+      safeLog(this.L, 'i', "shortcut(intentUri) ok pkg=" + spkg + " id=" + sid + " user=" + String(uid));
       return;
     } catch(eDataSc) {
       dataErr = String(eDataSc);
-      safeLog(this.L, 'w',  "shortcut(intentUri) fail pkg=" + spkg + " id=" + sid + " user=" + String(uid) + " err=" + dataErr);
+      safeLog(this.L, 'w', "shortcut(intentUri) fail pkg=" + spkg + " id=" + sid + " user=" + String(uid) + " err=" + dataErr);
       try {
         var dataIntent2 = android.content.Intent.parseUri(iu, 0);
         dataIntent2.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(dataIntent2);
-        safeLog(this.L, 'i',  "shortcut(intentUri startActivity fallback) ok pkg=" + spkg + " id=" + sid + " user=" + String(uid));
+        safeLog(this.L, 'i', "shortcut(intentUri startActivity fallback) ok pkg=" + spkg + " id=" + sid + " user=" + String(uid));
         return;
       } catch(eDataFallback) {
         dataErr = dataErr + " | fallback=" + String(eDataFallback);
-        safeLog(this.L, 'w',  "shortcut(intentUri startActivity fallback) fail pkg=" + spkg + " id=" + sid + " err=" + String(eDataFallback));
+        safeLog(this.L, 'w', "shortcut(intentUri startActivity fallback) fail pkg=" + spkg + " id=" + sid + " err=" + String(eDataFallback));
       }
     }
+  } else {
+    dataErr = "intentUri missing";
   }
 
-  if (shortcutMode === "strict" || shortcutMode === "intent" || shortcutMode === "data") {
-    this.toast("快捷方式 intentUri 启动失败");
-    safeLog(this.L, 'e',  "shortcut strict/data fail pkg=" + spkg + " id=" + sid + " user=" + String(uid) + " err=" + dataErr);
+  if (shortcutMode !== "legacy_js") {
+    this.toast(iu ? "快捷方式 intentUri 启动失败" : "快捷方式缺少 intentUri");
+    safeLog(this.L, 'e', "shortcut intent-only fail pkg=" + spkg + " id=" + sid + " user=" + String(uid) + " err=" + dataErr);
     return;
   }
 
-  // # 兼容模式：intentUri 不存在或失败时，回退旧 shortcutJsCode。
+  // 旧版兼容区：只有按钮或全局配置显式为 legacy_js 时才可进入。
   if (!spkg) { this.toast("按钮#" + idx + " 缺少 pkg"); return; }
   if (!sid) { this.toast("按钮#" + idx + " 缺少 shortcutId"); return; }
 
   var jsCode = (btn.shortcutJsCode != null) ? String(btn.shortcutJsCode) : "";
   if (!jsCode || jsCode.length === 0) {
-    this.toast("按钮#" + idx + " 未配置 JS 启动代码");
-    safeLog(this.L, 'e',  "shortcut no js fallback pkg=" + spkg + " id=" + sid + " dataErr=" + dataErr);
+    this.toast("按钮#" + idx + " 未配置旧版 JS 启动代码");
+    safeLog(this.L, 'e', "shortcut legacy_js missing code pkg=" + spkg + " id=" + sid + " dataErr=" + dataErr);
     return;
   }
 
   try {
-    // # 提供少量上下文变量给脚本使用（可选）
-    // - __sc_intentUri: 当前按钮 intentUri
-    // - __sc_userId: 当前目标 userId（已合并 launchUserId）
     var __sc_intentUri = iu;
     var __sc_userId = uid;
-
     var rjs = eval(jsCode);
-
-    // # 约定：返回值以 ok 开头视为成功；以 err 开头视为失败（失败也不兜底）
     var sret = (rjs == null) ? "" : String(rjs);
     if (sret.indexOf("ok") === 0) {
-      safeLog(this.L, 'i',  "shortcut(js fallback) ok pkg=" + spkg + " id=" + sid + " user=" + String(uid));
+      safeLog(this.L, 'i', "shortcut(legacy_js) ok pkg=" + spkg + " id=" + sid + " user=" + String(uid));
       return;
     }
-
-    safeLog(this.L, 'e',  "shortcut(js fallback) fail pkg=" + spkg + " id=" + sid + " user=" + String(uid) + " ret=" + sret + " dataErr=" + dataErr);
-    this.toast("快捷方式 JS 启动失败: " + sret);
+    safeLog(this.L, 'e', "shortcut(legacy_js) fail pkg=" + spkg + " id=" + sid + " user=" + String(uid) + " ret=" + sret + " dataErr=" + dataErr);
+    this.toast("旧版快捷方式 JS 启动失败: " + sret);
     return;
   } catch (eJsSc) {
-    safeLog(this.L, 'e',  "shortcut(js fallback) exception pkg=" + spkg + " id=" + sid + " err=" + eJsSc + " dataErr=" + dataErr);
-    this.toast("快捷方式 JS 异常: " + String(eJsSc));
+    safeLog(this.L, 'e', "shortcut(legacy_js) exception pkg=" + spkg + " id=" + sid + " err=" + eJsSc + " dataErr=" + dataErr);
+    this.toast("旧版快捷方式 JS 异常: " + String(eJsSc));
     return;
   }
 }

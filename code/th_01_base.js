@@ -1,4 +1,4 @@
-// @version 1.1.2
+// @version 1.1.3
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -1310,6 +1310,32 @@ var ConfigManager = {
                     b.cmd_b64 = encodeBase64Utf8(b.cmd);
                     dirty = true;
                 }
+
+                // Shortcut 安全迁移：有 intentUri 的按钮固定走结构化启动；仅无 intentUri 且已有旧 JS 的按钮保留 legacy_js。
+                if (String(b.type || "") === "shortcut") {
+                    var shortcutIntent = "";
+                    var shortcutJs = "";
+                    var shortcutMode = "";
+                    try { shortcutIntent = String(b.intentUri || "").replace(/^\s+|\s+$/g, ""); } catch (eScIntent) { shortcutIntent = ""; }
+                    try { shortcutJs = String(b.shortcutJsCode || "").replace(/^\s+|\s+$/g, ""); } catch (eScJs) { shortcutJs = ""; }
+                    try { shortcutMode = String(b.shortcutExecMode || "").replace(/^\s+|\s+$/g, "").toLowerCase(); } catch (eScMode) { shortcutMode = ""; }
+
+                    var normalizedShortcutMode = "intent";
+                    if (shortcutMode === "legacy_js" || shortcutMode === "legacy" || shortcutMode === "js") {
+                        normalizedShortcutMode = "legacy_js";
+                    } else if (!shortcutIntent && shortcutJs) {
+                        normalizedShortcutMode = "legacy_js";
+                    }
+
+                    if (String(b.shortcutExecMode || "") !== normalizedShortcutMode) {
+                        b.shortcutExecMode = normalizedShortcutMode;
+                        dirty = true;
+                    }
+                    if (typeof b.shortcutRunMode !== "undefined") {
+                        try { delete b.shortcutRunMode; } catch (eScRunMode) { b.shortcutRunMode = null; }
+                        dirty = true;
+                    }
+                }
             }
         }
 
@@ -1353,6 +1379,14 @@ var ConfigManager = {
                     cfgForButtonMigration.BUTTONS_MIGRATION_VERSION = 1;
                     this.saveSettings(cfgForButtonMigration);
                 } catch (eMigSave) {}
+            }
+
+            if (buttonMigrationVersion < 2) {
+                try {
+                    if (!cfgForButtonMigration) cfgForButtonMigration = this.loadSettings();
+                    cfgForButtonMigration.BUTTONS_MIGRATION_VERSION = 2;
+                    this.saveSettings(cfgForButtonMigration);
+                } catch (eShortcutMigrationVersion) {}
             }
         }
 
