@@ -1,0 +1,41 @@
+name: apply-content-strict-security
+
+on:
+  push:
+    branches:
+      - fix/content-strict-write-allowlist
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-content-strict-security
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '应用 Content 安全默认值') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/content-strict-write-allowlist
+          fetch-depth: 0
+
+      - name: Apply patch
+        run: python3 scripts/apply_content_strict_security.py
+
+      - name: Verify generated JavaScript
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          git diff --check
+
+      - name: Commit generated modules
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_08_content.js code/th_12_rebuild.js
+          git commit -m "应用 Content 安全默认值"
+          git push origin HEAD:fix/content-strict-write-allowlist
