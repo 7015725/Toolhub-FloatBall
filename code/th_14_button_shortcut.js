@@ -1,3 +1,4 @@
+// @version 1.0.0
 // ToolHub - button shortcut inline selector module
 // Stage 2 split: shortcut inline picker logic moved out of th_14_panels.js.
 
@@ -181,80 +182,61 @@ function __scDrawableToBitmap(drawable, targetPx) {
         try { inputScCmd.input.setTextIsSelectable(true);  } catch(eSel) { safeLog(null, 'e', "catch " + String(eSel)); }
      } catch(eRO) { safeLog(null, 'e', "catch " + String(eRO)); }
 
-// # 快捷方式 JS 启动代码（自动生成，可手动微调）
-    // 这段代码的主要内容/用途：为"快捷方式按钮"提供可执行的 JS 启动脚本（默认走 startIntentAsUserByUri），用于精确指定主/分身 userId 并避免弹选择器。
-    // 说明：
-    // 1) 选择快捷方式后会自动生成并回填；
-    // 2) 保存按钮会把该脚本写入按钮配置字段 shortcutJsCode；
-    // 3) 运行时优先执行该脚本，失败才回退 Shell am start，保证桌面移除后仍可启动。
-    function __scBuildDefaultJsCode() {
-        // # 这段代码的主要内容/用途：为"快捷方式按钮"生成"自包含"的 JavaScript 启动脚本（严格按用户成功示例写法），并确保字符串安全转义
-        try {
-            var u0 = (scSelectedUserId != null) ? parseInt(String(scSelectedUserId), 10) : 0;
-            if (isNaN(u0)) u0 = 0;
-
-            // # 优先使用 launchUserId（你在按钮配置里锁定主/分身时用），否则回退 userId
-            try {
-                if (targetBtn && targetBtn.launchUserId != null && String(targetBtn.launchUserId).length > 0) {
-                    var lu = parseInt(String(targetBtn.launchUserId), 10);
-                    if (!isNaN(lu)) u0 = lu;
-                }
-             } catch(eLuSc) { safeLog(null, 'e', "catch " + String(eLuSc)); }
-
-            var iu0 = scSelectedIntentUri ? String(scSelectedIntentUri) : "";
-            if (!iu0 || iu0.length === 0) {
-                return "// # 这段代码的主要内容/用途：未选择快捷方式，暂无可生成的启动脚本\n\n'err_no_shortcut'\n";
-            }
-
-            // # 用 JSON.stringify 做安全转义，避免 intentUri 中包含引号/反斜杠/换行导致脚本语法错误
-            var sIntent = JSON.stringify(iu0);
-            var sUser = String(u0);
-
-            // # 生成"自包含"脚本：严格按用户成功示例（Intent.parseUri + UserHandle.of + context.startActivityAsUser）
-            var out = "";
-            out += "// # 这段代码的主要内容/用途：在指定用户(UserHandle)下启动快捷方式（自动生成，自包含，可复制到独立 JS 任务中运行）\n";
-            out += "importClass(android.content.Intent);\n";
-            out += "importClass(android.os.UserHandle);\n\n";
-            out += "var r = 'ok';\n";
-            out += "try {\n";
-            out += "  var myIntent = Intent.parseUri(" + sIntent + ", 0);\n";
-            out += "  myIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);\n";
-            out += "  var userHandle = UserHandle.of(" + sUser + ");\n";
-            out += "  context.startActivityAsUser(myIntent, userHandle);\n";
-            out += "  r = 'ok_user_' + String(" + sUser + ");\n";
-            out += "} catch (e) {\n";
-            out += "  r = 'err_' + e;\n";
-            out += "}\n";
-            out += "r\n";
-            return out;
-        } catch (eBuildJs) {
-            return "// # 这段代码的主要内容/用途：生成快捷方式启动脚本失败\n\n'err_build_js'\n";
-        }
-    }
-
-    // # 安全回填 JS 编辑框：集中处理，避免重复代码与空指针崩溃：集中处理，避免重复代码与空指针崩溃
-    function __scUpdateJsCodeSafe() {
-        try {
-            if (inputScJsCode && inputScJsCode.input) {
-                inputScJsCode.input.setText(String(__scBuildDefaultJsCode()));
-            }
-         } catch(eUpJs) { safeLog(null, 'e', "catch " + String(eUpJs)); }
-    }
-
-    var inputScJsCode = self.ui.createInputGroup(self, "快捷方式 JS 启动代码 (startActivityAsUser)", (targetBtn.shortcutJsCode ? String(targetBtn.shortcutJsCode) : ""), false, "选择快捷方式后自动生成；你也可以手动改 userId 或其他参数");
-    shortcutWrap.addView(inputScJsCode.view);
-
+// # 旧版 JS 兼容区：仅对已迁移为 legacy_js 的历史按钮显示；新建快捷方式不提供任意 JS 编辑入口。
+    var legacyJsEnabled = false;
     try {
-        // # JS 编辑框尺寸：与 Shell 命令框一致，避免过高占屏（用户可滚动查看完整内容）
-        inputScJsCode.input.setEnabled(true);
-        inputScJsCode.input.setFocusable(true);
-        inputScJsCode.input.setFocusableInTouchMode(true);
-        try { inputScJsCode.input.setSingleLine(false);  } catch(eJsSL) { safeLog(null, 'e', "catch " + String(eJsSL)); }
-        try { inputScJsCode.input.setMinLines(2);  } catch(eJsML) { safeLog(null, 'e', "catch " + String(eJsML)); }
-        try { inputScJsCode.input.setMaxLines(4);  } catch(eJsMXL) { safeLog(null, 'e', "catch " + String(eJsMXL)); }
-        try { inputScJsCode.input.setHorizontallyScrolling(false);  } catch(eJsHS) { safeLog(null, 'e', "catch " + String(eJsHS)); }
-        try { inputScJsCode.input.setTextIsSelectable(true);  } catch(eJsSel) { safeLog(null, 'e', "catch " + String(eJsSel)); }
-     } catch(eJsBox) { safeLog(null, 'e', "catch " + String(eJsBox)); }
+        var legacyMode0 = String(targetBtn.shortcutExecMode || "").replace(/^\s+|\s+$/g, "").toLowerCase();
+        legacyJsEnabled = (legacyMode0 === "legacy_js");
+        if (!legacyJsEnabled && !scSelectedIntentUri && targetBtn.shortcutJsCode && String(targetBtn.shortcutRunMode || "") === "js") legacyJsEnabled = true;
+    } catch(eLegacyMode0) { legacyJsEnabled = false; }
+
+    var legacyJsWrap = null;
+    var legacyJsSwitch = null;
+    var inputScJsCode = null;
+
+    function __scSetLegacyJsEnabled(enabled) {
+        legacyJsEnabled = !!enabled;
+        try { if (legacyJsSwitch && legacyJsSwitch.isChecked() !== legacyJsEnabled) legacyJsSwitch.setChecked(legacyJsEnabled); } catch(eLegacyCheck) {}
+        try { if (inputScJsCode && inputScJsCode.view) inputScJsCode.view.setVisibility(legacyJsEnabled ? android.view.View.VISIBLE : android.view.View.GONE); } catch(eLegacyVis) {}
+    }
+
+    if (legacyJsEnabled) {
+        legacyJsWrap = new android.widget.LinearLayout(context);
+        legacyJsWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
+        legacyJsWrap.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
+
+        var legacyWarn = new android.widget.TextView(context);
+        legacyWarn.setText("旧版 JS 兼容模式：仅用于没有 intentUri 的历史按钮。重新选择快捷方式后将自动关闭。");
+        legacyWarn.setTextColor(subTextColor);
+        legacyWarn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+        legacyWarn.setPadding(0, 0, 0, self.dp(6));
+        legacyJsWrap.addView(legacyWarn);
+
+        var legacyRow = new android.widget.LinearLayout(context);
+        legacyRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        legacyRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        var legacyTitle = new android.widget.TextView(context);
+        legacyTitle.setText("保留旧版 JS 执行");
+        legacyTitle.setTextColor(textColor);
+        legacyTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+        var legacyTitleLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        legacyTitleLp.weight = 1;
+        legacyRow.addView(legacyTitle, legacyTitleLp);
+        legacyJsSwitch = new android.widget.Switch(context);
+        legacyJsSwitch.setChecked(true);
+        legacyRow.addView(legacyJsSwitch);
+        legacyJsWrap.addView(legacyRow);
+
+        inputScJsCode = self.ui.createInputGroup(self, "旧版快捷方式 JS", (targetBtn.shortcutJsCode ? String(targetBtn.shortcutJsCode) : ""), true, "仅为历史兼容保留；建议重新选择快捷方式迁移为 intentUri");
+        legacyJsWrap.addView(inputScJsCode.view);
+        legacyJsSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener({
+            onCheckedChanged: function(buttonView, checked) {
+                try { __scSetLegacyJsEnabled(!!checked); self.touchActivity(); } catch(eLegacyToggle) {}
+            }
+        }));
+        shortcutWrap.addView(legacyJsWrap);
+        __scSetLegacyJsEnabled(true);
+    }
 
 // # 快捷方式选择器（内联折叠版）：在"新增/编辑按钮页"内部展开/收起列表，并回填 pkg/shortcutId
 // 这段代码的主要内容/用途：把原先"弹出选择器窗口"的方式改为"折叠展开在本页下方显示"，避免上下层遮挡问题。
@@ -654,8 +636,8 @@ try {
                 // # 同步刷新：启动命令展示框
                 try { if (inputScCmd && inputScCmd.input) inputScCmd.input.setText(String(__scBuildLaunchCmd()));  } catch(eUpCmd) { safeLog(null, 'e', "catch " + String(eUpCmd)); }
 
-                // # 同步刷新：JS 启动代码（选择快捷方式后自动生成并回填）
-                __scUpdateJsCodeSafe();
+                // 重新选择到有效 intentUri 后，自动退出旧版 JS 兼容模式。
+                __scSetLegacyJsEnabled(false);
 
                 // # 回填：同时把快捷方式 icon 导出到 shortcut_icons，并把图标路径写入"图标地址"编辑框
                 // 这段代码的主要内容/用途：确保微信小程序等快捷方式在从桌面移除后，按钮页/按钮管理页仍能显示对应图标。
@@ -1148,6 +1130,7 @@ shortcutWrap.addView(scBody);
         setShortcutIdError: function(msg) { try { inputScId.setError(msg); } catch(e) {} },
         getIntentUri: function() { try { return scSelectedIntentUri ? String(scSelectedIntentUri) : ""; } catch(e) { return ""; } },
         getUserId: function() { try { var u = parseInt(String(scSelectedUserId), 10); return isNaN(u) ? 0 : u; } catch(e) { return 0; } },
+        isLegacyJsEnabled: function() { try { return !!legacyJsEnabled; } catch(e) { return false; } },
         getJsCode: function() { try { return inputScJsCode ? String(inputScJsCode.getValue()) : ""; } catch(e) { return ""; } }
     };
 };

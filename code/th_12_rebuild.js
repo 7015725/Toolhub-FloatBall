@@ -1,7 +1,7 @@
-// @version 1.0.5
+// @version 1.0.6
 // =======================【安全配置安装器】======================
 // 这段代码的主要内容/用途：注入 Shell / Shortcut / Content 加固需要的配置项。
-// Shell 默认 strict：要求显式广播目标和非空令牌；兼容模式只能由用户主动选择。
+// Shell 默认 strict；Shortcut 默认仅使用结构化 intentUri，旧 JS 仅允许显式 legacy_js。
 (function() {
   function putSchema(key, schema) {
     try {
@@ -24,7 +24,7 @@
   putSchema("SHELL_BRIDGE_EXTRA_TOKEN", { type: "string", default: "token" });
   putSchema("SHELL_BRIDGE_TOKEN", { type: "string", default: "" });
   putSchema("SHELL_BRIDGE_REQUIRE_TOKEN", { type: "bool", default: true });
-  putSchema("SHORTCUT_EXEC_MODE", { type: "enum", values: ["compat", "strict"], default: "compat" });
+  putSchema("SHORTCUT_EXEC_MODE", { type: "enum", values: ["intent", "legacy_js"], default: "intent" });
   putSchema("CONTENT_SECURITY_MODE", { type: "enum", values: ["off", "audit", "strict"], default: "audit" });
   putSchema("CONTENT_URI_ALLOWLIST", { type: "string", default: "content://settings/system/|content://settings/secure/|content://settings/global/" });
 
@@ -35,7 +35,7 @@
   putDefault("SHELL_BRIDGE_EXTRA_TOKEN", "token");
   putDefault("SHELL_BRIDGE_TOKEN", "");
   putDefault("SHELL_BRIDGE_REQUIRE_TOKEN", true);
-  putDefault("SHORTCUT_EXEC_MODE", "compat");
+  putDefault("SHORTCUT_EXEC_MODE", "intent");
   putDefault("CONTENT_SECURITY_MODE", "audit");
   putDefault("CONTENT_URI_ALLOWLIST", "content://settings/system/|content://settings/secure/|content://settings/global/");
 

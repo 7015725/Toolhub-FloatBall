@@ -2,9 +2,9 @@
   "alg": "SHA256withRSA",
   "files": {
     "th_01_base.js": {
-      "sha256": "78b7b0bb108b698b05a7cf556ac9b983c0f6e958b2d2386907d44a4d47483c16",
-      "size": 69332,
-      "version": "1.1.2"
+      "sha256": "3e71ac2b90819edc8fcbbb6b138c726670d2a56b8bbb2db091813de9b02bd349",
+      "size": 71323,
+      "version": "1.1.3"
     },
     "th_02_core.js": {
       "sha256": "59a1bb996e968055319994c89c47eb0ab8294e7dbec33e0060094dfbfdda3462",
@@ -47,14 +47,14 @@
       "version": "1.0.5"
     },
     "th_11_action.js": {
-      "sha256": "79acd93990a9757d890829e5d736861882bd62aaa4e46d9f31bd9f248e0c25fb",
-      "size": 23670,
-      "version": "1.0.7"
+      "sha256": "8b42466dc16a504a30866a313d00e9efa79f05a9112648efc8cac145c77b746c",
+      "size": 23368,
+      "version": "1.0.8"
     },
     "th_12_rebuild.js": {
-      "sha256": "4e514b66b1646ed2bf47327b29868e630f826c096689d5a784f74676ff0482e1",
-      "size": 3834,
-      "version": "1.0.5"
+      "sha256": "1840a466bf467125e14640d0603a1e1bc27c55b7d3cd47e6ce7a5818fcd24d41",
+      "size": 3835,
+      "version": "1.0.6"
     },
     "th_13_panel_ui.js": {
       "sha256": "7154bb5fe7c9d5da74f3ee3e1378fe6b092c771379d31f377a0d32901d47c9a9",
@@ -62,9 +62,9 @@
       "version": "1.0.2"
     },
     "th_14_button_editor.js": {
-      "sha256": "4a6bb2fbe6675423d64f32d395e315d217dc8c2ed6789fd2b7936e46822fc902",
-      "size": 72596,
-      "version": "1.0.2"
+      "sha256": "0c6576af048fe9afbb1ec3f9a32898ee8c33207cd69a043baba93f199cd0b8f5",
+      "size": 73214,
+      "version": "1.0.3"
     },
     "th_14_button_icon_editor.js": {
       "sha256": "41675d1a34e073425f1e5f4a54118f5f7bddc6e52092c51c9c635bcc8c212494",
@@ -72,9 +72,9 @@
       "version": "0.0.0"
     },
     "th_14_button_shortcut.js": {
-      "sha256": "67da6647cba0c0244b1244a6ebe55a12123e8b52754858f6a1d858441fb45d7c",
-      "size": 58590,
-      "version": "0.0.0"
+      "sha256": "9c54993dbc38c2f808a35d1c3fc2c87a36ef9ad2c16b8cdfa206e8b3cf9fe90c",
+      "size": 57181,
+      "version": "1.0.0"
     },
     "th_14_color_picker.js": {
       "sha256": "11ef97af1d11b53a8ec0d79798bb50b76bee28844f83aad3084259074ed0ae09",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "收紧 Shell 广播桥安全默认值"
+      "隔离 Shortcut 旧版 JS 回退并默认使用 Intent"
     ],
-    "title": "收紧 Shell 广播桥安全默认值"
+    "title": "隔离 Shortcut 旧版 JS 回退并默认使用 Intent"
   },
   "schema": 3,
-  "version": 20260712124756
+  "version": 20260712131143
 }

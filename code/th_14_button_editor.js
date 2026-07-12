@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -1341,6 +1341,10 @@ appWrap.addView(inputAppLaunchUser.view);
             delete newBtn.uri;
             delete newBtn.shortcutId;
             delete newBtn.shortcutRunMode;
+            delete newBtn.shortcutExecMode;
+            delete newBtn.shortcutJsCode;
+            delete newBtn.intentUri;
+            delete newBtn.userId;
             delete newBtn.launchUserId;
 
             var isValid = true;
@@ -1381,17 +1385,32 @@ try {
             } else if (newBtn.type === "shortcut") {
                 var sp = shortcutInline ? shortcutInline.getPkg() : "";
                 var sid = shortcutInline ? shortcutInline.getShortcutId() : "";
+                var keepLegacyJs = false;
+                try { keepLegacyJs = !!(shortcutInline && shortcutInline.isLegacyJsEnabled && shortcutInline.isLegacyJsEnabled()); } catch(eLegacyFlag) { keepLegacyJs = false; }
+
                 if (!sp) { if (shortcutInline) shortcutInline.setPkgError("请先选择快捷方式"); markInvalid(null, "请先选择快捷方式"); }
                 else { if (shortcutInline) shortcutInline.setPkgError(null); newBtn.pkg = sp; }
                 if (!sid) { if (shortcutInline) shortcutInline.setShortcutIdError("请先选择快捷方式"); markInvalid(null, "请先选择快捷方式"); }
                 else { if (shortcutInline) shortcutInline.setShortcutIdError(null); newBtn.shortcutId = sid; }
-                // # 保存：同时保存 intentUri/userId，供 JavaScript(startActivityAsUser) 脚本使用（锁定主/分身）
-                try { var _scIntentUri = shortcutInline ? shortcutInline.getIntentUri() : ""; if (_scIntentUri && _scIntentUri.length > 0) newBtn.intentUri = String(_scIntentUri);  } catch(eSIU2) { safeLog(null, 'e', "catch " + String(eSIU2)); }
+
+                var _scIntentUri = "";
+                try { _scIntentUri = shortcutInline ? String(shortcutInline.getIntentUri() || "") : ""; } catch(eSIU2) { _scIntentUri = ""; }
                 try { var _scUserId = shortcutInline ? shortcutInline.getUserId() : 0; newBtn.userId = _scUserId; newBtn.launchUserId = _scUserId; } catch(eSUID2) { newBtn.userId = 0; newBtn.launchUserId = 0; }
-                // # 保存：快捷方式 JS 启动代码（自动生成/可手动编辑）
-                try { if (shortcutInline) newBtn.shortcutJsCode = String(shortcutInline.getJsCode());  } catch(eSaveJs) { safeLog(null, 'e', "catch " + String(eSaveJs)); }
-                // # 保存：快捷方式仅使用 JavaScript 执行（取消 Shell/兜底）
-                newBtn.shortcutRunMode = "js";
+
+                if (keepLegacyJs) {
+                    var legacyCode = "";
+                    try { legacyCode = shortcutInline ? String(shortcutInline.getJsCode() || "") : ""; } catch(eLegacyCode) { legacyCode = ""; }
+                    if (!legacyCode.replace(/^\s+|\s+$/g, "")) markInvalid(null, "旧版 JS 代码不能为空");
+                    else {
+                        newBtn.shortcutExecMode = "legacy_js";
+                        newBtn.shortcutJsCode = legacyCode;
+                        if (_scIntentUri) newBtn.intentUri = _scIntentUri;
+                    }
+                } else {
+                    if (!_scIntentUri) markInvalid(null, "请选择包含 intentUri 的快捷方式");
+                    else newBtn.intentUri = _scIntentUri;
+                    newBtn.shortcutExecMode = "intent";
+                }
             }
             if (!isValid) {
                 updateInlineNotice(editInlineNotice, validationMessage || "请补全必填项", "error");
