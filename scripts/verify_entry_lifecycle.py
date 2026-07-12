@@ -30,21 +30,20 @@ def main():
     text = ENTRY_MODULE.read_text(encoding="utf-8")
     failures = []
 
+    receiver_marker = "function registerReceiverOnMain(actions, callback, allowExternal)"
     main_sync = section(
         text,
         "function runOnMainSync(fn, timeoutMs, onLateSuccess)",
-        "function registerReceiverOnMain(actions, callback)",
+        receiver_marker,
     )
     receiver = section(
         text,
-        "function registerReceiverOnMain(actions, callback)",
+        receiver_marker,
         "FloatBallAppWM.prototype.close = function()",
     )
-    start_async = section(
-        text,
-        "FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule)",
-        "\n};",
-    )
+    start_async = text[text.find(
+        "FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule)"
+    ):]
 
     require(
         "主线程同步任务支持迟到清理",
@@ -64,10 +63,19 @@ def main():
         failures,
     )
     require(
-        "Android 13 以上明确限制动态接收器导出",
+        "Android 13 以上明确设置接收器导出标志",
         "android.os.Build.VERSION.SDK_INT >= 33" in receiver
-        and "android.content.Context.RECEIVER_NOT_EXPORTED" in receiver,
-        "自定义动态接收器必须指定 RECEIVER_NOT_EXPORTED",
+        and "android.content.Context.RECEIVER_EXPORTED" in receiver
+        and "android.content.Context.RECEIVER_NOT_EXPORTED" in receiver
+        and "allowExternal === true" in receiver,
+        "动态接收器必须根据用途明确选择 EXPORTED 或 NOT_EXPORTED",
+        failures,
+    )
+    require(
+        "关闭广播保持外部兼容",
+        "registerReceiverOnMain(this.config.ACTION_CLOSE_ALL" in start_async
+        and "}, true);" in start_async,
+        "关闭广播需要允许既有 ShortX 或 shell 外部发送链继续工作",
         failures,
     )
     require(
