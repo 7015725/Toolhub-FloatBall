@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.0.10
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -87,35 +87,60 @@
   }
 })();
 
-function runOnMainSync(fn, timeoutMs) {
+function runOnMainSync(fn, timeoutMs, onLateSuccess) {
   if (!fn) return { ok: false, error: "empty-fn" };
   try {
     var mainLooper = android.os.Looper.getMainLooper();
     var myLooper = android.os.Looper.myLooper();
     if (mainLooper !== null && myLooper !== null && myLooper === mainLooper) {
-      return { ok: true, value: fn() };
+      return { ok: true, value: fn(), direct: true };
     }
   } catch (eLoop) {}
 
   try {
-    var box = { ok: false, value: null, error: null };
+    var box = { ok: false, value: null, error: null, active: true, started: false, completed: false, lateHandled: false };
     var latch = new java.util.concurrent.CountDownLatch(1);
     var h = new android.os.Handler(android.os.Looper.getMainLooper());
-    h.post(new java.lang.Runnable({
+    var task = new java.lang.Runnable({
       run: function() {
+        var value = null;
+        var success = false;
+        box.started = true;
         try {
-          box.value = fn();
+          if (!box.active) return;
+          value = fn();
+          success = true;
+          if (!box.active) {
+            box.lateHandled = true;
+            try { if (onLateSuccess) onLateSuccess(value); } catch (eLate) {
+              try { safeLog(null, 'e', "late main task cleanup fail: " + String(eLate)); } catch (eLateLog) {}
+            }
+            return;
+          }
+          box.value = value;
           box.ok = true;
         } catch (eRun) {
-          box.error = eRun;
+          if (box.active) box.error = eRun;
         } finally {
-          latch.countDown();
+          box.completed = true;
+          if (!box.active && success && box.lateHandled !== true) {
+            box.lateHandled = true;
+            try { if (onLateSuccess) onLateSuccess(value); } catch (eLate2) {}
+          }
+          try { latch.countDown(); } catch (eCount) {}
         }
       }
-    }));
+    });
+    var posted = h.post(task);
+    if (!posted) return { ok: false, error: "post-failed" };
     var waitMs = timeoutMs || 1500;
     var done = latch.await(waitMs, java.util.concurrent.TimeUnit.MILLISECONDS);
-    if (!done) return { ok: false, error: "timeout" };
+    if (!done) {
+      box.active = false;
+      try { h.removeCallbacks(task); } catch (eRemove) {}
+      return { ok: false, error: "timeout", timedOut: true, started: box.started === true };
+    }
+    box.active = false;
     if (!box.ok) return { ok: false, error: box.error };
     return box;
   } catch (e) {
@@ -125,6 +150,7 @@ function runOnMainSync(fn, timeoutMs) {
 
 function registerReceiverOnMain(actions, callback) {
   try {
+    var appCtx = context.getApplicationContext();
     var rcv = new JavaAdapter(android.content.BroadcastReceiver, {
       onReceive: function(ctx, intent) {
         try { callback(ctx, intent); } catch (e) { safeLog(null, 'e', "receiver callback fail: " + String(e)); }
@@ -140,10 +166,20 @@ function registerReceiverOnMain(actions, callback) {
       f.addAction(String(actList[i]));
     }
 
+    function unregisterLateReceiver() {
+      try { appCtx.unregisterReceiver(rcv); } catch (eLateUnreg) {
+        try { safeLog(null, 'w', "late receiver cleanup skipped: " + String(eLateUnreg)); } catch (eLateLog) {}
+      }
+    }
+
     var reg = runOnMainSync(function() {
-      context.getApplicationContext().registerReceiver(rcv, f);
+      if (android.os.Build.VERSION.SDK_INT >= 33) {
+        appCtx.registerReceiver(rcv, f, android.content.Context.RECEIVER_NOT_EXPORTED);
+      } else {
+        appCtx.registerReceiver(rcv, f);
+      }
       return true;
-    }, 2000);
+    }, 2000, unregisterLateReceiver);
     if (!reg.ok) {
       safeLog(null, 'e', "registerReceiver fail: " + String(reg.error));
       return null;
@@ -332,13 +368,34 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
   });
   if (sysDlgRcv) this.state.receivers.push(sysDlgRcv);
 
-  var startBox = { ok: false, err: "启动确认超时", added: false };
+  var startBox = { ok: false, err: "启动确认超时", added: false, active: true, timedOut: false };
   var startLatch = new java.util.concurrent.CountDownLatch(1);
+  var startToken = Number(this.state.startGeneration || 0) + 1;
+  this.state.startGeneration = startToken;
   var posted = false;
+  var startTask = null;
+
+  function isStartCurrent() {
+    return startBox.active === true &&
+      Number(self.state.startGeneration || 0) === startToken &&
+      self.state.closing !== true &&
+      self.state.closed !== true;
+  }
+
+  function closeLateStart(reason) {
+    try {
+      if (self.L) self.L.e("late start cancelled token=" + String(startToken) + " reason=" + String(reason || ""));
+    } catch (eLogLate) {}
+    try { self.close(); } catch (eCloseLate) {
+      try { safeLog(self.L, 'e', "late start cleanup fail: " + String(eCloseLate)); } catch (eLogCloseLate) {}
+    }
+  }
+
   try {
-    posted = h.post(new JavaAdapter(java.lang.Runnable, {
+    startTask = new JavaAdapter(java.lang.Runnable, {
       run: function() {
         try {
+          if (!isStartCurrent()) return;
           self.state.wm = context.getSystemService(android.content.Context.WINDOW_SERVICE);
           self.state.density = context.getResources().getDisplayMetrics().density;
 
@@ -350,6 +407,10 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
 
           self.createBallViews();
           self.state.ballLp = self.createBallLayoutParams();
+          if (!isStartCurrent()) {
+            closeLateStart("before_add_view");
+            return;
+          }
 
           try {
             self.state.wm.addView(self.state.ballRoot, self.state.ballLp);
@@ -365,8 +426,18 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
             return;
           }
 
+          if (!isStartCurrent()) {
+            closeLateStart("after_add_view");
+            return;
+          }
+
           self.setupDisplayMonitor();
           self.touchActivity();
+
+          if (!isStartCurrent()) {
+            closeLateStart("after_start_hooks");
+            return;
+          }
 
           startBox.ok = true;
           startBox.err = "";
@@ -384,7 +455,8 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
           try { startLatch.countDown(); } catch (eLatch) {}
         }
       }
-    }));
+    });
+    posted = h.post(startTask);
   } catch (ePost) {
     posted = false;
     startBox.ok = false;
@@ -393,15 +465,37 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
   }
 
   if (!posted) {
+    startBox.active = false;
+    this.state.startGeneration = startToken + 1;
     startBox.ok = false;
     if (!startBox.err) startBox.err = "启动任务投递失败";
+    try { this.close(); } catch (eClosePostFail) {}
   } else {
     try {
       var done = startLatch.await(2500, java.util.concurrent.TimeUnit.MILLISECONDS);
-      if (!done && self.L) self.L.e("start confirm timeout; addView result unknown");
+      if (!done) {
+        startBox.active = false;
+        startBox.timedOut = true;
+        startBox.ok = false;
+        startBox.err = "启动确认超时，已取消迟到启动";
+        this.state.startGeneration = startToken + 1;
+        try { h.removeCallbacks(startTask); } catch (eRemoveStart) {}
+        try {
+          h.post(new JavaAdapter(java.lang.Runnable, {
+            run: function() { closeLateStart("confirm_timeout"); }
+          }));
+        } catch (ePostCleanup) {
+          try { this.close(); } catch (eCloseTimeout) {}
+        }
+        if (self.L) self.L.e("start confirm timeout; late start invalidated token=" + String(startToken));
+      }
     } catch (eWait) {
+      startBox.active = false;
       startBox.ok = false;
       startBox.err = "启动确认等待异常: " + String(eWait);
+      this.state.startGeneration = startToken + 1;
+      try { h.removeCallbacks(startTask); } catch (eRemoveWait) {}
+      try { this.close(); } catch (eCloseWait) {}
     }
   }
 
@@ -409,6 +503,8 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
     ok: !!startBox.ok,
     err: String(startBox.err || ""),
     msg: startBox.ok ? "悬浮球 addView 已确认成功" : String(startBox.err || "启动失败"),
+    startTimedOut: startBox.timedOut === true,
+    startGeneration: startToken,
     preCloseBroadcastSent: preCloseSent,
     closeAction: String(this.config.ACTION_CLOSE_ALL),
     receiverRegisteredOnMain: {
