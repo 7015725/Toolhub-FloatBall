@@ -8,8 +8,12 @@ FILES = [ROOT / "ToolHub.js"] + sorted((ROOT / "code").glob("*.js"))
 PATTERNS = [
     ("let_or_const", re.compile(r"\b(?:let|const)\b")),
     ("arrow_function", re.compile(r"=>")),
+    ("class", re.compile(r"\bclass\s+[A-Za-z_$]")),
+    ("async", re.compile(r"\basync\s+(?:function\b|[A-Za-z_$][A-Za-z0-9_$]*\s*\()")),
+    ("await", re.compile(r"(?<![.$A-Za-z0-9_])await(?=\s|\()")),
     ("optional_chaining", re.compile(r"\?\.")),
     ("nullish_coalescing", re.compile(r"\?\?")),
+    ("spread_or_rest", re.compile(r"(?<!\.)\.\.\.(?!\.)")),
     ("template_literal", re.compile(r"`")),
 ]
 

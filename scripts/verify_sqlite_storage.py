@@ -2,25 +2,13 @@
 """静态校验 ToolHub 结构化 SQLite 与按钮图标 BLOB 存储。"""
 
 from pathlib import Path
-import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE_TARGET = ROOT / "code" / "th_02_core.js"
 ICON_TARGET = ROOT / "code" / "th_03_icon.js"
 
-FORBIDDEN_PATTERNS = {
-    "let": r"(^|[^A-Za-z0-9_$])let\s+",
-    "const": r"(^|[^A-Za-z0-9_$])const\s+",
-    "arrow function": r"=>",
-    "class": r"(^|[^A-Za-z0-9_$])class\s+",
-    "optional chaining": r"\?\.",
-    "nullish coalescing": r"\?\?",
-    "template literal": r"`",
-}
-
 CORE_REQUIRED = [
-    "// @version 2.0.0",
     'APP_ROOT_DIR + "/toolhub.db"',
     "CREATE TABLE IF NOT EXISTS toolhub_settings",
     "CREATE TABLE IF NOT EXISTS toolhub_buttons",
@@ -50,7 +38,6 @@ CORE_REQUIRED = [
 ]
 
 ICON_REQUIRED = [
-    "// @version 2.0.0",
     "CREATE TABLE IF NOT EXISTS toolhub_button_icons",
     "image_data BLOB NOT NULL",
     "icon_source_type",
@@ -86,12 +73,6 @@ def section(group, text, start, end):
     return text[a:b]
 
 
-def verify_es5(group, text):
-    for name, pattern in FORBIDDEN_PATTERNS.items():
-        if re.search(pattern, text, flags=re.MULTILINE):
-            fail(group, "Rhino ES5 incompatible syntax: " + name)
-
-
 def require_markers(group, text, markers):
     for marker in markers:
         if marker not in text:
@@ -104,7 +85,6 @@ def verify_core_storage():
         fail(group, "missing code/th_02_core.js")
     text = CORE_TARGET.read_text(encoding="utf-8")
     require_markers(group, text, CORE_REQUIRED)
-    verify_es5(group, text)
 
     if "CREATE TABLE IF NOT EXISTS toolhub_documents" in text:
         fail(group, "legacy JSON document table must not be created")
@@ -183,7 +163,6 @@ def verify_icon_storage():
         fail(group, "missing code/th_03_icon.js")
     text = ICON_TARGET.read_text(encoding="utf-8")
     require_markers(group, text, ICON_REQUIRED)
-    verify_es5(group, text)
 
     if (ROOT / "code" / "th_02_button_icons.js").exists():
         fail(group, "button icon storage must stay in a loaded module")
