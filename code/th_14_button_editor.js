@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -1203,7 +1203,33 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var inputShell = self.ui.createInputGroup(self, "Shell 命令", initCmd, true, "input / am / pm 等命令");
     shellWrap.addView(inputShell.view);
 
-    // # Root 开关已移除：广播桥接收端默认以 root 执行，开关无意义
+    var shellRootRow = new android.widget.LinearLayout(context);
+    shellRootRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    shellRootRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    shellRootRow.setPadding(self.dp(10), self.dp(8), self.dp(6), self.dp(8));
+    try { shellRootRow.setMinimumHeight(self.dp(48)); } catch(eRootRowH) {}
+    var shellRootText = new android.widget.TextView(context);
+    shellRootText.setText("使用 Root 权限");
+    shellRootText.setTextColor(textColor);
+    shellRootText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+    var shellRootTextLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+    shellRootTextLp.weight = 1;
+    shellRootRow.addView(shellRootText, shellRootTextLp);
+    var shellRootSwitch = new android.widget.Switch(context);
+    var initialShellRoot = false;
+    try {
+      if (targetBtn.root !== undefined && targetBtn.root !== null) {
+        var initialRootText = String(targetBtn.root).replace(/^\s+|\s+$/g, "").toLowerCase();
+        initialShellRoot = (targetBtn.root === true || initialRootText === "true" || initialRootText === "1" || initialRootText === "yes" || initialRootText === "on");
+      }
+    } catch(eInitialRoot) { initialShellRoot = false; }
+    shellRootSwitch.setChecked(initialShellRoot);
+    try { shellRootSwitch.setContentDescription("Shell 使用 Root 权限"); } catch(eRootDesc) {}
+    shellRootRow.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
+      try { shellRootSwitch.setChecked(!shellRootSwitch.isChecked()); self.touchActivity(); } catch(eRootToggle) {}
+    }}));
+    shellRootRow.addView(shellRootSwitch);
+    shellWrap.addView(shellRootRow);
     dynamicContainer.addView(shellWrap);
 
     // --- App ---
@@ -1328,7 +1354,7 @@ appWrap.addView(inputAppLaunchUser.view);
             if (newBtn.type === "shell") {
                 var c = inputShell.getValue();
                 if (!c) { markInvalid(inputShell, "请输入命令"); }
-                else { inputShell.setError(null); newBtn.cmd = c; newBtn.cmd_b64 = encodeBase64Utf8(c); newBtn.root = true; }
+                else { inputShell.setError(null); newBtn.cmd = c; newBtn.cmd_b64 = encodeBase64Utf8(c); newBtn.root = !!shellRootSwitch.isChecked(); }
             } else if (newBtn.type === "app") {
                 var p = inputPkg.getValue();
                 if (!p) { markInvalid(inputPkg, "请输入包名"); }
