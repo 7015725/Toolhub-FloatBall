@@ -9,7 +9,7 @@ PATTERNS = [
     ("let_or_const", re.compile(r"\b(?:let|const)\b")),
     ("arrow_function", re.compile(r"=>")),
     ("class", re.compile(r"\bclass\s+[A-Za-z_$]")),
-    ("async", re.compile(r"\basync\b")),
+    ("async", re.compile(r"\basync\s+(?:function\b|[A-Za-z_$][A-Za-z0-9_$]*\s*\()")),
     ("await", re.compile(r"\bawait\b")),
     ("optional_chaining", re.compile(r"\?\.")),
     ("nullish_coalescing", re.compile(r"\?\?")),
