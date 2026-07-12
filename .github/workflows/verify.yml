@@ -74,6 +74,23 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Verify shell diagnostic wrapper analysis
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/verify_shell_diagnostic_wrappers.py --check SHELL_DIAGNOSTIC_WRAPPER_ANALYSIS.md 2>&1 | tee shell-diagnostic-wrapper-analysis-log.txt
+
+      - name: Upload shell diagnostic wrapper analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-diagnostic-wrapper-analysis
+          path: |
+            SHELL_DIAGNOSTIC_WRAPPER_ANALYSIS.md
+            shell-diagnostic-wrapper-analysis-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify th_15 standalone audit
         shell: bash
         run: |
