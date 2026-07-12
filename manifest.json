@@ -52,9 +52,9 @@
       "version": "1.0.5"
     },
     "th_12_rebuild.js": {
-      "sha256": "7b75eec86c65fb1de255f95cb85c0d261eff61f00a49ce279a8ef260798c6248",
-      "size": 15036,
-      "version": "1.0.2"
+      "sha256": "9e61cc0d1c1425fd91f921585eb80a4905ea26143b1cc806f488ac16e339387c",
+      "size": 12692,
+      "version": "1.0.3"
     },
     "th_13_panel_ui.js": {
       "sha256": "7154bb5fe7c9d5da74f3ee3e1378fe6b092c771379d31f377a0d32901d47c9a9",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理旧位置持久化实现"
+      "清理旧悬浮球重建实现"
     ],
-    "title": "清理旧位置持久化实现"
+    "title": "清理旧悬浮球重建实现"
   },
   "schema": 3,
-  "version": 20260712012748
+  "version": 20260712013327
 }
