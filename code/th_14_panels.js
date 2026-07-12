@@ -1,4 +1,4 @@
-// @version 1.0.12
+// @version 1.0.13
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -146,7 +146,7 @@ FloatBallAppWM.prototype.getPointerSettingsBlocks = function() {
     {
       key: "hover",
       title: "悬停",
-      desc: "取字就绪提示与框选 OCR 悬停时间；松手取字不受提示时间限制",
+      desc: "同一文字边框内稳定悬停达到设定时间后，松手才能取字；框选 OCR 使用独立时间",
       keys: [
         "POINTER_TEXT_HOVER_MS",
         "POINTER_AREA_HOVER_MS"

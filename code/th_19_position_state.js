@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.0.10
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -396,8 +396,8 @@
     try {
       var hp = this.getPointerHotspot();
       if (!hp) return false;
-      if (typeof this.pointerRectHitScore === "function") {
-        return Number(this.pointerRectHitScore(hp.x, hp.y, pointerState.currentRect)) >= 0;
+      if (typeof this.pointerRectInside === "function") {
+        return this.pointerRectInside(hp.x, hp.y, pointerState.currentRect) === true;
       }
       var rect = pointerState.currentRect;
       return hp.x >= Number(rect.left) && hp.x <= Number(rect.right) &&
@@ -520,7 +520,13 @@
               st,
               "TEXT_PICK_RECENT_CANDIDATE",
               "accessibility_recent_candidate",
-              { ageMs: Number(recent.ageMs || 0) }
+              {
+                ageMs: Number(recent.ageMs || 0),
+                releaseTs: Number(st.releaseTs || 0),
+                hoverSince: Number(recent.hoverSince || 0),
+                readyAt: Number(recent.readyAt || 0),
+                insideFrame: true
+              }
             ) === true;
           }
         } catch (eRecentCommit) {
@@ -625,6 +631,11 @@
       st.pointerY = st.pendingPointerY;
 
       var now = nowPosition();
+      if (st.mode === "text_pick" && typeof this.updatePointerTextStableMotion === "function") {
+        try { this.updatePointerTextStableMotion(now); } catch (eTextStable) {
+          logPosition(this, "w", "pointer text stable motion fail: " + String(eTextStable));
+        }
+      }
       var lastVisual = Number(st.__toolHubPointerVisualAt || 0);
       if (immediate === true || now - lastVisual >= 12) {
         st.__toolHubPointerVisualAt = now;
