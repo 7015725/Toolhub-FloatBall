@@ -1,0 +1,48 @@
+name: apply-ball-rebuild-rollback
+
+on:
+  push:
+    branches:
+      - fix/ball-rebuild-rollback
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-ball-rebuild-rollback
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '应用悬浮球重建回滚') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/ball-rebuild-rollback
+          fetch-depth: 0
+
+      - name: Apply and verify
+        run: |
+          python3 scripts/apply_ball_rebuild_rollback.py
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_ball_position_state.py
+          python3 scripts/verify_ball_rebuild_rollback.py
+          git diff --check
+
+      - name: Commit generated module
+        run: |
+          if git diff --quiet -- code/th_19_position_state.js; then
+            echo "Ball rebuild rollback already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_19_position_state.js
+          git commit -m "应用悬浮球重建回滚"
+          git push origin HEAD:fix/ball-rebuild-rollback
