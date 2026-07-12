@@ -92,7 +92,11 @@ def remove_assignments(text):
         open_brace = text.find("{", match.start(), match.end())
         if open_brace < 0:
             fail("armLongPress opening brace missing")
-        ranges.append((match.start(), find_block_end(text, open_brace)))
+        start = match.start()
+        line_start = text.rfind("\n", 0, start) + 1
+        if text[line_start:start].strip() == "":
+            start = line_start
+        ranges.append((start, find_block_end(text, open_brace)))
     if len(ranges) != 2:
         fail("expected 2 th_15 armLongPress definitions, got %d" % len(ranges))
     for start, end in reversed(ranges):
