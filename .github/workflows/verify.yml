@@ -43,14 +43,18 @@ jobs:
       - name: Generate dead code audit
         shell: bash
         run: |
-          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.generated.md
+          set -o pipefail
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.generated.md 2>&1 | tee dead-code-audit-log.txt
 
       - name: Upload dead code audit
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dead-code-audit-report
-          path: DEAD_CODE_AUDIT.generated.md
-          if-no-files-found: error
+          path: |
+            DEAD_CODE_AUDIT.generated.md
+            dead-code-audit-log.txt
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Run ToolHub verification
