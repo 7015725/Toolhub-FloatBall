@@ -57,6 +57,23 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Verify th_15 standalone audit
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md 2>&1 | tee th15-extra-audit-log.txt
+
+      - name: Upload th_15 standalone audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: th15-extra-audit-report
+          path: |
+            TH15_EXTRA_AUDIT.md
+            th15-extra-audit-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Run ToolHub verification
         shell: bash
         run: |
