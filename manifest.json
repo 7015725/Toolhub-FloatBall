@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理旧悬浮球重建实现"
+      "补齐旧悬浮球重建清理"
     ],
-    "title": "清理旧悬浮球重建实现"
+    "title": "补齐旧悬浮球重建清理"
   },
   "schema": 3,
-  "version": 20260712013327
+  "version": 20260712013727
 }
