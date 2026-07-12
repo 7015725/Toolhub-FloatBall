@@ -1,4 +1,4 @@
-// @version 1.1.34
+// @version 1.1.35
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -388,6 +388,7 @@ FloatBallAppWM.prototype.resetPointerTextStableHover = function(st, atTs, hotspo
   pointerState.textStableLastX = hp ? Number(hp.x) : -100000;
   pointerState.textStableLastY = hp ? Number(hp.y) : -100000;
   pointerState.textStableSince = hp ? ts : 0;
+  pointerState.textStableTargetKey = String(pointerState.currentKey || "");
 
   var insideCurrent = false;
   if (hp && pointerState.currentRect) {
@@ -458,14 +459,8 @@ FloatBallAppWM.prototype.updatePointerTextStableMotion = function(atTs) {
   if (st.currentText && st.currentRect) {
     var inside = this.pointerTextHotspotInsideRect(st.currentRect);
     if (!inside) {
-      this.invalidatePointerTextHoverCredential(st, "leave_text_frame", false);
-      st.hoverKey = String(st.currentKey || "");
-      st.hoverSince = 0;
-      st.hoverX = hp.x;
-      st.hoverY = hp.y;
-      this.updatePointerVisualHot(false);
-      try { this.showPointerAreaFrame(st.currentRect, "text_hover"); } catch (eFrameOut) {}
-      return true;
+      // 离开严格文字边框后，旧目标的稳定时间和可提交凭证同时失效。
+      return this.resetPointerTextStableHover(st, ts, hp, "leave_text_frame");
     }
 
     if (String(st.hoverKey || "") !== String(st.currentKey || "")) {
@@ -493,26 +488,37 @@ FloatBallAppWM.prototype.bindPointerTextHoverCandidate = function(st, key, rect,
   var ts = Number(atTs || th17Now());
   if (isNaN(ts) || ts <= 0) ts = th17Now();
   var targetKey = String(key || "");
-  var targetChanged = String(pointerState.hoverKey || "") !== targetKey;
-  var rectChanged = false;
+  var previousHoverKey = String(pointerState.hoverKey || "");
+  var stableTargetKey = String(pointerState.textStableTargetKey || "");
+  var stableTargetChanged = !!stableTargetKey && stableTargetKey !== targetKey;
 
+  var hp = null;
+  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+
+  // 首次异步命中允许复用命中前的物理稳定时间；已经绑定过目标后，
+  // 文本或矩形 key 改变必须从新目标出现时重新计时。
+  if (stableTargetChanged) {
+    this.resetPointerTextStableHover(pointerState, ts, hp, "target_changed");
+  } else if (!stableTargetKey) {
+    pointerState.textStableTargetKey = targetKey;
+  }
+
+  var credentialTargetChanged =
+    pointerState.textHoverReadyKey &&
+    String(pointerState.textHoverReadyKey) !== targetKey;
+  var credentialRectChanged = false;
   try {
-    rectChanged =
+    credentialRectChanged =
       pointerState.textHoverReadyRect &&
       th17RectKey(pointerState.textHoverReadyRect) !== th17RectKey(rect);
-  } catch (eRectChanged) { rectChanged = true; }
+  } catch (eRectChanged) { credentialRectChanged = true; }
 
-  if (
-    targetChanged ||
-    rectChanged ||
-    (pointerState.textHoverReadyKey && String(pointerState.textHoverReadyKey) !== targetKey)
-  ) {
+  if (!stableTargetChanged && (credentialTargetChanged || credentialRectChanged)) {
     this.invalidatePointerTextHoverCredential(pointerState, "candidate_changed", false);
   }
 
+  pointerState.textStableTargetKey = targetKey;
   pointerState.hoverKey = targetKey;
-  var hp = null;
-  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
   pointerState.hoverX = hp ? hp.x : 0;
   pointerState.hoverY = hp ? hp.y : 0;
 
@@ -525,14 +531,19 @@ FloatBallAppWM.prototype.bindPointerTextHoverCandidate = function(st, key, rect,
   var stableSince = this.getPointerTextStableSinceForRect(pointerState, rect, ts);
   var currentSince = Number(pointerState.hoverSince || 0);
   if (
-    targetChanged ||
+    stableTargetChanged ||
     isNaN(currentSince) ||
     currentSince <= 0 ||
     currentSince > ts
   ) {
     pointerState.hoverSince = stableSince > 0 ? stableSince : ts;
   } else if (stableSince > 0 && stableSince < currentSince) {
-    // 无障碍结果可能晚于真实稳定停留返回，允许在同一边框内回溯物理稳定起点。
+    // 同一目标的无障碍结果可能晚于真实稳定停留返回，允许回溯物理稳定起点。
+    pointerState.hoverSince = stableSince;
+  }
+
+  // hoverKey 在临时空扫描后可能被清空；同一稳定目标恢复时不应被当作新目标。
+  if (!previousHoverKey && stableTargetKey === targetKey && stableSince > 0) {
     pointerState.hoverSince = stableSince;
   }
   return true;
@@ -893,6 +904,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       textStableLastX: -100000,
       textStableLastY: -100000,
       textStableSince: 0,
+      textStableTargetKey: "",
       textHoverBreakSlop: 0,
       textHoverReadyKey: "",
       textHoverReadyRect: null,
@@ -1033,6 +1045,7 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.textStableLastX = -100000;
   st.textStableLastY = -100000;
   st.textStableSince = 0;
+  st.textStableTargetKey = "";
   st.textHoverReadyKey = "";
   st.textHoverReadyRect = null;
   st.textHoverReadyAt = 0;
@@ -1575,6 +1588,7 @@ FloatBallAppWM.prototype.onPointerScreenChangedReflow = function(reason, oldW, o
     st.textStableLastX = -100000;
     st.textStableLastY = -100000;
     st.textStableSince = 0;
+    st.textStableTargetKey = "";
 
     st.currentText = "";
     st.currentRect = null;

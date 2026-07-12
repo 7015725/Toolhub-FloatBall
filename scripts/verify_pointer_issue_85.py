@@ -346,6 +346,7 @@ def main():
         and "st.hoverSince = 0;" in pointer_reflow
         and 'this.invalidatePointerTextHoverCredential(st, "screen_reflow", false)' in pointer_reflow
         and "st.textStableSince = 0;" in pointer_reflow
+        and 'st.textStableTargetKey = "";' in pointer_reflow
         and "this.resetPointerTextStableHover(" in pointer_reflow
         and "this.resetPointerAreaHold()" in pointer_reflow
         and '"screen_reflow:" + String(reason || "")' in pointer_reflow,

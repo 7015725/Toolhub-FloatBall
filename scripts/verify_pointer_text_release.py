@@ -30,7 +30,7 @@ p14 = TH14.read_text(encoding="utf-8")
 entry = ENTRY.read_text(encoding="utf-8")
 
 for marker in (
-    "// @version 1.1.34",
+    "// @version 1.1.35",
     "updatePointerTextStableMotion = function",
     "bindPointerTextHoverCandidate = function",
     "grantPointerTextHoverCredential = function",
@@ -80,6 +80,21 @@ if "areaHoldSince" in stable or "areaHoldAnchor" in stable:
     fail("text stable hover is coupled to OCR hold state")
 if "textHoverReadyRect" not in stable or "leave_text_frame" not in stable:
     fail("text credential does not require staying inside the drawn frame")
+if 'resetPointerTextStableHover(st, ts, hp, "leave_text_frame")' not in stable:
+    fail("leaving the drawn text frame does not reset the stable timer")
+
+binding = section(
+    p17,
+    "FloatBallAppWM.prototype.bindPointerTextHoverCandidate = function",
+    "FloatBallAppWM.prototype.grantPointerTextHoverCredential = function",
+)
+for marker in (
+    "textStableTargetKey",
+    "stableTargetChanged",
+    'resetPointerTextStableHover(pointerState, ts, hp, "target_changed")',
+):
+    if marker not in binding:
+        fail("target-level hover identity guard missing: " + marker)
 
 ready = section(
     p17,

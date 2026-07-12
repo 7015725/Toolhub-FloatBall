@@ -227,7 +227,7 @@ def main() -> None:
         fail("screen reflow does not cancel pending semantic task")
 
     for marker in (
-        "// @version 1.1.34",
+        "// @version 1.1.35",
         "copyPointerTextToClipboard = function",
         "cm.setPrimaryClip(clip)",
         "rememberPointerValidPick",
