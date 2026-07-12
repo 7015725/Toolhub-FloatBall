@@ -10,10 +10,10 @@
 ## 扫描摘要
 
 - 加载模块：`24`
-- 原型方法定义：`381`
+- 原型方法定义：`380`
 - 唯一原型方法：`360`
 - 已登记重复方法：`19`
-- 最终覆盖型候选节点：`5`
+- 最终覆盖型候选节点：`4`
 - 受保护覆盖/包装链：`15`
 - 第一批清理候选：`0`
 
@@ -22,10 +22,9 @@
 |级别|方法|旧定义模块|定义次数|最终所有者|直接调用|属性读取|动态引用|旧方法捕获|建议|
 |---|---|---|---:|---|---:|---:|---:|---:|---|
 |C|`animateBallLayout`|`th_09_animation.js`|1|`th_19_position_state.js`|5|5|0|2|设备验证后再定|
-|C|`onScreenChangedReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|7|9|0|5|暂缓删除|
+|C|`onScreenChangedReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|7|7|0|2|暂缓删除|
 |C|`scheduleScreenReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
 |C|`snapToEdgeDocked`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
-|C|`onScreenChangedReflow`|`th_15_extra.js`|1|`th_19_position_state.js`|7|9|0|5|暂缓删除|
 
 ### 判定说明
 
@@ -33,7 +32,6 @@
 - **C / `onScreenChangedReflow` / `th_09_animation.js`**：存在 th_09 基础实现与 th_15 包装链；需先证明屏幕变化监听没有加载期或延迟引用。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `scheduleScreenReflow` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `snapToEdgeDocked` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **C / `onScreenChangedReflow` / `th_15_extra.js`**：存在 th_09 基础实现与 th_15 包装链；需先证明屏幕变化监听没有加载期或延迟引用。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 
 ## 受保护覆盖与包装链
 

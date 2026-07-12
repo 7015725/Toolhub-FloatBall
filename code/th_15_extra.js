@@ -1,4 +1,4 @@
-// @version 1.1.5
+// @version 1.1.6
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -2799,22 +2799,6 @@ FloatBallAppWM.prototype.refreshBallPreviewInSettings = function() {
           return this.scheduleConfiguredBallPositionApply("settings:" + String(k || ""), true);
         }
         return oldApplyImmediateEffectsForKey.call(this, k);
-      };
-    }
-
-    if (typeof proto.onScreenChangedReflow === "function") {
-      var oldOnScreenChangedReflow = proto.onScreenChangedReflow;
-      proto.onScreenChangedReflow = function(reason) {
-        var ret = oldOnScreenChangedReflow.call(this, reason);
-        var pointerActive = false;
-        try {
-          pointerActive = typeof this.isPointerToolActive === "function" &&
-                          this.isPointerToolActive();
-        } catch (ePointer) {}
-        if (!pointerActive && this.state && this.state.addedBall) {
-          this.applyConfiguredBallPosition(false, "screen_reflow:" + String(reason || ""));
-        }
-        return ret;
       };
     }
 
