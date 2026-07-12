@@ -107,7 +107,8 @@ FloatBallAppWM.prototype.checkContentUriSecurity = function(uriStr, modeName, bt
 
 '''
 
-content = re.sub(r"^// @version 1\.0\.1$", "// @version 1.0.2", content, count=1, flags=re.M)
+if "// @version 1.0.2" not in content:
+    content = content.replace("// @version 1.0.1", "// @version 1.0.2", 1)
 start_candidates = [
     "// =======================【Content：安全审计】=======================",
     "// =======================【Content：安全策略】=======================",
@@ -125,9 +126,10 @@ if start < 0 or end < 0 or end <= start:
 content = content[:start] + new_security + content[end:]
 content_path.write_text(content, encoding="utf-8")
 
-rebuild = re.sub(r"^// @version 1\.0\.6$", "// @version 1.0.7", rebuild, count=1, flags=re.M)
+if "// @version 1.0.7" not in rebuild:
+    rebuild = rebuild.replace("// @version 1.0.6", "// @version 1.0.7", 1)
 rebuild = re.sub(
-    r'^  putSchema\("CONTENT_SECURITY_MODE".*$',
+    r'^  putSchema\("CONTENT_SECURITY_MODE".*\r?$',
     '  putSchema("CONTENT_SECURITY_MODE", { type: "enum", values: ["strict", "compat_audit", "off"], default: "strict" });',
     rebuild,
     count=1,
@@ -135,14 +137,14 @@ rebuild = re.sub(
 )
 if 'putSchema("CONTENT_WRITE_URI_ALLOWLIST"' not in rebuild:
     rebuild = re.sub(
-        r'(^  putSchema\("CONTENT_URI_ALLOWLIST".*$)',
+        r'(^  putSchema\("CONTENT_URI_ALLOWLIST".*\r?$)',
         r'\1\n  putSchema("CONTENT_WRITE_URI_ALLOWLIST", { type: "string", default: "" });',
         rebuild,
         count=1,
         flags=re.M,
     )
 rebuild = re.sub(
-    r'^  putDefault\("CONTENT_SECURITY_MODE".*$',
+    r'^  putDefault\("CONTENT_SECURITY_MODE".*\r?$',
     '  putDefault("CONTENT_SECURITY_MODE", "strict");',
     rebuild,
     count=1,
@@ -150,27 +152,33 @@ rebuild = re.sub(
 )
 if 'putDefault("CONTENT_WRITE_URI_ALLOWLIST"' not in rebuild:
     rebuild = re.sub(
-        r'(^  putDefault\("CONTENT_URI_ALLOWLIST".*$)',
+        r'(^  putDefault\("CONTENT_URI_ALLOWLIST".*\r?$)',
         r'\1\n  putDefault("CONTENT_WRITE_URI_ALLOWLIST", "");',
         rebuild,
         count=1,
         flags=re.M,
     )
 
-required = [
+required_content = [
     '// @version 1.0.2',
     'var mode = "strict"',
     'CONTENT_WRITE_URI_ALLOWLIST',
     'compat_audit',
     'fail closed',
 ]
-for token in required:
-    if token not in content and token != 'CONTENT_WRITE_URI_ALLOWLIST':
+for token in required_content:
+    if token not in content:
         raise SystemExit("generated content missing token: %s" % token)
-if 'CONTENT_WRITE_URI_ALLOWLIST' not in content or 'CONTENT_WRITE_URI_ALLOWLIST' not in rebuild:
-    raise SystemExit("generated files missing write allowlist")
-if '// @version 1.0.7' not in rebuild:
-    raise SystemExit("rebuild version was not updated")
+required_rebuild = [
+    '// @version 1.0.7',
+    'values: ["strict", "compat_audit", "off"], default: "strict"',
+    'putDefault("CONTENT_SECURITY_MODE", "strict")',
+    'putSchema("CONTENT_WRITE_URI_ALLOWLIST"',
+    'putDefault("CONTENT_WRITE_URI_ALLOWLIST", "")',
+]
+for token in required_rebuild:
+    if token not in rebuild:
+        raise SystemExit("generated rebuild missing token: %s" % token)
 
 rebuild_path.write_text(rebuild, encoding="utf-8")
 print("Content strict security patch applied")
