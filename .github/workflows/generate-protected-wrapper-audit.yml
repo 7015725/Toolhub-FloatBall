@@ -1,0 +1,74 @@
+name: generate-protected-wrapper-audit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'audit/protected-wrapper-chains' &&
+      github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/protected-wrapper-chains
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate reports
+        shell: bash
+        run: |
+          python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/report_dead_module_symbols.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''    lines.append("1. `th_09_animation.js` 的全部后续覆盖候选已完成独立审查与清理。")
+              lines.append("2. 当前静态覆盖候选为 0；停止按‘后续覆盖’继续删除运行时实现。")
+              lines.append("3. 后续只在新增重复定义或明确回归证据时重新开启专项审查。")'''
+          new = '''    lines.append("1. 后续覆盖候选清理已完成，当前转入受保护包装链独立审查。")
+              lines.append("2. 下一组联合审查 `execButtonAction` 与 `execShellSmart`，仅评估将诊断逻辑并回基础实现。")
+              lines.append("3. 其余设置、指针/OCR、ToolApp 和延迟加载包装继续保留。")'''
+          if text.count(old) != 1:
+              raise SystemExit('dead-code recommendation block mismatch')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 scripts/verify_module_boundaries.py
+          python3 -m compileall -q scripts .github/scripts
+          git diff --check
+
+      - name: Remove one-shot workflow
+        run: rm -f .github/workflows/generate-protected-wrapper-audit.yml
+
+      - name: Commit reports
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "生成受保护包装链审查报告"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:audit/protected-wrapper-chains
