@@ -1,6 +1,56 @@
-// @version 1.0.5
+// @version 1.0.6
+// =======================【Shell 按钮诊断】=======================
+FloatBallAppWM.prototype.getShellDiagPreviewText = function(cmdPlain, cmdB64) {
+  var p = "";
+  try { p = cmdPlain ? String(cmdPlain) : ""; } catch(eP0) { p = ""; }
+  if ((!p || p.length <= 0) && cmdB64 && typeof decodeBase64Utf8 === "function") {
+    try { p = String(decodeBase64Utf8(String(cmdB64)) || ""); } catch(eP1) { p = ""; }
+  }
+  if (!p || p.length <= 0) p = "[cmd_b64 only]";
+  try { p = p.replace(/[\r\n\t]+/g, " ").replace(/^\s+|\s+$/g, ""); } catch(eP2) {}
+  if (p.length > 220) p = p.substring(0, 220) + "...";
+  return p;
+};
+
+FloatBallAppWM.prototype.logShellButtonDiagnostics = function(btn, idx) {
+  try {
+    var title = "";
+    try { title = String(btn && btn.title ? btn.title : ""); } catch(eTitle) { title = ""; }
+    var cmdB64 = "";
+    var cmdPlain = "";
+    try { cmdB64 = (btn && btn.cmd_b64 !== undefined && btn.cmd_b64 !== null) ? String(btn.cmd_b64) : ""; } catch(eB64) { cmdB64 = ""; }
+    try { cmdPlain = (btn && btn.cmd !== undefined && btn.cmd !== null) ? String(btn.cmd) : ""; } catch(eCmd) { cmdPlain = ""; }
+
+    var root = true;
+    try {
+      if (btn && btn.root !== undefined && btn.root !== null) {
+        var rs = String(btn.root).replace(/^\s+|\s+$/g, "").toLowerCase();
+        root = !(rs === "false" || rs === "0" || rs === "no" || rs === "off");
+      }
+    } catch(eRoot) { root = true; }
+
+    var preview = this.getShellDiagPreviewText ? this.getShellDiagPreviewText(cmdPlain, cmdB64) : String(cmdPlain || "");
+    safeLog(this.L, 'i', "shell diag idx=" + String(idx) + " title=" + title + " root=" + String(root) + " cmd_len=" + String(cmdPlain ? cmdPlain.length : 0) + " cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " preview=" + preview);
+
+    var normalized = preview.replace(/\s+/g, " ");
+    if (normalized.indexOf("am shortx run SHARED-DA-") >= 0) {
+      safeLog(this.L, 'i', "shell diag shared-da idx=" + String(idx) + " title=" + title + " note=SHARED-DA is suitable for ToolHub invocation");
+    } else if (normalized.indexOf("am shortx run DA-") >= 0) {
+      safeLog(this.L, 'w', "shell diag private-da idx=" + String(idx) + " title=" + title + " note=private DA may not exist or may fail outside original ShortX rule");
+    }
+  } catch(eDiag) {
+    try { safeLog(this.L, 'w', "shell diag fail idx=" + String(idx) + " err=" + String(eDiag)); } catch(eLog) {}
+  }
+};
+
 // =======================【WM 线程：按钮动作执行】======================
 FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
+  try {
+    if (btn && String(btn.type || "") === "shell" && this.logShellButtonDiagnostics) this.logShellButtonDiagnostics(btn, idx);
+  } catch(eBefore) {
+    try { safeLog(this.L, 'w', "shell diag before exec fail idx=" + String(idx) + " err=" + String(eBefore)); } catch(eLog0) {}
+  }
+
   // # 点击防抖
   // 这段代码的主要内容/用途：防止在按钮面板上连续/乱点导致重复执行与 UI 状态机冲突（可能触发 system_server 异常重启）。
   if (!this.guardClick("btn_exec_" + String(idx), 380, null)) return;
