@@ -19,7 +19,8 @@
     "loadSavedPos": "th_19_position_state.js",
     "scheduleConfiguredBallPositionApply": "th_19_position_state.js",
     "armLongPress": "th_19_position_state.js",
-    "animateBallLayout": "th_19_position_state.js"
+    "animateBallLayout": "th_19_position_state.js",
+    "snapToEdgeDocked": "th_19_position_state.js"
   },
   "duplicateDefinitions": [
     {
@@ -241,16 +242,6 @@
           "oldVariable": "oldShowFrame"
         }
       ]
-    },
-    {
-      "method": "snapToEdgeDocked",
-      "definitions": [
-        "th_09_animation.js",
-        "th_19_position_state.js"
-      ],
-      "effectiveOwner": "th_19_position_state.js",
-      "type": "temporary_override",
-      "reason": "通用吸边实现由 th_19 固定位置状态机覆盖"
     },
     {
       "method": "startPointerTool",

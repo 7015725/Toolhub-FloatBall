@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -609,101 +609,6 @@ FloatBallAppWM.prototype.showMask = function() {
     safeLog(this.L, 'e',  "add mask fail err=" + String(e1));
     this.state.addedMask = false;
   }
-};
-
-FloatBallAppWM.prototype.snapToEdgeDocked = function(withAnim, forceSide) {
-  if (this.state.closing) return;
-  // 移除对面板/Mask的检查，允许在任何情况下强制吸边（如果调用方逻辑正确）
-  // 如果需要保护，调用方自己判断
-  if (this.state.dragging) return;
-
-  try {
-    var freshScreen = this.getScreenSizePx();
-    if (freshScreen && freshScreen.w > 0 && freshScreen.h > 0) {
-      this.state.screen = freshScreen;
-    }
-  } catch (eScreen) {}
-
-  var di = this.getDockInfo();
-  var ballSize = di.ballSize;
-  var visible = di.visiblePx;
-  var hidden = di.hiddenPx;
-
-  var snapLeft;
-  if (forceSide === "left") snapLeft = true;
-  else if (forceSide === "right") snapLeft = false;
-  else {
-      // 默认根据中心点判断
-      var centerX = this.state.ballLp.x + Math.round(ballSize / 2);
-      snapLeft = centerX < Math.round(this.state.screen.w / 2);
-  }
-
-  var targetW = visible;
-  var targetY = this.clamp(this.state.ballLp.y, 0, this.state.screen.h - ballSize);
-
-  if (snapLeft) {
-    this.state.dockSide = "left";
-    this.state.docked = true;
-
-    try { this.state.ballContent.setX(-hidden);  } catch(eL) { safeLog(null, 'e', "catch " + String(eL)); }
-
-    if (withAnim) {
-      this.animateBallLayout(0, targetY, targetW, this.config.DOCK_ANIM_MS, null);
-    } else {
-      this.state.ballLp.x = 0;
-      this.state.ballLp.y = targetY;
-      this.state.ballLp.width = targetW;
-      try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU1) { safeLog(null, 'e', "catch " + String(eU1)); }
-      this.savePos(this.state.ballLp.x, this.state.ballLp.y);
-    }
-
-    debugLog(this.L, "dock left x=0 y=" + String(targetY) + " w=" + String(targetW));
-
-    // 闲置变暗
-    try {
-         if (this.config.ENABLE_ANIMATIONS) {
-             this.state.ballContent.animate().alpha(this.config.BALL_IDLE_ALPHA).setDuration(300).start();
-         } else {
-             this.state.ballContent.setAlpha(this.config.BALL_IDLE_ALPHA);
-         }
-     } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
-
-    return;
-  }
-
-  this.state.dockSide = "right";
-  this.state.docked = true;
-
-  try { this.state.ballContent.setX(0);  } catch(eR) { safeLog(null, 'e', "catch " + String(eR)); }
-
-  var x2 = this.state.screen.w - visible;
-
-  if (withAnim) {
-    this.animateBallLayout(x2, targetY, targetW, this.config.DOCK_ANIM_MS, null);
-  } else {
-    this.state.ballLp.x = x2;
-    this.state.ballLp.y = targetY;
-    this.state.ballLp.width = targetW;
-    try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU2) { safeLog(null, 'e', "catch " + String(eU2)); }
-    this.savePos(this.state.ballLp.x, this.state.ballLp.y);
-  }
-
-  // # 日志精简：dock 事件添加防抖（10秒内不重复记录相同边）
-  var dockNow = Date.now();
-  var lastDock = this.state._lastDockLog || 0;
-  if (dockNow - lastDock > 10000) {
-    safeLog(this.L, 'i', "dock right x=" + String(x2) + " y=" + String(targetY));
-    this.state._lastDockLog = dockNow;
-  }
-
-  // 闲置变暗
-  try {
-     if (this.config.ENABLE_ANIMATIONS) {
-         this.state.ballContent.animate().alpha(this.config.BALL_IDLE_ALPHA).setDuration(300).start();
-     } else {
-         this.state.ballContent.setAlpha(this.config.BALL_IDLE_ALPHA);
-     }
-   } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
 };
 
 FloatBallAppWM.prototype.undockToFull = function(withAnim, endCb) {
