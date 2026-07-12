@@ -204,8 +204,8 @@ def classify(method, module, record):
     if method == "onScreenChangedReflow":
         return (
             "C",
-            "暂缓删除",
-            "存在 th_09 基础实现与 th_15 包装链；需先证明屏幕变化监听没有加载期或延迟引用。",
+            "设备验证后再定",
+            "th_09 旧比例重排仍由 th_19 覆盖；涉及屏幕旋转和指针窗口重排，需完成独立设备验证后再处理。",
         )
     if module == "th_09_animation.js":
         return (

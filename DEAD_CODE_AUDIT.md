@@ -22,14 +22,14 @@
 |级别|方法|旧定义模块|定义次数|最终所有者|直接调用|属性读取|动态引用|旧方法捕获|建议|
 |---|---|---|---:|---|---:|---:|---:|---:|---|
 |C|`animateBallLayout`|`th_09_animation.js`|1|`th_19_position_state.js`|5|5|0|2|设备验证后再定|
-|C|`onScreenChangedReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|7|7|0|2|暂缓删除|
+|C|`onScreenChangedReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|7|7|0|2|设备验证后再定|
 |C|`scheduleScreenReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
 |C|`snapToEdgeDocked`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
 
 ### 判定说明
 
 - **C / `animateBallLayout` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **C / `onScreenChangedReflow` / `th_09_animation.js`**：存在 th_09 基础实现与 th_15 包装链；需先证明屏幕变化监听没有加载期或延迟引用。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
+- **C / `onScreenChangedReflow` / `th_09_animation.js`**：th_09 旧比例重排仍由 th_19 覆盖；涉及屏幕旋转和指针窗口重排，需完成独立设备验证后再处理。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `scheduleScreenReflow` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `snapToEdgeDocked` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 
