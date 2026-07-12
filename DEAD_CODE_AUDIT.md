@@ -10,11 +10,11 @@
 ## 扫描摘要
 
 - 加载模块：`24`
-- 原型方法定义：`376`
+- 原型方法定义：`374`
 - 唯一原型方法：`360`
-- 已登记重复方法：`15`
+- 已登记重复方法：`13`
 - 最终覆盖型候选节点：`0`
-- 受保护覆盖/包装链：`15`
+- 受保护覆盖/包装链：`13`
 - 第一批清理候选：`0`
 
 ## 候选节点
@@ -32,9 +32,7 @@
 |`applyImmediateEffectsForKey`|`wrapper_chain`|`th_15_extra.js`|设置即时生效经过类型修正和固定位置设置扩展|
 |`createPointerFrameView`|`intentional_override`|`th_18_pointer_ocr.js`|OCR 扩展统一补充文字、框选和处理状态边框绘制|
 |`createPointerLayoutParams`|`wrapper`|`th_19_position_state.js`|补充屏幕边缘和刘海区域布局参数|
-|`execButtonAction`|`wrapper`|`th_16_entry.js`|增加 Shell 按钮执行前诊断|
 |`execPointerAction`|`wrapper`|`th_18_pointer_ocr.js`|增加 area_ocr 指针动作模式|
-|`execShellSmart`|`wrapper`|`th_16_entry.js`|增加 Shell 桥执行结果诊断|
 |`finishPointerAreaCapture`|`wrapper`|`th_18_pointer_ocr.js`|框选截图完成后异步衔接 OCR|
 |`popToolAppPage`|`wrapper`|`th_16_entry.js`|保存按钮后保留临时编辑状态|
 |`removePointerCallbacks`|`wrapper`|`th_19_position_state.js`|关闭指针时同步取消语义调度|
@@ -47,9 +45,9 @@
 
 ## 建议顺序
 
-1. 后续覆盖候选清理已完成，当前转入受保护包装链独立审查。
-2. 下一组联合审查 `execButtonAction` 与 `execShellSmart`，仅评估将诊断逻辑并回基础实现。
-3. 其余设置、指针/OCR、ToolApp 和延迟加载包装继续保留。
+1. 后续覆盖候选与 Shell 诊断包装收敛已完成。
+2. 当前剩余 13 条受保护包装链均承担明确功能或生命周期职责。
+3. 后续只在新增重复定义、失效包装或明确回归证据时重新开启专项审查。
 
 ## 使用方式
 

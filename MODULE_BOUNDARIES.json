@@ -20,7 +20,9 @@
     "scheduleConfiguredBallPositionApply": "th_19_position_state.js",
     "armLongPress": "th_19_position_state.js",
     "animateBallLayout": "th_19_position_state.js",
-    "snapToEdgeDocked": "th_19_position_state.js"
+    "snapToEdgeDocked": "th_19_position_state.js",
+    "execButtonAction": "th_11_action.js",
+    "execShellSmart": "th_10_shell.js"
   },
   "duplicateDefinitions": [
     {
@@ -74,23 +76,6 @@
       ]
     },
     {
-      "method": "execButtonAction",
-      "definitions": [
-        "th_11_action.js",
-        "th_16_entry.js"
-      ],
-      "effectiveOwner": "th_16_entry.js",
-      "type": "wrapper",
-      "reason": "增加 Shell 按钮执行前诊断",
-      "wrappers": [
-        {
-          "module": "th_16_entry.js",
-          "owner": "th_11_action.js",
-          "oldVariable": "oldExecButtonAction"
-        }
-      ]
-    },
-    {
       "method": "execPointerAction",
       "definitions": [
         "th_17_pointer.js",
@@ -104,23 +89,6 @@
           "module": "th_18_pointer_ocr.js",
           "owner": "th_17_pointer.js",
           "oldVariable": "oldExecPointerAction"
-        }
-      ]
-    },
-    {
-      "method": "execShellSmart",
-      "definitions": [
-        "th_10_shell.js",
-        "th_16_entry.js"
-      ],
-      "effectiveOwner": "th_16_entry.js",
-      "type": "wrapper",
-      "reason": "增加 Shell 桥执行结果诊断",
-      "wrappers": [
-        {
-          "module": "th_16_entry.js",
-          "owner": "th_10_shell.js",
-          "oldVariable": "oldExecShellSmart"
         }
       ]
     },

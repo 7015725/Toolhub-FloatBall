@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【Shell：广播桥执行】======================
 // 仅通过广播桥发送 shell 命令，由外部接收器实际执行。
 // 注意：system_server 进程本身不直接执行 shell。
@@ -75,6 +75,16 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
     ret.err = "Broadcast err=" + String(eB);
     ret.note = "broadcast send failed";
     safeLog(this.L, 'e',  "shell via broadcast fail action=" + String(ret.action || "") + " mode=" + String(ret.bridgeMode || "") + " target=" + String(ret.targetMode || "") + " err=" + String(eB));
+  }
+
+  try {
+    var via = ret && ret.via ? String(ret.via) : "";
+    safeLog(this.L, (ret && ret.ok) ? 'i' : 'w', "shell diag result ok=" + String(!!(ret && ret.ok)) + " via=" + via + " root=" + String(!!needRoot) + " cmd_b64_len=" + String(cmdB64 ? String(cmdB64).length : 0) + " ret=" + JSON.stringify(ret || {}));
+    if (via.indexOf("BroadcastBridge") >= 0) {
+      safeLog(this.L, 'i', "shell diag bridge sent note=BroadcastBridge sent only means broadcast was sent; it does not prove ShortX task executed successfully");
+    }
+  } catch(eAfter) {
+    try { safeLog(this.L, 'w', "shell diag after exec fail err=" + String(eAfter)); } catch(eLog1) {}
   }
 
   return ret;

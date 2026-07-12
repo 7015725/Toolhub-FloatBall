@@ -22,16 +22,6 @@ CATEGORY_ORDER = {
 }
 
 CLASSIFICATIONS = {
-    "execButtonAction": (
-        "诊断增强",
-        "下一轮专项审查",
-        "只增加 Shell 按钮执行前诊断；可评估并回基础实现，不能直接删除诊断。",
-    ),
-    "execShellSmart": (
-        "诊断增强",
-        "下一轮专项审查",
-        "只增加 Shell 桥执行结果诊断；可评估并回基础实现，不能直接删除诊断。",
-    ),
     "applyImmediateEffectsForKey": (
         "设置与类型链",
         "继续保留",
@@ -297,9 +287,10 @@ def render_report(rows):
     lines.append("")
     lines.append("- 已登记受保护覆盖/包装链：`%d`。" % len(rows))
     lines.append("- 定义链、有效所有者、旧方法捕获变量和调用关系均与 `MODULE_BOUNDARIES.json` 一致。")
-    lines.append("- 下一轮专项审查：%s。" % "、".join("`%s`" % row["method"] for row in review))
+    review_text = "、".join("`%s`" % row["method"] for row in review) if review else "无"
+    lines.append("- 下一轮专项审查：%s。" % review_text)
     lines.append("- 继续保留：`%d` 条；这些链承担设置类型、指针/OCR、生命周期、页面状态或延迟加载职责。" % len(retained))
-    lines.append("- 本报告不自动修改运行时代码；诊断包装也只能通过“并回基础实现”收敛，不能直接删除行为。")
+    lines.append("- 本报告不自动修改运行时代码；剩余包装均承担明确功能或生命周期职责。")
     lines.append("")
     lines.append("## 分类摘要")
     lines.append("")
@@ -339,9 +330,9 @@ def render_report(rows):
     lines.append("")
     lines.append("## 下一轮顺序")
     lines.append("")
-    lines.append("1. 联合审查 `execButtonAction` 与 `execShellSmart` 的诊断逻辑、调用范围和返回值透传。")
-    lines.append("2. 只有在诊断代码可以原样并回 `th_11_action.js` / `th_10_shell.js` 时，才删除 `th_16_entry.js` 包装。")
-    lines.append("3. 设置、指针/OCR、ToolApp 和 deferred wrapper 暂不进入删除流程。")
+    lines.append("1. `execButtonAction` 与 `execShellSmart` 诊断逻辑已并回基础实现。")
+    lines.append("2. 当前剩余 13 条包装链全部继续保留，不进入批量收敛流程。")
+    lines.append("3. 仅在出现明确重复、失效包装或回归证据时重新开启专项审查。")
     lines.append("")
     lines.append("## 使用方式")
     lines.append("")
