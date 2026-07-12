@@ -42,19 +42,19 @@
       "version": "1.0.5"
     },
     "th_10_shell.js": {
-      "sha256": "ed097d1154e922c0e461d0c8defc5e2499c3260ab94939dabba4da66da21ac21",
-      "size": 3994,
-      "version": "1.0.4"
+      "sha256": "bb350abf1b7551ee4832614a49294462f95939b8ffc917ca98b98fb7d5fb0141",
+      "size": 4631,
+      "version": "1.0.5"
     },
     "th_11_action.js": {
-      "sha256": "525f25d80a30ff077ac0f7b1ffadd6e7be0716f174e6b31b2faf9f94ecaee45a",
-      "size": 23200,
-      "version": "1.0.6"
+      "sha256": "79acd93990a9757d890829e5d736861882bd62aaa4e46d9f31bd9f248e0c25fb",
+      "size": 23670,
+      "version": "1.0.7"
     },
     "th_12_rebuild.js": {
-      "sha256": "87ba3af411c4e85537fc5c7501c3bdc545383b2eeeb18b4bbc3b206b63667230",
-      "size": 3901,
-      "version": "1.0.4"
+      "sha256": "4e514b66b1646ed2bf47327b29868e630f826c096689d5a784f74676ff0482e1",
+      "size": 3834,
+      "version": "1.0.5"
     },
     "th_13_panel_ui.js": {
       "sha256": "7154bb5fe7c9d5da74f3ee3e1378fe6b092c771379d31f377a0d32901d47c9a9",
@@ -62,9 +62,9 @@
       "version": "1.0.2"
     },
     "th_14_button_editor.js": {
-      "sha256": "48518fad82339c19bd71611cbb6da364e7cc629bcdefe2f26b8ba1e3e1896ab9",
-      "size": 70898,
-      "version": "1.0.1"
+      "sha256": "4a6bb2fbe6675423d64f32d395e315d217dc8c2ed6789fd2b7936e46822fc902",
+      "size": 72596,
+      "version": "1.0.2"
     },
     "th_14_button_icon_editor.js": {
       "sha256": "41675d1a34e073425f1e5f4a54118f5f7bddc6e52092c51c9c635bcc8c212494",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修正启动结果并增加降级状态"
+      "收紧 Shell 广播桥安全默认值"
     ],
-    "title": "修正启动结果并增加降级状态"
+    "title": "收紧 Shell 广播桥安全默认值"
   },
   "schema": 3,
-  "version": 20260712122947
+  "version": 20260712124756
 }
