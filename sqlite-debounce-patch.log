@@ -1,9 +1,0 @@
-SQLite debounce locking patch applied
-apply_status=0
-ES5_ERRORS 0
-es5_status=0
-OK: JavaScript syntax valid for 24 modules
-syntax_status=0
-FAIL [storage-core]: failed debounced writes must remain pending
-storage_status=1
-whitespace_status=1

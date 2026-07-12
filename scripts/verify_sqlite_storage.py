@@ -141,12 +141,27 @@ def verify_core_storage():
         fail(group, "structured write can return success before endTransaction")
 
     schedule = section(group, text, "scheduleWrite: function", "flushWrites: function")
-    if "live.task = null" not in schedule:
-        fail(group, "failed debounced writes must remain pending")
+    for marker in [
+        "self.runScheduledJob(job)",
+        "this._jobSequence = Number(this._jobSequence || 0) + 1",
+        "this._jobs[p] = job",
+    ]:
+        if marker not in schedule:
+            fail(group, "debounced scheduling is missing " + marker)
+
+    runner = section(group, text, "runScheduledJob: function", "scheduleWrite: function")
+    for marker in [
+        "live === job",
+        "current === job",
+        "current.lastError",
+    ]:
+        if marker not in runner:
+            fail(group, "debounced job identity handling is missing " + marker)
 
     flush = section(group, text, "flushWrites: function", "queryCount: function")
-    if "allOk = false" not in flush or "job.lastError" not in flush:
-        fail(group, "failed flush jobs are not retained")
+    for marker in ["allOk = false", "item.lastError", "failed.push(item)"]:
+        if marker not in flush:
+            fail(group, "failed flush jobs are not retained: " + marker)
 
     managed_read = section(group, text, "readManagedText: function", "writeManagedNow: function")
     if "oldReadText" in managed_read:
