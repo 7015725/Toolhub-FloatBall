@@ -1,6 +1,6 @@
 # ToolHub-FloatBall 整体结构说明
 
-更新时间：2026-07-09
+更新时间：2026-07-13
 
 本文档用于整理 `7015725/Toolhub-FloatBall` 当前代码结构、启动链路、模块职责和主要状态流。项目运行环境为 **ShortX / Rhino ES5 JavaScript**，入口文件负责安全更新和模块加载，核心业务集中挂载到 `FloatBallAppWM.prototype`。
 
@@ -68,17 +68,18 @@ Toolhub-FloatBall/
 │   ├── th_15_extra.js
 │   ├── th_16_entry.js
 │   ├── th_17_pointer.js
-│   └── th_18_pointer_ocr.js
+│   ├── th_18_pointer_ocr.js
+│   └── th_19_position_state.js
 └── scripts/
     ├── generate_signed_manifest.py
-    ├── verify_manifest.py
-    ├── verify_button_editor_layout.py
-    ├── verify_schema_validator.py
-    ├── verify_toolapp_adaptive_size.py
-    └── verify_toolapp_single_root.py
+    ├── verify_module_versions.py
+    ├── verify_atomic_update.py
+    ├── verify_release_transaction.py
+    ├── verify_sqlite_storage.py
+    └── ... 其他专项回归脚本
 ```
 
-当前实际加载 **23 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；`th_14_button_editor.js` 承载按钮管理紧凑列表、筛选、状态菜单和排序模式，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 处理与颜色状态补充由 `th_18_pointer_ocr.js` 承载。
+当前实际加载 **24 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载。
 
 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而保留的历史编号；本仓库延续现有文件名，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
 
@@ -148,18 +149,19 @@ shortx.getShortXDir()/ToolHub/
 ├── code/                         # 本地缓存子模块
 │   ├── th_01_base.js
 │   ├── ...
-│   ├── th_16_entry.js
 │   ├── th_17_pointer.js
 │   ├── th_18_pointer_ocr.js
+│   ├── th_19_position_state.js
+│   ├── .installed_manifest.json
 │   ├── .trusted_manifest_version
 │   └── .trusted_sha_<module>
 ├── logs/
 │   ├── init.log
 │   └── ShortX_ToolHub_yyyyMMdd.log
-├── settings.json
-├── buttons.json
-└── schema.json
+└── toolhub.db                    # 设置、按钮和 Schema 的结构化 SQLite
 ```
+
+旧 `settings.json`、`buttons.json`、`schema.json` 仅在迁移阶段读取；迁移成功后删除。
 
 ---
 
@@ -188,6 +190,8 @@ var UPDATE_SOURCE = 1;          // 0: Gitea, 1: GitHub
 var UPDATE_SECURITY_MODE = 2;   // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 ```
 
+只有精确值 `0 / 1 / 2` 有效；无效值强制回退到 `2`，不会静默进入普通模式。
+
 关键模块：
 
 ```text
@@ -204,12 +208,12 @@ th_16_entry.js
 | 模块 | 职责 |
 |---|---|
 | `th_01_base.js` | 基础工具、配置校验、路径常量、文件 IO、原子写、防抖写、日志基础、默认配置与设置 schema、旧 schema 自动刷新 |
-| `th_02_core.js` | `FloatBallAppWM` 构造函数、核心 state 初始化、基础方法、UI 工具对象初始化 |
+| `th_02_core.js` | 完全结构化 SQLite、旧配置迁移、防抖并发写入、核心 state 与基础方法 |
 | `th_03_icon.js` | 图标加载、图标缓存、Drawable / Bitmap 处理、悬浮球图标解析 |
 | `th_04_theme.js` | 屏幕尺寸、旋转、Toast、振动、动物岛主题、Monet 颜色、Drawable 工具 |
 | `th_05_persistence.js` | 悬浮球位置保存、设置保存、临时编辑缓存、实时预览刷新 |
 | `th_06_icon_parser.js` | ShortX 图标解析、图标目录扫描、图标名回退 |
-| `th_08_content.js` | ContentProvider 查询、Content 类型按钮读取 |
+| `th_08_content.js` | ContentProvider 受控读写，读取与写入使用独立 URI 白名单 |
 | `th_09_animation.js` | 悬浮球动画、吸边、面板显示隐藏、Mask、系统返回、预测性返回、缓存清理 |
 | `th_10_shell.js` | Shell 广播桥执行层 |
 | `th_11_action.js` | 按钮动作分发：设置、日志、Toast、App、Shell、Broadcast、Shortcut、Content、Pointer |
@@ -226,6 +230,7 @@ th_16_entry.js
 | `th_16_entry.js` | 主线程同步、广播注册、实例注册、`startAsync`、`close`、`dispose`、设置页重启 |
 | `th_17_pointer.js` | 屏幕指针、悬停取字、取字就绪视觉状态、框选区域、小框回退取字、OCR rect 输出 |
 | `th_18_pointer_ocr.js` | 框选截图 OCR 处理、截图区域覆盖层、OCR 任务衔接、指针边框颜色状态补充 |
+| `th_19_position_state.js` | 固定位置状态机、指针布局、语义会话隔离和悬浮球尺寸重建回滚 |
 
 ---
 
@@ -396,42 +401,53 @@ execButtonAction(btn, idx)
 | `open_viewer` | 打开日志查看器 |
 | `toast` | 显示 Toast |
 | `app` | 通过 PackageManager 启动 App，支持 `launchUserId` |
-| `shell` | 通过 shell 广播桥发送 base64 命令，默认 root |
+| `shell` | 通过 Shell 广播桥发送 base64 命令；Root 默认关闭，仅显式 `root:true` 开启 |
 | `broadcast` | 发送自定义广播，兼容 `extra` / `extras` |
-| `shortcut` | 执行 `shortcutJsCode`，用于锁定主 / 分身快捷方式 |
+| `shortcut` | 默认启动 `intentUri`；仅显式 `legacy_js` 执行历史 `shortcutJsCode` |
+| `content` | 按独立读写白名单访问 ContentProvider |
+| `pointer` | 启动取字或框选 OCR |
 
 ---
 
 ## 13. 配置与持久化
 
-主要文件：
+当前持久化后端：
 
 ```text
-settings.json
-buttons.json
-schema.json
+toolhub.db
+├── toolhub_meta
+├── toolhub_settings
+├── toolhub_buttons
+├── toolhub_button_values
+└── toolhub_schema_values
 ```
 
 配置流：
 
 ```text
-ConfigManager.loadSettings()
+ConfigManager.loadSettings / loadButtons / loadSchema
    │
    ▼
-ConfigValidator.sanitizeConfig()
+ConfigValidator 与兼容迁移
    │
    ▼
-FloatBallAppWM.config
-   ├─ pendingUserCfg 临时编辑
-   ├─ previewMode 实时预览
-   └─ ConfigManager.saveSettings() 落盘
+结构化 SQLite 适配器
+   │
+   ├─ settings → 类型化键值行
+   ├─ buttons  → 主表 + 递归参数节点
+   └─ schema   → 递归关系节点
 ```
 
 持久化策略：
 
-- 原子写：临时文件 → flush / sync → rename。
-- 防抖写：连续修改合并保存。
-- `close()` 时执行 `FileIO.flushDebouncedWrites()`。
+- SQLite 事务提交后才报告保存成功。
+- 防抖任务由任务锁保护，所有管理写入通过统一写锁串行执行。
+- 旧任务在写入前后校验对象身份和代次，不能删除或覆盖新任务。
+- 立即保存会取消同路径旧防抖任务。
+- `close()` 时刷新待写任务，失败任务保留供后续重试。
+- 数据库只读救援模式禁止把默认值写回损坏数据库。
+
+旧 JSON 文件只作为一次性迁移来源，不再作为运行期配置文件。
 
 ---
 
@@ -509,35 +525,34 @@ BALL_POS_DOCK_SIDE
 ToolHub.js 内置 RSA 公钥
    │
    ▼
-下载 manifest.json / manifest.sig
+下载并验证 manifest.json / manifest.sig
+   │
+   ├─ alg / keyId / SHA256withRSA
+   ├─ manifest version 防回滚
+   └─ modules[] / manifest.files 一致性
    │
    ▼
-校验 alg / keyId / RSA 签名
+整批模块下载到 .txn.tmp 并校验 size / sha256
    │
    ▼
-校验 manifest version 防回滚
+写入 .module_update_transaction.json
+   │
+   ├─ 正式文件备份为 .txn.bak
+   ├─ 模块和安全元数据在同一事务内切换
+   └─ 整批哈希通过后写入 .module_update_transaction.committed
    │
    ▼
-逐个下载 code/th_*.js 到 .tmp
-   │
-   ▼
-校验 size / sha256
-   │
-   ▼
-通过后覆盖本地模块
-   │
-   ▼
-保存 trusted sha / trusted manifest version
+失败逆序回滚；中断由下次启动恢复或完成清理
 ```
 
-当前 `manifest.json` 信息：
+当前清单结构：
 
 ```text
 schema: 3
-version: 20260703110021
+version: 以当前 manifest.json 为准
 alg: SHA256withRSA
 keyId: toolhub-targets-20260703-rsa3072
-files: 22 个模块
+files: 24 个模块
 ```
 
 ---
@@ -547,7 +562,7 @@ files: 22 个模块
 修改 `code/*.js` 或 `ToolHub.js` 后，需要重新生成签名清单：
 
 ```bash
-scripts/generate_signed_manifest.py
+python3 scripts/generate_signed_manifest.py --yes
 ```
 
 会更新：

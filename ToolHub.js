@@ -12,8 +12,15 @@ var UPDATE_ROOTS = [
 ];
 
 if (UPDATE_SOURCE !== 1) UPDATE_SOURCE = 0;
-UPDATE_SECURITY_MODE = parseInt(String(UPDATE_SECURITY_MODE || 0), 10);
-if (isNaN(UPDATE_SECURITY_MODE) || UPDATE_SECURITY_MODE < 0 || UPDATE_SECURITY_MODE > 2) UPDATE_SECURITY_MODE = 0;
+var __updateSecurityModeText = "";
+var __updateSecurityModeFallback = false;
+try { __updateSecurityModeText = String(UPDATE_SECURITY_MODE).replace(/^\s+|\s+$/g, ""); } catch (eUpdateSecurityModeText) { __updateSecurityModeText = ""; }
+if (/^[012]$/.test(__updateSecurityModeText)) {
+    UPDATE_SECURITY_MODE = parseInt(__updateSecurityModeText, 10);
+} else {
+    UPDATE_SECURITY_MODE = 2;
+    __updateSecurityModeFallback = true;
+}
 
 var GIT_ROOT = UPDATE_ROOTS[UPDATE_SOURCE];
 var GIT_BASE = GIT_ROOT + "code/";
@@ -147,6 +154,9 @@ function getToolHubRootDir() {
 }
 
 var TOOLHUB_BOOT_ROOT_DIR = getToolHubRootDir();
+if (__updateSecurityModeFallback) {
+    writeLog("WARN invalid UPDATE_SECURITY_MODE, forced to secure mode 2");
+}
 
 function getLogPath() { return getToolHubRootDir() + "/logs/init.log"; }
 function getCodeDirPath() { return getToolHubRootDir() + "/code/"; }

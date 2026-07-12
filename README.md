@@ -17,6 +17,7 @@ Gitea:  https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub
 STRUCTURE.md
 ARCHITECTURE.md
 SQLITE_STORAGE.md
+docs/security-config-clean.md
 ```
 
 > 手机端当前默认使用 GitHub 更新源。是否已同步 Gitea，需要在每次发布结果中单独确认。
@@ -81,6 +82,8 @@ var UPDATE_SECURITY_MODE = 2;   // 0: 普通, 1: manifest校验, 2: 完整验签
 | `1` | 按 manifest 校验模块 SHA-256 和文件大小 |
 | `2` | 校验签名、keyId、版本、防回滚、SHA-256 和文件大小 |
 
+只有明确设置为 `0` 才进入普通更新模式。空值、非法字符、复合字符串和越界值等无效配置会强制回退到 `2`，避免配置错误静默关闭验签。
+
 ---
 
 ## 实机目录
@@ -111,7 +114,8 @@ shortx.getShortXDir()/
     │   ├── th_15_extra.js
     │   ├── th_16_entry.js
     │   ├── th_17_pointer.js
-    │   └── th_18_pointer_ocr.js
+    │   ├── th_18_pointer_ocr.js
+    │   └── th_19_position_state.js
     ├── logs/
     │   ├── init.log
     │   └── ShortX_ToolHub_yyyyMMdd.log
@@ -201,7 +205,7 @@ THEME_DAY_BG_HEX      null
 用户 ID
 Shell 命令
 广播 Action
-快捷方式代码
+快捷方式 Intent / 执行模式 / 旧版兼容代码
 数组和对象参数
 ```
 
@@ -382,8 +386,8 @@ storage engine=sqlite format=structured backend=sqlite-structured path=... exist
 | `app` | 启动 App，可指定用户 |
 | `shell` | 通过 Shell 广播桥执行命令 |
 | `broadcast` | 发送广播 |
-| `shortcut` | 执行 ShortX 快捷方式代码 |
-| `content` | 查询 ContentProvider |
+| `shortcut` | 默认启动 `intentUri`；仅显式 `legacy_js` 执行历史兼容代码 |
+| `content` | 按读写白名单访问 ContentProvider |
 | `pointer` | 启动取字和框选 OCR |
 
 ---
@@ -398,7 +402,7 @@ storage engine=sqlite format=structured backend=sqlite-structured path=... exist
 | `th_04_theme.js` | 屏幕、主题、颜色、Toast 和振动 |
 | `th_05_persistence.js` | 位置与设置保存、编辑缓存和预览刷新 |
 | `th_06_icon_parser.js` | ShortX 图标解析 |
-| `th_08_content.js` | ContentProvider 查询 |
+| `th_08_content.js` | ContentProvider 受控读取与按写入白名单执行修改 |
 | `th_09_animation.js` | 动画、吸边、面板和返回适配 |
 | `th_10_shell.js` | Shell 广播桥 |
 | `th_11_action.js` | 按钮动作分发 |
@@ -409,6 +413,7 @@ storage engine=sqlite format=structured backend=sqlite-structured path=... exist
 | `th_16_entry.js` | 启动、广播、关闭和资源释放 |
 | `th_17_pointer.js` | 指针、取字、框选和状态颜色 |
 | `th_18_pointer_ocr.js` | 截图 OCR 与覆盖层处理 |
+| `th_19_position_state.js` | 悬浮球固定位置、指针布局与尺寸重建事务回滚 |
 
 ---
 
