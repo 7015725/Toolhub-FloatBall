@@ -37,6 +37,10 @@ jobs:
 
       - name: Commit generated modules
         run: |
+          if git diff --quiet -- code/th_08_content.js code/th_12_rebuild.js; then
+            echo "Content security patch already current"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add code/th_08_content.js code/th_12_rebuild.js
