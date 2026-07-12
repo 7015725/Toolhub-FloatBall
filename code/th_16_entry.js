@@ -148,7 +148,7 @@ function runOnMainSync(fn, timeoutMs, onLateSuccess) {
   }
 }
 
-function registerReceiverOnMain(actions, callback) {
+function registerReceiverOnMain(actions, callback, allowExternal) {
   try {
     var appCtx = context.getApplicationContext();
     var rcv = new JavaAdapter(android.content.BroadcastReceiver, {
@@ -174,7 +174,10 @@ function registerReceiverOnMain(actions, callback) {
 
     var reg = runOnMainSync(function() {
       if (android.os.Build.VERSION.SDK_INT >= 33) {
-        appCtx.registerReceiver(rcv, f, android.content.Context.RECEIVER_NOT_EXPORTED);
+        var receiverFlag = allowExternal === true
+          ? android.content.Context.RECEIVER_EXPORTED
+          : android.content.Context.RECEIVER_NOT_EXPORTED;
+        appCtx.registerReceiver(rcv, f, receiverFlag);
       } else {
         appCtx.registerReceiver(rcv, f);
       }
@@ -326,7 +329,7 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
         run: function() { try { self.close(); } catch (e1) {} }
       }));
     } catch (e2) {}
-  });
+  }, true);
   if (closeRcv) this.state.receivers.push(closeRcv);
 
   var cfgRcv = registerReceiverOnMain(
