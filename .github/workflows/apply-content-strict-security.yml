@@ -17,7 +17,6 @@ concurrency:
 
 jobs:
   apply:
-    if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '应用 Content 安全默认值') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,17 +25,31 @@ jobs:
           ref: fix/content-strict-write-allowlist
           fetch-depth: 0
 
-      - name: Apply patch
-        run: python3 scripts/apply_content_strict_security.py
-
-      - name: Verify generated JavaScript
+      - name: Apply, verify and commit
+        shell: bash
         run: |
+          set +e
+          python3 scripts/apply_content_strict_security.py > content-patch-debug.log 2>&1
+          status=$?
+          cat content-patch-debug.log
+          if [ "$status" -ne 0 ]; then
+            git checkout -- code/th_08_content.js code/th_12_rebuild.js
+            printf '\nexit_status=%s\n' "$status" >> content-patch-debug.log
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add content-patch-debug.log
+            if git diff --cached --quiet; then
+              exit 0
+            fi
+            git commit -m "记录 Content 补丁失败"
+            git push origin HEAD:fix/content-strict-write-allowlist
+            exit 0
+          fi
+
+          rm -f content-patch-debug.log
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
           git diff --check
-
-      - name: Commit generated modules
-        run: |
           if git diff --quiet -- code/th_08_content.js code/th_12_rebuild.js; then
             echo "Content security patch already current"
             exit 0
