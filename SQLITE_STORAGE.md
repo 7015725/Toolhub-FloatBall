@@ -117,7 +117,9 @@ userId
 cmd
 cmd_b64
 action
-shortcutCode
+intentUri
+shortcutExecMode
+shortcutJsCode（仅历史 legacy_js 按钮）
 嵌套对象
 数组参数
 ```
