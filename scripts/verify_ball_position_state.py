@@ -13,7 +13,7 @@ MANIFEST = ROOT / "manifest.json"
 TOOLHUB = ROOT / "ToolHub.js"
 
 REQUIRED = [
-    "// @version 1.0.9",
+    "// @version 1.0.10",
     "__toolHubPositionStateMachineInstalled",
     "__toolHubFixedEdgePointerPatchInstalled = true",
     "BALL_POSITION_SIDE",
@@ -186,7 +186,7 @@ def main() -> None:
         "layoutInDisplayCutoutMode",
         "proto.createPointerLayoutParams = function(st)",
         "proto.pointerCandidateMatchesFinalHotspot = function(st)",
-        "pointerRectHitScore(hp.x, hp.y, pointerState.currentRect)",
+        "pointerRectInside(hp.x, hp.y, pointerState.currentRect)",
     ):
         if marker not in edge_helper:
             fail("pointer edge/candidate helper missing: " + marker)
@@ -227,7 +227,7 @@ def main() -> None:
         fail("screen reflow does not cancel pending semantic task")
 
     for marker in (
-        "// @version 1.1.33",
+        "// @version 1.1.35",
         "copyPointerTextToClipboard = function",
         "cm.setPrimaryClip(clip)",
         "rememberPointerValidPick",
@@ -250,10 +250,18 @@ def main() -> None:
         fail("text hover readiness must not reuse OCR area hold timing")
     if "areaHoldDelay: 2000" not in pointer_core:
         fail("pointer state area hover default is not 2000ms")
+    for marker in (
+        "updatePointerTextStableMotion = function",
+        "grantPointerTextHoverCredential = function",
+        "hasPointerTextHoverCredential = function",
+        "TEXT_HOVER_NOT_READY",
+        "TEXT_POINTER_OUTSIDE_FRAME",
+    ):
+        if marker not in pointer_core:
+            fail("independent pointer text hover credential missing: " + marker)
     for forbidden in (
         "getRecentReadyPointerPick",
         "restoreRecentReadyPointerPick",
-        "lastValidPickReadyAt",
         "syncPointerTextHoverFromStableHold",
         "storeReadyPointerSnapshot",
         "getReadyPointerSnapshotForRelease",
@@ -311,7 +319,7 @@ def main() -> None:
         "lastValidPickText",
         "lastValidPickRect",
         "lastValidPickSession",
-        "pointerRectHitScore",
+        "pointerRectInside",
     ):
         if marker not in recent:
             fail("recent valid-pick cache is incomplete: " + marker)

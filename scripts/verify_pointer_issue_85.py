@@ -197,7 +197,7 @@ def main():
         'timeoutReason.indexOf("release_final") === 0' in apply_inspect
         and 'timeoutReason.indexOf("area_small_text_final") === 0' in apply_inspect
         and "finishAfterRelease === true" in apply_inspect
-        and "this.pointerRectHitScore(pack.x, pack.y, st.boundRect) >= 0" in apply_inspect
+        and "this.pointerRectInside(pack.x, pack.y, st.boundRect) === true" in apply_inspect
         and "candidateFresh" in apply_inspect
         and "finalTimeout &&" in apply_inspect
         and "candidateStillHit &&" in apply_inspect,
@@ -344,9 +344,13 @@ def main():
         and "st.boundRect = null;" in pointer_reflow
         and "st.boundAt = 0;" in pointer_reflow
         and "st.hoverSince = 0;" in pointer_reflow
+        and 'this.invalidatePointerTextHoverCredential(st, "screen_reflow", false)' in pointer_reflow
+        and "st.textStableSince = 0;" in pointer_reflow
+        and 'st.textStableTargetKey = "";' in pointer_reflow
+        and "this.resetPointerTextStableHover(" in pointer_reflow
         and "this.resetPointerAreaHold()" in pointer_reflow
         and '"screen_reflow:" + String(reason || "")' in pointer_reflow,
-        "text_pick reflow must clear pre-rotation candidates and restart inspection",
+        "text_pick reflow must clear candidates and hover credentials, then restart stable timing",
     )
 
     screen_reflow = section(

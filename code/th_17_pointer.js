@@ -1,4 +1,4 @@
-// @version 1.1.33
+// @version 1.1.35
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -292,6 +292,347 @@ FloatBallAppWM.prototype.copyPointerTextToClipboard = function(textValue) {
   return false;
 };
 
+FloatBallAppWM.prototype.invalidatePointerTextHoverCredential = function(st, reason, keepRecentReady) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  if (!pointerState) return false;
+
+  var hadCredential = !!(
+    pointerState.textHoverReadyKey ||
+    pointerState.textHoverReadyRect ||
+    Number(pointerState.textHoverReadyAt || 0) > 0
+  );
+
+  pointerState.textHoverReadyKey = "";
+  pointerState.textHoverReadyRect = null;
+  pointerState.textHoverReadyAt = 0;
+  pointerState.textHoverReadySince = 0;
+  pointerState.textHoverReadySession = 0;
+  pointerState.textHoverReadyToken = Number(pointerState.textHoverReadyToken || 0) + 1;
+
+  try {
+    if (pointerState.handler && pointerState.textReadyRunnable) {
+      pointerState.handler.removeCallbacks(pointerState.textReadyRunnable);
+    }
+  } catch (eRemoveReady) {}
+  pointerState.textReadyRunnable = null;
+  pointerState.textReadyToken = Number(pointerState.textReadyToken || 0) + 1;
+
+  if (keepRecentReady !== true) {
+    pointerState.lastValidPickReadyAt = 0;
+    pointerState.lastValidPickHoverSince = 0;
+    pointerState.lastValidPickReadySession = 0;
+  }
+
+  if (hadCredential && reason) {
+    try { safeLog(this.L, 'd', "invalidate pointer text hover credential reason=" + String(reason)); } catch (eLog) {}
+  }
+  return hadCredential;
+};
+
+FloatBallAppWM.prototype.pointerTextHotspotInsideRect = function(rect) {
+  if (!rect) return false;
+  var hp = null;
+  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+  if (!hp) return false;
+  try {
+    if (this.pointerRectInside) return this.pointerRectInside(hp.x, hp.y, rect) === true;
+  } catch (eInside) {}
+  return hp.x >= Number(rect.left) && hp.x <= Number(rect.right) &&
+    hp.y >= Number(rect.top) && hp.y <= Number(rect.bottom);
+};
+
+FloatBallAppWM.prototype.getPointerTextStableSinceForRect = function(st, rect, atTs) {
+  var pointerState = st || null;
+  if (!pointerState || !rect) return 0;
+
+  var ts = Number(atTs || th17Now());
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+
+  var since = Number(pointerState.textStableSince || 0);
+  var anchorX = Number(pointerState.textStableAnchorX || -100000);
+  var anchorY = Number(pointerState.textStableAnchorY || -100000);
+  if (isNaN(since) || since <= 0 || since > ts) return 0;
+  if (isNaN(anchorX) || isNaN(anchorY) || anchorX < -90000 || anchorY < -90000) return 0;
+
+  var anchorInside = false;
+  try {
+    if (this.pointerRectInside) anchorInside = this.pointerRectInside(anchorX, anchorY, rect) === true;
+    else {
+      anchorInside = anchorX >= Number(rect.left) && anchorX <= Number(rect.right) &&
+        anchorY >= Number(rect.top) && anchorY <= Number(rect.bottom);
+    }
+  } catch (eAnchor) { anchorInside = false; }
+  if (!anchorInside || !this.pointerTextHotspotInsideRect(rect)) return 0;
+  return since;
+};
+
+FloatBallAppWM.prototype.resetPointerTextStableHover = function(st, atTs, hotspot, reason) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  if (!pointerState) return false;
+
+  var ts = Number(atTs || th17Now());
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+  var hp = hotspot || null;
+  try { if (!hp) hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+
+  this.invalidatePointerTextHoverCredential(pointerState, reason || "stable_reset", false);
+
+  pointerState.textStableAnchorX = hp ? Number(hp.x) : -100000;
+  pointerState.textStableAnchorY = hp ? Number(hp.y) : -100000;
+  pointerState.textStableLastX = hp ? Number(hp.x) : -100000;
+  pointerState.textStableLastY = hp ? Number(hp.y) : -100000;
+  pointerState.textStableSince = hp ? ts : 0;
+  pointerState.textStableTargetKey = String(pointerState.currentKey || "");
+
+  var insideCurrent = false;
+  if (hp && pointerState.currentRect) {
+    try {
+      if (this.pointerRectInside) insideCurrent = this.pointerRectInside(hp.x, hp.y, pointerState.currentRect) === true;
+    } catch (eInside) { insideCurrent = false; }
+  }
+
+  pointerState.hoverKey = String(pointerState.currentKey || "");
+  pointerState.hoverSince = insideCurrent ? ts : 0;
+  pointerState.hoverX = hp ? Number(hp.x) : 0;
+  pointerState.hoverY = hp ? Number(hp.y) : 0;
+  this.updatePointerVisualHot(false);
+  try {
+    if (pointerState.currentRect) this.showPointerAreaFrame(pointerState.currentRect, "text_hover");
+  } catch (eFrame) {}
+  return true;
+};
+
+FloatBallAppWM.prototype.updatePointerTextStableMotion = function(atTs) {
+  var st = this.ensurePointerToolState();
+  if (!st.active || st.closed || st.mode !== "text_pick" || !st.dragging) return false;
+
+  var ts = Number(atTs || th17Now());
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+  var hp = null;
+  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+  if (!hp) return false;
+
+  var currentCredentialStillInside = false;
+  if (
+    st.textHoverReadyKey &&
+    st.textHoverReadyRect &&
+    String(st.textHoverReadyKey) === String(st.currentKey || "") &&
+    Number(st.textHoverReadySession || 0) === Number(st.inspectSession || 0)
+  ) {
+    try {
+      currentCredentialStillInside =
+        this.pointerTextHotspotInsideRect(st.currentRect) &&
+        this.pointerTextHotspotInsideRect(st.textHoverReadyRect);
+    } catch (eReadyInside) { currentCredentialStillInside = false; }
+  }
+
+  if (currentCredentialStillInside) {
+    st.textStableLastX = hp.x;
+    st.textStableLastY = hp.y;
+    return true;
+  }
+
+  var anchorX = Number(st.textStableAnchorX || -100000);
+  var anchorY = Number(st.textStableAnchorY || -100000);
+  if (anchorX < -90000 || anchorY < -90000 || Number(st.textStableSince || 0) <= 0) {
+    return this.resetPointerTextStableHover(st, ts, hp, "stable_start");
+  }
+
+  var dx = hp.x - anchorX;
+  var dy = hp.y - anchorY;
+  var dist = Math.sqrt(dx * dx + dy * dy);
+  var breakSlop = Math.max(1, Number(st.textHoverBreakSlop || this.dp(14)));
+
+  if (dist > breakSlop) {
+    return this.resetPointerTextStableHover(st, ts, hp, "stable_move");
+  }
+
+  st.textStableLastX = hp.x;
+  st.textStableLastY = hp.y;
+
+  if (st.currentText && st.currentRect) {
+    var inside = this.pointerTextHotspotInsideRect(st.currentRect);
+    if (!inside) {
+      // 离开严格文字边框后，旧目标的稳定时间和可提交凭证同时失效。
+      return this.resetPointerTextStableHover(st, ts, hp, "leave_text_frame");
+    }
+
+    if (String(st.hoverKey || "") !== String(st.currentKey || "")) {
+      this.invalidatePointerTextHoverCredential(st, "candidate_key_changed", false);
+      st.hoverKey = String(st.currentKey || "");
+      st.hoverSince = 0;
+    }
+
+    if (!st.hoverSince || Number(st.hoverSince || 0) <= 0) {
+      var stableSince = this.getPointerTextStableSinceForRect(st, st.currentRect, ts);
+      st.hoverSince = stableSince > 0 ? stableSince : ts;
+      st.hoverX = hp.x;
+      st.hoverY = hp.y;
+      try { this.schedulePointerTextReadyVisualRefresh(); } catch (eSchedule) {}
+    }
+  }
+
+  return true;
+};
+
+FloatBallAppWM.prototype.bindPointerTextHoverCandidate = function(st, key, rect, atTs) {
+  var pointerState = st || null;
+  if (!pointerState || !key || !rect) return false;
+
+  var ts = Number(atTs || th17Now());
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+  var targetKey = String(key || "");
+  var previousHoverKey = String(pointerState.hoverKey || "");
+  var stableTargetKey = String(pointerState.textStableTargetKey || "");
+  var stableTargetChanged = !!stableTargetKey && stableTargetKey !== targetKey;
+
+  var hp = null;
+  try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
+
+  // 首次异步命中允许复用命中前的物理稳定时间；已经绑定过目标后，
+  // 文本或矩形 key 改变必须从新目标出现时重新计时。
+  if (stableTargetChanged) {
+    this.resetPointerTextStableHover(pointerState, ts, hp, "target_changed");
+  } else if (!stableTargetKey) {
+    pointerState.textStableTargetKey = targetKey;
+  }
+
+  var credentialTargetChanged =
+    pointerState.textHoverReadyKey &&
+    String(pointerState.textHoverReadyKey) !== targetKey;
+  var credentialRectChanged = false;
+  try {
+    credentialRectChanged =
+      pointerState.textHoverReadyRect &&
+      th17RectKey(pointerState.textHoverReadyRect) !== th17RectKey(rect);
+  } catch (eRectChanged) { credentialRectChanged = true; }
+
+  if (!stableTargetChanged && (credentialTargetChanged || credentialRectChanged)) {
+    this.invalidatePointerTextHoverCredential(pointerState, "candidate_changed", false);
+  }
+
+  pointerState.textStableTargetKey = targetKey;
+  pointerState.hoverKey = targetKey;
+  pointerState.hoverX = hp ? hp.x : 0;
+  pointerState.hoverY = hp ? hp.y : 0;
+
+  if (!hp || !this.pointerTextHotspotInsideRect(rect)) {
+    pointerState.hoverSince = 0;
+    this.updatePointerVisualHot(false);
+    return false;
+  }
+
+  var stableSince = this.getPointerTextStableSinceForRect(pointerState, rect, ts);
+  var currentSince = Number(pointerState.hoverSince || 0);
+  if (
+    stableTargetChanged ||
+    isNaN(currentSince) ||
+    currentSince <= 0 ||
+    currentSince > ts
+  ) {
+    pointerState.hoverSince = stableSince > 0 ? stableSince : ts;
+  } else if (stableSince > 0 && stableSince < currentSince) {
+    // 同一目标的无障碍结果可能晚于真实稳定停留返回，允许回溯物理稳定起点。
+    pointerState.hoverSince = stableSince;
+  }
+
+  // hoverKey 在临时空扫描后可能被清空；同一稳定目标恢复时不应被当作新目标。
+  if (!previousHoverKey && stableTargetKey === targetKey && stableSince > 0) {
+    pointerState.hoverSince = stableSince;
+  }
+  return true;
+};
+
+FloatBallAppWM.prototype.grantPointerTextHoverCredential = function(st, atTs) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  if (!pointerState || !pointerState.currentText || !pointerState.currentRect) return false;
+
+  var ts = Number(atTs || th17Now());
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+  var key = String(pointerState.currentKey || this.pointerTextKeyOf({
+    text: pointerState.currentText,
+    rect: pointerState.currentRect
+  }));
+  if (!key || String(pointerState.hoverKey || "") !== key) return false;
+  if (!this.pointerTextHotspotInsideRect(pointerState.currentRect)) return false;
+
+  var since = Number(pointerState.hoverSince || 0);
+  if (isNaN(since) || since <= 0 || since > ts) return false;
+  if (ts - since < this.getPointerTextHoverLimitMs()) return false;
+
+  var session = Number(pointerState.inspectSession || 0);
+  if (
+    String(pointerState.textHoverReadyKey || "") === key &&
+    pointerState.textHoverReadyRect &&
+    th17RectKey(pointerState.textHoverReadyRect) === th17RectKey(pointerState.currentRect) &&
+    Number(pointerState.textHoverReadySession || 0) === session &&
+    Number(pointerState.textHoverReadyAt || 0) > 0 &&
+    this.pointerTextHotspotInsideRect(pointerState.textHoverReadyRect)
+  ) {
+    return true;
+  }
+
+  pointerState.textHoverReadyKey = key;
+  pointerState.textHoverReadyRect = th17RectObj(pointerState.currentRect);
+  pointerState.textHoverReadyAt = ts;
+  pointerState.textHoverReadySince = since;
+  pointerState.textHoverReadySession = session;
+  pointerState.textHoverReadyToken = Number(pointerState.textHoverReadyToken || 0) + 1;
+
+  try { this.rememberPointerValidPick(pointerState); } catch (eRemember) {}
+  pointerState.lastValidPickReadyAt = ts;
+  pointerState.lastValidPickHoverSince = since;
+  pointerState.lastValidPickReadySession = session;
+
+  try {
+    safeLog(this.L, 'i',
+      "pointer text hover credential granted elapsed=" + String(Math.max(0, ts - since)) +
+      " key=" + key
+    );
+  } catch (eLog) {}
+  return true;
+};
+
+FloatBallAppWM.prototype.hasPointerTextHoverCredential = function(st, atTs, allowGrant) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  if (!pointerState || !pointerState.currentText || !pointerState.currentRect) return false;
+
+  var ts = Number(atTs || th17Now());
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+  if (allowGrant === true) {
+    try { this.grantPointerTextHoverCredential(pointerState, ts); } catch (eGrant) {}
+  }
+
+  var key = String(pointerState.currentKey || "");
+  if (!key || String(pointerState.textHoverReadyKey || "") !== key) return false;
+  if (!pointerState.textHoverReadyRect) return false;
+  if (th17RectKey(pointerState.textHoverReadyRect) !== th17RectKey(pointerState.currentRect)) return false;
+  if (Number(pointerState.textHoverReadySession || 0) !== Number(pointerState.inspectSession || 0)) return false;
+
+  var readyAt = Number(pointerState.textHoverReadyAt || 0);
+  var readySince = Number(pointerState.textHoverReadySince || 0);
+  if (isNaN(readyAt) || readyAt <= 0 || readyAt > ts) return false;
+  if (isNaN(readySince) || readySince <= 0 || readySince > ts) return false;
+  if (ts - readySince < this.getPointerTextHoverLimitMs()) return false;
+
+  // 业务门槛使用严格边框命中，不使用带 padding 的无障碍候选命中范围。
+  if (!this.pointerTextHotspotInsideRect(pointerState.currentRect)) return false;
+  if (!this.pointerTextHotspotInsideRect(pointerState.textHoverReadyRect)) return false;
+  return true;
+};
+
 FloatBallAppWM.prototype.rememberPointerValidPick = function(st) {
   var pointerState = st || null;
   try {
@@ -304,12 +645,31 @@ FloatBallAppWM.prototype.rememberPointerValidPick = function(st) {
     rect: pointerState.currentRect
   }));
   if (!key) return false;
+
+  if (String(pointerState.lastValidPickKey || "") !== key) {
+    pointerState.lastValidPickReadyAt = 0;
+    pointerState.lastValidPickHoverSince = 0;
+    pointerState.lastValidPickReadySession = 0;
+  }
+
   var now = th17Now();
   pointerState.lastValidPickText = String(pointerState.currentText);
   pointerState.lastValidPickRect = th17RectObj(pointerState.currentRect);
   pointerState.lastValidPickKey = key;
   pointerState.lastValidPickAt = now;
   pointerState.lastValidPickSession = Number(pointerState.inspectSession || 0);
+
+  if (
+    String(pointerState.textHoverReadyKey || "") === key &&
+    pointerState.textHoverReadyRect &&
+    th17RectKey(pointerState.textHoverReadyRect) === th17RectKey(pointerState.currentRect) &&
+    Number(pointerState.textHoverReadySession || 0) === Number(pointerState.inspectSession || 0) &&
+    Number(pointerState.textHoverReadyAt || 0) > 0
+  ) {
+    pointerState.lastValidPickReadyAt = Number(pointerState.textHoverReadyAt || 0);
+    pointerState.lastValidPickHoverSince = Number(pointerState.textHoverReadySince || 0);
+    pointerState.lastValidPickReadySession = Number(pointerState.textHoverReadySession || 0);
+  }
   return true;
 };
 
@@ -320,11 +680,18 @@ FloatBallAppWM.prototype.getRecentPointerPickForRelease = function(st, atTs) {
   } catch (eState) { pointerState = null; }
   if (!pointerState || !pointerState.lastValidPickText || !pointerState.lastValidPickRect) return null;
   if (Number(pointerState.lastValidPickSession || 0) !== Number(pointerState.inspectSession || 0)) return null;
+  if (Number(pointerState.lastValidPickReadySession || 0) !== Number(pointerState.inspectSession || 0)) return null;
 
   var now = Number(atTs || th17Now());
   if (isNaN(now) || now <= 0) now = th17Now();
   var hitAt = Number(pointerState.lastValidPickAt || 0);
+  var readyAt = Number(pointerState.lastValidPickReadyAt || 0);
+  var hoverSince = Number(pointerState.lastValidPickHoverSince || 0);
   if (isNaN(hitAt) || hitAt <= 0) return null;
+  if (isNaN(readyAt) || readyAt <= 0 || readyAt > now) return null;
+  if (isNaN(hoverSince) || hoverSince <= 0 || hoverSince > now) return null;
+  if (now - hoverSince < this.getPointerTextHoverLimitMs()) return null;
+
   var age = now - hitAt;
   var maxAge = 500;
   if (age < 0 || age > maxAge) return null;
@@ -333,8 +700,16 @@ FloatBallAppWM.prototype.getRecentPointerPickForRelease = function(st, atTs) {
   try { hp = this.getPointerHotspot(); } catch (eHotspot) { hp = null; }
   if (!hp) return null;
   var hit = false;
-  try { hit = this.pointerRectHitScore(hp.x, hp.y, pointerState.lastValidPickRect) >= 0; }
-  catch (eHit) { hit = false; }
+  try {
+    if (this.pointerRectInside) {
+      hit = this.pointerRectInside(hp.x, hp.y, pointerState.lastValidPickRect) === true;
+    } else {
+      hit = hp.x >= Number(pointerState.lastValidPickRect.left) &&
+        hp.x <= Number(pointerState.lastValidPickRect.right) &&
+        hp.y >= Number(pointerState.lastValidPickRect.top) &&
+        hp.y <= Number(pointerState.lastValidPickRect.bottom);
+    }
+  } catch (eHit) { hit = false; }
   if (!hit) return null;
 
   return {
@@ -342,6 +717,8 @@ FloatBallAppWM.prototype.getRecentPointerPickForRelease = function(st, atTs) {
     rect: th17RectObj(pointerState.lastValidPickRect),
     key: String(pointerState.lastValidPickKey || ""),
     hitAt: hitAt,
+    readyAt: readyAt,
+    hoverSince: hoverSince,
     ageMs: age,
     session: Number(pointerState.lastValidPickSession || 0)
   };
@@ -351,11 +728,24 @@ FloatBallAppWM.prototype.restoreRecentPointerPickForRelease = function(st, recen
   var pointerState = st || null;
   var item = recent || null;
   if (!pointerState || !item || !item.text || !item.rect) return false;
+
   pointerState.currentText = String(item.text);
   pointerState.currentRect = th17RectObj(item.rect);
   pointerState.currentKey = String(item.key || "");
   pointerState.hoverKey = pointerState.currentKey;
-  pointerState.hoverSince = Number(item.hitAt || th17Now());
+  pointerState.hoverSince = Number(item.hoverSince || 0);
+  pointerState.textHoverReadyKey = pointerState.currentKey;
+  pointerState.textHoverReadyRect = th17RectObj(item.rect);
+  pointerState.textHoverReadyAt = Number(item.readyAt || 0);
+  pointerState.textHoverReadySince = Number(item.hoverSince || 0);
+  pointerState.textHoverReadySession = Number(item.session || pointerState.inspectSession || 0);
+  pointerState.textHoverReadyToken = Number(pointerState.textHoverReadyToken || 0) + 1;
+
+  if (!this.hasPointerTextHoverCredential(pointerState, Number(pointerState.releaseTs || th17Now()), false)) {
+    this.invalidatePointerTextHoverCredential(pointerState, "recent_candidate_invalid", false);
+    return false;
+  }
+
   try { this.showPointerAreaFrame(pointerState.currentRect, "text_hit"); } catch (eFrame) {}
   try { this.updatePointerVisualHot(true); } catch (eHot) {}
   return true;
@@ -364,6 +754,12 @@ FloatBallAppWM.prototype.restoreRecentPointerPickForRelease = function(st, recen
 FloatBallAppWM.prototype.completePointerCandidateOnRelease = function(st, successCode, source, extraData) {
   var pointerState = st || null;
   if (!pointerState || !pointerState.currentText || !pointerState.currentRect) return false;
+  var commitTs = Number(pointerState.releaseTs || th17Now());
+  if (isNaN(commitTs) || commitTs <= 0) commitTs = th17Now();
+  if (!this.hasPointerTextHoverCredential(pointerState, commitTs, false)) {
+    try { safeLog(this.L, 'w', "blocked pointer text release without valid hover credential"); } catch (eCredentialLog) {}
+    return false;
+  }
   var data = { source: String(source || "accessibility_release") };
   try {
     if (extraData) {
@@ -490,6 +886,9 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       lastValidPickRect: null,
       lastValidPickKey: "",
       lastValidPickAt: 0,
+      lastValidPickReadyAt: 0,
+      lastValidPickHoverSince: 0,
+      lastValidPickReadySession: 0,
       lastValidPickSession: 0,
       boundText: "",
       boundRect: null,
@@ -500,6 +899,21 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       hoverX: 0,
       hoverY: 0,
       hoverMinMs: 800,
+      textStableAnchorX: -100000,
+      textStableAnchorY: -100000,
+      textStableLastX: -100000,
+      textStableLastY: -100000,
+      textStableSince: 0,
+      textStableTargetKey: "",
+      textHoverBreakSlop: 0,
+      textHoverReadyKey: "",
+      textHoverReadyRect: null,
+      textHoverReadyAt: 0,
+      textHoverReadySince: 0,
+      textHoverReadySession: 0,
+      textHoverReadyToken: 0,
+      textReadyToken: 0,
+      textReadyRunnable: null,
       releaseTs: 0,
       areaHoldToken: 0,
       areaHoldRunnable: null,
@@ -563,6 +977,7 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
   st.areaMinMovePx = dp.call(this, th17ConfigNumber(this, "POINTER_AREA_MIN_MOVE_DP", 24, 0, 160));
   st.areaHoldStableSlop = dp.call(this, 5);
   st.areaHoldBreakSlop = dp.call(this, 14);
+  st.textHoverBreakSlop = dp.call(this, 14);
   st.areaCaptureInset = dp.call(this, 3);
   st.areaMinSize = dp.call(this, 8);
   return st;
@@ -610,6 +1025,9 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.lastValidPickRect = null;
   st.lastValidPickKey = "";
   st.lastValidPickAt = 0;
+  st.lastValidPickReadyAt = 0;
+  st.lastValidPickHoverSince = 0;
+  st.lastValidPickReadySession = 0;
   st.lastValidPickSession = Number(st.inspectSession || 0);
   st.boundText = "";
   st.boundRect = null;
@@ -619,6 +1037,21 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.hoverKey = "";
   st.hoverX = 0;
   st.hoverY = 0;
+  try { if (st.handler && st.textReadyRunnable) st.handler.removeCallbacks(st.textReadyRunnable); } catch (eRemoveTextReadyReset) {}
+  st.textReadyRunnable = null;
+  st.textReadyToken = Number(st.textReadyToken || 0) + 1;
+  st.textStableAnchorX = -100000;
+  st.textStableAnchorY = -100000;
+  st.textStableLastX = -100000;
+  st.textStableLastY = -100000;
+  st.textStableSince = 0;
+  st.textStableTargetKey = "";
+  st.textHoverReadyKey = "";
+  st.textHoverReadyRect = null;
+  st.textHoverReadyAt = 0;
+  st.textHoverReadySince = 0;
+  st.textHoverReadySession = 0;
+  st.textHoverReadyToken = Number(st.textHoverReadyToken || 0) + 1;
   st.releaseTs = 0;
   try { if (st.handler && st.areaHoldRunnable) st.handler.removeCallbacks(st.areaHoldRunnable); } catch (eRemoveAreaHoldReset) {}
   st.areaHoldRunnable = null;
@@ -882,6 +1315,8 @@ FloatBallAppWM.prototype.removePointerCallbacks = function(st) {
   st.inspectPending = false;
   st.inspectFinishAfterResult = false;
   st.areaHoldToken++;
+  st.textReadyToken = Number(st.textReadyToken || 0) + 1;
+  st.textHoverReadyToken = Number(st.textHoverReadyToken || 0) + 1;
   try { if (st.handler && st.areaHoldRunnable) st.handler.removeCallbacks(st.areaHoldRunnable); } catch (eRemoveAreaHoldEnter) {}
   st.areaHoldRunnable = null;
   st.inspectSeq++;
@@ -1145,6 +1580,15 @@ FloatBallAppWM.prototype.onPointerScreenChangedReflow = function(reason, oldW, o
       }
     } catch(eClearReadyReflow) {}
     st.textReadyRunnable = null;
+    try {
+      this.invalidatePointerTextHoverCredential(st, "screen_reflow", false);
+    } catch(eCredentialReflow) {}
+    st.textStableAnchorX = -100000;
+    st.textStableAnchorY = -100000;
+    st.textStableLastX = -100000;
+    st.textStableLastY = -100000;
+    st.textStableSince = 0;
+    st.textStableTargetKey = "";
 
     st.currentText = "";
     st.currentRect = null;
@@ -1186,9 +1630,17 @@ FloatBallAppWM.prototype.onPointerScreenChangedReflow = function(reason, oldW, o
       );
     }
 
-    // 仍处于拖动状态时，以旋转后的热点重新开始悬停计时。
+    // 仍处于拖动状态时，以旋转后的热点重新开始独立取字悬停和框选计时。
     try {
-      if (st.dragging) this.updatePointerAreaHoldCandidate();
+      if (st.dragging) {
+        this.resetPointerTextStableHover(
+          st,
+          th17Now(),
+          this.getPointerHotspot(),
+          "screen_reflow"
+        );
+        this.updatePointerAreaHoldCandidate();
+      }
     } catch(eRestartHoldReflow) {}
   }
 
@@ -1374,6 +1826,7 @@ FloatBallAppWM.prototype.schedulePointerMove = function(x, y) {
       try { st.wm.updateViewLayout(st.root, st.lp); } catch (eU) { safeLog(self.L, 'e', "pointer update fail: " + String(eU)); }
       if (st.mode === "area_capture") self.updatePointerAreaSelection();
       else {
+        try { self.updatePointerTextStableMotion(th17Now()); } catch (eTextStable) {}
         self.updatePointerAreaHoldCandidate();
         self.scheduleDraggingInspect();
       }
@@ -1940,35 +2393,19 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
   var finishAfterRelease = pack.finishAfterResult === true;
   if (result && result.text && result.rect) {
     var key = this.pointerTextKeyOf(result);
-    if (key !== st.hoverKey) {
-      st.hoverKey = key;
-      var releaseTsForHover = 0;
-      var stableSince = 0;
-      try { releaseTsForHover = Number(st.releaseTs || 0); } catch (eReleaseTs) { releaseTsForHover = 0; }
-      try { stableSince = Number(st.areaHoldSince || 0); } catch (eStableSince) { stableSince = 0; }
-
-      // 松手最终补扫命中新文本时，不能绕过“悬停取字时间”。
-      // 如果指针热点已经稳定停留足够久，则用稳定起点计算悬停时间；
-      // 否则从松手时间开始计算，后续 extract 会返回 TEXT_HOVER_NOT_READY。
-      if (finishAfterRelease && releaseTsForHover > 0 && stableSince > 0 && releaseTsForHover - stableSince >= Number(st.hoverMinMs || 800)) {
-        st.hoverSince = stableSince;
-      } else if (finishAfterRelease && releaseTsForHover > 0) {
-        st.hoverSince = releaseTsForHover;
-      } else {
-        st.hoverSince = now;
-      }
-      st.hoverX = pack.x;
-      st.hoverY = pack.y;
-    }
     st.currentText = String(result.text);
-    st.currentRect = result.rect;
+    st.currentRect = th17RectObj(result.rect);
     st.currentKey = key;
     st.boundText = st.currentText;
     st.boundRect = th17RectObj(result.rect);
     st.boundKey = key;
     st.boundAt = now;
+
+    var hoverAt = now;
+    if (finishAfterRelease && Number(st.releaseTs || 0) > 0) hoverAt = Number(st.releaseTs);
+    try { this.bindPointerTextHoverCandidate(st, key, st.currentRect, hoverAt); } catch (eBindHover) {}
     try { this.rememberPointerValidPick(st); } catch (eRemember) {}
-    this.refreshPointerTextReadyVisualState();
+    this.refreshPointerTextReadyVisualState(hoverAt);
     this.schedulePointerTextReadyVisualRefresh();
   } else {
     var recoveredByLastCandidate = false;
@@ -1985,7 +2422,7 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     try {
       candidateStillHit =
         !!st.boundRect &&
-        this.pointerRectHitScore(pack.x, pack.y, st.boundRect) >= 0;
+        this.pointerRectInside(pack.x, pack.y, st.boundRect) === true;
     } catch(eCandidateHit) {
       candidateStillHit = false;
     }
@@ -2015,12 +2452,18 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
         st.currentText = String(st.boundText);
         st.currentRect = th17RectObj(st.boundRect);
         st.currentKey = st.boundKey || this.pointerTextKeyOf({ text: st.currentText, rect: st.currentRect });
-        st.hoverKey = st.currentKey;
-        if (!st.hoverSince || Number(st.hoverSince || 0) <= 0) st.hoverSince = Number(st.boundAt || now);
-        st.hoverX = pack.x;
-        st.hoverY = pack.y;
+        var recoveredHoverAt = finishAfterRelease && Number(st.releaseTs || 0) > 0 ?
+          Number(st.releaseTs) : now;
+        try {
+          this.bindPointerTextHoverCandidate(
+            st,
+            st.currentKey,
+            st.currentRect,
+            recoveredHoverAt
+          );
+        } catch (eBindRecovered) {}
         recoveredByLastCandidate = true;
-        this.refreshPointerTextReadyVisualState();
+        this.refreshPointerTextReadyVisualState(recoveredHoverAt);
         this.schedulePointerTextReadyVisualRefresh();
         try {
           safeLog(this.L, 'w',
@@ -2039,10 +2482,7 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
     }
 
     if (!recoveredByLastCandidate) {
-      try {
-        st.textReadyToken = Number(st.textReadyToken || 0) + 1;
-        if (st.handler && st.textReadyRunnable) st.handler.removeCallbacks(st.textReadyRunnable);
-      } catch(eClearReadyTimer) {}
+      try { this.invalidatePointerTextHoverCredential(st, "inspect_empty", true); } catch (eClearReadyTimer) {}
       st.currentText = "";
       st.currentRect = null;
       st.currentKey = "";
@@ -2220,14 +2660,7 @@ FloatBallAppWM.prototype.getPointerTextHoverLimitMs = function() {
 
 FloatBallAppWM.prototype.isPointerTextHoverReady = function(atTs) {
   var st = this.ensurePointerToolState();
-  if (!st.currentText || !st.currentRect) return false;
-  if (!st.hoverSince || Number(st.hoverSince || 0) <= 0) return false;
-  if (st.currentKey && st.hoverKey && String(st.currentKey) !== String(st.hoverKey)) return false;
-  var ts = Number(atTs || th17Now());
-  if (isNaN(ts) || ts <= 0) ts = th17Now();
-  var since = Number(st.hoverSince || 0);
-  if (isNaN(since) || since <= 0 || since > ts) return false;
-  return ts - since >= this.getPointerTextHoverLimitMs();
+  return this.hasPointerTextHoverCredential(st, atTs, true) === true;
 };
 
 FloatBallAppWM.prototype.getPointerTextHoverRemainMs = function(atTs) {
@@ -2235,22 +2668,23 @@ FloatBallAppWM.prototype.getPointerTextHoverRemainMs = function(atTs) {
   var ts = Number(atTs || th17Now());
   if (isNaN(ts) || ts <= 0) ts = th17Now();
   var elapsed = st.hoverSince ? (ts - Number(st.hoverSince || 0)) : 0;
+  if (isNaN(elapsed) || elapsed < 0) elapsed = 0;
   var remain = this.getPointerTextHoverLimitMs() - elapsed;
   if (isNaN(remain) || remain < 0) remain = 0;
   return Math.ceil(remain);
 };
 
-FloatBallAppWM.prototype.refreshPointerTextReadyVisualState = function() {
+FloatBallAppWM.prototype.refreshPointerTextReadyVisualState = function(atTs) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "text_pick") return false;
   if (!st.currentText || !st.currentRect) {
     this.updatePointerVisualHot(false);
     return false;
   }
-  var ready = this.isPointerTextHoverReady(th17Now()) === true;
-  if (ready) {
-    try { this.rememberPointerValidPick(st); } catch (eRememberReady) {}
-  }
+
+  var ts = Number(atTs || th17Now());
+  if (isNaN(ts) || ts <= 0) ts = th17Now();
+  var ready = this.hasPointerTextHoverCredential(st, ts, true) === true;
   try { this.showPointerAreaFrame(st.currentRect, ready ? "text_hit" : "text_hover"); } catch(eFrameReady) {}
   this.updatePointerVisualHot(ready);
   try { if (st.root) st.root.invalidate(); } catch(eInvReady) {}
@@ -2261,6 +2695,7 @@ FloatBallAppWM.prototype.schedulePointerTextReadyVisualRefresh = function() {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "text_pick") return false;
   if (!st.currentText || !st.currentRect || !st.hoverSince) return false;
+  if (!this.pointerTextHotspotInsideRect(st.currentRect)) return false;
   if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
 
   try {
@@ -2269,6 +2704,9 @@ FloatBallAppWM.prototype.schedulePointerTextReadyVisualRefresh = function() {
 
   st.textReadyToken = Number(st.textReadyToken || 0) + 1;
   var token = st.textReadyToken;
+  var session = Number(st.inspectSession || 0);
+  var key = String(st.currentKey || "");
+  var rectKey = th17RectKey(st.currentRect);
   var delay = this.getPointerTextHoverRemainMs(th17Now());
   if (delay <= 0) {
     this.refreshPointerTextReadyVisualState();
@@ -2280,6 +2718,9 @@ FloatBallAppWM.prototype.schedulePointerTextReadyVisualRefresh = function() {
     try {
       if (!st.active || st.closed || st.mode !== "text_pick") return;
       if (Number(st.textReadyToken || 0) !== token) return;
+      if (Number(st.inspectSession || 0) !== session) return;
+      if (String(st.currentKey || "") !== key) return;
+      if (!st.currentRect || th17RectKey(st.currentRect) !== rectKey) return;
       self.refreshPointerTextReadyVisualState();
     } catch(eRunReady) {
       safeLog(self.L, 'e', "pointer text ready visual refresh fail: " + String(eRunReady));
@@ -2315,10 +2756,46 @@ FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect, relea
     return { ok: false, err: "未命中文本", code: "NO_TEXT" };
   }
 
+  var insideFrame = false;
+  try { insideFrame = this.pointerTextHotspotInsideRect(st.currentRect) === true; } catch (eInside) { insideFrame = false; }
+  var credentialReady = false;
+  try { credentialReady = this.hasPointerTextHoverCredential(st, releaseTs, true) === true; }
+  catch (eCredential) { credentialReady = false; }
+
+  if (!insideFrame || !credentialReady) {
+    var hoverSince = Number(st.hoverSince || 0);
+    var elapsedMs = hoverSince > 0 ? Math.max(0, releaseTs - hoverSince) : 0;
+    var remainMs = Math.max(0, this.getPointerTextHoverLimitMs() - elapsedMs);
+    var code = insideFrame ? "TEXT_HOVER_NOT_READY" : "TEXT_POINTER_OUTSIDE_FRAME";
+    var message = insideFrame ? "悬停时间不足" : "指针不在文字边框内";
+    this.setPointerToolResult({
+      ok: false,
+      type: "cancel",
+      code: code,
+      message: message,
+      value: "",
+      data: {
+        elapsedMs: elapsedMs,
+        remainMs: remainMs,
+        hoverMinMs: this.getPointerTextHoverLimitMs(),
+        insideFrame: insideFrame,
+        currentKey: String(st.currentKey || "")
+      }
+    });
+    this.toast(message);
+    this.closePointerTool(message, true);
+    return { ok: false, err: message, code: code };
+  }
+
   var reason = String(st.inspectLastReason || st.inspectLatestReason || "");
   var successCode = "TEXT_PICK_SUCCESS";
   var source = "accessibility_current";
-  var extra = { releaseTs: releaseTs };
+  var extra = {
+    releaseTs: releaseTs,
+    hoverSince: Number(st.textHoverReadySince || st.hoverSince || 0),
+    readyAt: Number(st.textHoverReadyAt || 0),
+    insideFrame: true
+  };
   if (recent) {
     successCode = "TEXT_PICK_RECENT_CANDIDATE";
     source = "accessibility_recent_candidate";
@@ -2416,7 +2893,7 @@ FloatBallAppWM.prototype.finishPointerTextPickOnRelease = function() {
   if (!st.active || st.closed || st.mode !== "text_pick") return false;
   st.releaseTs = th17Now();
 
-  // 有明确文字候选：普通取字松手立即提交；悬停时间只控制就绪颜色。
+  // 有明确文字候选：在最终热点上统一校验 800ms 可提交凭证和严格边框命中。
   if (st.currentText && st.currentRect) {
     this.extractCurrentPointerText(true, st.releaseTs);
     return true;
@@ -3241,6 +3718,7 @@ FloatBallAppWM.prototype.onPointerBallDragStart = function(rawX, rawY) {
   st.moved = false;
   st.hot = false;
   this.resetPointerAreaHold();
+  try { this.resetPointerTextStableHover(st, th17Now(), this.getPointerHotspot(), "drag_start"); } catch (eTextStableStart) {}
   if (st.mode === "area_capture") {
     var hp = this.getPointerHotspot();
     st.areaStartX = hp.x;
