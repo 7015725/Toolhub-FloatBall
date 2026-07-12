@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""校验 ToolHub 启动超时、迟到任务和广播接收器生命周期契约。"""
+"""校验 ToolHub 启动、关闭和广播接收器生命周期契约。"""
 
 import sys
 from pathlib import Path
@@ -40,6 +40,11 @@ def main():
         text,
         receiver_marker,
         "FloatBallAppWM.prototype.close = function()",
+    )
+    close_flow = section(
+        text,
+        "FloatBallAppWM.prototype.close = function()",
+        "/**\n * 完全销毁实例",
     )
     start_async = text[text.find(
         "FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule)"
@@ -107,6 +112,44 @@ def main():
         "startTimedOut: startBox.timedOut === true" in start_async
         and "startGeneration: startToken" in start_async,
         "调用方需要区分普通失败和启动确认超时",
+        failures,
+    )
+    require(
+        "关闭步骤相互隔离",
+        "function closeStep(name, fn)" in close_flow
+        and 'closeStep("cancelDockTimer"' in close_flow
+        and 'closeStep("stopDisplayMonitor"' in close_flow
+        and 'closeStep("closePointerTool"' in close_flow
+        and 'closeStep("unregisterReceivers"' in close_flow
+        and 'closeStep("quitHandlerThread"' in close_flow,
+        "关闭流程的关键步骤必须独立捕获异常，不能因单点失败中断后续清理",
+        failures,
+    )
+    require(
+        "面板关闭失败存在逐项回退",
+        'closeStep("hideMainPanelFallback"' in close_flow
+        and 'closeStep("hideSettingsPanelFallback"' in close_flow
+        and 'closeStep("hideViewerPanelFallback"' in close_flow
+        and 'closeStep("removeResidualViewerPanel"' in close_flow
+        and 'closeStep("removeBall"' in close_flow,
+        "hideAllPanels 失败后必须逐项关闭并再次尝试移除残余 View",
+        failures,
+    )
+    require(
+        "配置刷新失败可观测",
+        'if (FileIO.flushDebouncedWrites() === false) throw "flush returned false";' in close_flow,
+        "关闭前配置刷新返回 false 时必须记录为关闭步骤失败",
+        failures,
+    )
+    require(
+        "关闭最终状态必达",
+        "} finally {" in close_flow
+        and "stateRef.closed = true;" in close_flow
+        and "stateRef.closing = false;" in close_flow
+        and "stateRef.receivers = [];" in close_flow
+        and "stateRef.ht = null;" in close_flow
+        and "unregisterToolHubAppInstance(self)" in close_flow,
+        "无论前置清理是否异常，都必须完成状态收尾、线程引用清理和实例反注册",
         failures,
     )
     require(
