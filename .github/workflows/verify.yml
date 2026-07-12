@@ -122,6 +122,7 @@ jobs:
           python3 scripts/verify_atomic_update.py
           python3 scripts/verify_release_transaction.py
           python3 scripts/verify_startup_status.py
+          python3 scripts/verify_shell_bridge_security.py
           python3 scripts/verify_pointer_regressions.py
           python3 .github/scripts/verify_manifest_signature.py
 
