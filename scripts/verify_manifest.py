@@ -15,6 +15,9 @@ ENTRY_SHA = ROOT / "ToolHub.js.sha256"
 SIGN_SCRIPT = ROOT / "scripts" / "generate_signed_manifest.py"
 
 
+
+
+
 def fail(msg):
     print("FAIL:", msg)
     sys.exit(1)
