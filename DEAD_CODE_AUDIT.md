@@ -10,10 +10,10 @@
 ## 扫描摘要
 
 - 加载模块：`24`
-- 原型方法定义：`392`
+- 原型方法定义：`383`
 - 唯一原型方法：`360`
-- 已登记重复方法：`27`
-- 最终覆盖型候选节点：`14`
+- 已登记重复方法：`20`
+- 最终覆盖型候选节点：`6`
 - 受保护覆盖/包装链：`15`
 - 第一批清理候选：`0`
 
@@ -21,31 +21,15 @@
 
 |级别|方法|旧定义模块|定义次数|最终所有者|直接调用|属性读取|动态引用|旧方法捕获|建议|
 |---|---|---|---:|---|---:|---:|---:|---:|---|
-|B|`applyConfiguredBallPosition`|`th_15_extra.js`|1|`th_19_position_state.js`|12|12|0|2|位置过渡候选|
-|B|`cancelConfiguredBallPositionApply`|`th_15_extra.js`|1|`th_19_position_state.js`|3|3|0|2|位置过渡候选|
-|B|`createBallLayoutParams`|`th_15_extra.js`|2|`th_19_position_state.js`|2|2|0|3|位置过渡候选|
-|B|`getConfiguredBallPosition`|`th_15_extra.js`|1|`th_19_position_state.js`|8|8|0|2|位置过渡候选|
-|B|`isBallPositionEffectKey`|`th_15_extra.js`|1|`th_19_position_state.js`|1|2|0|2|位置过渡候选|
-|B|`loadSavedPos`|`th_15_extra.js`|1|`th_19_position_state.js`|1|1|0|2|位置过渡候选|
-|B|`scheduleConfiguredBallPositionApply`|`th_15_extra.js`|1|`th_19_position_state.js`|1|1|0|2|位置过渡候选|
-|B|`snapToEdgeDocked`|`th_15_extra.js`|1|`th_19_position_state.js`|2|2|0|3|位置过渡候选|
-|C|`animateBallLayout`|`th_09_animation.js`|1|`th_19_position_state.js`|6|6|0|2|设备验证后再定|
+|C|`animateBallLayout`|`th_09_animation.js`|1|`th_19_position_state.js`|5|5|0|2|设备验证后再定|
 |C|`onScreenChangedReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|7|9|0|5|暂缓删除|
 |C|`scheduleScreenReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
-|C|`snapToEdgeDocked`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|3|设备验证后再定|
+|C|`snapToEdgeDocked`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
 |C|`armLongPress`|`th_15_extra.js`|2|`th_19_position_state.js`|0|0|0|3|暂缓删除|
 |C|`onScreenChangedReflow`|`th_15_extra.js`|1|`th_19_position_state.js`|7|9|0|5|暂缓删除|
 
 ### 判定说明
 
-- **B / `applyConfiguredBallPosition` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **B / `cancelConfiguredBallPositionApply` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **B / `createBallLayoutParams` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **B / `getConfiguredBallPosition` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **B / `isBallPositionEffectKey` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **B / `loadSavedPos` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **B / `scheduleConfiguredBallPositionApply` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **B / `snapToEdgeDocked` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `animateBallLayout` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `onScreenChangedReflow` / `th_09_animation.js`**：存在 th_09 基础实现与 th_15 包装链；需先证明屏幕变化监听没有加载期或延迟引用。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `scheduleScreenReflow` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
