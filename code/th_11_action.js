@@ -1,15 +1,69 @@
-// @version 1.0.8
+// @version 1.0.9
 // =======================【Shell 按钮诊断】=======================
-FloatBallAppWM.prototype.getShellDiagPreviewText = function(cmdPlain, cmdB64) {
-  var p = "";
-  try { p = cmdPlain ? String(cmdPlain) : ""; } catch(eP0) { p = ""; }
-  if ((!p || p.length <= 0) && cmdB64 && typeof decodeBase64Utf8 === "function") {
-    try { p = String(decodeBase64Utf8(String(cmdB64)) || ""); } catch(eP1) { p = ""; }
+FloatBallAppWM.prototype.getShellDiagCommandMeta = function(cmdPlain, cmdB64) {
+  var plain = "";
+  var encoded = "";
+  var source = "none";
+  try { plain = cmdPlain ? String(cmdPlain) : ""; } catch(ePlain) { plain = ""; }
+  try { encoded = cmdB64 ? String(cmdB64) : ""; } catch(eEncoded) { encoded = ""; }
+
+  if (plain && plain.length > 0) {
+    source = "cmd";
+  } else if (encoded && encoded.length > 0) {
+    source = "cmd_b64";
+    if (typeof decodeBase64Utf8 === "function") {
+      try { plain = String(decodeBase64Utf8(encoded) || ""); } catch(eDecode) { plain = ""; }
+    }
   }
-  if (!p || p.length <= 0) p = "[cmd_b64 only]";
-  try { p = p.replace(/[\r\n\t]+/g, " ").replace(/^\s+|\s+$/g, ""); } catch(eP2) {}
-  if (p.length > 220) p = p.substring(0, 220) + "...";
-  return p;
+
+  var normalized = "";
+  try { normalized = String(plain || "").replace(/[\r\n\t]+/g, " ").replace(/^\s+|\s+$/g, "").replace(/\s+/g, " "); } catch(eNormalize) { normalized = ""; }
+  var lower = normalized.toLowerCase();
+  var kind = "unknown";
+  if (normalized.indexOf("am shortx run SHARED-DA-") >= 0) kind = "shortx_shared_da";
+  else if (normalized.indexOf("am shortx run DA-") >= 0) kind = "shortx_private_da";
+  else if (lower.indexOf("am shortx run ") === 0) kind = "shortx_action";
+  else if (lower.indexOf("am broadcast ") === 0) kind = "android_broadcast";
+  else if (lower.indexOf("am start ") === 0 || lower.indexOf("am startservice ") === 0) kind = "android_activity";
+  else if (lower.indexOf("settings ") === 0 || lower.indexOf("cmd ") === 0 || lower.indexOf("pm ") === 0) kind = "android_cli";
+  else if (lower.indexOf("sh ") === 0 || lower.indexOf("bash ") === 0 || lower.indexOf("su ") === 0) kind = "shell_script";
+  else if (normalized.length > 0) kind = "shell_command";
+  else if (encoded.length > 0) kind = "encoded_unknown";
+
+  var fingerprint = "";
+  try {
+    var digestInput = plain && plain.length > 0 ? plain : encoded;
+    if (digestInput && digestInput.length > 0) {
+      var md = java.security.MessageDigest.getInstance("SHA-256");
+      var bytes = md.digest(new java.lang.String(String(digestInput)).getBytes("UTF-8"));
+      var hex = "";
+      for (var i = 0; i < bytes.length; i++) {
+        var n = Number(bytes[i]);
+        if (n < 0) n += 256;
+        var h = n.toString(16);
+        if (h.length < 2) h = "0" + h;
+        hex += h;
+      }
+      fingerprint = hex.substring(0, 12);
+    }
+  } catch(eDigest) { fingerprint = ""; }
+
+  return {
+    kind: kind,
+    source: source,
+    cmdLen: plain ? plain.length : 0,
+    cmdB64Len: encoded ? encoded.length : 0,
+    fingerprint: fingerprint
+  };
+};
+
+// 兼容旧调用名，但只返回脱敏摘要，绝不返回命令正文。
+FloatBallAppWM.prototype.getShellDiagPreviewText = function(cmdPlain, cmdB64) {
+  var meta = this.getShellDiagCommandMeta(cmdPlain, cmdB64);
+  return "[redacted kind=" + String(meta.kind || "unknown") +
+    " source=" + String(meta.source || "none") +
+    " len=" + String(meta.cmdLen || 0) +
+    " sha256=" + String(meta.fingerprint || "") + "]";
 };
 
 FloatBallAppWM.prototype.logShellButtonDiagnostics = function(btn, idx) {
@@ -29,17 +83,22 @@ FloatBallAppWM.prototype.logShellButtonDiagnostics = function(btn, idx) {
       }
     } catch(eRoot) { root = false; }
 
-    var preview = this.getShellDiagPreviewText ? this.getShellDiagPreviewText(cmdPlain, cmdB64) : String(cmdPlain || "");
-    safeLog(this.L, 'i', "shell diag idx=" + String(idx) + " title=" + title + " root=" + String(root) + " cmd_len=" + String(cmdPlain ? cmdPlain.length : 0) + " cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " preview=" + preview);
+    var meta = this.getShellDiagCommandMeta ? this.getShellDiagCommandMeta(cmdPlain, cmdB64) : {
+      kind: "unknown", source: "none", cmdLen: cmdPlain ? cmdPlain.length : 0,
+      cmdB64Len: cmdB64 ? cmdB64.length : 0, fingerprint: ""
+    };
+    safeLog(this.L, 'i', "shell diag idx=" + String(idx) + " title=" + title + " root=" + String(root) +
+      " kind=" + String(meta.kind || "unknown") + " source=" + String(meta.source || "none") +
+      " cmd_len=" + String(meta.cmdLen || 0) + " cmd_b64_len=" + String(meta.cmdB64Len || 0) +
+      " fingerprint=" + String(meta.fingerprint || ""));
 
-    var normalized = preview.replace(/\s+/g, " ");
-    if (normalized.indexOf("am shortx run SHARED-DA-") >= 0) {
+    if (meta.kind === "shortx_shared_da") {
       safeLog(this.L, 'i', "shell diag shared-da idx=" + String(idx) + " title=" + title + " note=SHARED-DA is suitable for ToolHub invocation");
-    } else if (normalized.indexOf("am shortx run DA-") >= 0) {
+    } else if (meta.kind === "shortx_private_da") {
       safeLog(this.L, 'w', "shell diag private-da idx=" + String(idx) + " title=" + title + " note=private DA may not exist or may fail outside original ShortX rule");
     }
   } catch(eDiag) {
-    try { safeLog(this.L, 'w', "shell diag fail idx=" + String(idx) + " err=" + String(eDiag)); } catch(eLog) {}
+    try { safeLog(this.L, 'w', "shell diag fail idx=" + String(idx) + " err_type=diagnostic_exception"); } catch(eLog) {}
   }
 };
 
@@ -201,7 +260,7 @@ return;
     }
 
     this.toast("shell 广播桥发送失败");
-    safeLog(this.L, 'e',  "shell all failed cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " ret=" + JSON.stringify(r || {}));
+    safeLog(this.L, 'e', "shell all failed cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " via=" + String(r && r.via ? r.via : "") + " action=" + String(r && r.action ? r.action : "") + " target=" + String(r && r.targetMode ? r.targetMode : "") + " mode=" + String(r && r.bridgeMode ? r.bridgeMode : "") + " err_type=" + String(r && r.err ? "broadcast_error" : "unknown"));
     return;
   }
 
