@@ -261,7 +261,15 @@ def validate_boundaries(data, modules, definitions):
         owner = str(record.get("effectiveOwner", ""))
         if owner not in order:
             fail("effective owner not loaded for %s: %s" % (method, owner))
-        if expected and order[owner] < max(order[item] for item in expected):
+        deferred = (
+            str(record.get("type", "")) == "deferred_wrapper" and
+            str(record.get("runtimeMode", "")) == "deferred_retry"
+        )
+        if (
+            not deferred and
+            expected and
+            order[owner] < max(order[item] for item in expected)
+        ):
             fail("effective owner is not final for %s" % method)
     return records
 
