@@ -153,6 +153,8 @@ function getCodeDirPath() { return getToolHubRootDir() + "/code/"; }
 function getTrustedShaPath(relPath) { return getCodeDirPath() + ".trusted_sha_" + relPath; }
 function getTrustedVersionPath() { return getCodeDirPath() + ".trusted_manifest_version"; }
 function getInstalledManifestPath() { return getCodeDirPath() + ".installed_manifest.json"; }
+function getModuleTxnMarkerPath() { return getCodeDirPath() + ".module_update_transaction.json"; }
+function getModuleTxnCommitPath() { return getCodeDirPath() + ".module_update_transaction.committed"; }
 
 function writeLog(msg) {
     var writer = null;
@@ -857,36 +859,375 @@ function ensureLocalTrustedModule(relPath, destFile) {
     return { updated: false, size: destFile.length(), hash: actualHash };
 }
 
+function getTxnStageFile(destFile) {
+    return new java.io.File(destFile.getAbsolutePath() + ".txn.tmp");
+}
+
+function getTxnBackupFile(destFile) {
+    return new java.io.File(destFile.getAbsolutePath() + ".txn.bak");
+}
+
+function deleteFileStrict(fileObj, label) {
+    if (!fileObj || !fileObj.exists()) return true;
+    if (!fileObj.delete()) throw String(label || "delete file") + " failed: " + fileObj.getAbsolutePath();
+    return true;
+}
+
+function makeTransactionEntry(destFile, expectedHash, size, kind, moduleName) {
+    var stageFile = getTxnStageFile(destFile);
+    var backupFile = getTxnBackupFile(destFile);
+    return {
+        destPath: String(destFile.getAbsolutePath()),
+        stagePath: String(stageFile.getAbsolutePath()),
+        backupPath: String(backupFile.getAbsolutePath()),
+        expectedHash: String(expectedHash || "").toLowerCase(),
+        size: Number(size || 0),
+        hadDest: destFile.exists(),
+        kind: String(kind || "file"),
+        module: moduleName ? String(moduleName) : ""
+    };
+}
+
+function stageVerifiedModuleEntry(relPath, destFile) {
+    var info = getManifestInfo(relPath);
+    if (!info || !info.sha256) throw "module not in trusted manifest: " + relPath;
+    var expectedHash = String(info.sha256).toLowerCase();
+    var expectedSize = Number(info.size || 0);
+    var stageFile = getTxnStageFile(destFile);
+    deleteFileStrict(stageFile, "delete old transaction stage");
+    var size = downloadFile(GIT_BASE + relPath, stageFile);
+    if (expectedSize > 0 && size !== expectedSize) {
+        deleteFileStrict(stageFile, "delete invalid transaction stage");
+        throw "manifest size mismatch for " + relPath + ": expected=" + expectedSize + ", got=" + size;
+    }
+    var stageHash = sha256File(stageFile.getAbsolutePath());
+    if (!stageHash || !hashesEqual(stageHash, expectedHash)) {
+        deleteFileStrict(stageFile, "delete invalid transaction stage");
+        throw "manifest SHA256 mismatch for " + relPath + ": expected=" + expectedHash + ", actual=" + stageHash;
+    }
+    return makeTransactionEntry(destFile, expectedHash, size, "module", relPath);
+}
+
+function stagePlainModuleEntry(relPath, destFile) {
+    var stageFile = getTxnStageFile(destFile);
+    deleteFileStrict(stageFile, "delete old transaction stage");
+    var size = downloadFile(GIT_BASE + relPath, stageFile);
+    if (size <= 0) {
+        deleteFileStrict(stageFile, "delete empty transaction stage");
+        throw "empty download: " + relPath;
+    }
+    var stageHash = sha256File(stageFile.getAbsolutePath());
+    if (!stageHash) {
+        deleteFileStrict(stageFile, "delete unhashed transaction stage");
+        throw "cannot hash staged module: " + relPath;
+    }
+    return makeTransactionEntry(destFile, stageHash, size, "module", relPath);
+}
+
+function stageTextTransactionEntry(destPath, text, kind) {
+    var destFile = new java.io.File(String(destPath));
+    var stageFile = getTxnStageFile(destFile);
+    deleteFileStrict(stageFile, "delete old metadata stage");
+    if (!writeTextFile(stageFile.getAbsolutePath(), String(text))) {
+        try { if (stageFile.exists()) stageFile.delete(); } catch (eDeleteStage) {}
+        throw "write transaction metadata stage failed: " + destFile.getName();
+    }
+    var hash = sha256File(stageFile.getAbsolutePath());
+    if (!hash) {
+        deleteFileStrict(stageFile, "delete unhashed metadata stage");
+        throw "cannot hash transaction metadata stage: " + destFile.getName();
+    }
+    return makeTransactionEntry(destFile, hash, stageFile.length(), kind || "metadata", "");
+}
+
+function buildInstalledManifestForTransaction(moduleEntries) {
+    var byModule = {};
+    for (var ei = 0; ei < moduleEntries.length; ei++) {
+        var entry = moduleEntries[ei];
+        if (entry && entry.module) byModule[String(entry.module)] = entry;
+    }
+    var now = Number(java.lang.System.currentTimeMillis());
+    var versionNum = 0;
+    if (__trustedManifest && __trustedManifest.version !== undefined && __trustedManifest.version !== null) {
+        versionNum = Number(__trustedManifest.version || 0);
+    }
+    if (!versionNum || isNaN(versionNum)) versionNum = getTrustedVersion();
+    if (isNaN(versionNum)) versionNum = 0;
+    var man = { schema: 1, version: Number(versionNum), files: {}, updatedAt: now };
+    for (var i = 0; i < modules.length; i++) {
+        var relPath = String(modules[i]);
+        var staged = byModule[relPath];
+        if (staged) {
+            var stagedFile = new java.io.File(String(staged.stagePath));
+            if (!stagedFile.exists()) throw "staged module missing while building installed manifest: " + relPath;
+            man.files[relPath] = {
+                sha256: String(staged.expectedHash).toLowerCase(),
+                size: Number(staged.size || stagedFile.length()),
+                mtime: Number(stagedFile.lastModified())
+            };
+            continue;
+        }
+        var localFile = new java.io.File(getCodeDirPath(), relPath);
+        if (!localFile.exists()) throw "local module missing while building installed manifest: " + relPath;
+        var localHash = sha256File(localFile.getAbsolutePath());
+        if (!localHash) throw "cannot hash local module while building installed manifest: " + relPath;
+        man.files[relPath] = {
+            sha256: String(localHash).toLowerCase(),
+            size: Number(localFile.length()),
+            mtime: Number(localFile.lastModified())
+        };
+    }
+    return man;
+}
+
+function appendTransactionMetadataEntries(entries) {
+    var installed = buildInstalledManifestForTransaction(entries);
+    entries.push(stageTextTransactionEntry(getInstalledManifestPath(), JSON.stringify(installed, null, 2), "installed_manifest"));
+    if (UPDATE_SECURITY_MODE !== 0) {
+        var moduleEntries = entries.slice ? entries.slice(0) : entries;
+        for (var i = 0; i < moduleEntries.length; i++) {
+            var item = moduleEntries[i];
+            if (!item || item.kind !== "module" || !item.module) continue;
+            entries.push(stageTextTransactionEntry(getTrustedShaPath(String(item.module)), String(item.expectedHash || ""), "trusted_sha"));
+        }
+    }
+    if (UPDATE_SECURITY_MODE === 2 && __trustedManifest) {
+        entries.push(stageTextTransactionEntry(getTrustedVersionPath(), String(__trustedManifest.version || 0), "trusted_version"));
+    }
+    return installed;
+}
+
+function cleanupStagedTransactionEntries(entries) {
+    if (!entries) return;
+    for (var i = 0; i < entries.length; i++) {
+        try {
+            var stageFile = new java.io.File(String(entries[i].stagePath || ""));
+            if (stageFile.exists()) stageFile.delete();
+        } catch (eStageCleanup) {}
+    }
+}
+
+function transactionEntryMatches(entry) {
+    try {
+        var destFile = new java.io.File(String(entry.destPath || ""));
+        if (!destFile.exists()) return false;
+        if (Number(entry.size || 0) > 0 && Number(destFile.length()) !== Number(entry.size)) return false;
+        var hash = sha256File(destFile.getAbsolutePath());
+        return !!hash && hashesEqual(hash, entry.expectedHash);
+    } catch (eMatch) {
+        return false;
+    }
+}
+
+function rollbackModuleTransaction(txn, reason) {
+    var errors = [];
+    var entries = txn && txn.entries ? txn.entries : [];
+    for (var i = entries.length - 1; i >= 0; i--) {
+        var entry = entries[i] || {};
+        try {
+            var destFile = new java.io.File(String(entry.destPath || ""));
+            var stageFile = new java.io.File(String(entry.stagePath || ""));
+            var backupFile = new java.io.File(String(entry.backupPath || ""));
+            if (backupFile.exists()) {
+                if (destFile.exists() && !destFile.delete()) throw "delete replacement failed: " + destFile.getAbsolutePath();
+                if (!backupFile.renameTo(destFile)) throw "restore transaction backup failed: " + backupFile.getAbsolutePath();
+            } else if (entry.hadDest !== true && destFile.exists()) {
+                if (!destFile.delete()) throw "delete new transaction file failed: " + destFile.getAbsolutePath();
+            }
+            try { if (stageFile.exists()) stageFile.delete(); } catch (eDeleteStage) {}
+        } catch (eRollbackOne) {
+            errors.push(String(entry.destPath || "") + " -> " + String(eRollbackOne));
+        }
+    }
+    if (errors.length > 0) {
+        writeLog("Module transaction rollback incomplete reason=" + String(reason || "") + " errors=" + errors.join(" | "));
+        throw "module transaction rollback incomplete: " + errors.join(" | ");
+    }
+    try { deleteFileStrict(new java.io.File(getModuleTxnCommitPath()), "delete transaction commit marker"); } catch (eCommitDelete) {}
+    deleteFileStrict(new java.io.File(getModuleTxnMarkerPath()), "delete transaction marker");
+    __installedManifest = null;
+    writeLog("Module transaction rolled back id=" + String(txn && txn.id || "") + " reason=" + String(reason || ""));
+    return true;
+}
+
+function finalizeCommittedModuleTransaction(txn) {
+    var entries = txn && txn.entries ? txn.entries : [];
+    var pending = [];
+    for (var i = 0; i < entries.length; i++) {
+        var entry = entries[i] || {};
+        try {
+            var stageFile = new java.io.File(String(entry.stagePath || ""));
+            var backupFile = new java.io.File(String(entry.backupPath || ""));
+            if (stageFile.exists() && !stageFile.delete()) pending.push(stageFile.getAbsolutePath());
+            if (backupFile.exists() && !backupFile.delete()) pending.push(backupFile.getAbsolutePath());
+        } catch (eCleanupOne) {
+            pending.push(String(entry.destPath || "") + ":" + String(eCleanupOne));
+        }
+    }
+    if (pending.length > 0) {
+        writeLog("Committed module transaction cleanup pending id=" + String(txn && txn.id || "") + " files=" + pending.join(","));
+        return false;
+    }
+    deleteFileStrict(new java.io.File(getModuleTxnCommitPath()), "delete transaction commit marker");
+    deleteFileStrict(new java.io.File(getModuleTxnMarkerPath()), "delete transaction marker");
+    __installedManifest = null;
+    writeLog("Committed module transaction finalized id=" + String(txn && txn.id || ""));
+    return true;
+}
+
+function recoverOrphanTransactionFiles() {
+    var dir = ensureCodeDir();
+    var files = dir.listFiles();
+    if (!files) return;
+    for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        var name = String(f.getName());
+        try {
+            if (name.lastIndexOf(".txn.tmp") === name.length - 8) {
+                if (f.exists()) f.delete();
+            } else if (name.lastIndexOf(".txn.bak") === name.length - 8) {
+                var destName = name.substring(0, name.length - 8);
+                var dest = new java.io.File(dir, destName);
+                if (dest.exists() && !dest.delete()) throw "delete orphan replacement failed: " + dest.getAbsolutePath();
+                if (!f.renameTo(dest)) throw "restore orphan backup failed: " + f.getAbsolutePath();
+                writeLog("Recovered orphan transaction backup: " + destName);
+            }
+        } catch (eOrphan) {
+            throw "orphan transaction recovery failed: " + String(eOrphan);
+        }
+    }
+}
+
+function recoverPendingModuleTransaction() {
+    var markerFile = new java.io.File(getModuleTxnMarkerPath());
+    var commitFile = new java.io.File(getModuleTxnCommitPath());
+    if (!markerFile.exists()) {
+        recoverOrphanTransactionFiles();
+        try { if (commitFile.exists()) commitFile.delete(); } catch (eDeleteOrphanCommit) {}
+        return { recovered: false };
+    }
+    var markerText = readTextFile(markerFile.getAbsolutePath());
+    var txn = null;
+    try { txn = markerText ? JSON.parse(String(markerText)) : null; } catch (eParseTxn) { txn = null; }
+    if (!txn || !txn.id || !txn.entries) {
+        writeLog("Invalid module transaction marker; restoring orphan backups");
+        recoverOrphanTransactionFiles();
+        try { if (commitFile.exists()) commitFile.delete(); } catch (eDeleteBadCommit) {}
+        deleteFileStrict(markerFile, "delete invalid transaction marker");
+        __installedManifest = null;
+        return { recovered: true, invalid: true };
+    }
+    var commitId = readFirstLine(commitFile.getAbsolutePath());
+    if (commitId && String(commitId) === String(txn.id)) {
+        var complete = true;
+        for (var i = 0; i < txn.entries.length; i++) {
+            if (!transactionEntryMatches(txn.entries[i])) { complete = false; break; }
+        }
+        if (complete) {
+            finalizeCommittedModuleTransaction(txn);
+            return { recovered: true, committed: true, id: String(txn.id) };
+        }
+    }
+    rollbackModuleTransaction(txn, "startup_recovery");
+    return { recovered: true, rolledBack: true, id: String(txn.id) };
+}
+
+function executeStagedModuleTransaction(entries, installedManifest) {
+    if (!entries || entries.length <= 0) return { ok: true, count: 0, id: "" };
+    recoverPendingModuleTransaction();
+    var txnId = String((__trustedManifest && __trustedManifest.version) || java.lang.System.currentTimeMillis()) + "-" + String(java.lang.System.nanoTime());
+    var txn = {
+        schema: 1,
+        id: txnId,
+        manifestVersion: Number((__trustedManifest && __trustedManifest.version) || 0),
+        createdAt: Number(java.lang.System.currentTimeMillis()),
+        entries: entries
+    };
+    var markerFile = new java.io.File(getModuleTxnMarkerPath());
+    var commitFile = new java.io.File(getModuleTxnCommitPath());
+    if (!writeTextFile(markerFile.getAbsolutePath(), JSON.stringify(txn, null, 2))) {
+        cleanupStagedTransactionEntries(entries);
+        throw "write module transaction marker failed";
+    }
+    var commitWritten = false;
+    try {
+        for (var i = 0; i < entries.length; i++) {
+            var entry = entries[i];
+            var destFile = new java.io.File(String(entry.destPath));
+            var stageFile = new java.io.File(String(entry.stagePath));
+            var backupFile = new java.io.File(String(entry.backupPath));
+            if (!stageFile.exists()) throw "transaction stage missing: " + stageFile.getAbsolutePath();
+            if (backupFile.exists() && !backupFile.delete()) throw "delete stale transaction backup failed: " + backupFile.getAbsolutePath();
+            if (entry.hadDest === true) {
+                if (!destFile.exists()) throw "transaction destination disappeared: " + destFile.getAbsolutePath();
+                if (!destFile.renameTo(backupFile)) throw "backup transaction destination failed: " + destFile.getAbsolutePath();
+            } else if (destFile.exists()) {
+                throw "unexpected transaction destination exists: " + destFile.getAbsolutePath();
+            }
+            if (!stageFile.renameTo(destFile)) throw "install transaction stage failed: " + stageFile.getAbsolutePath();
+        }
+        for (var vi = 0; vi < entries.length; vi++) {
+            if (!transactionEntryMatches(entries[vi])) throw "transaction verification failed: " + String(entries[vi].destPath || "");
+        }
+        if (!writeTextFile(commitFile.getAbsolutePath(), txnId)) throw "write module transaction commit marker failed";
+        commitWritten = true;
+        __installedManifest = installedManifest || null;
+        var finalized = finalizeCommittedModuleTransaction(txn);
+        return { ok: true, count: entries.length, id: txnId, cleanupPending: !finalized };
+    } catch (eTxn) {
+        if (!commitWritten) {
+            try { rollbackModuleTransaction(txn, String(eTxn)); } catch (eRollback) {
+                throw String(eTxn) + "; " + String(eRollback);
+            }
+        }
+        throw String(eTxn);
+    }
+}
+
+
 function installPendingModuleUpdates() {
     if (__manualUpdateRunning) return { ok: false, running: true, msg: "更新正在进行" };
     __manualUpdateRunning = true;
     var names = [];
+    var entries = [];
     try {
+        recoverPendingModuleTransaction();
         var dir = ensureCodeDir();
         if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) fetchTrustedManifest();
         if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) throw (__securityStatus && __securityStatus.msg ? __securityStatus.msg : "更新清单不可用");
+
         for (var i = 0; i < modules.length; i++) {
             var relPath = String(modules[i]);
-            var f = new java.io.File(dir, relPath);
-            var result = null;
+            var destFile = new java.io.File(dir, relPath);
+            var currentHash = destFile.exists() ? sha256File(destFile.getAbsolutePath()) : null;
             if (UPDATE_SECURITY_MODE === 0) {
-                result = ensurePlainRemoteModule(relPath, f);
-            } else {
-                var info = getManifestInfo(relPath);
-                if (!info || !info.sha256) throw "module not in trusted manifest: " + relPath;
-                var expectedHash = String(info.sha256).toLowerCase();
-                var actualHash = f.exists() ? sha256File(f.getAbsolutePath()) : null;
-                if (actualHash && hashesEqual(actualHash, expectedHash)) {
-                    saveTrustedSha(relPath, expectedHash);
+                var plainEntry = stagePlainModuleEntry(relPath, destFile);
+                if (currentHash && hashesEqual(currentHash, plainEntry.expectedHash)) {
+                    cleanupStagedTransactionEntries([plainEntry]);
                     continue;
                 }
-                result = ensureVerifiedModule(relPath, f);
+                entries.push(plainEntry);
+                names.push(relPath);
+                continue;
             }
-            if (result && result.updated) names.push(relPath);
+            var info = getManifestInfo(relPath);
+            if (!info || !info.sha256) throw "module not in trusted manifest: " + relPath;
+            var expectedHash = String(info.sha256).toLowerCase();
+            if (currentHash && hashesEqual(currentHash, expectedHash)) continue;
+            entries.push(stageVerifiedModuleEntry(relPath, destFile));
+            names.push(relPath);
         }
+
+        var installedManifest = null;
+        var txnResult = { ok: true, count: 0, id: "", cleanupPending: false };
+        if (entries.length > 0) {
+            installedManifest = appendTransactionMetadataEntries(entries);
+            txnResult = executeStagedModuleTransaction(entries, installedManifest);
+        } else {
+            if (!saveInstalledManifestFromLocal()) throw "保存本地安装清单失败";
+        }
+
         __pendingModuleUpdates = [];
-        saveInstalledManifestFromLocal();
-        if (UPDATE_SECURITY_MODE === 2 && __trustedManifest) saveTrustedVersion(__trustedManifest.version);
         var rel = getManifestRelease();
         var now = java.lang.System.currentTimeMillis();
         TOOLHUB_UPDATE_STATE.ok = true;
@@ -903,22 +1244,25 @@ function installPendingModuleUpdates() {
         TOOLHUB_UPDATE_STATE.needRestart = names.length > 0;
         TOOLHUB_UPDATE_STATE.lastCheckAt = Number(now);
         TOOLHUB_UPDATE_STATE.error = "";
-        writeLog("Manual module update finished, count=" + names.length + ", modules=" + names.join(","));
+        writeLog("Transactional module update finished, count=" + names.length + ", modules=" + names.join(",") + ", txn=" + String(txnResult.id || "") + ", cleanupPending=" + String(txnResult.cleanupPending === true));
         return {
             ok: true,
             count: names.length,
             modules: names,
             needRestart: names.length > 0,
-            msg: names.length > 0 ? ("已更新 " + names.length + " 个子模块，重启 ToolHub 后生效。") : "子模块已是最新。"
+            transactionId: String(txnResult.id || ""),
+            cleanupPending: txnResult.cleanupPending === true,
+            msg: names.length > 0 ? ("已事务更新 " + names.length + " 个子模块，重启 ToolHub 后生效。") : "子模块已是最新。"
         };
     } catch (eInstall) {
+        cleanupStagedTransactionEntries(entries);
         var errText = String(eInstall);
         TOOLHUB_UPDATE_STATE.ok = false;
         TOOLHUB_UPDATE_STATE.status = "error";
         TOOLHUB_UPDATE_STATE.error = errText;
         TOOLHUB_UPDATE_STATE.lastCheckAt = Number(java.lang.System.currentTimeMillis());
-        writeLog("Manual module update failed: " + errText);
-        return { ok: false, error: errText, msg: "更新失败：" + errText };
+        writeLog("Transactional module update failed: " + errText);
+        return { ok: false, error: errText, msg: "更新失败，整批已回滚：" + errText };
     } finally {
         __manualUpdateRunning = false;
     }
@@ -1118,6 +1462,7 @@ var __moduleUpdates = [];
 var __pendingModuleUpdates = [];
 var loadErrors = [];
 var criticalModules = { "th_01_base.js": true, "th_02_core.js": true, "th_05_persistence.js": true, "th_16_entry.js": true, "th_19_position_state.js": true };
+recoverPendingModuleTransaction();
 fetchTrustedManifest();
 
 var __manifestCheck = checkModuleManifestConsistency();
