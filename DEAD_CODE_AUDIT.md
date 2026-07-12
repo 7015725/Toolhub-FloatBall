@@ -10,10 +10,10 @@
 ## 扫描摘要
 
 - 加载模块：`24`
-- 原型方法定义：`380`
+- 原型方法定义：`378`
 - 唯一原型方法：`360`
-- 已登记重复方法：`19`
-- 最终覆盖型候选节点：`4`
+- 已登记重复方法：`17`
+- 最终覆盖型候选节点：`2`
 - 受保护覆盖/包装链：`15`
 - 第一批清理候选：`0`
 
@@ -22,15 +22,11 @@
 |级别|方法|旧定义模块|定义次数|最终所有者|直接调用|属性读取|动态引用|旧方法捕获|建议|
 |---|---|---|---:|---|---:|---:|---:|---:|---|
 |C|`animateBallLayout`|`th_09_animation.js`|1|`th_19_position_state.js`|5|5|0|2|设备验证后再定|
-|C|`onScreenChangedReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|7|7|0|2|设备验证后再定|
-|C|`scheduleScreenReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
 |C|`snapToEdgeDocked`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
 
 ### 判定说明
 
 - **C / `animateBallLayout` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **C / `onScreenChangedReflow` / `th_09_animation.js`**：th_09 旧比例重排仍由 th_19 覆盖；涉及屏幕旋转和指针窗口重排，需完成独立设备验证后再处理。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **C / `scheduleScreenReflow` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `snapToEdgeDocked` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 
 ## 受保护覆盖与包装链
@@ -55,9 +51,9 @@
 
 ## 建议顺序
 
-1. 先完成 `th_09_animation.js` 独立审查，区分唯一实现、受保护链和后续覆盖候选。
-2. 优先将 `onScreenChangedReflow` 与 `scheduleScreenReflow` 作为同一屏幕变化链定位、验证和处理。
-3. 再分别审查 `animateBallLayout` 与 `snapToEdgeDocked`，必须包含动画开关、旋转、尺寸变化、面板和指针场景。
+1. `th_09_animation.js` 独立审查已完成，后续只处理报告中的剩余覆盖候选。
+2. 下一组单独审查 `animateBallLayout`，验证动画开关、取消、结束回调、尺寸变化和 token 失效。
+3. 最后审查 `snapToEdgeDocked`，验证闲置吸边、面板、指针、左右侧和动画开关。
 
 ## 使用方式
 

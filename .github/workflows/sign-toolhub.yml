@@ -163,19 +163,36 @@ jobs:
           fi
           python3 scripts/generate_signed_manifest.py "${args[@]}"
 
-      - name: Verify generated artifacts
+      - name: Verify generated JavaScript
         shell: bash
         run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
+
+      - name: Verify generated storage and position
+        shell: bash
+        run: |
           python3 scripts/verify_sqlite_storage.py
           python3 scripts/verify_ball_position_state.py
+
+      - name: Verify generated UI contracts
+        shell: bash
+        run: |
           python3 scripts/verify_toolapp_layout.py
           python3 scripts/verify_button_editor_layout.py
           python3 scripts/verify_schema_validator.py
-          python3 scripts/verify_pointer_regressions.py
-          python3 .github/scripts/verify_manifest_signature.py
-          git diff --check
+
+      - name: Verify generated pointer regressions
+        shell: bash
+        run: python3 scripts/verify_pointer_regressions.py
+
+      - name: Verify generated manifest signature
+        shell: bash
+        run: python3 .github/scripts/verify_manifest_signature.py
+
+      - name: Check generated whitespace
+        shell: bash
+        run: git diff --check
 
       - name: Commit generated artifacts
         if: steps.current-generated.outputs.current != 'true'
