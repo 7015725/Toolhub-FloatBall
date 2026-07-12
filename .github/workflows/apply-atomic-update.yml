@@ -1,0 +1,55 @@
+name: apply-atomic-update
+
+on:
+  push:
+    branches:
+      - fix/atomic-module-update
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-atomic-update-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.event.head_commit.message != '应用原子模块更新补丁'
+    runs-on: ubuntu-latest
+    environment: signing
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/atomic-module-update
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Apply updater patch
+        run: python3 scripts/apply_atomic_update_patch.py
+
+      - name: Verify patched JavaScript
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          git diff --check
+
+      - name: Commit patched entry
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ToolHub.js
+          if git diff --cached --quiet; then
+            echo "ToolHub.js already patched"
+            exit 0
+          fi
+          git commit -m "应用原子模块更新补丁"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:fix/atomic-module-update
