@@ -109,20 +109,14 @@ FloatBallAppWM.prototype.checkContentUriSecurity = function(uriStr, modeName, bt
 
 if "// @version 1.0.2" not in content:
     content = content.replace("// @version 1.0.1", "// @version 1.0.2", 1)
-start_candidates = [
-    "// =======================【Content：安全审计】=======================",
-    "// =======================【Content：安全策略】=======================",
-]
-start = -1
-for marker in start_candidates:
-    pos = content.find(marker)
-    if pos >= 0:
-        start = pos
-        break
-end_marker = "// =======================【Content：通用 query】======================="
-end = content.find(end_marker)
+security_func = content.find("FloatBallAppWM.prototype.getContentSecurityMode = function() {")
+query_func = content.find("FloatBallAppWM.prototype.contentQueryToText = function(")
+if security_func < 0 or query_func < 0 or query_func <= security_func:
+    raise SystemExit("missing content security function boundaries")
+start = content.rfind("// =======================", 0, security_func)
+end = content.rfind("// =======================", 0, query_func)
 if start < 0 or end < 0 or end <= start:
-    raise SystemExit("missing content security section markers")
+    raise SystemExit("missing content security section boundaries")
 content = content[:start] + new_security + content[end:]
 content_path.write_text(content, encoding="utf-8")
 
