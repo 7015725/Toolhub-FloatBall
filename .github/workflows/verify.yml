@@ -74,6 +74,23 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Verify settings type wrapper analysis
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/verify_settings_type_wrappers.py --check SETTINGS_TYPE_WRAPPER_ANALYSIS.md 2>&1 | tee settings-type-wrapper-analysis-log.txt
+
+      - name: Upload settings type wrapper analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: settings-type-wrapper-analysis
+          path: |
+            SETTINGS_TYPE_WRAPPER_ANALYSIS.md
+            settings-type-wrapper-analysis-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify th_15 standalone audit
         shell: bash
         run: |
@@ -129,4 +146,3 @@ jobs:
             git diff --check "origin/${{ github.base_ref }}...HEAD"
           else
             git show --check --pretty=oneline --summary HEAD
-          fi
