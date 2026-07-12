@@ -44,7 +44,29 @@ Shell 按钮的 `root` 字段默认按 `false` 处理。只有按钮明确保存
 
 旧值 `compat`、`strict`、`data` 和未知值都按 `intent` 处理，不会触发 `eval` 回退。
 
+## Content 动作
+
+默认配置：
+
+- `CONTENT_SECURITY_MODE = strict`
+- `CONTENT_URI_ALLOWLIST = content://settings/system/|content://settings/secure/|content://settings/global/`
+- `CONTENT_WRITE_URI_ALLOWLIST = ""`
+
+读取和写入使用独立白名单：
+
+- `get`、`query`、`view` 使用 `CONTENT_URI_ALLOWLIST`。
+- `put`、`update`、`insert`、`delete` 使用 `CONTENT_WRITE_URI_ALLOWLIST`。
+- 写入白名单默认留空，因此所有 Content 写入默认被拒绝。
+- 需要写入时，应只加入具体 URI，例如 `content://settings/system/screen_brightness`，不要直接开放整个 Settings 表。
+
+模式说明：
+
+- `strict`：不在对应白名单中的操作直接拒绝；安全检查异常时也拒绝。
+- `compat_audit`：记录越界 URI，但继续执行。仅用于临时兼容旧按钮。
+- `off`：关闭 URI 安全检查，仅用于明确受控环境。
+
+旧值 `audit` 和未知值均按 `strict` 处理，不再自动放行。原有读取 Settings 的按钮通常继续可用；原有写入按钮需要把目标 URI 明确加入 `CONTENT_WRITE_URI_ALLOWLIST`，或临时选择 `compat_audit`。
+
 ## 其他默认值
 
-- `CONTENT_SECURITY_MODE = audit`
 - `TOOLAPP_BACK_SURFACE_DOMINANCE = 1.08`
