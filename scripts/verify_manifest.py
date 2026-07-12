@@ -60,6 +60,16 @@ def flatten_regex_pairs(items):
     return out
 
 
+def collect_python_files():
+    roots = [ROOT / "scripts", ROOT / ".github" / "scripts"]
+    return sorted(
+        str(path)
+        for scan_root in roots
+        if scan_root.exists()
+        for path in scan_root.rglob("*.py")
+    )
+
+
 def main():
     for path in [CODE_DIR, MANIFEST, ENTRY, ENTRY_SHA, SIGN_SCRIPT]:
         if not path.exists():
@@ -98,9 +108,9 @@ def main():
     if entry_hash not in sha_line:
         fail("ToolHub.js.sha256 mismatch")
 
-    py_files = sorted(str(p) for p in (ROOT / "scripts").glob("*.py"))
+    py_files = collect_python_files()
     if py_files:
-        subprocess.check_call(["python3", "-m", "py_compile"] + py_files, cwd=str(ROOT))
+        subprocess.check_call([sys.executable, "-m", "py_compile"] + py_files, cwd=str(ROOT))
 
     print("OK manifest_version=%s files=%s entry_sha=%s" % (
         manifest.get("version"),
