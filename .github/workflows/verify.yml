@@ -74,6 +74,23 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Verify th_09 standalone audit
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md 2>&1 | tee th09-animation-audit-log.txt
+
+      - name: Upload th_09 standalone audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: th09-animation-audit-report
+          path: |
+            TH09_ANIMATION_AUDIT.md
+            th09-animation-audit-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Run ToolHub verification
         shell: bash
         run: |
