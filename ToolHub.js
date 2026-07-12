@@ -1068,8 +1068,18 @@ function finalizeCommittedModuleTransaction(txn) {
         writeLog("Committed module transaction cleanup pending id=" + String(txn && txn.id || "") + " files=" + pending.join(","));
         return false;
     }
-    deleteFileStrict(new java.io.File(getModuleTxnCommitPath()), "delete transaction commit marker");
-    deleteFileStrict(new java.io.File(getModuleTxnMarkerPath()), "delete transaction marker");
+    try {
+        deleteFileStrict(new java.io.File(getModuleTxnMarkerPath()), "delete transaction marker");
+    } catch (eDeleteMarker) {
+        writeLog("Committed module transaction marker cleanup pending id=" + String(txn && txn.id || "") + " err=" + String(eDeleteMarker));
+        return false;
+    }
+    try {
+        deleteFileStrict(new java.io.File(getModuleTxnCommitPath()), "delete transaction commit marker");
+    } catch (eDeleteCommit) {
+        writeLog("Committed module transaction commit marker cleanup pending id=" + String(txn && txn.id || "") + " err=" + String(eDeleteCommit));
+        return false;
+    }
     __installedManifest = null;
     writeLog("Committed module transaction finalized id=" + String(txn && txn.id || ""));
     return true;
@@ -1134,7 +1144,6 @@ function recoverPendingModuleTransaction() {
 
 function executeStagedModuleTransaction(entries, installedManifest) {
     if (!entries || entries.length <= 0) return { ok: true, count: 0, id: "" };
-    recoverPendingModuleTransaction();
     var txnId = String((__trustedManifest && __trustedManifest.version) || java.lang.System.currentTimeMillis()) + "-" + String(java.lang.System.nanoTime());
     var txn = {
         schema: 1,
@@ -1213,7 +1222,10 @@ function installPendingModuleUpdates() {
             var info = getManifestInfo(relPath);
             if (!info || !info.sha256) throw "module not in trusted manifest: " + relPath;
             var expectedHash = String(info.sha256).toLowerCase();
-            if (currentHash && hashesEqual(currentHash, expectedHash)) continue;
+            if (currentHash && hashesEqual(currentHash, expectedHash)) {
+                saveTrustedSha(relPath, expectedHash);
+                continue;
+            }
             entries.push(stageVerifiedModuleEntry(relPath, destFile));
             names.push(relPath);
         }
@@ -1225,6 +1237,11 @@ function installPendingModuleUpdates() {
             txnResult = executeStagedModuleTransaction(entries, installedManifest);
         } else {
             if (!saveInstalledManifestFromLocal()) throw "保存本地安装清单失败";
+            if (UPDATE_SECURITY_MODE === 2 && __trustedManifest) {
+                if (!writeTextFile(getTrustedVersionPath(), String(__trustedManifest.version || 0))) {
+                    throw "保存可信清单版本失败";
+                }
+            }
         }
 
         __pendingModuleUpdates = [];
