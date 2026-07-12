@@ -30,6 +30,7 @@ jobs:
         run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_module_boundaries.py
           python3 scripts/verify_sqlite_persistence.py
           python3 scripts/verify_button_icon_blob.py
           python3 scripts/verify_ball_position_state.py
