@@ -1,122 +1,463 @@
 {
-  "schema": 1,
+  "schema": 2,
   "policy": "constraints_only",
-  "description": "锁定当前子模块方法所有权和已知覆盖关系；新增未登记的重复原型定义必须失败。",
+  "description": "锁定当前子模块原型方法定义基线和有效所有者；新增、删除或改变未登记覆盖关系必须失败。",
   "directOwners": {
-    "savePos": "th_19_position_state.js",
-    "loadSavedPos": "th_19_position_state.js",
-    "setupTouchListener": "th_19_position_state.js",
-    "rebuildBallForNewSize": "th_19_position_state.js",
     "finishPointerGestureFromRaw": "th_19_position_state.js",
     "movePointerFromRaw": "th_19_position_state.js",
     "completePointerCandidateOnRelease": "th_17_pointer.js",
     "extractCurrentPointerText": "th_17_pointer.js",
     "close": "th_16_entry.js"
   },
-  "temporaryDuplicateDefinitions": [
+  "duplicateDefinitions": [
     {
-      "method": "savePos",
-      "obsolete": "th_05_persistence.js",
-      "effective": "th_19_position_state.js",
-      "reason": "旧像素位置持久化已被固定边缘位置策略覆盖"
+      "method": "animateBallLayout",
+      "definitions": [
+        "th_09_animation.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override",
+      "reason": "旧吸边动画会保存临时像素坐标，当前由固定位置状态机实现覆盖"
     },
     {
-      "method": "loadSavedPos",
-      "obsolete": "th_05_persistence.js",
-      "effective": "th_19_position_state.js",
-      "reason": "旧像素位置恢复已被固定边缘位置策略覆盖"
-    },
-    {
-      "method": "rebuildBallForNewSize",
-      "obsolete": "th_12_rebuild.js",
-      "effective": "th_19_position_state.js",
-      "reason": "旧中心点重建已被固定边缘重建覆盖"
-    },
-    {
-      "method": "setupTouchListener",
-      "obsolete": "th_15_extra.js",
-      "effective": "th_19_position_state.js",
-      "reason": "旧可移动悬浮球触摸状态机已被固定位置状态机覆盖"
-    }
-  ],
-  "allowedWrappers": [
-    {
-      "method": "setPendingValue",
-      "owner": "th_05_persistence.js",
-      "wrapper": "th_12_rebuild.js",
-      "oldVariable": "oldSetPendingValue",
-      "reason": "保存前恢复枚举值原始类型"
+      "method": "applyConfiguredBallPosition",
+      "definitions": [
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override",
+      "reason": "th_19 统一固定位置应用和动画代次保护"
     },
     {
       "method": "applyImmediateEffectsForKey",
-      "owner": "th_05_persistence.js",
-      "wrapper": "th_12_rebuild.js",
-      "oldVariable": "oldApplyImmediateEffectsForKey",
-      "reason": "补充设置保存后的运行时刷新"
+      "definitions": [
+        "th_05_persistence.js",
+        "th_12_rebuild.js",
+        "th_15_extra.js"
+      ],
+      "effectiveOwner": "th_15_extra.js",
+      "type": "wrapper_chain",
+      "reason": "设置即时生效经过类型修正和固定位置设置扩展",
+      "wrappers": [
+        {
+          "module": "th_12_rebuild.js",
+          "owner": "th_05_persistence.js",
+          "oldVariable": "oldApplyImmediateEffectsForKey"
+        },
+        {
+          "module": "th_15_extra.js",
+          "owner": "th_12_rebuild.js",
+          "oldVariable": "oldApplyImmediateEffectsForKey"
+        }
+      ]
     },
     {
-      "method": "execButtonAction",
-      "owner": "th_11_action.js",
-      "wrapper": "th_16_entry.js",
-      "oldVariable": "oldExecButtonAction",
-      "reason": "增加 Shell 按钮执行前诊断"
+      "method": "armLongPress",
+      "definitions": [
+        "th_15_extra.js",
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override_chain",
+      "reason": "旧长按设置入口和 th_15 固定位置补丁均被 th_19 禁用实现覆盖"
     },
     {
-      "method": "execShellSmart",
-      "owner": "th_10_shell.js",
-      "wrapper": "th_16_entry.js",
-      "oldVariable": "oldExecShellSmart",
-      "reason": "增加 Shell 桥执行结果诊断"
+      "method": "cancelConfiguredBallPositionApply",
+      "definitions": [
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override",
+      "reason": "固定位置延迟任务由 th_19 统一持有"
     },
     {
-      "method": "popToolAppPage",
-      "owner": "th_15_extra.js",
-      "wrapper": "th_16_entry.js",
-      "oldVariable": "oldPopToolAppPage",
-      "reason": "保存按钮后保留临时编辑状态"
+      "method": "createBallLayoutParams",
+      "definitions": [
+        "th_15_extra.js",
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override_chain",
+      "reason": "普通位置和旧固定位置布局均被 th_19 固定边缘布局覆盖"
+    },
+    {
+      "method": "createPointerFrameView",
+      "definitions": [
+        "th_17_pointer.js",
+        "th_18_pointer_ocr.js"
+      ],
+      "effectiveOwner": "th_18_pointer_ocr.js",
+      "type": "intentional_override",
+      "reason": "OCR 扩展统一补充文字、框选和处理状态边框绘制"
     },
     {
       "method": "createPointerLayoutParams",
-      "owner": "th_17_pointer.js",
-      "wrapper": "th_19_position_state.js",
-      "oldVariable": "oldCreatePointerLayoutParamsPosition",
-      "reason": "补充屏幕边缘和刘海区域布局参数"
+      "definitions": [
+        "th_17_pointer.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "wrapper",
+      "reason": "补充屏幕边缘和刘海区域布局参数",
+      "wrappers": [
+        {
+          "module": "th_19_position_state.js",
+          "owner": "th_17_pointer.js",
+          "oldVariable": "oldCreatePointerLayoutParamsPosition"
+        }
+      ]
+    },
+    {
+      "method": "execButtonAction",
+      "definitions": [
+        "th_11_action.js",
+        "th_16_entry.js"
+      ],
+      "effectiveOwner": "th_16_entry.js",
+      "type": "wrapper",
+      "reason": "增加 Shell 按钮执行前诊断",
+      "wrappers": [
+        {
+          "module": "th_16_entry.js",
+          "owner": "th_11_action.js",
+          "oldVariable": "oldExecButtonAction"
+        }
+      ]
+    },
+    {
+      "method": "execPointerAction",
+      "definitions": [
+        "th_17_pointer.js",
+        "th_18_pointer_ocr.js"
+      ],
+      "effectiveOwner": "th_18_pointer_ocr.js",
+      "type": "wrapper",
+      "reason": "增加 area_ocr 指针动作模式",
+      "wrappers": [
+        {
+          "module": "th_18_pointer_ocr.js",
+          "owner": "th_17_pointer.js",
+          "oldVariable": "oldExecPointerAction"
+        }
+      ]
+    },
+    {
+      "method": "execShellSmart",
+      "definitions": [
+        "th_10_shell.js",
+        "th_16_entry.js"
+      ],
+      "effectiveOwner": "th_16_entry.js",
+      "type": "wrapper",
+      "reason": "增加 Shell 桥执行结果诊断",
+      "wrappers": [
+        {
+          "module": "th_16_entry.js",
+          "owner": "th_10_shell.js",
+          "oldVariable": "oldExecShellSmart"
+        }
+      ]
+    },
+    {
+      "method": "finishPointerAreaCapture",
+      "definitions": [
+        "th_17_pointer.js",
+        "th_18_pointer_ocr.js"
+      ],
+      "effectiveOwner": "th_18_pointer_ocr.js",
+      "type": "wrapper",
+      "reason": "框选截图完成后异步衔接 OCR",
+      "wrappers": [
+        {
+          "module": "th_18_pointer_ocr.js",
+          "owner": "th_17_pointer.js",
+          "oldVariable": "oldFinishPointerAreaCapture"
+        }
+      ]
+    },
+    {
+      "method": "getConfiguredBallPosition",
+      "definitions": [
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override",
+      "reason": "固定边缘位置计算由 th_19 统一"
+    },
+    {
+      "method": "isBallPositionEffectKey",
+      "definitions": [
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override",
+      "reason": "固定位置设置键判断由 th_19 统一"
+    },
+    {
+      "method": "loadSavedPos",
+      "definitions": [
+        "th_05_persistence.js",
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override_chain",
+      "reason": "旧像素恢复和 th_15 固定位置补丁均被 th_19 覆盖"
+    },
+    {
+      "method": "onScreenChangedReflow",
+      "definitions": [
+        "th_09_animation.js",
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "wrapper_then_override",
+      "reason": "th_15 曾包装通用重排，最终由 th_19 统一固定位置和指针重排",
+      "wrappers": [
+        {
+          "module": "th_15_extra.js",
+          "owner": "th_09_animation.js",
+          "oldVariable": "oldOnScreenChangedReflow"
+        }
+      ]
+    },
+    {
+      "method": "popToolAppPage",
+      "definitions": [
+        "th_15_extra.js",
+        "th_16_entry.js"
+      ],
+      "effectiveOwner": "th_16_entry.js",
+      "type": "wrapper",
+      "reason": "保存按钮后保留临时编辑状态",
+      "wrappers": [
+        {
+          "module": "th_16_entry.js",
+          "owner": "th_15_extra.js",
+          "oldVariable": "oldPopToolAppPage"
+        }
+      ]
+    },
+    {
+      "method": "rebuildBallForNewSize",
+      "definitions": [
+        "th_12_rebuild.js",
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "wrapper_then_override",
+      "reason": "th_15 曾包装旧重建，最终由 th_19 固定位置重建覆盖",
+      "wrappers": [
+        {
+          "module": "th_15_extra.js",
+          "owner": "th_12_rebuild.js",
+          "oldVariable": "oldRebuildBallForNewSize"
+        }
+      ]
     },
     {
       "method": "removePointerCallbacks",
-      "owner": "th_17_pointer.js",
-      "wrapper": "th_19_position_state.js",
-      "oldVariable": "oldRemovePointerCallbacksPosition",
-      "reason": "关闭指针时同步取消语义调度"
+      "definitions": [
+        "th_17_pointer.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "wrapper",
+      "reason": "关闭指针时同步取消语义调度",
+      "wrappers": [
+        {
+          "module": "th_19_position_state.js",
+          "owner": "th_17_pointer.js",
+          "oldVariable": "oldRemovePointerCallbacksPosition"
+        }
+      ]
     },
     {
       "method": "resetPointerToolState",
-      "owner": "th_17_pointer.js",
-      "wrapper": "th_19_position_state.js",
-      "oldVariable": "oldResetPointerToolStatePosition",
-      "reason": "重置指针时同步重建语义调度会话"
+      "definitions": [
+        "th_17_pointer.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "wrapper",
+      "reason": "重置指针时同步重建语义调度会话",
+      "wrappers": [
+        {
+          "module": "th_19_position_state.js",
+          "owner": "th_17_pointer.js",
+          "oldVariable": "oldResetPointerToolStatePosition"
+        }
+      ]
     },
     {
-      "method": "showPointerAreaFrame",
-      "owner": "th_17_pointer.js",
-      "wrapper": "th_18_pointer_ocr.js",
-      "oldVariable": "oldShowFrame",
-      "reason": "增加指针边框刷新节流和状态颜色"
+      "method": "savePos",
+      "definitions": [
+        "th_05_persistence.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override",
+      "reason": "旧像素位置持久化已被固定边缘位置策略覆盖"
+    },
+    {
+      "method": "scheduleConfiguredBallPositionApply",
+      "definitions": [
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override",
+      "reason": "固定位置延迟应用由 th_19 统一"
     },
     {
       "method": "scheduleDraggingInspect",
-      "owner": "th_17_pointer.js",
-      "wrapper": "th_18_pointer_ocr.js",
-      "oldVariable": "oldDraggingInspect",
-      "reason": "限制拖动期间无障碍扫描频率"
+      "definitions": [
+        "th_17_pointer.js",
+        "th_18_pointer_ocr.js"
+      ],
+      "effectiveOwner": "th_18_pointer_ocr.js",
+      "type": "wrapper",
+      "reason": "限制拖动期间无障碍扫描频率",
+      "wrappers": [
+        {
+          "module": "th_18_pointer_ocr.js",
+          "owner": "th_17_pointer.js",
+          "oldVariable": "oldDraggingInspect"
+        }
+      ]
+    },
+    {
+      "method": "scheduleScreenReflow",
+      "definitions": [
+        "th_09_animation.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override",
+      "reason": "屏幕变化重排调度由 th_19 统一"
+    },
+    {
+      "method": "setPendingValue",
+      "definitions": [
+        "th_05_persistence.js",
+        "th_12_rebuild.js"
+      ],
+      "effectiveOwner": "th_12_rebuild.js",
+      "type": "wrapper",
+      "reason": "保存前恢复枚举值原始类型",
+      "wrappers": [
+        {
+          "module": "th_12_rebuild.js",
+          "owner": "th_05_persistence.js",
+          "oldVariable": "oldSetPendingValue"
+        }
+      ]
+    },
+    {
+      "method": "setupTouchListener",
+      "definitions": [
+        "th_15_extra.js",
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override_chain",
+      "reason": "旧可移动触摸和 th_15 固定位置触摸均被 th_19 唯一状态机覆盖"
+    },
+    {
+      "method": "showPointerAreaFrame",
+      "definitions": [
+        "th_17_pointer.js",
+        "th_18_pointer_ocr.js"
+      ],
+      "effectiveOwner": "th_18_pointer_ocr.js",
+      "type": "wrapper",
+      "reason": "增加指针边框刷新节流和状态颜色",
+      "wrappers": [
+        {
+          "module": "th_18_pointer_ocr.js",
+          "owner": "th_17_pointer.js",
+          "oldVariable": "oldShowFrame"
+        }
+      ]
+    },
+    {
+      "method": "snapToEdgeDocked",
+      "definitions": [
+        "th_09_animation.js",
+        "th_15_extra.js",
+        "th_19_position_state.js"
+      ],
+      "effectiveOwner": "th_19_position_state.js",
+      "type": "temporary_override_chain",
+      "reason": "通用吸边和 th_15 固定位置补丁均被 th_19 覆盖"
+    },
+    {
+      "method": "startPointerTool",
+      "definitions": [
+        "th_17_pointer.js",
+        "th_18_pointer_ocr.js"
+      ],
+      "effectiveOwner": "th_18_pointer_ocr.js",
+      "type": "wrapper",
+      "reason": "启动新指针前取消旧 OCR 并支持 area_ocr 模式",
+      "wrappers": [
+        {
+          "module": "th_18_pointer_ocr.js",
+          "owner": "th_17_pointer.js",
+          "oldVariable": "oldStartPointerTool"
+        }
+      ]
+    },
+    {
+      "method": "startToolHubModuleUpdateFromSettings",
+      "definitions": [
+        "th_03_icon.js",
+        "th_14_panels.js"
+      ],
+      "effectiveOwner": "th_03_icon.js",
+      "type": "deferred_wrapper",
+      "runtimeMode": "deferred_retry",
+      "reason": "th_03 在后台等待设置模块加载后安装自动重启包装",
+      "wrappers": [
+        {
+          "module": "th_03_icon.js",
+          "owner": "th_14_panels.js",
+          "oldVariable": "oldStart",
+          "installMode": "deferred_retry"
+        }
+      ]
     }
   ],
-  "allowedOverrides": [
+  "cleanupCandidates": [
     {
-      "method": "createPointerFrameView",
-      "owner": "th_17_pointer.js",
-      "override": "th_18_pointer_ocr.js",
-      "reason": "当前由 OCR 扩展统一补充指针边框状态绘制"
+      "method": "savePos",
+      "module": "th_05_persistence.js",
+      "occurrences": 1
+    },
+    {
+      "method": "loadSavedPos",
+      "module": "th_05_persistence.js",
+      "occurrences": 1
+    },
+    {
+      "method": "rebuildBallForNewSize",
+      "module": "th_12_rebuild.js",
+      "occurrences": 1
+    },
+    {
+      "method": "setupTouchListener",
+      "module": "th_15_extra.js",
+      "occurrences": 2
     }
   ],
   "forbiddenDefinitions": {}
