@@ -24,17 +24,6 @@ CANDIDATE_TYPES = {
     "wrapper_then_override",
 }
 
-POSITION_TRANSITION_METHODS = {
-    "applyConfiguredBallPosition",
-    "cancelConfiguredBallPositionApply",
-    "createBallLayoutParams",
-    "getConfiguredBallPosition",
-    "isBallPositionEffectKey",
-    "loadSavedPos",
-    "scheduleConfiguredBallPositionApply",
-    "snapToEdgeDocked",
-}
-
 
 def fail(message):
     print("FAIL:", message)
@@ -211,12 +200,6 @@ def classify(method, module, record):
             "A",
             "优先候选",
             "条件包装依赖前序实现；th_12 已禁止重新定义该方法，当前包装不会安装。",
-        )
-    if module == "th_15_extra.js" and method in POSITION_TRANSITION_METHODS:
-        return (
-            "B",
-            "位置过渡候选",
-            "th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。",
         )
     if method == "armLongPress":
         return (
