@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "ce9bfb73d2703e268bab21d5d7596dc6b0ab40d94127b6a988e47555fc65053b",
-      "size": 38914,
-      "version": "1.0.10"
+      "sha256": "e66f007cf35702cdef47b007e95b42e6f077dc6033353853763ceb0439ca6c03",
+      "size": 42616,
+      "version": "1.0.11"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复 SQLite 防抖任务并发竞态"
+      "为悬浮球尺寸重建增加失败回滚"
     ],
-    "title": "修复 SQLite 防抖任务并发竞态"
+    "title": "为悬浮球尺寸重建增加失败回滚"
   },
   "schema": 3,
-  "version": 20260712153305
+  "version": 20260712154425
 }
