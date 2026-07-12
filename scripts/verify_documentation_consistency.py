@@ -42,6 +42,24 @@ for text, label in ((ARCH, "architecture"), (STRUCTURE, "structure")):
     require(text, ".module_update_transaction.committed", label + " commit marker")
     require(text, "toolhub.db", label + " structured storage")
 
+critical_modules = (
+    "th_01_base.js",
+    "th_02_core.js",
+    "th_05_persistence.js",
+    "th_16_entry.js",
+    "th_19_position_state.js",
+)
+for name in critical_modules:
+    require(ARCH, name, "architecture critical module " + name)
+    require(STRUCTURE, name, "structure critical module " + name)
+forbid(STRUCTURE, "这两个模块失败会导致入口中断", "structure obsolete critical count")
+require(STRUCTURE, "任一加载失败都会中断启动", "structure critical failure behavior")
+require(STRUCTURE, "healthy / degraded / failed", "structure startup tri-state")
+
+require(ARCH, "ballRebuildActive", "architecture rebuild state")
+require(STRUCTURE, "ballRebuildActive", "structure rebuild state")
+require(STRUCTURE, "position_state", "structure final load stage")
+
 forbid(ARCH, "manifest.version = 20260703110021", "architecture frozen manifest version")
 forbid(STRUCTURE, "version: 20260703110021", "structure frozen manifest version")
 forbid(STRUCTURE, "files: 22 个模块", "structure old manifest module count")
