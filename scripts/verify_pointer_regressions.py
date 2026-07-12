@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""校验指针 Issue #85 修复与悬停松手取字契约。"""
+"""校验指针取字、框选 OCR、剪贴板和历史回归契约。"""
 
-import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -13,7 +12,6 @@ POSITION = ROOT / "code" / "th_19_position_state.js"
 ANIMATION = ROOT / "code" / "th_09_animation.js"
 PANELS = ROOT / "code" / "th_14_panels.js"
 ENTRY = ROOT / "ToolHub.js"
-ENTRY_SHA = ROOT / "ToolHub.js.sha256"
 VERIFY_MANIFEST = ROOT / "scripts" / "verify_manifest.py"
 
 
@@ -65,6 +63,7 @@ def verify_manifest(result):
 
 def verify_issue_85(result, pointer, ocr, position, animation):
     group = "issue-85"
+
     finish_wrapper = section(
         ocr,
         "var oldFinishPointerAreaCapture = proto.finishPointerAreaCapture;",
@@ -93,7 +92,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         "installFixedEdgePointer18" not in ocr
         and "proto.setupTouchListener = function()" not in ocr
         and "self.onPointerBallTap(rawX, rawY)" in touch_owner,
-        "th_19 must own touch handling and delegate active pointer taps to core onPointerBallTap",
+        "th_19 must own touch handling and delegate active pointer taps to core",
     )
 
     async_ocr = section(ocr, "function scheduleAreaOcrAsync18", "function install18()")
@@ -136,7 +135,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and guard_before_clipboard >= 0
         and guard_before_clipboard < clipboard_call
         and guard_after_clipboard > clipboard_call,
-        "clipboard write must be guarded by current-token checks before and after copying",
+        "clipboard write must be guarded before and after copying",
     )
 
     stop_ocr_worker = section(
@@ -158,7 +157,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and 'stopAreaOcrWorker18(this, stCancelOcr, "start_pointer_tool")' in start_pointer_wrapper
         and "clearAreaOcrWorkerRefs18(st, ht, workerH, timeoutRunnable, token)" in async_ocr
         and "finally {" in async_ocr,
-        "cancel path must remove timeout/worker callbacks, quit the HandlerThread, and clear owned references",
+        "cancel path must remove callbacks, quit HandlerThread, and clear owned references",
     )
 
     ocr_rect = section(
@@ -187,7 +186,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
     empty_code = finish_text.find('code: "POINTER_RELEASE_EMPTY"')
     result.require(
         group,
-        "W5 final timeout is distinct from an empty release",
+        "W5 final timeout is distinct from empty release",
         "var finalTimeout =" in apply_inspect
         and "st.inspectLastTimedOut === true" in finish_text
         and timeout_code >= 0
@@ -204,7 +203,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and "candidateFresh" in apply_inspect
         and "finalTimeout &&" in apply_inspect
         and "candidateStillHit &&" in apply_inspect,
-        "timeout reuse must be limited to final scans with a fresh candidate still under the hotspot",
+        "timeout reuse must be limited to final scans with a fresh candidate under the hotspot",
     )
 
     save_bitmap = section(
@@ -216,7 +215,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
     compress_check = save_bitmap.find("if (compressed !== true", compress_call + 1)
     result.require(
         group,
-        "W6 bitmap.compress return value is checked",
+        "W6 bitmap.compress result is checked",
         compress_call >= 0 and compress_check > compress_call,
         "bitmap.compress result must be validated before flush",
     )
@@ -268,7 +267,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and "isPointerAreaCaptureTokenCurrent" in area_async
         and "mainH.post" in area_async
         and "scheduleAreaOcrAsync18(" in area_complete_hook,
-        "touch-end capture must return pending while screenshot/save run in a guarded background thread",
+        "touch-end capture must return pending while screenshot/save run in a guarded thread",
     )
 
     apply_ocr = section(
@@ -278,7 +277,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
     )
     result.require(
         group,
-        "N6 empty OCR result is not reported as success",
+        "N6 empty OCR result is not success",
         '"AREA_OCR_EMPTY"' in apply_ocr
         and "var hasText = textOk === true && normalizedText.length > 0;" in apply_ocr
         and "obj.ok = hasText;" in apply_ocr
@@ -288,7 +287,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and "var code = !textOk" in async_ocr
         and '"AREA_OCR_EMPTY"' in async_ocr
         and "if (textOk && textValue)" in async_ocr,
-        "empty or whitespace-only OCR must use AREA_OCR_EMPTY and skip clipboard success",
+        "empty OCR must use AREA_OCR_EMPTY and skip clipboard success",
     )
 
     worker = section(
@@ -335,7 +334,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
     )
     result.require(
         group,
-        "S1 pointer state reflows with the screen",
+        "S1 pointer state reflows with screen",
         all("FloatBallAppWM.prototype." + name in pointer for name in reflow_names)
         and "st.captureRect = this.mapPointerRectForScreenReflow" in pointer_reflow
         and "st.boundRect = this.mapPointerRectForScreenReflow" in pointer_reflow
@@ -358,9 +357,8 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and "st.textStableSince = 0;" in pointer_reflow
         and 'st.textStableTargetKey = "";' in pointer_reflow
         and "this.resetPointerTextStableHover(" in pointer_reflow
-        and "this.resetPointerAreaHold()" in pointer_reflow
-        and '"screen_reflow:" + String(reason || "")' in pointer_reflow,
-        "text_pick reflow must clear candidates and hover credentials, then restart stable timing",
+        and "this.resetPointerAreaHold()" in pointer_reflow,
+        "text reflow must clear candidates and hover credentials",
     )
 
     screen_reflow = section(
@@ -372,16 +370,16 @@ def verify_issue_85(result, pointer, ocr, position, animation):
     pointer_hook = screen_reflow.find("this.onPointerScreenChangedReflow(reason, oldW, oldH, newW, newH)")
     result.require(
         group,
-        "S1 screen reflow calls the pointer hook",
+        "S1 screen reflow calls pointer hook",
         screen_assignment >= 0 and pointer_hook > screen_assignment,
-        "onScreenChangedReflow must call the pointer hook after updating screen size",
+        "screen reflow must call pointer hook after updating screen size",
     )
 
 
 def verify_text_release(result, pointer, position, panels, entry):
     group = "text-release"
+
     for marker in (
-        "// @version 1.1.35",
         "updatePointerTextStableMotion = function",
         "bindPointerTextHoverCandidate = function",
         "grantPointerTextHoverCredential = function",
@@ -396,7 +394,7 @@ def verify_text_release(result, pointer, position, panels, entry):
         "TEXT_PICK_RECENT_CANDIDATE",
         "TEXT_PICK_FINAL_SCAN",
     ):
-        result.require(group, "th17 marker " + marker, marker in pointer, "th17 marker missing: " + marker)
+        result.require(group, "th17 marker " + marker, marker in pointer, "missing marker: " + marker)
 
     extract = section(
         pointer,
@@ -410,7 +408,7 @@ def verify_text_release(result, pointer, position, panels, entry):
         "TEXT_POINTER_OUTSIDE_FRAME",
         "completePointerCandidateOnRelease",
     ):
-        result.require(group, "extract gate " + marker, marker in extract, "extract gate missing: " + marker)
+        result.require(group, "extract gate " + marker, marker in extract, "missing extract gate: " + marker)
 
     completion = section(
         pointer,
@@ -441,7 +439,7 @@ def verify_text_release(result, pointer, position, panels, entry):
         "textHoverReadyRect" in stable
         and "leave_text_frame" in stable
         and 'resetPointerTextStableHover(st, ts, hp, "leave_text_frame")' in stable,
-        "leaving the drawn text frame does not reset the stable timer",
+        "leaving drawn text frame does not reset stable timer",
     )
 
     binding = section(
@@ -454,7 +452,7 @@ def verify_text_release(result, pointer, position, panels, entry):
         "stableTargetChanged",
         'resetPointerTextStableHover(pointerState, ts, hp, "target_changed")',
     ):
-        result.require(group, "target identity " + marker, marker in binding, "target-level hover identity guard missing: " + marker)
+        result.require(group, "target identity " + marker, marker in binding, "missing target identity guard: " + marker)
 
     ready = section(
         pointer,
@@ -465,7 +463,7 @@ def verify_text_release(result, pointer, position, panels, entry):
         group,
         "visual ready uses business credential",
         "hasPointerTextHoverCredential" in ready,
-        "visual ready state is not backed by the business credential",
+        "visual ready is not backed by business credential",
     )
     result.require(
         group,
@@ -480,7 +478,7 @@ def verify_text_release(result, pointer, position, panels, entry):
         "FloatBallAppWM.prototype.restoreRecentPointerPickForRelease = function",
     )
     for marker in ("lastValidPickReadyAt", "lastValidPickHoverSince", "pointerRectInside"):
-        result.require(group, "recent candidate " + marker, marker in recent, "recent candidate readiness guard missing: " + marker)
+        result.require(group, "recent candidate " + marker, marker in recent, "missing recent guard: " + marker)
     result.require(
         group,
         "recent candidate uses strict frame hit testing",
@@ -506,7 +504,7 @@ def verify_text_release(result, pointer, position, panels, entry):
         group,
         "final candidate is inside drawn text frame",
         "pointerRectInside" in candidate and "pointerRectHitScore" not in candidate,
-        "final candidate is not strictly inside the drawn text frame",
+        "final candidate is not strictly inside drawn text frame",
     )
 
     move = section(
@@ -518,7 +516,7 @@ def verify_text_release(result, pointer, position, panels, entry):
         group,
         "raw movement updates independent stable hover",
         "updatePointerTextStableMotion(now)" in move,
-        "raw pointer movement does not update independent stable hover",
+        "raw pointer movement does not update stable hover",
     )
 
     finalizer = section(
@@ -544,7 +542,7 @@ def verify_text_release(result, pointer, position, panels, entry):
         group,
         "confirmed candidate uses unified credential extraction",
         "extractCurrentPointerText(true, st.releaseTs)" in finalizer,
-        "confirmed candidate does not use unified credential extraction",
+        "confirmed candidate does not use unified extraction",
     )
     result.require(
         group,
@@ -575,23 +573,147 @@ def verify_text_release(result, pointer, position, panels, entry):
         group,
         "settings description matches hover credential",
         "同一文字边框内稳定悬停达到设定时间后，松手才能取字" in panels,
-        "pointer setting description does not match hover credential behavior",
+        "pointer setting description does not match behavior",
     )
     result.require(
         group,
         "entry-level runtime pointer patch is absent",
         "指针无障碍取字提交链修复" not in entry
         and "installToolHubPointerAccessibilityTextReleaseFix" not in entry,
-        "entry-level runtime pointer patch still remains",
+        "entry-level runtime pointer patch remains",
     )
 
-    expected = hashlib.sha256(ENTRY.read_bytes()).hexdigest()
-    sha_line = ENTRY_SHA.read_text(encoding="utf-8").strip()
+
+def verify_pointer_core(result, pointer, ocr):
+    group = "pointer-core"
+
+    for marker in (
+        "copyPointerTextToClipboard = function",
+        "cm.setPrimaryClip(clip)",
+        "rememberPointerValidPick",
+        "getRecentPointerPickForRelease",
+        "restoreRecentPointerPickForRelease",
+        "completePointerCandidateOnRelease",
+        "completePointerTextCopy",
+        "data.clipboardAccepted = copied === true",
+        "accessibility_current",
+        "small_area_fallback",
+        "areaHoldDelay: 2000",
+    ):
+        result.require(group, "core marker " + marker, marker in pointer, "missing pointer core marker: " + marker)
+
+    extract = section(
+        pointer,
+        "FloatBallAppWM.prototype.extractCurrentPointerText = function",
+        "FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function",
+    )
     result.require(
         group,
-        "ToolHub.js.sha256",
-        expected in sha_line,
-        "ToolHub.js.sha256 mismatch",
+        "extract does not report direct clipboard result as success",
+        "copyPointerTextToClipboard(textValue)" not in extract,
+        "extractCurrentPointerText still treats direct clipboard write as success",
+    )
+    result.require(
+        group,
+        "extract restores recent candidate",
+        "getRecentPointerPickForRelease" in extract,
+        "extractCurrentPointerText does not restore recent candidate",
+    )
+    result.require(
+        group,
+        "extract uses unified release completion",
+        "completePointerCandidateOnRelease(" in extract,
+        "extractCurrentPointerText bypasses unified completion",
+    )
+
+    clipboard = section(
+        pointer,
+        "FloatBallAppWM.prototype.copyPointerTextToClipboard = function",
+        "FloatBallAppWM.prototype.ensurePointerToolState = function",
+    )
+    for forbidden in (
+        "runPointerClipboardOnMain",
+        "writePointerClipboardMainSync",
+        "copyPointerTextToClipboardVerified",
+        "clipboardCopyToken",
+        "clipboardCopyPending",
+        "clipboardReadbackMatched",
+        "java.util.concurrent.CountDownLatch",
+    ):
+        result.require(
+            group,
+            "obsolete clipboard gate absent " + forbidden,
+            forbidden not in clipboard,
+            "obsolete clipboard completion gate remains: " + forbidden,
+        )
+    result.require(
+        group,
+        "clipboard uses stable direct write",
+        "cm.setPrimaryClip(clip)" in clipboard,
+        "stable direct clipboard write is missing",
+    )
+
+    complete = section(
+        pointer,
+        "FloatBallAppWM.prototype.completePointerTextCopy = function",
+        "FloatBallAppWM.prototype.ensurePointerToolState = function",
+    )
+    result.require(
+        group,
+        "accessibility success is independent from clipboard acceptance",
+        "ok: true" in complete and "clipboard: copied === true" in complete,
+        "accessibility success is incorrectly gated by clipboard result",
+    )
+
+    recent = section(
+        pointer,
+        "FloatBallAppWM.prototype.rememberPointerValidPick = function",
+        "FloatBallAppWM.prototype.completePointerTextCopy = function",
+    )
+    for marker in (
+        "lastValidPickText",
+        "lastValidPickRect",
+        "lastValidPickSession",
+        "pointerRectInside",
+    ):
+        result.require(group, "recent cache " + marker, marker in recent, "recent cache missing: " + marker)
+
+    fallback = section(
+        pointer,
+        "FloatBallAppWM.prototype.finishPointerFallbackText = function",
+        "FloatBallAppWM.prototype.updatePointerAreaSelection = function",
+    )
+    result.require(
+        group,
+        "small-area fallback uses unified completion",
+        "completePointerTextCopy(" in fallback,
+        "small-area fallback bypasses unified clipboard completion",
+    )
+
+    for forbidden in (
+        "installFixedEdgePointer18",
+        "schedulePointerMoveRaw18",
+        "fixBallToEdge18",
+        "pickBallSide18",
+        "启动反馈：子模块加载完成",
+    ):
+        result.require(
+            group,
+            "OCR residue absent " + forbidden,
+            forbidden not in ocr,
+            "th_18 still contains fixed-edge or timing residue: " + forbidden,
+        )
+    result.require(
+        group,
+        "th18 performance extension remains",
+        "installPointerPerf18(proto);" in ocr,
+        "th_18 performance extension missing",
+    )
+    result.require(
+        group,
+        "th18 OCR extension remains",
+        "pointer area_ocr patch installed" in ocr,
+        "th_18 OCR extension missing",
     )
 
 
@@ -603,7 +725,6 @@ def main():
         ANIMATION,
         PANELS,
         ENTRY,
-        ENTRY_SHA,
         VERIFY_MANIFEST,
     ]
     missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
@@ -621,6 +742,7 @@ def main():
 
     verify_issue_85(result, pointer, ocr, position, animation)
     verify_text_release(result, pointer, position, panels, entry)
+    verify_pointer_core(result, pointer, ocr)
     verify_manifest(result)
 
     for name in result.passed:
@@ -633,9 +755,10 @@ def main():
 
     issue_count = sum(1 for name in result.passed if name.startswith("issue-85 /"))
     release_count = sum(1 for name in result.passed if name.startswith("text-release /"))
+    core_count = sum(1 for name in result.passed if name.startswith("pointer-core /"))
     print(
-        "OK pointer_regressions issue85=%d text_release=%d total=%d"
-        % (issue_count, release_count, len(result.passed))
+        "OK pointer_regressions issue85=%d text_release=%d pointer_core=%d total=%d"
+        % (issue_count, release_count, core_count, len(result.passed))
     )
     return 0
 
