@@ -42,14 +42,14 @@
       "version": "1.0.5"
     },
     "th_10_shell.js": {
-      "sha256": "bb350abf1b7551ee4832614a49294462f95939b8ffc917ca98b98fb7d5fb0141",
-      "size": 4631,
-      "version": "1.0.5"
+      "sha256": "4bc77239db0f3db6e88ecc06c8c4c16e6bd973ccb21435b2b650dd7eea85e584",
+      "size": 4895,
+      "version": "1.0.6"
     },
     "th_11_action.js": {
-      "sha256": "8b42466dc16a504a30866a313d00e9efa79f05a9112648efc8cac145c77b746c",
-      "size": 23368,
-      "version": "1.0.8"
+      "sha256": "b6832cd24a0354f1ddd10a98bf2a313397d3379bd3f5f35bb2fbf7df16894365",
+      "size": 26094,
+      "version": "1.0.9"
     },
     "th_12_rebuild.js": {
       "sha256": "65bca091b14b364d8c0b95f3c31acb66285297c7eb6834dafd1b5ff1f13fa2ae",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理悬浮球重建一次性文件"
+      "脱敏 Shell 命令诊断日志"
     ],
-    "title": "清理悬浮球重建一次性文件"
+    "title": "脱敏 Shell 命令诊断日志"
   },
   "schema": 3,
-  "version": 20260712154824
+  "version": 20260712161325
 }
