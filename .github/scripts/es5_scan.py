@@ -10,7 +10,7 @@ PATTERNS = [
     ("arrow_function", re.compile(r"=>")),
     ("class", re.compile(r"\bclass\s+[A-Za-z_$]")),
     ("async", re.compile(r"\basync\s+(?:function\b|[A-Za-z_$][A-Za-z0-9_$]*\s*\()")),
-    ("await", re.compile(r"\bawait\b")),
+    ("await", re.compile(r"(?<![.$A-Za-z0-9_])await(?=\s|\()")),
     ("optional_chaining", re.compile(r"\?\.")),
     ("nullish_coalescing", re.compile(r"\?\?")),
     ("spread_or_rest", re.compile(r"(?<!\.)\.\.\.(?!\.)")),
