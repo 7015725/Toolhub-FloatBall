@@ -1,0 +1,96 @@
+name: patch-pointer-reflow-verifier
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'fix/remove-th09-screen-reflow-fallbacks' &&
+      github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/remove-th09-screen-reflow-fallbacks
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Patch pointer verifier
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/verify_pointer_regressions.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''    screen_reflow = section(
+              animation,
+              "FloatBallAppWM.prototype.onScreenChangedReflow = function(reason)",
+              "FloatBallAppWM.prototype.scheduleScreenReflow = function(reason)",
+          )'''
+          new = '''    screen_reflow = section(
+              position,
+              "proto.onScreenChangedReflow = function(reason)",
+              "proto.scheduleScreenReflow = function(reason)",
+          )'''
+          if text.count(old) != 1:
+              raise SystemExit('FAIL: expected one legacy screen reflow verifier block')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
+      - name: Verify pointer contracts without manifest
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import scripts.verify_pointer_regressions as v
+          result = v.CheckResult()
+          pointer = v.read_text(v.POINTER)
+          ocr = v.read_text(v.POINTER_OCR)
+          position = v.read_text(v.POSITION)
+          animation = v.read_text(v.ANIMATION)
+          panels = v.read_text(v.PANELS)
+          entry = v.read_text(v.ENTRY)
+          v.verify_issue_85(result, pointer, ocr, position, animation)
+          v.verify_text_release(result, pointer, position, panels, entry)
+          v.verify_pointer_core(result, pointer, ocr)
+          if result.failed:
+              for name, detail in result.failed:
+                  print('FAIL %s: %s' % (name, detail))
+              raise SystemExit(1)
+          print('OK pointer contracts without manifest: %d' % len(result.passed))
+          PY
+          python3 scripts/verify_ball_position_state.py
+          python3 -m compileall -q scripts .github/scripts
+          git diff --check
+
+      - name: Remove temporary workflow
+        run: rm -f .github/workflows/patch-pointer-reflow-verifier.yml
+
+      - name: Commit verifier fix
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "修正指针屏幕重排验证所有者"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:fix/remove-th09-screen-reflow-fallbacks
