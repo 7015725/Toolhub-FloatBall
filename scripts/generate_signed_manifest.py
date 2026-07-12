@@ -105,8 +105,13 @@ def main() -> None:
         path = CODE_DIR / name
         if not path.exists():
             raise SystemExit(f"Missing module: {path}")
+        module_version = read_module_version(path)
+        if module_version == "0.0.0":
+            raise SystemExit(
+                "Module version missing, invalid, or reserved as 0.0.0: %s" % path
+            )
         files[name] = {
-            "version": read_module_version(path),
+            "version": module_version,
             "sha256": sha256_file(path),
             "size": path.stat().st_size,
         }
