@@ -1,4 +1,4 @@
-// @version 1.0.10
+// @version 1.0.11
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -195,79 +195,148 @@ function registerReceiverOnMain(actions, callback, allowExternal) {
 }
 
 FloatBallAppWM.prototype.close = function() {
+  if (!this.state) return;
+  if (this.state.closed === true) {
+    try { if (typeof unregisterToolHubAppInstance === "function") unregisterToolHubAppInstance(this); } catch (eAlreadyUnreg) {}
+    return;
+  }
   if (this.state.closing) return;
-  this.state.closing = true;
 
-  safeLog(this.L, 'i',  "close begin");
+  var self = this;
+  var stateRef = this.state;
+  stateRef.closing = true;
+  safeLog(this.L, 'i', "close begin");
 
-  this.cancelDockTimer();
-  this.stopDisplayMonitor();
-
-  try {
-    if (this.state.addedBall && this.state.ballLp) this.savePos(this.state.ballLp.x, this.state.ballLp.y);
-  } catch (eS) {}
-  try { FileIO.flushDebouncedWrites(); } catch (eFlushCfg) { safeLog(this.L, 'e', "flushDebouncedWrites fail: " + String(eFlushCfg)); }
-
-  try {
-    if (typeof this.closePointerTool === "function") this.closePointerTool("ToolHub 关闭", true);
-  } catch (ePointerClose) { safeLog(this.L, 'e', "closePointerTool fail: " + String(ePointerClose)); }
-
-  this.hideAllPanels();
-
-  if (this.state.addedBall && this.state.ballRoot) this.safeRemoveView(this.state.ballRoot, "ballRoot");
-
-  this.state.ballRoot = null;
-  this.state.ballContent = null;
-  this.state.ballLp = null;
-  this.state.addedBall = false;
-
-  // # 注销广播接收器 (修复内存泄漏)
-  if (this.state.receivers && this.state.receivers.length > 0) {
-    var list = this.state.receivers.slice ? this.state.receivers.slice(0) : this.state.receivers;
-    var unreg = runOnMainSync(function() {
-      for (var i = 0; i < list.length; i++) {
-        try { context.getApplicationContext().unregisterReceiver(list[i]); } catch(e) { safeLog(null, 'e', "unregisterReceiver fail: " + String(e)); }
-      }
+  function closeStep(name, fn) {
+    try {
+      if (fn) fn();
       return true;
-    }, 2000);
-    if (!unreg.ok) safeLog(this.L, 'e', "receiver cleanup incomplete: " + String(unreg.error));
-    this.state.receivers = [];
+    } catch (eStep) {
+      try { safeLog(self.L, 'e', "close step fail name=" + String(name) + " err=" + String(eStep)); } catch (eLogStep) {}
+      return false;
+    }
   }
 
-  // # 清理 HandlerThread
   try {
-    if (this.state.ht) {
-      if (android.os.Build.VERSION.SDK_INT >= 18) this.state.ht.quitSafely();
-      else this.state.ht.quit();
-    }
-  } catch (eQ) {}
+    closeStep("cancelDockTimer", function() { self.cancelDockTimer(); });
+    closeStep("stopDisplayMonitor", function() { self.stopDisplayMonitor(); });
+    closeStep("cancelConfiguredBallPositionApply", function() {
+      if (typeof self.cancelConfiguredBallPositionApply === "function") self.cancelConfiguredBallPositionApply();
+    });
+    closeStep("cancelBallLayoutAnimation", function() {
+      if (typeof self.cancelBallLayoutAnimation === "function") self.cancelBallLayoutAnimation("close");
+    });
 
-  // # 清理图标加载线程
-  try {
-    if (this._iconLoader && this._iconLoader.ht) {
-      if (android.os.Build.VERSION.SDK_INT >= 18) this._iconLoader.ht.quitSafely();
-      else this._iconLoader.ht.quit();
+    closeStep("savePos", function() {
+      if (stateRef.addedBall && stateRef.ballLp) self.savePos(stateRef.ballLp.x, stateRef.ballLp.y);
+    });
+    closeStep("flushDebouncedWrites", function() {
+      if (FileIO.flushDebouncedWrites() === false) throw "flush returned false";
+    });
+    closeStep("closePointerTool", function() {
+      if (typeof self.closePointerTool === "function") self.closePointerTool("ToolHub 关闭", true);
+    });
+    var allPanelsHidden = closeStep("hideAllPanels", function() { self.hideAllPanels(); });
+    if (!allPanelsHidden) {
+      closeStep("hideMainPanelFallback", function() { self.hideMainPanel(); });
+      closeStep("hideSettingsPanelFallback", function() { self.hideSettingsPanel(); });
+      closeStep("hideViewerPanelFallback", function() { self.hideViewerPanel(); });
+      closeStep("hideMaskFallback", function() { self.hideMask(); });
     }
-  } catch (eIcon) {}
-  try {
-    if (this.__scIconLoaderSingleton && this.__scIconLoaderSingleton.ht) {
-      if (android.os.Build.VERSION.SDK_INT >= 18) this.__scIconLoaderSingleton.ht.quitSafely();
-      else this.__scIconLoaderSingleton.ht.quit();
+
+    function removeResidualView(viewKey, label) {
+      var view = stateRef[viewKey];
+      if (!view) return;
+      var ret = self.safeRemoveView(view, label);
+      if (ret && ret.ok === false) throw String(ret.err || (label + " remove failed"));
     }
-  } catch (eScIcon) {}
-  try { this.__scIconLoaderSingleton = null; } catch (eScIcon2) {}
 
-  safeLog(this.L, 'i',  "close done");
-  this.state.closed = true;
-  try { if (typeof unregisterToolHubAppInstance === "function") unregisterToolHubAppInstance(this); } catch (eUnregApp) {}
+    closeStep("removeResidualMainPanel", function() { removeResidualView("panel", "panel-close-residual"); });
+    closeStep("removeResidualSettingsPanel", function() { removeResidualView("settingsPanel", "settingsPanel-close-residual"); });
+    closeStep("removeResidualViewerPanel", function() { removeResidualView("viewerPanel", "viewerPanel-close-residual"); });
+    closeStep("removeResidualMask", function() { removeResidualView("mask", "mask-close-residual"); });
+    closeStep("removeBall", function() {
+      if (!stateRef.ballRoot) return;
+      var ballRet = self.safeRemoveView(stateRef.ballRoot, "ballRoot");
+      if (ballRet && ballRet.ok === false) throw String(ballRet.err || "ball remove failed");
+    });
 
-  // # 清空缓存
-  try {
-    this._iconLru = null;
-    this._shortcutIconFailTs = {};
-    if (typeof __scIconCache !== "undefined") __scIconCache = {};
-    if (typeof __scAppLabelCache !== "undefined") __scAppLabelCache = {};
-  } catch (eCache) {}
+    closeStep("unregisterReceivers", function() {
+      if (!stateRef.receivers || stateRef.receivers.length <= 0) return;
+      var list = stateRef.receivers.slice ? stateRef.receivers.slice(0) : stateRef.receivers;
+      var unreg = runOnMainSync(function() {
+        for (var i = 0; i < list.length; i++) {
+          try { context.getApplicationContext().unregisterReceiver(list[i]); }
+          catch (eOne) { try { safeLog(null, 'e', "unregisterReceiver fail: " + String(eOne)); } catch (eOneLog) {} }
+        }
+        return true;
+      }, 2000);
+      if (!unreg.ok) safeLog(self.L, 'e', "receiver cleanup incomplete: " + String(unreg.error));
+    });
+
+    closeStep("quitHandlerThread", function() {
+      if (!stateRef.ht) return;
+      if (android.os.Build.VERSION.SDK_INT >= 18) stateRef.ht.quitSafely();
+      else stateRef.ht.quit();
+    });
+    closeStep("quitIconLoader", function() {
+      if (!self._iconLoader || !self._iconLoader.ht) return;
+      if (android.os.Build.VERSION.SDK_INT >= 18) self._iconLoader.ht.quitSafely();
+      else self._iconLoader.ht.quit();
+    });
+    closeStep("quitShortcutIconLoader", function() {
+      if (!self.__scIconLoaderSingleton || !self.__scIconLoaderSingleton.ht) return;
+      if (android.os.Build.VERSION.SDK_INT >= 18) self.__scIconLoaderSingleton.ht.quitSafely();
+      else self.__scIconLoaderSingleton.ht.quit();
+    });
+  } finally {
+    closeStep("clearViewState", function() {
+      stateRef.ballRoot = null;
+      stateRef.ballContent = null;
+      stateRef.ballLp = null;
+      stateRef.addedBall = false;
+      stateRef.panel = null;
+      stateRef.panelLp = null;
+      stateRef.addedPanel = false;
+      stateRef.settingsPanel = null;
+      stateRef.settingsPanelLp = null;
+      stateRef.addedSettings = false;
+      stateRef.viewerPanel = null;
+      stateRef.viewerPanelLp = null;
+      stateRef.viewerPanelType = null;
+      stateRef.addedViewer = false;
+      stateRef.mask = null;
+      stateRef.maskLp = null;
+      stateRef.addedMask = false;
+      stateRef.toolAppRoot = null;
+      stateRef.toolAppBody = null;
+      stateRef.toolAppContentHost = null;
+      stateRef.toolAppBackPreviewView = null;
+      stateRef.toolAppBackPreviewRoute = null;
+      stateRef.toolAppBackPreviewReady = false;
+      stateRef.toolAppTitleView = null;
+      stateRef.toolAppBackButton = null;
+      stateRef.toolAppActive = false;
+      stateRef.toolAppRoute = null;
+      stateRef.toolAppNavStack = [];
+      stateRef.panelBackCallbackEntries = [];
+      stateRef.receivers = [];
+      stateRef.ht = null;
+      stateRef.h = null;
+    });
+    closeStep("clearLoaderState", function() {
+      self.__scIconLoaderSingleton = null;
+      self._iconLru = null;
+      self._shortcutIconFailTs = {};
+      if (typeof __scIconCache !== "undefined") __scIconCache = {};
+      if (typeof __scAppLabelCache !== "undefined") __scAppLabelCache = {};
+    });
+
+    stateRef.closed = true;
+    stateRef.closing = false;
+    try { if (typeof unregisterToolHubAppInstance === "function") unregisterToolHubAppInstance(self); } catch (eUnregApp) {}
+    safeLog(self.L, 'i', "close done");
+  }
 };
 
 /**
