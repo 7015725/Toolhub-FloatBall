@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "收紧 Content 默认权限并拆分读写白名单"
+      "修复 SQLite 防抖任务并发竞态"
     ],
-    "title": "收紧 Content 默认权限并拆分读写白名单"
+    "title": "修复 SQLite 防抖任务并发竞态"
   },
   "schema": 3,
-  "version": 20260712132932
+  "version": 20260712152839
 }
