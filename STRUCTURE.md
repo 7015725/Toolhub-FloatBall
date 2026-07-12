@@ -196,10 +196,13 @@ var UPDATE_SECURITY_MODE = 2;   // 0: 普通更新, 1: manifest哈希校验, 2: 
 
 ```text
 th_01_base.js
+th_02_core.js
+th_05_persistence.js
 th_16_entry.js
+th_19_position_state.js
 ```
 
-这两个模块失败会导致入口中断。其他模块失败会进入 `loadErrors`，但不一定立刻中断，可能在运行期暴露功能缺失。
+任一加载失败都会中断启动。其他模块失败会进入 `loadErrors`；悬浮球仍能启动时返回 `degraded`。入口结果统一使用 `healthy / degraded / failed` 三态。
 
 ---
 
@@ -255,7 +258,8 @@ state
 │   ├── addedBall
 │   ├── dragging
 │   ├── docked
-│   └── dockSide
+│   ├── dockSide
+│   └── ballRebuildActive
 ├── 面板
 │   ├── panel / panelLp / addedPanel
 │   ├── settingsPanel / settingsPanelLp / addedSettings
@@ -579,7 +583,7 @@ ToolHub.js.sha256
 base → core → icon/theme/persistence/parser/content
 → animation/shell/action/rebuild
 → panel_ui → panels → button_shortcut / button_icon_editor / button_editor
-→ color_picker / icon_picker / schema_editor → extra → entry → pointer
+→ color_picker / icon_picker / schema_editor → extra → entry → pointer → pointer_ocr → position_state
 ```
 
 尤其注意：
@@ -589,6 +593,7 @@ base → core → icon/theme/persistence/parser/content
 - `th_15_extra.js` 依赖前面 UI、主题、设置、页面构建能力。
 - `th_16_entry.js` 负责启动实例。
 - `th_17_pointer.js` 位于入口生命周期之后，接入按钮动作分发和悬浮球拖动路径。
+- `th_18_pointer_ocr.js` 扩展框选 OCR，`th_19_position_state.js` 最后安装位置、布局和重建回滚包装。
 
 ---
 
@@ -609,7 +614,7 @@ base → core → icon/theme/persistence/parser/content
 - 大量方法挂载到同一个 prototype，隐式依赖较多。
 - 入口文件是信任根，升级入口仍需要用户手动替换 ShortX JS 任务内容。
 - 文档中的模块数量需要持续与 `manifest.json` 保持一致。
-- 非关键模块加载失败后可能继续启动，运行期才暴露缺失方法。
+- 非关键模块加载失败后可能降级启动；入口会明确返回 `degraded` 并列出加载异常。
 
 ---
 
