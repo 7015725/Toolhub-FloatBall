@@ -4,20 +4,20 @@
 
 - 本报告只审查 `th_09_animation.js`，不自动删除运行时代码。
 - 模块边界、定义链和最终所有者一致，未发现未登记重复定义。
-- 当前后续覆盖候选：`onScreenChangedReflow`、`scheduleScreenReflow`、`animateBallLayout`、`snapToEdgeDocked`。
+- 当前后续覆盖候选：`animateBallLayout`、`snapToEdgeDocked`。
 - `th_09` 含动画监听、显示监听、延迟 Runnable 和触摸回调；候选必须逐组完成调用链与真机验证。
 - 唯一实现和受保护覆盖链默认保留，不能仅凭调用次数低删除。
 
 ## 文件概况
 
-- 版本：`1.0.2`
-- 行数：`1110`
-- 字节数：`42278`
+- 版本：`1.0.3`
+- 行数：`994`
+- 字节数：`38070`
 - ToolHub 加载模块：`24`
-- `th_09` 原型方法定义：`30`
-- `th_09` 唯一原型方法：`30`
+- `th_09` 原型方法定义：`28`
+- `th_09` 唯一原型方法：`28`
 - 模块内重复定义方法：`0`
-- 后续覆盖候选：`4`
+- 后续覆盖候选：`2`
 - 受保护覆盖/包装链：`0`
 - 唯一实现：`26`
 
@@ -25,8 +25,8 @@
 
 |信号|数量|风险含义|
 |---|---:|---|
-|`Runnable`|7|可能持有实例并延迟调用最终原型方法|
-|`postDelayed`|2|需要排除旧回调对象和竞态|
+|`Runnable`|6|可能持有实例并延迟调用最终原型方法|
+|`postDelayed`|1|需要排除旧回调对象和竞态|
 |`DisplayListener`|1|屏幕旋转和尺寸变化入口|
 |`AnimatorListener`|1|动画结束/取消回调|
 |`AnimatorUpdateListener`|1|逐帧 WindowManager 更新|
@@ -36,8 +36,6 @@
 
 |方法|定义链|最终所有者|类型|直接调用|属性读取|动态引用|旧方法捕获|下一步|
 |---|---|---|---|---:|---:|---:|---:|---|
-|`onScreenChangedReflow`|`th_09_animation.js → th_19_position_state.js`|`th_19_position_state.js`|`temporary_override`|7|7|0|2|先作为同一屏幕变化链审查；验证 DisplayListener、即时调用和延迟 Runnable|
-|`scheduleScreenReflow`|`th_09_animation.js → th_19_position_state.js`|`th_19_position_state.js`|`temporary_override`|2|2|0|2|先作为同一屏幕变化链审查；验证 DisplayListener、即时调用和延迟 Runnable|
 |`animateBallLayout`|`th_09_animation.js → th_19_position_state.js`|`th_19_position_state.js`|`temporary_override`|5|5|0|2|单独审查动画 token、取消、结束回调、动画开关和尺寸变化|
 |`snapToEdgeDocked`|`th_09_animation.js → th_19_position_state.js`|`th_19_position_state.js`|`temporary_override`|2|2|0|2|最后审查吸边计时、面板状态、指针开始/结束和动画开关|
 

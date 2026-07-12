@@ -150,16 +150,6 @@
       ]
     },
     {
-      "method": "onScreenChangedReflow",
-      "definitions": [
-        "th_09_animation.js",
-        "th_19_position_state.js"
-      ],
-      "effectiveOwner": "th_19_position_state.js",
-      "type": "temporary_override",
-      "reason": "旧比例坐标重排由 th_19 固定位置与指针重排实现覆盖"
-    },
-    {
       "method": "popToolAppPage",
       "definitions": [
         "th_15_extra.js",
@@ -226,16 +216,6 @@
           "oldVariable": "oldDraggingInspect"
         }
       ]
-    },
-    {
-      "method": "scheduleScreenReflow",
-      "definitions": [
-        "th_09_animation.js",
-        "th_19_position_state.js"
-      ],
-      "effectiveOwner": "th_19_position_state.js",
-      "type": "temporary_override",
-      "reason": "屏幕变化重排调度由 th_19 统一"
     },
     {
       "method": "setPendingValue",
