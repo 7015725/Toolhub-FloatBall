@@ -1,4 +1,4 @@
-// @version 1.1.2
+// @version 1.1.3
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -3026,14 +3026,6 @@ FloatBallAppWM.prototype.createBallLayoutParams = function() {
       };
     }
 
-    if (typeof proto.rebuildBallForNewSize === "function") {
-      var oldRebuildBallForNewSize = proto.rebuildBallForNewSize;
-      proto.rebuildBallForNewSize = function(keepPanels) {
-        var ret = oldRebuildBallForNewSize.call(this, keepPanels);
-        if (ret) this.applyConfiguredBallPosition(false, "ball_rebuild");
-        return ret;
-      };
-    }
   } catch (eInstall) {
     try { safeLog(null, "e", "install fixed ball position patch fail: " + String(eInstall)); } catch (eLog) {}
   }

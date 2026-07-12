@@ -10,10 +10,10 @@
 ## 扫描摘要
 
 - 加载模块：`24`
-- 原型方法定义：`393`
+- 原型方法定义：`392`
 - 唯一原型方法：`360`
-- 已登记重复方法：`28`
-- 最终覆盖型候选节点：`15`
+- 已登记重复方法：`27`
+- 最终覆盖型候选节点：`14`
 - 受保护覆盖/包装链：`15`
 - 第一批清理候选：`0`
 
@@ -21,8 +21,7 @@
 
 |级别|方法|旧定义模块|定义次数|最终所有者|直接调用|属性读取|动态引用|旧方法捕获|建议|
 |---|---|---|---:|---|---:|---:|---:|---:|---|
-|A|`rebuildBallForNewSize`|`th_15_extra.js`|1|`th_19_position_state.js`|4|6|0|4|优先候选|
-|B|`applyConfiguredBallPosition`|`th_15_extra.js`|1|`th_19_position_state.js`|13|13|0|2|位置过渡候选|
+|B|`applyConfiguredBallPosition`|`th_15_extra.js`|1|`th_19_position_state.js`|12|12|0|2|位置过渡候选|
 |B|`cancelConfiguredBallPositionApply`|`th_15_extra.js`|1|`th_19_position_state.js`|3|3|0|2|位置过渡候选|
 |B|`createBallLayoutParams`|`th_15_extra.js`|2|`th_19_position_state.js`|2|2|0|3|位置过渡候选|
 |B|`getConfiguredBallPosition`|`th_15_extra.js`|1|`th_19_position_state.js`|8|8|0|2|位置过渡候选|
@@ -39,7 +38,6 @@
 
 ### 判定说明
 
-- **A / `rebuildBallForNewSize` / `th_15_extra.js`**：条件包装依赖前序实现；th_12 已禁止重新定义该方法，当前包装不会安装。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **B / `applyConfiguredBallPosition` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **B / `cancelConfiguredBallPositionApply` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **B / `createBallLayoutParams` / `th_15_extra.js`**：th_19 在实例创建前无条件覆盖；仍需确认模块加载期没有调用及设备位置基线一致。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
@@ -77,10 +75,9 @@
 
 ## 建议顺序
 
-1. 单独清理 `th_15_extra.js` 中不再可能安装的 `rebuildBallForNewSize` 条件包装器。
-2. 对 `th_15_extra.js` 的固定位置过渡方法做一次模块加载期调用审查和真机位置基线，再按一组清理。
-3. 将 `armLongPress` 与长按辅助状态作为独立交互审查，不与位置方法混删。
-4. 最后处理 `th_09_animation.js` 的旧动画、吸边和屏幕重排实现，必须包含旋转、尺寸变化和动画开关真机测试。
+1. 对 `th_15_extra.js` 的固定位置过渡方法做一次模块加载期调用审查和真机位置基线，再按一组清理。
+2. 将 `armLongPress` 与长按辅助状态作为独立交互审查，不与位置方法混删。
+3. 最后处理 `th_09_animation.js` 的旧动画、吸边和屏幕重排实现，必须包含旋转、尺寸变化和动画开关真机测试。
 
 ## 使用方式
 

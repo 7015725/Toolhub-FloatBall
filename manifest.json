@@ -97,9 +97,9 @@
       "version": "0.0.0"
     },
     "th_15_extra.js": {
-      "sha256": "4455303d7f8ddb500c29bcbd23eada629db3cdbc1b26d4a33848a977c53ead8f",
-      "size": 132515,
-      "version": "1.1.2"
+      "sha256": "4af9bb9ca80ebb6751e82db0dabd8586c5e332357f18ca6001a04a2938d7bc14",
+      "size": 132153,
+      "version": "1.1.3"
     },
     "th_16_entry.js": {
       "sha256": "0e8e80c06d693953e144a0cd12c44f513ba5b6053d78191c6d06e10c8d2f8409",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理旧悬浮球触摸实现"
+      "清理失效的悬浮球重建包装"
     ],
-    "title": "清理旧悬浮球触摸实现"
+    "title": "清理失效的悬浮球重建包装"
   },
   "schema": 3,
-  "version": 20260712015443
+  "version": 20260712022128
 }
