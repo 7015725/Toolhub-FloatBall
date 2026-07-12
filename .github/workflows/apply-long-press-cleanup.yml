@@ -39,17 +39,31 @@ jobs:
       - name: Refresh dead code audit
         run: python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
 
-      - name: Verify cleanup before signing
-        shell: bash
+      - name: Verify ES5 and JS syntax
         run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
-          python3 scripts/verify_ball_position_state.py
-          python3 scripts/verify_toolapp_layout.py
-          python3 scripts/verify_button_editor_layout.py
-          python3 scripts/verify_schema_validator.py
+
+      - name: Verify module boundaries
+        run: python3 scripts/verify_module_boundaries.py
+
+      - name: Verify dead code audit
+        run: python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+
+      - name: Verify ball position state
+        run: python3 scripts/verify_ball_position_state.py
+
+      - name: Verify ToolApp layout
+        run: python3 scripts/verify_toolapp_layout.py
+
+      - name: Verify button editor layout
+        run: python3 scripts/verify_button_editor_layout.py
+
+      - name: Verify schema validator
+        run: python3 scripts/verify_schema_validator.py
+
+      - name: Verify Python and whitespace
+        run: |
           python3 -m compileall -q scripts .github/scripts
           git diff --check
 
