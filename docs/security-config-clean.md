@@ -22,8 +22,29 @@
 
 Shell 按钮的 `root` 字段默认按 `false` 处理。只有按钮明确保存 `root: true` 时才请求 Root 执行。
 
+## Shortcut 快捷方式
+
+默认配置：
+
+- `SHORTCUT_EXEC_MODE = intent`
+
+默认只解析并启动按钮保存的 `intentUri`，不会在启动失败后自动执行 `shortcutJsCode`。
+
+模式说明：
+
+- `intent`：仅使用结构化 `intentUri`。启动失败时明确返回错误。
+- `legacy_js`：允许执行旧按钮保存的 `shortcutJsCode`。仅用于无法恢复 `intentUri` 的历史按钮。
+
+旧按钮加载时会执行一次安全迁移：
+
+- 有有效 `intentUri`：标记为 `intent`，即使仍保存旧 JS 也不会执行。
+- 没有 `intentUri`，但保存了旧 `shortcutJsCode`：标记为 `legacy_js`，保持旧功能可用。
+- 重新选择快捷方式并取得有效 `intentUri`：自动退出 `legacy_js`。
+- 新建快捷方式不再生成或保存任意 JavaScript。
+
+旧值 `compat`、`strict`、`data` 和未知值都按 `intent` 处理，不会触发 `eval` 回退。
+
 ## 其他默认值
 
-- `SHORTCUT_EXEC_MODE = compat`
 - `CONTENT_SECURITY_MODE = audit`
-- `TOOLAPP_BACK_SURFACE_DOMINANCE = 1.08`
+- `TOOLAPP_BACK_SURFACE_DOMINANCE = 1.08
