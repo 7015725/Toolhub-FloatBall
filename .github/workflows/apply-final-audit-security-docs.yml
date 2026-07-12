@@ -29,6 +29,7 @@ jobs:
       - name: Apply and verify
         run: |
           python3 scripts/apply_final_audit_security_docs.py
+          git checkout -- .github/workflows/verify.yml
           python3 scripts/verify_update_security_mode.py
           python3 scripts/verify_documentation_consistency.py
           python3 .github/scripts/es5_scan.py
@@ -44,6 +45,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ToolHub.js README.md ARCHITECTURE.md STRUCTURE.md SQLITE_STORAGE.md .github/workflows/verify.yml
+          git add ToolHub.js README.md ARCHITECTURE.md STRUCTURE.md SQLITE_STORAGE.md
           git commit -m "应用最终复审安全与文档修复"
           git push origin HEAD:fix/final-audit-security-docs
