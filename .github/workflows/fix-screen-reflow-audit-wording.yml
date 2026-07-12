@@ -32,35 +32,11 @@ jobs:
       - name: Fix generated audit wording
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('scripts/report_dead_module_symbols.py')
-          text = path.read_text(encoding='utf-8')
-          old = '''    if method == "onScreenChangedReflow":
-              return (
-                  "C",
-                  "暂缓删除",
-                  "存在 th_09 基础实现与 th_15 包装链；需先证明屏幕变化监听没有加载期或延迟引用。",
-              )
-          '''
-          new = '''    if method == "onScreenChangedReflow":
-              return (
-                  "C",
-                  "设备验证后再定",
-                  "th_09 旧比例重排仍由 th_19 覆盖；涉及屏幕旋转和指针窗口重排，需完成独立设备验证后再处理。",
-              )
-          '''
-          if text.count(old) != 1:
-              raise SystemExit('FAIL: expected one stale onScreenChangedReflow classification block')
-          path.write_text(text.replace(old, new), encoding='utf-8')
-          PY
+          python3 scripts/apply_screen_reflow_audit_wording.py
           python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
           python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
           python3 scripts/verify_module_boundaries.py
           git diff --check
-
-      - name: Remove temporary workflow
-        run: rm -f .github/workflows/fix-screen-reflow-audit-wording.yml
 
       - name: Commit report correction
         shell: bash
