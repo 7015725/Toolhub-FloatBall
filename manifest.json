@@ -32,9 +32,9 @@
       "version": "1.0.0"
     },
     "th_08_content.js": {
-      "sha256": "52afe5f33728229a0f3d69b30c13e677b19a0e601957be46035a3c3beedf8fa7",
-      "size": 10833,
-      "version": "1.0.1"
+      "sha256": "187b9b5b0d12aa91381e045db70facc4324ba6c6f9f610690683e97e8d1b1699",
+      "size": 12263,
+      "version": "1.0.2"
     },
     "th_09_animation.js": {
       "sha256": "35cd3ba3fb69059af71e032bb6cda45b501d440bc191f891d89f0d6d35a98a19",
@@ -52,9 +52,9 @@
       "version": "1.0.8"
     },
     "th_12_rebuild.js": {
-      "sha256": "1840a466bf467125e14640d0603a1e1bc27c55b7d3cd47e6ce7a5818fcd24d41",
-      "size": 3835,
-      "version": "1.0.6"
+      "sha256": "65bca091b14b364d8c0b95f3c31acb66285297c7eb6834dafd1b5ff1f13fa2ae",
+      "size": 3970,
+      "version": "1.0.7"
     },
     "th_13_panel_ui.js": {
       "sha256": "7154bb5fe7c9d5da74f3ee3e1378fe6b092c771379d31f377a0d32901d47c9a9",
@@ -130,5 +130,5 @@
     "title": "收紧 Content 默认权限并拆分读写白名单"
   },
   "schema": 3,
-  "version": 20260712132052
+  "version": 20260712132932
 }
