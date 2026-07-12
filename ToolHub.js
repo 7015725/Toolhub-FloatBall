@@ -1897,12 +1897,12 @@ var __out = (function() {
   if (TOOLHUB_UPDATE_STATE.changes && TOOLHUB_UPDATE_STATE.changes.length > 0) out.更新内容 = TOOLHUB_UPDATE_STATE.changes;
   if (syncInfo.count > 0) out.启动修复模块 = syncInfo.modules;
   if (pendingInfo.count > 0) out.可更新模块 = pendingInfo.modules;
-  if (loadInfo.count > 0) {
-    out.加载异常 = loadInfo.modules;
+  if (loadInfo.count > 0) out.加载异常 = loadInfo.modules;
+  if (!started) {
+    out.错误 = runtimeOptString(startRet && startRet.err) || (loadInfo.count > 0 ? loadInfo.msg : "未知错误");
+  } else if (degraded) {
     out.降级原因 = loadInfo.msg;
     out.错误 = loadInfo.msg;
-  } else if (!started) {
-    out.错误 = runtimeOptString(startRet && startRet.err) || "未知错误";
   }
   try {
     writeLog("Startup result status=" + startupStatus + " started=" + String(started) + " degraded=" + String(degraded) + " loadErrors=" + String(loadInfo.count || 0));
