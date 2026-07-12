@@ -1,4 +1,4 @@
-name: fix-dead-audit-typo
+name: refresh-dead-code-audit
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  fix:
+  refresh:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,24 +18,16 @@ jobs:
           ref: fix/content-strict-write-allowlist
           fetch-depth: 0
 
-      - name: Replace typo and commit
+      - name: Generate and commit audit baseline
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('DEAD_CODE_AUDIT.md')
-          text = p.read_text(encoding='utf-8')
-          old = '\u6587\u5977'
-          new = '\u6587\u5b57'
-          if old not in text:
-              print('audit typo already fixed')
-          else:
-              p.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
           if git diff --quiet -- DEAD_CODE_AUDIT.md; then
+            echo "Dead-code audit baseline already current"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add DEAD_CODE_AUDIT.md
-          git commit -m "修正死代码审查基线错字"
+          git commit -m "刷新死代码审查基线"
           git push origin HEAD:fix/content-strict-write-allowlist
