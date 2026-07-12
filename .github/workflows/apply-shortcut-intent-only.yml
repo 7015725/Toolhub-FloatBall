@@ -1,0 +1,42 @@
+name: apply-shortcut-intent-only
+
+on:
+  push:
+    branches:
+      - fix/shortcut-intent-only
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-shortcut-intent-only
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '应用 Shortcut intent-only 补丁') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/shortcut-intent-only
+          fetch-depth: 0
+
+      - name: Apply patch
+        run: python3 scripts/apply_shortcut_intent_only.py
+
+      - name: Verify generated JavaScript
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_button_editor_layout.py
+          git diff --check
+
+      - name: Commit generated modules
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_01_base.js code/th_11_action.js code/th_14_button_editor.js code/th_14_button_shortcut.js
+          git commit -m "应用 Shortcut intent-only 补丁"
+          git push origin HEAD:fix/shortcut-intent-only
