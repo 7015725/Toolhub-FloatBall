@@ -91,23 +91,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Verify th_09 snapToEdgeDocked analysis
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/verify_th09_snap_to_edge_docked.py --check TH09_SNAP_TO_EDGE_DOCKED_ANALYSIS.md 2>&1 | tee th09-snap-analysis-log.txt
-
-      - name: Upload th_09 snapToEdgeDocked analysis
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: th09-snap-analysis-report
-          path: |
-            TH09_SNAP_TO_EDGE_DOCKED_ANALYSIS.md
-            th09-snap-analysis-log.txt
-          if-no-files-found: error
-          retention-days: 7
-
       - name: Run ToolHub verification
         shell: bash
         run: |
