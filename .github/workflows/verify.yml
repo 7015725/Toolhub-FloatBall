@@ -40,6 +40,23 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Verify dead code audit
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md 2>&1 | tee dead-code-audit-log.txt
+
+      - name: Upload dead code audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dead-code-audit-report
+          path: |
+            DEAD_CODE_AUDIT.md
+            dead-code-audit-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Run ToolHub verification
         shell: bash
         run: |
