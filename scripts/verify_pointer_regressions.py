@@ -362,10 +362,10 @@ def verify_issue_85(result, pointer, ocr, position, animation):
     )
 
     screen_reflow = section(
-        animation,
-        "FloatBallAppWM.prototype.onScreenChangedReflow = function(reason)",
-        "FloatBallAppWM.prototype.scheduleScreenReflow = function(reason)",
-    )
+    position,
+    "proto.onScreenChangedReflow = function(reason)",
+    "proto.scheduleScreenReflow = function(reason)",
+)
     screen_assignment = screen_reflow.find("this.state.screen = { w: newW, h: newH };")
     pointer_hook = screen_reflow.find("this.onPointerScreenChangedReflow(reason, oldW, oldH, newW, newH)")
     result.require(
