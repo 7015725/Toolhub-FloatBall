@@ -74,6 +74,11 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Verify position baseline collector
+        shell: bash
+        run: |
+          python3 scripts/collect_position_baseline.py --self-test
+
       - name: Run ToolHub verification
         shell: bash
         run: |
