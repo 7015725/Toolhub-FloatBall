@@ -47,4 +47,4 @@ Shell 按钮的 `root` 字段默认按 `false` 处理。只有按钮明确保存
 ## 其他默认值
 
 - `CONTENT_SECURITY_MODE = audit`
-- `TOOLAPP_BACK_SURFACE_DOMINANCE = 1.08
+- `TOOLAPP_BACK_SURFACE_DOMINANCE = 1.08`
