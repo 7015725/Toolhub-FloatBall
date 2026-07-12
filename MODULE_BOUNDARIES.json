@@ -18,19 +18,10 @@
     "isBallPositionEffectKey": "th_19_position_state.js",
     "loadSavedPos": "th_19_position_state.js",
     "scheduleConfiguredBallPositionApply": "th_19_position_state.js",
-    "armLongPress": "th_19_position_state.js"
+    "armLongPress": "th_19_position_state.js",
+    "animateBallLayout": "th_19_position_state.js"
   },
   "duplicateDefinitions": [
-    {
-      "method": "animateBallLayout",
-      "definitions": [
-        "th_09_animation.js",
-        "th_19_position_state.js"
-      ],
-      "effectiveOwner": "th_19_position_state.js",
-      "type": "temporary_override",
-      "reason": "旧吸边动画会保存临时像素坐标，当前由固定位置状态机实现覆盖"
-    },
     {
       "method": "applyImmediateEffectsForKey",
       "definitions": [

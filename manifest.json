@@ -37,9 +37,9 @@
       "version": "1.0.1"
     },
     "th_09_animation.js": {
-      "sha256": "d46ca863f2e5e11a35b674a805d0e4fab90d11a863caae86c0e53c387a9edc1b",
-      "size": 38070,
-      "version": "1.0.3"
+      "sha256": "4a280c8a4fa5ac9fe5f0f1fa5c313510140bbf42c0bd2e76cd898df9c8b5c783",
+      "size": 34520,
+      "version": "1.0.4"
     },
     "th_10_shell.js": {
       "sha256": "d16fda02259f58ace47c3296e1d2c18b674bbee8462f19dbbec5abf5454ec784",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "删除 th_09 屏幕重排旧实现"
+      "删除 th_09 动画布局旧实现"
     ],
-    "title": "删除 th_09 屏幕重排旧实现"
+    "title": "删除 th_09 动画布局旧实现"
   },
   "schema": 3,
-  "version": 20260712064044
+  "version": 20260712073815
 }
