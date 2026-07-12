@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "policy": "constraints_only",
+  "description": "锁定当前子模块方法所有权和已知覆盖关系；新增未登记的重复原型定义必须失败。",
+  "directOwners": {
+    "savePos": "th_19_position_state.js",
+    "loadSavedPos": "th_19_position_state.js",
+    "setupTouchListener": "th_19_position_state.js",
+    "rebuildBallForNewSize": "th_19_position_state.js",
+    "finishPointerGestureFromRaw": "th_19_position_state.js",
+    "movePointerFromRaw": "th_19_position_state.js",
+    "completePointerCandidateOnRelease": "th_17_pointer.js",
+    "extractCurrentPointerText": "th_17_pointer.js",
+    "close": "th_16_entry.js"
+  },
+  "temporaryDuplicateDefinitions": [
+    {
+      "method": "savePos",
+      "obsolete": "th_05_persistence.js",
+      "effective": "th_19_position_state.js",
+      "reason": "旧像素位置持久化已被固定边缘位置策略覆盖"
+    },
+    {
+      "method": "loadSavedPos",
+      "obsolete": "th_05_persistence.js",
+      "effective": "th_19_position_state.js",
+      "reason": "旧像素位置恢复已被固定边缘位置策略覆盖"
+    },
+    {
+      "method": "rebuildBallForNewSize",
+      "obsolete": "th_12_rebuild.js",
+      "effective": "th_19_position_state.js",
+      "reason": "旧中心点重建已被固定边缘重建覆盖"
+    },
+    {
+      "method": "setupTouchListener",
+      "obsolete": "th_15_extra.js",
+      "effective": "th_19_position_state.js",
+      "reason": "旧可移动悬浮球触摸状态机已被固定位置状态机覆盖"
+    }
+  ],
+  "allowedWrappers": [
+    {
+      "method": "setPendingValue",
+      "owner": "th_05_persistence.js",
+      "wrapper": "th_12_rebuild.js",
+      "oldVariable": "oldSetPendingValue",
+      "reason": "保存前恢复枚举值原始类型"
+    },
+    {
+      "method": "applyImmediateEffectsForKey",
+      "owner": "th_05_persistence.js",
+      "wrapper": "th_12_rebuild.js",
+      "oldVariable": "oldApplyImmediateEffectsForKey",
+      "reason": "补充设置保存后的运行时刷新"
+    },
+    {
+      "method": "execButtonAction",
+      "owner": "th_11_action.js",
+      "wrapper": "th_16_entry.js",
+      "oldVariable": "oldExecButtonAction",
+      "reason": "增加 Shell 按钮执行前诊断"
+    },
+    {
+      "method": "execShellSmart",
+      "owner": "th_10_shell.js",
+      "wrapper": "th_16_entry.js",
+      "oldVariable": "oldExecShellSmart",
+      "reason": "增加 Shell 桥执行结果诊断"
+    },
+    {
+      "method": "popToolAppPage",
+      "owner": "th_15_extra.js",
+      "wrapper": "th_16_entry.js",
+      "oldVariable": "oldPopToolAppPage",
+      "reason": "保存按钮后保留临时编辑状态"
+    },
+    {
+      "method": "createPointerLayoutParams",
+      "owner": "th_17_pointer.js",
+      "wrapper": "th_19_position_state.js",
+      "oldVariable": "oldCreatePointerLayoutParamsPosition",
+      "reason": "补充屏幕边缘和刘海区域布局参数"
+    },
+    {
+      "method": "removePointerCallbacks",
+      "owner": "th_17_pointer.js",
+      "wrapper": "th_19_position_state.js",
+      "oldVariable": "oldRemovePointerCallbacksPosition",
+      "reason": "关闭指针时同步取消语义调度"
+    },
+    {
+      "method": "resetPointerToolState",
+      "owner": "th_17_pointer.js",
+      "wrapper": "th_19_position_state.js",
+      "oldVariable": "oldResetPointerToolStatePosition",
+      "reason": "重置指针时同步重建语义调度会话"
+    },
+    {
+      "method": "showPointerAreaFrame",
+      "owner": "th_17_pointer.js",
+      "wrapper": "th_18_pointer_ocr.js",
+      "oldVariable": "oldShowFrame",
+      "reason": "增加指针边框刷新节流和状态颜色"
+    },
+    {
+      "method": "scheduleDraggingInspect",
+      "owner": "th_17_pointer.js",
+      "wrapper": "th_18_pointer_ocr.js",
+      "oldVariable": "oldDraggingInspect",
+      "reason": "限制拖动期间无障碍扫描频率"
+    }
+  ],
+  "allowedOverrides": [
+    {
+      "method": "createPointerFrameView",
+      "owner": "th_17_pointer.js",
+      "override": "th_18_pointer_ocr.js",
+      "reason": "当前由 OCR 扩展统一补充指针边框状态绘制"
+    }
+  ],
+  "forbiddenDefinitions": {}
+}
