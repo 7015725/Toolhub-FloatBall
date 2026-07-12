@@ -1,0 +1,71 @@
+name: apply-settings-type-wrapper-cleanup
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/merge-settings-type-wrappers'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply cleanup and verify
+        shell: bash
+        run: |
+          python3 scripts/apply_settings_type_wrapper_cleanup.py
+          python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
+
+          python3 -m compileall -q scripts .github/scripts
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_schema_validator.py
+          python3 scripts/verify_sqlite_storage.py
+          python3 scripts/verify_ball_position_state.py
+          python3 scripts/verify_toolapp_layout.py
+          python3 scripts/verify_button_editor_layout.py
+          git diff --check
+
+      - name: Commit cleanup
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git rm scripts/apply_settings_type_wrapper_cleanup.py
+          git rm .github/workflows/apply-settings-type-wrapper-cleanup.yml
+          git add -A
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "收敛设置与类型包装链"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:${TARGET_BRANCH}"
