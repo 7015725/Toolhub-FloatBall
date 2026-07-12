@@ -1,159 +1,157 @@
 #!/usr/bin/env python3
-"""一次性清理引导器；执行后恢复正式签名脚本。"""
-from __future__ import annotations
+"""Generate ToolHub signed manifest and entry checksum.
 
+Security notes:
+- Private key stays outside the repo by default: ~/.hermes/toolhub_signing/private_key.pem
+- The script prints git status/diff summary before signing. Use --yes in automation.
+"""
+import argparse
+import base64
+import hashlib
 import json
-import os
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SELF = Path(__file__).resolve()
+CODE_DIR = ROOT / "code"
+PRIVATE_KEY = Path.home() / ".hermes" / "toolhub_signing" / "private_key.pem"
+MANIFEST = ROOT / "manifest.json"
+SIG = ROOT / "manifest.sig"
+ENTRY = ROOT / "ToolHub.js"
+ENTRY_SHA = ROOT / "ToolHub.js.sha256"
+DEFAULT_KEY_ID = "toolhub-targets-20260703-rsa3072"
+
+MODULES = [
+    "th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.js",
+    "th_05_persistence.js", "th_06_icon_parser.js",
+    "th_08_content.js", "th_09_animation.js", "th_10_shell.js",
+    "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
+    "th_14_panels.js", "th_14_button_shortcut.js",
+    "th_14_button_icon_editor.js", "th_14_button_editor.js",
+    "th_14_color_picker.js", "th_14_icon_picker.js",
+    "th_14_schema_editor.js", "th_15_extra.js", "th_16_entry.js",
+    "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js",
+]
 
 
-def git_show(path: str) -> str:
-    return subprocess.check_output(
-        ["git", "show", "origin/main:" + path],
-        cwd=str(ROOT),
-        text=True,
-    )
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
-def patch_runtime_files() -> None:
-    module_path = ROOT / "code" / "th_05_persistence.js"
-    text = module_path.read_text(encoding="utf-8")
+def read_module_version(path: Path) -> str:
+    try:
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines()[:5]:
+            line = line.strip()
+            if "@version" not in line:
+                continue
+            version_text = line.split("@version", 1)[1].strip().split()[0].strip()
+            parts = version_text.split(".")
+            if len(parts) == 3 and all(part.isdigit() for part in parts):
+                return version_text
+    except Exception:
+        pass
+    return "0.0.0"
 
-    if text.count("// @version 1.0.0") != 1:
-        raise SystemExit("unexpected th_05 version marker")
-    text = text.replace("// @version 1.0.0", "// @version 1.0.1", 1)
 
-    old_comment = (
-        "    // 节流或立即保存? 面板拖动结束通常不频繁，立即保存即可\n"
-        "    // 但为了避免连续事件，还是可以复用 savePos 的节流逻辑，或者直接保存\n"
-    )
-    if old_comment not in text:
-        raise SystemExit("panel persistence comment baseline changed")
-    text = text.replace(
-        old_comment,
-        "    // 面板拖动结束通常不频繁，直接保存配置即可。\n",
-        1,
-    )
+def git_output(args):
+    try:
+        return subprocess.check_output(["git", *args], cwd=ROOT, text=True, stderr=subprocess.STDOUT)
+    except Exception as e:
+        return f"<git {' '.join(args)} failed: {e}>\n"
 
-    start_marker = "// =======================【工具：位置持久化】======================"
-    end_marker = "// =======================【工具：配置持久化】======================"
-    start = text.find(start_marker)
-    end = text.find(end_marker)
-    if start < 0 or end < 0 or end <= start:
-        raise SystemExit("legacy position persistence section markers missing")
 
-    removed = text[start:end]
-    for marker in (
-        "FloatBallAppWM.prototype.savePos = function",
-        "FloatBallAppWM.prototype.loadSavedPos = function",
-        "BALL_POS_X_RATIO",
-        "BALL_POS_Y_RATIO",
-    ):
-        if marker not in removed:
-            raise SystemExit("legacy position section baseline missing: " + marker)
+def print_review_summary() -> None:
+    print("== ToolHub signing review ==")
+    print("-- git status --")
+    status = git_output(["status", "--short"])
+    print(status.rstrip() or "clean")
+    print("-- git diff --stat --")
+    diff_stat = git_output(["diff", "--stat"])
+    print(diff_stat.rstrip() or "no unstaged diff")
+    print("-- staged diff --stat --")
+    staged = git_output(["diff", "--cached", "--stat"])
+    print(staged.rstrip() or "no staged diff")
 
-    text = text[:start] + end_marker + text[end + len(end_marker):]
-    if "FloatBallAppWM.prototype.savePos = function" in text:
-        raise SystemExit("savePos remains in th_05")
-    if "FloatBallAppWM.prototype.loadSavedPos = function" in text:
-        raise SystemExit("loadSavedPos remains in th_05")
-    module_path.write_text(text, encoding="utf-8")
 
-    boundary_path = ROOT / "MODULE_BOUNDARIES.json"
-    data = json.loads(boundary_path.read_text(encoding="utf-8"))
-    if int(data.get("schema", 0)) != 2:
-        raise SystemExit("unexpected boundary schema")
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--yes", action="store_true", help="skip interactive confirmation after review summary")
+    ap.add_argument("--key-id", default=DEFAULT_KEY_ID)
+    ap.add_argument("--version", type=int, default=0, help="manifest version; default UTC yyyyMMddHHmmss")
+    ap.add_argument("--title", default="", help="optional release title written to manifest.release.title")
+    ap.add_argument("--date", default="", help="optional release date written to manifest.release.date")
+    ap.add_argument("--change", action="append", default=[], help="optional release note item; repeat for multiple changes")
+    args = ap.parse_args()
 
-    records = data.get("duplicateDefinitions") or []
-    save_record = None
-    load_record = None
-    kept = []
-    for record in records:
-        method = str(record.get("method", ""))
-        if method == "savePos":
-            save_record = record
-            continue
-        if method == "loadSavedPos":
-            load_record = record
-        kept.append(record)
+    if not PRIVATE_KEY.exists():
+        raise SystemExit(f"Private key not found: {PRIVATE_KEY}")
+    if not ENTRY.exists():
+        raise SystemExit(f"Entry file not found: {ENTRY}")
 
-    if not save_record or save_record.get("definitions") != [
-        "th_05_persistence.js",
-        "th_19_position_state.js",
-    ]:
-        raise SystemExit("savePos boundary baseline changed")
-    if not load_record or load_record.get("definitions") != [
-        "th_05_persistence.js",
-        "th_15_extra.js",
-        "th_19_position_state.js",
-    ]:
-        raise SystemExit("loadSavedPos boundary baseline changed")
+    print_review_summary()
+    if not args.yes:
+        ans = input("Sign this manifest? Type YES to continue: ").strip()
+        if ans != "YES":
+            raise SystemExit("aborted")
 
-    load_record["definitions"] = [
-        "th_15_extra.js",
-        "th_19_position_state.js",
-    ]
-    load_record["type"] = "temporary_override"
-    load_record["reason"] = "th_15 旧固定位置恢复仍被 th_19 最终实现覆盖"
-    data["duplicateDefinitions"] = kept
-    data.setdefault("directOwners", {})["savePos"] = "th_19_position_state.js"
+    files = {}
+    for name in MODULES:
+        path = CODE_DIR / name
+        if not path.exists():
+            raise SystemExit(f"Missing module: {path}")
+        files[name] = {
+            "version": read_module_version(path),
+            "sha256": sha256_file(path),
+            "size": path.stat().st_size,
+        }
 
-    targets = {
-        ("th_05_persistence.js", "savePos"),
-        ("th_05_persistence.js", "loadSavedPos"),
+    version = args.version or int(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
+    manifest = {
+        "schema": 3,
+        "version": version,
+        "keyId": args.key_id,
+        "alg": "SHA256withRSA",
+        "files": files,
     }
-    removed_candidates = []
-    remaining = []
-    for item in data.get("cleanupCandidates") or []:
-        key = (str(item.get("module", "")), str(item.get("method", "")))
-        if key in targets:
-            removed_candidates.append(key)
-        else:
-            remaining.append(item)
-    if set(removed_candidates) != targets:
-        raise SystemExit("cleanup candidate baseline changed")
-    data["cleanupCandidates"] = remaining
+    release = {}
+    title = str(args.title or "").strip()
+    date = str(args.date or "").strip()
+    changes = [str(item).strip() for item in (args.change or []) if str(item).strip()]
+    if title:
+        release["title"] = title
+    if date:
+        release["date"] = date
+    if changes:
+        release["changes"] = changes
+    if release:
+        manifest["release"] = release
+    data = (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    MANIFEST.write_bytes(data)
 
-    forbidden = data.setdefault("forbiddenDefinitions", {})
-    methods = list(forbidden.get("th_05_persistence.js") or [])
-    for method in ("savePos", "loadSavedPos"):
-        if method not in methods:
-            methods.append(method)
-    forbidden["th_05_persistence.js"] = methods
+    sig_bin = subprocess.check_output([
+        "openssl", "dgst", "-sha256", "-sign", str(PRIVATE_KEY), str(MANIFEST)
+    ])
+    SIG.write_text(base64.b64encode(sig_bin).decode("ascii") + "\n", encoding="utf-8")
 
-    boundary_path.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    entry_hash = sha256_file(ENTRY)
+    ENTRY_SHA.write_text(f"{entry_hash}  ToolHub.js\n", encoding="utf-8")
 
-
-def install_commit_hook() -> None:
-    hook = ROOT / ".git" / "hooks" / "pre-commit"
-    hook.parent.mkdir(parents=True, exist_ok=True)
-    hook.write_text(
-        "#!/usr/bin/env bash\n"
-        "set -e\n"
-        "git add -A -- "
-        "code/th_05_persistence.js "
-        "MODULE_BOUNDARIES.json "
-        "scripts/generate_signed_manifest.py\n",
-        encoding="utf-8",
-    )
-    os.chmod(str(hook), 0o755)
+    print("== signed manifest ==")
+    print(f"manifest_version={manifest['version']}")
+    print(f"key_id={manifest['keyId']}")
+    print(f"signed_files={len(files)}")
+    if manifest.get("release"):
+        rel = manifest["release"]
+        print(f"release_title={rel.get('title', '')}")
+        print(f"release_changes={len(rel.get('changes', []))}")
+    print(f"ToolHub.js_sha256={entry_hash}")
 
 
-original = git_show("scripts/generate_signed_manifest.py")
-patch_runtime_files()
-SELF.write_text(original, encoding="utf-8")
-install_commit_hook()
-
-namespace = {
-    "__name__": "__main__",
-    "__file__": str(SELF),
-    "__package__": None,
-}
-exec(compile(original, str(SELF), "exec"), namespace)
+if __name__ == "__main__":
+    main()
