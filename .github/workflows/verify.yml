@@ -74,26 +74,18 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Verify position baseline collector
-        shell: bash
-        run: |
-          python3 scripts/collect_position_baseline.py --self-test
-
       - name: Run ToolHub verification
         shell: bash
         run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_sqlite_persistence.py
-          python3 scripts/verify_button_icon_blob.py
+          python3 scripts/verify_sqlite_storage.py
           python3 scripts/verify_ball_position_state.py
           python3 scripts/verify_manifest.py
-          python3 scripts/verify_toolapp_single_root.py
-          python3 scripts/verify_toolapp_adaptive_size.py
+          python3 scripts/verify_toolapp_layout.py
           python3 scripts/verify_button_editor_layout.py
           python3 scripts/verify_schema_validator.py
-          python3 scripts/verify_pointer_issue_85.py
-          python3 scripts/verify_pointer_text_release.py
+          python3 scripts/verify_pointer_regressions.py
           python3 .github/scripts/verify_manifest_signature.py
 
       - name: Check git whitespace
