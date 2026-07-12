@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // =======================【Shell 按钮诊断】=======================
 FloatBallAppWM.prototype.getShellDiagPreviewText = function(cmdPlain, cmdB64) {
   var p = "";
@@ -21,13 +21,13 @@ FloatBallAppWM.prototype.logShellButtonDiagnostics = function(btn, idx) {
     try { cmdB64 = (btn && btn.cmd_b64 !== undefined && btn.cmd_b64 !== null) ? String(btn.cmd_b64) : ""; } catch(eB64) { cmdB64 = ""; }
     try { cmdPlain = (btn && btn.cmd !== undefined && btn.cmd !== null) ? String(btn.cmd) : ""; } catch(eCmd) { cmdPlain = ""; }
 
-    var root = true;
+    var root = false;
     try {
       if (btn && btn.root !== undefined && btn.root !== null) {
         var rs = String(btn.root).replace(/^\s+|\s+$/g, "").toLowerCase();
-        root = !(rs === "false" || rs === "0" || rs === "no" || rs === "off");
+        root = (rs === "true" || rs === "1" || rs === "yes" || rs === "on");
       }
-    } catch(eRoot) { root = true; }
+    } catch(eRoot) { root = false; }
 
     var preview = this.getShellDiagPreviewText ? this.getShellDiagPreviewText(cmdPlain, cmdB64) : String(cmdPlain || "");
     safeLog(this.L, 'i', "shell diag idx=" + String(idx) + " title=" + title + " root=" + String(root) + " cmd_len=" + String(cmdPlain ? cmdPlain.length : 0) + " cmd_b64_len=" + String(cmdB64 ? cmdB64.length : 0) + " preview=" + preview);
@@ -186,9 +186,9 @@ return;
       return;
     }
 
-    // # 旧按钮没有 root 字段时仍按 root 执行；新按钮可配置 root:false 走普通 shell。
-    var needRoot = true;
-    if (btn.root !== undefined && btn.root !== null) needRoot = parseBoolLike(btn.root, true);
+    // root 只接受按钮显式 true；旧按钮缺失 root 字段时使用普通权限。
+    var needRoot = false;
+    if (btn.root !== undefined && btn.root !== null) needRoot = parseBoolLike(btn.root, false);
 
     var r = this.execShellSmart(cmdB64, needRoot);
     if (r && r.ok) {
@@ -246,10 +246,12 @@ return;
         var kFrom = String(this.config.SHELL_BRIDGE_EXTRA_FROM || "from");
         var kRoot = String(this.config.SHELL_BRIDGE_EXTRA_ROOT || "root");
 
-        var bridgeMode = String(this.config.SHELL_BRIDGE_MODE || "compat");
+        var bridgeMode = String(this.config.SHELL_BRIDGE_MODE || "strict");
+        try { bridgeMode = bridgeMode.replace(/^\s+|\s+$/g, "").toLowerCase(); } catch(eMode) { bridgeMode = "strict"; }
+        if (bridgeMode !== "compat" && bridgeMode !== "explicit" && bridgeMode !== "strict") bridgeMode = "strict";
         var targetPkg = String(this.config.SHELL_BRIDGE_TARGET_PACKAGE || "").replace(/^\s+|\s+$/g, "");
         var targetCls = String(this.config.SHELL_BRIDGE_TARGET_CLASS || "").replace(/^\s+|\s+$/g, "");
-        var targetMode = "implicit";
+        var targetMode = "none";
 
         if (targetPkg && targetCls) {
           if (targetCls.charAt(0) === ".") targetCls = targetPkg + targetCls;
@@ -258,17 +260,22 @@ return;
         } else if (targetPkg) {
           it2.setPackage(targetPkg);
           targetMode = "package";
-        } else if (bridgeMode === "strict" || bridgeMode === "explicit") {
-          shellBridgeBlockErr = "shell bridge target missing";
+        } else if (bridgeMode === "compat") {
+          targetMode = "implicit";
+        } else {
+          shellBridgeBlockErr = "shell bridge target missing mode=" + bridgeMode;
         }
 
         var tokenValue = String(this.config.SHELL_BRIDGE_TOKEN || "");
         var tokenKey = String(this.config.SHELL_BRIDGE_EXTRA_TOKEN || "token");
+        try { tokenValue = tokenValue.replace(/^\s+|\s+$/g, ""); } catch(eTokenTrim) {}
+        try { tokenKey = tokenKey.replace(/^\s+|\s+$/g, ""); } catch(eTokenKeyTrim) {}
+        var requireToken = (bridgeMode === "strict") || (this.config.SHELL_BRIDGE_REQUIRE_TOKEN === true);
         if (tokenValue) {
           if (!tokenKey) tokenKey = "token";
           it2.putExtra(tokenKey, tokenValue);
-        } else if (this.config.SHELL_BRIDGE_REQUIRE_TOKEN === true) {
-          shellBridgeBlockErr = "shell bridge token missing";
+        } else if (requireToken) {
+          shellBridgeBlockErr = "shell bridge token missing mode=" + bridgeMode;
         }
 
         var bridgeCmdPlain = "";
@@ -299,16 +306,16 @@ return;
            } catch(eC3) { safeLog(null, 'e', "catch " + String(eC3)); }
         }
 
-        // # root：旧广播按钮没有 root 字段时仍默认 root=true；新按钮可在 btn.root 或 extra.root 中配置 false。
+        // root 只接受显式 true；缺失字段时使用普通权限。
         try {
           if (!it2.hasExtra(kRoot)) {
-            var bridgeNeedRoot = true;
-            if (btn.root !== undefined && btn.root !== null) bridgeNeedRoot = parseBoolLike(btn.root, true);
+            var bridgeNeedRoot = false;
+            if (btn.root !== undefined && btn.root !== null) bridgeNeedRoot = parseBoolLike(btn.root, false);
             it2.putExtra(kRoot, bridgeNeedRoot);
           }
         } catch (eR0) {
           try {
-            it2.putExtra(kRoot, true);
+            it2.putExtra(kRoot, false);
            } catch(eR1) { safeLog(null, 'e', "catch " + String(eR1)); }
         }
 
@@ -322,7 +329,7 @@ return;
                 var rawStr = String(raw).replace(/^\s+|\s+$/g, "").toLowerCase();
                 if (rawStr === "true" || rawStr === "false" || rawStr === "1" || rawStr === "0") {
                   it2.removeExtra(kRoot);
-                  it2.putExtra(kRoot, parseBoolLike(rawStr, true));
+                  it2.putExtra(kRoot, parseBoolLike(rawStr, false));
                 }
               }
             }
