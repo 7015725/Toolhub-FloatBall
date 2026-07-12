@@ -10,6 +10,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "code" / "th_01_base.js"
+PERSISTENCE = ROOT / "code" / "th_05_persistence.js"
+REBUILD = ROOT / "code" / "th_12_rebuild.js"
+EXTRA = ROOT / "code" / "th_15_extra.js"
 
 EXPECTED = {
     "THEME_MODE": {"type": "single_choice", "name": "主题模式", "options": [0, 1, 2], "validator_type": "enum"},
@@ -73,6 +76,9 @@ def get_num(block, field):
 
 def main():
     src = BASE.read_text(encoding="utf-8")
+    persistence = PERSISTENCE.read_text(encoding="utf-8")
+    rebuild = REBUILD.read_text(encoding="utf-8")
+    extra = EXTRA.read_text(encoding="utf-8")
     errors = []
     for key, exp in EXPECTED.items():
         schema = find_schema_item(src, key)
@@ -108,11 +114,67 @@ def main():
     for text in LEGACY_TEXT:
         if text in src:
             errors.append("legacy wording remains: " + text)
+    required_persistence = [
+        "function normalizeToolHubEnumValueBySchema(key, value)",
+        "this.state.pendingUserCfg[k] = normalizeToolHubEnumValueBySchema(k, v)",
+        "FloatBallAppWM.prototype.isThemeEffectKey = function(k)",
+        "FloatBallAppWM.prototype.isPanelLayoutEffectKey = function(k)",
+        "FloatBallAppWM.prototype.isPointerEffectKey = function(k)",
+        "FloatBallAppWM.prototype.isBallVisualEffectKey = function(k)",
+        "FloatBallAppWM.prototype.refreshPointerAfterSettingsChanged = function()",
+        "FloatBallAppWM.prototype.refreshVisiblePanelsAfterSettingsChanged = function(reason)",
+        "FloatBallAppWM.prototype.scheduleSettingsEffectRefresh = function(reason, themeChanged, panelChanged)",
+        "this.isBallPositionEffectKey && this.isBallPositionEffectKey(key)",
+        "this.scheduleConfiguredBallPositionApply(\"settings:\" + key, true)",
+        "this.refreshPointerAfterSettingsChanged()",
+        "this.scheduleSettingsEffectRefresh(key, themeChanged, panelChanged)",
+        "BALL_IDLE_ALPHA",
+    ]
+    for marker in required_persistence:
+        if marker not in persistence:
+            errors.append("settings effect marker missing: " + marker)
+
+    required_rebuild = [
+        "ConfigValidator.validate = function(key, value)",
+        "normalizeToolHubEnumValueBySchema(key, value)",
+        "ConfigValidator.__toolHubEnumNormalizePatchInstalled = true",
+    ]
+    for marker in required_rebuild:
+        if marker not in rebuild:
+            errors.append("enum validator marker missing: " + marker)
+
+    forbidden = {
+        "th_12_rebuild.js": [
+            "proto.setPendingValue = function(k, v)",
+            "proto.applyImmediateEffectsForKey = function(k)",
+            "__toolHubSetPendingValuePatched",
+            "__toolHubApplyImmediateEffectsPatched",
+            "__toolHubSettingsEffectPatchInstalled",
+            "installSettingsEffectPatch()",
+        ],
+        "th_15_extra.js": [
+            "proto.applyImmediateEffectsForKey = function(k)",
+            "install fixed ball position patch fail",
+        ],
+    }
+    for name, markers in forbidden.items():
+        body = rebuild if name == "th_12_rebuild.js" else extra
+        for marker in markers:
+            if marker in body:
+                errors.append(name + ": stale wrapper remains " + marker)
+
+    combined = persistence + "\n" + rebuild + "\n" + extra
+    pending_defs = len(re.findall(r"(?:FloatBallAppWM\.prototype|proto)\.setPendingValue\s*=\s*function\s*\(", combined))
+    apply_defs = len(re.findall(r"(?:FloatBallAppWM\.prototype|proto)\.applyImmediateEffectsForKey\s*=\s*function\s*\(", combined))
+    if pending_defs != 1:
+        errors.append("setPendingValue definition count=" + str(pending_defs))
+    if apply_defs != 1:
+        errors.append("applyImmediateEffectsForKey definition count=" + str(apply_defs))
     if errors:
         for e in errors:
             print("FAIL: " + e)
         return 1
-    print("schema_validator_ok keys=" + str(len(EXPECTED)))
+    print("schema_validator_ok keys=" + str(len(EXPECTED)) + " settings_effects=1")
     return 0
 
 if __name__ == "__main__":

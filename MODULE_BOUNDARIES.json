@@ -22,32 +22,11 @@
     "animateBallLayout": "th_19_position_state.js",
     "snapToEdgeDocked": "th_19_position_state.js",
     "execButtonAction": "th_11_action.js",
-    "execShellSmart": "th_10_shell.js"
+    "execShellSmart": "th_10_shell.js",
+    "setPendingValue": "th_05_persistence.js",
+    "applyImmediateEffectsForKey": "th_05_persistence.js"
   },
   "duplicateDefinitions": [
-    {
-      "method": "applyImmediateEffectsForKey",
-      "definitions": [
-        "th_05_persistence.js",
-        "th_12_rebuild.js",
-        "th_15_extra.js"
-      ],
-      "effectiveOwner": "th_15_extra.js",
-      "type": "wrapper_chain",
-      "reason": "设置即时生效经过类型修正和固定位置设置扩展",
-      "wrappers": [
-        {
-          "module": "th_12_rebuild.js",
-          "owner": "th_05_persistence.js",
-          "oldVariable": "oldApplyImmediateEffectsForKey"
-        },
-        {
-          "module": "th_15_extra.js",
-          "owner": "th_12_rebuild.js",
-          "oldVariable": "oldApplyImmediateEffectsForKey"
-        }
-      ]
-    },
     {
       "method": "createPointerFrameView",
       "definitions": [
@@ -174,23 +153,6 @@
           "module": "th_18_pointer_ocr.js",
           "owner": "th_17_pointer.js",
           "oldVariable": "oldDraggingInspect"
-        }
-      ]
-    },
-    {
-      "method": "setPendingValue",
-      "definitions": [
-        "th_05_persistence.js",
-        "th_12_rebuild.js"
-      ],
-      "effectiveOwner": "th_12_rebuild.js",
-      "type": "wrapper",
-      "reason": "保存前恢复枚举值原始类型",
-      "wrappers": [
-        {
-          "module": "th_12_rebuild.js",
-          "owner": "th_05_persistence.js",
-          "oldVariable": "oldSetPendingValue"
         }
       ]
     },

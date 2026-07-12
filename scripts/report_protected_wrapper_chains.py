@@ -22,16 +22,6 @@ CATEGORY_ORDER = {
 }
 
 CLASSIFICATIONS = {
-    "applyImmediateEffectsForKey": (
-        "设置与类型链",
-        "继续保留",
-        "两层包装共同承担枚举类型修正和固定位置设置即时生效。",
-    ),
-    "setPendingValue": (
-        "设置与类型链",
-        "继续保留",
-        "保存前恢复枚举值原始类型，需与设置预览和提交链联审。",
-    ),
     "createPointerFrameView": (
         "指针与 OCR 扩展",
         "继续保留",
@@ -289,7 +279,7 @@ def render_report(rows):
     lines.append("- 定义链、有效所有者、旧方法捕获变量和调用关系均与 `MODULE_BOUNDARIES.json` 一致。")
     review_text = "、".join("`%s`" % row["method"] for row in review) if review else "无"
     lines.append("- 下一轮专项审查：%s。" % review_text)
-    lines.append("- 继续保留：`%d` 条；这些链承担设置类型、指针/OCR、生命周期、页面状态或延迟加载职责。" % len(retained))
+    lines.append("- 继续保留：`%d` 条；这些链承担指针/OCR、生命周期、页面状态或延迟加载职责。" % len(retained))
     lines.append("- 本报告不自动修改运行时代码；剩余包装均承担明确功能或生命周期职责。")
     lines.append("")
     lines.append("## 分类摘要")
@@ -330,9 +320,9 @@ def render_report(rows):
     lines.append("")
     lines.append("## 下一轮顺序")
     lines.append("")
-    lines.append("1. `execButtonAction` 与 `execShellSmart` 诊断逻辑已并回基础实现。")
-    lines.append("2. 当前剩余 13 条包装链全部继续保留，不进入批量收敛流程。")
-    lines.append("3. 仅在出现明确重复、失效包装或回归证据时重新开启专项审查。")
+    lines.append("1. 设置与类型包装已并回 `th_05_persistence.js`。")
+    lines.append("2. 当前剩余 11 条包装链全部继续保留，不进入批量收敛流程。")
+    lines.append("3. 指针/OCR、ToolApp 和 deferred wrapper 仅在明确回归证据下重新审查。")
     lines.append("")
     lines.append("## 使用方式")
     lines.append("")

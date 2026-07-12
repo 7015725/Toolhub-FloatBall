@@ -2,17 +2,16 @@
 
 ## 结论
 
-- 已登记受保护覆盖/包装链：`13`。
+- 已登记受保护覆盖/包装链：`11`。
 - 定义链、有效所有者、旧方法捕获变量和调用关系均与 `MODULE_BOUNDARIES.json` 一致。
 - 下一轮专项审查：无。
-- 继续保留：`13` 条；这些链承担设置类型、指针/OCR、生命周期、页面状态或延迟加载职责。
+- 继续保留：`11` 条；这些链承担指针/OCR、生命周期、页面状态或延迟加载职责。
 - 本报告不自动修改运行时代码；剩余包装均承担明确功能或生命周期职责。
 
 ## 分类摘要
 
 |类别|数量|结论|
 |---|---:|---|
-|设置与类型链|2|继续保留，后续只能联审|
 |指针与 OCR 扩展|6|继续保留，属于功能完成链|
 |指针布局与生命周期|3|继续保留，属于资源和竞态保护|
 |ToolApp 状态保持|1|继续保留，属于页面状态契约|
@@ -22,8 +21,6 @@
 
 |类别|方法|定义链|最终所有者|类型|调用|属性读取|动态引用|旧方法捕获|结论|
 |---|---|---|---|---|---:|---:|---:|---:|---|
-|设置与类型链|`applyImmediateEffectsForKey`|`th_05_persistence.js → th_12_rebuild.js → th_15_extra.js`|`th_15_extra.js`|`wrapper_chain`|2|9|0|2|继续保留|
-|设置与类型链|`setPendingValue`|`th_05_persistence.js → th_12_rebuild.js`|`th_12_rebuild.js`|`wrapper`|9|13|0|1|继续保留|
 |指针与 OCR 扩展|`createPointerFrameView`|`th_17_pointer.js → th_18_pointer_ocr.js`|`th_18_pointer_ocr.js`|`intentional_override`|1|4|0|1|继续保留|
 |指针与 OCR 扩展|`execPointerAction`|`th_17_pointer.js → th_18_pointer_ocr.js`|`th_18_pointer_ocr.js`|`wrapper`|1|6|0|2|继续保留|
 |指针与 OCR 扩展|`finishPointerAreaCapture`|`th_17_pointer.js → th_18_pointer_ocr.js`|`th_18_pointer_ocr.js`|`wrapper`|2|6|0|1|继续保留|
@@ -38,8 +35,6 @@
 
 ## 判定说明
 
-- **`applyImmediateEffectsForKey` / 设置与类型链**：两层包装共同承担枚举类型修正和固定位置设置即时生效。 原登记原因：设置即时生效经过类型修正和固定位置设置扩展
-- **`setPendingValue` / 设置与类型链**：保存前恢复枚举值原始类型，需与设置预览和提交链联审。 原登记原因：保存前恢复枚举值原始类型
 - **`createPointerFrameView` / 指针与 OCR 扩展**：OCR 模块提供完整边框视图覆盖，不是无行为的转发包装。 原登记原因：OCR 扩展统一补充文字、框选和处理状态边框绘制
 - **`execPointerAction` / 指针与 OCR 扩展**：增加 area_ocr 动作模式并保留基础指针动作。 原登记原因：增加 area_ocr 指针动作模式
 - **`finishPointerAreaCapture` / 指针与 OCR 扩展**：框选完成后异步衔接 OCR，属于功能完成链。 原登记原因：框选截图完成后异步衔接 OCR
@@ -54,9 +49,9 @@
 
 ## 下一轮顺序
 
-1. `execButtonAction` 与 `execShellSmart` 诊断逻辑已并回基础实现。
-2. 当前剩余 13 条包装链全部继续保留，不进入批量收敛流程。
-3. 仅在出现明确重复、失效包装或回归证据时重新开启专项审查。
+1. 设置与类型包装已并回 `th_05_persistence.js`。
+2. 当前剩余 11 条包装链全部继续保留，不进入批量收敛流程。
+3. 指针/OCR、ToolApp 和 deferred wrapper 仅在明确回归证据下重新审查。
 
 ## 使用方式
 
