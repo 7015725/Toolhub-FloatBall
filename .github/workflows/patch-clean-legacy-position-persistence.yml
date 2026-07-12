@@ -4,12 +4,17 @@ on:
   push:
     branches:
       - fix/clean-legacy-position-persistence
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'fix/clean-legacy-position-persistence'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
