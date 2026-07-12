@@ -97,9 +97,9 @@
       "version": "0.0.0"
     },
     "th_15_extra.js": {
-      "sha256": "1f60dcb2ea57ee19d039050158e428286c1fd775b615e3ee01c13b7d4dd7d79f",
-      "size": 125961,
-      "version": "1.1.4"
+      "sha256": "3e430508d1670a08b75b8dbcf27a82ba883977904475ef63725354bb0f0446d7",
+      "size": 124908,
+      "version": "1.1.5"
     },
     "th_16_entry.js": {
       "sha256": "0e8e80c06d693953e144a0cd12c44f513ba5b6053d78191c6d06e10c8d2f8409",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "删除位置过渡备用实现"
+      "删除长按备用实现"
     ],
-    "title": "删除位置过渡备用实现"
+    "title": "删除长按备用实现"
   },
   "schema": 3,
-  "version": 20260712042509
+  "version": 20260712043821
 }

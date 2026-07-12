@@ -1,4 +1,4 @@
-// @version 1.1.4
+// @version 1.1.5
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -2490,37 +2490,6 @@ FloatBallAppWM.prototype.resetLongPressState = function() {
   this.state.longPressRunnable = null;
 };
 
-FloatBallAppWM.prototype.armLongPress = function() {
-  if (!this.config.ENABLE_LONG_PRESS) return;
-
-  this.resetLongPressState();
-  this.state.longPressArmed = true;
-
-  var self = this;
-
-  var r = new java.lang.Runnable({
-    run: function() {
-      try {
-        if (self.state.closing) return;
-        if (!self.state.longPressArmed) return;
-        if (self.state.dragging) return;
-
-        self.state.longPressTriggered = true;
-        self.vibrateOnce(self.config.LONG_PRESS_VIBRATE_MS);
-
-        if (self.state.addedSettings) self.hideSettingsPanel();
-        else self.showPanelAvoidBall("settings");
-
-        if (self.L) self.L.i("longPress -> settings");
-      } catch (e) {
-        if (self.L) self.L.e("longPress run err=" + String(e));
-      }
-    }
-  });
-
-  this.state.longPressRunnable = r;
-  this.state.h.postDelayed(r, this.config.LONG_PRESS_MS);
-};
 
 FloatBallAppWM.prototype.buildBallContentView = function(opts) {
   opts = opts || {};
@@ -2822,11 +2791,6 @@ FloatBallAppWM.prototype.refreshBallPreviewInSettings = function() {
 
     // 固定位置模式下，所有吸边入口统一回到设置中的边缘和高度位置。
     // 长按不再承担设置入口或移动位置。
-    proto.armLongPress = function() {
-      try { this.cancelLongPressTimer(); } catch (eCancel) {}
-      try { this.resetLongPressState(); } catch (eReset) {}
-      return false;
-    };
 
         if (typeof proto.applyImmediateEffectsForKey === "function") {
       var oldApplyImmediateEffectsForKey = proto.applyImmediateEffectsForKey;
