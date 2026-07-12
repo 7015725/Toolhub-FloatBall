@@ -57,6 +57,23 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Verify protected wrapper audit
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md 2>&1 | tee protected-wrapper-audit-log.txt
+
+      - name: Upload protected wrapper audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: protected-wrapper-audit-report
+          path: |
+            PROTECTED_WRAPPER_AUDIT.md
+            protected-wrapper-audit-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify th_15 standalone audit
         shell: bash
         run: |
