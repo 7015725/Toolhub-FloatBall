@@ -10,10 +10,10 @@
 ## 扫描摘要
 
 - 加载模块：`24`
-- 原型方法定义：`383`
+- 原型方法定义：`381`
 - 唯一原型方法：`360`
-- 已登记重复方法：`20`
-- 最终覆盖型候选节点：`6`
+- 已登记重复方法：`19`
+- 最终覆盖型候选节点：`5`
 - 受保护覆盖/包装链：`15`
 - 第一批清理候选：`0`
 
@@ -25,7 +25,6 @@
 |C|`onScreenChangedReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|7|9|0|5|暂缓删除|
 |C|`scheduleScreenReflow`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
 |C|`snapToEdgeDocked`|`th_09_animation.js`|1|`th_19_position_state.js`|2|2|0|2|设备验证后再定|
-|C|`armLongPress`|`th_15_extra.js`|2|`th_19_position_state.js`|0|0|0|3|暂缓删除|
 |C|`onScreenChangedReflow`|`th_15_extra.js`|1|`th_19_position_state.js`|7|9|0|5|暂缓删除|
 
 ### 判定说明
@@ -34,7 +33,6 @@
 - **C / `onScreenChangedReflow` / `th_09_animation.js`**：存在 th_09 基础实现与 th_15 包装链；需先证明屏幕变化监听没有加载期或延迟引用。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `scheduleScreenReflow` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `snapToEdgeDocked` / `th_09_animation.js`**：动画、旋转和吸边基础能力耦合，静态最终覆盖不足以单独证明可删除。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
-- **C / `armLongPress` / `th_15_extra.js`**：涉及设置入口与长按状态辅助方法；应先单独审查调用方和交互契约。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 - **C / `onScreenChangedReflow` / `th_15_extra.js`**：存在 th_09 基础实现与 th_15 包装链；需先证明屏幕变化监听没有加载期或延迟引用。 最终所有者 `th_19_position_state.js` 位于其后；动态引用风险为 **低**。
 
 ## 受保护覆盖与包装链

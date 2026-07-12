@@ -201,12 +201,6 @@ def classify(method, module, record):
             "优先候选",
             "条件包装依赖前序实现；th_12 已禁止重新定义该方法，当前包装不会安装。",
         )
-    if method == "armLongPress":
-        return (
-            "C",
-            "暂缓删除",
-            "涉及设置入口与长按状态辅助方法；应先单独审查调用方和交互契约。",
-        )
     if method == "onScreenChangedReflow":
         return (
             "C",
