@@ -22,9 +22,9 @@
       "version": "1.0.0"
     },
     "th_05_persistence.js": {
-      "sha256": "13a4bb5a625a22a5b6e523cc15b173fceb4c3225c52d8723e0b027cae8e5de5e",
-      "size": 14926,
-      "version": "1.0.0"
+      "sha256": "14a53ea0e7bce639bf66e9b117bbc030cf10aa3177a88ad3de99f61454415d0c",
+      "size": 10998,
+      "version": "1.0.1"
     },
     "th_06_icon_parser.js": {
       "sha256": "25b95a5df634a7ee359f3ab798e4d3154a71c24016f7b4bf8a658096644b2484",
@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "恢复取字独立悬停凭证门槛"
+      "清理旧位置持久化实现"
     ],
-    "title": "恢复取字独立悬停凭证门槛"
+    "title": "清理旧位置持久化实现"
   },
   "schema": 3,
-  "version": 20260712004529
+  "version": 20260712012748
 }
