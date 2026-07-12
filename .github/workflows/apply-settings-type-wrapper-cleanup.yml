@@ -27,28 +27,56 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Apply cleanup and verify
+      - name: Apply cleanup
+        shell: bash
+        run: python3 scripts/apply_settings_type_wrapper_cleanup.py
+
+      - name: Regenerate reports
         shell: bash
         run: |
-          python3 scripts/apply_settings_type_wrapper_cleanup.py
           python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
           python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
           python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
 
+      - name: Verify Python and boundaries
+        shell: bash
+        run: |
           python3 -m compileall -q scripts .github/scripts
           python3 scripts/verify_module_boundaries.py
+
+      - name: Verify generated audits
+        shell: bash
+        run: |
           python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
           python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
           python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
           python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
+
+      - name: Verify JavaScript
+        shell: bash
+        run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_schema_validator.py
+
+      - name: Verify settings schema and effects
+        shell: bash
+        run: python3 scripts/verify_schema_validator.py
+
+      - name: Verify storage and position
+        shell: bash
+        run: |
           python3 scripts/verify_sqlite_storage.py
           python3 scripts/verify_ball_position_state.py
+
+      - name: Verify UI contracts
+        shell: bash
+        run: |
           python3 scripts/verify_toolapp_layout.py
           python3 scripts/verify_button_editor_layout.py
-          git diff --check
+
+      - name: Check whitespace
+        shell: bash
+        run: git diff --check
 
       - name: Commit cleanup
         shell: bash
