@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "隔离 Shortcut 旧版 JS 回退并默认使用 Intent"
+      "收紧 Content 默认权限并拆分读写白名单"
     ],
-    "title": "隔离 Shortcut 旧版 JS 回退并默认使用 Intent"
+    "title": "收紧 Content 默认权限并拆分读写白名单"
   },
   "schema": 3,
-  "version": 20260712131143
+  "version": 20260712132052
 }
