@@ -1,4 +1,4 @@
-// @version 2.0.0
+// @version 2.0.1
 
 // =======================【配置存储：完全结构化 SQLite】=======================
 // 说明：数据库只保存原子字段和关系，不保存 JSON 文档；JSON 仅作为现有 ConfigManager
@@ -20,6 +20,9 @@
       storageFormatVersion: 2,
       _timer: null,
       _jobs: {},
+      _jobLock: new java.util.concurrent.locks.ReentrantLock(),
+      _writeLock: new java.util.concurrent.locks.ReentrantLock(),
+      _jobSequence: 0,
       _blockedWrites: {},
       _lastError: "",
       _lastDbError: "",
@@ -643,13 +646,80 @@
         return false;
       },
 
+      writeManagedNowSerialized: function(path, content) {
+        var p = String(path || "");
+        this._writeLock.lock();
+        try {
+          this._jobLock.lock();
+          try {
+            var pending = this._jobs[p];
+            if (pending) {
+              try { if (pending.task) pending.task.cancel(); } catch (eCancel) {}
+              try { delete this._jobs[p]; } catch (eDelete) { this._jobs[p] = null; }
+            }
+          } finally {
+            this._jobLock.unlock();
+          }
+          return this.writeManagedNow(p, content);
+        } finally {
+          this._writeLock.unlock();
+        }
+      },
+
       ensureTimer: function() {
+        this._jobLock.lock();
         try {
           if (!this._timer) this._timer = new java.util.Timer("sx-toolhub-structured-sqlite", true);
           return !!this._timer;
         } catch (e) {
           this._lastError = "ensureTimer: " + String(e);
           return false;
+        } finally {
+          this._jobLock.unlock();
+        }
+      },
+
+      runScheduledJob: function(job) {
+        if (!job) return false;
+        var p = String(job.path || "");
+        var shouldRun = false;
+        var ok = false;
+
+        this._writeLock.lock();
+        try {
+          this._jobLock.lock();
+          try {
+            var live = this._jobs[p];
+            shouldRun = !!live && live === job && Number(live.version) === Number(job.version);
+            if (shouldRun) {
+              live.running = true;
+              live.task = null;
+            }
+          } finally {
+            this._jobLock.unlock();
+          }
+          if (!shouldRun) return true;
+
+          ok = this.writeManagedNow(p, job.payload);
+
+          this._jobLock.lock();
+          try {
+            var current = this._jobs[p];
+            if (current === job && Number(current.version) === Number(job.version)) {
+              current.running = false;
+              if (ok) {
+                try { delete this._jobs[p]; } catch (eDelete) { this._jobs[p] = null; }
+              } else {
+                current.task = null;
+                current.lastError = String(this._lastError || "structured write failed");
+              }
+            }
+          } finally {
+            this._jobLock.unlock();
+          }
+          return ok;
+        } finally {
+          this._writeLock.unlock();
         }
       },
 
@@ -662,80 +732,119 @@
         var d = 0;
         try { d = parseInt(String(delayMs), 10); } catch (eDelay) { d = 0; }
         if (isNaN(d) || d < 0) d = 0;
-        if (!this.ensureTimer()) return this.writeManagedNow(p, content);
 
-        var old = this._jobs[p];
-        if (old && old.task) {
-          try { old.task.cancel(); } catch (eCancel) {}
-        }
-
-        var self = this;
         var payload = String(content);
-        var version = old && old.version ? Number(old.version) + 1 : 1;
-        var task = new JavaAdapter(java.util.TimerTask, {
-          run: function() {
-            var live = self._jobs[p];
-            if (!live || Number(live.version) !== version) return;
-            var ok = self.writeManagedNow(p, payload);
-            if (ok) {
-              try { delete self._jobs[p]; } catch (eDelete) { self._jobs[p] = null; }
-            } else {
-              live.task = null;
-              live.lastError = String(self._lastError || "structured write failed");
-            }
-          }
-        });
+        var task = null;
+        var job = null;
+        var fallbackNow = false;
+        var self = this;
 
-        this._jobs[p] = {
-          path: p,
-          payload: payload,
-          version: version,
-          task: task,
-          lastError: ""
-        };
-
+        this._writeLock.lock();
         try {
-          this._timer.schedule(task, d);
-          return true;
-        } catch (eSchedule) {
-          this._lastError = "scheduleWrite: " + String(eSchedule);
-          var okNow = this.writeManagedNow(p, payload);
-          if (okNow) {
-            try { delete this._jobs[p]; } catch (eDelete2) { this._jobs[p] = null; }
-          } else {
-            this._jobs[p].task = null;
-            this._jobs[p].lastError = String(this._lastError || "structured write failed");
+          this._jobLock.lock();
+          try {
+            var old = this._jobs[p];
+            if (old && old.task) {
+              try { old.task.cancel(); } catch (eCancel) {}
+            }
+
+            this._jobSequence = Number(this._jobSequence || 0) + 1;
+            job = {
+              path: p,
+              payload: payload,
+              version: Number(this._jobSequence),
+              task: null,
+              running: false,
+              lastError: ""
+            };
+
+            task = new JavaAdapter(java.util.TimerTask, {
+              run: function() {
+                self.runScheduledJob(job);
+              }
+            });
+            job.task = task;
+            this._jobs[p] = job;
+
+            try {
+              if (!this._timer) this._timer = new java.util.Timer("sx-toolhub-structured-sqlite", true);
+              this._timer.schedule(task, d);
+            } catch (eSchedule) {
+              this._lastError = "scheduleWrite: " + String(eSchedule);
+              if (this._jobs[p] === job) {
+                try { delete this._jobs[p]; } catch (eDelete2) { this._jobs[p] = null; }
+              }
+              fallbackNow = true;
+            }
+          } finally {
+            this._jobLock.unlock();
           }
-          return okNow;
+
+          if (fallbackNow) return this.writeManagedNow(p, payload);
+          return true;
+        } finally {
+          this._writeLock.unlock();
         }
       },
 
       flushWrites: function() {
         var allOk = true;
+        var snapshot = [];
+        var failed = [];
+
+        this._writeLock.lock();
         try {
-          for (var p in this._jobs) {
-            if (!this._jobs.hasOwnProperty(p)) continue;
-            var job = this._jobs[p];
-            if (!job) continue;
-            try { if (job.task) job.task.cancel(); } catch (eCancel) {}
-            var ok = this.writeManagedNow(p, job.payload);
-            if (ok) {
-              try { delete this._jobs[p]; } catch (eDelete) { this._jobs[p] = null; }
-            } else {
+          this._jobLock.lock();
+          try {
+            for (var p in this._jobs) {
+              if (!this._jobs.hasOwnProperty(p)) continue;
+              var job = this._jobs[p];
+              if (!job) continue;
+              try { if (job.task) job.task.cancel(); } catch (eCancel) {}
+              snapshot.push(job);
+            }
+            this._jobs = {};
+            if (this._timer) {
+              try { this._timer.cancel(); } catch (eTimerCancel) {}
+              try { this._timer.purge(); } catch (ePurge) {}
+              this._timer = null;
+            }
+          } finally {
+            this._jobLock.unlock();
+          }
+
+          for (var i = 0; i < snapshot.length; i++) {
+            var item = snapshot[i];
+            var ok = this.writeManagedNow(item.path, item.payload);
+            if (!ok) {
               allOk = false;
-              job.task = null;
-              job.lastError = String(this._lastError || "structured write failed");
+              item.task = null;
+              item.running = false;
+              item.lastError = String(this._lastError || "structured write failed");
+              failed.push(item);
             }
           }
-          if (this._timer) {
-            try { this._timer.cancel(); } catch (eTimerCancel) {}
-            try { this._timer.purge(); } catch (ePurge) {}
-            this._timer = null;
+
+          if (failed.length > 0) {
+            this._jobLock.lock();
+            try {
+              for (var j = 0; j < failed.length; j++) {
+                var failedJob = failed[j];
+                var current = this._jobs[failedJob.path];
+                if (!current || Number(current.version) < Number(failedJob.version)) {
+                  this._jobs[failedJob.path] = failedJob;
+                }
+              }
+            } finally {
+              this._jobLock.unlock();
+            }
           }
           return allOk;
         } catch (e) {
           this._lastError = "flushWrites: " + String(e);
           return false;
+        } finally {
+          this._writeLock.unlock();
         }
       },
 
@@ -771,8 +880,13 @@
         var db = null;
         try { exists = new java.io.File(String(this.dbPath)).exists(); } catch (eExists) {}
         try {
-          for (var k in this._jobs) {
-            if (this._jobs.hasOwnProperty(k) && this._jobs[k]) pending++;
+          this._jobLock.lock();
+          try {
+            for (var k in this._jobs) {
+              if (this._jobs.hasOwnProperty(k) && this._jobs[k]) pending++;
+            }
+          } finally {
+            this._jobLock.unlock();
           }
         } catch (ePending) {}
         try {
@@ -825,12 +939,12 @@
     };
 
     FileIO.writeText = function(path, content) {
-      if (StructuredStore.isManagedPath(path)) return StructuredStore.writeManagedNow(path, content);
+      if (StructuredStore.isManagedPath(path)) return StructuredStore.writeManagedNowSerialized(path, content);
       return oldWriteText.call(FileIO, path, content);
     };
 
     FileIO.writeTextAtomic = function(path, content) {
-      if (StructuredStore.isManagedPath(path)) return StructuredStore.writeManagedNow(path, content);
+      if (StructuredStore.isManagedPath(path)) return StructuredStore.writeManagedNowSerialized(path, content);
       return oldWriteTextAtomic.call(FileIO, path, content);
     };
 
