@@ -5,87 +5,26 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def replace_once(path, old, new, label):
-    text = path.read_text(encoding="utf-8")
+def replace_once(text, old, new, label):
     if old not in text:
-        raise SystemExit("missing patch anchor: %s in %s" % (label, path))
+        raise SystemExit("missing patch anchor: %s" % label)
     if text.count(old) != 1:
         raise SystemExit("non-unique patch anchor: %s count=%d" % (label, text.count(old)))
-    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    return text.replace(old, new, 1)
 
 
-content = ROOT / "code" / "th_08_content.js"
-rebuild = ROOT / "code" / "th_12_rebuild.js"
+content_path = ROOT / "code" / "th_08_content.js"
+rebuild_path = ROOT / "code" / "th_12_rebuild.js"
+content = content_path.read_text(encoding="utf-8")
+rebuild = rebuild_path.read_text(encoding="utf-8")
 
-replace_once(content, "// @version 1.0.1", "// @version 1.0.2", "content version")
-
-old_security = '''// =======================【Content：安全审计】=======================
-// 这段代码的主要内容/用途：为 ContentResolver 访问增加 audit / strict / off 三档安全模式。
-// 默认 audit：只记录非 allowlist URI，不阻断旧按钮。
-FloatBallAppWM.prototype.getContentSecurityMode = function() {
-  var mode = "audit";
-  try {
-    if (this.config && this.config.CONTENT_SECURITY_MODE !== undefined && this.config.CONTENT_SECURITY_MODE !== null) {
-      mode = String(this.config.CONTENT_SECURITY_MODE || "audit");
-    }
-  } catch (eMode) { mode = "audit"; }
-  try { mode = mode.replace(/^\\s+|\\s+$/g, "").toLowerCase(); } catch (eTrim) { mode = "audit"; }
-  if (mode !== "audit" && mode !== "strict" && mode !== "off") mode = "audit";
-  return mode;
-};
-
-FloatBallAppWM.prototype.getContentUriAllowlist = function() {
-  var raw = "content://settings/system/|content://settings/secure/|content://settings/global/";
-  try {
-    if (this.config && this.config.CONTENT_URI_ALLOWLIST !== undefined && this.config.CONTENT_URI_ALLOWLIST !== null) {
-      raw = String(this.config.CONTENT_URI_ALLOWLIST || raw);
-    }
-  } catch (eAllow) {}
-  return String(raw || "");
-};
-
-FloatBallAppWM.prototype.isContentUriAllowlisted = function(uriStr) {
-  try {
-    var uri = String(uriStr || "");
-    if (!uri) return false;
-    var raw = this.getContentUriAllowlist ? this.getContentUriAllowlist() : "";
-    var parts = String(raw || "").split("|");
-    for (var i = 0; i < parts.length; i++) {
-      var p = String(parts[i] || "").replace(/^\\s+|\\s+$/g, "");
-      if (!p) continue;
-      if (uri.indexOf(p) === 0) return true;
-    }
-  } catch (e) {}
-  return false;
-};
-
-FloatBallAppWM.prototype.checkContentUriSecurity = function(uriStr, modeName, btn) {
-  var out = { ok: true, mode: "audit", allowed: false, uri: String(uriStr || ""), err: "" };
-  try {
-    out.mode = this.getContentSecurityMode ? this.getContentSecurityMode() : "audit";
-    if (out.mode === "off") return out;
-
-    out.allowed = this.isContentUriAllowlisted ? this.isContentUriAllowlisted(uriStr) : false;
-    if (out.allowed) return out;
-
-    var msg = "content uri not in allowlist mode=" + out.mode + " action=" + String(modeName || "") + " uri=" + String(uriStr || "");
-    if (out.mode === "strict") {
-      out.ok = false;
-      out.err = msg;
-      safeLog(this.L, 'e', msg);
-      return out;
-    }
-
-    // audit：只记录，不阻断。
-    safeLog(this.L, 'w', msg);
-    return out;
-  } catch (eSec) {
-    out.ok = true;
-    out.err = String(eSec);
-    try { safeLog(this.L, 'w', "content security check failed compat allow err=" + String(eSec)); } catch(eLog) {}
-  }
-  return out;
-};'''
+content = replace_once(content, "// @version 1.0.1", "// @version 1.0.2", "content version")
+start_marker = "// =======================【Content：安全审计】======================="
+end_marker = "// =======================【Content：通用 query】======================="
+start = content.find(start_marker)
+end = content.find(end_marker)
+if start < 0 or end < 0 or end <= start:
+    raise SystemExit("missing content security section markers")
 
 new_security = '''// =======================【Content：安全策略】=======================
 // 默认 strict：读取使用 CONTENT_URI_ALLOWLIST，写入使用独立的 CONTENT_WRITE_URI_ALLOWLIST。
@@ -181,23 +120,24 @@ FloatBallAppWM.prototype.checkContentUriSecurity = function(uriStr, modeName, bt
     }
   }
   return out;
-};'''
-replace_once(content, old_security, new_security, "content security block")
+};
 
-replace_once(rebuild, "// @version 1.0.6", "// @version 1.0.7", "rebuild version")
-replace_once(rebuild,
-'''  putSchema("CONTENT_SECURITY_MODE", { type: "enum", values: ["off", "audit", "strict"], default: "audit" });
-  putSchema("CONTENT_URI_ALLOWLIST", { type: "string", default: "content://settings/system/|content://settings/secure/|content://settings/global/" });''',
-'''  putSchema("CONTENT_SECURITY_MODE", { type: "enum", values: ["strict", "compat_audit", "off"], default: "strict" });
-  putSchema("CONTENT_URI_ALLOWLIST", { type: "string", default: "content://settings/system/|content://settings/secure/|content://settings/global/" });
-  putSchema("CONTENT_WRITE_URI_ALLOWLIST", { type: "string", default: "" });''',
-"content schema")
-replace_once(rebuild,
-'''  putDefault("CONTENT_SECURITY_MODE", "audit");
-  putDefault("CONTENT_URI_ALLOWLIST", "content://settings/system/|content://settings/secure/|content://settings/global/");''',
-'''  putDefault("CONTENT_SECURITY_MODE", "strict");
-  putDefault("CONTENT_URI_ALLOWLIST", "content://settings/system/|content://settings/secure/|content://settings/global/");
-  putDefault("CONTENT_WRITE_URI_ALLOWLIST", "");''',
-"content defaults")
+'''
+content = content[:start] + new_security + content[end:]
+content_path.write_text(content, encoding="utf-8")
 
+rebuild = replace_once(rebuild, "// @version 1.0.6", "// @version 1.0.7", "rebuild version")
+rebuild = replace_once(
+    rebuild,
+    '  putSchema("CONTENT_SECURITY_MODE", { type: "enum", values: ["off", "audit", "strict"], default: "audit" });\n  putSchema("CONTENT_URI_ALLOWLIST", { type: "string", default: "content://settings/system/|content://settings/secure/|content://settings/global/" });',
+    '  putSchema("CONTENT_SECURITY_MODE", { type: "enum", values: ["strict", "compat_audit", "off"], default: "strict" });\n  putSchema("CONTENT_URI_ALLOWLIST", { type: "string", default: "content://settings/system/|content://settings/secure/|content://settings/global/" });\n  putSchema("CONTENT_WRITE_URI_ALLOWLIST", { type: "string", default: "" });',
+    "content schema",
+)
+rebuild = replace_once(
+    rebuild,
+    '  putDefault("CONTENT_SECURITY_MODE", "audit");\n  putDefault("CONTENT_URI_ALLOWLIST", "content://settings/system/|content://settings/secure/|content://settings/global/");',
+    '  putDefault("CONTENT_SECURITY_MODE", "strict");\n  putDefault("CONTENT_URI_ALLOWLIST", "content://settings/system/|content://settings/secure/|content://settings/global/");\n  putDefault("CONTENT_WRITE_URI_ALLOWLIST", "");',
+    "content defaults",
+)
+rebuild_path.write_text(rebuild, encoding="utf-8")
 print("Content strict security patch applied")
