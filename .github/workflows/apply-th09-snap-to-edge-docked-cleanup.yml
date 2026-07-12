@@ -1,0 +1,49 @@
+name: apply-th09-snap-to-edge-docked-cleanup
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'fix/remove-th09-snap-to-edge-docked' &&
+      github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/remove-th09-snap-to-edge-docked
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply cleanup and verify
+        run: python3 scripts/cleanup_th09_snap_to_edge_docked.py
+
+      - name: Commit cleanup
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "删除 th_09 吸边旧实现"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:fix/remove-th09-snap-to-edge-docked
