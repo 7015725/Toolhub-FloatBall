@@ -38,6 +38,31 @@ jobs:
           python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
           python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
 
+      - name: Fix generated schema verifier regex
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/verify_schema_validator.py")
+          text = path.read_text(encoding="utf-8")
+          replacements = [
+              (
+                  r'r"(?:FloatBallAppWM\\.prototype|proto)\\.setPendingValue\\s*=\\s*function\\s*\\("',
+                  r'r"(?:FloatBallAppWM\.prototype|proto)\.setPendingValue\s*=\s*function\s*\("',
+              ),
+              (
+                  r'r"(?:FloatBallAppWM\\.prototype|proto)\\.applyImmediateEffectsForKey\\s*=\\s*function\\s*\\("',
+                  r'r"(?:FloatBallAppWM\.prototype|proto)\.applyImmediateEffectsForKey\s*=\s*function\s*\("',
+              ),
+          ]
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit("schema verifier regex marker mismatch: " + old)
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+
       - name: Verify Python and boundaries
         shell: bash
         run: |
