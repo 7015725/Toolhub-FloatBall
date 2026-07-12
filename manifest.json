@@ -87,9 +87,9 @@
       "version": "1.0.0"
     },
     "th_14_panels.js": {
-      "sha256": "b9a23604096aadf3ccea728fecc7125e96eac1b1f8f5014e816d815615aea46c",
-      "size": 122523,
-      "version": "1.0.12"
+      "sha256": "a2ef9f1771746aa5cec7658c884b089467a093b1769b9e91c9f46d9d6614e6b2",
+      "size": 122547,
+      "version": "1.0.13"
     },
     "th_14_schema_editor.js": {
       "sha256": "903fb69f973af2a722ea2536bd86099005bb07605616028d5ae9c388fe2981e0",
@@ -107,9 +107,9 @@
       "version": "1.0.8"
     },
     "th_17_pointer.js": {
-      "sha256": "06b96d0085731fd2e71b97c1709efb9205f15b5f8fc37c7c590459bec1118ed6",
-      "size": 124645,
-      "version": "1.1.33"
+      "sha256": "f1a73bb489c8443c2184fc615f832afd15dddc9859552e338bf2edd4634f819d",
+      "size": 143635,
+      "version": "1.1.35"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "a9f08c74c5099b46eb962934ba0f0713a4e3e8cc340a12d1e6be6d0ef19b7754",
@@ -117,18 +117,18 @@
       "version": "1.0.20"
     },
     "th_19_position_state.js": {
-      "sha256": "d5a418b4bdd69a32a2c1e1bd4ae5e4d18b92048c26d4c5107ae9b7d63c404160",
-      "size": 38401,
-      "version": "1.0.9"
+      "sha256": "ce9bfb73d2703e268bab21d5d7596dc6b0ab40d94127b6a988e47555fc65053b",
+      "size": 38914,
+      "version": "1.0.10"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复 th_17_pointer.js 花括号结构并增加 JS 语法解析检查"
+      "恢复取字独立悬停凭证门槛"
     ],
-    "title": "修复指针模块加载异常"
+    "title": "恢复取字独立悬停凭证门槛"
   },
   "schema": 3,
-  "version": 20260711152933
+  "version": 20260712004529
 }
