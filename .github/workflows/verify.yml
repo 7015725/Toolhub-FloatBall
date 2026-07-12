@@ -25,12 +25,26 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Verify module boundaries
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/verify_module_boundaries.py 2>&1 | tee module-boundary-report.txt
+
+      - name: Upload module boundary report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-boundary-report
+          path: module-boundary-report.txt
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Run ToolHub verification
         shell: bash
         run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_module_boundaries.py
           python3 scripts/verify_sqlite_persistence.py
           python3 scripts/verify_button_icon_blob.py
           python3 scripts/verify_ball_position_state.py
