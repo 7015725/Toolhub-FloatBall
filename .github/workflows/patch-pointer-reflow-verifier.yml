@@ -33,22 +33,26 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
+          import re
           from pathlib import Path
           path = Path('scripts/verify_pointer_regressions.py')
           text = path.read_text(encoding='utf-8')
-          old = '''    screen_reflow = section(
-              animation,
-              "FloatBallAppWM.prototype.onScreenChangedReflow = function(reason)",
-              "FloatBallAppWM.prototype.scheduleScreenReflow = function(reason)",
-          )'''
+          pattern = re.compile(
+              r'    screen_reflow = section\(\n'
+              r'\s*animation,\n'
+              r'\s*"FloatBallAppWM\.prototype\.onScreenChangedReflow = function\(reason\)",\n'
+              r'\s*"FloatBallAppWM\.prototype\.scheduleScreenReflow = function\(reason\)",\n'
+              r'\s*\)'
+          )
           new = '''    screen_reflow = section(
               position,
               "proto.onScreenChangedReflow = function(reason)",
               "proto.scheduleScreenReflow = function(reason)",
           )'''
-          if text.count(old) != 1:
-              raise SystemExit('FAIL: expected one legacy screen reflow verifier block')
-          path.write_text(text.replace(old, new), encoding='utf-8')
+          text, count = pattern.subn(new, text)
+          if count != 1:
+              raise SystemExit('FAIL: legacy screen reflow verifier matches=%d' % count)
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Verify pointer contracts without manifest
