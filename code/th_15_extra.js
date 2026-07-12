@@ -1,4 +1,4 @@
-// @version 1.1.6
+// @version 1.1.7
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -2783,26 +2783,3 @@ FloatBallAppWM.prototype.refreshBallPreviewInSettings = function() {
     return false;
   }
 };
-
-// =======================【固定位置预设与悬浮球手势收敛】=======================
-(function() {
-  try {
-    var proto = FloatBallAppWM.prototype;
-
-    // 固定位置模式下，所有吸边入口统一回到设置中的边缘和高度位置。
-    // 长按不再承担设置入口或移动位置。
-
-        if (typeof proto.applyImmediateEffectsForKey === "function") {
-      var oldApplyImmediateEffectsForKey = proto.applyImmediateEffectsForKey;
-      proto.applyImmediateEffectsForKey = function(k) {
-        if (this.isBallPositionEffectKey && this.isBallPositionEffectKey(k)) {
-          return this.scheduleConfiguredBallPositionApply("settings:" + String(k || ""), true);
-        }
-        return oldApplyImmediateEffectsForKey.call(this, k);
-      };
-    }
-
-  } catch (eInstall) {
-    try { safeLog(null, "e", "install fixed ball position patch fail: " + String(eInstall)); } catch (eLog) {}
-  }
-})();

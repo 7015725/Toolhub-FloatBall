@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // =======================【工具：面板位置持久化】======================
 FloatBallAppWM.prototype.savePanelState = function(key, state) {
   if (!key || !state) return;
@@ -33,6 +33,132 @@ FloatBallAppWM.prototype.getConfigSchema = function() {
   return ConfigManager.loadSchema();
 };
 
+function normalizeToolHubEnumValueBySchema(key, value) {
+  try {
+    if (typeof ConfigValidator === "undefined" || !ConfigValidator || !ConfigValidator.schemas) return value;
+    var schema = ConfigValidator.schemas[String(key || "")];
+    if (!schema || String(schema.type || "") !== "enum" || !schema.values) return value;
+    for (var i = 0; i < schema.values.length; i++) {
+      if (String(schema.values[i]) === String(value)) return schema.values[i];
+    }
+  } catch(e) {}
+  return value;
+}
+
+FloatBallAppWM.prototype.isThemeEffectKey = function(k) {
+  k = String(k || "");
+  return k === "SETTINGS_THEME" ||
+         k === "THEME_MODE" ||
+         k === "THEME_DAY_BG_HEX" ||
+         k === "THEME_DAY_TEXT_HEX" ||
+         k === "THEME_NIGHT_BG_HEX" ||
+         k === "THEME_NIGHT_TEXT_HEX" ||
+         k === "PANEL_BG_ALPHA";
+};
+
+FloatBallAppWM.prototype.isPanelLayoutEffectKey = function(k) {
+  k = String(k || "");
+  return k === "PANEL_ROWS" ||
+         k === "PANEL_COLS" ||
+         k === "PANEL_ITEM_SIZE_DP" ||
+         k === "PANEL_GAP_DP" ||
+         k === "PANEL_PADDING_DP" ||
+         k === "PANEL_ICON_SIZE_DP" ||
+         k === "PANEL_LABEL_ENABLED" ||
+         k === "PANEL_LABEL_TEXT_SIZE_SP" ||
+         k === "PANEL_LABEL_TOP_MARGIN_DP" ||
+         k === "PANEL_POS_GRAVITY" ||
+         k === "PANEL_CUSTOM_OFFSET_Y" ||
+         k === "BALL_PANEL_GAP_DP";
+};
+
+FloatBallAppWM.prototype.isPointerEffectKey = function(k) {
+  k = String(k || "");
+  return k.indexOf("POINTER_") === 0;
+};
+
+FloatBallAppWM.prototype.isBallVisualEffectKey = function(k) {
+  k = String(k || "");
+  return k === "BALL_SIZE_DP" ||
+         k === "BALL_PNG_MODE" ||
+         k === "BALL_ICON_TYPE" ||
+         k === "BALL_ICON_FILE_PATH" ||
+         k === "BALL_ICON_RES_ID" ||
+         k === "BALL_ICON_RES_NAME" ||
+         k === "BALL_ICON_SIZE_DP" ||
+         k === "BALL_ICON_TINT_HEX" ||
+         k === "BALL_BG_COLOR_HEX" ||
+         k === "BALL_IDLE_ALPHA";
+};
+
+FloatBallAppWM.prototype.refreshPointerAfterSettingsChanged = function() {
+  try {
+    if (!this.state || !this.state.pointerTool) return false;
+    var st = this.ensurePointerToolState ? this.ensurePointerToolState() : this.state.pointerTool;
+    if (!st || !st.active) return false;
+    if (st.lp) {
+      st.lp.width = st.pointerW;
+      st.lp.height = st.pointerH;
+      try { if (st.root && st.wm) st.wm.updateViewLayout(st.root, st.lp); } catch(eUpdate) { safeLog(this.L, "w", "pointer update layout fail: " + String(eUpdate)); }
+    }
+    try { if (st.root) st.root.invalidate(); } catch(eInvalidate) {}
+    return true;
+  } catch(e) {
+    safeLog(this.L, "w", "refreshPointerAfterSettingsChanged fail: " + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.refreshVisiblePanelsAfterSettingsChanged = function(reason) {
+  try {
+    if (!this.state || this.state.closing) return false;
+    if (this.state.toolAppActive && this.replaceToolAppPage) {
+      var route = "";
+      try { route = String(this.state.toolAppRoute || ""); } catch(eRoute) { route = ""; }
+      this.replaceToolAppPage(route || "settings");
+      return true;
+    }
+    if (this.state.addedPanel) this.hideMainPanel();
+    if (this.state.addedSettings) {
+      this.hideSettingsPanel();
+      this.showPanelAvoidBall("settings");
+    }
+    if (this.state.addedViewer) this.hideViewerPanel();
+    return true;
+  } catch(e) {
+    safeLog(this.L, "w", "refreshVisiblePanelsAfterSettingsChanged fail reason=" + String(reason || "") + " err=" + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.scheduleSettingsEffectRefresh = function(reason, themeChanged, panelChanged) {
+  try {
+    if (!this.state || this.state.closing) return false;
+    if (themeChanged) {
+      try { if (this.refreshMonetColors) this.refreshMonetColors(this.isDarkTheme()); } catch(eColor) {}
+      try { if (this.state.ballContent && this.updateBallContentBackground) this.updateBallContentBackground(this.state.ballContent); } catch(eBallBg) {}
+    }
+    var self = this;
+    if (this.state.settingsEffectRefreshPosted) return true;
+    this.state.settingsEffectRefreshPosted = true;
+    var run = function() {
+      try { self.state.settingsEffectRefreshPosted = false; } catch(eFlag) {}
+      try {
+        if (self.refreshVisiblePanelsAfterSettingsChanged) self.refreshVisiblePanelsAfterSettingsChanged(reason);
+      } catch(eRun) { safeLog(self.L, "w", "settings effect refresh run fail: " + String(eRun)); }
+    };
+    if (this.state.h) {
+      this.state.h.post(new JavaAdapter(java.lang.Runnable, { run: run }));
+    } else {
+      run();
+    }
+    return true;
+  } catch(e) {
+    safeLog(this.L, "w", "scheduleSettingsEffectRefresh fail: " + String(e));
+  }
+  return false;
+};
+
 // =======================【设置面板：临时编辑缓存】======================
 FloatBallAppWM.prototype.beginEditConfig = function() {
   try {
@@ -59,7 +185,7 @@ FloatBallAppWM.prototype.getPendingValue = function(k) {
 };
 FloatBallAppWM.prototype.setPendingValue = function(k, v) {
   if (!this.state.pendingUserCfg) this.beginEditConfig();
-  this.state.pendingUserCfg[k] = v;
+  this.state.pendingUserCfg[k] = normalizeToolHubEnumValueBySchema(k, v);
   this.state.pendingDirty = true;
 
   // 设置页主题切换：不论 previewMode 都重建设置页 UI
@@ -199,26 +325,31 @@ FloatBallAppWM.prototype.persistUserCfgFromObject = function(obj) {
 };
 
 FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
+  var key = String(k || "");
   try {
-    if (k === "LOG_ENABLE") {
+    if (this.isBallPositionEffectKey && this.isBallPositionEffectKey(key)) {
+      return this.scheduleConfiguredBallPositionApply("settings:" + key, true);
+    }
+
+    if (key === "LOG_ENABLE") {
       try {
         if (this.L) {
           this.L.enable = !!this.config.LOG_ENABLE;
           this.L.i("apply LOG_ENABLE=" + String(this.config.LOG_ENABLE));
         }
-       } catch(eLE) { safeLog(null, 'e', "catch " + String(eLE)); }
+      } catch(eLE) { safeLog(null, 'e', "catch " + String(eLE)); }
       return;
     }
-    if (k === "LOG_DEBUG") {
+    if (key === "LOG_DEBUG") {
       try {
         if (this.L) {
           this.L.debug = !!this.config.LOG_DEBUG;
           this.L.i("apply LOG_DEBUG=" + String(this.config.LOG_DEBUG));
         }
-       } catch(eLD) { safeLog(null, 'e', "catch " + String(eLD)); }
+      } catch(eLD) { safeLog(null, 'e', "catch " + String(eLD)); }
       return;
     }
-    if (k === "LOG_KEEP_DAYS") {
+    if (key === "LOG_KEEP_DAYS") {
       try {
         var n = Math.max(1, Math.floor(Number(this.config.LOG_KEEP_DAYS || 3)));
         this.config.LOG_KEEP_DAYS = n;
@@ -227,35 +358,42 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
           this.L.i("apply LOG_KEEP_DAYS=" + String(n));
           this.L.cleanupOldFiles();
         }
-       } catch(eLK) { safeLog(null, 'e', "catch " + String(eLK)); }
-      return;
-    }
-    if (k === "BALL_SIZE_DP" || k === "BALL_PNG_MODE" || k === "BALL_ICON_TYPE" || k === "BALL_ICON_FILE_PATH" || k === "BALL_ICON_RES_ID" || k === "BALL_ICON_RES_NAME" || k === "BALL_ICON_SIZE_DP" || k === "BALL_ICON_TINT_HEX" || k === "BALL_BG_COLOR_HEX") { this.rebuildBallForNewSize(); return; }
-
-    if (k === "TOOLAPP_BACK_EDGE_WIDTH_DP") {
+      } catch(eLK) { safeLog(null, 'e', "catch " + String(eLK)); }
       return;
     }
 
-    if (k === "PANEL_ROWS" || k === "PANEL_COLS" ||
-        k === "PANEL_ITEM_SIZE_DP" || k === "PANEL_GAP_DP" ||
-        k === "PANEL_PADDING_DP" || k === "PANEL_ICON_SIZE_DP" ||
-        k === "PANEL_LABEL_ENABLED" || k === "PANEL_LABEL_TEXT_SIZE_SP" ||
-        k === "PANEL_LABEL_TOP_MARGIN_DP") {
+    var themeChanged = this.isThemeEffectKey && this.isThemeEffectKey(key);
+    var panelChanged = this.isPanelLayoutEffectKey && this.isPanelLayoutEffectKey(key);
+    var pointerChanged = this.isPointerEffectKey && this.isPointerEffectKey(key);
+    var ballChanged = this.isBallVisualEffectKey && this.isBallVisualEffectKey(key);
 
-      if (this.state.addedPanel) this.hideMainPanel();
-      if (this.state.addedSettings) this.hideSettingsPanel();
-      if (this.state.addedViewer) this.hideViewerPanel();
+    if (ballChanged) {
+      try { this.rebuildBallForNewSize(); } catch(eBall) { safeLog(this.L, "w", "apply ball visual fail key=" + key + " err=" + String(eBall)); }
       return;
     }
 
-    if (k === "EDGE_VISIBLE_RATIO") {
+    if (key === "TOOLAPP_BACK_EDGE_WIDTH_DP") return;
+
+    if (key === "EDGE_VISIBLE_RATIO") {
       if (this.state.addedBall && this.state.docked) {
         this.state.docked = false;
         this.snapToEdgeDocked(false);
       }
       return;
     }
-   } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
+
+    if (pointerChanged) {
+      if (this.refreshPointerAfterSettingsChanged) this.refreshPointerAfterSettingsChanged();
+      return;
+    }
+
+    if (themeChanged || panelChanged) {
+      if (this.scheduleSettingsEffectRefresh) this.scheduleSettingsEffectRefresh(key, themeChanged, panelChanged);
+      return;
+    }
+  } catch(e0) {
+    safeLog(null, 'e', "applyImmediateEffectsForKey catch key=" + key + " err=" + String(e0));
+  }
 };
 
 FloatBallAppWM.prototype.commitPendingUserCfg = function() {
@@ -295,4 +433,3 @@ FloatBallAppWM.prototype.commitPendingUserCfg = function() {
     return { ok: false, err: String(e0) };
   }
 };
-
