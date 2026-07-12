@@ -24,8 +24,8 @@ jobs:
           from pathlib import Path
           p = Path('DEAD_CODE_AUDIT.md')
           text = p.read_text(encoding='utf-8')
-          old = '文奷'
-          new = '文字'
+          old = '\u6587\u5977'
+          new = '\u6587\u5b57'
           if old not in text:
               print('audit typo already fixed')
           else:
