@@ -53,6 +53,22 @@ def parse_entry_modules():
         fail("parse ToolHub.js modules failed: " + str(e))
 
 
+def parse_entry_version():
+    try:
+        text = ENTRY.read_text(encoding="utf-8", errors="replace")
+        for symbol in ("TOOLHUB_ENTRY_VERSION", "MIN_TRUSTED_MANIFEST_VERSION"):
+            match = re.search(r"\bvar\s+%s\s*=\s*(\d+)\s*;" % re.escape(symbol), text)
+            if not match:
+                continue
+            version = int(match.group(1))
+            if version <= 0:
+                fail("invalid %s: %s" % (symbol, version))
+            return version, symbol
+    except Exception as e:
+        fail("parse ToolHub.js entry version failed: " + str(e))
+    fail("ToolHub.js entry version marker missing")
+
+
 def flatten_regex_pairs(items):
     out = []
     for a, b in items:
@@ -104,6 +120,22 @@ def main():
             fail("size mismatch: " + name)
 
     entry_hash = sha256_file(ENTRY)
+    entry_size = ENTRY.stat().st_size
+    entry_version, entry_version_source = parse_entry_version()
+    entry_meta = manifest.get("entry") or {}
+    if str(entry_meta.get("name", "")) != "ToolHub.js":
+        fail("manifest entry.name must be ToolHub.js")
+    if int(entry_meta.get("version", 0) or 0) != entry_version:
+        fail("manifest entry.version mismatch")
+    if str(entry_meta.get("versionSource", "")) != entry_version_source:
+        fail("manifest entry.versionSource mismatch")
+    if str(entry_meta.get("sha256", "")).lower() != entry_hash:
+        fail("manifest entry.sha256 mismatch")
+    if int(entry_meta.get("size", -1)) != entry_size:
+        fail("manifest entry.size mismatch")
+    if entry_meta.get("manualUpdate") is not True:
+        fail("manifest entry.manualUpdate must be true")
+
     sha_line = ENTRY_SHA.read_text(encoding="utf-8").strip()
     if entry_hash not in sha_line:
         fail("ToolHub.js.sha256 mismatch")
@@ -112,9 +144,10 @@ def main():
     if py_files:
         subprocess.check_call([sys.executable, "-m", "py_compile"] + py_files, cwd=str(ROOT))
 
-    print("OK manifest_version=%s files=%s entry_sha=%s" % (
+    print("OK manifest_version=%s files=%s entry_version=%s entry_sha=%s" % (
         manifest.get("version"),
         len(py_modules),
+        entry_version,
         entry_hash,
     ))
 
