@@ -1,0 +1,359 @@
++            isOplus: isOplus,
++            isColorOS: isColorOS,
++            isRealme: isRealme,
++            api: api,
++            summary: "api=" + api + ", manu=" + manu + ", brand=" + brand + ", model=" + model + ", display=" + display + ", miuiCode=" + miuiCode + ", modDevice=" + modDevice + ", oplusRom=" + oplusRom + ", coloros=" + coloros + ", realmeUi=" + realmeUi + ", realmeRom=" + realmeRom + ", market=" + marketName + ", pBrand=" + productBrand + ", pManu=" + productManu + ", pDev=" + productDevice + ", buildId=" + oplusOsDisplay + ", realme=" + isRealme
++        };
++    }
++
++    function applyMagnifierSafetyProfile() {
++        romProfile = detectRomProfile();
++        // 手动强制禁用（localVarOf$禁用系统放大镜=1）优先级最高
++        var userDisableMagnifier = false;
++        try {
++            userDisableMagnifier = (typeof localVarOf$禁用系统放大镜 !== 'undefined') && (String(localVarOf$禁用系统放大镜) === "1");
++        } catch (eUser) { userDisableMagnifier = false; }
++        if (userDisableMagnifier) {
++            forceDisableSystemMagnifier = true;
++            magnifierSafeMode = true;
++            MAGNIFIER_MAX_ERROR_COUNT = 1;
++            FINGER_PREVIEW_INTERVAL = 40;
++            FINGER_PREVIEW_CONTENT_INTERVAL = 80;
++            return;
++        }
++
++        // realme 默认也开启系统放大镜，但使用安全模式/低频率，避免复杂参数触发 ROM 风险。
++        if (romProfile.isRealme) {
++            magnifierSafeMode = true;
++            MAGNIFIER_MAX_ERROR_COUNT = 1;
++            FINGER_PREVIEW_INTERVAL = 40;
++            FINGER_PREVIEW_CONTENT_INTERVAL = 80;
++            return;
++        }
++
++        // 保留 HyperOS/MIUI 兼容路径
++        if (romProfile.isXiaomi) {
++            magnifierSafeMode = true;
++            MAGNIFIER_MAX_ERROR_COUNT = 1;
++            FINGER_PREVIEW_INTERVAL = 33;
++            FINGER_PREVIEW_CONTENT_INTERVAL = 66;
++            return;
++        }
++
++        // 保留 ColorOS 兼容：仅走保守参数，不强制禁用放大镜
++        if (romProfile.isColorOS) {
++            magnifierSafeMode = true;
++            MAGNIFIER_MAX_ERROR_COUNT = 2;
++            FINGER_PREVIEW_INTERVAL = 28;
++            FINGER_PREVIEW_CONTENT_INTERVAL = 56;
++            return;
++        }
++
++        // 其余机型走默认策略
++    }
++
++    function setClipboard(text) {
++        try {
++            if (typeof setClip === 'function') {
++                setClip(text);
++                return true;
++            } else {
++                var cm = appContext.getSystemService(appContext.CLIPBOARD_SERVICE);
++                if (cm) {
++                    var clip = android.content.ClipData.newPlainText("拾字", String(text));
++                    cm.setPrimaryClip(clip);
++                    return true;
++                }
++            }
++        } catch (e) {
++            showToast("复制失败: " + e.message);
++        }
++        return false;
++    }
++
++    function runUi(action) {
++        mainHandler.post(new java.lang.Runnable({ run: action }));
++    }
++
++    function getSharedPrefs() {
++        return appContext.getSharedPreferences(PREFS_NAME, appContext.MODE_PRIVATE);
++    }
++
++    function getFontSizeStoreFile() {
++        try {
++            if (typeof shortx !== 'undefined' && shortx && shortx.getShortXDir) {
++                return new java.io.File(shortx.getShortXDir() + "/data/pickword_font_size.txt");
++            }
++        } catch (e) {}
++        return null;
++    }
++
++    function readFontSizeFromFile() {
++        var file = getFontSizeStoreFile();
++        if (!file || !file.exists()) return -1;
++        try {
++            var reader = new java.io.BufferedReader(new java.io.FileReader(file));
++            var line = reader.readLine();
++            reader.close();
++            if (!line) return -1;
++            var size = parseInt(String(line).replace(/\s+/g, ""), 10);
++            return isNaN(size) ? -1 : size;
++        } catch (e) {
++            return -1;
++        }
++    }
++
++    function writeFontSizeToFile(size) {
++        var file = getFontSizeStoreFile();
++        if (!file) return false;
++        try {
++            var parent = file.getParentFile();
++            if (parent && !parent.exists()) { parent.mkdirs(); }
++            var writer = new java.io.FileWriter(file, false);
++            writer.write(String(size));
++            writer.flush();
++            writer.close();
++            return true;
++        } catch (e) {
++            return false;
++        }
++    }
++
++    function loadFontSize() {
++        try {
++            var defaultSize = getAdaptiveDefaultFontSize();
++            var savedSize = readFontSizeFromFile();
++            if (savedSize < 0) {
++                try {
++                    var prefs = getSharedPrefs();
++                    savedSize = prefs.getInt(KEY_FONT_SIZE, -1);
++                } catch (e1) { savedSize = -1; }
++            }
++            if (savedSize >= MIN_FONT_SIZE && savedSize <= MAX_FONT_SIZE) {
++                currentFontSize = savedSize;
++            } else {
++                currentFontSize = defaultSize;
++            }
++        } catch (e) {
++            currentFontSize = getAdaptiveDefaultFontSize();
++        }
++        return currentFontSize;
++    }
++
++    function saveFontSize(size) {
++        var saved = writeFontSizeToFile(size);
++        try {
++            var prefs = getSharedPrefs();
++            var editor = prefs.edit();
++            editor.putInt(KEY_FONT_SIZE, size);
++            editor.apply();
++        } catch (e) {}
++        return saved;
++    }
++
++    function getSafeScaleValue(value, fallbackValue) {
++        var n = parseFloat(String(value));
++        if (isNaN(n) || n <= 0) return fallbackValue;
++        if (n < 0.5) n = 0.5;
++        if (n > 2.0) n = 2.0;
++        return n;
++    }
++
++    function getCharSpacingScale(ch) {
++        if (!ch || ch.length === 0) return 1.0;
++        var code = ch.charCodeAt(0);
++        if (code === 10 || code === 13 || code === 9 || code === 32 || code === 0x3000) return 1.0;
++        if ((code >= 0x21 && code <= 0x7E) || (code >= 0xFF61 && code <= 0xFFDC)) {
++            return getSafeScaleValue(DIY_CONFIG.HALF_WIDTH_CHAR_SPACING_SCALE, 1.0);
++        }
++        if (code >= 0x2E80 || code > 0xFF00) {
++            return getSafeScaleValue(DIY_CONFIG.FULL_WIDTH_CHAR_SPACING_SCALE, 1.0);
++        }
++        return 1.0;
++    }
++
++    function rebuildSelectedSetFromIndices(indices) {
++        var result = {};
++        for (var i = 0; i < indices.length; i++) {
++            result[indices[i]] = true;
++        }
++        return result;
++    }
++
++    function countSelectedSet(setObj) {
++        var count = 0;
++        try {
++            for (var k in setObj) {
++                if (Object.prototype.hasOwnProperty.call(setObj, k) && setObj[k] === true) count++;
++            }
++        } catch (e) {}
++        return count;
++    }
++
++    function countSelectedInRange(setObj, startIndex, endIndex) {
++        if (!setObj) return 0;
++        if (startIndex > endIndex) { var tmp = startIndex; startIndex = endIndex; endIndex = tmp; }
++        if (startIndex < 0) startIndex = 0;
++        var count = 0;
++        try {
++            for (var i = startIndex; i <= endIndex; i++) {
++                if (setObj[i] === true) count++;
++            }
++        } catch (e) {}
++        return count;
++    }
++
++    function calcDragSelectionCount(minIndex, maxIndex) {
++        if (!dragSnapshotSet || minIndex < 0 || maxIndex < 0) return selectedIndices.length;
++        if (minIndex > maxIndex) { var tmp = minIndex; minIndex = maxIndex; maxIndex = tmp; }
++        var selectedInRange = countSelectedInRange(dragSnapshotSet, minIndex, maxIndex);
++        var rangeLen = maxIndex - minIndex + 1;
++        if (dragStartWasSelected) return Math.max(0, dragSnapshotCount - selectedInRange);
++        return Math.max(0, dragSnapshotCount + rangeLen - selectedInRange);
++    }
++
++    var dragUpdateProcessor = new java.lang.Runnable({
++        run: function() {
++            pendingDragUpdate = null;
++            var dmin = dragPendingDirtyMin;
++            var dmax = dragPendingDirtyMax;
++            dragPendingDirtyMin = -1;
++            dragPendingDirtyMax = -1;
++            if (dmin < 0 || dmax < 0) {
++                dmin = lastDragVisualMin;
++                dmax = lastDragVisualMax;
++            }
++            lastDragUpdateTime = Date.now();
++            拾字Floaty.updateSelectionSpans(dmin, dmax);
++            拾字Floaty.updatePreviewDuringDrag();
++        }
++    });
++
++    var 拾字Floaty = {
++        // 动态动画流参数
++        currentScrollDirection: 0,
++        currentScrollSpeed: 0,
++        exactScrollY: 0,
++
++        show: function(text) {
++            if (mainLayout !== null) {
++                isShowing = true;
++                this.resetTextLoadState((typeof text === 'string') ? text : String(text || ""));
++                selectedIndices = [];
++                selectedSet = {};
++                previewTextOverride = null;
++                previewSelectionSignature = "";
++                cleanUndoStack = [];
++                isDragging = false;
++                dragStartIndex = -1;
++                isAutoScrolling = false;
++                lastTouchX = 0;
++                lastTouchY = 0;
++                lastTouchRawX = 0;
++                lastTouchRawY = 0;
++                fingerPreviewLastIndex = -1;
++                fingerPreviewLastUpdateTime = 0;
++                lastDragEnd = -1;
++                dragSnapshotSet = null;
++                dragSnapshotCount = 0;
++                dragStartWasSelected = false;
++                dragPendingDirtyMin = -1;
++                dragPendingDirtyMax = -1;
++                lastTranslationState = null;
++                this.currentScrollDirection = 0;
++                this.currentScrollSpeed = 0;
++
++                loadFontSize();
++                var self = this;
++                runUi(function() {
++                    try {
++                        if (seekBar) seekBar.setProgress(currentFontSize - MIN_FONT_SIZE);
++                        if (fontSizeLabel) fontSizeLabel.setText(currentFontSize + "sp");
++                        if (textCanvasControl) textCanvasControl.setTextSize(currentFontSize);
++                        mainLayout.setVisibility(View.VISIBLE);
++                        animateWindowEnter(mainLayout);
++                        self.scheduleInitialTextLoad();
++                    } catch (e) {
++                        showToast("显示窗口失败: " + e.message);
++                        isShowing = false;
++                    }
++                });
++                return;
++            }
++
++            if (isShowing) {
++                showToast("拾字已在运行");
++                return;
++            }
++
++            loadFontSize();
++            if (android.os.Build.VERSION.SDK_INT >= 23) {
++                if (!android.provider.Settings.canDrawOverlays(appContext)) {
++                    showToast("请先授予悬浮窗权限");
++                    var intent = new android.content.Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
++                    intent.setData(android.net.Uri.parse("package:" + appContext.getPackageName()));
++                    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
++                    appContext.startActivity(intent);
++                    return;
++                }
++            }
++
++            isShowing = true;
++            this.resetTextLoadState((typeof text === 'string') ? text : String(text || ""));
++            selectedIndices = [];
++            selectedSet = {};
++            previewTextOverride = null;
++            previewSelectionSignature = "";
++            cleanUndoStack = [];
++                isDragging = false;
++            dragStartIndex = -1;
++            isAutoScrolling = false;
++            lastTouchX = 0;
++            lastTouchY = 0;
++            lastTouchRawX = 0;
++            lastTouchRawY = 0;
++            fingerPreviewLastIndex = -1;
++            fingerPreviewLastUpdateTime = 0;
++            lastDragEnd = -1;
++            dragSnapshotSet = null;
++            dragSnapshotCount = 0;
++            dragStartWasSelected = false;
++            dragPendingDirtyMin = -1;
++            dragPendingDirtyMax = -1;
++            lastTranslationState = null;
++            this.currentScrollDirection = 0;
++            this.currentScrollSpeed = 0;
++
++            var self = this;
++            runUi(function() {
++                try {
++                    self.createWindow();
++                    animateWindowEnter(mainLayout);
++                    self.scheduleInitialTextLoad();
++                } catch (e) {
++                    showToast("创建窗口失败: " + e.message);
++                    isShowing = false;
++                }
++            });
++        },
++
++        hide: function() {
++            if (windowManager !== null && mainLayout !== null) {
++                runUi(function() {
++                    try {
++                        if (longPressHandler) {
++                            mainHandler.removeCallbacks(longPressHandler);
++                            longPressHandler = null;
++                        }
++                        if (autoScrollRunnable) {
++                            mainHandler.removeCallbacks(autoScrollRunnable);
++                            autoScrollRunnable = null;
++                        }
++                        if (keepAliveTimer && pinLayout === null) {
++                            mainHandler.removeCallbacks(keepAliveTimer);
++                            keepAliveTimer = null;
++                        }
++                        if (pendingFullTextRunnable) {
++                            mainHandler.removeCallbacks(pendingFullTextRunnable);
++                            pendingFullTextRunnable = null;
++                        }
