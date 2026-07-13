@@ -122,9 +122,9 @@
       "version": "1.0.11"
     },
     "th_20_pickword.js": {
-      "sha256": "27e53433c41d7fe72e57b2f1165763497b9e5dec3f4089c434dcace049291615",
-      "size": 212056,
-      "version": "1.0.1"
+      "sha256": "40f0329b182604dc4de1f792a80978e672f675219f0afdb5e9cd7d9d923ed1bc",
+      "size": 211716,
+      "version": "1.0.2"
     },
     "th_21_result_preview.js": {
       "sha256": "489199f1c8d8bea046eb5e29dad3ae5cb67c7c3f99b72f796690e7dfb92b824f",
@@ -135,10 +135,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复顶部预览透明动效重影"
+      "修复拾字窗口首次高度跳变"
     ],
-    "title": "修复顶部预览透明动效重影"
+    "title": "修复拾字窗口首次高度跳变"
   },
   "schema": 3,
-  "version": 20260713092614
+  "version": 20260713095125
 }

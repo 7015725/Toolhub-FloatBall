@@ -130,6 +130,28 @@ def main() -> int:
         failures,
     )
 
+    pickword_create_window = section(pickword, "createWindow: function()", "createTitleBar: function()")
+    pickword_initial_load = section(pickword, "scheduleInitialTextLoad: function()", "installCanvasScrollRefreshHooks: function()")
+    pickword_load_full = section(pickword, "loadFullTextNow: function", "scheduleInitialTextLoad: function()")
+    pickword_height = section(pickword, "applyScrollViewHeightNow: function()", "createPreviewBox: function()")
+    require(
+        "pickword / stable adaptive initial height",
+        "new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(60, 72))" in pickword_create_window
+        and pickword_create_window.find("this.scheduleInitialTextLoad();") >= 0
+        and pickword_create_window.find("this.scheduleInitialTextLoad();") < pickword_create_window.find("windowManager.addView(mainLayout, layoutParams)")
+        and pickword_show.count("self.scheduleInitialTextLoad();") == 1
+        and pickword_show.find("self.scheduleInitialTextLoad();") < pickword_show.find("mainLayout.setVisibility(View.VISIBLE)")
+        and "正在加载文本…" not in pickword_initial_load
+        and "INITIAL_TEXT_DELAY_MS" not in pickword
+        and "this.applyScrollViewHeightNow();" in pickword_initial_load
+        and "self.loadFullTextNow(false, true)" in pickword_initial_load
+        and "loadFullTextNow: function(showMsg, preserveHeight)" in pickword_load_full
+        and "if (preserveHeight !== true) this.adjustScrollViewHeight();" in pickword_load_full
+        and "Math.min(contentHeight + uiDp(8, 10), textAreaHeight)" in pickword_height,
+        "420dp must remain a maximum height while the first visible frame uses the final adaptive height",
+        failures,
+    )
+
     require(
         "pickword / full text metadata retained",
         "ps.fullText = raw" in pickword
