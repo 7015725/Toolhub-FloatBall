@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // =======================【取字 / OCR 顶部结果预览】=======================
 // 全自绘单实例悬浮预览；点击后把完整文本传给 th_20_pickword.js。
 (function() {
@@ -132,7 +132,10 @@
         exiting: false,
         clickLocked: false,
         dismissRunnable: null,
+        visibilityFallbackRunnable: null,
         handler: null,
+        drawCount: 0,
+        firstDrawLogged: false,
         line1: "",
         line2: "",
         measuredWidth: 0,
@@ -309,7 +312,23 @@
     var self = appObj;
     var PreviewView = new JavaAdapter(android.view.View, {
       onDraw: function(canvas) {
-        try { drawPreview21(self, st, canvas, this); } catch (eDraw) {}
+        st.drawCount = Number(st.drawCount || 0) + 1;
+        if (st.firstDrawLogged !== true) {
+          st.firstDrawLogged = true;
+          try {
+            safeLog(self.L, 'i',
+              "result preview first draw" +
+              " width=" + String(this.getWidth()) +
+              " height=" + String(this.getHeight()) +
+              " alpha=" + String(this.getAlpha()) +
+              " visibility=" + String(this.getVisibility()) +
+              " lpY=" + String(st.lp ? st.lp.y : -1) +
+              " drawCount=" + String(st.drawCount));
+          } catch (eFirstDrawLog) {}
+        }
+        try { drawPreview21(self, st, canvas, this); } catch (eDraw) {
+          try { safeLog(self.L, 'e', "result preview draw fail: " + String(eDraw)); } catch (eDrawLog) {}
+        }
       },
       onTouchEvent: function(event) {
         try {
@@ -350,6 +369,8 @@
     }, context);
     PreviewView.setClickable(true);
     PreviewView.setFocusable(false);
+    try { PreviewView.setWillNotDraw(false); } catch (eWillNotDraw) {}
+    try { PreviewView.setVisibility(android.view.View.VISIBLE); } catch (eVisible) {}
     try { PreviewView.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null); } catch (eLayer) {}
     return PreviewView;
   }
@@ -380,9 +401,64 @@
     st.dismissRunnable = null;
   }
 
+  function cancelVisibilityFallback21(st) {
+    if (!st) return;
+    try {
+      if (st.handler && st.visibilityFallbackRunnable) {
+        st.handler.removeCallbacks(st.visibilityFallbackRunnable);
+      }
+    } catch (e0) {}
+    st.visibilityFallbackRunnable = null;
+  }
+
+  function scheduleVisibilityFallback21(appObj, st, rootRef) {
+    if (!st || !rootRef) return false;
+    cancelVisibilityFallback21(st);
+    var token = Number(st.generation || 0);
+    st.visibilityFallbackRunnable = new java.lang.Runnable({ run: function() {
+      try {
+        st.visibilityFallbackRunnable = null;
+        if (Number(st.generation || 0) !== token) return;
+        if (st.added !== true || st.root !== rootRef) return;
+
+        try { rootRef.animate().cancel(); } catch (eCancel) {}
+        try { rootRef.setVisibility(android.view.View.VISIBLE); } catch (eVisible) {}
+        try { rootRef.setAlpha(1); } catch (eAlpha) {}
+        try { rootRef.setTranslationY(0); } catch (eTranslation) {}
+        try { rootRef.requestLayout(); } catch (eLayout) {}
+        try { rootRef.invalidate(); } catch (eInvalidate) {}
+
+        var attached = false;
+        try {
+          attached = rootRef.isAttachedToWindow ? rootRef.isAttachedToWindow() === true : rootRef.getWindowToken() !== null;
+        } catch (eAttached) {}
+        try {
+          safeLog(appObj.L, 'i',
+            "result preview visual check" +
+            " attached=" + String(attached) +
+            " visibility=" + String(rootRef.getVisibility()) +
+            " alpha=" + String(rootRef.getAlpha()) +
+            " width=" + String(rootRef.getWidth()) +
+            " height=" + String(rootRef.getHeight()) +
+            " lpY=" + String(st.lp ? st.lp.y : -1) +
+            " drawCount=" + String(st.drawCount || 0));
+        } catch (eLog) {}
+      } catch (eFallback) {
+        try { safeLog(appObj.L, 'e', "result preview visibility fallback fail: " + String(eFallback)); } catch (eFallbackLog) {}
+      }
+    }});
+    try {
+      return st.handler.postDelayed(st.visibilityFallbackRunnable, 260) === true;
+    } catch (ePost) {
+      st.visibilityFallbackRunnable = null;
+    }
+    return false;
+  }
+
   function removeView21(appObj, st) {
     if (!st) return false;
     cancelDismiss21(st);
+    cancelVisibilityFallback21(st);
     try {
       if (st.added && st.root && st.wm) st.wm.removeView(st.root);
     } catch (eRemove) {
@@ -397,6 +473,8 @@
     st.entering = false;
     st.exiting = false;
     st.clickLocked = false;
+    st.drawCount = 0;
+    st.firstDrawLogged = false;
     return true;
   }
 
@@ -438,8 +516,11 @@
       st.visible = true;
       st.entering = true;
       try {
-        st.root.setAlpha(0);
+        st.root.setVisibility(android.view.View.VISIBLE);
+        st.root.setAlpha(0.78);
         st.root.setTranslationY(-dp21(appObj, 8));
+        st.root.requestLayout();
+        st.root.invalidate();
         st.root.animate()
           .alpha(1)
           .translationY(0)
@@ -447,12 +528,24 @@
           .setInterpolator(new android.view.animation.DecelerateInterpolator())
           .start();
       } catch (eEnter) {
-        try { st.root.setAlpha(1); st.root.setTranslationY(0); } catch (eEnterFallback) {}
+        try {
+          st.root.setVisibility(android.view.View.VISIBLE);
+          st.root.setAlpha(1);
+          st.root.setTranslationY(0);
+          st.root.requestLayout();
+          st.root.invalidate();
+        } catch (eEnterFallback) {}
       }
+      scheduleVisibilityFallback21(appObj, st, st.root);
       st.entering = false;
     } else {
+      try {
+        st.root.setVisibility(android.view.View.VISIBLE);
+        st.root.setAlpha(1);
+        st.root.setTranslationY(0);
+      } catch (eExistingVisible) {}
       try { st.wm.updateViewLayout(st.root, st.lp); } catch (eUpdate) {}
-      try { st.root.invalidate(); } catch (eInvalidate) {}
+      try { st.root.requestLayout(); st.root.invalidate(); } catch (eInvalidate) {}
       try {
         st.root.animate().cancel();
         st.root.setAlpha(0.86);
@@ -460,6 +553,7 @@
         st.root.setScaleY(0.985);
         st.root.animate().alpha(1).scaleX(1).scaleY(1).setDuration(120).start();
       } catch (ePulse) {}
+      scheduleVisibilityFallback21(appObj, st, st.root);
       st.visible = true;
     }
     scheduleDismiss21(appObj, st);
