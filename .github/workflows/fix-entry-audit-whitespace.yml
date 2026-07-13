@@ -22,46 +22,38 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Normalize changed text files
+      - name: Fix report ending and regenerate
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          paths = [
-              Path('.github/workflows/verify.yml'),
-              Path('ENTRY_SYMBOL_AUDIT.md'),
-              Path('ToolHub.js'),
-              Path('scripts/report_entry_symbols.py'),
-              Path('scripts/verify_entry_redundancy_cleanup.py'),
-          ]
-          for path in paths:
-              text = path.read_text(encoding='utf-8')
-              normalized = '\n'.join(line.rstrip(' \t') for line in text.splitlines()) + '\n'
-              if normalized != text:
-                  path.write_text(normalized, encoding='utf-8')
-                  print('normalized', path)
+          path = Path('scripts/report_entry_symbols.py')
+          text = path.read_text(encoding='utf-8')
+          old = '    return "\\n".join(lines) + "\\n"\n'
+          new = '    return "\\n".join(lines).rstrip("\\n") + "\\n"\n'
+          if old not in text:
+              raise SystemExit('report return anchor missing')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+          rm -f ENTRY_WHITESPACE_DEBUG.txt
 
-      - name: Capture whitespace result
+      - name: Verify whitespace
         shell: bash
         run: |
           git fetch --no-tags origin main --depth=1
-          set +e
-          git diff --check origin/main...HEAD > ENTRY_WHITESPACE_DEBUG.txt 2>&1
-          status=$?
-          set -e
-          printf '\nexit_status=%s\n' "$status" >> ENTRY_WHITESPACE_DEBUG.txt
-          cat ENTRY_WHITESPACE_DEBUG.txt
+          git diff --check origin/main...HEAD
 
-      - name: Commit normalization and report
+      - name: Commit corrected files
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/workflows/verify.yml ENTRY_SYMBOL_AUDIT.md ToolHub.js scripts/report_entry_symbols.py scripts/verify_entry_redundancy_cleanup.py ENTRY_WHITESPACE_DEBUG.txt
+          git add -A ENTRY_SYMBOL_AUDIT.md ENTRY_WHITESPACE_DEBUG.txt scripts/report_entry_symbols.py
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "记录入口审计空白检查结果"
+          git commit -m "修正入口审计报告结尾换行"
           git push origin HEAD:${{ github.head_ref }}
