@@ -50,9 +50,9 @@
       "version": "1.0.5"
     },
     "th_10_shell.js": {
-      "sha256": "a6a86d6f764a7df0c93c0907c32956f5e151ffc3bbb5f1dc90ceedacf59d052f",
-      "size": 20280,
-      "version": "1.0.7"
+      "sha256": "0ef229d897eecf0d89fec845c79fed28ac91c10540c5e7d06d6c8dd78a1bcac8",
+      "size": 20256,
+      "version": "1.0.8"
     },
     "th_11_action.js": {
       "sha256": "b6832cd24a0354f1ddd10a98bf2a313397d3379bd3f5f35bb2fbf7df16894365",
@@ -148,5 +148,5 @@
     "title": "增加 ToolHub 入口文件更新提醒"
   },
   "schema": 3,
-  "version": 20260713145350
+  "version": 20260713145900
 }
