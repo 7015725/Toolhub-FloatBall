@@ -127,18 +127,18 @@
       "version": "1.0.0"
     },
     "th_21_result_preview.js": {
-      "sha256": "fdc247cee754bdd124c5b37eb5b76d185bc2299f837ffcfcb03d8a0234817b4c",
-      "size": 23846,
-      "version": "1.0.0"
+      "sha256": "83f3baa564d656aab64817a4f4aa04a920599e029eed9f9bba28d6ae5e8d60d2",
+      "size": 27660,
+      "version": "1.0.1"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "增加取字结果预览与拾字子模块"
+      "修复结果预览窗口不可见"
     ],
-    "title": "增加取字结果预览与拾字子模块"
+    "title": "修复结果预览窗口不可见"
   },
   "schema": 3,
-  "version": 20260713073136
+  "version": 20260713081751
 }
