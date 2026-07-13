@@ -104,12 +104,7 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
 // ToolHub.js 是 ShortX JS 任务入口和信任根，只检测版本并提示用户手动替换，绝不进入子模块更新事务。
 (function() {
   try {
-    if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
-    var proto = FloatBallAppWM.prototype;
-    if (proto.__toolHubEntryUpdateNoticeBootstrapInstalled === true) return;
-
     var ENTRY_FILE_NAME = "ToolHub.js";
-    var ENTRY_URL = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/main/ToolHub.js";
     var ENTRY_NOTICE_FILE = ".entry_update_notice_version";
 
     function entryVersionNumber(value) {
@@ -157,7 +152,6 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
         sha256: hash,
         size: size,
         manualUpdate: !meta || meta.manualUpdate !== false,
-        url: ENTRY_URL,
         message: "ToolHub 入口文件有更新，请替换 ShortX JS 任务中的 ToolHub.js。"
       };
     }
@@ -174,7 +168,6 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
           TOOLHUB_UPDATE_STATE.entrySize = Number(info.size || 0);
           TOOLHUB_UPDATE_STATE.entryManualUpdate = info.manualUpdate !== false;
           TOOLHUB_UPDATE_STATE.entryMessage = String(info.message || "");
-          TOOLHUB_UPDATE_STATE.entryUrl = String(info.url || ENTRY_URL);
         }
       } catch(eState) {
         try { safeLog(null, 'w', "apply entry update state fail: " + String(eState)); } catch(eLogState) {}
@@ -209,21 +202,6 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
       return false;
     }
 
-    function copyEntryUrl(appObj) {
-      try {
-        var cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
-        cm.setPrimaryClip(android.content.ClipData.newPlainText("ToolHub.js", ENTRY_URL));
-        try {
-          if (appObj && typeof appObj.toast === "function") appObj.toast("入口文件地址已复制");
-          else android.widget.Toast.makeText(context, "入口文件地址已复制", android.widget.Toast.LENGTH_SHORT).show();
-        } catch(eToast) {}
-        return true;
-      } catch(eCopy) {
-        try { safeLog(appObj && appObj.L ? appObj.L : null, 'w', "copy entry url fail: " + String(eCopy)); } catch(eLogCopy) {}
-        return false;
-      }
-    }
-
     function showEntryUpdateToastOnce() {
       var info = applyEntryUpdateState();
       if (!info.available || wasEntryVersionNotified(info.remoteVersion)) return false;
@@ -244,14 +222,6 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
       return false;
     }
 
-    proto.getToolHubEntryUpdateInfo = function() {
-      return applyEntryUpdateState();
-    };
-
-    proto.copyToolHubEntryUrl = function() {
-      return copyEntryUrl(this);
-    };
-
     try {
       if (typeof checkToolHubModuleUpdatesNow === "function" && checkToolHubModuleUpdatesNow.__entryUpdateWrapped !== true) {
         var oldCheckToolHubModuleUpdatesNow = checkToolHubModuleUpdatesNow;
@@ -264,10 +234,14 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
               result.entryLocalVersion = info.localVersion;
               result.entryRemoteVersion = info.remoteVersion;
               result.entryManualUpdate = true;
-              result.entryUrl = info.url;
               result.msg = Number(result.count || 0) > 0
                 ? String(result.msg || "") + " 入口文件也有更新，需手动替换。"
                 : "发现 ToolHub 入口文件更新，请手动替换 ShortX 任务中的 ToolHub.js。";
+              try {
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(new java.lang.Runnable({
+                  run: function() { showEntryUpdateToastOnce(); }
+                }));
+              } catch(ePostNotice) {}
             }
           } catch(eRet) {}
           return result;
@@ -279,145 +253,11 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
       try { safeLog(null, 'w', "wrap update check for entry fail: " + String(eWrapCheck)); } catch(eLogWrap) {}
     }
 
-    function installEntryUpdateUiPatch() {
-      try {
-        if (proto.__toolHubEntryUpdateNoticeUiInstalled === true) return true;
-        if (typeof proto.getToolHubUpdateState !== "function" ||
-            typeof proto.getToolHubUpdateVisual !== "function" ||
-            typeof proto.createToolHubUpdateDetailBox !== "function") return false;
-
-        var oldGetToolHubUpdateState = proto.getToolHubUpdateState;
-        proto.getToolHubUpdateState = function() {
-          var state = oldGetToolHubUpdateState.call(this);
-          var info = applyEntryUpdateState();
-          if (!state) state = {};
-          state.entryUpdateAvailable = info.available === true;
-          state.entryLocalVersion = Number(info.localVersion || 0);
-          state.entryRemoteVersion = Number(info.remoteVersion || 0);
-          state.entryName = String(info.name || ENTRY_FILE_NAME);
-          state.entrySha256 = String(info.sha256 || "");
-          state.entrySize = Number(info.size || 0);
-          state.entryManualUpdate = true;
-          state.entryMessage = String(info.message || "");
-          state.entryUrl = String(info.url || ENTRY_URL);
-          return state;
-        };
-
-        var oldGetToolHubUpdateVisual = proto.getToolHubUpdateVisual;
-        proto.getToolHubUpdateVisual = function(updateState, T, isDark) {
-          var visual = oldGetToolHubUpdateVisual.call(this, updateState, T, isDark);
-          var entryAvailable = updateState && updateState.entryUpdateAvailable === true;
-          if (!entryAvailable || !visual) return visual;
-          var statusName = String(updateState.status || "unknown");
-          if (statusName === "error" || statusName === "checking" || statusName === "installing" ||
-              statusName === "restarting" || (statusName === "updated" && updateState.needRestart === true)) return visual;
-          var C = this.ui && this.ui.colors ? this.ui.colors : {};
-          var warningColor = T.warning || C.warning || android.graphics.Color.parseColor(isDark ? "#FBBF24" : "#B45309");
-          visual.icon = "↑";
-          visual.iconColor = warningColor;
-          visual.labelColor = T.onSurface;
-          visual.detailColor = T.onSurface2;
-          visual.bg = T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12);
-          visual.stroke = this.withAlpha(warningColor, isDark ? 0.30 : 0.20);
-          if (statusName === "available" && Number(updateState.availableCount || 0) > 0) {
-            visual.label = "模块和入口均有更新";
-            visual.sub = String(updateState.availableCount) + "项+入口";
-          } else {
-            visual.label = "入口文件有更新";
-            visual.sub = "手动替换";
-          }
-          return visual;
-        };
-
-        var oldCreateToolHubUpdateDetailBox = proto.createToolHubUpdateDetailBox;
-        proto.createToolHubUpdateDetailBox = function() {
-          var self = this;
-          var box = oldCreateToolHubUpdateDetailBox.call(this);
-          var updateState = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
-          if (!box || !updateState || updateState.entryUpdateAvailable !== true) return box;
-          try {
-            var isDark = this.isDarkTheme();
-            var T = this.getSettingsColorScheme();
-            var C = this.ui && this.ui.colors ? this.ui.colors : {};
-            var warningColor = T.warning || C.warning || android.graphics.Color.parseColor(isDark ? "#FBBF24" : "#B45309");
-            var card = new android.widget.LinearLayout(context);
-            card.setOrientation(android.widget.LinearLayout.VERTICAL);
-            card.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
-            card.setBackground(this.ui.createStrokeDrawable(
-              T.warningContainer || this.withAlpha(warningColor, isDark ? 0.18 : 0.10),
-              this.withAlpha(warningColor, isDark ? 0.42 : 0.28),
-              this.dp(1), this.dp(16)
-            ));
-
-            var title = new android.widget.TextView(context);
-            title.setText("入口文件需要手动替换");
-            title.setTextColor(T.onSurface);
-            title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-            title.setTypeface(null, android.graphics.Typeface.BOLD);
-            card.addView(title, new android.widget.LinearLayout.LayoutParams(-1, -2));
-
-            var versionText = new android.widget.TextView(context);
-            versionText.setText(
-              String(updateState.entryName || ENTRY_FILE_NAME) + "  " +
-              String(updateState.entryLocalVersion || 0) + " → " +
-              String(updateState.entryRemoteVersion || 0)
-            );
-            versionText.setTextColor(T.onSurface2);
-            versionText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-            versionText.setPadding(0, this.dp(5), 0, 0);
-            card.addView(versionText, new android.widget.LinearLayout.LayoutParams(-1, -2));
-
-            var desc = new android.widget.TextView(context);
-            desc.setText("入口文件是 ShortX 任务中的信任根，不会自动覆盖。请复制最新版 ToolHub.js 的完整内容并替换当前入口代码。");
-            desc.setTextColor(T.onSurface2);
-            desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-            desc.setLineSpacing(this.dp(1), 1.05);
-            desc.setPadding(0, this.dp(5), 0, 0);
-            card.addView(desc, new android.widget.LinearLayout.LayoutParams(-1, -2));
-
-            var copyButton = this.ui.createSolidButton(this, "复制入口地址", warningColor, T.onPrimary, function() {
-              copyEntryUrl(self);
-            });
-            try { copyButton.setContentDescription("复制最新版 ToolHub.js 地址"); } catch(eDescButton) {}
-            var buttonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(46));
-            buttonLp.setMargins(0, this.dp(10), 0, 0);
-            card.addView(copyButton, buttonLp);
-
-            var cardLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-            cardLp.setMargins(0, this.dp(10), 0, 0);
-            box.addView(card, cardLp);
-          } catch(eCard) {
-            try { safeLog(this.L, 'w', "render entry update card fail: " + String(eCard)); } catch(eLogCard) {}
-          }
-          return box;
-        };
-
-        proto.__toolHubEntryUpdateNoticeUiInstalled = true;
-        return true;
-      } catch(eInstallUi) {
-        try { safeLog(null, 'w', "install entry update ui patch fail: " + String(eInstallUi)); } catch(eLogInstallUi) {}
-      }
-      return false;
-    }
-
-    proto.__toolHubEntryUpdateNoticeBootstrapInstalled = true;
     applyEntryUpdateState();
-
     try {
-      new java.lang.Thread(new java.lang.Runnable({
-        run: function() {
-          var installed = false;
-          for (var retryIndex = 0; retryIndex < 12; retryIndex++) {
-            installed = installEntryUpdateUiPatch();
-            if (installed) break;
-            try { java.lang.Thread.sleep(400); } catch(eRetrySleep) {}
-          }
-          try {
-            var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-            mainHandler.postDelayed(new java.lang.Runnable({ run: function() { showEntryUpdateToastOnce(); } }), 1200);
-          } catch(eNoticePost) {}
-        }
-      }), "ToolHub-EntryUpdateNotice").start();
+      new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new java.lang.Runnable({
+        run: function() { showEntryUpdateToastOnce(); }
+      }), 1200);
     } catch(eSchedule) {
       try { safeLog(null, 'w', "schedule entry update notice fail: " + String(eSchedule)); } catch(eLogSchedule) {}
     }
