@@ -4,12 +4,19 @@ on:
   push:
     branches:
       - docs/readme-entry-update-record-20260714
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.head_ref == 'docs/readme-entry-update-record-20260714' || github.ref_name == 'docs/readme-entry-update-record-20260714'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
