@@ -13,7 +13,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
   var PT = this.getIslandPickerTheme ? this.getIslandPickerTheme() : null;
   var isDark = PT ? PT.isDark : this.isDarkTheme();
   var C = this.ui.colors;
-  var T = PT ? PT.T : this.getAnimalIslandTheme();
+  var T = PT ? PT.T : this.getSettingsColorScheme();
   var textColor = PT ? PT.text : (isDark ? C.textPriDark : C.textPriLight);
   var subTextColor = PT ? PT.sub : (isDark ? C.textSecDark : C.textSecLight);
 

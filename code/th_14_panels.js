@@ -222,7 +222,7 @@ FloatBallAppWM.prototype.createPointerSettingsBlockDesc = function(parent, block
   try {
     var isDark = this.isDarkTheme();
     var C = this.ui.colors;
-    var T = this.getAnimalIslandTheme();
+    var T = this.getSettingsColorScheme();
     var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
     this.applySettingsTheme(T, isDark, C, cfgTpl);
     var tv = new android.widget.TextView(context);
@@ -276,7 +276,7 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   try { this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) {}
   var tabs = this.getBallSettingsSubtabs ? this.getBallSettingsSubtabs() : [];
@@ -364,7 +364,7 @@ FloatBallAppWM.prototype.getSettingsHomeIcon = function(title) {
 FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function(parent, icon, title) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
   var row = new android.widget.LinearLayout(context);
@@ -393,7 +393,7 @@ FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function(parent, icon
 FloatBallAppWM.prototype.getIslandPickerTheme = function() {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = null;
   try { cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config; } catch(eCfg) { cfgTpl = this.config; }
   try { this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) {}
@@ -418,7 +418,7 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
   var useMonet = this.isSettingsMonetTheme ? this.isSettingsMonetTheme(cfgTpl) : false;
@@ -635,7 +635,7 @@ FloatBallAppWM.prototype.getToolHubUpdateVisual = function(updateState, T, isDar
 FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, onToggle) {
   var self = this;
   var isDark = this.isDarkTheme();
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var C = this.ui.colors;
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
@@ -901,7 +901,7 @@ FloatBallAppWM.prototype.startToolHubRestartFromSettings = function(anchorView) 
 FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   var self = this;
   var isDark = this.isDarkTheme();
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var C = this.ui.colors;
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
@@ -1019,7 +1019,7 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
 FloatBallAppWM.prototype.createSettingsConfigStatusPill = function(statusLabel, statusValue, statusBg, statusStroke, statusValueColor, compact) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
   var pill = new android.widget.LinearLayout(context);
@@ -1064,7 +1064,7 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
   var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
@@ -1219,7 +1219,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
   var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
@@ -1389,7 +1389,7 @@ FloatBallAppWM.prototype.buildSettingsRouteDetailPane = function(route, title, d
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
   var root = new android.widget.LinearLayout(context);
@@ -1434,7 +1434,7 @@ FloatBallAppWM.prototype.createSettingsMasterMenuItem = function(parent, cat, se
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
   var row = new android.widget.LinearLayout(context);
@@ -1491,7 +1491,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   this.applySettingsTheme(T, isDark, C, cfgTpl);
   var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
@@ -1801,7 +1801,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
 
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
 
   // 设置页主题切换：animal（默认动物岛风）或 monet（系统莫奈色）
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
@@ -2038,7 +2038,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var PT = this.getIslandPickerTheme ? this.getIslandPickerTheme() : null;
   var isDark = PT ? PT.isDark : this.isDarkTheme();
   var C = this.ui.colors;
-  var T = PT ? PT.T : this.getAnimalIslandTheme();
+  var T = PT ? PT.T : this.getSettingsColorScheme();
   var wm = this.state.wm;
 
   var dm = context.getResources().getDisplayMetrics();

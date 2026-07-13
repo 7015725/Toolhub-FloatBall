@@ -3,7 +3,7 @@
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme ? this.getAnimalIslandTheme() : null;
+  var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
   try { if (this.applySettingsTheme && T) this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
   var color = T ? T.primary : C.primary;
 
@@ -91,7 +91,7 @@ FloatBallAppWM.prototype.refreshSettingColorPreviewView = function(v, hex, strok
 FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivider) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme ? this.getAnimalIslandTheme() : null;
+  var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
   try { if (this.applySettingsTheme && T) this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
   var textColor = T ? T.text : (isDark ? C.textPriDark : C.textPriLight);
   var secColor = T ? T.sub : (isDark ? C.textSecDark : C.textSecLight);
