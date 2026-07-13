@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -641,15 +641,6 @@ var MonetColorProvider = {
     this._cacheDark = null;
   }
 };
-
-// =======================【兼容兜底：themeTextInt/themeBgInt】======================
-// 这段代码的主要内容/用途：兼容旧代码或异步回调里误引用 themeTextInt/themeBgInt 导致 ReferenceError 崩溃。
-// 说明：当前版本文字色应通过 getPanelTextColorInt(bgInt) 获取；这里仅作为"兜底全局变量"，避免回调炸线程。
-
-// 声明全局变量（避免 ReferenceError）
-var themeBgInt = 0;
-var themeTextInt = 0;
-
 // =======================【API 兼容性辅助函数】======================
 // 这段代码的主要内容/用途：处理 Android API 级别差异，避免在旧版本上崩溃
 
@@ -901,30 +892,6 @@ FloatBallAppWM.prototype.updateBallContentBackground = function(contentView, use
     ));
    } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 };
-
-
-FloatBallAppWM.prototype.safeParseColor = function(hex, fallbackInt) {
-  // 这段代码的主要内容/用途：安全解析 #RRGGBB/#AARRGGBB，解析失败直接回退，避免 system_server 抛异常。
-  try { return android.graphics.Color.parseColor(String(hex)); } catch (e) { return fallbackInt; }
-};
-
-
-
-FloatBallAppWM.prototype.getPanelBgColorInt = function() {
-  var scheme = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
-  var base = scheme && scheme.background
-    ? scheme.background
-    : (this.isDarkTheme()
-        ? (this.ui.colors.bgDark || android.graphics.Color.parseColor("#131314"))
-        : (this.ui.colors.bgLight || android.graphics.Color.parseColor("#F8F9FA")));
-
-  var alpha = 1.0;
-  try { alpha = Number(this.config.PANEL_BG_ALPHA); } catch(eAlpha) { alpha = 0.85; }
-  if (!(alpha >= 0.1 && alpha <= 1.0)) alpha = 0.85;
-
-  return this.withAlpha(base, alpha);
-};
-
 FloatBallAppWM.prototype.getPanelTextColorInt = function(bgInt) {
   var scheme = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
   if (scheme && scheme.onBackground) return scheme.onBackground;
@@ -976,8 +943,6 @@ FloatBallAppWM.prototype.updatePanelBackground = function(panelView) {
       bg.setStroke(this.dp(1), this.withAlpha(strokeBase, isDark ? 0.28 : 0.22));
     } catch(eStroke) { safeLog(null, 'e', "catch " + String(eStroke)); }
     panelView.setBackground(bg);
-
-    try { themeBgInt = bgInt; themeTextInt = textInt; } catch(eCompat) {}
 
     // 设置页子控件已使用语义色，不再递归覆盖状态色；旧主面板/查看器保留兼容兜底。
     var preserveSemanticColors = false;

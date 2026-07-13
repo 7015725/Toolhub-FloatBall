@@ -1,4 +1,4 @@
-// @version 1.1.5
+// @version 1.1.6
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -67,6 +67,56 @@ function parseBooleanLike(value) {
   return !!value;
 }
 
+// 第四阶段：仅保留迁移识别表，不再作为可用配置。
+var DEPRECATED_THEME_CONFIG_KEYS = {
+  SETTINGS_THEME: true,
+  THEME_MODE: true,
+  THEME_ACCENT_LIGHT: true,
+  THEME_ACCENT_DARK: true,
+  THEME_DAY_BG_HEX: true,
+  THEME_DAY_TEXT_HEX: true,
+  THEME_NIGHT_BG_HEX: true,
+  THEME_NIGHT_TEXT_HEX: true
+};
+
+function isDeprecatedThemeConfigKey(key) {
+  return DEPRECATED_THEME_CONFIG_KEYS[String(key || "")] === true;
+}
+
+function stripDeprecatedThemeSchemaItems(value) {
+  var changed = false;
+
+  function clean(node) {
+    if (Object.prototype.toString.call(node) === "[object Array]") {
+      var outArr = [];
+      for (var i = 0; i < node.length; i++) {
+        var item = node[i];
+        if (item && typeof item === "object" &&
+            Object.prototype.toString.call(item) !== "[object Array]" &&
+            isDeprecatedThemeConfigKey(item.key)) {
+          changed = true;
+          continue;
+        }
+        outArr.push(clean(item));
+      }
+      return outArr;
+    }
+
+    if (node && typeof node === "object") {
+      var outObj = {};
+      for (var k in node) {
+        if (!node.hasOwnProperty(k)) continue;
+        outObj[k] = clean(node[k]);
+      }
+      return outObj;
+    }
+
+    return node;
+  }
+
+  return { value: clean(value), changed: changed };
+}
+
 // # 配置校验层：防止用户手动编辑 JSON 导致崩溃
 var ConfigValidator = {
   schemas: {
@@ -93,8 +143,6 @@ var ConfigValidator = {
     PANEL_ITEM_SIZE_DP: { type: "int", min: 48, max: 120, default: 64 },
     PANEL_GAP_DP: { type: "int", min: 4, max: 24, default: 8 },
     PANEL_PADDING_DP: { type: "int", min: 8, max: 32, default: 12 },
-
-    // 主题配置
 
     // 图标配置
     BALL_ICON_TYPE: { type: "enum", values: ["app", "file", "android", "shortx"], default: "app" },
@@ -188,7 +236,6 @@ var ConfigValidator = {
     PANEL_LABEL_TEXT_SIZE_SP: { type: "int", min: 8, max: 24, default: 12 },
     PANEL_LABEL_TOP_MARGIN_DP: { type: "int", min: 0, max: 20, default: 4 },
 
-    // 主题颜色配置（留空则使用系统莫奈色）
   },
 
   validate: function(key, value) {
@@ -229,6 +276,7 @@ var ConfigValidator = {
   sanitizeConfig: function(config) {
     var out = {};
     for (var k in config) {
+      if (isDeprecatedThemeConfigKey(k)) continue;
       var res = this.validate(k, config[k]);
       if (res.valid) {
         out[k] = res.value;
@@ -986,21 +1034,14 @@ var ConfigManager = {
     // 这解决了脚本更新后，旧的 schema.json 缓存导致新开关不显示的问题
     var needReset = false;
     if (s) {
-        var sStr = JSON.stringify(s);
-        var deprecatedThemeSchemaKeys = [
-            "SETTINGS_THEME",
-            "THEME_MODE",
-            "THEME_DAY_BG_HEX",
-            "THEME_DAY_TEXT_HEX",
-            "THEME_NIGHT_BG_HEX",
-            "THEME_NIGHT_TEXT_HEX"
-        ];
-        for (var dtk = 0; dtk < deprecatedThemeSchemaKeys.length; dtk++) {
-            if (sStr.indexOf("\"" + deprecatedThemeSchemaKeys[dtk] + "\"") >= 0) {
-                needReset = true;
-                break;
-            }
+        var deprecatedSchemaCleanup = stripDeprecatedThemeSchemaItems(s);
+        if (deprecatedSchemaCleanup.changed) {
+            s = deprecatedSchemaCleanup.value;
+            try {
+                FileIO.writeTextAtomic(PATH_SCHEMA, JSON.stringify(s, null, 2));
+            } catch (eDeprecatedSchemaWrite) {}
         }
+        var sStr = JSON.stringify(s);
         if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_X_DP") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 || sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_RESULT_PREVIEW_TIMEOUT_SEC") < 0 || sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HIT_HEX") < 0 || sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_COLOR_AREA_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
             needReset = true;
         }

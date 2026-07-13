@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // ToolHub - 设置结构编辑器模块
 // 依赖：th_14_panels.js 的设置页主题/基础 UI，th_05_persistence.js 的 ConfigManager。
 // 加载顺序：th_14_panels.js 之后，th_15_extra.js 之前。
@@ -19,14 +19,14 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
 
-  var bgColor = T && T.bg ? T.bg : (isDark ? C.bgDark : C.bgLight);
-  var cardColor = T && T.card ? T.card : (isDark ? C.cardDark : C.cardLight);
-  var textColor = T && T.text ? T.text : (isDark ? C.textPriDark : C.textPriLight);
-  var subTextColor = T && T.sub ? T.sub : (isDark ? C.textSecDark : C.textSecLight);
+  var bgColor = T && T.background ? T.background : (isDark ? C.bgDark : C.bgLight);
+  var cardColor = T && T.surface ? T.surface : (isDark ? C.cardDark : C.cardLight);
+  var textColor = T && T.onSurface ? T.onSurface : (isDark ? C.textPriDark : C.textPriLight);
+  var subTextColor = T && T.onSurface2 ? T.onSurface2 : (isDark ? C.textSecDark : C.textSecLight);
   var primaryColor = T && T.primary ? T.primary : C.primary;
-  var primaryDeep = T && T.primaryDeep ? T.primaryDeep : C.primary;
-  var primarySoft = T && T.primarySoft ? T.primarySoft : self.withAlpha(primaryColor, isDark ? 0.22 : 0.12);
-  var strokeColor = T && T.stroke ? T.stroke : (isDark ? C.dividerDark : C.dividerLight);
+  var primaryDeep = T && T.primary ? T.primary : C.primary;
+  var primarySoft = T && T.primaryContainer ? T.primaryContainer : self.withAlpha(primaryColor, isDark ? 0.22 : 0.12);
+  var strokeColor = T && T.outlineVariant ? T.outlineVariant : (isDark ? C.dividerDark : C.dividerLight);
   var inputBgColor = isDark ? C.inputBgDark : C.inputBgLight;
   var dangerColor = C.danger || C.error || 0xffd32f2f;
 

@@ -1,4 +1,4 @@
-// @version 2.0.1
+// @version 2.0.2
 
 // =======================【配置存储：完全结构化 SQLite】=======================
 // 说明：数据库只保存原子字段和关系，不保存 JSON 文档；JSON 仅作为现有 ConfigManager
@@ -18,6 +18,7 @@
     var StructuredStore = {
       dbPath: APP_ROOT_DIR + "/toolhub.db",
       storageFormatVersion: 2,
+      deprecatedThemeCleanupVersion: 1,
       _timer: null,
       _jobs: {},
       _jobLock: new java.util.concurrent.locks.ReentrantLock(),
@@ -480,9 +481,76 @@
         return allOk;
       },
 
+      deprecatedThemeKeys: function() {
+        var out = [];
+        try {
+          for (var key in DEPRECATED_THEME_CONFIG_KEYS) {
+            if (DEPRECATED_THEME_CONFIG_KEYS.hasOwnProperty(key) &&
+                DEPRECATED_THEME_CONFIG_KEYS[key] === true) {
+              out.push(String(key));
+            }
+          }
+        } catch (e) {}
+        return out;
+      },
+
+      cleanupDeprecatedThemeData: function(db) {
+        var targetVersion = Number(this.deprecatedThemeCleanupVersion || 1);
+        var currentVersion = Number(this.getMeta(db, "deprecated_theme_cleanup_version") || 0);
+        if (currentVersion >= targetVersion) return true;
+
+        var keys = this.deprecatedThemeKeys();
+        var inTransaction = false;
+        var marked = false;
+        var committed = false;
+
+        try {
+          db.beginTransaction();
+          inTransaction = true;
+
+          for (var i = 0; i < keys.length; i++) {
+            db.delete(
+              "toolhub_settings",
+              "setting_key=?",
+              this.stringArgs([keys[i]])
+            );
+          }
+
+          var schema = this.readSchemaInDb(db);
+          if (this.isArray(schema)) {
+            var cleanedSchema = stripDeprecatedThemeSchemaItems(schema);
+            if (cleanedSchema.changed) {
+              this.replaceSchemaInDb(db, cleanedSchema.value);
+            }
+          }
+
+          this.putMeta(db, "deprecated_theme_cleanup_version", String(targetVersion));
+          this.putMeta(db, "deprecated_theme_cleanup_at", String(java.lang.System.currentTimeMillis()));
+          db.setTransactionSuccessful();
+          marked = true;
+        } catch (e) {
+          this._lastDbError = "cleanupDeprecatedThemeData: " + String(e);
+          this._lastError = this._lastDbError;
+        } finally {
+          if (inTransaction) {
+            try {
+              db.endTransaction();
+              if (marked) committed = true;
+            } catch (eEnd) {
+              committed = false;
+              this._lastDbError = "cleanupDeprecatedThemeData endTransaction: " + String(eEnd);
+              this._lastError = this._lastDbError;
+            }
+          }
+        }
+
+        return committed;
+      },
+
       migrateIfNeeded: function(db) {
         var current = this.getMeta(db, "storage_format_version");
         if (String(current || "") === String(this.storageFormatVersion)) {
+          if (!this.cleanupDeprecatedThemeData(db)) return false;
           if (!this._legacyFilesRemoved) this.cleanupLegacyFiles();
           return true;
         }
@@ -523,6 +591,7 @@
         }
 
         if (!committed) return false;
+        if (!this.cleanupDeprecatedThemeData(db)) return false;
         this._migrationSource = settingsSource.source + "," + buttonsSource.source + "," + schemaSource.source;
         try {
           db.execSQL("VACUUM");

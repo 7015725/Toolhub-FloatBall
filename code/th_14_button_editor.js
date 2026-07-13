@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -29,9 +29,9 @@ FloatBallAppWM.prototype.createButtonManagerActionChip = function(text, textColo
   tv.setPadding(this.dp(10), 0, this.dp(10), 0);
   try {
     var bg = new android.graphics.drawable.GradientDrawable();
-    bg.setColor(this.withAlpha(T.primarySoft, this.isDarkTheme() ? 0.62 : 0.95));
+    bg.setColor(this.withAlpha(T.primaryContainer, this.isDarkTheme() ? 0.62 : 0.95));
     bg.setCornerRadius(this.dp(14));
-    bg.setStroke(this.dp(1), strokeColor || this.withAlpha(T.primaryDeep, 0.32));
+    bg.setStroke(this.dp(1), strokeColor || this.withAlpha(T.primary, 0.32));
     tv.setBackground(bg);
     try { tv.setElevation(this.dp(1)); } catch(eElev) {}
   } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
@@ -116,15 +116,15 @@ FloatBallAppWM.prototype.createButtonManagerStatusChip = function(enabled, onCli
   tv.setGravity(android.view.Gravity.CENTER);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tv.setTypeface(null, android.graphics.Typeface.BOLD);
-  tv.setTextColor(ok ? T.primaryDeep : C.warning);
+  tv.setTextColor(ok ? T.primary : C.warning);
   try { tv.setMinHeight(this.dp(48)); tv.setMinimumHeight(this.dp(48)); } catch(eMinH) {}
   try { tv.setMinWidth(this.dp(58)); tv.setMinimumWidth(this.dp(58)); } catch(eMinW) {}
   try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
   try { tv.setContentDescription(ok ? "已启用，点击暂停" : "已暂停，点击启用"); } catch(eDesc) {}
   tv.setPadding(this.dp(10), 0, this.dp(10), 0);
   try {
-    var bgColor = ok ? this.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.12) : this.withAlpha(C.warning, isDark ? 0.20 : 0.12);
-    var strokeColor = ok ? this.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.24) : this.withAlpha(C.warning, isDark ? 0.40 : 0.28);
+    var bgColor = ok ? this.withAlpha(T.primary, isDark ? 0.18 : 0.12) : this.withAlpha(C.warning, isDark ? 0.20 : 0.12);
+    var strokeColor = ok ? this.withAlpha(T.primary, isDark ? 0.34 : 0.24) : this.withAlpha(C.warning, isDark ? 0.40 : 0.28);
     tv.setBackground(this.ui.createStrokeDrawable(bgColor, strokeColor, this.dp(1), this.dp(16)));
   } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
   if (onClickFn) {
@@ -141,7 +141,7 @@ FloatBallAppWM.prototype.createButtonManagerMoreButton = function(onClickFn) {
   tv.setText("⋮");
   tv.setGravity(android.view.Gravity.CENTER);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
-  tv.setTextColor(T.sub);
+  tv.setTextColor(T.onSurface2);
   try { tv.setMinHeight(this.dp(48)); tv.setMinimumHeight(this.dp(48)); } catch(eMinH) {}
   try { tv.setMinWidth(this.dp(48)); tv.setMinimumWidth(this.dp(48)); } catch(eMinW) {}
   try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
@@ -220,7 +220,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     box.setOrientation(android.widget.LinearLayout.VERTICAL);
     box.setPadding(this.dp(8), this.dp(8), this.dp(8), this.dp(8));
     try {
-      var bg = this.ui.createStrokeDrawable(isDark ? C.cardDark : C.cardLight, this.withAlpha(T.stroke, isDark ? 0.28 : 0.38), this.dp(1), this.dp(18));
+      var bg = this.ui.createStrokeDrawable(isDark ? C.cardDark : C.cardLight, this.withAlpha(T.outlineVariant, isDark ? 0.28 : 0.38), this.dp(1), this.dp(18));
       box.setBackground(bg);
       try { box.setElevation(this.dp(10)); } catch(eElev) {}
       try { box.setClipToOutline(true); } catch(eClipOutline) {}
@@ -232,7 +232,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     headerBox.setPadding(this.dp(10), 0, this.dp(10), this.dp(6));
     var titleTv = new android.widget.TextView(context);
     titleTv.setText(String(btnCfg.title || "管理工具"));
-    titleTv.setTextColor(T.text);
+    titleTv.setTextColor(T.onSurface);
     titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
     titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
     titleTv.setSingleLine(true);
@@ -241,7 +241,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     headerBox.addView(titleTv);
     var subTv = new android.widget.TextView(context);
     subTv.setText("更多操作");
-    subTv.setTextColor(T.sub);
+    subTv.setTextColor(T.onSurface2);
     subTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
     subTv.setSingleLine(true);
     try { subTv.setIncludeFontPadding(false); } catch(eSubPad) {}
@@ -251,7 +251,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     box.addView(headerBox, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, headerH));
 
     var divider = new android.view.View(context);
-    divider.setBackgroundColor(this.withAlpha(T.stroke, isDark ? 0.24 : 0.30));
+    divider.setBackgroundColor(this.withAlpha(T.outlineVariant, isDark ? 0.24 : 0.30));
     var dividerLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1);
     dividerLp.setMargins(this.dp(6), 0, this.dp(6), this.dp(4));
     box.addView(divider, dividerLp);
@@ -263,7 +263,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
         row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
         row.setGravity(android.view.Gravity.CENTER_VERTICAL);
         row.setPadding(self.dp(10), 0, self.dp(10), 0);
-        var rowColor = menuItem.danger ? C.danger : T.primaryDeep;
+        var rowColor = menuItem.danger ? C.danger : T.primary;
         try { row.setMinHeight(rowH); row.setMinimumHeight(rowH); } catch(eRowH) {}
         try { row.setContentDescription(String(menuItem.label || "")); } catch(eDesc) {}
         try {
@@ -298,7 +298,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
         var hintTv = new android.widget.TextView(context);
         hintTv.setText(String(menuItem.hint || ""));
         hintTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-        hintTv.setTextColor(menuItem.enabled ? T.sub : self.withAlpha(T.sub, 0.38));
+        hintTv.setTextColor(menuItem.enabled ? T.onSurface2 : self.withAlpha(T.onSurface2, 0.38));
         hintTv.setSingleLine(true);
         try { hintTv.setIncludeFontPadding(false); } catch(eHintPad) {}
         var hintLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -359,7 +359,7 @@ FloatBallAppWM.prototype.showButtonManagerActionSheet = function(opts) {
       builder: function(content, closePopup) {
         var desc = new android.widget.TextView(context);
         desc.setText(buttonName);
-        desc.setTextColor(self.getSettingsColorScheme().sub);
+        desc.setTextColor(self.getSettingsColorScheme().onSurface2);
         desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
         desc.setSingleLine(true);
         desc.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -391,13 +391,13 @@ FloatBallAppWM.prototype.showButtonManagerActionSheet = function(opts) {
         var C2 = self.ui.colors;
         var canUp = idx > 0;
         var canDown = idx < buttons.length - 1;
-        addActionRow("上移", T2.primaryDeep, canUp, function() {
+        addActionRow("上移", T2.primary, canUp, function() {
           if (swap(idx, idx - 1)) changed("已上移，点保存布置生效", "ok");
         });
-        addActionRow("下移", T2.primaryDeep, canDown, function() {
+        addActionRow("下移", T2.primary, canDown, function() {
           if (swap(idx, idx + 1)) changed("已下移，点保存布置生效", "ok");
         });
-        addActionRow("复制", T2.primaryDeep, true, function() {
+        addActionRow("复制", T2.primary, true, function() {
           try {
             var copy = JSON.parse(JSON.stringify(buttons[idx] || {}));
             copy.title = String(copy.title || "工具") + " 副本";
@@ -444,7 +444,7 @@ FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent,
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
   card.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
-  card.setBackground(this.ui.createStrokeDrawable(T.card, this.withAlpha(T.stroke, isDark ? 0.30 : 0.46), this.dp(1), this.dp(18)));
+  card.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.outlineVariant, isDark ? 0.30 : 0.46), this.dp(1), this.dp(18)));
   try { card.setElevation(this.dp(2)); } catch(eCardElev) {}
 
   var header = new android.widget.LinearLayout(context);
@@ -454,14 +454,14 @@ FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent,
   titleBox.setOrientation(android.widget.LinearLayout.VERTICAL);
   var tv = new android.widget.TextView(context);
   tv.setText(String(title || ""));
-  tv.setTextColor(T.text);
+  tv.setTextColor(T.onSurface);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
   tv.setTypeface(null, android.graphics.Typeface.BOLD);
   titleBox.addView(tv);
   if (desc) {
     var dv = new android.widget.TextView(context);
     dv.setText(String(desc));
-    dv.setTextColor(T.sub);
+    dv.setTextColor(T.onSurface2);
     dv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
     dv.setPadding(0, this.dp(3), this.dp(8), 0);
     titleBox.addView(dv);
@@ -471,7 +471,7 @@ FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent,
   header.addView(titleBox, titleLp);
   var toggleTv = new android.widget.TextView(context);
   toggleTv.setText(expanded ? "折叠 ▲" : "展开 ▼");
-  toggleTv.setTextColor(T.primaryDeep);
+  toggleTv.setTextColor(T.primary);
   toggleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   toggleTv.setTypeface(null, android.graphics.Typeface.BOLD);
   header.addView(toggleTv);
@@ -520,12 +520,12 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   var T = this.getSettingsColorScheme();
 
   // 颜色配置
-  var bgColor = T.bg;
-  var cardColor = T.card;
-  var textColor = T.text;
-  var subTextColor = T.sub;
-  var dividerColor = T.stroke;
-  var inputBgColor = T.card2;
+  var bgColor = T.background;
+  var cardColor = T.surface;
+  var textColor = T.onSurface;
+  var subTextColor = T.onSurface2;
+  var dividerColor = T.outlineVariant;
+  var inputBgColor = T.surface2;
 
   var panel = this.ui.createStyledPanel(this, 16);
   try { panel.setBackground(this.ui.createRoundDrawable(bgColor, this.dp(18))); } catch(ePanelBg) {}
@@ -558,9 +558,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
       var n = self.state.buttonEditorNotice;
       if (!n || !n.msg) return null;
       var kind = String(n.kind || "info");
-      var color = (kind === "error") ? C.error : (kind === "ok" ? T.primaryDeep : T.primaryDeep);
-      var bg = (kind === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.10);
-      var stroke = (kind === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.22);
+      var color = (kind === "error") ? C.error : (kind === "ok" ? T.primary : T.primary);
+      var bg = (kind === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
+      var stroke = (kind === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
       var box = new android.widget.TextView(context);
       box.setText(String(n.msg));
       box.setTextColor(color);
@@ -582,9 +582,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     try {
       if (!tv) { setButtonEditorNotice(msg, kind); return; }
       var k = String(kind || "info");
-      var color2 = (k === "error") ? C.error : (k === "ok" ? T.primaryDeep : T.primaryDeep);
-      var bg2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.10);
-      var stroke2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primaryDeep, isDark ? 0.34 : 0.22);
+      var color2 = (k === "error") ? C.error : (k === "ok" ? T.primary : T.primary);
+      var bg2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
+      var stroke2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
       tv.setText(String(msg || ""));
       tv.setTextColor(color2);
       tv.setBackground(self.ui.createStrokeDrawable(bg2, stroke2, self.dp(1), self.dp(14)));
@@ -633,7 +633,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     header.addView(self.ui.createSpacer(self));
 
-    var btnSortMode = self.ui.createFlatButton(self, sortMode ? "完成" : "排序", T.primaryDeep, function() {
+    var btnSortMode = self.ui.createFlatButton(self, sortMode ? "完成" : "排序", T.primary, function() {
       self.state.buttonManagerSortMode = !sortMode;
       self.state.btnEditorListScrollY = 0;
       refreshPanel();
@@ -660,7 +660,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var searchSurface = new android.widget.LinearLayout(context);
     searchSurface.setOrientation(android.widget.LinearLayout.VERTICAL);
     searchSurface.setPadding(self.dp(12), self.dp(10), self.dp(12), self.dp(8));
-    searchSurface.setBackground(self.ui.createStrokeDrawable(T.card, self.withAlpha(T.stroke, isDark ? 0.30 : 0.46), self.dp(1), self.dp(18)));
+    searchSurface.setBackground(self.ui.createStrokeDrawable(T.surface, self.withAlpha(T.outlineVariant, isDark ? 0.30 : 0.46), self.dp(1), self.dp(18)));
     var searchRow = new android.widget.LinearLayout(context);
     searchRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     searchRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -668,7 +668,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     var searchInputLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     searchInputLp.weight = 1;
     searchRow.addView(searchInput.view, searchInputLp);
-    var btnSearch = self.createButtonManagerActionChip("搜索", T.primaryDeep, self.withAlpha(T.primaryDeep, 0.32), function() {
+    var btnSearch = self.createButtonManagerActionChip("搜索", T.primary, self.withAlpha(T.primary, 0.32), function() {
       try { self.state.buttonManagerQuery = String(searchInput.getValue ? searchInput.getValue() : ""); } catch(eQ) { self.state.buttonManagerQuery = ""; }
       self.state.btnEditorListScrollY = 0;
       refreshPanel();
@@ -707,7 +707,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
       (function(filterItem) {
         var selected = activeFilter === String(filterItem.key || "all");
         var chipText = selected ? ("✓ " + filterItem.label) : filterItem.label;
-        var chip = self.createButtonManagerActionChip(chipText, selected ? T.primaryDeep : subTextColor, selected ? self.withAlpha(T.primaryDeep, 0.38) : self.withAlpha(subTextColor, 0.20), function() {
+        var chip = self.createButtonManagerActionChip(chipText, selected ? T.primary : subTextColor, selected ? self.withAlpha(T.primary, 0.38) : self.withAlpha(subTextColor, 0.20), function() {
           self.state.buttonManagerFilter = String(filterItem.key || "all");
           self.state.btnEditorListScrollY = 0;
           refreshPanel();
@@ -748,7 +748,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         card.setOrientation(android.widget.LinearLayout.VERTICAL);
         card.setGravity(android.view.Gravity.CENTER_VERTICAL);
         var cardBgColor = cardColor;
-        card.setBackground(self.ui.createStrokeDrawable(cardBgColor, self.withAlpha(T.stroke, isDark ? 0.28 : 0.45), self.dp(1), self.dp(18)));
+        card.setBackground(self.ui.createStrokeDrawable(cardBgColor, self.withAlpha(T.outlineVariant, isDark ? 0.28 : 0.45), self.dp(1), self.dp(18)));
         try { card.setElevation(self.dp(3));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         if (!__enabled) {
             try { card.setAlpha(0.62);  } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
@@ -821,7 +821,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
           sortActions.setOrientation(android.widget.LinearLayout.HORIZONTAL);
           sortActions.setGravity(android.view.Gravity.CENTER_VERTICAL);
           var canUp = (idx > 0);
-          var btnUp = self.createButtonManagerTextAction("↑", canUp ? T.primaryDeep : self.withAlpha(subTextColor, 0.25), canUp ? function() {
+          var btnUp = self.createButtonManagerTextAction("↑", canUp ? T.primary : self.withAlpha(subTextColor, 0.25), canUp ? function() {
               var temp = buttons[idx];
               buttons[idx] = buttons[idx - 1];
               buttons[idx - 1] = temp;
@@ -831,7 +831,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
           try { btnUp.setEnabled(canUp); } catch(eUpEn) {}
           sortActions.addView(btnUp);
           var canDown = (idx < buttons.length - 1);
-          var btnDown = self.createButtonManagerTextAction("↓", canDown ? T.primaryDeep : self.withAlpha(subTextColor, 0.25), canDown ? function() {
+          var btnDown = self.createButtonManagerTextAction("↓", canDown ? T.primary : self.withAlpha(subTextColor, 0.25), canDown ? function() {
               var temp2 = buttons[idx];
               buttons[idx] = buttons[idx + 1];
               buttons[idx + 1] = temp2;

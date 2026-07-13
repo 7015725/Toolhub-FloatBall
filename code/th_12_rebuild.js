@@ -1,4 +1,4 @@
-// @version 1.2.0
+// @version 1.2.1
 // =======================【安全配置安装器】======================
 // 这段代码的主要内容/用途：注入 Shell / Shortcut / Content 加固需要的配置项。
 // Shell 默认 strict；Shortcut 默认仅使用结构化 intentUri，旧 JS 仅允许显式 legacy_js。
@@ -310,27 +310,10 @@
         primaryRepaired: repair.repaired,
         primaryRepairSource: repair.source,
         primaryTextRatio: repair.textRatio,
-        primarySurfaceRatio: repair.surfaceRatio,
+        primarySurfaceRatio: repair.surfaceRatio
 
-        // 第二阶段兼容别名：设置页迁移期间继续满足旧页面字段契约。
-        // 所有别名均来自同一动态语义色 Scheme，不再维护第二套固定配色。
-        bg: background,
-        bg2: surface,
-        leaf: secondary,
-        card: surface,
-        card2: surface2,
-        cream: surface,
-        text: onSurface,
-        sub: onSurface2,
-        brown: onSurface2,
-        primaryDeep: repair.color,
-        primarySoft: primaryContainer,
-        dangerSoft: dangerContainer,
-        stroke: outlineVariant
       };
     };
-
-    // 旧主题接口保持原样；第二阶段由设置页调用点逐步迁移到本 Scheme。
 
     proto.__toolHubSettingsColorSchemeInstalled = true;
   } catch(eInstall) {
