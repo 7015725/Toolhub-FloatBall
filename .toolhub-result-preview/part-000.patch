@@ -1,0 +1,287 @@
+diff --git a/.github/workflows/sign-toolhub.yml b/.github/workflows/sign-toolhub.yml
+index 07f79602626ddd3e14e68a317f464781358fda26..c9b44aace96e7a94a0f9731baeb7c964389a6e5c 100644
+--- a/.github/workflows/sign-toolhub.yml
++++ b/.github/workflows/sign-toolhub.yml
+@@ -184,7 +184,9 @@ jobs:
+ 
+       - name: Verify generated pointer regressions
+         shell: bash
+-        run: python3 scripts/verify_pointer_regressions.py
++        run: |
++          python3 scripts/verify_pointer_regressions.py
++          python3 scripts/verify_result_preview.py
+ 
+       - name: Verify generated manifest signature
+         shell: bash
+diff --git a/.github/workflows/verify.yml b/.github/workflows/verify.yml
+index d7f842dacd1293f165012bc3c177b17ec8a55b52..20752ad159a2a979aa36c343bf9c3989ffbe58c9 100644
+--- a/.github/workflows/verify.yml
++++ b/.github/workflows/verify.yml
+@@ -136,6 +136,7 @@ jobs:
+           python3 scripts/verify_documentation_consistency.py
+           python3 scripts/verify_github_only_source.py
+           python3 scripts/verify_pointer_regressions.py
++          python3 scripts/verify_result_preview.py
+           python3 .github/scripts/verify_manifest_signature.py
+ 
+       - name: Check git whitespace
+diff --git a/ARCHITECTURE.md b/ARCHITECTURE.md
+index b3d9b19dbb379b4e2bebcf0fafb174eee8d4326e..bc858576e91a2ed9d4e37f69de47f15429694e0b 100644
+--- a/ARCHITECTURE.md
++++ b/ARCHITECTURE.md
+@@ -2,7 +2,7 @@
+ 
+ 更新时间：2026-07-13
+ 
+-本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **24 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载。
++本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **26 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
+ 
+ ---
+ 
+@@ -24,7 +24,7 @@ ShortX JS 任务入口
+ - `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
+ - `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
+ - `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
+-- `code/th_*.js`：入口按顺序加载的子模块，当前为 24 个。
++- `code/th_*.js`：入口按顺序加载的子模块，当前为 26 个。
+ 
+ ---
+ 
+@@ -93,7 +93,7 @@ ballRoot / ballContent Touch
+ 
+ ## 3. 模块分层
+ 
+-当前实际加载 24 个子模块，入口 `modules[]` 顺序如下：
++当前实际加载 26 个子模块，入口 `modules[]` 顺序如下：
+ 
+ ```text
+ 基础能力层
+@@ -129,6 +129,10 @@ UI 基础与页面层
+   th_17_pointer.js
+   th_18_pointer_ocr.js
+   th_19_position_state.js
++
++结果与拾字 UI 层
++  th_20_pickword.js
++  th_21_result_preview.js
+ ```
+ 
+ 模块职责：
+@@ -205,6 +209,12 @@ th_18_pointer_ocr.js
+ 
+ th_19_position_state.js
+   悬浮球固定位置状态机、指针布局适配、语义回调会话隔离和尺寸重建事务回滚。
++
++th_20_pickword.js
++  拾字文字选择、复制、翻译、钉屏、放大镜和完整资源清理。
++
++th_21_result_preview.js
++  状态栏下方的两行全自绘结果预览、自动消失、连续结果替换和拾字入口。
+ ```
+ 
+ 说明：
+@@ -337,7 +347,7 @@ UPDATE_SECURITY_MODE = 2
+ ```text
+ shortx.getShortXDir()/ToolHub/
+ ├── code/
+-│   ├── th_01_base.js ... th_19_position_state.js
++│   ├── th_01_base.js ... th_21_result_preview.js
+ │   ├── .installed_manifest.json
+ │   ├── .trusted_manifest_version
+ │   ├── .trusted_sha_<module>
+diff --git a/DEAD_CODE_AUDIT.md b/DEAD_CODE_AUDIT.md
+index 031c820bf1081981e328803dfd8e877060d45c1e..1224d5ad1753d810ff5c2689032d52549dab4821 100644
+--- a/DEAD_CODE_AUDIT.md
++++ b/DEAD_CODE_AUDIT.md
+@@ -9,9 +9,9 @@
+ 
+ ## 扫描摘要
+ 
+-- 加载模块：`24`
+-- 原型方法定义：`374`
+-- 唯一原型方法：`363`
++- 加载模块：`26`
++- 原型方法定义：`384`
++- 唯一原型方法：`373`
+ - 已登记重复方法：`11`
+ - 最终覆盖型候选节点：`0`
+ - 受保护覆盖/包装链：`11`
+diff --git a/ENTRY_SYMBOL_AUDIT.md b/ENTRY_SYMBOL_AUDIT.md
+index 462f31babe4b652a905b7f5a7ff113265aa2e2ac..456ff34cb090ce0d2ed45e86792fd18955f43295 100644
+--- a/ENTRY_SYMBOL_AUDIT.md
++++ b/ENTRY_SYMBOL_AUDIT.md
+@@ -10,7 +10,7 @@
+ ## 扫描摘要
+ 
+ - 入口行数：`1888`
+-- 子模块文件：`24`
++- 子模块文件：`26`
+ - 普通函数定义：`94`
+ - 顶层变量：`29`
+ - 跨模块引用函数：`4`
+diff --git a/MODULE_BOUNDARIES.json b/MODULE_BOUNDARIES.json
+index 98162e1c314bfc3073dc82f237bacea3053d03a4..cd8c0512105dde4196818c24724a1494a7db85c5 100644
+--- a/MODULE_BOUNDARIES.json
++++ b/MODULE_BOUNDARIES.json
+@@ -24,7 +24,19 @@
+     "execButtonAction": "th_11_action.js",
+     "execShellSmart": "th_10_shell.js",
+     "setPendingValue": "th_05_persistence.js",
+-    "applyImmediateEffectsForKey": "th_05_persistence.js"
++    "applyImmediateEffectsForKey": "th_05_persistence.js",
++    "completePointerTextResult": "th_17_pointer.js",
++    "completePointerTextCopy": "th_17_pointer.js",
++    "showPickwordText": "th_20_pickword.js",
++    "isPickwordShowing": "th_20_pickword.js",
++    "hidePickwordWindow": "th_20_pickword.js",
++    "disposePickwordModule": "th_20_pickword.js",
++    "onPickwordConfigurationChanged": "th_20_pickword.js",
++    "publishResultPreview": "th_21_result_preview.js",
++    "dismissResultPreview": "th_21_result_preview.js",
++    "openResultPreviewPrimaryAction": "th_21_result_preview.js",
++    "disposeResultPreview": "th_21_result_preview.js",
++    "onResultPreviewConfigurationChanged": "th_21_result_preview.js"
+   },
+   "duplicateDefinitions": [
+     {
+diff --git a/README.md b/README.md
+index 1d14c2e28400a0fd126e7dc00657dbd3639e54a9..efa62e05c1ee0c38e91c52f419ce0da9b9fa6684 100644
+--- a/README.md
++++ b/README.md
+@@ -114,7 +114,9 @@ shortx.getShortXDir()/
+     │   ├── th_16_entry.js
+     │   ├── th_17_pointer.js
+     │   ├── th_18_pointer_ocr.js
+-    │   └── th_19_position_state.js
++    │   ├── th_19_position_state.js
++    │   ├── th_20_pickword.js
++    │   └── th_21_result_preview.js
+     ├── logs/
+     │   ├── init.log
+     │   └── ShortX_ToolHub_yyyyMMdd.log
+@@ -413,6 +415,8 @@ storage engine=sqlite format=structured backend=sqlite-structured path=... exist
+ | `th_17_pointer.js` | 指针、取字、框选和状态颜色 |
+ | `th_18_pointer_ocr.js` | 截图 OCR 与覆盖层处理 |
+ | `th_19_position_state.js` | 悬浮球固定位置、指针布局与尺寸重建事务回滚 |
++| `th_20_pickword.js` | 拾字文字选择、复制、翻译、钉屏与放大镜 |
++| `th_21_result_preview.js` | 取字和 OCR 顶部两行全自绘结果预览 |
+ 
+ ---
+ 
+diff --git a/STRUCTURE.md b/STRUCTURE.md
+index 07249c88725374cff0455cdcbecc876fd6b02f54..f3621915e7b5ff3c4cf0ec2a41286eb5e60b4f5f 100644
+--- a/STRUCTURE.md
++++ b/STRUCTURE.md
+@@ -67,7 +67,9 @@ Toolhub-FloatBall/
+ │   ├── th_16_entry.js
+ │   ├── th_17_pointer.js
+ │   ├── th_18_pointer_ocr.js
+-│   └── th_19_position_state.js
++│   ├── th_19_position_state.js
++│   ├── th_20_pickword.js
++│   └── th_21_result_preview.js
+ └── scripts/
+     ├── generate_signed_manifest.py
+     ├── verify_module_versions.py
+@@ -77,7 +79,7 @@ Toolhub-FloatBall/
+     └── ... 其他专项回归脚本
+ ```
+ 
+-当前实际加载 **24 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载。
++当前实际加载 **26 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
+ 
+ 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而保留的历史编号；本仓库延续现有文件名，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
+ 
+@@ -150,6 +152,8 @@ shortx.getShortXDir()/ToolHub/
+ │   ├── th_17_pointer.js
+ │   ├── th_18_pointer_ocr.js
+ │   ├── th_19_position_state.js
++│   ├── th_20_pickword.js
++│   ├── th_21_result_preview.js
+ │   ├── .installed_manifest.json
+ │   ├── .trusted_manifest_version
+ │   └── .trusted_sha_<module>
+@@ -233,6 +237,8 @@ th_19_position_state.js
+ | `th_17_pointer.js` | 屏幕指针、悬停取字、取字就绪视觉状态、框选区域、小框回退取字、OCR rect 输出 |
+ | `th_18_pointer_ocr.js` | 框选截图 OCR 处理、截图区域覆盖层、OCR 任务衔接、指针边框颜色状态补充 |
+ | `th_19_position_state.js` | 固定位置状态机、指针布局、语义会话隔离和悬浮球尺寸重建回滚 |
++| `th_20_pickword.js` | 拾字文字选择、复制、翻译、钉屏、放大镜及其生命周期清理 |
++| `th_21_result_preview.js` | 顶部两行全自绘结果预览、倒计时、动效与拾字入口 |
+ 
+ ---
+ 
+@@ -555,7 +561,7 @@ schema: 3
+ version: 以当前 manifest.json 为准
+ alg: SHA256withRSA
+ keyId: toolhub-targets-20260703-rsa3072
+-files: 24 个模块
++files: 26 个模块
+ ```
+ 
+ ---
+@@ -582,7 +588,7 @@ ToolHub.js.sha256
+ base → core → icon/theme/persistence/parser/content
+ → animation/shell/action/rebuild
+ → panel_ui → panels → button_shortcut / button_icon_editor / button_editor
+-→ color_picker / icon_picker / schema_editor → extra → entry → pointer → pointer_ocr → position_state
++→ color_picker / icon_picker / schema_editor → extra → entry → pointer → pointer_ocr → position_state → pickword → result_preview
+ ```
+ 
+ 尤其注意：
+@@ -592,7 +598,8 @@ base → core → icon/theme/persistence/parser/content
+ - `th_15_extra.js` 依赖前面 UI、主题、设置、页面构建能力。
+ - `th_16_entry.js` 负责启动实例。
+ - `th_17_pointer.js` 位于入口生命周期之后，接入按钮动作分发和悬浮球拖动路径。
+-- `th_18_pointer_ocr.js` 扩展框选 OCR，`th_19_position_state.js` 最后安装位置、布局和重建回滚包装。
++- `th_18_pointer_ocr.js` 扩展框选 OCR，`th_19_position_state.js` 安装位置、布局和重建回滚包装。
++- `th_20_pickword.js` 和 `th_21_result_preview.js` 只新增拾字与结果 UI 服务，不覆盖 `th_19_position_state.js` 的位置或触摸所有权。
+ 
+ ---
+ 
+diff --git a/TH09_ANIMATION_AUDIT.md b/TH09_ANIMATION_AUDIT.md
+index 1a96d9cc2962696a42cd6af4994e88c0202d2da7..8b0fca936e7f25160a4742de9b0e423d6e335555 100644
+--- a/TH09_ANIMATION_AUDIT.md
++++ b/TH09_ANIMATION_AUDIT.md
+@@ -13,7 +13,7 @@
+ - 版本：`1.0.5`
+ - 行数：`818`
+ - 字节数：`31137`
+-- ToolHub 加载模块：`24`
++- ToolHub 加载模块：`26`
+ - `th_09` 原型方法定义：`26`
+ - `th_09` 唯一原型方法：`26`
+ - 模块内重复定义方法：`0`
+diff --git a/TH15_EXTRA_AUDIT.md b/TH15_EXTRA_AUDIT.md
+index 5c62e08eb6d51c7bd52fb7d2ee45958855d1847f..93dbc1a13581280e0364cca55a4e7ecfbf95f6a0 100644
+--- a/TH15_EXTRA_AUDIT.md
++++ b/TH15_EXTRA_AUDIT.md
+@@ -12,7 +12,7 @@
+ - 版本：`1.1.7`
+ - 行数：`2785`
+ - 字节数：`123318`
+-- ToolHub 加载模块：`24`
++- ToolHub 加载模块：`26`
+ - `th_15` 原型方法定义：`59`
+ - `th_15` 唯一原型方法：`59`
+ - 模块内重复定义方法：`0`
+diff --git a/ToolHub.js b/ToolHub.js
+index bdf3e7662626075514c280fb16a8bafd1e30650f..e23b0cfb076ac1aca26c39f34b05a4689b95437d 100644
+--- a/ToolHub.js
++++ b/ToolHub.js
+@@ -1454,7 +1454,7 @@ var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.j
+                "th_06_icon_parser.js", "th_08_content.js", "th_09_animation.js",
+                "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
+                "th_14_panels.js", "th_14_button_shortcut.js", "th_14_button_icon_editor.js", "th_14_button_editor.js",
+-               "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js"];
++               "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js"];
+ var __moduleUpdates = [];
+ var __pendingModuleUpdates = [];
+ var loadErrors = [];
+diff --git a/code/th_01_base.js b/code/th_01_base.js
+index 55838f6fa6c24bc8af7ed29f80c88d35dc1b7cd2..4b3fc02bde105286bb7f0304be5bbf3122cc8840 100644
+--- a/code/th_01_base.js
++++ b/code/th_01_base.js
+@@ -1,4 +1,4 @@
+-// @version 1.1.3
++// @version 1.1.4
+ // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
