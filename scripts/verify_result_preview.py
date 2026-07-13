@@ -186,6 +186,17 @@ def main() -> int:
         "enter/exit and click feedback contracts are incomplete",
         failures,
     )
+    require(
+        "preview / visible fallback and draw diagnostics",
+        "PreviewView.setWillNotDraw(false)" in preview
+        and "st.root.setAlpha(0.78)" in preview
+        and "scheduleVisibilityFallback21(appObj, st, st.root)" in preview
+        and "rootRef.setVisibility(android.view.View.VISIBLE)" in preview
+        and '"result preview first draw"' in preview
+        and '"result preview visual check"' in preview,
+        "preview must remain visible when the entry animation does not advance",
+        failures,
+    )
     action = section(preview, "proto.openResultPreviewPrimaryAction = function()", "proto.disposeResultPreview = function")
     require(
         "preview / click passes full text to pickword",
