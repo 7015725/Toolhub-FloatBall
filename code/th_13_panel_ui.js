@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();

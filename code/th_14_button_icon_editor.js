@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // ToolHub - button icon editor module
 // Stage 3: icon source / ShortX icon preview / tint inline editor split from th_14_panels.js.
 
