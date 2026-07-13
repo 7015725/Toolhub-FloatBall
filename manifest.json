@@ -1,5 +1,13 @@
 {
   "alg": "SHA256withRSA",
+  "entry": {
+    "manualUpdate": true,
+    "name": "ToolHub.js",
+    "sha256": "717985781ebacfd32e702a481f3624fad5a839aca853c3905f3603d22cedb1d6",
+    "size": 82649,
+    "version": 20260507152251,
+    "versionSource": "MIN_TRUSTED_MANIFEST_VERSION"
+  },
   "files": {
     "th_01_base.js": {
       "sha256": "debd69a87d1f1347710171994824df310295202aecde9ed57cc38990c4f3e346",
@@ -42,9 +50,9 @@
       "version": "1.0.5"
     },
     "th_10_shell.js": {
-      "sha256": "4bc77239db0f3db6e88ecc06c8c4c16e6bd973ccb21435b2b650dd7eea85e584",
-      "size": 4895,
-      "version": "1.0.6"
+      "sha256": "a6a86d6f764a7df0c93c0907c32956f5e151ffc3bbb5f1dc90ceedacf59d052f",
+      "size": 20280,
+      "version": "1.0.7"
     },
     "th_11_action.js": {
       "sha256": "b6832cd24a0354f1ddd10a98bf2a313397d3379bd3f5f35bb2fbf7df16894365",
@@ -135,10 +143,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复亮色弱强调容器黑块"
+      "增加 ToolHub 入口文件更新提醒"
     ],
-    "title": "修复亮色弱强调容器黑块"
+    "title": "增加 ToolHub 入口文件更新提醒"
   },
   "schema": 3,
-  "version": 20260713142452
+  "version": 20260713145350
 }
