@@ -143,10 +143,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "增加 ToolHub 入口文件更新提醒"
+      "移除入口更新临时诊断日志"
     ],
-    "title": "增加 ToolHub 入口文件更新提醒"
+    "title": "移除入口更新临时诊断日志"
   },
   "schema": 3,
-  "version": 20260713150654
+  "version": 20260713151942
 }
