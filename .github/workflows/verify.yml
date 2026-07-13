@@ -111,7 +111,6 @@ jobs:
       - name: Run ToolHub verification
         shell: bash
         run: |
-          bash -n scripts/sync_gitea_main.sh
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
           python3 scripts/verify_sqlite_storage.py
@@ -132,7 +131,7 @@ jobs:
           python3 scripts/verify_content_security.py
           python3 scripts/verify_module_versions.py
           python3 scripts/verify_documentation_consistency.py
-          python3 scripts/check_update_source_consistency.py --self-test
+          python3 scripts/verify_github_only_source.py
           python3 scripts/verify_pointer_regressions.py
           python3 .github/scripts/verify_manifest_signature.py
 
