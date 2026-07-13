@@ -1,88 +1,14 @@
-name: debug-sign-entry-sha
+name: debug-sign-entry-sha-disabled
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
-
-env:
-  TARGET_BRANCH: ${{ github.head_ref }}
+  contents: read
 
 jobs:
-  debug:
-    if: ${{ github.head_ref == 'fix/toolhub-entry-writable-probe' }}
+  disabled:
+    if: ${{ false }}
     runs-on: ubuntu-latest
-    environment: signing
     steps:
-      - name: Checkout branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Install signing key
-        shell: bash
-        env:
-          TOOLHUB_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.TOOLHUB_SIGNING_PRIVATE_KEY_PEM }}
-        run: |
-          mkdir -p "$HOME/.hermes/toolhub_signing"
-          printf '%s\n' "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" > "$HOME/.hermes/toolhub_signing/private_key.pem"
-          chmod 600 "$HOME/.hermes/toolhub_signing/private_key.pem"
-
-      - name: Trace entry checksum
-        shell: bash
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          debug=SIGN_ENTRY_SHA_DEBUG.txt
-          : > "$debug"
-          record() {
-            label="$1"
-            printf '\n== %s ==\n' "$label" >> "$debug"
-            sha256sum ToolHub.js >> "$debug"
-            printf 'sha_file=' >> "$debug"
-            cat ToolHub.js.sha256 >> "$debug"
-            git status --short >> "$debug"
-          }
-          run_step() {
-            label="$1"
-            shift
-            printf '\n$ %s\n' "$label" >> "$debug"
-            set +e
-            "$@" >> "$debug" 2>&1
-            code=$?
-            set -e
-            printf 'exit_status=%s\n' "$code" >> "$debug"
-            record "after $label"
-          }
-          record "checkout"
-          run_step generate python3 scripts/generate_signed_manifest.py --yes --title "$PR_TITLE" --change "$PR_TITLE"
-          run_step manifest python3 scripts/verify_manifest.py
-          run_step es5 python3 .github/scripts/es5_scan.py
-          run_step syntax python3 scripts/verify_js_syntax.py
-          run_step sqlite python3 scripts/verify_sqlite_storage.py
-          run_step position python3 scripts/verify_ball_position_state.py
-          run_step toolapp python3 scripts/verify_toolapp_layout.py
-          run_step button python3 scripts/verify_button_editor_layout.py
-          run_step schema python3 scripts/verify_schema_validator.py
-          run_step pointer python3 scripts/verify_pointer_regressions.py
-          cat "$debug"
-
-      - name: Commit debug output
-        shell: bash
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add SIGN_ENTRY_SHA_DEBUG.txt
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "记录签名入口 SHA 变化"
-          git push origin HEAD:${{ github.head_ref }}
+      - run: echo disabled
