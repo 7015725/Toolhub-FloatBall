@@ -4,7 +4,6 @@
 
 本文档用于整理 `7015725/Toolhub-FloatBall` 当前代码结构、启动链路、模块职责和主要状态流。项目运行环境为 **ShortX / Rhino ES5 JavaScript**，入口文件负责安全更新和模块加载，核心业务集中挂载到 `FloatBallAppWM.prototype`。
 
-维护要求：每次修改或调整 ToolHub 后，必须同步推送到 GitHub 和 Gitea 两个仓库。
 
 ---
 
@@ -15,7 +14,6 @@ ShortX JS 任务
    │
    ▼
 ToolHub.js
-   ├─ 选择更新源：Gitea / GitHub
    ├─ 拉取 manifest.json / manifest.sig
    ├─ 校验版本 / 签名 / sha256 / size
    ├─ 下载或复用本地 code/th_*.js
@@ -167,6 +165,8 @@ shortx.getShortXDir()/ToolHub/
 
 ## 5. 启动链路
 
+更新源固定为 GitHub，不再提供来源选择或镜像源回退。
+
 入口文件 `ToolHub.js` 主要流程：
 
 ```text
@@ -186,7 +186,6 @@ shortx.getShortXDir()/ToolHub/
 当前入口配置：
 
 ```javascript
-var UPDATE_SOURCE = 1;          // 0: Gitea, 1: GitHub
 var UPDATE_SECURITY_MODE = 2;   // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 ```
 

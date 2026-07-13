@@ -217,6 +217,8 @@ th_19_position_state.js
 
 ## 4. 启动机制
 
+更新源固定为 GitHub，不再保留其他镜像源或运行时来源切换。
+
 入口启动链：
 
 ```text
@@ -252,7 +254,6 @@ ToolHub.js
 - `ToolHub.js` 顶部当前配置：
 
 ```javascript
-var UPDATE_SOURCE = 1;        // 0: Gitea, 1: GitHub
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
 ```
 

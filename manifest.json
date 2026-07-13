@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "增加 Gitea 主分支安全同步脚本"
+      "取消 Gitea 更新源并固定使用 GitHub"
     ],
-    "title": "增加 Gitea 主分支安全同步脚本"
+    "title": "取消 Gitea 更新源并固定使用 GitHub"
   },
   "schema": 3,
-  "version": 20260713003540
+  "version": 20260713005132
 }

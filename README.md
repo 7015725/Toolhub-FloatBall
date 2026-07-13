@@ -8,7 +8,6 @@ ShortX ToolHub 是面向 **ShortX / Rhino ES5 JavaScript** 的模块化 Android 
 
 ```text
 GitHub: https://github.com/7015725/Toolhub-FloatBall
-Gitea:  https://git.xin-blog.com/linshenjianlu/ShortX_ToolHub
 ```
 
 相关文档：
@@ -20,7 +19,6 @@ SQLITE_STORAGE.md
 docs/security-config-clean.md
 ```
 
-> 手机端当前默认使用 GitHub 更新源。是否已同步 Gitea，需要在每次发布结果中单独确认。
 
 ---
 
@@ -71,8 +69,9 @@ docs/security-config-clean.md
 
 ## 入口配置
 
+> 更新源固定为 GitHub，不再提供来源切换配置。
+
 ```javascript
-var UPDATE_SOURCE = 1;          // 0: Gitea, 1: GitHub
 var UPDATE_SECURITY_MODE = 2;   // 0: 普通, 1: manifest校验, 2: 完整验签
 ```
 
