@@ -22,11 +22,11 @@
 +                        }
 +                    }
 +
-+                    var targetPinMaxWidthDp = readPinNumber(DI_CONFIG.PIN_WINDOW_MAX_WIDTH_DP, 340, 120);
-+                    var targetPinMaxHeightDp = readPinNumber(DI_CONFIG.PIN_WINDOW_MAX_HEIGHT_DP, 160, 120);
-+                    var pinPaddingHorizontalDp = readPinNumber(DI_CONFIG.PIN_TEXT_PADDING_HORIZONTAL_DP, 18, 0);
-+                    var pinPaddingVerticalDp = readPinNumber(DI_CONFIG.PIN_TEXT_PADDING_VERTICAL_DP, 14, 0);
-+                    var pinLineExtraDp = readPinNumber(DI_CONFIG.PIN_TEXT_LINE_SPACING_EXTRA_DP, 2, 0);
++                    var targetPinMaxWidthDp = readPinNumber(DIY_CONFIG.PIN_WINDOW_MAX_WIDTH_DP, 340, 120);
++                    var targetPinMaxHeightDp = readPinNumber(DIY_CONFIG.PIN_WINDOW_MAX_HEIGHT_DP, 160, 120);
++                    var pinPaddingHorizontalDp = readPinNumber(DIY_CONFIG.PIN_TEXT_PADDING_HORIZONTAL_DP, 18, 0);
++                    var pinPaddingVerticalDp = readPinNumber(DIY_CONFIG.PIN_TEXT_PADDING_VERTICAL_DP, 14, 0);
++                    var pinLineExtraDp = readPinNumber(DIY_CONFIG.PIN_TEXT_LINE_SPACING_EXTRA_DP, 2, 0);
 +
 +                    var maxPinWidth = Math.round(Math.min(screenWidth * 0.88, uiDp(targetPinMaxWidthDp, Math.max(targetPinMaxWidthDp, 560))));
 +                    var maxPinHeight = Math.round(Math.min(screenHeight * 0.68, uiDp(targetPinMaxHeightDp, targetPinMaxHeightDp)));
@@ -69,7 +69,7 @@
 +
 +                    var lineHeightPx = Math.max(uiDp(21, 24), Math.round(dp(pinTextSizeSp * 1.55)) + pinLineExtraPx);
 +                    var naturalTextHeight = Math.round(lineCount * lineHeightPx) + pinPaddingY * 2 + Math.round(uiDp(4, 6));
-+                    var progressReservePx = (DI_CONFIG.PIN_BATCH_SHOW_PROGRESS !== false && textLen > 0) ? Math.round(uiDp(22, 26)) : 0;
++                    var progressReservePx = (DIY_CONFIG.PIN_BATCH_SHOW_PROGRESS !== false && textLen > 0) ? Math.round(uiDp(22, 26)) : 0;
 +                    var maxScrollHeight = Math.max(Math.round(uiDp(56, 68)), maxPinHeight - progressReservePx);
 +                    var needPinScrollLimit = naturalTextHeight > maxScrollHeight;
 +                    var pinScrollHeight = needPinScrollLimit ? maxScrollHeight : LayoutParams.WRAP_CONTENT;
