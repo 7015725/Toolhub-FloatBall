@@ -1,0 +1,44 @@
+name: apply-entry-symbol-audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-entry-symbol-audit
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: ${{ github.head_ref == 'audit/toolhub-entry-redundancy' && !contains(github.event.pull_request.title, '[generated]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate and verify report
+        run: |
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+
+      - name: Commit generated report
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ENTRY_SYMBOL_AUDIT.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "生成 ToolHub 入口符号审计报告"
+          git push origin HEAD:${{ github.head_ref }}
