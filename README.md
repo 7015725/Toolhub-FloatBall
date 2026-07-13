@@ -49,6 +49,8 @@ docs/security-config-clean.md
 
 > `ToolHub.js` 是信任根，内置 RSA 公钥和最低可信清单版本。入口自身发生变化时，需要手动替换 ShortX 任务中的代码。
 
+入口在读取已验签清单后，会比较本地入口版本与 `manifest.entry.version`。远端入口较新时只提示手动替换，不会自动下载、覆盖或重启 `ToolHub.js`。
+
 ### 2. 首次启动
 
 入口会自动：
@@ -455,6 +457,17 @@ python3 .github/scripts/verify_manifest_signature.py
 ---
 
 ## 更新记录
+
+### 2026-07-13
+
+**完善 ToolHub 入口文件更新提醒**
+
+- 签名清单新增 `entry` 元数据，记录 `ToolHub.js` 的入口版本、SHA-256 和文件大小。
+- 启动及手动检查更新时比较本地与远端入口版本。
+- 入口版本落后时提示手动替换 ShortX 任务中的 `ToolHub.js`。
+- 同一远端入口版本只主动提醒一次。
+- 入口文件不加入子模块更新列表，不参与自动下载、事务替换或自动重启。
+- 修改 `ToolHub.js` 但未提升入口版本时，CI 校验失败。
 
 ### 2026-07-11
 
