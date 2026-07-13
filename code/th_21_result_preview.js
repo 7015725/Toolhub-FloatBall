@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // =======================【取字 / OCR 顶部结果预览】=======================
 // 全自绘单实例悬浮预览；点击后把完整文本传给 th_20_pickword.js。
 (function() {
@@ -174,6 +174,25 @@
     };
   }
 
+  // Rhino 在 Android 29+ 可能把 Paint.setColor(int) 错配到 setColor(long ColorLong)。
+  // 明确拆分 ARGB 通道并调用无重载歧义的 setARGB(int, int, int, int)。
+  function setPaintColor21(paint, color) {
+    if (!paint) return false;
+    var value = Number(color);
+    if (isNaN(value)) value = 0;
+    value = value | 0;
+    try {
+      paint.setARGB(
+        (value >>> 24) & 255,
+        (value >>> 16) & 255,
+        (value >>> 8) & 255,
+        value & 255
+      );
+      return true;
+    } catch (eArgb) {}
+    return false;
+  }
+
   function topInset21(root) {
     var top = 0;
     try {
@@ -288,20 +307,20 @@
     var bg = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     var rect = new android.graphics.RectF(dp21(appObj, 1), dp21(appObj, 1), width - dp21(appObj, 1), height - dp21(appObj, 1));
     bg.setStyle(android.graphics.Paint.Style.FILL);
-    bg.setColor(c.bg);
+    setPaintColor21(bg, c.bg);
     canvas.drawRoundRect(rect, dp21(appObj, 12), dp21(appObj, 12), bg);
     bg.setStyle(android.graphics.Paint.Style.STROKE);
     bg.setStrokeWidth(dp21(appObj, 1));
-    bg.setColor(c.stroke);
+    setPaintColor21(bg, c.stroke);
     canvas.drawRoundRect(rect, dp21(appObj, 12), dp21(appObj, 12), bg);
 
     var textPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-    textPaint.setColor(c.text);
+    setPaintColor21(textPaint, c.text);
     textPaint.setTextSize(sp21(14));
     var x = dp21(appObj, 14);
     if (st.line2) {
       canvas.drawText(new java.lang.String(st.line1), x, dp21(appObj, 25), textPaint);
-      textPaint.setColor(c.secondary);
+      setPaintColor21(textPaint, c.secondary);
       canvas.drawText(new java.lang.String(st.line2), x, dp21(appObj, 47), textPaint);
     } else {
       canvas.drawText(new java.lang.String(st.line1), x, dp21(appObj, 30), textPaint);

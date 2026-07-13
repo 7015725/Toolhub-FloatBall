@@ -127,18 +127,18 @@
       "version": "1.0.0"
     },
     "th_21_result_preview.js": {
-      "sha256": "83f3baa564d656aab64817a4f4aa04a920599e029eed9f9bba28d6ae5e8d60d2",
-      "size": 27660,
-      "version": "1.0.1"
+      "sha256": "5e1b2e885f32cfb1a68ac811f7760d803b2ee606b83991289c71bc5720a9227e",
+      "size": 28249,
+      "version": "1.0.2"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复结果预览窗口不可见"
+      "修复结果预览绘制颜色异常"
     ],
-    "title": "修复结果预览窗口不可见"
+    "title": "修复结果预览绘制颜色异常"
   },
   "schema": 3,
-  "version": 20260713081751
+  "version": 20260713084332
 }
