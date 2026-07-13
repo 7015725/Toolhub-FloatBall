@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // ToolHub - 设置结构编辑器模块
 // 依赖：th_14_panels.js 的设置页主题/基础 UI，th_05_persistence.js 的 ConfigManager。
 // 加载顺序：th_14_panels.js 之后，th_15_extra.js 之前。

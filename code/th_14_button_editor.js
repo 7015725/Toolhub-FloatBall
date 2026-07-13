@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 

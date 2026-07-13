@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // ToolHub - ShortX 图标选择器模块
 //
 // 阶段 1：承载 showShortXIconPickerPopup。

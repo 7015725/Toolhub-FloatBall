@@ -1,4 +1,4 @@
-// @version 0.0.1
+// @version 0.0.2
 // ToolHub - 颜色选择器弹窗模块
 // 依赖：th_14_panels.js 中的 showPopupOverlay()、th_04_theme.js 主题工具、th_06_icon_parser.js 图标解析。
 
