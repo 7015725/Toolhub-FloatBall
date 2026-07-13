@@ -75,19 +75,6 @@ function syncFileOutput(stream) {
 
 var __toolHubRootDir = null;
 
-function getAndroidContext() {
-    try {
-        var app = Packages.android.app.ActivityThread.currentApplication();
-        if (app) return app.getApplicationContext ? app.getApplicationContext() : app;
-    } catch (eApp) {}
-    try {
-        var ctx = Packages.tornaco.apps.shortx.core.OooO0O0.OooO00o();
-        if (ctx && ctx.getApplicationContext) return ctx.getApplicationContext();
-        return ctx;
-    } catch (eCtx) {}
-    return null;
-}
-
 function canWriteDirPath(path) {
     try {
         if (!path) return false;
@@ -607,10 +594,6 @@ function copyRuntimeStringList(list) {
     return out;
 }
 
-function getUpdateSourceText() {
-    return "GitHub";
-}
-
 function getUpdateModeText() {
     if (UPDATE_SECURITY_MODE === 1) return "manifest哈希校验";
     if (UPDATE_SECURITY_MODE === 2) return "完整验签安全更新";
@@ -644,7 +627,7 @@ function applyRuntimeUpdateState(availableNames, errText) {
         else if (oldNeedRestart) TOOLHUB_UPDATE_STATE.status = "updated";
         else if (UPDATE_SECURITY_MODE === 0) TOOLHUB_UPDATE_STATE.status = "plain";
         else TOOLHUB_UPDATE_STATE.status = names.length > 0 ? "available" : "latest";
-        TOOLHUB_UPDATE_STATE.source = getUpdateSourceText();
+        TOOLHUB_UPDATE_STATE.source = "GitHub";
         TOOLHUB_UPDATE_STATE.mode = UPDATE_SECURITY_MODE;
         TOOLHUB_UPDATE_STATE.modeText = getUpdateModeText();
         TOOLHUB_UPDATE_STATE.version = versionNum;
@@ -1803,14 +1786,10 @@ var __out = (function() {
   }
   function buildToolHubUpdateState(syncInfo, pendingInfo, loadInfo, securityText) {
     var rel = getManifestRelease();
-    var sourceText = getUpdateSourceText();
     var modeText = getUpdateModeText();
     var statusName = "latest";
     var errText = "";
-    var versionNum = 0;
-    if (__securityStatus && __securityStatus.version !== undefined && __securityStatus.version !== null) versionNum = Number(__securityStatus.version || 0);
-    if ((!versionNum || isNaN(versionNum)) && __trustedManifest && __trustedManifest.version !== undefined) versionNum = Number(__trustedManifest.version || 0);
-    if (isNaN(versionNum)) versionNum = 0;
+    var versionNum = getTrustedManifestVersionNumber();
     if (UPDATE_SECURITY_MODE === 0) statusName = "plain";
     if (syncInfo && syncInfo.count > 0) statusName = "updated";
     if (pendingInfo && pendingInfo.count > 0) statusName = "available";
@@ -1825,7 +1804,7 @@ var __out = (function() {
     return {
       ok: statusName !== "error",
       status: statusName,
-      source: sourceText,
+      source: "GitHub",
       mode: UPDATE_SECURITY_MODE,
       modeText: modeText,
       version: versionNum,
