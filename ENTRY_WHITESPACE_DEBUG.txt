@@ -1,0 +1,3 @@
+ENTRY_SYMBOL_AUDIT.md:145: new blank line at EOF.
+
+exit_status=2
