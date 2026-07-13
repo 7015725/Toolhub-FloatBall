@@ -65,7 +65,7 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add ToolHub.js ENTRY_SYMBOL_AUDIT.md .github/workflows/verify.yml scripts/verify_entry_writable_probe.py ENTRY_WRITABLE_PROBE_DEBUG.txt
+          git add ToolHub.js ENTRY_SYMBOL_AUDIT.md scripts/verify_entry_writable_probe.py ENTRY_WRITABLE_PROBE_DEBUG.txt
           if git diff --cached --quiet; then
             exit 0
           fi
