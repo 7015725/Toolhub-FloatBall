@@ -311,6 +311,61 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         "worker finally must validate session, Handler, and HandlerThread identities",
     )
 
+    snapshot_scan = section(
+        pointer,
+        "FloatBallAppWM.prototype.findPointerTextAtSnapshot = function",
+        "FloatBallAppWM.prototype.cancelPointerInspectRetry = function",
+    )
+    retry_scan = section(
+        pointer,
+        "FloatBallAppWM.prototype.cancelPointerInspectRetry = function",
+        "FloatBallAppWM.prototype.applyPointerInspectResult = function",
+    )
+    apply_retry = section(
+        pointer,
+        "FloatBallAppWM.prototype.applyPointerInspectResult = function(pack)",
+        "FloatBallAppWM.prototype.runPointerInspectWorker = function(st)",
+    )
+    schedule_async = section(
+        pointer,
+        "FloatBallAppWM.prototype.schedulePointerInspectAsync = function",
+        "FloatBallAppWM.prototype.updatePointerInspect = function",
+    )
+    pointer_state = section(
+        pointer,
+        "FloatBallAppWM.prototype.ensurePointerToolState = function()",
+        "FloatBallAppWM.prototype.resetPointerToolState = function",
+    )
+    active_root_pos = snapshot_scan.find("this.getPointerActiveRoot")
+    windows_pos = snapshot_scan.find("a.getWindows")
+    result.require(
+        group,
+        "N7 drag scan prioritizes active application root",
+        active_root_pos >= 0
+        and windows_pos > active_root_pos
+        and "inspectMaxDragMs: 90" in pointer_state
+        and "inspectMaxDragNodes: 240" in pointer_state
+        and 'reasonText.indexOf("drag_retry") === 0' in snapshot_scan
+        and "inspectMaxRetryMs" in snapshot_scan
+        and "inspectMaxRetryNodes" in snapshot_scan,
+        "drag scans must inspect the active root first and use adaptive drag/retry budgets",
+    )
+    result.require(
+        group,
+        "N8 stationary timeout retries preserve valid hover",
+        "FloatBallAppWM.prototype.schedulePointerInspectRetry = function(pack)" in retry_scan
+        and "pointer stationary inspect retry=" in retry_scan
+        and '"drag_retry_" + String(retryNo)' in retry_scan
+        and "allowStationary" in schedule_async
+        and "allowStationary !== true" in schedule_async
+        and "stationaryRetryScheduled = this.schedulePointerInspectRetry(pack) === true" in apply_retry
+        and "keepCurrentOnDragTimeout" in apply_retry
+        and "stationaryRetryScheduled === true" in apply_retry
+        and "this.pointerRectInside(pack.x, pack.y, st.currentRect) === true" in apply_retry
+        and "inspectRetryRunnable" in pointer_state,
+        "timed-out drag scans must retry at the same hotspot without discarding a still-valid candidate",
+    )
+
     remove_callbacks = section(
         pointer,
         "FloatBallAppWM.prototype.removePointerCallbacks = function(st)",
