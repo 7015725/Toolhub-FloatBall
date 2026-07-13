@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "完善双源一致性检查触发策略"
+      "增加 Gitea 主分支安全同步脚本"
     ],
-    "title": "完善双源一致性检查触发策略"
+    "title": "增加 Gitea 主分支安全同步脚本"
   },
   "schema": 3,
-  "version": 20260713002906
+  "version": 20260713003540
 }
