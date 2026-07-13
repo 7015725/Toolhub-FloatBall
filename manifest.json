@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复更新安全模式降级并同步架构文档"
+      "增加 GitHub 与 Gitea 发布一致性检查"
     ],
-    "title": "修复更新安全模式降级并同步架构文档"
+    "title": "增加 GitHub 与 Gitea 发布一致性检查"
   },
   "schema": 3,
-  "version": 20260712165502
+  "version": 20260713002505
 }

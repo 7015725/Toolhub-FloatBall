@@ -131,6 +131,7 @@ jobs:
           python3 scripts/verify_content_security.py
           python3 scripts/verify_module_versions.py
           python3 scripts/verify_documentation_consistency.py
+          python3 scripts/check_update_source_consistency.py --self-test
           python3 scripts/verify_pointer_regressions.py
           python3 .github/scripts/verify_manifest_signature.py
 
