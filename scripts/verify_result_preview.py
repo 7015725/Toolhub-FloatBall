@@ -197,6 +197,16 @@ def main() -> int:
         "preview must remain visible when the entry animation does not advance",
         failures,
     )
+    draw_preview = section(preview, "function drawPreview21(appObj, st, canvas, view)", "function createView21(appObj, st)")
+    require(
+        "preview / paint color avoids ColorLong overload",
+        "function setPaintColor21(paint, color)" in preview
+        and "paint.setARGB(" in preview
+        and draw_preview.count("setPaintColor21(") == 4
+        and ".setColor(" not in draw_preview,
+        "custom drawing must use explicit ARGB channels instead of overloaded Paint.setColor",
+        failures,
+    )
     action = section(preview, "proto.openResultPreviewPrimaryAction = function()", "proto.disposeResultPreview = function")
     require(
         "preview / click passes full text to pickword",
