@@ -52,14 +52,14 @@
       "version": "1.0.9"
     },
     "th_12_rebuild.js": {
-      "sha256": "f7e37249fb266bfb8ab06e1e3e6881774ea0052f05e53ae0fd5ca5e97eaa5c2d",
-      "size": 15251,
-      "version": "1.2.1"
+      "sha256": "14133633ebc6331b77c0e2d9ab27c85df2071696bcedde3eea25e77c38aaba19",
+      "size": 16639,
+      "version": "1.2.2"
     },
     "th_13_panel_ui.js": {
-      "sha256": "c15bcc3fc1a2d18101d2a3745331fa498ea999abb03925874849063859be378f",
-      "size": 25512,
-      "version": "1.0.5"
+      "sha256": "e67b0d6999669a8409e15a772443df6d3720f98aceaee9fc9314738a54e47420",
+      "size": 25546,
+      "version": "1.0.6"
     },
     "th_14_button_editor.js": {
       "sha256": "b4b261901352f3a62c0965eec8f3172ac213f2f337adfc73f237128e01aa090d",
@@ -87,9 +87,9 @@
       "version": "1.0.2"
     },
     "th_14_panels.js": {
-      "sha256": "c8b980759c3e4b8d0d03a1f788d8e87174347c276a9aa37a6869351eb2abc18b",
-      "size": 119338,
-      "version": "1.0.17"
+      "sha256": "75d6dde8a58b18fd281360d39b70252eee3f6613cea3c3d7c3b8731e5475d39f",
+      "size": 119429,
+      "version": "1.0.18"
     },
     "th_14_schema_editor.js": {
       "sha256": "c713ba038602e53272aae22852fcb90238047fe8ebf33e35b0c0e5ab1a4781fc",
@@ -97,9 +97,9 @@
       "version": "1.0.3"
     },
     "th_15_extra.js": {
-      "sha256": "2dd6b5a2bfcda536ec672ace6e0d491bd10ac406e5e997b1b84a5144b2f1643b",
-      "size": 122248,
-      "version": "1.1.10"
+      "sha256": "16964397a97f339f597f66512269de1e7b5b0f339cf8e7b0db3f31a84ad1d63b",
+      "size": 122247,
+      "version": "1.1.11"
     },
     "th_16_entry.js": {
       "sha256": "64b7bc7c0a16667536dabaa9bedbb8b0d36f57ad9efb78790809446adf2975ae",
@@ -135,10 +135,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理历史主题数据与配色兼容层（第四阶段）"
+      "收敛设置界面颜色角色与强调层级（第五阶段）"
     ],
-    "title": "清理历史主题数据与配色兼容层（第四阶段）"
+    "title": "收敛设置界面颜色角色与强调层级（第五阶段）"
   },
   "schema": 3,
-  "version": 20260713121543
+  "version": 20260713130035
 }

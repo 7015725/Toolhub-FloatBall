@@ -20,8 +20,9 @@ REQUIRED_FIELDS = [
     "background", "onBackground", "surface", "onSurface", "surface2",
     "onSurface2", "primary", "onPrimary", "primaryContainer",
     "onPrimaryContainer", "outline", "outlineVariant", "secondary",
-    "tertiary", "success", "warning", "danger", "onDanger",
-    "dangerContainer", "onDangerContainer",
+    "tertiary", "success", "successContainer", "onSuccessContainer",
+    "warning", "warningContainer", "onWarningContainer",
+    "danger", "onDanger", "dangerContainer", "onDangerContainer",
 ]
 
 REMOVED_ALIASES = [

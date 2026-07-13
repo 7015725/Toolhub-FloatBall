@@ -1,4 +1,4 @@
-// @version 1.1.10
+// @version 1.1.11
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -866,7 +866,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     var body = new android.widget.LinearLayout(context);
     body.setOrientation(android.widget.LinearLayout.VERTICAL);
     body.setPadding(shellPad, shellTopPad, shellPad, shellPad);
-    body.setBackground(this.ui.createStrokeDrawable(T.background, this.withAlpha(T.outlineVariant, isDark ? 0.30 : 0.46), this.dp(1), outerRadius));
+    body.setBackground(this.ui.createStrokeDrawable(T.background, this.withAlpha(T.outlineVariant, isDark ? 0.18 : 0.16), this.dp(1), outerRadius));
     try { body.setClipToOutline(true); } catch(eClip) {}
     try { body.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 7 : 10)); } catch (eElev) {}
 
@@ -874,7 +874,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
     bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
     bar.setPadding(this.dp(8), this.dp(4), this.dp(8), this.dp(4));
-    bar.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.outlineVariant, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
+    bar.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.outlineVariant, isDark ? 0.16 : 0.14), this.dp(1), this.dp(20)));
     try { bar.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 1 : 2)); } catch(eBarElev) {}
 
     function handlePreviewBackClick() {
@@ -907,8 +907,8 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     btnHelp.setTypeface(null, android.graphics.Typeface.BOLD);
     btnHelp.setPadding(0, 0, 0, 0);
     try { btnHelp.setContentDescription("打开手册"); } catch(eHelpDesc) {}
-    try { btnHelp.setAlpha(0.62); } catch(eHelpAlpha) {}
-    try { btnHelp.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eHelpBg) {}
+    try { btnHelp.setAlpha(1.0); } catch(eHelpAlpha) {}
+    try { btnHelp.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.22 : 0.16), this.dp(1), this.dp(18))); } catch(eHelpBg) {}
     var helpLp = new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48));
     helpLp.setMargins(this.dp(6), 0, 0, 0);
     bar.addView(btnHelp, helpLp);
@@ -916,13 +916,13 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     function handlePreviewCloseClick() {
       try { self.toast("这是返回预览，松手后才会返回"); } catch(eToast) {}
     }
-    var btnClose = this.ui.createFlatButton(this, "×", T.primary, handlePreviewCloseClick);
+    var btnClose = this.ui.createFlatButton(this, "×", T.onSurface2, handlePreviewCloseClick);
     btnClose.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20);
     btnClose.setTypeface(null, android.graphics.Typeface.BOLD);
     btnClose.setPadding(0, 0, 0, 0);
     try { btnClose.setContentDescription("关闭"); } catch(eCloseDesc) {}
-    try { btnClose.setAlpha(0.62); } catch(eRightClick) {}
-    try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
+    try { btnClose.setAlpha(1.0); } catch(eRightClick) {}
+    try { btnClose.setBackground(this.ui.createStrokeDrawable(T.surface2, this.withAlpha(T.outlineVariant, isDark ? 0.18 : 0.14), this.dp(1), this.dp(18))); } catch(eRightBg) {}
     var closeLp = new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48));
     closeLp.setMargins(this.dp(6), 0, 0, 0);
     bar.addView(btnClose, closeLp);
@@ -1482,7 +1482,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
   // 外层薄荷容器本身就是整张“设置”卡片：四角统一圆角，并给底部留出完整收口。
   body.setPadding(shellPad, shellTopPad, shellPad, shellPad);
-  body.setBackground(this.ui.createStrokeDrawable(T.background, this.withAlpha(T.outlineVariant, isDark ? 0.30 : 0.46), this.dp(1), outerRadius));
+  body.setBackground(this.ui.createStrokeDrawable(T.background, this.withAlpha(T.outlineVariant, isDark ? 0.18 : 0.16), this.dp(1), outerRadius));
   try { body.setClipToOutline(true); } catch(eClip) {}
   try { body.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 7 : 10)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   root.addView(body, new android.widget.FrameLayout.LayoutParams(-1, -1));
@@ -1491,7 +1491,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   bar.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   bar.setGravity(android.view.Gravity.CENTER_VERTICAL);
   bar.setPadding(this.dp(8), this.dp(4), this.dp(8), this.dp(4));
-  bar.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.outlineVariant, isDark ? 0.30 : 0.45), this.dp(1), this.dp(20)));
+  bar.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.outlineVariant, isDark ? 0.16 : 0.14), this.dp(1), this.dp(20)));
   try { bar.setElevation(this.dp((spec && (spec.isExpandedWidth || spec.isWideWidth)) ? 1 : 2)); } catch(eBarElev) {}
 
   var btnBack = this.ui.createFlatButton(this, "‹", T.onSurface2, function() {
@@ -1522,7 +1522,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   btnHelp.setTypeface(null, android.graphics.Typeface.BOLD);
   btnHelp.setPadding(0, 0, 0, 0);
   try { btnHelp.setContentDescription("打开手册"); } catch(eHelpDesc) {}
-  try { btnHelp.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eHelpBg) {}
+  try { btnHelp.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.22 : 0.16), this.dp(1), this.dp(18))); } catch(eHelpBg) {}
   var helpLp = new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48));
   helpLp.setMargins(this.dp(6), 0, 0, 0);
   bar.addView(btnHelp, helpLp);
@@ -1534,7 +1534,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   btnClose.setTypeface(null, android.graphics.Typeface.BOLD);
   btnClose.setPadding(0, 0, 0, 0);
   try { btnClose.setContentDescription("关闭"); } catch(eCloseDesc) {}
-  try { btnClose.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.30 : 0.22), this.dp(1), this.dp(18))); } catch(eRightBg) {}
+  try { btnClose.setBackground(this.ui.createStrokeDrawable(T.surface2, this.withAlpha(T.outlineVariant, isDark ? 0.18 : 0.14), this.dp(1), this.dp(18))); } catch(eRightBg) {}
   var closeLp = new android.widget.LinearLayout.LayoutParams(this.dp(48), this.dp(48));
   closeLp.setMargins(this.dp(6), 0, 0, 0);
   bar.addView(btnClose, closeLp);

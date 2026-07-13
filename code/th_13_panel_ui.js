@@ -1,10 +1,10 @@
-// @version 1.0.5
+// @version 1.0.6
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
-  var color = T ? T.primary : C.primary;
+  var color = T ? T.onSurface : (isDark ? C.textPriDark : C.textPriLight);
 
   var h = new android.widget.TextView(context);
   h.setText(String(item.name || ""));
