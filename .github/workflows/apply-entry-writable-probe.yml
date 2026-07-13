@@ -1,0 +1,55 @@
+name: apply-entry-writable-probe
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-entry-writable-probe
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: ${{ github.head_ref == 'fix/toolhub-entry-writable-probe' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply refactor and verify
+        shell: bash
+        run: |
+          python3 scripts/apply_entry_writable_probe_refactor.py
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/verify_entry_redundancy_cleanup.py
+          python3 scripts/verify_entry_writable_probe.py
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_entry_lifecycle.py
+          python3 scripts/verify_update_security_mode.py
+          python3 scripts/verify_github_only_source.py
+          git diff --check
+
+      - name: Commit generated files
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add ToolHub.js ENTRY_SYMBOL_AUDIT.md .github/workflows/verify.yml scripts/verify_entry_writable_probe.py
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "合并入口目录可写探针"
+          git push origin HEAD:${{ github.head_ref }}
