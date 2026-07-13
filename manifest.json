@@ -52,9 +52,9 @@
       "version": "1.0.9"
     },
     "th_12_rebuild.js": {
-      "sha256": "8a51264e0dae9608f7e2db3fbb188ce73fd356a429a84bab25db6c962fcf9a87",
-      "size": 17330,
-      "version": "1.2.3"
+      "sha256": "a54ba99b8e75c429ba29f40ccc80e85f96de651a4cfaac088f51b103437e9bcf",
+      "size": 19483,
+      "version": "1.2.4"
     },
     "th_13_panel_ui.js": {
       "sha256": "e67b0d6999669a8409e15a772443df6d3720f98aceaee9fc9314738a54e47420",
@@ -135,10 +135,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复弱强调色透明黑底回归"
+      "修复亮色弱强调容器黑块"
     ],
-    "title": "修复弱强调色透明黑底回归"
+    "title": "修复亮色弱强调容器黑块"
   },
   "schema": 3,
-  "version": 20260713131201
+  "version": 20260713142452
 }
