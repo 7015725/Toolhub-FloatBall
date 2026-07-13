@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "增加 GitHub 与 Gitea 发布一致性检查"
+      "完善双源一致性检查触发策略"
     ],
-    "title": "增加 GitHub 与 Gitea 发布一致性检查"
+    "title": "完善双源一致性检查触发策略"
   },
   "schema": 3,
-  "version": 20260713002505
+  "version": 20260713002906
 }
