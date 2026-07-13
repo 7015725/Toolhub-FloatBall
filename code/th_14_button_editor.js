@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -16,7 +16,6 @@ FloatBallAppWM.prototype.matchesButtonManagerQuery = function(btnCfg, query) {
 
 FloatBallAppWM.prototype.createButtonManagerActionChip = function(text, textColor, strokeColor, onClickFn) {
   var T = this.getSettingsColorScheme();
-  this.applySettingsTheme(T, this.isDarkTheme(), this.ui.colors, this.state.pendingUserCfg || this.config);
   var tv = new android.widget.TextView(context);
   tv.setText(String(text || ""));
   tv.setGravity(android.view.Gravity.CENTER);
@@ -111,7 +110,6 @@ FloatBallAppWM.prototype.createButtonManagerStatusChip = function(enabled, onCli
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
-  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
   var tv = new android.widget.TextView(context);
   var ok = enabled !== false;
   tv.setText(ok ? "启用" : "暂停");
@@ -139,7 +137,6 @@ FloatBallAppWM.prototype.createButtonManagerStatusChip = function(enabled, onCli
 
 FloatBallAppWM.prototype.createButtonManagerMoreButton = function(onClickFn) {
   var T = this.getSettingsColorScheme();
-  this.applySettingsTheme(T, this.isDarkTheme(), this.ui.colors, this.state.pendingUserCfg || this.config);
   var tv = new android.widget.TextView(context);
   tv.setText("⋮");
   tv.setGravity(android.view.Gravity.CENTER);
@@ -209,7 +206,6 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     var isDark = this.isDarkTheme();
     var C = this.ui.colors;
     var T = this.getSettingsColorScheme();
-    this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
     var menuItems = [
       { label: "上移", hint: "提前显示", icon: "↑", kind: "up", enabled: idx > 0, danger: false },
       { label: "下移", hint: "靠后显示", icon: "↓", kind: "down", enabled: idx < buttons.length - 1, danger: false },
@@ -444,7 +440,6 @@ FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent,
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
-  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
   var expanded = defaultExpanded !== false;
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -523,7 +518,6 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
-  this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
 
   // 颜色配置
   var bgColor = T.bg;

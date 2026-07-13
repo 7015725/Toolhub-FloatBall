@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // ToolHub - 设置结构编辑器模块
 // 依赖：th_14_panels.js 的设置页主题/基础 UI，th_05_persistence.js 的 ConfigManager。
 // 加载顺序：th_14_panels.js 之后，th_15_extra.js 之前。
@@ -18,7 +18,6 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
-  try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config); } catch(eTheme) {}
 
   var bgColor = T && T.bg ? T.bg : (isDark ? C.bgDark : C.bgLight);
   var cardColor = T && T.card ? T.card : (isDark ? C.cardDark : C.cardLight);

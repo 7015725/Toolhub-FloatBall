@@ -1,10 +1,9 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
-  try { if (this.applySettingsTheme && T) this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
   var color = T ? T.primary : C.primary;
 
   var h = new android.widget.TextView(context);
@@ -26,10 +25,6 @@ FloatBallAppWM.prototype.isSettingColorPreviewItem = function(item) {
 
   if (type === "ball_color") return true;
 
-  if (key === "THEME_DAY_BG_HEX") return true;
-  if (key === "THEME_DAY_TEXT_HEX") return true;
-  if (key === "THEME_NIGHT_BG_HEX") return true;
-  if (key === "THEME_NIGHT_TEXT_HEX") return true;
 
   if (key === "BALL_ICON_TINT_HEX") return true;
   if (key === "BALL_BG_COLOR_HEX") return true;
@@ -92,7 +87,6 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
-  try { if (this.applySettingsTheme && T) this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
   var textColor = T ? T.text : (isDark ? C.textPriDark : C.textPriLight);
   var secColor = T ? T.sub : (isDark ? C.textSecDark : C.textSecLight);
   var dividerColor = T ? T.stroke : (isDark ? C.dividerDark : C.dividerLight);

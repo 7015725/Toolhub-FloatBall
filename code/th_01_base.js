@@ -1,4 +1,4 @@
-// @version 1.1.4
+// @version 1.1.5
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -95,10 +95,6 @@ var ConfigValidator = {
     PANEL_PADDING_DP: { type: "int", min: 8, max: 32, default: 12 },
 
     // 主题配置
-    SETTINGS_THEME: { type: "enum", values: ["animal", "monet"], default: "animal" },
-    THEME_MODE: { type: "enum", values: [0, 1, 2], default: 1 },
-    THEME_ACCENT_LIGHT: { type: "string", default: "#FF3A86FF" },
-    THEME_ACCENT_DARK: { type: "string", default: "#FF90CAF9" },
 
     // 图标配置
     BALL_ICON_TYPE: { type: "enum", values: ["app", "file", "android", "shortx"], default: "app" },
@@ -193,10 +189,6 @@ var ConfigValidator = {
     PANEL_LABEL_TOP_MARGIN_DP: { type: "int", min: 0, max: 20, default: 4 },
 
     // 主题颜色配置（留空则使用系统莫奈色）
-    THEME_DAY_BG_HEX: { type: "string", default: null },
-    THEME_DAY_TEXT_HEX: { type: "string", default: null },
-    THEME_NIGHT_BG_HEX: { type: "string", default: null },
-    THEME_NIGHT_TEXT_HEX: { type: "string", default: null }
   },
 
   validate: function(key, value) {
@@ -858,12 +850,6 @@ var ConfigManager = {
         PANEL_LABEL_TEXT_SIZE_SP: 12,
         PANEL_LABEL_TOP_MARGIN_DP: 4,
         PANEL_BG_ALPHA: 0.85,
-        SETTINGS_THEME: "animal",
-        THEME_MODE: 1,
-        THEME_DAY_BG_HEX: null,
-        THEME_DAY_TEXT_HEX: null,
-        THEME_NIGHT_BG_HEX: null,
-        THEME_NIGHT_TEXT_HEX: null,
         BALL_PANEL_GAP_DP: 10,
         LOG_ENABLE: true,
         LOG_DEBUG: true,
@@ -880,19 +866,6 @@ var ConfigManager = {
     ],
     defaultSchema: [
         { type: "section", name: "外观" },
-        { key: "SETTINGS_THEME", name: "设置页主题", type: "single_choice", options: [
-            { label: "动物岛风", value: "animal" },
-            { label: "系统莫奈色", value: "monet" }
-        ]},
-        { key: "THEME_MODE", name: "主题模式", type: "single_choice", options: [
-            { label: "跟随系统", value: 0 },
-            { label: "浅色", value: 1 },
-            { label: "深色", value: 2 }
-        ]},
-        { key: "THEME_DAY_BG_HEX", name: "日间背景色(#RRGGBB)", type: "text" },
-        { key: "THEME_DAY_TEXT_HEX", name: "日间文字色(#RRGGBB)", type: "text" },
-        { key: "THEME_NIGHT_BG_HEX", name: "夜间背景色(#RRGGBB)", type: "text" },
-        { key: "THEME_NIGHT_TEXT_HEX", name: "夜间文字色(#RRGGBB)", type: "text" },
         { key: "PANEL_BG_ALPHA", name: "面板背景透明度(0.1~1.0)", type: "float", min: 0.1, max: 1.0, step: 0.05 },
 
         { type: "section", name: "悬浮球" },
@@ -1014,7 +987,21 @@ var ConfigManager = {
     var needReset = false;
     if (s) {
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("SETTINGS_THEME") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_X_DP") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 || sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_RESULT_PREVIEW_TIMEOUT_SEC") < 0 || sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HIT_HEX") < 0 || sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_COLOR_AREA_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
+        var deprecatedThemeSchemaKeys = [
+            "SETTINGS_THEME",
+            "THEME_MODE",
+            "THEME_DAY_BG_HEX",
+            "THEME_DAY_TEXT_HEX",
+            "THEME_NIGHT_BG_HEX",
+            "THEME_NIGHT_TEXT_HEX"
+        ];
+        for (var dtk = 0; dtk < deprecatedThemeSchemaKeys.length; dtk++) {
+            if (sStr.indexOf("\"" + deprecatedThemeSchemaKeys[dtk] + "\"") >= 0) {
+                needReset = true;
+                break;
+            }
+        }
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_X_DP") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 || sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_RESULT_PREVIEW_TIMEOUT_SEC") < 0 || sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HIT_HEX") < 0 || sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_COLOR_AREA_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
             needReset = true;
         }
         if (!needReset && (

@@ -1,4 +1,4 @@
-// @version 1.1.8
+// @version 1.1.9
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -83,41 +83,24 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
 
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var settTheme = "animal";
-  try { settTheme = String(this.config.SETTINGS_THEME || "animal"); } catch(eSetTheme) { settTheme = "animal"; }
-  var useAnimalPanel = (settTheme === "animal" && this.getSettingsColorScheme);
-  var TPanel = null;
-  try { if (useAnimalPanel) TPanel = this.getSettingsColorScheme(); } catch(eTPanel) { TPanel = null; useAnimalPanel = false; }
+  var TPanel = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
 
-  var bgColor = isDark ? C.bgDark : C.bgLight;
-  var cardColor = isDark ? C.cardDark : C.cardLight;
-  var textColor = isDark ? C.textPriDark : C.textPriLight;
-  var panelStrokeColor = isDark ? C.dividerDark : C.dividerLight;
-  var cardStrokeColor = isDark ? C.dividerDark : C.dividerLight;
-  var pressedCardColor = this.withAlpha(C.primary, 0.20);
-  var panelRadiusDp = 22;
-  var cardRadiusDp = 12;
-  var panelElevationDp = 8;
-  var cardElevationDp = 2;
-
-  if (useAnimalPanel && TPanel) {
-    var Color = android.graphics.Color;
-    bgColor = Color.parseColor(isDark ? "#27362E" : "#E4F1DF");
-    cardColor = Color.parseColor(isDark ? "#34463A" : "#FFFDF4");
-    textColor = Color.parseColor(isDark ? "#F5EBD2" : "#3F3528");
-    panelStrokeColor = this.withAlpha(Color.parseColor(isDark ? "#526454" : "#E8DEC8"), isDark ? 0.50 : 0.52);
-    cardStrokeColor = this.withAlpha(Color.parseColor(isDark ? "#526454" : "#E8DEC8"), isDark ? 0.52 : 0.56);
-    pressedCardColor = this.withAlpha(Color.parseColor(isDark ? "#526454" : "#DDEEDB"), isDark ? 0.36 : 0.42);
-    panelRadiusDp = 30;
-    cardRadiusDp = 20;
-    panelElevationDp = isDark ? 1 : 2;
-    cardElevationDp = isDark ? 1 : 2;
-  }
+  var bgColor = TPanel && TPanel.background ? TPanel.background : (isDark ? C.bgDark : C.bgLight);
+  var cardColor = TPanel && TPanel.surface ? TPanel.surface : (isDark ? C.cardDark : C.cardLight);
+  var textColor = TPanel && TPanel.onSurface ? TPanel.onSurface : (isDark ? C.textPriDark : C.textPriLight);
+  var panelStrokeColor = TPanel && TPanel.outlineVariant ? TPanel.outlineVariant : (isDark ? C.dividerDark : C.dividerLight);
+  var cardStrokeColor = panelStrokeColor;
+  var primaryColor = TPanel && TPanel.primary ? TPanel.primary : C.primary;
+  var pressedCardColor = this.withAlpha(primaryColor, isDark ? 0.24 : 0.14);
+  var panelRadiusDp = 24;
+  var cardRadiusDp = 16;
+  var panelElevationDp = isDark ? 2 : 4;
+  var cardElevationDp = isDark ? 1 : 2;
 
   var panel = new android.widget.LinearLayout(context);
   panel.setOrientation(android.widget.LinearLayout.VERTICAL);
 
-  // 面板背景：走统一主题色 API（支持 Monet/动物岛/自定义）
+  // 面板背景：统一使用系统明暗与 Monet 语义色
   // 先设一个柔和临时背景避免裸窗口闪烁，最后再由 updatePanelBackground 统一兜底
   try {
     var tmpBg = this.ui.createStrokeDrawable(bgColor, panelStrokeColor, this.dp(1), this.dp(panelRadiusDp));
@@ -879,7 +862,6 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     var C = this.ui.colors;
     var T = this.getSettingsColorScheme();
     var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-    try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
 
     var body = new android.widget.LinearLayout(context);
     body.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -1335,7 +1317,6 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
   var spec = this.getToolAppResponsiveSpec ? this.getToolAppResponsiveSpec() : null;
   var shellPad = spec ? spec.shellPadding : this.dp(6);
   var shellTopPad = shellPad;
@@ -2718,7 +2699,6 @@ FloatBallAppWM.prototype.buildBallPreviewView = function() {
     var C = this.ui.colors;
     var T = this.getSettingsColorScheme();
     var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-    try { this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
 
     var card = new android.widget.LinearLayout(context);
     card.setOrientation(android.widget.LinearLayout.HORIZONTAL);

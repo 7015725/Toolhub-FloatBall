@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -43,50 +43,6 @@ FloatBallAppWM.prototype.getRotation = function() { try { return this.state.wm.g
 // =======================【工具：alpha/toast/vibrate】======================
 FloatBallAppWM.prototype.withAlpha = function(colorInt, alpha01) { var a = Math.floor(Number(alpha01) * 255); return (colorInt & 0x00FFFFFF) | (a << 24); };
 
-// Animal Island Lite：ToolApp 专用视觉主题。只供设置/按钮管理/编辑页调用，避免覆盖悬浮球 Monet 取色。
-FloatBallAppWM.prototype.getAnimalIslandTheme = function() {
-  var isDark = false;
-  try { isDark = this.isDarkTheme(); } catch(eDark) { isDark = false; }
-  var Color = android.graphics.Color;
-  if (isDark) {
-    return {
-      bg: Color.parseColor("#2F4034"),
-      bg2: Color.parseColor("#3C5142"),
-      leaf: Color.parseColor("#4E6F5B"),
-      card: Color.parseColor("#405243"),
-      card2: Color.parseColor("#4A5D4E"),
-      cream: Color.parseColor("#FFF1D2"),
-      text: Color.parseColor("#FFF1D2"),
-      sub: Color.parseColor("#E3CFA8"),
-      brown: Color.parseColor("#D0AE7A"),
-      primary: Color.parseColor("#8BD7A8"),
-      primaryDeep: Color.parseColor("#5FB980"),
-      primarySoft: Color.parseColor("#3F684F"),
-      danger: Color.parseColor("#F0A08F"),
-      dangerSoft: Color.parseColor("#68453C"),
-      stroke: Color.parseColor("#8B754E"),
-      onPrimary: Color.parseColor("#173524")
-    };
-  }
-  return {
-    bg: Color.parseColor("#A8DDB4"),
-    bg2: Color.parseColor("#DDF3D8"),
-    leaf: Color.parseColor("#7DC395"),
-    card: Color.parseColor("#FFF9E6"),
-    card2: Color.parseColor("#FFFFFF"),
-    cream: Color.parseColor("#FFF9E6"),
-    text: Color.parseColor("#5E472D"),
-    sub: Color.parseColor("#7C5734"),
-    brown: Color.parseColor("#8B643D"),
-    primary: Color.parseColor("#19C8B9"),
-    primaryDeep: Color.parseColor("#0E9E91"),
-    primarySoft: Color.parseColor("#DDF7F2"),
-    danger: Color.parseColor("#D86962"),
-    dangerSoft: Color.parseColor("#FFE7E2"),
-    stroke: Color.parseColor("#E0C79E"),
-    onPrimary: Color.parseColor("#FFFFFF")
-  };
-};
 
 FloatBallAppWM.prototype.toast = function(msg) {
   try {
@@ -142,10 +98,10 @@ FloatBallAppWM.prototype.renderInlineNoticeNow = function() {
         if (!msg) { box.setVisibility(android.view.View.GONE); return; }
         var isDark = self.isDarkTheme ? self.isDarkTheme() : false;
         var C = self.ui && self.ui.colors ? self.ui.colors : {};
-        var T = self.getAnimalIslandTheme ? self.getAnimalIslandTheme() : null;
-        var primary = T && T.primaryDeep ? T.primaryDeep : (C.primary || android.graphics.Color.parseColor("#005BC0"));
-        var error = C.error || C.danger || android.graphics.Color.parseColor("#BA1A1A");
-        var okColor = C.success || primary;
+        var T = self.getSettingsColorScheme ? self.getSettingsColorScheme() : null;
+        var primary = T && T.primary ? T.primary : (C.primary || android.graphics.Color.parseColor("#005BC0"));
+        var error = T && T.danger ? T.danger : (C.danger || android.graphics.Color.parseColor("#BA1A1A"));
+        var okColor = T && T.success ? T.success : (C.success || primary);
         var color = kind === "error" ? error : (kind === "ok" ? okColor : primary);
         var bg = self.withAlpha ? self.withAlpha(color, isDark ? 0.20 : 0.10) : color;
         var stroke = self.withAlpha ? self.withAlpha(color, isDark ? 0.44 : 0.28) : color;
@@ -738,55 +694,56 @@ function startActivityAsUserSafe(ctx, intent, userId) {
 }
 
 FloatBallAppWM.prototype.isDarkTheme = function() {
-  // 0) 优先检查用户强制设置 (0=跟随系统, 1=白天, 2=黑夜)
-  var mode = 0;
-  try { mode = Math.floor(Number(this.config.THEME_MODE || 0));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-
-  if (mode === 2) return true;
-  if (mode === 1) return false;
-
-  // mode === 0 (or others) -> Fallback to system detection
-  // 这段代码的主要内容/用途：更稳健地判断当前是否处于"夜间/暗色"模式（并打印调试日志）。
-  // 说明：system_server 场景下 Configuration.uiMode 偶发不一致，因此再用 UiModeManager 兜底交叉验证。
+  // 设置页与面板统一跟随系统明暗；不再提供手动浅色/深色模式。
   var result = false;
   var from = "unknown";
 
   try {
-    // # 1) 优先用 Configuration（最快）
     var uiMode = context.getResources().getConfiguration().uiMode;
     var nightMask = (uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK);
-    if (nightMask === android.content.res.Configuration.UI_MODE_NIGHT_YES) { result = true; from = "Configuration(UI_MODE_NIGHT_YES)"; }
-    else if (nightMask === android.content.res.Configuration.UI_MODE_NIGHT_NO) { result = false; from = "Configuration(UI_MODE_NIGHT_NO)"; }
-   } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
+    if (nightMask === android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+      result = true;
+      from = "Configuration(UI_MODE_NIGHT_YES)";
+    } else if (nightMask === android.content.res.Configuration.UI_MODE_NIGHT_NO) {
+      result = false;
+      from = "Configuration(UI_MODE_NIGHT_NO)";
+    }
+  } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
 
   if (from === "unknown") {
     try {
-      // # 2) 再用 UiModeManager（更"系统态"）
       var um = context.getSystemService(android.content.Context.UI_MODE_SERVICE);
       if (um) {
         var nm = um.getNightMode();
-        if (nm === android.app.UiModeManager.MODE_NIGHT_YES) { result = true; from = "UiModeManager(MODE_NIGHT_YES)"; }
-        else if (nm === android.app.UiModeManager.MODE_NIGHT_NO) { result = false; from = "UiModeManager(MODE_NIGHT_NO)"; }
-        else { from = "UiModeManager(mode=" + String(nm) + ")"; }
+        if (nm === android.app.UiModeManager.MODE_NIGHT_YES) {
+          result = true;
+          from = "UiModeManager(MODE_NIGHT_YES)";
+        } else if (nm === android.app.UiModeManager.MODE_NIGHT_NO) {
+          result = false;
+          from = "UiModeManager(MODE_NIGHT_NO)";
+        } else {
+          from = "UiModeManager(mode=" + String(nm) + ")";
+        }
       }
-     } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
+    } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
   }
 
-  // # 3) 实在判断不了，就按"非暗色"处理，避免自动主题背景黑成一片
-  if (from === "unknown") { result = false; from = "fallback(false)"; }
+  if (from === "unknown") {
+    result = false;
+    from = "fallback(false)";
+  }
 
-  // 仅在状态改变时打印日志，避免刷屏
-  var logKey = String(result) + "|" + from + "|" + mode;
+  var logKey = String(result) + "|" + from;
   if (this._lastDarkThemeLog !== logKey) {
-      this._lastDarkThemeLog = logKey;
-      try { _th_log(this.L, "d", "[theme] isDarkTheme=" + String(result) + " via=" + from + " mode=" + mode);  } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); }
+    this._lastDarkThemeLog = logKey;
+    try {
+      _th_log(this.L, "d", "[theme] isDarkTheme=" + String(result) + " via=" + from);
+    } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); }
   }
 
-  // # 主题切换时刷新莫奈配色（传入 result 避免递归）
-  // 注：构造函数中会初始化，这里只在构造完成后的切换时触发
   if (this._lastDarkResult !== undefined && this._lastDarkResult !== result) {
     this._lastDarkResult = result;
-    try { this.refreshMonetColors(result);  } catch(eM) { safeLog(null, 'e', "catch " + String(eM)); }
+    try { this.refreshMonetColors(result); } catch(eM) { safeLog(null, 'e', "catch " + String(eM)); }
   } else if (this._lastDarkResult === undefined) {
     this._lastDarkResult = result;
   }
@@ -954,53 +911,27 @@ FloatBallAppWM.prototype.safeParseColor = function(hex, fallbackInt) {
 
 
 FloatBallAppWM.prototype.getPanelBgColorInt = function() {
-  // 这段代码的主要内容/用途：配合"白天/夜晚"两档主题，返回统一的背景颜色（不再依赖自动亮度推断）。
-  var isDark = this.isDarkTheme();
+  var scheme = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
+  var base = scheme && scheme.background
+    ? scheme.background
+    : (this.isDarkTheme()
+        ? (this.ui.colors.bgDark || android.graphics.Color.parseColor("#131314"))
+        : (this.ui.colors.bgLight || android.graphics.Color.parseColor("#F8F9FA")));
 
-  var dayBgHex = (this.config.THEME_DAY_BG_HEX != null) ? String(this.config.THEME_DAY_BG_HEX) : null;
-  var nightBgHex = (this.config.THEME_NIGHT_BG_HEX != null) ? String(this.config.THEME_NIGHT_BG_HEX) : null;
+  var alpha = 1.0;
+  try { alpha = Number(this.config.PANEL_BG_ALPHA); } catch(eAlpha) { alpha = 0.85; }
+  if (!(alpha >= 0.1 && alpha <= 1.0)) alpha = 0.85;
 
-  // # 兼容旧版默认配色：若仍为旧默认值，自动回退到莫奈色
-  if (dayBgHex === "#FAF4E3") dayBgHex = null;
-  if (nightBgHex === "#191928") nightBgHex = null;
-
-  // # 未配置时使用莫奈 surface 色作为回退
-  var dayFallback = this.ui.colors.bgLight || android.graphics.Color.parseColor("#F8F9FA");
-  var nightFallback = this.ui.colors.bgDark || android.graphics.Color.parseColor("#131314");
-
-  var base = isDark
-    ? (nightBgHex ? this.safeParseColor(nightBgHex, nightFallback) : nightFallback)
-    : (dayBgHex ? this.safeParseColor(dayBgHex, dayFallback) : dayFallback);
-
-  // # 继承原配置：面板背景透明度（0~1）
-  var a = 1.0;
-  try { a = Number(this.config.PANEL_BG_ALPHA); } catch (e1) { a = 0.85; }
-  if (!(a >= 0.0 && a <= 1.0)) a = 0.85;
-
-  var out = this.withAlpha(base, a);
-
-  try { _th_log(this.L, "d", "[t]bg isDark=" + isDark + " o=" + _th_hex(out));  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); }
-
-  return out;
+  return this.withAlpha(base, alpha);
 };
 
 FloatBallAppWM.prototype.getPanelTextColorInt = function(bgInt) {
-  // 这段代码的主要内容/用途：配合"白天/夜晚"两档主题，返回统一的文字颜色（不再依赖自动亮度推断）。
-  var isDark = this.isDarkTheme();
-
-  var dayTextHex = (this.config.THEME_DAY_TEXT_HEX != null) ? String(this.config.THEME_DAY_TEXT_HEX) : null;
-  var nightTextHex = (this.config.THEME_NIGHT_TEXT_HEX != null) ? String(this.config.THEME_NIGHT_TEXT_HEX) : null;
-
-  // # 兼容旧版默认配色：若仍为旧默认值，自动回退到莫奈色
-  if (dayTextHex === "#333333") dayTextHex = null;
-  if (nightTextHex === "#E6E6F0") nightTextHex = null;
-
-  // # 未配置时使用莫奈 onSurface 色作为回退
-  var dayFallback = this.ui.colors.textPriLight || android.graphics.Color.parseColor("#1F1F1F");
-  var nightFallback = this.ui.colors.textPriDark || android.graphics.Color.parseColor("#E3E3E3");
-
-  if (!isDark) return dayTextHex ? this.safeParseColor(dayTextHex, dayFallback) : dayFallback;
-  return nightTextHex ? this.safeParseColor(nightTextHex, nightFallback) : nightFallback;
+  var scheme = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
+  if (scheme && scheme.onBackground) return scheme.onBackground;
+  if (this.getSettingsBestTextColor && bgInt) return this.getSettingsBestTextColor(bgInt);
+  return this.isDarkTheme()
+    ? (this.ui.colors.textPriDark || android.graphics.Color.parseColor("#E3E3E3"))
+    : (this.ui.colors.textPriLight || android.graphics.Color.parseColor("#1F1F1F"));
 };
 
 FloatBallAppWM.prototype.applyTextColorRecursive = function(v, colorInt) {
@@ -1020,56 +951,60 @@ FloatBallAppWM.prototype.applyTextColorRecursive = function(v, colorInt) {
 };
 
 FloatBallAppWM.prototype.updatePanelBackground = function(panelView) {
-  // 这段代码的主要内容/用途：统一为"主面板/设置面板/查看器面板"应用背景与文字颜色；SETTINGS_THEME=animal 时使用动物岛色，monet 时保持系统莫奈。
   try {
-    var bg = new android.graphics.drawable.GradientDrawable();
+    var scheme = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
     var isDark = this.isDarkTheme();
-    var settTheme = "animal";
-    try { settTheme = String(this.config.SETTINGS_THEME || "animal"); } catch(eSetTheme) { settTheme = "animal"; }
+    var bgInt = scheme && scheme.background
+      ? scheme.background
+      : (isDark ? this.ui.colors.bgDark : this.ui.colors.bgLight);
+    var textInt = scheme && scheme.onBackground
+      ? scheme.onBackground
+      : this.getPanelTextColorInt(bgInt);
+    var strokeBase = scheme && scheme.outlineVariant
+      ? scheme.outlineVariant
+      : (isDark ? this.ui.colors.dividerDark : this.ui.colors.dividerLight);
 
-    var bgInt = 0;
-    var tc = 0;
-    var stroke = 0;
-    var radiusDp = 22;
+    var alpha = 1.0;
+    try { alpha = Number(this.config.PANEL_BG_ALPHA); } catch(eAlpha) { alpha = 0.85; }
+    if (!(alpha >= 0.1 && alpha <= 1.0)) alpha = 0.85;
+    bgInt = this.withAlpha(bgInt, alpha);
 
-    if (settTheme === "animal" && this.getAnimalIslandTheme) {
-      var Color = android.graphics.Color;
-      bgInt = Color.parseColor(isDark ? "#27362E" : "#E4F1DF");
-      tc = Color.parseColor(isDark ? "#F5EBD2" : "#3F3528");
-      stroke = this.withAlpha(Color.parseColor(isDark ? "#526454" : "#E8DEC8"), isDark ? 0.50 : 0.52);
-      radiusDp = 30;
-    } else {
-      bgInt = this.getPanelBgColorInt();
-      tc = this.getPanelTextColorInt(bgInt);
-      var outlineColor = this.ui.colors._monetOutline || (isDark ? android.graphics.Color.parseColor("#8E918F") : android.graphics.Color.parseColor("#747775"));
-      stroke = this.withAlpha(outlineColor, isDark ? 0.26 : 0.20);
-    }
-
-    bg.setCornerRadius(this.dp(radiusDp));
+    var bg = new android.graphics.drawable.GradientDrawable();
+    bg.setCornerRadius(this.dp(24));
     bg.setColor(bgInt);
-
-    // 轻量描边：亮色时更明显，暗色时也保留一点边界（不提供自定义输入，避免设置页复杂化）
-    var sw = this.dp(1);
-    try { bg.setStroke(sw, stroke);  } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
-
+    try {
+      bg.setStroke(this.dp(1), this.withAlpha(strokeBase, isDark ? 0.28 : 0.22));
+    } catch(eStroke) { safeLog(null, 'e', "catch " + String(eStroke)); }
     panelView.setBackground(bg);
 
-    try { themeBgInt = bgInt; themeTextInt = tc;  } catch(eT) { safeLog(null, 'e', "catch " + String(eT)); }
-    this.applyTextColorRecursive(panelView, tc);
+    try { themeBgInt = bgInt; themeTextInt = textInt; } catch(eCompat) {}
 
-    try { _th_log(this.L, "d", "[t]apply theme=" + settTheme + " bg=" + _th_hex(bgInt) + " tx=" + _th_hex(tc));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+    // 设置页子控件已使用语义色，不再递归覆盖状态色；旧主面板/查看器保留兼容兜底。
+    var preserveSemanticColors = false;
+    try {
+      var route = String(this.state && this.state.toolAppRoute || "");
+      preserveSemanticColors =
+        route === "settings" ||
+        route.indexOf("settings_") === 0 ||
+        route.indexOf("settings/") === 0 ||
+        (this.state && this.state.addedSettings && panelView === this.state.settingsPanel);
+    } catch(eRoute) { preserveSemanticColors = false; }
+
+    if (!preserveSemanticColors && this.applyTextColorRecursive) {
+      this.applyTextColorRecursive(panelView, textInt);
+    }
 
     try {
       _th_log(this.L, "d",
-        "[theme:apply] theme=" + settTheme +
+        "[theme:apply] scheme=system-monet" +
         " isDark=" + isDark +
-        " bg=" + _th_hex(bgInt) + " " + _th_argb(bgInt) +
-        " text=" + _th_hex(tc) + " " + _th_argb(tc) +
-        " stroke=" + _th_hex(stroke)
+        " bg=" + _th_hex(bgInt) +
+        " text=" + _th_hex(textInt) +
+        " semantic=" + preserveSemanticColors
       );
-     } catch(eL0) { safeLog(null, 'e', "catch " + String(eL0)); }
-  } catch (e) {
-    try { _th_log(this.L, "e", "[theme:apply] err=" + String(e));  } catch(eL1) { safeLog(null, 'e', "catch " + String(eL1)); }
+    } catch(eLog) { safeLog(null, 'e', "catch " + String(eLog)); }
+  } catch(e) {
+    try { _th_log(this.L, "e", "[theme:apply] err=" + String(e)); }
+    catch(eLog2) { safeLog(null, 'e', "catch " + String(eLog2)); }
   }
 };
-

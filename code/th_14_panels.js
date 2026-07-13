@@ -1,39 +1,4 @@
-// @version 1.0.15
-
-// 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
-// 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
-// 传入 T、isDark、C(this.ui.colors)、cfgTpl(配置源)，直接修改 T 的字段。
-FloatBallAppWM.prototype.applySettingsTheme = function(T, isDark, C, cfgTpl) {
-  var settTheme = String((cfgTpl || this.config).SETTINGS_THEME || "animal");
-  if (settTheme !== "monet") return;
-  try {
-    var Color = android.graphics.Color;
-    var monetBg = isDark ? C.bgDark : C.bgLight;
-    var monetTxt = isDark ? C.textPriDark : C.textPriLight;
-    var monetSub = isDark ? C.textSecDark : C.textSecLight;
-    var monetCard = C._monetSurfaceContainerLow || (isDark ? C.cardDark : C.cardLight);
-    var monetCard2 = C._monetSurfaceContainerHigh || (isDark ? C.inputBgDark : C.inputBgLight);
-    var monetPrimary = C.primary;
-    var monetPrimaryContainer = C._monetPrimaryContainer || this.withAlpha(monetPrimary, isDark ? 0.28 : 0.14);
-    var monetOnPrimaryContainer = C._monetOnPrimaryContainer || monetPrimary;
-    var monetOnP = C._monetOnPrimary || (isDark ? Color.parseColor("#062E6F") : Color.WHITE);
-    T.bg = monetBg;
-    T.card = monetCard;
-    T.card2 = monetCard2;
-    T.text = monetTxt;
-    T.sub = monetSub;
-    T.primary = monetPrimary;
-    T.primaryDeep = monetOnPrimaryContainer;
-    T.primarySoft = monetPrimaryContainer;
-    T.brown = monetOnPrimaryContainer;
-    T.stroke = C._monetOutlineVariant || (isDark ? this.withAlpha(monetTxt, 0.16) : this.withAlpha(monetTxt, 0.12));
-    T.onPrimary = monetOnP;
-  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-};
-
-FloatBallAppWM.prototype.isSettingsMonetTheme = function(cfgTpl) {
-  try { return String((cfgTpl || this.config).SETTINGS_THEME || "animal") === "monet"; } catch(e) { return false; }
-};
+// @version 1.0.16
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -84,25 +49,13 @@ FloatBallAppWM.prototype.addSettingsGridChild = function(parent, child, columns)
 };
 
 FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
-  var cfgTpl = null;
-  try { cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config; } catch(eCfg) { cfgTpl = this.config; }
-  if (this.isSettingsMonetTheme && this.isSettingsMonetTheme(cfgTpl)) {
-    return [
-      { key: "ball", title: "悬浮球", desc: "大小、图标、颜色、位置和跟随距离", sections: ["悬浮球"] },
-      { key: "pointer", title: "指针", desc: "大小、贴边、悬停、取字保护、OCR阈值和颜色", sections: ["指针"] },
-      { key: "panel", title: "面板", desc: "排列、文字、位置和吸边行为", sections: ["面板布局", "面板文字", "吸边与位置"] },
-      { key: "theme", title: "外观", desc: "颜色、背景、透明度和动态取色", sections: ["外观"] },
-      { key: "motion", title: "动作与手势", desc: "点击、长按、动画和贴边回弹", sections: ["动画", "动作与手势"] },
-      { key: "debug", title: "运行记录", desc: "查看日志与当前状态", sections: ["日志"] }
-    ];
-  }
   return [
-    { key: "ball", title: "悬浮球", desc: "调整悬浮球大小、图标、位置和面板距离", sections: ["悬浮球"] },
-    { key: "pointer", title: "指针", desc: "调整指针大小、悬停、结果预览、OCR阈值和颜色", sections: ["指针"] },
-    { key: "panel", title: "工具面板", desc: "调整面板排列、文字、位置和吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
-    { key: "theme", title: "换装与装饰", desc: "更换颜色、背景和透明度", sections: ["外观"] },
-    { key: "motion", title: "动作与手势", desc: "调整点击、长按和贴边回弹效果", sections: ["动画", "动作与手势"] },
-    { key: "debug", title: "运行记录", desc: "查看日志和运行状态", sections: ["日志"] }
+    { key: "ball", title: "悬浮球", desc: "大小、图标、颜色、位置和面板距离", sections: ["悬浮球"] },
+    { key: "pointer", title: "指针", desc: "大小、贴边、悬停、取字保护、OCR 阈值和颜色", sections: ["指针"] },
+    { key: "panel", title: "面板", desc: "排列、文字、位置和吸边行为", sections: ["面板布局", "面板文字", "吸边与位置"] },
+    { key: "theme", title: "外观", desc: "系统动态配色与背景透明度", sections: ["外观"] },
+    { key: "motion", title: "动作与手势", desc: "点击、长按、动画和贴边回弹", sections: ["动画", "动作与手势"] },
+    { key: "debug", title: "运行记录", desc: "查看日志与当前状态", sections: ["日志"] }
   ];
 };
 
@@ -224,7 +177,6 @@ FloatBallAppWM.prototype.createPointerSettingsBlockDesc = function(parent, block
     var C = this.ui.colors;
     var T = this.getSettingsColorScheme();
     var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-    this.applySettingsTheme(T, isDark, C, cfgTpl);
     var tv = new android.widget.TextView(context);
     tv.setText(String(blockDef.desc || ""));
     tv.setTextColor(T.sub);
@@ -278,7 +230,6 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  try { this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) {}
   var tabs = this.getBallSettingsSubtabs ? this.getBallSettingsSubtabs() : [];
   if (!tabs || tabs.length <= 1) return;
   var active = this.getActiveBallSettingsSubtab ? this.getActiveBallSettingsSubtab() : String(tabs[0].key);
@@ -366,7 +317,6 @@ FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function(parent, icon
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var row = new android.widget.LinearLayout(context);
   row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   row.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -396,7 +346,6 @@ FloatBallAppWM.prototype.getIslandPickerTheme = function() {
   var T = this.getSettingsColorScheme();
   var cfgTpl = null;
   try { cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config; } catch(eCfg) { cfgTpl = this.config; }
-  try { this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) {}
   return {
     isDark: isDark,
     C: C,
@@ -420,8 +369,7 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
-  var useMonet = this.isSettingsMonetTheme ? this.isSettingsMonetTheme(cfgTpl) : false;
+  var useMonet = true ? true : false;
   var row = new android.widget.LinearLayout(context);
   row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   row.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -638,7 +586,6 @@ FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, o
   var T = this.getSettingsColorScheme();
   var C = this.ui.colors;
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var updateState = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
   var visual = this.getToolHubUpdateVisual ? this.getToolHubUpdateVisual(updateState, T, isDark) : null;
   var pill = new android.widget.LinearLayout(context);
@@ -904,7 +851,6 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   var T = this.getSettingsColorScheme();
   var C = this.ui.colors;
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var updateState = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
   var visual = this.getToolHubUpdateVisual ? this.getToolHubUpdateVisual(updateState, T, isDark) : null;
   var box = new android.widget.LinearLayout(context);
@@ -1021,7 +967,6 @@ FloatBallAppWM.prototype.createSettingsConfigStatusPill = function(statusLabel, 
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var pill = new android.widget.LinearLayout(context);
   pill.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   pill.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -1066,7 +1011,6 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
   var compactWelcome = spec && (spec.isLandscape || spec.isExpandedWidth || spec.isWideWidth);
   var tightWidth = spec && spec.isCompactWidth;
@@ -1221,7 +1165,6 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
   var columns = (spec && spec.isWideWidth) ? 2 : 1;
   var cardRadius = spec ? spec.cardRadius : this.dp(18);
@@ -1391,7 +1334,6 @@ FloatBallAppWM.prototype.buildSettingsRouteDetailPane = function(route, title, d
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var root = new android.widget.LinearLayout(context);
   root.setOrientation(android.widget.LinearLayout.VERTICAL);
   root.setPadding(0, 0, 0, 0);
@@ -1436,7 +1378,6 @@ FloatBallAppWM.prototype.createSettingsMasterMenuItem = function(parent, cat, se
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var row = new android.widget.LinearLayout(context);
   row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   row.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -1493,9 +1434,8 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
   var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
-  var useMonetHome = this.isSettingsMonetTheme ? this.isSettingsMonetTheme(cfgTpl) : false;
+  var useMonetHome = true ? true : false;
   var useMasterDetail = spec && spec.useSideBySide;
   var columns = spec ? spec.gridColumnCount : 1;
   var cardRadius = spec ? spec.cardRadius : this.dp(24);
@@ -1805,7 +1745,6 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
 
   // 设置页主题切换：animal（默认动物岛风）或 monet（系统莫奈色）
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  this.applySettingsTheme(T, isDark, C, cfgTpl);
 
   var bgColor = T.bg;
   var cardColor = T.card;
