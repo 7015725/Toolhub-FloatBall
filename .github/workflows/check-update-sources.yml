@@ -1,0 +1,42 @@
+name: check-update-sources
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-update-sources
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify update sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Check GitHub and Gitea release consistency
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/check_update_source_consistency.py --timeout 20 --retries 2 2>&1 | tee update-source-consistency.log
+
+      - name: Upload consistency report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-source-consistency-report
+          path: update-source-consistency.log
+          if-no-files-found: error
+          retention-days: 14
