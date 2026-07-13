@@ -97,8 +97,7 @@ PASS pointer-core / OCR residue absent pickBallSide18
 PASS pointer-core / OCR residue absent 启动反馈：子模块加载完成
 PASS pointer-core / th18 performance extension remains
 PASS pointer-core / th18 OCR extension remains
-FAIL shared / manifest: scripts/verify_manifest.py failed:
-FAIL: ToolHub.js.sha256 mismatch
-FAIL pointer_regressions passed=99 failed=1
+PASS shared / manifest
+OK pointer_regressions issue85=17 text_release=47 pointer_core=35 total=100
 
-exit_status=1
+exit_status=0
