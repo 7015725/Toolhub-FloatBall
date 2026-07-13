@@ -115,6 +115,7 @@ jobs:
           {
             python3 .github/scripts/es5_scan.py
             python3 scripts/verify_js_syntax.py
+            python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.generated.md
             python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
             python3 scripts/verify_entry_redundancy_cleanup.py
             python3 scripts/verify_entry_writable_probe.py
@@ -151,7 +152,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: toolhub-verification-log
-          path: toolhub-verification-log.txt
+          path: |
+            toolhub-verification-log.txt
+            ENTRY_SYMBOL_AUDIT.generated.md
           if-no-files-found: error
           retention-days: 7
 
@@ -163,3 +166,4 @@ jobs:
             git diff --check "origin/${{ github.base_ref }}...HEAD"
           else
             git show --check --pretty=oneline --summary HEAD
+          fi
