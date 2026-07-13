@@ -13,7 +13,7 @@
 - 子模块文件：`26`
 - 普通函数定义：`94`
 - 顶层变量：`29`
-- 跨模块引用函数：`4`
+- 跨模块引用函数：`8`
 - 动态引用待确认函数：`0`
 - 高置信度零引用函数候选：`0`
 - 高置信度零引用变量候选：`0`
@@ -54,7 +54,7 @@
 |`syncFileOutput`|68|7|入口内使用|2|2|0|0|0|
 |`canWriteDirPath`|78|8|入口内使用|1|1|0|0|0|
 |`assertWritableDirPath`|87|23|入口内使用|2|2|0|0|0|
-|`getToolHubRootDir`|111|18|入口内使用|3|3|0|0|0|
+|`getToolHubRootDir`|111|18|跨模块引用|3|3|1|2|0|
 |`getLogPath`|135|1|入口内使用|1|1|0|0|0|
 |`getCodeDirPath`|136|1|入口内使用|8|8|0|0|0|
 |`getTrustedShaPath`|137|1|入口内使用|3|3|0|0|0|
@@ -62,13 +62,13 @@
 |`getInstalledManifestPath`|139|1|入口内使用|3|3|0|0|0|
 |`getModuleTxnMarkerPath`|140|1|入口内使用|4|4|0|0|0|
 |`getModuleTxnCommitPath`|141|1|入口内使用|4|4|0|0|0|
-|`writeLog`|143|27|入口内使用|48|48|0|0|0|
+|`writeLog`|143|27|跨模块引用|48|48|2|2|0|
 |`runShell`|171|7|入口内使用|1|1|0|0|0|
 |`setDirPerms`|179|6|入口内使用|2|2|0|0|0|
 |`ensureCodeDir`|186|16|入口内使用|8|8|0|0|0|
 |`readTextFile`|203|16|入口内使用|6|6|0|0|0|
-|`writeTextFile`|220|20|入口内使用|7|7|0|0|0|
-|`readFirstLine`|241|6|入口内使用|3|3|0|0|0|
+|`writeTextFile`|220|20|跨模块引用|7|7|1|2|0|
+|`readFirstLine`|241|6|跨模块引用|3|3|1|2|0|
 |`sha256File`|248|23|入口内使用|17|17|0|0|0|
 |`saveTrustedSha`|272|1|入口内使用|7|7|0|0|0|
 |`getTrustedSha`|273|1|入口内使用|4|4|0|0|0|
@@ -125,7 +125,7 @@
 |`recoverPendingModuleTransaction`|1091|33|入口内使用|2|2|0|0|0|
 |`executeStagedModuleTransaction`|1125|50|入口内使用|1|1|0|0|0|
 |`installPendingModuleUpdates`|1177|90|跨模块引用|0|0|1|2|0|
-|`checkToolHubModuleUpdatesNow`|1269|78|跨模块引用|0|0|2|4|0|
+|`checkToolHubModuleUpdatesNow`|1269|78|跨模块引用|0|0|2|8|0|
 |`checkModuleManifestConsistency`|1349|51|入口内使用|2|2|0|0|0|
 |`verifyLocalModuleBeforeEval`|1401|21|入口内使用|1|1|0|0|0|
 |`loadScript`|1423|29|入口内使用|2|2|0|0|0|
