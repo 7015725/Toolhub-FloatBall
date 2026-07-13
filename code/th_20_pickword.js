@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -322,12 +322,10 @@
     // 胶囊圆角比例：0.5 表示半高圆角（标准胶囊）
     var MAGNIFIER_CORNER_RATIO = 0.5;
 
-    // 长文本首屏加载策略：先显示前 N 字，让窗口先出来，再延迟补全全文。
-    // 调大可减少“二次补全文”感，但首屏更慢；调小首屏更快，但长文会更明显地分段加载。
+    // 长文本首屏加载策略：窗口显示前同步排版前 N 字，并一次确定稳定文本区高度。
+    // TEXT_AREA_HEIGHT_DP 仅作为最大高度；短文本按实际高度，长文本超出后在内部滚动。
     var INITIAL_TEXT_FAST_LIMIT = 1500;
-    // 主 UI 创建后延迟多少 ms 再填入文本。给窗口 addView/入场动画让路，避免首屏阻塞。
-    var INITIAL_TEXT_DELAY_MS = 60;
-    // 完整长文本补全延迟(ms)。建议晚于首屏动画和放大镜预热；太小会重新卡首屏，太大用户等待更久。
+    // 完整长文本补全延迟(ms)。补全文时保持首次文本区高度不变，避免外层窗口二次伸缩。
     var FULL_TEXT_DELAY_MS = 1200;
     var pendingFullTextRunnable = null;
     var pendingFingerPreviewWarmupRunnable = null;
@@ -1508,9 +1506,9 @@
                         if (seekBar) seekBar.setProgress(currentFontSize - MIN_FONT_SIZE);
                         if (fontSizeLabel) fontSizeLabel.setText(currentFontSize + "sp");
                         if (textCanvasControl) textCanvasControl.setTextSize(currentFontSize);
+                        self.scheduleInitialTextLoad();
                         mainLayout.setVisibility(View.VISIBLE);
                         animatePickwordMainEnter(mainLayout);
-                        self.scheduleInitialTextLoad();
                     } catch (e) {
                         showToast("显示窗口失败: " + e.message);
                         isShowing = false;
@@ -1567,7 +1565,6 @@
                 try {
                     self.createWindow();
                     animatePickwordMainEnter(mainLayout);
-                    self.scheduleInitialTextLoad();
                 } catch (e) {
                     showToast("创建窗口失败: " + e.message);
                     isShowing = false;
@@ -1648,7 +1645,7 @@
             mainHandler.postDelayed(pendingFingerPreviewWarmupRunnable, delayMs || 900);
         },
 
-        loadFullTextNow: function(showMsg) {
+        loadFullTextNow: function(showMsg, preserveHeight) {
             try {
                 if (!isShowing || !textView || !isPartialTextLoaded) return false;
                 if (isDragging || selectedIndices.length > 0) {
@@ -1667,7 +1664,7 @@
                 cleanUndoStack = [];
                 this.updateTextView(true);
                 this.updateActionButtons();
-                this.adjustScrollViewHeight();
+                if (preserveHeight !== true) this.adjustScrollViewHeight();
                 if (showMsg) showToast("长文本已加载完整");
                 return true;
             } catch (e1) {
@@ -1682,48 +1679,40 @@
                 try { mainHandler.removeCallbacks(pendingFullTextRunnable); } catch (e0) {}
                 pendingFullTextRunnable = null;
             }
-            if (textCanvasControl) {
-                try { textCanvasControl.setText("正在加载文本…"); } catch (e1) {}
-            }
-            mainHandler.postDelayed(new java.lang.Runnable({
-                run: function() {
-                    try {
-                        if (!isShowing || !textView) return;
-                        var source = String(originalFullText || fullText || "");
-                        if (source.length > INITIAL_TEXT_FAST_LIMIT) {
-                            isPartialTextLoaded = true;
-                            fullText = source.substring(0, INITIAL_TEXT_FAST_LIMIT);
-                            self.updateTextView(true);
-                            self.updateActionButtons();
-                            self.adjustScrollViewHeight();
-                            self.scheduleFingerPreviewWarmup(900);
-
-                            pendingFullTextRunnable = new java.lang.Runnable({
-                                run: function() {
-                                    try {
-                                        if (!isShowing || !textView) return;
-                                        if (isDragging || selectedIndices.length > 0) {
-                                            mainHandler.postDelayed(pendingFullTextRunnable, 600);
-                                            return;
-                                        }
-                                        self.loadFullTextNow(false);
-                                    } catch (e2) {}
-                                }
-                            });
-                            mainHandler.postDelayed(pendingFullTextRunnable, FULL_TEXT_DELAY_MS);
-                        } else {
-                            isPartialTextLoaded = false;
-                            fullText = source;
-                            self.updateTextView(true);
-                            self.updateActionButtons();
-                            self.adjustScrollViewHeight();
-                            self.scheduleFingerPreviewWarmup(700);
-                        }
-                    } catch (e3) {
-                        showToast("加载文本失败: " + e3.message);
-                    }
+            try {
+                var source = String(originalFullText || fullText || "");
+                if (source.length > INITIAL_TEXT_FAST_LIMIT) {
+                    isPartialTextLoaded = true;
+                    fullText = source.substring(0, INITIAL_TEXT_FAST_LIMIT);
+                } else {
+                    isPartialTextLoaded = false;
+                    fullText = source;
                 }
-            }), INITIAL_TEXT_DELAY_MS);
+
+                this.updateTextView(true);
+                this.updateActionButtons();
+                this.applyScrollViewHeightNow();
+                this.scheduleFingerPreviewWarmup(isPartialTextLoaded ? 900 : 700);
+
+                if (isPartialTextLoaded) {
+                    pendingFullTextRunnable = new java.lang.Runnable({
+                        run: function() {
+                            try {
+                                if (!isShowing || !textView) return;
+                                if (isDragging || selectedIndices.length > 0) {
+                                    mainHandler.postDelayed(pendingFullTextRunnable, 600);
+                                    return;
+                                }
+                                // 首批文本已经确定外层窗口高度；补全全文只扩展内部可滚动内容。
+                                self.loadFullTextNow(false, true);
+                            } catch (e1) {}
+                        }
+                    });
+                    mainHandler.postDelayed(pendingFullTextRunnable, FULL_TEXT_DELAY_MS);
+                }
+            } catch (e2) {
+                showToast("加载文本失败: " + e2.message);
+            }
         },
 
         installCanvasScrollRefreshHooks: function() {
@@ -1851,7 +1840,7 @@
             mainLayout.addView(titleBar);
 
             scrollView = new ScrollView(appContext);
-            var scrollParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, textAreaHeight);
+            var scrollParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(60, 72));
             scrollParams.setMargins(0, uiDp(12, 14), 0, uiDp(8, 10));
             scrollView.setLayoutParams(scrollParams);
             try { scrollView.setFillViewport(false); } catch (eFill) {}
@@ -1888,6 +1877,8 @@
             mainLayout.addView(actionBar);
             this.updateActionButtons();
 
+            // 在 addView 前同步排版首屏文本并确定最终文本区高度，避免首帧先按最大高度显示。
+            this.scheduleInitialTextLoad();
             windowManager.addView(mainLayout, layoutParams);
         },
 
@@ -2014,18 +2005,29 @@
             }
         },
 
+        applyScrollViewHeightNow: function() {
+            if (!scrollView || !textCanvasControl) return 0;
+            try {
+                var contentHeight = textCanvasControl.getContentHeight();
+                var newHeight = Math.max(uiDp(60, 72), Math.min(contentHeight + uiDp(8, 10), textAreaHeight));
+                var params = scrollView.getLayoutParams();
+                if (params.height !== newHeight) {
+                    params.height = newHeight;
+                    scrollView.setLayoutParams(params);
+                }
+                return newHeight;
+            } catch (e) {}
+            return 0;
+        },
+
         adjustScrollViewHeight: function() {
             if (!scrollView || !textCanvasControl) return;
             if (pendingAdjustRunnable) { mainHandler.removeCallbacks(pendingAdjustRunnable); pendingAdjustRunnable = null; }
+            var self = this;
             pendingAdjustRunnable = new java.lang.Runnable({
                 run: function() {
                     pendingAdjustRunnable = null;
-                    try {
-                        var contentHeight = textCanvasControl.getContentHeight();
-                        var newHeight = Math.max(uiDp(60, 72), Math.min(contentHeight + uiDp(8, 10), textAreaHeight));
-                        var params = scrollView.getLayoutParams();
-                        if (params.height !== newHeight) { params.height = newHeight; scrollView.setLayoutParams(params); }
-                    } catch (e) {}
+                    try { self.applyScrollViewHeightNow(); } catch (e) {}
                 }
             });
             mainHandler.postDelayed(pendingAdjustRunnable, 50);
