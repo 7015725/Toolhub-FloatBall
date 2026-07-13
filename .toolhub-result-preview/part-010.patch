@@ -1,0 +1,221 @@
++            params.setMargins(uiDp(4, 6), 0, uiDp(4, 6), 0); btn.setLayoutParams(params);
++            btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
++            applyButtonAnimation(btn); return btn;
++        },
++
++        createMiniHeaderBtn: function(text, callback) {
++            var btn = new TextView(appContext);
++            btn.setText(text);
++            safeTextColor(btn, Colors.onPrimary);
++            btn.setTextSize(uiTextSize(10, 11));
++            btn.setGravity(Gravity.CENTER);
++            btn.setSingleLine(true);
++            btn.setPadding(uiDp(8, 10), uiDp(4, 5), uiDp(8, 10), uiDp(4, 5));
++            btn.setBackground(createPressableDrawable(Colors.btnPrimaryBg, Colors.btnPrimaryPressed, isTablet ? 12 : 10));
++            var params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
++            params.setMargins(uiDp(8, 10), 0, 0, 0);
++            btn.setLayoutParams(params);
++            btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
++            applyButtonAnimation(btn);
++            return btn;
++        },
++
++        createSettingChipBtn: function(text, callback) {
++            var btn = new TextView(appContext);
++            btn.setText(text);
++            safeTextColor(btn, Colors.textSecondary);
++            btn.setTextSize(uiTextSize(10, 11));
++            btn.setGravity(Gravity.CENTER);
++            btn.setSingleLine(true);
++            btn.setPadding(uiDp(7, 9), uiDp(4, 5), uiDp(7, 9), uiDp(4, 5));
++            btn.setBackground(createPressableDrawable(Colors.btnSecondaryBg, Colors.btnSecondaryPressed, isTablet ? 12 : 10));
++            var params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
++            params.setMargins(uiDp(4, 5), 0, 0, 0);
++            btn.setLayoutParams(params);
++            btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
++            applyButtonAnimation(btn);
++            return btn;
++        },
++
++        createFingerPreview: function() {
++            if (systemMagnifierEnabled && systemMagnifier) return; // 已创建且可用：直接复用，避免重复创建
++            if (magnifierDisabledByError) return; // 已触发熔断禁用：不再尝试创建，优先保稳定
++            if (forceDisableSystemMagnifier) {
++                systemMagnifierEnabled = false;
++                magnifierUseAdvancedShow = false;
++                systemMagnifier = null;
++                if (!forceDisableMagnifierToastShown) {
++                    forceDisableMagnifierToastShown = true;
++                    showToast("系统放大镜已手动关闭，继续使用无放大镜模式");
++                }
++                return;
++            }
++            try {
++                if (!textView) return; // 文本视图不存在时无法绑定放大镜
++                var sdkInt = android.os.Build.VERSION.SDK_INT;
++                if (sdkInt < 28) {
++                    systemMagnifierEnabled = false; // 低于 API 28 明确标记不可用
++                    magnifierUseAdvancedShow = false;
++                    if (!fingerPreviewCreateErrorShown) {
++                        fingerPreviewCreateErrorShown = true; // 仅提示一次，避免频繁弹窗
++                        showToast("系统放大镜需要 Android 9+ (API 28)"); // 告知版本门槛
++                    }
++                    return; // 低版本直接退出
++                }
++                var Magnifier = android.widget.Magnifier;
++                systemMagnifier = null;
++                magnifierUseAdvancedShow = false;
++
++                // API 28 也支持 Magnifier，但 Builder/四参数 show 在部分版本/ROM 上不稳定。
++                // 因此：API 29+ 且非安全模式才使用 Builder 外观参数；API 28 或安全模式走最保守构造与 show(x,y)。
++                if (sdkInt >= 29 && !magnifierSafeMode) {
++                    try {
++                        var builder = new Magnifier.Builder(textView);
++                        try { builder.setInitialZoom(FINGER_PREVIEW_ZOOM); } catch (e0) {}
++                        try {
++                            var baseSize = Math.round(uiDp(FINGER_PREVIEW_SIZE_DP, FINGER_PREVIEW_SIZE_DP));
++                            if (baseSize > 0) {
++                                var minHeightPx = Math.round(uiDp(MAGNIFIER_MIN_HEIGHT_DP, MAGNIFIER_MIN_HEIGHT_DP));
++                                var minWidthExtraPx = Math.round(uiDp(MAGNIFIER_MIN_WIDTH_EXTRA_DP, MAGNIFIER_MIN_WIDTH_EXTRA_DP));
++                                var magnifierHeight = Math.max(minHeightPx, Math.round(baseSize * MAGNIFIER_HEIGHT_RATIO));
++                                var magnifierWidth = Math.max(magnifierHeight + minWidthExtraPx, Math.round(magnifierHeight * MAGNIFIER_WIDTH_RATIO));
++                                builder.setSize(magnifierWidth, magnifierHeight);
++                                try { builder.setCornerRadius(Math.round(magnifierHeight * MAGNIFIER_CORNER_RATIO)); } catch (e2) {}
++                            }
++                            try {
++                                var offsetY = -Math.round(uiDp(FINGER_PREVIEW_OFFSET_Y_DP, FINGER_PREVIEW_OFFSET_Y_DP));
++                                builder.setDefaultSourceToMagnifierOffset(0, offsetY);
++                            } catch (e3) {}
++                        } catch (e1) {}
++                        systemMagnifier = builder.build();
++                        magnifierUseAdvancedShow = true;
++                    } catch (eBuilder) {
++                        appendMagnifierErrorLog("CREATE_BUILDER_FALLBACK", eBuilder, "profile=" + romProfile.summary);
++                        magnifierSafeMode = true;
++                        systemMagnifier = null;
++                        magnifierUseAdvancedShow = false;
++                    }
++                }
++
++                if (!systemMagnifier) {
++                    systemMagnifier = new Magnifier(textView); // API 28+ 保守路径：默认开启且兼容 Android 9
++                    magnifierUseAdvancedShow = false;
++                    magnifierSafeMode = true;
++                }
++
++                systemMagnifierEnabled = true; // 创建成功：标记可用
++                magnifierErrorCount = 0; // 创建成功后清空异常计数（解除历史失败影响）
++            } catch (e) {
++                systemMagnifier = null; // 创建失败：确保实例清空
++                systemMagnifierEnabled = false; // 创建失败：确保可用标记关闭
++                magnifierUseAdvancedShow = false;
++                magnifierSafeMode = true; // 创建异常后立即切入安全模式，后续只走保守调用
++                magnifierErrorCount++; // 记录一次创建异常
++                appendMagnifierErrorLog("CREATE", e, "profile=" + romProfile.summary);
++                if (MAGNIFIER_AUTO_DISABLE_ON_ERROR && magnifierErrorCount >= MAGNIFIER_MAX_ERROR_COUNT) {
++                    magnifierDisabledByError = true; // 达到阈值：触发熔断禁用
++                }
++                if (!fingerPreviewCreateErrorShown) {
++                    fingerPreviewCreateErrorShown = true; // 创建失败提示仍然只弹一次
++                    showToast("系统放大镜创建失败，已自动降级: " + e.message);
++                }
++                if (magnifierDisabledByError) {
++                    showToast("系统放大镜已自动禁用，请继续使用无放大镜模式"); // 告知已进入保护态
++                }
++            }
++        },
++
++        showFingerPreview: function(rawX, rawY, index) {
++            // 兼容旧调用签名：rawX/rawY/index 目前不直接使用，统一以 lastTouchX/lastTouchY 为准。
++            try {
++                this.createFingerPreview();
++                if (!systemMagnifierEnabled || !systemMagnifier) return;
++                var sx = lastTouchX;
++                var sy = lastTouchY;
++                if (sx < 0) sx = 0;
++                if (sy < 0) sy = 0;
++                // 关键：每次 show 都显式传入放大镜中心坐标，确保 FINGER_PREVIEW_OFFSET_Y_DP 改动立即生效
++                if (magnifierUseAdvancedShow) {
++                    var offsetY = -Math.round(uiDp(FINGER_PREVIEW_OFFSET_Y_DP, FINGER_PREVIEW_OFFSET_Y_DP));
++                    systemMagnifier.show(sx, sy, sx, sy + offsetY);
++                } else {
++                    systemMagnifier.show(sx, sy);
++                }
++                fingerPreviewLastShownX = sx;
++                fingerPreviewLastShownY = sy;
++            } catch (e) {
++                magnifierSafeMode = true; // 出现异常后自动切入安全模式
++                magnifierUseAdvancedShow = false;
++                magnifierErrorCount++; // 显示阶段异常：累计错误次数
++                appendMagnifierErrorLog("SHOW", e, "x=" + sx + ",y=" + sy + ",index=" + index);
++                if (MAGNIFIER_AUTO_DISABLE_ON_ERROR && magnifierErrorCount >= MAGNIFIER_MAX_ERROR_COUNT) {
++                    magnifierDisabledByError = true; // 达到阈值：标记熔断禁用
++                    systemMagnifierEnabled = false; // 立即关闭可用状态，阻止后续继续调用
++                    try { if (systemMagnifier) systemMagnifier.dismiss(); } catch (e0) {} // 尝试收起系统放大镜窗口
++                    systemMagnifier = null; // 清空实例引用，避免继续使用异常对象
++                }
++                var nowErr1 = Date.now(); // 记录本次异常时间
++                if (nowErr1 - magnifierErrorToastLastTime >= MAGNIFIER_ERROR_TOAST_INTERVAL_MS) {
++                    magnifierErrorToastLastTime = nowErr1; // 更新上次提示时间戳
++                    showToast(magnifierDisabledByError ? "放大镜异常已禁用，继续无放大镜模式" : ("放大镜异常已降级: " + e.message)); // 熔断后给固定提示，未熔断则回显错误
++                }
++            }
++        },
++
++        updateFingerPreview: function(rawX, rawY, index, force) {
++            // 兼容旧调用签名：rawX/rawY 目前不直接使用，坐标统一取 lastTouchX/lastTouchY。
++            if (!systemMagnifierEnabled || !systemMagnifier) return;
++            try {
++                var now = Date.now();
++                var previewInterval = FINGER_PREVIEW_INTERVAL;
++                try {
++                    if (fullText && fullText.length > INITIAL_TEXT_FAST_LIMIT) {
++                        var largeInterval = parseInt(String(DIY_CONFIG.CANVAS_LARGE_TEXT_MAGNIFIER_INTERVAL_MS), 10);
++                        if (!isNaN(largeInterval) && largeInterval > previewInterval) previewInterval = largeInterval;
++                    }
++                    if (isDragging) {
++                        var dragInterval = parseInt(String(DIY_CONFIG.CANVAS_DRAG_MAGNIFIER_INTERVAL_MS), 10);
++                        if (!isNaN(dragInterval) && dragInterval > previewInterval) previewInterval = dragInterval;
++                    }
++                } catch (eInterval) {}
++
++                var sx = lastTouchX;
++                var sy = lastTouchY;
++                if (sx < 0) sx = 0;
++                if (sy < 0) sy = 0;
++
++                if (!force && isDragging) {
++                    var slopPx = 0;
++                    try { slopPx = dp(parseFloat(String(DIY_CONFIG.CANVAS_DRAG_MAGNIFIER_MOVE_SLOP_DP))); } catch (eSlop) { slopPx = dp(3); }
++                    if (isNaN(slopPx) || slopPx < 0) slopPx = dp(3);
++                    var movedEnough = Math.abs(sx - fingerPreviewLastShownX) >= slopPx || Math.abs(sy - fingerPreviewLastShownY) >= slopPx;
++                    if (!movedEnough && index === fingerPreviewLastIndex) return;
++                }
++                if (!force && now - fingerPreviewLastUpdateTime < previewInterval) return;
++                fingerPreviewLastUpdateTime = now;
++
++                if (magnifierUseAdvancedShow) {
++                    var offsetY = -Math.round(uiDp(FINGER_PREVIEW_OFFSET_Y_DP, FINGER_PREVIEW_OFFSET_Y_DP));
++                    systemMagnifier.show(sx, sy, sx, sy + offsetY);
++                } else {
++                    systemMagnifier.show(sx, sy);
++                }
++                fingerPreviewLastShownX = sx;
++                fingerPreviewLastShownY = sy;
++
++                if (force || index !== fingerPreviewLastIndex || now - fingerPreviewLastContentUpdateTime >= FINGER_PREVIEW_CONTENT_INTERVAL) {
++                    fingerPreviewLastIndex = index;
++                    fingerPreviewLastContentUpdateTime = now;
++                }
++            } catch (e) {
++                magnifierSafeMode = true; // 更新异常后自动切入安全模式
++                magnifierUseAdvancedShow = false;
++                magnifierErrorCount++; // 更新阶段异常：累计错误次数
++                appendMagnifierErrorLog("UPDATE", e, "x=" + sx + ",y=" + sy + ",index=" + index + ",force=" + force);
++                if (MAGNIFIER_AUTO_DISABLE_ON_ERROR && magnifierErrorCount >= MAGNIFIER_MAX_ERROR_COUNT) {
++                    magnifierDisabledByError = true; // 达到阈值：标记熔断禁用
++                    systemMagnifierEnabled = false; // 立即关闭可用状态，阻止继续 update/show
++                    try { if (systemMagnifier) systemMagnifier.dismiss(); } catch (e0) {} // 尝试先关闭系统放大镜窗口
++                    systemMagnifier = null; // 清空实例，避免后续误用
++                }
++                var nowErr2 = Date.now(); // 记录本次异常时间
