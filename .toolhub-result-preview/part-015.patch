@@ -1,0 +1,314 @@
++                var oldSelectedIndices = selectedIndices.slice(0);
++                var oldSelectedSet = this.cloneSelectedSet(selectedSet);
++                var oldScrollY = 0;
++                try { if (scrollView) oldScrollY = scrollView.getScrollY(); } catch (eScroll) { oldScrollY = 0; }
++                var oldIsPartialTextLoaded = isPartialTextLoaded;
++                var oldPreviewTextOverride = previewTextOverride;
++                var oldPreviewSelectionSignature = previewSelectionSignature;
++                var source = String(originalFullText || fullText || "");
++                var beforeLen = source.length;
++                var transformed = this.transformTextByMode(source, mode);
++                var label = this.getTransformLabel(mode);
++                if (mode !== "spaces" && mode !== "newlines") return;
++                var removed = beforeLen - transformed.length;
++                if (removed <= 0) {
++                    return;
++                }
++                this.pushCleanUndoState({
++                    scope: "loaded",
++                    mode: mode,
++                    fullText: oldFullText,
++                    originalFullText: oldOriginalFullText,
++                    selectedIndices: oldSelectedIndices,
++                    selectedSet: oldSelectedSet,
++                    scrollY: oldScrollY,
++                    isPartialTextLoaded: oldIsPartialTextLoaded,
++                    previewTextOverride: oldPreviewTextOverride,
++                    previewSelectionSignature: oldPreviewSelectionSignature
++                });
++                if (pendingFullTextRunnable) {
++                    try { mainHandler.removeCallbacks(pendingFullTextRunnable); } catch (e0) {}
++                    pendingFullTextRunnable = null;
++                }
++                originalFullText = transformed;
++                fullText = transformed;
++                isPartialTextLoaded = false;
++                selectedIndices = [];
++                selectedSet = {};
++                previewTextOverride = null;
++                previewSelectionSignature = "";
++                lastTranslationState = null;
++                runUi(function() {
++                    try {
++                        self.updateTextView();
++                        self.updateActionButtons();
++                        self.updateCleanButtons();
++                        self.adjustScrollViewHeight();
++                        if (scrollView) scrollView.scrollTo(0, 0);
++                    } catch (e1) {
++                    }
++                });
++            } catch (e) {
++            }
++        },
++
++        removeSelectedSpaces: function() {
++            this.applyPreviewTextTransform("spaces");
++        },
++
++        removeSelectedNewlines: function() {
++            this.applyPreviewTextTransform("newlines");
++        },
++
++        removeLoadedSpaces: function() {
++            this.applyLoadedTextTransform("spaces");
++        },
++
++        removeLoadedNewlines: function() {
++            this.applyLoadedTextTransform("newlines");
++        },
++
++        selectAll: function() {
++            selectedSet = {};
++            selectedIndices = [];
++            for (var i = 0; i < fullText.length; i++) { selectedSet[i] = true; selectedIndices.push(i);
++            }
++            this.updateSelectionSpans(); this.updatePreview();
++            showToast("已全选 " + selectedIndices.length + " 个字");
++        },
++
++        clear: function() {
++            selectedIndices = [];
++            selectedSet = {};
++            previewTextOverride = null;
++            previewSelectionSignature = "";
++            cleanUndoStack = [];
++            this.updateSelectionSpans(); this.updatePreview();
++        },
++
++        isChinese: function(text) {
++            for (var i = 0; i < text.length; i++) {
++                var code = text.charCodeAt(i);
++                if (code >= 0x4E00 && code <= 0x9FA5) return true;
++            }
++            return false;
++        },
++
++        createTranslateError: function(code, message) {
++            var err = { code: String(code || ""), message: String(message || "") };
++            err.toString = function() { return err.message || ("错误码 " + err.code); };
++            return err;
++        },
++
++        getTranslateErrorMessage: function(e) {
++            var code = e && e.code ? String(e.code) : "";
++            if (code === "54003") return "翻译接口访问过快，请稍后再试";
++            if (e && e.message) return String(e.message);
++            return String(e);
++        },
++
++        translateTextSync: function(text) {
++            var apiType = DIY_CONFIG.TRANSLATE_API;
++            var isCh = this.isChinese(text);
++            var source = "auto";
++            var target = "";
++            var params = null;
++            var reqUrl = "";
++            if (apiType === 2) {
++                target = isCh ? "en" : "zh-CHS";
++                params = buildYoudaoParams(text, source, target);
++                reqUrl = YD_API_URL;
++            } else {
++                target = isCh ? "en" : "zh";
++                params = buildBaiduParams(text, source, target);
++                reqUrl = BD_API_URL;
++            }
++
++            var formBody = urlEncodeForm(params);
++            var url = new java.net.URL(reqUrl);
++            var conn = url.openConnection();
++            conn.setRequestMethod("POST");
++            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
++            conn.setDoOutput(true);
++            conn.setConnectTimeout(10000);
++            conn.setReadTimeout(30000);
++
++            var os = conn.getOutputStream();
++            os.write(new java.lang.String(formBody).getBytes("UTF-8"));
++            os.flush();
++            os.close();
++
++            var responseCode = conn.getResponseCode();
++            var inputStream = responseCode === 200 ? conn.getInputStream() : conn.getErrorStream();
++            var reader = new java.io.BufferedReader(new java.io.InputStreamReader(inputStream, "UTF-8"));
++            var line;
++            var response = "";
++            while ((line = reader.readLine()) != null) {
++                response += line;
++            }
++            reader.close();
++            if (responseCode !== 200) throw this.createTranslateError("HTTP", "HTTP " + responseCode);
++
++            var json = JSON.parse(response);
++            var translatedText = "";
++            if (apiType === 2) {
++                if (json.errorCode && json.errorCode !== "0") throw this.createTranslateError(json.errorCode, "错误码 " + json.errorCode);
++                if (json.translation && json.translation.length > 0) translatedText = json.translation[0];
++            } else {
++                if (json.error_code !== undefined && json.error_code != 0) throw this.createTranslateError(json.error_code, "错误码 " + json.error_code);
++                if (json.trans_result && json.trans_result.length > 0) {
++                    var parts = [];
++                    for (var ti = 0; ti < json.trans_result.length; ti++) {
++                        parts.push(json.trans_result[ti].dst);
++                    }
++                    translatedText = parts.join("\n");
++                }
++            }
++            if (!translatedText) throw this.createTranslateError("EMPTY", "无效响应");
++            return translatedText;
++        },
++
++        translateTextSyncWithRetry: function(text) {
++            var retryDelays = [1200, 2500, 5000];
++            var lastError = null;
++            for (var attempt = 0; attempt <= retryDelays.length; attempt++) {
++                try {
++                    return this.translateTextSync(text);
++                } catch (e) {
++                    lastError = e;
++                    var code = e && e.code ? String(e.code) : "";
++                    if (code !== "54003" || attempt >= retryDelays.length) throw e;
++                    java.lang.Thread.sleep(retryDelays[attempt]);
++                }
++            }
++            throw lastError;
++        },
++
++        ensureKeepAlive: function() {
++            // ToolHub 主实例负责生命周期；子模块不得创建独立保活循环。
++            return true;
++        },
++
++        releaseKeepAliveIfIdle: function() {
++            try {
++                if (keepAliveTimer) mainHandler.removeCallbacks(keepAliveTimer);
++            } catch (e) {}
++            keepAliveTimer = null;
++            return true;
++        },
++
++        cancelPinnedTextBatchLoad: function() {
++            try {
++                pinLoadToken++;
++                if (pinBatchLoadRunnable) {
++                    try { mainHandler.removeCallbacks(pinBatchLoadRunnable); } catch (e0) {}
++                    pinBatchLoadRunnable = null;
++                }
++            } catch (e) {}
++        },
++
++        updatePinProgress: function(loaded, total, done) {
++            try {
++                if (!pinProgressView) return;
++                if (!DIY_CONFIG.PIN_BATCH_SHOW_PROGRESS) {
++                    pinProgressView.setVisibility(View.GONE);
++                    return;
++                }
++                total = Math.max(0, parseInt(String(total), 10) || 0);
++                loaded = Math.max(0, parseInt(String(loaded), 10) || 0);
++                if (total <= 0 || loaded >= total || done) {
++                    pinProgressView.setText("已加载完整");
++                    var progressRef = pinProgressView;
++                    mainHandler.postDelayed(new java.lang.Runnable({
++                        run: function() {
++                            try { if (progressRef === pinProgressView && pinProgressView) pinProgressView.setVisibility(View.GONE); } catch (e0) {}
++                        }
++                    }), 500);
++                    return;
++                }
++                pinProgressView.setVisibility(View.VISIBLE);
++                pinProgressView.setText("加载 " + loaded + "/" + total);
++            } catch (e) {}
++        },
++
++        startPinnedTextBatchLoad: function(text) {
++            try {
++                this.cancelPinnedTextBatchLoad();
++                if (!pinTextView) return;
++                var source = String(text == null ? "" : text);
++                var total = source.length;
++                var firstChars = parseInt(String(DIY_CONFIG.PIN_BATCH_FIRST_CHARS), 10);
++                var batchChars = parseInt(String(DIY_CONFIG.PIN_BATCH_CHARS), 10);
++                var delayMs = parseInt(String(DIY_CONFIG.PIN_BATCH_DELAY_MS), 10);
++                if (isNaN(firstChars) || firstChars < 200) firstChars = 1200;
++                if (isNaN(batchChars) || batchChars < 200) batchChars = 1000;
++                if (isNaN(delayMs) || delayMs < 0) delayMs = 24;
++
++                var enableBatch = DIY_CONFIG.PIN_BATCH_LOAD_ENABLE !== false && total > firstChars;
++                if (!enableBatch) {
++                    pinTextView.setText(new java.lang.String(source));
++                    if (pinProgressView) pinProgressView.setVisibility(View.GONE);
++                    return;
++                }
++
++                var token = pinLoadToken;
++                var offset = Math.min(firstChars, total);
++                pinTextView.setText(new java.lang.String(source.substring(0, offset)));
++                this.updatePinProgress(offset, total, false);
++
++                var self = this;
++                pinBatchLoadRunnable = new java.lang.Runnable({
++                    run: function() {
++                        try {
++                            if (token !== pinLoadToken || pinLayout === null || pinTextView === null) return;
++                            var end = offset + batchChars;
++                            if (end > total) end = total;
++                            if (end > offset) {
++                                pinTextView.append(new java.lang.String(source.substring(offset, end)));
++                                offset = end;
++                                self.updatePinProgress(offset, total, offset >= total);
++                            }
++                            if (offset < total && token === pinLoadToken && pinLayout !== null && pinTextView !== null) {
++                                mainHandler.postDelayed(pinBatchLoadRunnable, delayMs);
++                            } else {
++                                pinBatchLoadRunnable = null;
++                            }
++                        } catch (eRun) {
++                            pinBatchLoadRunnable = null;
++                            try { if (pinProgressView) pinProgressView.setText("加载中断"); } catch (e0) {}
++                        }
++                    }
++                });
++                mainHandler.postDelayed(pinBatchLoadRunnable, delayMs);
++            } catch (e) {
++                try {
++                    if (pinTextView) pinTextView.setText(new java.lang.String(String(text == null ? "" : text)));
++                    if (pinProgressView) pinProgressView.setVisibility(View.GONE);
++                } catch (e1) {}
++            }
++        },
++
++
++        pinSelectedText: function() {
++            if (selectedIndices.length === 0) {
++                showToast("请先选择文字");
++                return;
++            }
++            var text = this.getSelectedText();
++            if (!text || text.length === 0) {
++                showToast("选中文字为空");
++                return;
++            }
++            this.showPinnedTextWindow(text);
++        },
++
++        showPinnedTextWindow: function(text) {
++            var self = this;
++            runUi(function() {
++                try {
++                    pinnedText = String(text == null ? "" : text);
++                    if (pinnedText.length === 0) {
++                        showToast("钉屏文本为空");
++                        return;
++                    }
++                    self.cancelPinnedTextBatchLoad();
