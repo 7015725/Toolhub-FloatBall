@@ -1,0 +1,302 @@
++        CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS: 40,
++
++        // Canvas 滚动兜底刷新间隔(ms)。用于修复快速滑动后新露出区域不自动重绘的问题。
++        // 16 ≈ 60fps；如果发热/掉帧可调到 24。
++        CANVAS_SCROLL_REFRESH_INTERVAL_MS: 16,
++
++        // 滚动停止后继续补刷的帧数。用于 fling 后最后一屏补绘。
++        // 建议 6~12；数值越大越稳，刷新也越多。
++        CANVAS_SCROLL_REFRESH_IDLE_FRAMES: 8,
++
++        // 大文本状态下放大镜刷新间隔(ms)。降低系统 Magnifier 捕获频率，减少拖选掉帧。
++        // 建议 48~80。
++        CANVAS_LARGE_TEXT_MAGNIFIER_INTERVAL_MS: 64,
++
++        // 长按拖选时放大镜刷新间隔(ms)。如果放大镜掉帧，优先调大到 80。
++        CANVAS_DRAG_MAGNIFIER_INTERVAL_MS: 64,
++
++        // 手指移动小于该距离(dp)，且字符索引没变时，不重复刷新放大镜。
++        CANVAS_DRAG_MAGNIFIER_MOVE_SLOP_DP: 3,
++
++        // 中文/全角字符宽度缓存。true = 用“中”的宽度复用大部分 CJK 字符，提升大文本排版速度。
++        // 如果个别字体下中文宽度差异很明显，可改 false，但 8000 字加载会更慢。
++        CANVAS_FAST_FULL_WIDTH_CACHE: true,
++
++        // ===== 新增：钉屏 UI 参数 =====
++        // 钉屏浮窗最大宽度(dp)。窗口实际宽度由文本内容 + 自适应，超过该宽度后自动换行。
++        // 不是固定宽度；只是宽度上限。
++        PIN_WINDOW_MAX_WIDTH_DP: 340,
++
++        // 钉屏浮窗最大高度(dp)。内容超过该高度后，钉屏内部 ScrollView 滚动。
++        // 不是固定高度；短文本会按内容高度自适应。默认约 6 行文本高度。
++        PIN_WINDOW_MAX_HEIGHT_DP: 160,
++
++        // 钉屏文字大小(sp)。当前按需求固定为 14sp。
++        PIN_TEXT_SIZE_SP: 14,
++
++        // 钉屏文本左右(dp)。用于控制文字和卡片边缘的距离。
++        // 宽度自适应时，最终宽度 = 文本实际宽度 + 左右，且不超过最大宽度。
++        PIN_TEXT_PADDING_HORIZONTAL_DP: 8,
++
++        // 钉屏文本上下(dp)。用于避免一行/两行/三行文字被裁切。
++        PIN_TEXT_PADDING_VERTICAL_DP: 6,
++
++        // 钉屏文本额外行距(dp)。多行文本显示不完整时可适当增大到 3~4。
++        PIN_TEXT_LINE_SPACING_EXTRA_DP: 2,
++
++        // 钉屏长文本是否分批加载。true = 先显示首批，再分批 append，减少钉屏首次显示卡顿。
++        PIN_BATCH_LOAD_ENABLE: true,
++
++        // 钉屏首批立即显示字符数。数值越大首屏内容越多，但首次 setText 越重。
++        PIN_BATCH_FIRST_CHARS: 1000,
++
++        // 钉屏后续每批追加字符数。越大加载越快但越容易卡顿；越小越平滑。
++        PIN_BATCH_CHARS: 1000,
++
++        // 钉屏每批追加之间的延迟(ms)。建议 16~32。
++        PIN_BATCH_DELAY_MS: 24,
++
++        // 钉屏长文本加载时是否显示底部进度。
++        PIN_BATCH_SHOW_PROGRESS: true,
++
++        // ===== 原有：主文本加载参数 =====
++        // 最大允许载入的字符数。数值越大可处理长文越多，但首次排版、选区刷新、放大镜镜像都会更吃性能。
++        // 建议：普通手机 3000~5000；性能较好可 8000；如果首屏仍慢，可先降到 3000 验证。
++        MAX_CHAR_LIMIT: 8000,
++
++        // 主文本区最大高度(dp)。数值越大，单屏显示行数越多，但窗口更高、布局测量更重。
++        // 建议：手机 360~420；平板 480~560；如果遮挡严重可调小。
++        TEXT_AREA_HEIGHT_DP: 420,
++
++        // 边缘下拉/上推滚动时的自动滚动刷新延迟(ms)。
++        // 数值越小滚动越丝滑，但 MOVE/选区/放大镜刷新更频繁，更吃 CPU。
++        // 建议：60Hz 用 16~24；90Hz 用 11~16；120Hz 用 8~12；卡顿时优先调大到 16 或 24。
++        SCROLL_DELAY_MS: 10
++    };
++
++    var appContext;
++    try {
++        if (typeof context === 'undefined' || context == null) {
++            return;
++        }
++        appContext = context.getApplicationContext ? context.getApplicationContext() : context;
++    } catch (e) {
++        return;
++    }
++
++    var LayoutParams = android.view.WindowManager.LayoutParams;
++    var LinearLayout = android.widget.LinearLayout;
++    var TextView = android.widget.TextView;
++    var Button = android.widget.Button;
++    var ScrollView = android.widget.ScrollView;
++    var GradientDrawable = android.graphics.drawable.GradientDrawable;
++    var Color = android.graphics.Color;
++    var Paint = android.graphics.Paint;
++    var RectF = android.graphics.RectF;
++    var Rect = android.graphics.Rect;
++    var MotionEvent = android.view.MotionEvent;
++    var Gravity = android.view.Gravity;
++    var TypedValue = android.util.TypedValue;
++    var View = android.view.View;
++    var Handler = android.os.Handler;
++    var Looper = android.os.Looper;
++    var ColorStateList = android.content.res.ColorStateList;
++    var JavaArray = java.lang.reflect.Array;
++
++    // ColorOS / realmeOS 稳定性修复：避免 Rhino 直接调用 Android UI 的 int 颜色重载。
++    // 颜色统一走 ColorStateList / ARGB 对象路径，降低 system_server 软重启风险。
++    function toColorInt(colorValue) {
++        try { return colorValue | 0; } catch (e) { return colorValue; }
++    }
++
++    function jintArray(values) {
++        var arr = JavaArray.newInstance(java.lang.Integer.TYPE, values.length);
++        for (var i = 0; i < values.length; i++) {
++            arr[i] = toColorInt(values[i]);
++        }
++        return arr;
++    }
++
++    function jint2Array(rows) {
++        var outer = JavaArray.newInstance(java.lang.Class.forName("[I"), rows.length);
++        for (var i = 0; i < rows.length; i++) {
++            outer[i] = jintArray(rows[i]);
++        }
++        return outer;
++    }
++
++    function safeColorStateList(colorValue) {
++        var safeColor = toColorInt(colorValue);
++        var states = jint2Array([
++            [android.R.attr.state_pressed],
++            [android.R.attr.state_focused],
++            [android.R.attr.state_selected],
++            []
++        ]);
++        var colors = jintArray([safeColor, safeColor, safeColor, safeColor]);
++        return new ColorStateList(states, colors);
++    }
++
++    function safeTextColor(viewObj, colorValue) {
++        try { viewObj.setTextColor(safeColorStateList(colorValue)); } catch (e) {}
++    }
++
++    function safeGdColor(drawableObj, colorValue) {
++        try { drawableObj.setColor(safeColorStateList(colorValue)); } catch (e) {}
++    }
++
++    var mainHandler = new Handler(Looper.getMainLooper());
++    var keepAliveTimer = null;
++
++    var PREFS_NAME = "拾字Prefs";
++    var KEY_FONT_SIZE = "fontSize";
++    // 字号范围：设置面板里的滑块上下限。调太小不易点选，调太大容易增加排版高度。
++    var MIN_FONT_SIZE = 12;
++    var MAX_FONT_SIZE = 32;
++    var DEFAULT_FONT_SIZE = 20;      // 默认字号；首次使用或读取失败时采用此值，后续会记住用户滑块选择。
++    var currentFontSize = DEFAULT_FONT_SIZE;
++    var windowManager = null;
++    var mainLayout = null;
++    var layoutParams = null;
++    var textView = null;
++    var textCanvasControl = null;
++    var canvasScrollRefreshRunnable = null;
++    var canvasScrollRefreshRunning = false;
++    var canvasLastScrollY = -1;
++    var canvasScrollIdleFrames = 0;
++    var previewTextView = null;
++    var previewTextOverride = null;
++    var previewSelectionSignature = "";
++    var seekBar = null;
++    var fontSizeLabel = null;
++    var scrollView = null;
++    var countLabelView = null;
++    var copyActionBtn = null;
++    var translateActionBtn = null;
++    var selectAllActionBtn = null;
++    var clearActionBtn = null;
++    var pinActionBtn = null;
++    var loadedRemoveSpaceBtn = null;
++    var loadedRemoveNewlineBtn = null;
++    var previewRemoveSpaceBtn = null;
++    var previewRemoveNewlineBtn = null;
++    var previewEditBtn = null;
++    var cleanUndoStack = [];
++    var pinLayout = null;
++    var pinLayoutParams = null;
++    var pinTextView = null;
++    var pinScrollView = null;
++    var pinProgressView = null;
++    var pinWindowManager = null;
++    var pinBatchLoadRunnable = null;
++    var pinLoadToken = 0;
++    var pinnedText = "";
++    var titleBarRefs = { normalMode: null, settingMode: null };
++
++    var fullText = "";
++    var selectedIndices = [];
++    var lastTranslationState = null;
++
++    var isDragging = false;
++    var isTranslating = false; // 并发锁
++    var dragStartIndex = -1;
++    var dragSnapshot = [];
++    var longPressHandler = null;
++    var touchDownTime = 0;
++    var touchDownX = 0;
++    var touchDownY = 0;
++    var touchDownRawX = 0;
++    var touchDownRawY = 0;
++    var isShowing = false;
++    var selectedSet = {};
++    var dragSelectionCount = 0;
++    var lastDragVisualMin = -1;
++    var lastDragVisualMax = -1;
++    var dragSnapshotSet = null;
++    var dragSnapshotCount = 0;
++    var dragStartWasSelected = false;
++    var dragPendingDirtyMin = -1;
++    var dragPendingDirtyMax = -1;
++
++    var pendingAdjustRunnable = null;
++
++    var lastDragUpdateTime = 0;
++    // 拖选刷新节流(ms)：会优先读取 DIY_CONFIG.CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS。
++    var DRAG_UPDATE_INTERVAL = 40;
++    var pendingDragUpdate = null;
++    var lastDragEnd = -1;
++
++    var autoScrollRunnable = null;
++    var lastTouchX = 0;
++    var lastTouchY = 0;
++    var lastTouchRawX = 0;
++    var lastTouchRawY = 0;
++    var isAutoScrolling = false;
++    // 边缘自动滚动触发区比例：0.15 表示顶部/底部 15% 区域触发自动滚动。
++    // 调大更容易触发滚动；调小可减少误触。
++    var SCROLL_EDGE_TOP = 0.15;
++    var SCROLL_EDGE_BOTTOM = 0.15;
++    // 自动滚动速度范围(dp/帧近似值)：数值越大，拖到边缘时滚动越快。
++    var SCROLL_MIN_SPEED = 5;
++    var SCROLL_MAX_SPEED = 25;
++
++    var fingerPreviewLastIndex = -1;
++    var fingerPreviewLastUpdateTime = 0;
++    var fingerPreviewLastContentUpdateTime = 0;
++    var fingerPreviewLastShownX = -99999;
++    var fingerPreviewLastShownY = -99999;
++    var fingerPreviewCreateErrorShown = false;
++    var systemMagnifier = null;
++    var systemMagnifierEnabled = false;
++    var magnifierUseAdvancedShow = false; // true 时才使用 API 29+ 的 show(x,y,centerX,centerY)
++    var magnifierErrorToastLastTime = 0;
++    var MAGNIFIER_ERROR_TOAST_INTERVAL_MS = 2000;
++    // 稳定性保护：连续异常达到阈值后自动禁用系统放大镜，避免个别机型异常导致黑屏/软重启风险放大
++    var MAGNIFIER_AUTO_DISABLE_ON_ERROR = true; // 是否启用“异常自动禁用”熔断开关（true=开启保护）
++    var MAGNIFIER_MAX_ERROR_COUNT = 3; // 连续异常计数阈值：达到该次数后禁用系统放大镜
++    var magnifierErrorCount = 0; // 当前会话中的放大镜异常累计计数（创建/显示/更新都会累加）
++    var magnifierDisabledByError = false; // 是否已因异常触发自动禁用（true 时不再尝试创建）
++    var magnifierSafeMode = false; // 安全模式：仅使用最保守系统调用，优先稳定
++    var magnifierLogFilePath = "/storage/emulated/0/Download/shortx_magnifier_error.log";
++    var romProfile = { isXiaomi: false, isOplus: false, isColorOS: false, isRealme: false, api: 0, summary: "" };
++    // 系统放大镜总开关：false=默认开启/允许创建，true=强制关闭。
++    // 仍保留 localVarOf$禁用系统放大镜=1 的手动禁用入口。
++    var forceDisableSystemMagnifier = false;
++    var forceDisableMagnifierToastShown = false;
++
++    // 放大镜大小(dp)：越大越容易看清，但全屏 overlay 与镜像 TextView 绘制成本更高。
++    var FINGER_PREVIEW_SIZE_DP = 90;
++    // 放大镜相对手指的上移距离(dp)：越大越靠上，避免被手指挡住；太大可能贴近屏幕顶部。
++    var FINGER_PREVIEW_OFFSET_Y_DP = 60;
++    // 放大倍数：越大文字越清楚，但镜像内容尺寸越大、首次同步越重。
++    var FINGER_PREVIEW_ZOOM = 1.35;
++    // 放大镜位置刷新间隔(ms)：16 约等于 60fps；卡顿时可调 24~33。
++    var FINGER_PREVIEW_INTERVAL = 16;
++    // 放大镜内容/选中态刷新间隔(ms)：越小同步越及时，越大越省性能。
++    var FINGER_PREVIEW_CONTENT_INTERVAL = 24;
++
++    // ===== 系统放大镜外观 DIY 参数（胶囊形） =====
++    // 高度 = FINGER_PREVIEW_SIZE_DP * MAGNIFIER_HEIGHT_RATIO（再受最小高度限制）
++    var MAGNIFIER_HEIGHT_RATIO = 0.72;
++    // 宽度 = 高度 * MAGNIFIER_WIDTH_RATIO（再受最小宽度补偿限制）
++    var MAGNIFIER_WIDTH_RATIO = 2.1;
++    // 最小高度下限(dp)：会在创建时换算为 px，跨设备观感更一致
++    var MAGNIFIER_MIN_HEIGHT_DP = 36;
++    // 宽度额外补偿(dp)：会在创建时换算为 px，避免过窄
++    var MAGNIFIER_MIN_WIDTH_EXTRA_DP = 24;
++    // 胶囊圆角比例：0.5 表示半高圆角（标准胶囊）
++    var MAGNIFIER_CORNER_RATIO = 0.5;
++
++    // 长文本首屏加载策略：先显示前 N 字，让窗口先出来，再延迟补全全文。
++    // 调大可减少“二次补全文”感，但首屏更慢；调小首屏更快，但长文会更明显地分段加载。
++    var INITIAL_TEXT_FAST_LIMIT = 1500;
++    // 主 UI 创建后延迟多少 ms 再填入文本。给窗口 addView/入场动画让路，避免首屏阻塞。
++    var INITIAL_TEXT_DELAY_MS = 60;
++    // 完整长文本补全延迟(ms)。建议晚于首屏动画和放大镜预热；太小会重新卡首屏，太大用户等待更久。
++    var FULL_TEXT_DELAY_MS = 1200;
++    var pendingFullTextRunnable = null;
++    var pendingFingerPreviewWarmupRunnable = null;
++    var isPartialTextLoaded = false;
++    var originalFullText = "";
++
++    // 翻译 API 统一鉴权配置读取
