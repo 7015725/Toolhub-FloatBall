@@ -1,0 +1,229 @@
++                if (nowErr2 - magnifierErrorToastLastTime >= MAGNIFIER_ERROR_TOAST_INTERVAL_MS) {
++                    magnifierErrorToastLastTime = nowErr2; // 更新时间戳，控制提示频率
++                    showToast(magnifierDisabledByError ? "放大镜异常已禁用，继续无放大镜模式" : ("放大镜更新异常已降级: " + e.message)); // 根据是否熔断给不同提示文案
++                }
++            }
++        },
++
++        hideFingerPreview: function() {
++            fingerPreviewLastIndex = -1;
++            fingerPreviewLastUpdateTime = 0;
++            fingerPreviewLastContentUpdateTime = 0;
++            fingerPreviewLastShownX = -99999;
++            fingerPreviewLastShownY = -99999;
++            try {
++                if (systemMagnifierEnabled && systemMagnifier) {
++                    systemMagnifier.dismiss();
++                }
++            } catch (e) {}
++        },
++
++        removeFingerPreview: function() {
++            try {
++                if (systemMagnifier) {
++                    systemMagnifier.dismiss();
++                    systemMagnifier.destroy();
++                }
++            } catch (e2) {}
++            systemMagnifier = null;
++            systemMagnifierEnabled = false;
++            magnifierUseAdvancedShow = false;
++            fingerPreviewLastIndex = -1;
++            fingerPreviewLastUpdateTime = 0;
++            fingerPreviewLastContentUpdateTime = 0;
++            fingerPreviewLastShownX = -99999;
++            fingerPreviewLastShownY = -99999;
++            fingerPreviewCreateErrorShown = false;
++            magnifierErrorCount = 0; // 主动移除时清空异常计数，避免影响下次新会话
++            magnifierDisabledByError = false; // 主动移除时解除熔断状态，允许后续重新创建
++        },
++
++        setupTextViewTouch: function() {
++            var self = this;
++            var longPressRunnable = null;
++            var isPressed = false;
++            var lastValidIndex = -1;
++            var onTouch = new View.OnTouchListener({
++                onTouch: function(v, event) {
++                    var action = event.getAction(); var x = event.getX(); var y = event.getY();
++                    var rawX = event.getRawX(); var rawY = event.getRawY();
++                    var currentIndex = -1;
++                    if (action === MotionEvent.ACTION_UP) currentIndex = self.getCharIndexAtPosition(x, y);
++
++                    switch(action) {
++                        case MotionEvent.ACTION_DOWN:
++                            isPressed = true; isDragging = false; dragStartIndex = -1; dragSnapshot = []; dragSnapshotSet = null; dragSnapshotCount = 0; dragStartWasSelected = false; dragPendingDirtyMin = -1; dragPendingDirtyMax = -1; lastValidIndex = -1; dragSelectionCount = selectedIndices.length; lastDragVisualMin = -1; lastDragVisualMax = -1;
++                            touchDownTime = Date.now(); touchDownX = x; touchDownY = y; touchDownRawX = rawX; touchDownRawY = rawY;
++                            lastTouchX = x; lastTouchY = y; lastTouchRawX = rawX; lastTouchRawY = rawY;
++                            if (scrollView) scrollView.requestDisallowInterceptTouchEvent(true);
++                            if (longPressRunnable) mainHandler.removeCallbacks(longPressRunnable);
++                            var textViewRef = textView;
++                            longPressRunnable = new java.lang.Runnable({
++                                run: function() {
++                                    if (!isPressed || !textViewRef) return;
++                                    var indexAtLongPress = self.getCharIndexAtPosition(touchDownX, touchDownY);
++                                    if (indexAtLongPress < 0) {
++                                        for (var offset = 10; offset <= 50; offset += 10) {
++                                            if ((indexAtLongPress = self.getCharIndexAtPosition(touchDownX + offset, touchDownY)) >= 0) break;
++                                            if ((indexAtLongPress = self.getCharIndexAtPosition(touchDownX - offset, touchDownY)) >= 0) break;
++                                            if ((indexAtLongPress = self.getCharIndexAtPosition(touchDownX, touchDownY + offset)) >= 0) break;
++                                            if ((indexAtLongPress = self.getCharIndexAtPosition(touchDownX, touchDownY - offset)) >= 0) break;
++                                        }
++                                    }
++                                    if (indexAtLongPress < 0) return;
++                                    isDragging = true; lastValidIndex = indexAtLongPress; dragStartIndex = indexAtLongPress; dragSnapshot = setToArray(selectedSet);
++                                    dragSnapshotSet = rebuildSelectedSetFromIndices(dragSnapshot);
++                                    dragSnapshotCount = dragSnapshot.length;
++                                    dragStartWasSelected = dragSnapshotSet[dragStartIndex] === true;
++                                    dragPendingDirtyMin = -1;
++                                    dragPendingDirtyMax = -1;
++                                    try { textViewRef.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
++                                    } catch (e) {}
++                                    if (dragStartIndex >= 0) {
++                                        lastDragVisualMin = dragStartIndex;
++                                        lastDragVisualMax = dragStartIndex;
++                                        dragSelectionCount = calcDragSelectionCount(lastDragVisualMin, lastDragVisualMax);
++                                        self.updateSelectionSpans(dragStartIndex, dragStartIndex);
++                                        self.updatePreviewDuringDrag();
++                                        self.showFingerPreview(touchDownRawX, touchDownRawY, dragStartIndex);
++                                    }
++                                }
++                            });
++                            longPressHandler = longPressRunnable;
++                            mainHandler.postDelayed(longPressRunnable, LONG_PRESS_TIME);
++                            return true;
++
++                        case MotionEvent.ACTION_MOVE:
++                            if (!isPressed) return true;
++                            lastTouchX = x; lastTouchY = y; lastTouchRawX = rawX; lastTouchRawY = rawY;
++                            var moveIndex = self.getCharIndexAtPosition(x, y, isDragging);
++                            if (moveIndex < 0 && isDragging) {
++                                if (lastValidIndex >= 0) moveIndex = lastValidIndex;
++                                if (moveIndex < 0) {
++                                    for (var offset = 5; offset <= 40; offset += 5) {
++                                        if ((moveIndex = self.getCharIndexAtPosition(x + offset, y, true)) >= 0) break;
++                                        if ((moveIndex = self.getCharIndexAtPosition(x - offset, y, true)) >= 0) break;
++                                        if ((moveIndex = self.getCharIndexAtPosition(x, y + offset, true)) >= 0) break;
++                                        if ((moveIndex = self.getCharIndexAtPosition(x, y - offset, true)) >= 0) break;
++                                    }
++                                }
++                            }
++                            if (moveIndex >= 0) lastValidIndex = moveIndex;
++                            var dx = Math.abs(x - touchDownX); var dy = Math.abs(y - touchDownY);
++                            if (!isDragging && (dx > dp(TOUCH_SLOP) || dy > dp(TOUCH_SLOP))) {
++                                if (longPressRunnable) { mainHandler.removeCallbacks(longPressRunnable);
++                                longPressRunnable = null; longPressHandler = null; }
++                                if (scrollView) scrollView.requestDisallowInterceptTouchEvent(false);
++                                self.startCanvasScrollRefresh();
++                            }
++                            if (isDragging && moveIndex >= 0) { self.updateDragSelection(dragStartIndex, moveIndex, dragSnapshot);
++                                self.updateFingerPreview(rawX, rawY, moveIndex, false);
++                                self.checkAndScroll(x, y); }
++                            return true;
++                        case MotionEvent.ACTION_UP:
++                        case MotionEvent.ACTION_CANCEL:
++                            isPressed = false;
++                            if (scrollView) scrollView.requestDisallowInterceptTouchEvent(false);
++                            if (longPressRunnable) { mainHandler.removeCallbacks(longPressRunnable); longPressRunnable = null; longPressHandler = null;
++                            }
++
++                            if (action === MotionEvent.ACTION_UP && !isDragging && (Date.now() - touchDownTime) < LONG_PRESS_TIME && Math.abs(x - touchDownX) < dp(TOUCH_SLOP) && Math.abs(y - touchDownY) < dp(TOUCH_SLOP)) {
++                                if (currentIndex >= 0) self.toggleSelection(currentIndex);
++                            }
++
++                            if (isDragging) {
++                                if (pendingDragUpdate) { mainHandler.removeCallbacks(dragUpdateProcessor);
++                                pendingDragUpdate = null; }
++                                self.commitDragSelection();
++                                self.updateSelectionSpans(lastDragVisualMin, lastDragVisualMax);
++                                self.updatePreview();
++                            }
++                            self.stopAutoScroll();
++                            self.hideFingerPreview();
++                            isDragging = false; dragStartIndex = -1; dragSnapshot = []; dragSnapshotSet = null; dragSnapshotCount = 0; dragStartWasSelected = false; lastValidIndex = -1;
++                            lastTouchX = 0; lastTouchY = 0; lastTouchRawX = 0; lastTouchRawY = 0;
++                            lastDragEnd = -1; lastDragUpdateTime = 0; lastDragVisualMin = -1; lastDragVisualMax = -1; dragPendingDirtyMin = -1; dragPendingDirtyMax = -1; dragSelectionCount = selectedIndices.length;
++                            return true;
++                    }
++                    return false;
++                }
++            });
++            textView.setOnTouchListener(onTouch);
++        },
++
++        updateDragSelection: function(start, end, snapshot) {
++            if (end === lastDragEnd) return;
++            var oldMin = lastDragVisualMin;
++            var oldMax = lastDragVisualMax;
++            lastDragEnd = end;
++            var currentMin = Math.min(start, end);
++            var currentMax = Math.max(start, end);
++
++            if (!dragSnapshotSet) {
++                dragSnapshotSet = rebuildSelectedSetFromIndices(snapshot || []);
++                dragSnapshotCount = snapshot ? snapshot.length : countSelectedSet(selectedSet);
++                dragStartWasSelected = dragSnapshotSet[start] === true;
++            }
++
++            dragSelectionCount = calcDragSelectionCount(currentMin, currentMax);
++            lastDragVisualMin = currentMin;
++            lastDragVisualMax = currentMax;
++
++            var dirtyMin = currentMin;
++            var dirtyMax = currentMax;
++            if (oldMin >= 0 && oldMax >= 0) {
++                if (oldMin < dirtyMin) dirtyMin = oldMin;
++                if (oldMax > dirtyMax) dirtyMax = oldMax;
++            }
++
++            if (dragPendingDirtyMin < 0 || dirtyMin < dragPendingDirtyMin) dragPendingDirtyMin = dirtyMin;
++            if (dragPendingDirtyMax < 0 || dirtyMax > dragPendingDirtyMax) dragPendingDirtyMax = dirtyMax;
++
++            var interval = DRAG_UPDATE_INTERVAL;
++            try {
++                var cfgInterval = parseInt(String(DIY_CONFIG.CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS), 10);
++                if (!isNaN(cfgInterval) && cfgInterval >= 16) interval = cfgInterval;
++            } catch (eInt) {}
++            if (interval < 16) interval = 16;
++            if (interval > 80) interval = 80;
++
++            var now = Date.now();
++            if (now - lastDragUpdateTime < interval) {
++                if (pendingDragUpdate) mainHandler.removeCallbacks(dragUpdateProcessor);
++                pendingDragUpdate = true;
++                mainHandler.postDelayed(dragUpdateProcessor, interval);
++            } else {
++                var dmin = dragPendingDirtyMin;
++                var dmax = dragPendingDirtyMax;
++                dragPendingDirtyMin = -1;
++                dragPendingDirtyMax = -1;
++                lastDragUpdateTime = now;
++                this.updateSelectionSpans(dmin, dmax);
++                this.updatePreviewDuringDrag();
++            }
++        },
++
++        commitDragSelection: function() {
++            if (!dragSnapshotSet || lastDragVisualMin < 0 || lastDragVisualMax < 0) {
++                selectedIndices = setToArray(selectedSet);
++                dragSelectionCount = selectedIndices.length;
++                return;
++            }
++            var result = {};
++            try {
++                for (var k in dragSnapshotSet) {
++                    if (Object.prototype.hasOwnProperty.call(dragSnapshotSet, k) && dragSnapshotSet[k] === true) result[k] = true;
++                }
++                var minIndex = lastDragVisualMin;
++                var maxIndex = lastDragVisualMax;
++                if (minIndex > maxIndex) { var tmp = minIndex; minIndex = maxIndex; maxIndex = tmp; }
++                for (var i = minIndex; i <= maxIndex; i++) {
++                    if (dragStartWasSelected) delete result[i];
++                    else result[i] = true;
++                }
++            } catch (e) {}
++            selectedSet = result;
++            selectedIndices = setToArray(selectedSet);
++            dragSelectionCount = selectedIndices.length;
++        },
++
