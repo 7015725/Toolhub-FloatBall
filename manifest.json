@@ -122,23 +122,23 @@
       "version": "1.0.11"
     },
     "th_20_pickword.js": {
-      "sha256": "39598104baafa225785460ca202b3c5560939d4d7ba4feb3418591ef3c9e7dc1",
-      "size": 211038,
-      "version": "1.0.0"
+      "sha256": "27e53433c41d7fe72e57b2f1165763497b9e5dec3f4089c434dcace049291615",
+      "size": 212056,
+      "version": "1.0.1"
     },
     "th_21_result_preview.js": {
-      "sha256": "5e1b2e885f32cfb1a68ac811f7760d803b2ee606b83991289c71bc5720a9227e",
-      "size": 28249,
-      "version": "1.0.2"
+      "sha256": "7448cba950e7a2a45a09f13ae2ff009977a5b5124f7a17a6a5e67aa10cd4e109",
+      "size": 28661,
+      "version": "1.0.3"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复结果预览绘制颜色异常"
+      "修复顶部预览进入拾字时闪烁"
     ],
-    "title": "修复结果预览绘制颜色异常"
+    "title": "修复顶部预览进入拾字时闪烁"
   },
   "schema": 3,
-  "version": 20260713084332
+  "version": 20260713090051
 }

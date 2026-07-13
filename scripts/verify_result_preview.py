@@ -116,6 +116,20 @@ def main() -> int:
         "pickword child module must not maintain its own keepalive timer",
         failures,
     )
+    main_enter = section(pickword, "function animatePickwordMainEnter(view)", "function applyButtonAnimation(btn)")
+    pickword_show = section(pickword, "show: function(text)", "hide: function()")
+    require(
+        "pickword / opaque main-window entry",
+        "view.setAlpha(1)" in main_enter
+        and "view.setAlpha(0)" not in main_enter
+        and ".alpha(" not in main_enter
+        and pickword_show.count("animatePickwordMainEnter(mainLayout)") == 2
+        and "animateWindowEnter(mainLayout)" not in pickword_show
+        and "animateWindowEnter(pinLayout)" in pickword,
+        "main pickword window must enter fully opaque while pin-window animation remains unchanged",
+        failures,
+    )
+
     require(
         "pickword / full text metadata retained",
         "ps.fullText = raw" in pickword
@@ -208,6 +222,16 @@ def main() -> int:
         failures,
     )
     action = section(preview, "proto.openResultPreviewPrimaryAction = function()", "proto.disposeResultPreview = function")
+    require(
+        "preview / primary handoff removes preview before pickword",
+        action.find("removeView21(this, st)") >= 0
+        and action.find("this.showPickwordText(payload.text") > action.find("removeView21(this, st)")
+        and 'this.dismissResultPreview("primary_action", true)' not in action
+        and "this.publishResultPreview(payload)" in action
+        and '"result preview primary handoff removed="' in action,
+        "preview must be removed synchronously before opening pickword and restored only on failure",
+        failures,
+    )
     require(
         "preview / click passes full text to pickword",
         "this.showPickwordText(payload.text" in action

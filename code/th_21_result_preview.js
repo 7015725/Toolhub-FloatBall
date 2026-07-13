@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【取字 / OCR 顶部结果预览】=======================
 // 全自绘单实例悬浮预览；点击后把完整文本传给 th_20_pickword.js。
 (function() {
@@ -683,6 +683,14 @@
         st.generation = Number(st.generation || 0) + 1;
         var payload = st.payload;
         var ret = null;
+        var removedForHandoff = false;
+        try {
+          removedForHandoff = removeView21(this, st) === true;
+          safeLog(this.L, 'i',
+            "result preview primary handoff removed=" + String(removedForHandoff));
+        } catch (eHandoff) {
+          try { this.dismissResultPreview("primary_action_handoff", false); } catch (eDismissFallback) {}
+        }
         try {
           if (String(payload.primaryAction || "pickword") === "pickword" && typeof this.showPickwordText === "function") {
             ret = this.showPickwordText(payload.text, {
@@ -697,12 +705,11 @@
         } catch (eAction) {
           ret = { ok: false, code: "PREVIEW_ACTION_FAILED", message: String(eAction) };
         }
-        if (ret && ret.ok === true) {
-          this.dismissResultPreview("primary_action", true);
-          return true;
-        }
+        if (ret && ret.ok === true) return true;
         st.clickLocked = false;
-        scheduleDismiss21(this, st);
+        try { this.publishResultPreview(payload); } catch (eRestore) {
+          try { scheduleDismiss21(this, st); } catch (eRestoreSchedule) {}
+        }
         try { this.toast("拾字打开失败"); } catch (eToast) {}
         return false;
       };

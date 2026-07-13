@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -965,6 +965,34 @@
             .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
     }
 
+    // 主拾字窗口保持全不透明，只做轻微缩放和位移，避免 DIM 遮罩与淡入叠加闪烁。
+    function animatePickwordMainEnter(view) {
+        if (!view) return;
+        try { view.animate().cancel(); } catch (eCancel) {}
+        try {
+            view.setVisibility(View.VISIBLE);
+            view.setAlpha(1);
+            view.setScaleX(0.985);
+            view.setScaleY(0.985);
+            view.setTranslationY(uiDp(6, 7));
+            view.animate()
+                .scaleX(1)
+                .scaleY(1)
+                .translationY(0)
+                .setDuration(140)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .start();
+        } catch (eEnter) {
+            try {
+                view.setVisibility(View.VISIBLE);
+                view.setAlpha(1);
+                view.setScaleX(1);
+                view.setScaleY(1);
+                view.setTranslationY(0);
+            } catch (eFallback) {}
+        }
+    }
+
     function applyButtonAnimation(btn) {
         btn.setOnTouchListener(new View.OnTouchListener({
             onTouch: function(v, event) {
@@ -1481,7 +1509,7 @@
                         if (fontSizeLabel) fontSizeLabel.setText(currentFontSize + "sp");
                         if (textCanvasControl) textCanvasControl.setTextSize(currentFontSize);
                         mainLayout.setVisibility(View.VISIBLE);
-                        animateWindowEnter(mainLayout);
+                        animatePickwordMainEnter(mainLayout);
                         self.scheduleInitialTextLoad();
                     } catch (e) {
                         showToast("显示窗口失败: " + e.message);
@@ -1538,7 +1566,7 @@
             runUi(function() {
                 try {
                     self.createWindow();
-                    animateWindowEnter(mainLayout);
+                    animatePickwordMainEnter(mainLayout);
                     self.scheduleInitialTextLoad();
                 } catch (e) {
                     showToast("创建窗口失败: " + e.message);
