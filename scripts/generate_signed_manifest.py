@@ -3,6 +3,7 @@
 
 Security notes:
 - Private key stays outside the repo by default: ~/.hermes/toolhub_signing/private_key.pem
+- The signed manifest records ToolHub.js metadata for manual replacement notices only.
 - The script prints git status/diff summary before signing. Use --yes in automation.
 """
 import argparse
