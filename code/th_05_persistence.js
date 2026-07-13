@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【工具：面板位置持久化】======================
 FloatBallAppWM.prototype.savePanelState = function(key, state) {
   if (!key || !state) return;
@@ -46,14 +46,7 @@ function normalizeToolHubEnumValueBySchema(key, value) {
 }
 
 FloatBallAppWM.prototype.isThemeEffectKey = function(k) {
-  k = String(k || "");
-  return k === "SETTINGS_THEME" ||
-         k === "THEME_MODE" ||
-         k === "THEME_DAY_BG_HEX" ||
-         k === "THEME_DAY_TEXT_HEX" ||
-         k === "THEME_NIGHT_BG_HEX" ||
-         k === "THEME_NIGHT_TEXT_HEX" ||
-         k === "PANEL_BG_ALPHA";
+  return String(k || "") === "PANEL_BG_ALPHA";
 };
 
 FloatBallAppWM.prototype.isPanelLayoutEffectKey = function(k) {
@@ -188,29 +181,12 @@ FloatBallAppWM.prototype.setPendingValue = function(k, v) {
   this.state.pendingUserCfg[k] = normalizeToolHubEnumValueBySchema(k, v);
   this.state.pendingDirty = true;
 
-  // 设置页主题切换：不论 previewMode 都重建设置页 UI
-  if (String(k) === "SETTINGS_THEME") {
-      try {
-          if (this.state.toolAppActive && this.replaceToolAppPage) {
-              this.replaceToolAppPage(String(this.state.toolAppRoute || "settings_group"));
-          } else {
-              if (this.state.settingsPanel) {
-                  this.safeRemoveView(this.state.settingsPanel, "settingsPanel");
-                  this.state.settingsPanel = null;
-                  this.state.settingsPanelLp = null;
-                  this.state.addedSettings = false;
-              }
-              this.replaceToolAppPage("settings_group");
-          }
-      } catch(eReb) { safeLog(null, 'e', "catch " + String(eReb)); }
-  } else {
-      var keyStr = String(k);
-      if (keyStr.indexOf("BALL_") === 0 && this.refreshBallPreviewInSettings) {
-          try { this.refreshBallPreviewInSettings(); } catch(eBP) { safeLog(null, 'e', "catch " + String(eBP)); }
-      }
-      if (this.state.previewMode) {
-          this.refreshPreview(k);
-      }
+  var keyStr = String(k);
+  if (keyStr.indexOf("BALL_") === 0 && this.refreshBallPreviewInSettings) {
+    try { this.refreshBallPreviewInSettings(); } catch(eBP) { safeLog(null, 'e', "catch " + String(eBP)); }
+  }
+  if (this.state.previewMode) {
+    this.refreshPreview(k);
   }
 };
 

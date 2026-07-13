@@ -15,7 +15,6 @@ REBUILD = ROOT / "code" / "th_12_rebuild.js"
 EXTRA = ROOT / "code" / "th_15_extra.js"
 
 EXPECTED = {
-    "THEME_MODE": {"type": "single_choice", "name": "主题模式", "options": [0, 1, 2], "validator_type": "enum"},
     "BALL_SIZE_DP": {"type": "int", "name": "悬浮球大小", "min": 20, "max": 200},
     "BALL_PANEL_GAP_DP": {"type": "int", "name": "球与面板距离", "min": 0, "max": 50},
     "BALL_ICON_TYPE": {"type": "single_choice", "validator_type": "enum", "name": "悬浮球图标来源", "labels": ["应用图标", "本地文件", "内置图标库"]},
@@ -31,6 +30,17 @@ EXPECTED = {
     "BALL_POSITION_SIDE": {"type": "single_choice", "validator_type": "enum", "name": "停靠边缘", "labels": ["左侧", "右侧"]},
     "BALL_POSITION_PERCENT": {"type": "int", "name": "高度位置(%)", "min": 0, "max": 100},
 }
+
+REMOVED_THEME_KEYS = [
+    "SETTINGS_THEME",
+    "THEME_MODE",
+    "THEME_ACCENT_LIGHT",
+    "THEME_ACCENT_DARK",
+    "THEME_DAY_BG_HEX",
+    "THEME_DAY_TEXT_HEX",
+    "THEME_NIGHT_BG_HEX",
+    "THEME_NIGHT_TEXT_HEX",
+]
 
 LEGACY_TEXT = [
     "气球",
@@ -80,6 +90,11 @@ def main():
     rebuild = REBUILD.read_text(encoding="utf-8")
     extra = EXTRA.read_text(encoding="utf-8")
     errors = []
+    for removed_key in REMOVED_THEME_KEYS:
+        if re.search(r"(?m)^\s*%s\s*:" % re.escape(removed_key), src):
+            errors.append("removed theme validator/default remains: " + removed_key)
+        if re.search(r'\{\s*key:\s*"%s"' % re.escape(removed_key), src):
+            errors.append("removed theme schema remains: " + removed_key)
     for key, exp in EXPECTED.items():
         schema = find_schema_item(src, key)
         validator = find_validator_item(src, key)
