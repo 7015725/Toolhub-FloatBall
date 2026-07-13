@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // =======================【Shell：广播桥执行】======================
 // 仅通过广播桥发送 shell 命令，由外部接收器实际执行。
 // 注意：system_server 进程本身不直接执行 shell。
@@ -288,7 +288,7 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
 
         var oldGetToolHubUpdateState = proto.getToolHubUpdateState;
         proto.getToolHubUpdateState = function() {
-          var state = oldGetToolHubUpdateState.apply(this, arguments);
+          var state = oldGetToolHubUpdateState.call(this);
           var info = applyEntryUpdateState();
           if (!state) state = {};
           state.entryUpdateAvailable = info.available === true;
@@ -305,7 +305,7 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
 
         var oldGetToolHubUpdateVisual = proto.getToolHubUpdateVisual;
         proto.getToolHubUpdateVisual = function(updateState, T, isDark) {
-          var visual = oldGetToolHubUpdateVisual.apply(this, arguments);
+          var visual = oldGetToolHubUpdateVisual.call(this, updateState, T, isDark);
           var entryAvailable = updateState && updateState.entryUpdateAvailable === true;
           if (!entryAvailable || !visual) return visual;
           var statusName = String(updateState.status || "unknown");
@@ -332,7 +332,7 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
         var oldCreateToolHubUpdateDetailBox = proto.createToolHubUpdateDetailBox;
         proto.createToolHubUpdateDetailBox = function() {
           var self = this;
-          var box = oldCreateToolHubUpdateDetailBox.apply(this, arguments);
+          var box = oldCreateToolHubUpdateDetailBox.call(this);
           var updateState = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
           if (!box || !updateState || updateState.entryUpdateAvailable !== true) return box;
           try {
@@ -404,21 +404,20 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
     applyEntryUpdateState();
 
     try {
-      var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-      var attempts = { count: 0 };
-      var patchTask = null;
-      patchTask = new java.lang.Runnable({
+      new java.lang.Thread(new java.lang.Runnable({
         run: function() {
-          attempts.count++;
-          var installed = installEntryUpdateUiPatch();
-          if (!installed && attempts.count < 12) {
-            try { mainHandler.postDelayed(patchTask, 400); } catch(eRetryPost) {}
-            return;
+          var installed = false;
+          for (var retryIndex = 0; retryIndex < 12; retryIndex++) {
+            installed = installEntryUpdateUiPatch();
+            if (installed) break;
+            try { java.lang.Thread.sleep(400); } catch(eRetrySleep) {}
           }
-          try { mainHandler.postDelayed(new java.lang.Runnable({ run: function() { showEntryUpdateToastOnce(); } }), 1200); } catch(eNoticePost) {}
+          try {
+            var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            mainHandler.postDelayed(new java.lang.Runnable({ run: function() { showEntryUpdateToastOnce(); } }), 1200);
+          } catch(eNoticePost) {}
         }
-      });
-      mainHandler.postDelayed(patchTask, 200);
+      }), "ToolHub-EntryUpdateNotice").start();
     } catch(eSchedule) {
       try { safeLog(null, 'w', "schedule entry update notice fail: " + String(eSchedule)); } catch(eLogSchedule) {}
     }
