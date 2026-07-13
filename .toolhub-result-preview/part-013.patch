@@ -1,0 +1,272 @@
++                btn.setAlpha((enabled || isUndo) ? 1.0 : 0.45);
++                if (isUndo) safeTextColor(btn, Colors.success);
++                else safeTextColor(btn, isPreview ? Colors.onPrimary : Colors.textSecondary);
++            } catch (e) {}
++        },
++
++        isCleanUndoTarget: function(scope, mode) {
++            var topState = this.getTopCleanUndoState();
++            if (!topState || topState.scope !== scope || topState.mode !== mode) return false;
++            if (scope === "preview" && topState.selectionSignature !== this.getPreviewSelectionSignature()) return false;
++            return true;
++        },
++
++        undoLastClean: function() {
++            var state = this.getTopCleanUndoState();
++            if (!state) {
++                return;
++            }
++            var self = this;
++            try {
++                cleanUndoStack.pop();
++                if (state.scope === "preview") {
++                    if (state.selectionSignature !== this.getPreviewSelectionSignature()) {
++                        this.updateCleanButtons();
++                        return;
++                    }
++                    previewTextOverride = state.previewTextOverride;
++                    previewSelectionSignature = state.previewSelectionSignature || this.getPreviewSelectionSignature();
++                    this.updatePreview();
++                    this.updateCleanButtons();
++                    return;
++                }
++                if (state.scope === "loaded") {
++                    fullText = state.fullText;
++                    originalFullText = state.originalFullText;
++                    isPartialTextLoaded = !!state.isPartialTextLoaded;
++                    selectedIndices = state.selectedIndices ? state.selectedIndices.slice(0) : [];
++                    selectedSet = this.cloneSelectedSet(state.selectedSet || rebuildSelectedSetFromIndices(selectedIndices));
++                    previewTextOverride = state.previewTextOverride;
++                    previewSelectionSignature = state.previewSelectionSignature || "";
++                    runUi(function() {
++                        try {
++                            self.updateTextView();
++                            self.updateSelectionSpans();
++                            self.adjustScrollViewHeight();
++                            if (scrollView) scrollView.scrollTo(0, state.scrollY || 0);
++                            self.updateActionButtons();
++                            self.updateCleanButtons();
++                        } catch (e1) {
++                        }
++                    });
++                    return;
++                }
++            } catch (e) {
++            }
++        },
++
++        setActionEnabled: function(view, enabled) {
++            if (!view) return;
++            try { view.setEnabled(enabled); view.setAlpha(enabled ? 1.0 : 0.45); } catch (e) {}
++        },
++
++        updateActionButtons: function() {
++            var hasSelection = (isDragging ? dragSelectionCount : selectedIndices.length) > 0;
++            var hasUndo = !!lastTranslationState;
++            if (translateActionBtn) translateActionBtn.setText(hasUndo ? "↶ 撤销" : "🌐 翻译");
++            this.setActionEnabled(copyActionBtn, hasSelection); this.setActionEnabled(translateActionBtn, hasSelection || hasUndo);
++            this.setActionEnabled(pinActionBtn, hasSelection);
++            this.setActionEnabled(selectAllActionBtn, fullText && fullText.length > 0); this.setActionEnabled(clearActionBtn, hasSelection);
++            this.updateCleanButtons();
++        },
++
++        applyReplacementsToText: function(sourceText, replacements) {
++            var result = String(sourceText == null ? "" : sourceText);
++            for (var i = replacements.length - 1; i >= 0; i--) {
++                var item = replacements[i];
++                var start = item.start;
++                var end = item.end;
++                if (start < 0) start = 0;
++                if (end < start) end = start;
++                if (start > result.length) start = result.length;
++                if (end > result.length) end = result.length;
++                result = result.substring(0, start) + String(item.translatedText == null ? "" : item.translatedText) + result.substring(end);
++            }
++            return result;
++        },
++
++        replaceSelectedRanges: function(replacements) {
++            if (!replacements || replacements.length === 0) return false;
++            var oldFullText = fullText;
++            var oldOriginalFullText = originalFullText;
++            var oldSelectedIndices = selectedIndices.slice(0);
++            var oldSelectedSet = this.cloneSelectedSet(selectedSet);
++            var oldScrollY = 0;
++            try { if (scrollView) oldScrollY = scrollView.getScrollY(); } catch (e0) { oldScrollY = 0; }
++            var oldIsPartialTextLoaded = isPartialTextLoaded;
++
++            lastTranslationState = {
++                fullText: oldFullText,
++                originalFullText: oldOriginalFullText,
++                selectedIndices: oldSelectedIndices,
++                selectedSet: oldSelectedSet,
++                scrollY: oldScrollY,
++                isPartialTextLoaded: oldIsPartialTextLoaded
++            };
++
++            fullText = this.applyReplacementsToText(oldFullText, replacements);
++            originalFullText = this.applyReplacementsToText(oldOriginalFullText || oldFullText, replacements);
++            selectedIndices = [];
++            selectedSet = {};
++            previewTextOverride = null;
++            previewSelectionSignature = "";
++            cleanUndoStack = [];
++
++            var shift = 0;
++            for (var i = 0; i < replacements.length; i++) {
++                var item = replacements[i];
++                var newStart = item.start + shift;
++                var replacement = String(item.translatedText == null ? "" : item.translatedText);
++                var selectedLen = replacement.length;
++                if (item.selectedTextLength !== undefined && item.selectedTextLength !== null) selectedLen = item.selectedTextLength;
++                if (selectedLen < 0) selectedLen = 0;
++                if (selectedLen > replacement.length) selectedLen = replacement.length;
++                for (var j = 0; j < selectedLen; j++) {
++                    selectedIndices.push(newStart + j);
++                    selectedSet[newStart + j] = true;
++                }
++                shift += replacement.length - (item.end - item.start);
++            }
++            selectedIndices.sort(function(a, b) { return a - b; });
++
++            var self = this;
++            runUi(function() {
++                try {
++                    self.updateTextView();
++                    self.updateSelectionSpans();
++                    self.adjustScrollViewHeight();
++                    self.updateActionButtons();
++                } catch (e) {
++                    showToast("替换失败");
++                }
++            });
++            return true;
++        },
++
++        replaceSelectedText: function(newText) {
++            var ranges = this.collectSelectedRanges();
++            if (ranges.length === 0) return false;
++            var replacements = [];
++            for (var i = 0; i < ranges.length; i++) {
++                replacements.push({ start: ranges[i].start, end: ranges[i].end, translatedText: String(newText == null ? "" : newText) });
++            }
++            return this.replaceSelectedRanges(replacements);
++        },
++
++        undoLastTranslation: function() {
++            if (!lastTranslationState) { showToast("没有可撤销内容");
++            return; }
++            fullText = lastTranslationState.fullText;
++            originalFullText = lastTranslationState.originalFullText;
++            isPartialTextLoaded = !!lastTranslationState.isPartialTextLoaded;
++            selectedIndices = lastTranslationState.selectedIndices.slice(0);
++            selectedSet = this.cloneSelectedSet(lastTranslationState.selectedSet || rebuildSelectedSetFromIndices(selectedIndices));
++            var restoreScrollY = lastTranslationState.scrollY || 0;
++            lastTranslationState = null;
++            var self = this;
++            runUi(function() {
++                try {
++                    self.updateTextView();
++                    self.updateSelectionSpans();
++                    self.adjustScrollViewHeight();
++                    if (scrollView) {
++                        scrollView.post(new java.lang.Runnable({ run: function() { try { scrollView.scrollTo(0, restoreScrollY); } catch (e1) {} } }));
++                    }
++                    self.updateActionButtons();
++                    showToast("已撤销");
++                } catch (e) {}
++            });
++        },
++
++        updatePreviewDuringDrag: function() {
++            var count = isDragging ? dragSelectionCount : selectedIndices.length;
++            if (countLabelView) countLabelView.setText("已选 " + count + " 字");
++            this.updateActionButtons();
++            try {
++                if (previewTextView) {
++                    if (count > 0) {
++                        previewTextView.setText("正在拖选…已选 " + count + " 字，松手后显示预览");
++                        safeTextColor(previewTextView, Colors.textSecondary);
++                    } else {
++                        previewTextView.setText("点击选择文字...");
++                        safeTextColor(previewTextView, Colors.textSecondary);
++                    }
++                }
++            } catch (e) {}
++        },
++
++        updatePreview: function() {
++            var count = selectedIndices.length;
++            if (countLabelView) countLabelView.setText("已选 " + count + " 字");
++            this.updateActionButtons();
++            if (count === 0) {
++                previewTextOverride = null;
++                previewSelectionSignature = "";
++                this.clearCleanUndoStack("preview");
++                this.updateCleanButtons();
++                if (isPartialTextLoaded) previewTextView.setText("长文本自动加载中，先显示前" + fullText.length + "字...");
++                else previewTextView.setText("点击选择文字...");
++                safeTextColor(previewTextView, Colors.textSecondary); return;
++            }
++
++            var sig = this.getPreviewSelectionSignature();
++            if (previewTextOverride !== null && sig === previewSelectionSignature) {
++                previewTextView.setText(String(previewTextOverride));
++                safeTextColor(previewTextView, Colors.text);
++                return;
++            }
++            previewTextOverride = null;
++            previewSelectionSignature = sig;
++            this.clearCleanUndoStack("preview");
++            previewTextView.setText(this.getSelectedTextRaw()); safeTextColor(previewTextView, Colors.text);
++        },
++
++        editPreviewText: function() {
++            var self = this;
++            try {
++                if (selectedIndices.length === 0) return;
++                var sig = this.getPreviewSelectionSignature();
++                var oldText = this.getSelectedText();
++                runUi(function() {
++                    try {
++                        var dialogContext = appContext;
++                        try { if (typeof context !== 'undefined' && context != null) dialogContext = context; } catch (eCtx) {}
++                        var dialog = new android.app.Dialog(dialogContext);
++                        try { dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE); } catch (eFeature) {}
++
++                        var root = new LinearLayout(appContext);
++                        root.setOrientation(LinearLayout.VERTICAL);
++                        root.setPadding(uiDp(14, 18), uiDp(12, 16), uiDp(14, 18), uiDp(12, 16));
++                        root.setBackground(createStrokeRoundRectDrawable(Colors.surface, Colors.primaryLight, isTablet ? 20 : 16, 1));
++                        try { root.setElevation(uiDp(6, 8)); } catch (eElev) {}
++
++                        var header = new LinearLayout(appContext);
++                        header.setOrientation(LinearLayout.HORIZONTAL);
++                        header.setGravity(Gravity.CENTER_VERTICAL);
++                        header.setPadding(0, 0, 0, uiDp(10, 12));
++
++                        var icon = new TextView(appContext);
++                        icon.setText("✎");
++                        icon.setGravity(Gravity.CENTER);
++                        icon.setTextSize(uiTextSize(16, 18));
++                        safeTextColor(icon, Colors.onPrimary);
++                        icon.setBackground(createRoundRectDrawable(Colors.btnPrimaryBg, isTablet ? 13 : 11));
++                        var iconLp = new LinearLayout.LayoutParams(uiDp(32, 38), uiDp(32, 38));
++                        iconLp.setMargins(0, 0, uiDp(10, 12), 0);
++                        header.addView(icon, iconLp);
++
++                        var titleWrap = new LinearLayout(appContext);
++                        titleWrap.setOrientation(LinearLayout.VERTICAL);
++                        titleWrap.setGravity(Gravity.CENTER_VERTICAL);
++                        titleWrap.setLayoutParams(new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
++
++                        var title = new TextView(appContext);
++                        title.setText("编辑预览文字");
++                        safeTextColor(title, Colors.text);
++                        title.setTextSize(uiTextSize(16, 18));
++                        try { title.setTypeface(null, android.graphics.Typeface.BOLD); } catch (eType) {}
++                        titleWrap.addView(title);
++
++                        var subtitle = new TextView(appContext);
++                        subtitle.setText("仅修改预览结果，原文保持不变");
++                        safeTextColor(subtitle, Colors.textSecondary);
