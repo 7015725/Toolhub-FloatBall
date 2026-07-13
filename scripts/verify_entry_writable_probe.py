@@ -36,15 +36,14 @@ can_body = ENTRY[can_start:assert_start]
 if 'new java.io.File(' in can_body or 'FileOutputStream' in can_body:
     fail("canWriteDirPath must not duplicate probe I/O")
 
-assert_body_end = ENTRY.find('\nfunction getToolHubRootDir()', assert_start)
+assert_body_end = ENTRY.find('
+function getToolHubRootDir()', assert_start)
 if assert_body_end < 0:
     fail("assertWritableDirPath boundary missing")
 assert_body = ENTRY[assert_start:assert_body_end]
-finally_pos = assert_body.find('finally {')
-cleanup_pos = assert_body.find('closeQuietly(out);')
-if finally_pos < 0:
+if assert_body.find('finally {') < 0:
     fail("probe cleanup must be in finally")
-if cleanup_pos < finally_pos:
+if assert_body.find('closeQuietly(out);') < assert_body.find('finally {'):
     fail("stream cleanup must execute from finally")
 
 print("Entry writable probe verification passed")
