@@ -31,7 +31,7 @@
 |---|---|---|---|
 |`createPointerFrameView`|`intentional_override`|`th_18_pointer_ocr.js`|OCR 扩展统一补充文字、框选和处理状态边框绘制|
 |`createPointerLayoutParams`|`wrapper`|`th_19_position_state.js`|补充屏幕边缘和刘海区域布局参数|
-|`execPointerAction`|`wrapper`|`th_18_pointer_ocr.js`|增加 area_ocr 动作模式|
+|`execPointerAction`|`wrapper`|`th_18_pointer_ocr.js`|增加 area_ocr 指针动作模式|
 |`finishPointerAreaCapture`|`wrapper`|`th_18_pointer_ocr.js`|框选截图完成后异步衔接 OCR|
 |`popToolAppPage`|`wrapper`|`th_16_entry.js`|保存按钮后保留临时编辑状态|
 |`removePointerCallbacks`|`wrapper`|`th_19_position_state.js`|关闭指针时同步取消语义调度|
