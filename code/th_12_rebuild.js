@@ -1,4 +1,4 @@
-// @version 1.2.3
+// @version 1.2.4
 // =======================【安全配置安装器】======================
 // 这段代码的主要内容/用途：注入 Shell / Shortcut / Content 加固需要的配置项。
 // Shell 默认 strict；Shortcut 默认仅使用结构化 intentUri，旧 JS 仅允许显式 legacy_js。
@@ -80,7 +80,7 @@
   try {
     if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
     var proto = FloatBallAppWM.prototype;
-    var settingsColorSchemeVersion = "1.2.3";
+    var settingsColorSchemeVersion = "1.2.4";
     if (String(proto.__toolHubSettingsColorSchemeVersion || "") === settingsColorSchemeVersion) return;
 
     function parseColor(hex, fallbackInt) {
@@ -110,19 +110,45 @@
       return n;
     }
 
+    function clampColorByte(value) {
+      var n = Number(value);
+      if (isNaN(n) || !isFinite(n)) n = 0;
+      n = Math.round(n);
+      if (n < 0) n = 0;
+      if (n > 255) n = 255;
+      return n;
+    }
+
+    function colorRed(colorInt) {
+      return (toOpaqueColor(colorInt, android.graphics.Color.BLACK) >>> 16) & 0xFF;
+    }
+
+    function colorGreen(colorInt) {
+      return (toOpaqueColor(colorInt, android.graphics.Color.BLACK) >>> 8) & 0xFF;
+    }
+
+    function colorBlue(colorInt) {
+      return toOpaqueColor(colorInt, android.graphics.Color.BLACK) & 0xFF;
+    }
+
+    function packOpaqueColor(redValue, greenValue, blueValue) {
+      var r = clampColorByte(redValue);
+      var g = clampColorByte(greenValue);
+      var b = clampColorByte(blueValue);
+      return (0xFF000000 | (r << 16) | (g << 8) | b);
+    }
+
     function mixColor(baseColor, overlayColor, ratio) {
       try {
-        var Color = android.graphics.Color;
-        var base = toOpaqueColor(baseColor, Color.BLACK);
+        var base = toOpaqueColor(baseColor, android.graphics.Color.BLACK);
         var overlay = toOpaqueColor(overlayColor, base);
         var p = clampRatio(ratio);
         var q = 1 - p;
-        var r = Math.max(0, Math.min(255, Math.round(Color.red(base) * q + Color.red(overlay) * p)));
-        var g = Math.max(0, Math.min(255, Math.round(Color.green(base) * q + Color.green(overlay) * p)));
-        var b = Math.max(0, Math.min(255, Math.round(Color.blue(base) * q + Color.blue(overlay) * p)));
-
-        // 使用 32 位 ARGB 位运算，避免 Rhino 误选浮点颜色重载。
-        return (0xFF000000 | (r << 16) | (g << 8) | b);
+        return packOpaqueColor(
+          colorRed(base) * q + colorRed(overlay) * p,
+          colorGreen(base) * q + colorGreen(overlay) * p,
+          colorBlue(base) * q + colorBlue(overlay) * p
+        );
       } catch(e) {
         return toOpaqueColor(baseColor, android.graphics.Color.BLACK);
       }
@@ -130,16 +156,47 @@
 
     function linearChannel(value) {
       var x = Number(value) / 255;
+      if (isNaN(x) || !isFinite(x)) x = 0;
       if (x <= 0.03928) return x / 12.92;
       return Math.pow((x + 0.055) / 1.055, 2.4);
     }
 
+    function ensureWeakContainer(app, containerColor, surfaceColor, isDark, roleName) {
+      var container = toOpaqueColor(containerColor, surfaceColor);
+      if (isDark) return container;
+
+      try {
+        var luminance = app.getSettingsColorLuminance(container);
+        var surfaceLuminance = app.getSettingsColorLuminance(surfaceColor);
+        var contrast = app.getSettingsColorContrastRatio(container, surfaceColor);
+        var invalid = isNaN(luminance) || !isFinite(luminance) ||
+                      isNaN(surfaceLuminance) || !isFinite(surfaceLuminance) ||
+                      isNaN(contrast) || !isFinite(contrast) ||
+                      luminance < 0.35 ||
+                      (surfaceLuminance > 0.50 && contrast > 2.0);
+        if (!invalid) return container;
+
+        try {
+          safeLog(
+            null,
+            "w",
+            "settings weak container fallback role=" + String(roleName || "unknown") +
+            " luminance=" + String(luminance) +
+            " surfaceLuminance=" + String(surfaceLuminance) +
+            " contrast=" + String(contrast)
+          );
+        } catch(eLog) {}
+      } catch(eCheck) {}
+
+      return toOpaqueColor(surfaceColor, android.graphics.Color.WHITE);
+    }
+
     proto.getSettingsColorLuminance = function(colorInt) {
       try {
-        var Color = android.graphics.Color;
-        return 0.2126 * linearChannel(Color.red(colorInt)) +
-               0.7152 * linearChannel(Color.green(colorInt)) +
-               0.0722 * linearChannel(Color.blue(colorInt));
+        var color = toOpaqueColor(colorInt, android.graphics.Color.BLACK);
+        return 0.2126 * linearChannel(colorRed(color)) +
+               0.7152 * linearChannel(colorGreen(color)) +
+               0.0722 * linearChannel(colorBlue(color));
       } catch(e) {
         return 0;
       }
@@ -296,6 +353,7 @@
 
       // 弱强调色始终由最终 primary 派生，避免主色与容器色跨色相。
       var primaryContainer = mixColor(surface, primary, isDark ? 0.24 : 0.13);
+      primaryContainer = ensureWeakContainer(this, primaryContainer, surface, isDark, "primary");
       var onPrimaryContainer = onSurface;
       if (this.getSettingsColorContrastRatio(primaryContainer, onPrimaryContainer) < 4.5) {
         onPrimaryContainer = this.getSettingsBestTextColor(primaryContainer);
@@ -315,6 +373,8 @@
       var warning = colorOr(colors.warning, fallback.warning);
       var successContainer = mixColor(surface, success, isDark ? 0.20 : 0.12);
       var warningContainer = mixColor(surface, warning, isDark ? 0.20 : 0.12);
+      successContainer = ensureWeakContainer(this, successContainer, surface, isDark, "success");
+      warningContainer = ensureWeakContainer(this, warningContainer, surface, isDark, "warning");
       var onSuccessContainer = onSurface;
       var onWarningContainer = onSurface;
       if (this.getSettingsColorContrastRatio(successContainer, onSuccessContainer) < 4.5) {

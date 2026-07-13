@@ -33,19 +33,39 @@ required_scheme = [
     "function toOpaqueColor(value, fallbackInt)",
     "return (n & 0x00FFFFFF) | 0xFF000000;",
     "return (0xFF000000 | (r << 16) | (g << 8) | b);",
-    'var settingsColorSchemeVersion = "1.2.3";',
+    'var settingsColorSchemeVersion = "1.2.4";',
     "proto.__toolHubSettingsColorSchemeVersion = settingsColorSchemeVersion;",
+    "function clampColorByte(value)",
+    "function colorRed(colorInt)",
+    "function colorGreen(colorInt)",
+    "function colorBlue(colorInt)",
+    "function packOpaqueColor(redValue, greenValue, blueValue)",
+    "function ensureWeakContainer(app, containerColor, surfaceColor, isDark, roleName)",
+    'primaryContainer = ensureWeakContainer(this, primaryContainer, surface, isDark, "primary");',
+    'successContainer = ensureWeakContainer(this, successContainer, surface, isDark, "success");',
+    'warningContainer = ensureWeakContainer(this, warningContainer, surface, isDark, "warning");',
 ]
 for marker in required_scheme:
     if marker not in SCHEME:
         errors.append("Scheme 颜色角色缺失：" + marker)
 
-if "return Color.argb(" in section(
+mix_section = section(
     SCHEME,
     "function mixColor(baseColor, overlayColor, ratio)",
     "function linearChannel(value)",
-):
-    errors.append("mixColor 仍使用 Rhino 易误选重载的 Color.argb")
+)
+for forbidden in ("Color.argb(", "Color.red(", "Color.green(", "Color.blue("):
+    if forbidden in mix_section:
+        errors.append("mixColor 仍依赖 Java 颜色通道：" + forbidden)
+
+luminance_section = section(
+    SCHEME,
+    "proto.getSettingsColorLuminance = function",
+    "proto.getSettingsColorContrastRatio = function",
+)
+for forbidden in ("Color.red(", "Color.green(", "Color.blue("):
+    if forbidden in luminance_section:
+        errors.append("亮度计算仍依赖 Java 颜色通道：" + forbidden)
 
 if "if (proto.__toolHubSettingsColorSchemeInstalled === true) return;" in SCHEME:
     errors.append("Scheme 仍使用不可热更新的布尔安装守卫")
