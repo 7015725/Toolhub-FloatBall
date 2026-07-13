@@ -1,0 +1,68 @@
+name: patch-readme-entry-update
+
+on:
+  push:
+    branches:
+      - docs/readme-entry-update-record-20260714
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: docs/readme-entry-update-record-20260714
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Update README and remove temporary workflow
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          readme = Path("README.md")
+          text = readme.read_text(encoding="utf-8")
+
+          old_note = "> `ToolHub.js` 是信任根，内置 RSA 公钥和最低可信清单版本。入口自身发生变化时，需要手动替换 ShortX 任务中的代码。\n"
+          extra_note = "入口在读取已验签清单后，会比较本地入口版本与 `manifest.entry.version`。远端入口较新时只提示手动替换，不会自动下载、覆盖或重启 `ToolHub.js`。"
+          if extra_note not in text:
+              if old_note not in text:
+                  raise SystemExit("README install entry note not found")
+              text = text.replace(old_note, old_note + "\n" + extra_note + "\n", 1)
+
+          old_record = "## 更新记录\n\n### 2026-07-11\n"
+          new_record = """## 更新记录
+
+### 2026-07-13
+
+**完善 ToolHub 入口文件更新提醒**
+
+- 签名清单新增 `entry` 元数据，记录 `ToolHub.js` 的入口版本、SHA-256 和文件大小。
+- 启动及手动检查更新时比较本地与远端入口版本。
+- 入口版本落后时提示手动替换 ShortX 任务中的 `ToolHub.js`。
+- 同一远端入口版本只主动提醒一次。
+- 入口文件不加入子模块更新列表，不参与自动下载、事务替换或自动重启。
+- 修改 `ToolHub.js` 但未提升入口版本时，CI 校验失败。
+
+### 2026-07-11
+"""
+          if "### 2026-07-13\n\n**完善 ToolHub 入口文件更新提醒**" not in text:
+              if old_record not in text:
+                  raise SystemExit("README update record marker not found")
+              text = text.replace(old_record, new_record, 1)
+
+          readme.write_text(text, encoding="utf-8")
+          Path(".github/workflows/patch-readme-entry-update.yml").unlink()
+          PY
+
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md .github/workflows/patch-readme-entry-update.yml
+          git commit -m "更新 README 入口更新记录"
+          git push origin HEAD:docs/readme-entry-update-record-20260714
