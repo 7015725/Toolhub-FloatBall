@@ -1,0 +1,334 @@
++    var API_APP_ID = typeof localVarOf$应用ID !== 'undefined' ? localVarOf$应用ID : "";
++    var API_APP_SECRET = typeof localVarOf$应用秘钥 !== 'undefined' ? localVarOf$应用秘钥 : "";
++    var BD_API_URL = "https://fanyi-api.baidu.com/api/trans/vip/translate";
++    var YD_API_URL = "https://openapi.youdao.com/api";
++
++    // ==========================================
++    // 翻译引擎核心辅助函数
++    // ==========================================
++    function md5(str) {
++        try {
++            var md = java.security.MessageDigest.getInstance("MD5");
++            md.update(new java.lang.String(str).getBytes("UTF-8"));
++            var bytes = md.digest();
++            var sb = new java.lang.StringBuilder();
++            for (var i = 0; i < bytes.length; i++) {
++                var tmp = java.lang.Integer.toHexString(bytes[i] & 0xFF);
++                if (tmp.length() == 1) { sb.append("0"); }
++                sb.append(tmp);
++            }
++            return sb.toString();
++        } catch (e) { return ""; }
++    }
++
++    function sha256(str) {
++        try {
++            var md = java.security.MessageDigest.getInstance("SHA-256");
++            md.update(new java.lang.String(str).getBytes("UTF-8"));
++            var bytes = md.digest();
++            var sb = new java.lang.StringBuilder();
++            for (var i = 0; i < bytes.length; i++) {
++                var tmp = java.lang.Integer.toHexString(bytes[i] & 0xFF);
++                if (tmp.length() == 1) { sb.append("0"); }
++                sb.append(tmp);
++            }
++            return sb.toString();
++        } catch (e) { return ""; }
++    }
++
++    function getYoudaoInput(q) {
++        if (q == null) return "";
++        var len = q.length;
++        if (len <= 20) { return q; }
++        return q.substring(0, 10) + len + q.substring(len - 10, len);
++    }
++
++    function buildBaiduParams(q, fromLang, toLang) {
++        var salt = java.util.UUID.randomUUID().toString();
++        var signStr = API_APP_ID + q + salt + API_APP_SECRET;
++        var sign = md5(signStr);
++        return { q: q, from: fromLang, to: toLang, appid: API_APP_ID, salt: salt, sign: sign };
++    }
++
++    function buildYoudaoParams(q, fromLang, toLang) {
++        var salt = java.util.UUID.randomUUID().toString();
++        var curtime = String(Math.floor(Date.now() / 1000));
++        var input = getYoudaoInput(q);
++        var signStr = API_APP_ID + input + salt + curtime + API_APP_SECRET;
++        var sign = sha256(signStr);
++        return {
++            q: q, from: fromLang, to: toLang, appKey: API_APP_ID,
++            salt: salt, sign: sign, signType: "v3", curtime: curtime
++        };
++    }
++
++    function urlEncodeForm(params) {
++        var pairs = [];
++        var keys = [];
++        for (var k in params) {
++            if (Object.prototype.hasOwnProperty.call(params, k)) { keys.push(k); }
++        }
++        for (var i = 0; i < keys.length; i++) {
++            var k = keys[i];
++            var v = params[k];
++            if (v !== undefined && v !== null) {
++                pairs.push(java.net.URLEncoder.encode(String(k), "UTF-8") + "=" + java.net.URLEncoder.encode(String(v), "UTF-8"));
++            }
++        }
++        return pairs.join("&");
++    }
++
++    function setToArray(set) {
++        var result = [];
++        for (var key in set) {
++            if (Object.prototype.hasOwnProperty.call(set, key) && set[key] === true) {
++                result.push(parseInt(key, 10));
++            }
++        }
++        return result.sort(function(a, b) { return a - b; });
++    }
++
++
++    var LONG_PRESS_TIME = 300;
++    var TOUCH_SLOP = 12;
++
++    var isDark = false;
++    try {
++        var uiMode = appContext.getResources().getConfiguration().uiMode;
++        isDark = (uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) === android.content.res.Configuration.UI_MODE_NIGHT_YES;
++    } catch (e) {
++        isDark = false;
++    }
++
++    var Colors = {
++        bg: isDark ? Color.parseColor("#0f172a") : Color.parseColor("#ffffff"),
++        surface: isDark ? Color.parseColor("#1e293b") : Color.parseColor("#f8fafc"),
++        surfaceVariant: isDark ? Color.parseColor("#334155") : Color.parseColor("#f1f5f9"),
++        text: isDark ? Color.parseColor("#f8fafc") : Color.parseColor("#0f172a"),
++        textSecondary: isDark ? Color.parseColor("#94a3b8") : Color.parseColor("#64748b"),
++        textTertiary: isDark ? Color.parseColor("#64748b") : Color.parseColor("#94a3b8"),
++        primary: Color.parseColor("#6366f1"),
++        primaryLight: isDark ? Color.parseColor("#312e81") : Color.parseColor("#e0e7ff"),
++        onPrimary: Color.WHITE,
++        selectionBg: Color.parseColor("#6366f1"),
++        selectionText: Color.WHITE,
++        success: Color.parseColor("#22c55e"),
++        warning: Color.parseColor("#f59e0b"),
++        btnPrimaryBg: Color.parseColor("#6366f1"),
++        btnPrimaryPressed: Color.parseColor("#4f46e5"),
++        btnSecondaryBg: isDark ? Color.parseColor("#334155") : Color.parseColor("#f1f5f9"),
++        btnSecondaryPressed: isDark ? Color.parseColor("#475569") : Color.parseColor("#e2e8f0")
++    };
++
++    function dp(value) {
++        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, appContext.getResources().getDisplayMetrics());
++    }
++
++    var screenWidth = 0;
++    var screenHeight = 0;
++    var isTablet = false;
++    var windowWidth = 0;
++    var maxWindowHeight = 0;
++    var textAreaHeight = 0;
++    var uiScale = 1.0;
++    var screenCategory = "phone";
++
++    function uiTextSize(phoneSp, tabletSp) {
++        var base = isTablet ? tabletSp : phoneSp;
++        return Math.max(9, Math.round(base * uiScale));
++    }
++
++    function uiDp(phoneDp, tabletDp) {
++        var base = isTablet ? tabletDp : phoneDp;
++        return dp(base * uiScale);
++    }
++
++    function getAdaptiveDefaultFontSize() {
++        var adaptive = Math.round(DEFAULT_FONT_SIZE * uiScale);
++        if (adaptive < MIN_FONT_SIZE) adaptive = MIN_FONT_SIZE;
++        if (adaptive > MAX_FONT_SIZE) adaptive = MAX_FONT_SIZE;
++        return adaptive;
++    }
++
++
++    function sp(value) {
++        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, value, appContext.getResources().getDisplayMetrics());
++    }
++
++    function createCanvasTextControl() {
++        var state = {
++            text: "",
++            textSizeSp: currentFontSize,
++            lines: [],
++            contentHeight: 0,
++            contentWidth: 0,
++            layoutDirty: true,
++            measuredWidth: 0,
++            lineHeight: 0,
++            widthCache: {}
++        };
++
++        var textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
++        var bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
++        var rectF = new RectF();
++        var clipRect = new Rect();
++
++        function resetPaint() {
++            try {
++                textPaint.setTextSize(sp(state.textSizeSp));
++                try { textPaint.setSubpixelText(true); } catch (e0) {}
++                try { textPaint.setLinearText(true); } catch (e1) {}
++            } catch (e2) {}
++        }
++
++        function getPaddingInfo(viewObj) {
++            return {
++                left: viewObj ? viewObj.getPaddingLeft() : Math.round(uiDp(12, 14)),
++                right: viewObj ? viewObj.getPaddingRight() : Math.round(uiDp(12, 14)),
++                top: viewObj ? viewObj.getPaddingTop() : Math.round(uiDp(12, 14)),
++                bottom: viewObj ? viewObj.getPaddingBottom() : Math.round(uiDp(12, 14))
++            };
++        }
++
++        function getCharAdvance(ch) {
++            if (ch === "\n" || ch === "\r") return 0;
++            var code = 0;
++            try { code = ch.charCodeAt(0); } catch (eCode) { code = 0; }
++            var fastFullWidth = false;
++            try {
++                fastFullWidth = DIY_CONFIG.CANVAS_FAST_FULL_WIDTH_CACHE === true && code >= 0x2E80 && code !== 0x3000 && !(code >= 0xFF61 && code <= 0xFFDC);
++            } catch (eFast) { fastFullWidth = false; }
++
++            var key = fastFullWidth ? (state.textSizeSp + "#FULL_WIDTH") : (state.textSizeSp + "#" + ch);
++            if (state.widthCache[key] !== undefined) return state.widthCache[key];
++            var base = 0;
++            try {
++                if (fastFullWidth) base = textPaint.measureText(new java.lang.String("中"));
++                else base = textPaint.measureText(new java.lang.String(ch));
++            } catch (e0) {
++                try {
++                    if (fastFullWidth) base = textPaint.measureText("中");
++                    else base = textPaint.measureText(String(ch));
++                } catch (e1) { base = sp(state.textSizeSp) * (fastFullWidth ? 1.0 : 0.55); }
++            }
++            if (base < 1) base = sp(state.textSizeSp) * (fastFullWidth ? 1.0 : 0.55);
++            var scale = getCharSpacingScale(ch);
++            var adv = base;
++            if (Math.abs(scale - 1.0) > 0.001) adv = base * scale;
++            state.widthCache[key] = adv;
++            return adv;
++        }
++
++        function pushLine(start, end, xs, widthValue, topValue) {
++            state.lines.push({
++                start: start,
++                end: end,
++                xs: xs,
++                width: widthValue,
++                top: topValue,
++                bottom: topValue + state.lineHeight,
++                baseline: topValue + state.baselineOffset
++            });
++        }
++
++        function rebuildLayout(widthValue, viewObj) {
++            resetPaint();
++            var padding = getPaddingInfo(viewObj);
++            var available = widthValue - padding.left - padding.right;
++            if (available <= 0) available = Math.max(1, Math.round(windowWidth - padding.left - padding.right - uiDp(32, 40)));
++
++            var fm = textPaint.getFontMetrics();
++            var fontHeight = Math.max(1, fm.descent - fm.ascent);
++            state.lineHeight = Math.max(Math.round(fontHeight * 1.18 + uiDp(3, 4)), Math.round(sp(state.textSizeSp) * 1.35));
++            state.baselineOffset = Math.round((state.lineHeight - fontHeight) / 2 - fm.ascent);
++            state.lines = [];
++            state.contentWidth = widthValue;
++
++            var source = String(state.text || "");
++            var len = source.length;
++            var y = padding.top;
++            var lineStart = 0;
++            var lineX = 0;
++            var xs = [0];
++            var i = 0;
++
++            if (len === 0) {
++                pushLine(0, 0, [0], 0, y);
++                state.contentHeight = Math.round(y + state.lineHeight + padding.bottom);
++                state.layoutDirty = false;
++                return;
++            }
++
++            while (i < len) {
++                var ch = source.charAt(i);
++                if (ch === "\r" || ch === "\n") {
++                    pushLine(lineStart, i, xs, lineX, y);
++                    y += state.lineHeight;
++                    if (ch === "\r" && i + 1 < len && source.charAt(i + 1) === "\n") i++;
++                    i++;
++                    lineStart = i;
++                    lineX = 0;
++                    xs = [0];
++                    continue;
++                }
++
++                var adv = getCharAdvance(ch);
++                if (lineX > 0 && lineX + adv > available) {
++                    pushLine(lineStart, i, xs, lineX, y);
++                    y += state.lineHeight;
++                    lineStart = i;
++                    lineX = 0;
++                    xs = [0];
++                    continue;
++                }
++
++                lineX += adv;
++                xs.push(lineX);
++                i++;
++            }
++
++            pushLine(lineStart, len, xs, lineX, y);
++            state.contentHeight = Math.round(y + state.lineHeight + padding.bottom);
++            state.layoutDirty = false;
++        }
++
++        function ensureLayout(viewObj) {
++            var w = 0;
++            try { w = viewObj.getWidth(); } catch (e0) { w = 0; }
++            if (w <= 0) w = state.measuredWidth;
++            if (w <= 0) w = Math.round(windowWidth - uiDp(32, 40));
++            if (state.layoutDirty || state.contentWidth !== w || state.lines.length === 0) {
++                rebuildLayout(w, viewObj);
++            }
++        }
++
++        function isIndexSelectedForCanvas(indexValue) {
++            try {
++                if (isDragging && dragSnapshotSet && dragStartIndex >= 0 && lastDragVisualMin >= 0 && lastDragVisualMax >= 0) {
++                    if (indexValue >= lastDragVisualMin && indexValue <= lastDragVisualMax) {
++                        return !dragStartWasSelected;
++                    }
++                    return dragSnapshotSet[indexValue] === true;
++                }
++            } catch (e0) {}
++            return selectedSet[indexValue] === true;
++        }
++
++        function drawSelectionForLine(canvas, line, paddingLeft) {
++            try {
++                var runStart = -1;
++                var i;
++                for (i = line.start; i <= line.end; i++) {
++                    var selected = (i < line.end && isIndexSelectedForCanvas(i));
++                    if (selected && runStart < 0) runStart = i;
++                    if ((!selected || i === line.end) && runStart >= 0) {
++                        var runEnd = i;
++                        var leftIndex = runStart - line.start;
++                        var rightIndex = runEnd - line.start;
++                        if (leftIndex < 0) leftIndex = 0;
++                        if (rightIndex >= line.xs.length) rightIndex = line.xs.length - 1;
++                        var l = paddingLeft + line.xs[leftIndex];
++                        var r = paddingLeft + line.xs[rightIndex];
++                        if (r < l + 1) r = l + 1;
++                        rectF.set(l, line.top + 1, r, line.bottom - 1);
++                        setPaintColor(bgPaint, Colors.selectionBg, 220);
