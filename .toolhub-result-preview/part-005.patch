@@ -1,0 +1,245 @@
++                        canvas.drawRoundRect(rectF, uiDp(3, 4), uiDp(3, 4), bgPaint);
++                        runStart = -1;
++                    }
++                }
++            } catch (e) {}
++        }
++
++        var canvasView = new JavaAdapter(View, {
++            onMeasure: function(widthMeasureSpec, heightMeasureSpec) {
++                try {
++                    var w = android.view.View.MeasureSpec.getSize(widthMeasureSpec);
++                    if (w <= 0) w = Math.round(windowWidth - uiDp(32, 40));
++                    state.measuredWidth = w;
++                    if (state.layoutDirty || state.contentWidth !== w || state.lines.length === 0) {
++                        rebuildLayout(w, this);
++                    }
++                    var h = Math.max(Math.round(state.contentHeight), Math.round(uiDp(80, 96)));
++                    this.setMeasuredDimension(w, h);
++                } catch (e) {
++                    this.setMeasuredDimension(Math.round(windowWidth - uiDp(32, 40)), Math.round(uiDp(120, 150)));
++                }
++            },
++            onSizeChanged: function(w, h, oldw, oldh) {
++                try {
++                    if (w !== oldw) {
++                        state.layoutDirty = true;
++                        ensureLayout(this);
++                    }
++                } catch (e) {}
++            },
++            onDraw: function(canvas) {
++                try {
++                    ensureLayout(this);
++                    var padding = getPaddingInfo(this);
++                    var hasClip = false;
++                    try { hasClip = canvas.getClipBounds(clipRect); } catch (e0) { hasClip = false; }
++                    var clipTop = hasClip ? clipRect.top : 0;
++                    var clipBottom = hasClip ? clipRect.bottom : this.getHeight();
++                    try {
++                        if (scrollView) {
++                            var svTop = scrollView.getScrollY();
++                            var svBottom = svTop + scrollView.getHeight();
++                            if (svBottom > svTop) {
++                                clipTop = Math.max(clipTop, svTop);
++                                clipBottom = Math.min(clipBottom, svBottom);
++                                if (clipBottom <= clipTop) {
++                                    clipTop = svTop;
++                                    clipBottom = svBottom;
++                                }
++                            }
++                        }
++                    } catch (eClip) {}
++
++                    resetPaint();
++                    var source = String(state.text || "");
++                    var lastSelected = null;
++                    var bufferLines = 50;
++                    try {
++                        if (isDragging) bufferLines = parseInt(String(DIY_CONFIG.CANVAS_DRAG_VISIBLE_LINE_BUFFER), 10);
++                        else bufferLines = parseInt(String(DIY_CONFIG.CANVAS_VISIBLE_LINE_BUFFER), 10);
++                    } catch (eBuf) { bufferLines = isDragging ? 8 : 50; }
++                    if (isNaN(bufferLines) || bufferLines < 0) bufferLines = isDragging ? 8 : 50;
++                    if (isDragging && bufferLines > 24) bufferLines = 24;
++                    if (!isDragging && bufferLines > 120) bufferLines = 120;
++                    var startLine = Math.floor((clipTop - padding.top) / Math.max(1, state.lineHeight)) - bufferLines;
++                    var endLine = Math.ceil((clipBottom - padding.top) / Math.max(1, state.lineHeight)) + bufferLines;
++                    if (startLine < 0) startLine = 0;
++                    if (endLine >= state.lines.length) endLine = state.lines.length - 1;
++                    for (var li = startLine; li <= endLine; li++) {
++                        var line = state.lines[li];
++                        if (!line) continue;
++
++                        drawSelectionForLine(canvas, line, padding.left);
++                        var x = padding.left;
++                        for (var idx = line.start; idx < line.end; idx++) {
++                            var ch = source.charAt(idx);
++                            var selected = isIndexSelectedForCanvas(idx);
++                            if (lastSelected !== selected) {
++                                setPaintColor(textPaint, selected ? Colors.selectionText : Colors.text, 255);
++                                lastSelected = selected;
++                            }
++                            try { canvas.drawText(new java.lang.String(ch), x, line.baseline, textPaint); } catch (e1) {
++                                try { canvas.drawText(String(ch), x, line.baseline, textPaint); } catch (e2) {}
++                            }
++                            var pos = idx - line.start;
++                            if (pos + 1 < line.xs.length) x = padding.left + line.xs[pos + 1];
++                        }
++                    }
++                } catch (e3) {}
++            }
++        }, appContext);
++
++        canvasView.setPadding(uiDp(12, 14), uiDp(12, 14), uiDp(12, 14), uiDp(12, 14));
++        canvasView.setBackground(createRoundRectDrawable(Colors.surface, isTablet ? 12 : 8));
++        canvasView.setClickable(true);
++        canvasView.setLongClickable(false);
++        canvasView.setFocusable(false);
++        try { canvasView.setWillNotDraw(false); } catch (eWill) {}
++
++        return {
++            view: canvasView,
++            setText: function(textValue) {
++                state.text = String(textValue == null ? "" : textValue);
++                state.layoutDirty = true;
++                try { canvasView.requestLayout(); } catch (e0) {}
++                try { canvasView.invalidate(); } catch (e1) {}
++                try { if (拾字Floaty && 拾字Floaty.startCanvasScrollRefresh) 拾字Floaty.startCanvasScrollRefresh(); } catch (e2) {}
++            },
++            setTextSize: function(sizeValue) {
++                state.textSizeSp = sizeValue;
++                state.widthCache = {};
++                state.layoutDirty = true;
++                try { canvasView.requestLayout(); } catch (e0) {}
++                try { canvasView.invalidate(); } catch (e1) {}
++            },
++            getContentHeight: function() {
++                try { ensureLayout(canvasView); } catch (e0) {}
++                return state.contentHeight;
++            },
++            getLineCount: function() {
++                try { ensureLayout(canvasView); } catch (e0) {}
++                return state.lines.length;
++            },
++            getCharIndexAt: function(x, y) {
++                try {
++                    ensureLayout(canvasView);
++                    var lines = state.lines;
++                    if (!lines || lines.length === 0) return -1;
++                    var lineIndex = Math.floor((y - canvasView.getPaddingTop()) / Math.max(1, state.lineHeight));
++                    if (lineIndex < 0) lineIndex = 0;
++                    if (lineIndex >= lines.length) lineIndex = lines.length - 1;
++                    var line = lines[lineIndex];
++                    if (!line) return -1;
++                    if (line.end <= line.start) return line.start >= 0 && line.start < state.text.length ? line.start : -1;
++                    var localX = x - canvasView.getPaddingLeft();
++                    if (localX < 0) localX = 0;
++                    var xs = line.xs;
++                    var lo = 0;
++                    var hi = xs.length - 2;
++                    var answer = hi;
++                    while (lo <= hi) {
++                        var midIndex = Math.floor((lo + hi) / 2);
++                        var mid = (xs[midIndex] + xs[midIndex + 1]) / 2;
++                        if (localX < mid) {
++                            answer = midIndex;
++                            hi = midIndex - 1;
++                        } else {
++                            lo = midIndex + 1;
++                        }
++                    }
++                    return Math.max(line.start, Math.min(line.start + answer, state.text.length - 1));
++                } catch (e) { return -1; }
++            },
++            invalidateVisible: function() {
++                try {
++                    var top = 0;
++                    var bottom = canvasView.getHeight();
++                    if (scrollView) {
++                        top = Math.max(0, scrollView.getScrollY() - state.lineHeight * 4);
++                        bottom = Math.min(canvasView.getHeight(), scrollView.getScrollY() + scrollView.getHeight() + state.lineHeight * 4);
++                    }
++                    var width = Math.max(1, canvasView.getWidth());
++                    var itop = Math.round(top);
++                    var ibottom = Math.round(bottom);
++                    if (ibottom <= itop) ibottom = Math.min(canvasView.getHeight(), itop + Math.max(1, state.lineHeight * 8));
++                    try { canvasView.invalidate(0, itop, width, ibottom); } catch (e2) { canvasView.invalidate(); }
++                    // 快速滚动时部分 ROM / 硬件加速路径不会主动重绘新露出的子区域，父容器也补一次 invalidate。
++                    // 但长按拖选 + 放大镜期间如果每帧补父容器和动画刷新，会明显掉帧，所以拖选时只刷新子 View 局部。
++                    if (!isDragging) {
++                        try { if (scrollView) scrollView.invalidate(); } catch (e3) {}
++                        try { if (android.os.Build.VERSION.SDK_INT >= 16) canvasView.postInvalidateOnAnimation(); } catch (e4) {}
++                    }
++                } catch (e0) { try { canvasView.invalidate(); } catch (e1) {} }
++            },
++            invalidateCharRange: function(startIndex, endIndex) {
++                try {
++                    ensureLayout(canvasView);
++                    if (startIndex === undefined || startIndex === null || endIndex === undefined || endIndex === null || startIndex < 0 || endIndex < 0) {
++                        this.invalidateVisible();
++                        return;
++                    }
++                    if (startIndex > endIndex) { var tmp = startIndex; startIndex = endIndex; endIndex = tmp; }
++                    var lines = state.lines;
++                    if (!lines || lines.length === 0) { this.invalidateVisible(); return; }
++                    var startLine = Math.floor((Math.max(0, startIndex) / Math.max(1, state.text.length)) * lines.length);
++                    var endLine = Math.floor((Math.max(0, endIndex) / Math.max(1, state.text.length)) * lines.length);
++                    if (startLine < 0) startLine = 0;
++                    if (endLine < 0) endLine = 0;
++                    if (startLine >= lines.length) startLine = lines.length - 1;
++                    if (endLine >= lines.length) endLine = lines.length - 1;
++                    while (startLine > 0 && lines[startLine].start > startIndex) startLine--;
++                    while (startLine + 1 < lines.length && lines[startLine].end <= startIndex) startLine++;
++                    while (endLine > 0 && lines[endLine].start > endIndex) endLine--;
++                    while (endLine + 1 < lines.length && lines[endLine].end <= endIndex) endLine++;
++                    var top = Math.max(0, lines[startLine].top - state.lineHeight * 2);
++                    var bottom = Math.min(canvasView.getHeight(), lines[endLine].bottom + state.lineHeight * 2);
++                    canvasView.invalidate(0, Math.round(top), Math.max(1, canvasView.getWidth()), Math.round(bottom));
++                } catch (e0) { this.invalidateVisible(); }
++            },
++            invalidate: function() {
++                try { this.invalidateVisible(); } catch (e0) { try { canvasView.invalidate(); } catch (e1) {} }
++            },
++            requestLayout: function() {
++                try { canvasView.requestLayout(); } catch (e0) {}
++            }
++        };
++    }
++
++    function detectScreenSize() {
++        try {
++            var wm = appContext.getSystemService(appContext.WINDOW_SERVICE);
++            var display = wm.getDefaultDisplay();
++            var metrics = new android.util.DisplayMetrics();
++            display.getMetrics(metrics);
++
++            screenWidth = metrics.widthPixels;
++            screenHeight = metrics.heightPixels;
++            var widthDp = screenWidth / metrics.density;
++            var heightDp = screenHeight / metrics.density;
++            var smallestWidth = Math.min(widthDp, heightDp);
++            var shortestPx = Math.min(screenWidth, screenHeight);
++            isTablet = smallestWidth >= 600;
++
++            if (isTablet) {
++                if (smallestWidth >= 900) { screenCategory = "large_tablet"; uiScale = 1.28; }
++                else { screenCategory = "tablet"; uiScale = 1.16; }
++            } else if (smallestWidth <= 360 || shortestPx <= 720) {
++                screenCategory = "small_phone"; uiScale = 0.92;
++            } else if (smallestWidth >= 480) {
++                screenCategory = "large_phone"; uiScale = 1.08;
++            } else {
++                screenCategory = "phone"; uiScale = 1.0;
++            }
++
++            if (isTablet) {
++                windowWidth = Math.min(screenWidth * 0.78, dp(smallestWidth >= 900 ? 920 : 760));
++                maxWindowHeight = screenHeight * 0.85;
++                textAreaHeight = uiDp(DIY_CONFIG.TEXT_AREA_HEIGHT_DP, smallestWidth >= 900 ? DIY_CONFIG.TEXT_AREA_HEIGHT_DP + 100 : DIY_CONFIG.TEXT_AREA_HEIGHT_DP);
++            } else if (screenCategory === "large_phone") {
++                windowWidth = screenWidth * 0.88;
++                maxWindowHeight = screenHeight * 0.85;
++                textAreaHeight = uiDp(DIY_CONFIG.TEXT_AREA_HEIGHT_DP, DIY_CONFIG.TEXT_AREA_HEIGHT_DP);
++            } else if (screenCategory === "small_phone") {
++                windowWidth = screenWidth * 0.97;
++                maxWindowHeight = screenHeight * 0.90;
