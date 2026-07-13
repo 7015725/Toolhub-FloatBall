@@ -1,4 +1,4 @@
-// @version 1.2.1
+// @version 1.2.2
 // =======================【安全配置安装器】======================
 // 这段代码的主要内容/用途：注入 Shell / Shortcut / Content 加固需要的配置项。
 // Shell 默认 strict；Shortcut 默认仅使用结构化 intentUri，旧 JS 仅允许显式 legacy_js。
@@ -93,6 +93,30 @@
       return n;
     }
 
+    function clampRatio(value) {
+      var n = Number(value);
+      if (isNaN(n)) n = 0;
+      if (n < 0) n = 0;
+      if (n > 1) n = 1;
+      return n;
+    }
+
+    function mixColor(baseColor, overlayColor, ratio) {
+      try {
+        var Color = android.graphics.Color;
+        var p = clampRatio(ratio);
+        var q = 1 - p;
+        return Color.argb(
+          Math.round(Color.alpha(baseColor) * q + Color.alpha(overlayColor) * p),
+          Math.round(Color.red(baseColor) * q + Color.red(overlayColor) * p),
+          Math.round(Color.green(baseColor) * q + Color.green(overlayColor) * p),
+          Math.round(Color.blue(baseColor) * q + Color.blue(overlayColor) * p)
+        );
+      } catch(e) {
+        return baseColor;
+      }
+    }
+
     function linearChannel(value) {
       var x = Number(value) / 255;
       if (x <= 0.03928) return x / 12.92;
@@ -123,69 +147,57 @@
     };
 
     proto.getSettingsBestTextColor = function(bgColor) {
-      var darkText = parseColor("#101012", android.graphics.Color.BLACK);
-      var lightText = android.graphics.Color.WHITE;
+      var Color = android.graphics.Color;
+      var darkText = parseColor("#25272A", Color.BLACK);
+      var lightText = parseColor("#E7E9EC", Color.WHITE);
       var darkRatio = this.getSettingsColorContrastRatio(bgColor, darkText);
       var lightRatio = this.getSettingsColorContrastRatio(bgColor, lightText);
-      return darkRatio >= lightRatio ? darkText : lightText;
+      var preferred = darkRatio >= lightRatio ? darkText : lightText;
+      var preferredRatio = Math.max(darkRatio, lightRatio);
+      if (preferredRatio >= 4.5) return preferred;
+
+      var blackRatio = this.getSettingsColorContrastRatio(bgColor, Color.BLACK);
+      var whiteRatio = this.getSettingsColorContrastRatio(bgColor, Color.WHITE);
+      return blackRatio >= whiteRatio ? Color.BLACK : Color.WHITE;
     };
 
     proto.repairSettingsPrimaryColor = function(rawPrimary, surface, isDark, candidates) {
       var minTextRatio = 4.5;
-      var minSurfaceRatio = 1.35;
-      var rawOn = this.getSettingsBestTextColor(rawPrimary);
-      var rawTextRatio = this.getSettingsColorContrastRatio(rawPrimary, rawOn);
-      var rawSurfaceRatio = this.getSettingsColorContrastRatio(rawPrimary, surface);
+      var minSurfaceRatio = 1.55;
+      var neutralAnchor = parseColor(isDark ? "#E7E9EC" : "#25272A", isDark ? android.graphics.Color.WHITE : android.graphics.Color.BLACK);
 
-      if (rawTextRatio >= minTextRatio && rawSurfaceRatio >= minSurfaceRatio) {
+      function buildResult(app, color, source, repaired) {
+        var onColor = app.getSettingsBestTextColor(color);
         return {
-          color: rawPrimary,
-          onColor: rawOn,
-          repaired: false,
-          source: "raw",
-          textRatio: rawTextRatio,
-          surfaceRatio: rawSurfaceRatio
+          color: color,
+          onColor: onColor,
+          repaired: repaired,
+          source: source,
+          textRatio: app.getSettingsColorContrastRatio(color, onColor),
+          surfaceRatio: app.getSettingsColorContrastRatio(color, surface)
         };
       }
 
-      var list = candidates || [];
-      var best = null;
-      var bestScore = -1;
-      for (var i = 0; i < list.length; i++) {
-        var one = list[i] || {};
-        var color = colorOr(one.color, rawPrimary);
-        var onColor = this.getSettingsBestTextColor(color);
-        var textRatio = this.getSettingsColorContrastRatio(color, onColor);
-        var surfaceRatio = this.getSettingsColorContrastRatio(color, surface);
-        var score = (textRatio >= minTextRatio ? 100 : 0) +
-                    (surfaceRatio >= minSurfaceRatio ? 100 : 0) +
-                    textRatio * 2 + surfaceRatio;
-        var result = {
-          color: color,
-          onColor: onColor,
-          repaired: true,
-          source: String(one.name || "candidate"),
-          textRatio: textRatio,
-          surfaceRatio: surfaceRatio
-        };
+      var raw = buildResult(this, rawPrimary, "raw", false);
+      if (raw.textRatio >= minTextRatio && raw.surfaceRatio >= minSurfaceRatio) return raw;
+
+      var steps = [0.08, 0.16, 0.24, 0.32, 0.42, 0.52, 0.64];
+      var best = raw;
+      var bestScore = raw.textRatio * 2 + raw.surfaceRatio;
+      for (var i = 0; i < steps.length; i++) {
+        var ratio = steps[i];
+        var adjusted = mixColor(rawPrimary, neutralAnchor, ratio);
+        var result = buildResult(this, adjusted, "neutral_mix_" + String(Math.round(ratio * 100)), true);
+        var score = (result.textRatio >= minTextRatio ? 100 : 0) +
+                    (result.surfaceRatio >= minSurfaceRatio ? 100 : 0) +
+                    result.textRatio * 2 + result.surfaceRatio;
         if (score > bestScore) {
           bestScore = score;
           best = result;
         }
-        if (textRatio >= minTextRatio && surfaceRatio >= minSurfaceRatio) return result;
+        if (result.textRatio >= minTextRatio && result.surfaceRatio >= minSurfaceRatio) return result;
       }
-
-      if (best) return best;
-      var safePrimary = parseColor(isDark ? "#A8C7FA" : "#005BC0", rawPrimary);
-      var safeOn = this.getSettingsBestTextColor(safePrimary);
-      return {
-        color: safePrimary,
-        onColor: safeOn,
-        repaired: true,
-        source: "fallback",
-        textRatio: this.getSettingsColorContrastRatio(safePrimary, safeOn),
-        surfaceRatio: this.getSettingsColorContrastRatio(safePrimary, surface)
-      };
+      return best;
     };
 
     proto.getSettingsColorScheme = function(forceDark) {
@@ -250,27 +262,30 @@
       var background = colorOr(monet && monet.surface, colorOr(isDark ? colors.bgDark : colors.bgLight, fallback.background));
       var surface = colorOr(monet && (monet.surfaceContainerLow || monet.surfaceVariant), colorOr(isDark ? colors.cardDark : colors.cardLight, fallback.surface));
       var surface2 = colorOr(monet && (monet.surfaceContainerHigh || monet.surfaceVariant), colorOr(isDark ? colors.inputBgDark : colors.inputBgLight, fallback.surface2));
-      var onBackground = colorOr(monet && monet.onSurface, colorOr(isDark ? colors.textPriDark : colors.textPriLight, fallback.onSurface));
-      var onSurface = onBackground;
-      var onSurface2 = colorOr(monet && monet.onSurfaceVariant, colorOr(isDark ? colors.textSecDark : colors.textSecLight, fallback.onSurface2));
+      // 正文和说明文字使用稳定中性色，不再随强调色色相偏移。
+      var preferredPrimaryText = parseColor(isDark ? "#E7E9EC" : "#25272A", fallback.onSurface);
+      var preferredSecondaryText = parseColor(isDark ? "#ADB3BA" : "#666B70", fallback.onSurface2);
+      var onBackground = preferredPrimaryText;
+      var onSurface = preferredPrimaryText;
+      var onSurface2 = preferredSecondaryText;
 
-      if (this.getSettingsColorContrastRatio(background, onBackground) < 4.5) onBackground = this.getSettingsBestTextColor(background);
-      if (this.getSettingsColorContrastRatio(surface, onSurface) < 4.5) onSurface = this.getSettingsBestTextColor(surface);
-      if (this.getSettingsColorContrastRatio(surface2, onSurface2) < 4.5) onSurface2 = this.getSettingsBestTextColor(surface2);
+      if (this.getSettingsColorContrastRatio(background, onBackground) < 7.0) onBackground = this.getSettingsBestTextColor(background);
+      if (this.getSettingsColorContrastRatio(surface, onSurface) < 7.0) onSurface = this.getSettingsBestTextColor(surface);
+      if (this.getSettingsColorContrastRatio(surface, onSurface2) < 4.5 ||
+          this.getSettingsColorContrastRatio(surface2, onSurface2) < 4.5) {
+        onSurface2 = onSurface;
+      }
 
       var rawPrimary = colorOr(monet && monet.primary, colorOr(colors.primary, fallback.primary));
       var secondary = colorOr(monet && monet.secondary, colorOr(colors.accent, fallback.secondary));
       var tertiary = colorOr(monet && monet.tertiary, colorOr(colors._monetTertiary, fallback.tertiary));
-      var primaryContainer = colorOr(monet && monet.primaryContainer, colorOr(colors._monetPrimaryContainer, fallback.primaryContainer));
-      var repair = this.repairSettingsPrimaryColor(rawPrimary, surface, isDark, [
-        { name: "secondary", color: secondary },
-        { name: "tertiary", color: tertiary },
-        { name: "primaryContainer", color: primaryContainer },
-        { name: "fallback", color: fallback.primary }
-      ]);
-
+      var repair = this.repairSettingsPrimaryColor(rawPrimary, surface, isDark, null);
+      var primary = repair.color;
       var onPrimary = repair.onColor;
-      var onPrimaryContainer = colorOr(monet && monet.onPrimaryContainer, colorOr(colors._monetOnPrimaryContainer, fallback.onPrimaryContainer));
+
+      // 弱强调色始终由最终 primary 派生，避免主色与容器色跨色相。
+      var primaryContainer = mixColor(surface, primary, isDark ? 0.24 : 0.13);
+      var onPrimaryContainer = onSurface;
       if (this.getSettingsColorContrastRatio(primaryContainer, onPrimaryContainer) < 4.5) {
         onPrimaryContainer = this.getSettingsBestTextColor(primaryContainer);
       }
@@ -285,6 +300,19 @@
         onDangerContainer = this.getSettingsBestTextColor(dangerContainer);
       }
 
+      var success = colorOr(colors.success, fallback.success);
+      var warning = colorOr(colors.warning, fallback.warning);
+      var successContainer = mixColor(surface, success, isDark ? 0.20 : 0.12);
+      var warningContainer = mixColor(surface, warning, isDark ? 0.20 : 0.12);
+      var onSuccessContainer = onSurface;
+      var onWarningContainer = onSurface;
+      if (this.getSettingsColorContrastRatio(successContainer, onSuccessContainer) < 4.5) {
+        onSuccessContainer = this.getSettingsBestTextColor(successContainer);
+      }
+      if (this.getSettingsColorContrastRatio(warningContainer, onWarningContainer) < 4.5) {
+        onWarningContainer = this.getSettingsBestTextColor(warningContainer);
+      }
+
       return {
         dark: isDark,
         background: background,
@@ -293,7 +321,7 @@
         onSurface: onSurface,
         surface2: surface2,
         onSurface2: onSurface2,
-        primary: repair.color,
+        primary: primary,
         onPrimary: onPrimary,
         primaryContainer: primaryContainer,
         onPrimaryContainer: onPrimaryContainer,
@@ -301,8 +329,12 @@
         outlineVariant: outlineVariant,
         secondary: secondary,
         tertiary: tertiary,
-        success: colorOr(colors.success, fallback.success),
-        warning: colorOr(colors.warning, fallback.warning),
+        success: success,
+        successContainer: successContainer,
+        onSuccessContainer: onSuccessContainer,
+        warning: warning,
+        warningContainer: warningContainer,
+        onWarningContainer: onWarningContainer,
         danger: danger,
         onDanger: onDanger,
         dangerContainer: dangerContainer,

@@ -1,4 +1,4 @@
-// @version 1.0.17
+// @version 1.0.18
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -332,7 +332,7 @@ FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function(parent, icon
   row.addView(tvIcon, iconLp);
   var tv = new android.widget.TextView(context);
   tv.setText(String(title || ""));
-  tv.setTextColor(T.primary);
+  tv.setTextColor(T.onSurface);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
   tv.setTypeface(null, android.graphics.Typeface.BOLD);
   row.addView(tv, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
@@ -377,7 +377,7 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   var itemRadius = spec ? spec.itemRadius : this.dp(18);
   row.setPadding(this.dp(12), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(8) : this.dp(10), this.dp(10), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(8) : this.dp(10));
   row.setMinimumHeight(spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(72) : this.dp(76));
-  row.setBackground(this.ui.createRippleDrawable(T.surface, this.withAlpha(T.primary, isDark ? 0.18 : 0.12), itemRadius));
+  row.setBackground(this.ui.createRippleDrawable(T.surface, this.withAlpha(T.primary, isDark ? 0.14 : 0.08), itemRadius));
   try { row.setElevation(this.dp(1)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   var badge = new android.widget.TextView(context);
   badge.setText(this.getSettingsHomeIcon ? this.getSettingsHomeIcon(title) : "✦");
@@ -385,7 +385,7 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   badge.setGravity(android.view.Gravity.CENTER);
   badge.setTypeface(null, android.graphics.Typeface.BOLD);
-  badge.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.30 : 0.22), this.dp(1), this.dp(13)));
+  badge.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.22 : 0.16), this.dp(1), this.dp(13)));
   var iconSize = spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(38) : this.dp(40);
   var badgeLp = new android.widget.LinearLayout.LayoutParams(iconSize, iconSize);
   badgeLp.setMargins(0, 0, this.dp(10), 0);
@@ -511,72 +511,72 @@ FloatBallAppWM.prototype.getToolHubUpdateState = function() {
 FloatBallAppWM.prototype.getToolHubUpdateVisual = function(updateState, T, isDark) {
   var C = this.ui.colors || {};
   var dangerColor = T.danger || C.danger || android.graphics.Color.parseColor("#BA1A1A");
-  var dangerBg = T.dangerContainer || this.withAlpha(dangerColor, isDark ? 0.22 : 0.12);
-  var warningColor = C.warning || T.onSurface2 || T.primary;
-  var warningBg = this.withAlpha(warningColor, isDark ? 0.22 : 0.12);
-  var successColor = C.success || T.primary;
-  var successBg = this.withAlpha(successColor, isDark ? 0.20 : 0.10);
+  var warningColor = T.warning || C.warning || android.graphics.Color.parseColor(isDark ? "#FBBF24" : "#B45309");
+  var successColor = T.success || C.success || android.graphics.Color.parseColor(isDark ? "#4ADE80" : "#15803D");
+  var primaryColor = T.primary;
   var visual = {
     icon: "✓",
     label: "尚未检查更新",
     sub: "详情",
-    textColor: T.primary,
-    bg: this.withAlpha(T.primaryContainer, isDark ? 0.82 : 0.96),
-    stroke: this.withAlpha(T.primary, isDark ? 0.34 : 0.24)
+    iconColor: primaryColor,
+    labelColor: T.onSurface,
+    detailColor: T.onSurface2,
+    bg: T.primaryContainer,
+    stroke: this.withAlpha(primaryColor, isDark ? 0.24 : 0.16)
   };
+
+  function applyStatus(app, color, container) {
+    visual.iconColor = color;
+    visual.labelColor = T.onSurface;
+    visual.detailColor = T.onSurface2;
+    visual.bg = container;
+    visual.stroke = app.withAlpha(color, isDark ? 0.30 : 0.20);
+  }
+
   var s = updateState ? String(updateState.status || "unknown") : "unknown";
   if (s === "checking") {
     visual.icon = "…";
     visual.label = "检查中";
     visual.sub = "稍候";
-    visual.textColor = warningColor;
-    visual.bg = warningBg;
-    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
   } else if (s === "available") {
     visual.icon = "↓";
     visual.label = "发现新版本";
     visual.sub = updateState && Number(updateState.availableCount || 0) > 0 ? (String(updateState.availableCount) + "项") : "更新";
-    visual.textColor = warningColor;
-    visual.bg = warningBg;
-    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
   } else if (s === "installing") {
     visual.icon = "…";
     visual.label = "正在更新";
     visual.sub = "稍候";
-    visual.textColor = warningColor;
-    visual.bg = warningBg;
-    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
   } else if (s === "restarting") {
     visual.icon = "↻";
     visual.label = "正在重启";
     visual.sub = "稍候";
-    visual.textColor = warningColor;
-    visual.bg = warningBg;
-    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
   } else if (s === "updated") {
     visual.icon = "↻";
     visual.label = updateState && updateState.needRestart ? "已更新，重启生效" : "模块已更新";
     visual.sub = updateState && updateState.needRestart ? "重启" : (updateState && Number(updateState.updatedCount || 0) > 0 ? (String(updateState.updatedCount) + "项") : "完成");
-    visual.textColor = successColor;
-    visual.bg = successBg;
-    visual.stroke = this.withAlpha(successColor, isDark ? 0.44 : 0.30);
+    applyStatus(this, successColor, T.successContainer || this.withAlpha(successColor, isDark ? 0.20 : 0.12));
   } else if (s === "latest") {
     visual.icon = "✓";
     visual.label = "已是最新";
+    applyStatus(this, successColor, T.successContainer || this.withAlpha(successColor, isDark ? 0.20 : 0.12));
   } else if (s === "plain") {
     visual.icon = "⚠";
     visual.label = "普通模式";
-    visual.textColor = warningColor;
-    visual.bg = warningBg;
-    visual.stroke = this.withAlpha(warningColor, isDark ? 0.44 : 0.30);
+    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
   } else if (s === "error") {
     visual.icon = "!";
     visual.label = "更新异常";
-    visual.textColor = dangerColor;
-    visual.bg = dangerBg;
-    visual.stroke = this.withAlpha(dangerColor, isDark ? 0.44 : 0.30);
+    applyStatus(this, dangerColor, this.withAlpha(dangerColor, isDark ? 0.18 : 0.10));
   }
-  if (s !== "available" && s !== "installing" && s !== "updated" && updateState && Number(updateState.version || 0) > 0) visual.sub = "v" + String(Math.floor(Number(updateState.version || 0)));
+
+  if (s !== "available" && s !== "installing" && s !== "updated" &&
+      updateState && Number(updateState.version || 0) > 0) {
+    visual.sub = "v" + String(Math.floor(Number(updateState.version || 0)));
+  }
   return visual;
 };
 
@@ -599,7 +599,7 @@ FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, o
 
   var iconTv = new android.widget.TextView(context);
   iconTv.setText(String(visual.icon || "✓"));
-  iconTv.setTextColor(visual.textColor);
+  iconTv.setTextColor(visual.iconColor);
   iconTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compact ? 12 : 13);
   iconTv.setGravity(android.view.Gravity.CENTER);
   iconTv.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -607,7 +607,7 @@ FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, o
 
   var labelTv = new android.widget.TextView(context);
   labelTv.setText(String(visual.label || "更新状态"));
-  labelTv.setTextColor(visual.textColor);
+  labelTv.setTextColor(visual.labelColor);
   labelTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compact ? 11 : 12);
   labelTv.setTypeface(null, android.graphics.Typeface.BOLD);
   labelTv.setSingleLine(true);
@@ -618,12 +618,12 @@ FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, o
 
   var detailTv = new android.widget.TextView(context);
   detailTv.setText(expanded ? "收起" : String(visual.sub || "详情"));
-  detailTv.setTextColor(visual.textColor);
+  detailTv.setTextColor(visual.detailColor);
   detailTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
   detailTv.setGravity(android.view.Gravity.CENTER);
   detailTv.setSingleLine(true);
   detailTv.setPadding(this.dp(7), this.dp(3), this.dp(7), this.dp(3));
-  detailTv.setBackground(this.ui.createRoundDrawable(this.withAlpha(visual.textColor, isDark ? 0.16 : 0.10), this.dp(12)));
+  detailTv.setBackground(this.ui.createRoundDrawable(this.withAlpha(visual.iconColor, isDark ? 0.12 : 0.08), this.dp(12)));
   pill.addView(detailTv, new android.widget.LinearLayout.LayoutParams(-2, -2));
 
   pill.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
@@ -874,7 +874,7 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   addLine(this, box, headText, T.onSurface, 13, true);
 
   if (updateState && updateState.changes && updateState.changes.length > 0) {
-    var changeHead = addLine(this, box, "更新内容", T.primary, 12, true);
+    var changeHead = addLine(this, box, "更新内容", T.onSurface, 12, true);
     changeHead.setPadding(0, this.dp(8), 0, this.dp(2));
     var maxChanges = Math.min(3, updateState.changes.length);
     for (var ci = 0; ci < maxChanges; ci++) {
@@ -884,7 +884,7 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   }
 
   if (updateState && updateState.availableDetails && updateState.availableDetails.length > 0) {
-    var detailHead = addLine(this, box, "版本差异", T.primary, 12, true);
+    var detailHead = addLine(this, box, "版本差异", T.onSurface, 12, true);
     detailHead.setPadding(0, this.dp(8), 0, this.dp(2));
     var maxDetails = Math.min(4, updateState.availableDetails.length);
     for (var di = 0; di < maxDetails; di++) {
@@ -1019,7 +1019,7 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   card.setGravity(android.view.Gravity.CENTER_VERTICAL);
   card.setMinimumHeight(compactWelcome ? this.dp(102) : this.dp(112));
   card.setPadding(this.dp(14), this.dp(10), this.dp(14), this.dp(10));
-  card.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.primary, isDark ? 0.22 : 0.18), this.dp(1), spec ? spec.cardRadius : this.dp(24)));
+  card.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.outlineVariant, isDark ? 0.14 : 0.12), this.dp(1), spec ? spec.cardRadius : this.dp(24)));
   try { card.setElevation(this.dp(compactWelcome ? 2 : 4)); } catch(eElev) {}
 
   var topRow = new android.widget.LinearLayout(context);
@@ -1033,7 +1033,7 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   island.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compactWelcome ? 22 : 24);
   island.setTextColor(T.primary);
   island.setTypeface(null, android.graphics.Typeface.BOLD);
-  island.setBackground(this.ui.createStrokeDrawable(this.withAlpha(T.primaryContainer, isDark ? 0.78 : 0.96), this.withAlpha(T.primary, isDark ? 0.26 : 0.20), this.dp(1), this.dp(18)));
+  island.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.22 : 0.16), this.dp(1), this.dp(18)));
   var iconSize = compactWelcome ? this.dp(48) : this.dp(50);
   var islandLp = new android.widget.LinearLayout.LayoutParams(iconSize, iconSize);
   islandLp.setMargins(0, 0, this.dp(12), 0);
@@ -1246,7 +1246,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   function createCard() {
     var c = new android.widget.LinearLayout(context);
     c.setOrientation(android.widget.LinearLayout.VERTICAL);
-    c.setBackground(self.ui.createStrokeDrawable(T.surface, self.withAlpha(T.outlineVariant, isDark ? 0.18 : 0.24), self.dp(1), cardRadius));
+    c.setBackground(self.ui.createStrokeDrawable(T.surface, self.withAlpha(T.outlineVariant, isDark ? 0.14 : 0.12), self.dp(1), cardRadius));
     try { c.setElevation(self.dp(1)); } catch(e) {}
     try { c.setClipToOutline(true); } catch(e2) {}
     if (columns > 1) {
@@ -1384,7 +1384,7 @@ FloatBallAppWM.prototype.createSettingsMasterMenuItem = function(parent, cat, se
   row.setPadding(this.dp(10), this.dp(7), this.dp(10), this.dp(7));
   row.setMinimumHeight(this.dp(64));
   var bg = selected ? T.primaryContainer : T.surface;
-  var stroke = selected ? this.withAlpha(T.primary, isDark ? 0.52 : 0.36) : this.withAlpha(T.outlineVariant, isDark ? 0.20 : 0.24);
+  var stroke = selected ? this.withAlpha(T.primary, isDark ? 0.30 : 0.24) : this.withAlpha(T.outlineVariant, isDark ? 0.14 : 0.12);
   row.setBackground(this.ui.createStrokeDrawable(bg, stroke, this.dp(1), this.dp(18)));
   try { row.setElevation(this.dp(selected ? 2 : 0)); } catch(eElev) {}
   var mark = new android.view.View(context);
@@ -1405,7 +1405,7 @@ FloatBallAppWM.prototype.createSettingsMasterMenuItem = function(parent, cat, se
   texts.setOrientation(android.widget.LinearLayout.VERTICAL);
   var title = new android.widget.TextView(context);
   title.setText(String(cat && cat.title || ""));
-  title.setTextColor(selected ? T.primary : T.onSurface);
+  title.setTextColor(T.onSurface);
   title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
   title.setTypeface(null, android.graphics.Typeface.BOLD);
   texts.addView(title, new android.widget.LinearLayout.LayoutParams(-1, -2));

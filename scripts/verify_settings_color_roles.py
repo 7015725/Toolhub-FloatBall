@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+SCHEME = (ROOT / "code/th_12_rebuild.js").read_text(encoding="utf-8")
+PANEL_UI = (ROOT / "code/th_13_panel_ui.js").read_text(encoding="utf-8")
+PANELS = (ROOT / "code/th_14_panels.js").read_text(encoding="utf-8")
+EXTRA = (ROOT / "code/th_15_extra.js").read_text(encoding="utf-8")
+
+errors = []
+
+def section(text, start_marker, end_marker=None):
+    start = text.find(start_marker)
+    if start < 0:
+        errors.append("缺少区段：" + start_marker)
+        return ""
+    if end_marker:
+        end = text.find(end_marker, start + len(start_marker))
+    else:
+        end = text.find("\nFloatBallAppWM.prototype.", start + len(start_marker))
+    if end < 0:
+        end = len(text)
+    return text[start:end]
+
+required_scheme = [
+    "function mixColor(baseColor, overlayColor, ratio)",
+    'var preferredPrimaryText = parseColor(isDark ? "#E7E9EC" : "#25272A"',
+    'var preferredSecondaryText = parseColor(isDark ? "#ADB3BA" : "#666B70"',
+    "var primaryContainer = mixColor(surface, primary, isDark ? 0.24 : 0.13);",
+    "var successContainer = mixColor(surface, success, isDark ? 0.20 : 0.12);",
+    "var warningContainer = mixColor(surface, warning, isDark ? 0.20 : 0.12);",
+]
+for marker in required_scheme:
+    if marker not in SCHEME:
+        errors.append("Scheme 颜色角色缺失：" + marker)
+
+repair = section(
+    SCHEME,
+    "proto.repairSettingsPrimaryColor = function",
+    "proto.getSettingsColorScheme = function",
+)
+for stale in ('name: "secondary"', 'name: "tertiary"', 'name: "primaryContainer"'):
+    if stale in repair:
+        errors.append("主强调色仍可能跨色相替换：" + stale)
+
+header = section(PANEL_UI, "FloatBallAppWM.prototype.createSectionHeader = function")
+if "T ? T.onSurface" not in header:
+    errors.append("设置章节标题未使用常规文字色")
+if "T ? T.primary" in header:
+    errors.append("设置章节标题仍直接使用强强调色")
+
+home_header = section(PANELS, "FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function")
+if "tv.setTextColor(T.onSurface);" not in home_header:
+    errors.append("设置首页分区标题未使用常规文字色")
+
+master = section(PANELS, "FloatBallAppWM.prototype.createSettingsMasterMenuItem = function")
+if "title.setTextColor(T.onSurface);" not in master:
+    errors.append("双栏分类标题未使用常规文字色")
+
+visual = section(PANELS, "FloatBallAppWM.prototype.getToolHubUpdateVisual = function")
+for marker in ("iconColor:", "labelColor:", "detailColor:", "T.successContainer", "T.warningContainer"):
+    if marker not in visual:
+        errors.append("更新状态颜色角色缺失：" + marker)
+if "textColor:" in visual:
+    errors.append("更新状态仍使用单一 textColor 覆盖全部文字")
+
+pill = section(PANELS, "FloatBallAppWM.prototype.createToolHubUpdatePill = function")
+for marker in ("visual.iconColor", "visual.labelColor", "visual.detailColor"):
+    if marker not in pill:
+        errors.append("更新状态控件未使用拆分颜色：" + marker)
+
+if 'createFlatButton(this, "×", T.onSurface2' not in EXTRA:
+    errors.append("顶部关闭按钮未使用中性文字色")
+if "createStrokeDrawable(T.surface2, this.withAlpha(T.outlineVariant" not in EXTRA:
+    errors.append("顶部关闭按钮未使用中性弱背景")
+if 'createFlatButton(this, "?", T.primary' not in EXTRA:
+    errors.append("帮助按钮未保留交互强调色")
+if "btnHelp.setBackground(this.ui.createStrokeDrawable(T.primaryContainer" not in EXTRA:
+    errors.append("帮助按钮未使用弱强调背景")
+
+if errors:
+    for item in errors:
+        print("FAIL:", item)
+    sys.exit(1)
+
+print(
+    "OK settings_color_roles text=neutral accent=interactive "
+    "container=derived status=split topbar=balanced"
+)
