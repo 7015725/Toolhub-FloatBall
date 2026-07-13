@@ -52,9 +52,9 @@
       "version": "1.0.9"
     },
     "th_12_rebuild.js": {
-      "sha256": "14133633ebc6331b77c0e2d9ab27c85df2071696bcedde3eea25e77c38aaba19",
-      "size": 16639,
-      "version": "1.2.2"
+      "sha256": "8a51264e0dae9608f7e2db3fbb188ce73fd356a429a84bab25db6c962fcf9a87",
+      "size": 17330,
+      "version": "1.2.3"
     },
     "th_13_panel_ui.js": {
       "sha256": "e67b0d6999669a8409e15a772443df6d3720f98aceaee9fc9314738a54e47420",
@@ -135,10 +135,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "收敛设置界面颜色角色与强调层级（第五阶段）"
+      "修复弱强调色透明黑底回归"
     ],
-    "title": "收敛设置界面颜色角色与强调层级（第五阶段）"
+    "title": "修复弱强调色透明黑底回归"
   },
   "schema": 3,
-  "version": 20260713130035
+  "version": 20260713131201
 }
