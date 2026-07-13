@@ -17,7 +17,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
   var isEditing = (this.state.editingSchemaIndex !== null && this.state.editingSchemaIndex !== undefined);
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme ? this.getAnimalIslandTheme() : null;
+  var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
   try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config); } catch(eTheme) {}
 
   var bgColor = T && T.bg ? T.bg : (isDark ? C.bgDark : C.bgLight);

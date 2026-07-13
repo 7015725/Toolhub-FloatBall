@@ -52,23 +52,23 @@
       "version": "1.0.9"
     },
     "th_12_rebuild.js": {
-      "sha256": "272c516a0ab19d895267e6341db827d9ba4f444e1ae940f1fc614fc2ac99d312",
-      "size": 15350,
-      "version": "1.1.0"
+      "sha256": "e095af53bae84ff8bedbcff2077bc9a5b77f3cd9733f48b5e4d66598ec02982b",
+      "size": 15910,
+      "version": "1.2.0"
     },
     "th_13_panel_ui.js": {
-      "sha256": "7154bb5fe7c9d5da74f3ee3e1378fe6b092c771379d31f377a0d32901d47c9a9",
-      "size": 26054,
+      "sha256": "7826afc6d89268a642e05cd32c46882b2998f07349ccf8ec6d1784365adf2db3",
+      "size": 26062,
       "version": "1.0.2"
     },
     "th_14_button_editor.js": {
-      "sha256": "0c6576af048fe9afbb1ec3f9a32898ee8c33207cd69a043baba93f199cd0b8f5",
-      "size": 73214,
+      "sha256": "141d3ab907718b512e1c0ca2e5e50dddb92956fd4d47c1cb5f6160a354bd2765",
+      "size": 73230,
       "version": "1.0.3"
     },
     "th_14_button_icon_editor.js": {
-      "sha256": "68e20173e206300e11add136f0247a23a32900108baf19849e12fecb70a7d8dc",
-      "size": 52228,
+      "sha256": "2d444f05aa2e2481fef166550f9ccbcb8096816548ce7f4de5316132008bf4ca",
+      "size": 52230,
       "version": "1.0.0"
     },
     "th_14_button_shortcut.js": {
@@ -77,28 +77,28 @@
       "version": "1.0.0"
     },
     "th_14_color_picker.js": {
-      "sha256": "11ef97af1d11b53a8ec0d79798bb50b76bee28844f83aad3084259074ed0ae09",
-      "size": 25618,
+      "sha256": "7aeb3887fdb81ef8ca3035c76b5187948b755b20c6aa8285075472f10fe74643",
+      "size": 25620,
       "version": "0.0.1"
     },
     "th_14_icon_picker.js": {
-      "sha256": "586210ef0c2418803edc0b1939658fcba6623dd04ece9b96b55b29f9eb9cbe1b",
-      "size": 24999,
+      "sha256": "029601d8e6dbfd1cc3c8476eb43c231bc4dcc5082d3f4bbb67f1d5c6a45c9c88",
+      "size": 25001,
       "version": "1.0.0"
     },
     "th_14_panels.js": {
-      "sha256": "09330efea3d9cf58c2466993a33d204d3fc1d9dab514e06c1e00fea3cb43bb71",
-      "size": 122781,
+      "sha256": "9c91dd94d85ac52fa17be8d9f160d761f7ffb8c11b042495816343fe2d483548",
+      "size": 122811,
       "version": "1.0.14"
     },
     "th_14_schema_editor.js": {
-      "sha256": "a484e4707d705ed9462e3dd2515246e9411374940d1f4cb5aed6fdc0fd21762c",
-      "size": 22265,
+      "sha256": "175cb5d8b61490eb42189ceca3520cc4d597828f7210077615a40db34d562ea4",
+      "size": 22269,
       "version": "1.0.0"
     },
     "th_15_extra.js": {
-      "sha256": "f0d62c0d4ea833ccf4dea1ea6e7cee83025677133b910a587fbcb72a52c6d093",
-      "size": 123318,
+      "sha256": "286ce49a0ec61fbc59255b13fab83e3ed27e2f2b520dc1d051af22ac9723ff10",
+      "size": 123328,
       "version": "1.1.7"
     },
     "th_16_entry.js": {
@@ -135,10 +135,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "建立设置页统一配色契约（第一阶段）"
+      "迁移设置页到统一配色 Scheme（第二阶段）"
     ],
-    "title": "建立设置页统一配色契约（第一阶段）"
+    "title": "迁移设置页到统一配色 Scheme（第二阶段）"
   },
   "schema": 3,
-  "version": 20260713110646
+  "version": 20260713111516
 }

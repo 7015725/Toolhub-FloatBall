@@ -15,7 +15,7 @@ FloatBallAppWM.prototype.matchesButtonManagerQuery = function(btnCfg, query) {
 };
 
 FloatBallAppWM.prototype.createButtonManagerActionChip = function(text, textColor, strokeColor, onClickFn) {
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   this.applySettingsTheme(T, this.isDarkTheme(), this.ui.colors, this.state.pendingUserCfg || this.config);
   var tv = new android.widget.TextView(context);
   tv.setText(String(text || ""));
@@ -110,7 +110,7 @@ FloatBallAppWM.prototype.matchesButtonManagerFilter = function(btnCfg, filter) {
 FloatBallAppWM.prototype.createButtonManagerStatusChip = function(enabled, onClickFn) {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
   var tv = new android.widget.TextView(context);
   var ok = enabled !== false;
@@ -138,7 +138,7 @@ FloatBallAppWM.prototype.createButtonManagerStatusChip = function(enabled, onCli
 };
 
 FloatBallAppWM.prototype.createButtonManagerMoreButton = function(onClickFn) {
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   this.applySettingsTheme(T, this.isDarkTheme(), this.ui.colors, this.state.pendingUserCfg || this.config);
   var tv = new android.widget.TextView(context);
   tv.setText("⋮");
@@ -208,7 +208,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     }
     var isDark = this.isDarkTheme();
     var C = this.ui.colors;
-    var T = this.getAnimalIslandTheme();
+    var T = this.getSettingsColorScheme();
     this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
     var menuItems = [
       { label: "上移", hint: "提前显示", icon: "↑", kind: "up", enabled: idx > 0, danger: false },
@@ -363,7 +363,7 @@ FloatBallAppWM.prototype.showButtonManagerActionSheet = function(opts) {
       builder: function(content, closePopup) {
         var desc = new android.widget.TextView(context);
         desc.setText(buttonName);
-        desc.setTextColor(self.getAnimalIslandTheme().sub);
+        desc.setTextColor(self.getSettingsColorScheme().sub);
         desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
         desc.setSingleLine(true);
         desc.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -391,7 +391,7 @@ FloatBallAppWM.prototype.showButtonManagerActionSheet = function(opts) {
           content.addView(row, lp);
         }
 
-        var T2 = self.getAnimalIslandTheme();
+        var T2 = self.getSettingsColorScheme();
         var C2 = self.ui.colors;
         var canUp = idx > 0;
         var canDown = idx < buttons.length - 1;
@@ -443,7 +443,7 @@ FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent,
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
   var expanded = defaultExpanded !== false;
   var card = new android.widget.LinearLayout(context);
@@ -522,7 +522,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   var isEditing = (this.state.editingButtonIndex !== null);
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   this.applySettingsTheme(T, isDark, C, this.state.pendingUserCfg || this.config);
 
   // 颜色配置

@@ -85,9 +85,9 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
   var C = this.ui.colors;
   var settTheme = "animal";
   try { settTheme = String(this.config.SETTINGS_THEME || "animal"); } catch(eSetTheme) { settTheme = "animal"; }
-  var useAnimalPanel = (settTheme === "animal" && this.getAnimalIslandTheme);
+  var useAnimalPanel = (settTheme === "animal" && this.getSettingsColorScheme);
   var TPanel = null;
-  try { if (useAnimalPanel) TPanel = this.getAnimalIslandTheme(); } catch(eTPanel) { TPanel = null; useAnimalPanel = false; }
+  try { if (useAnimalPanel) TPanel = this.getSettingsColorScheme(); } catch(eTPanel) { TPanel = null; useAnimalPanel = false; }
 
   var bgColor = isDark ? C.bgDark : C.bgLight;
   var cardColor = isDark ? C.cardDark : C.cardLight;
@@ -877,7 +877,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
 
     var isDark = this.isDarkTheme();
     var C = this.ui.colors;
-    var T = this.getAnimalIslandTheme();
+    var T = this.getSettingsColorScheme();
     var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
     try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
 
@@ -1333,7 +1333,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
-  var T = this.getAnimalIslandTheme();
+  var T = this.getSettingsColorScheme();
   var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
   try { if (this.applySettingsTheme) this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
   var spec = this.getToolAppResponsiveSpec ? this.getToolAppResponsiveSpec() : null;
@@ -2716,7 +2716,7 @@ FloatBallAppWM.prototype.buildBallPreviewView = function() {
   return this.withPendingBallConfig(function() {
     var isDark = this.isDarkTheme();
     var C = this.ui.colors;
-    var T = this.getAnimalIslandTheme();
+    var T = this.getSettingsColorScheme();
     var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
     try { this.applySettingsTheme(T, isDark, C, cfgTpl); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
 
