@@ -30,10 +30,25 @@ required_scheme = [
     "var primaryContainer = mixColor(surface, primary, isDark ? 0.24 : 0.13);",
     "var successContainer = mixColor(surface, success, isDark ? 0.20 : 0.12);",
     "var warningContainer = mixColor(surface, warning, isDark ? 0.20 : 0.12);",
+    "function toOpaqueColor(value, fallbackInt)",
+    "return (n & 0x00FFFFFF) | 0xFF000000;",
+    "return (0xFF000000 | (r << 16) | (g << 8) | b);",
+    'var settingsColorSchemeVersion = "1.2.3";',
+    "proto.__toolHubSettingsColorSchemeVersion = settingsColorSchemeVersion;",
 ]
 for marker in required_scheme:
     if marker not in SCHEME:
         errors.append("Scheme 颜色角色缺失：" + marker)
+
+if "return Color.argb(" in section(
+    SCHEME,
+    "function mixColor(baseColor, overlayColor, ratio)",
+    "function linearChannel(value)",
+):
+    errors.append("mixColor 仍使用 Rhino 易误选重载的 Color.argb")
+
+if "if (proto.__toolHubSettingsColorSchemeInstalled === true) return;" in SCHEME:
+    errors.append("Scheme 仍使用不可热更新的布尔安装守卫")
 
 repair = section(
     SCHEME,

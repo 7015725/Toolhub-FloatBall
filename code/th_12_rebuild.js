@@ -1,4 +1,4 @@
-// @version 1.2.2
+// @version 1.2.3
 // =======================【安全配置安装器】======================
 // 这段代码的主要内容/用途：注入 Shell / Shortcut / Content 加固需要的配置项。
 // Shell 默认 strict；Shortcut 默认仅使用结构化 intentUri，旧 JS 仅允许显式 legacy_js。
@@ -80,17 +80,26 @@
   try {
     if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
     var proto = FloatBallAppWM.prototype;
-    if (proto.__toolHubSettingsColorSchemeInstalled === true) return;
+    var settingsColorSchemeVersion = "1.2.3";
+    if (String(proto.__toolHubSettingsColorSchemeVersion || "") === settingsColorSchemeVersion) return;
 
     function parseColor(hex, fallbackInt) {
       try { return android.graphics.Color.parseColor(String(hex)); } catch(e) { return fallbackInt; }
     }
 
-    function colorOr(value, fallbackInt) {
-      if (value === undefined || value === null || value === "") return fallbackInt;
+    function toOpaqueColor(value, fallbackInt) {
       var n = Number(value);
-      if (isNaN(n) || n === 0) return fallbackInt;
-      return n;
+      if (isNaN(n) || n === 0) n = Number(fallbackInt);
+      if (isNaN(n) || n === 0) n = android.graphics.Color.BLACK;
+      n = n | 0;
+      return (n & 0x00FFFFFF) | 0xFF000000;
+    }
+
+    function colorOr(value, fallbackInt) {
+      if (value === undefined || value === null || value === "") {
+        return toOpaqueColor(fallbackInt, android.graphics.Color.BLACK);
+      }
+      return toOpaqueColor(value, fallbackInt);
     }
 
     function clampRatio(value) {
@@ -104,16 +113,18 @@
     function mixColor(baseColor, overlayColor, ratio) {
       try {
         var Color = android.graphics.Color;
+        var base = toOpaqueColor(baseColor, Color.BLACK);
+        var overlay = toOpaqueColor(overlayColor, base);
         var p = clampRatio(ratio);
         var q = 1 - p;
-        return Color.argb(
-          Math.round(Color.alpha(baseColor) * q + Color.alpha(overlayColor) * p),
-          Math.round(Color.red(baseColor) * q + Color.red(overlayColor) * p),
-          Math.round(Color.green(baseColor) * q + Color.green(overlayColor) * p),
-          Math.round(Color.blue(baseColor) * q + Color.blue(overlayColor) * p)
-        );
+        var r = Math.max(0, Math.min(255, Math.round(Color.red(base) * q + Color.red(overlay) * p)));
+        var g = Math.max(0, Math.min(255, Math.round(Color.green(base) * q + Color.green(overlay) * p)));
+        var b = Math.max(0, Math.min(255, Math.round(Color.blue(base) * q + Color.blue(overlay) * p)));
+
+        // 使用 32 位 ARGB 位运算，避免 Rhino 误选浮点颜色重载。
+        return (0xFF000000 | (r << 16) | (g << 8) | b);
       } catch(e) {
-        return baseColor;
+        return toOpaqueColor(baseColor, android.graphics.Color.BLACK);
       }
     }
 
@@ -348,6 +359,7 @@
     };
 
     proto.__toolHubSettingsColorSchemeInstalled = true;
+    proto.__toolHubSettingsColorSchemeVersion = settingsColorSchemeVersion;
   } catch(eInstall) {
     try { safeLog(null, 'e', "install settings color scheme fail: " + String(eInstall)); } catch(eLog) {}
   }
