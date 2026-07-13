@@ -67,7 +67,9 @@ Toolhub-FloatBall/
 │   ├── th_16_entry.js
 │   ├── th_17_pointer.js
 │   ├── th_18_pointer_ocr.js
-│   └── th_19_position_state.js
+│   ├── th_19_position_state.js
+│   ├── th_20_pickword.js
+│   └── th_21_result_preview.js
 └── scripts/
     ├── generate_signed_manifest.py
     ├── verify_module_versions.py
@@ -77,7 +79,7 @@ Toolhub-FloatBall/
     └── ... 其他专项回归脚本
 ```
 
-当前实际加载 **24 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载。
+当前实际加载 **26 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
 
 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而保留的历史编号；本仓库延续现有文件名，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
 
@@ -150,6 +152,8 @@ shortx.getShortXDir()/ToolHub/
 │   ├── th_17_pointer.js
 │   ├── th_18_pointer_ocr.js
 │   ├── th_19_position_state.js
+│   ├── th_20_pickword.js
+│   ├── th_21_result_preview.js
 │   ├── .installed_manifest.json
 │   ├── .trusted_manifest_version
 │   └── .trusted_sha_<module>
@@ -233,6 +237,8 @@ th_19_position_state.js
 | `th_17_pointer.js` | 屏幕指针、悬停取字、取字就绪视觉状态、框选区域、小框回退取字、OCR rect 输出 |
 | `th_18_pointer_ocr.js` | 框选截图 OCR 处理、截图区域覆盖层、OCR 任务衔接、指针边框颜色状态补充 |
 | `th_19_position_state.js` | 固定位置状态机、指针布局、语义会话隔离和悬浮球尺寸重建回滚 |
+| `th_20_pickword.js` | 拾字文字选择、复制、翻译、钉屏、放大镜及其生命周期清理 |
+| `th_21_result_preview.js` | 顶部两行全自绘结果预览、倒计时、动效与拾字入口 |
 
 ---
 
@@ -555,7 +561,7 @@ schema: 3
 version: 以当前 manifest.json 为准
 alg: SHA256withRSA
 keyId: toolhub-targets-20260703-rsa3072
-files: 24 个模块
+files: 26 个模块
 ```
 
 ---
@@ -582,7 +588,7 @@ ToolHub.js.sha256
 base → core → icon/theme/persistence/parser/content
 → animation/shell/action/rebuild
 → panel_ui → panels → button_shortcut / button_icon_editor / button_editor
-→ color_picker / icon_picker / schema_editor → extra → entry → pointer → pointer_ocr → position_state
+→ color_picker / icon_picker / schema_editor → extra → entry → pointer → pointer_ocr → position_state → pickword → result_preview
 ```
 
 尤其注意：
@@ -592,7 +598,8 @@ base → core → icon/theme/persistence/parser/content
 - `th_15_extra.js` 依赖前面 UI、主题、设置、页面构建能力。
 - `th_16_entry.js` 负责启动实例。
 - `th_17_pointer.js` 位于入口生命周期之后，接入按钮动作分发和悬浮球拖动路径。
-- `th_18_pointer_ocr.js` 扩展框选 OCR，`th_19_position_state.js` 最后安装位置、布局和重建回滚包装。
+- `th_18_pointer_ocr.js` 扩展框选 OCR，`th_19_position_state.js` 安装位置、布局和重建回滚包装。
+- `th_20_pickword.js` 和 `th_21_result_preview.js` 只新增拾字与结果 UI 服务，不覆盖 `th_19_position_state.js` 的位置或触摸所有权。
 
 ---
 

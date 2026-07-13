@@ -118,24 +118,27 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         "async HandlerThread, token guard, timeout code, or dispatch is missing",
     )
 
-    clipboard_call = async_ocr.find("copyPointerAreaTextToClipboard(textValue)")
-    guard_before_clipboard = async_ocr.rfind(
-        "if (!isAreaOcrTokenCurrent18(st, token)) return;",
-        0,
-        clipboard_call,
+    apply_ocr_for_preview = section(
+        ocr,
+        "function applyAreaOcrResult18",
+        "function isAreaOcrTokenCurrent18",
     )
-    guard_after_clipboard = async_ocr.find(
-        "if (!isAreaOcrTokenCurrent18(st, token)) return;",
-        clipboard_call + 1,
+    preview_call = apply_ocr_for_preview.find("publishResultPreview")
+    seq_guard = apply_ocr_for_preview.find("Number(st.areaOcrSeq || 0) !== Number(token)")
+    done_guard = apply_ocr_for_preview.find("Number(st.areaOcrDoneToken || 0) === Number(token)")
+    main_preview_guard_count = async_ocr.count(
+        "if (!isAreaOcrTokenCurrent18(st, token)) return;"
     )
     result.require(
         group,
-        "N1 stale OCR cannot overwrite clipboard",
-        clipboard_call >= 0
-        and guard_before_clipboard >= 0
-        and guard_before_clipboard < clipboard_call
-        and guard_after_clipboard > clipboard_call,
-        "clipboard write must be guarded before and after copying",
+        "N1 stale OCR cannot publish preview",
+        preview_call >= 0
+        and seq_guard >= 0
+        and done_guard > seq_guard
+        and preview_call > done_guard
+        and main_preview_guard_count >= 3
+        and "copyPointerAreaTextToClipboard(textValue)" not in async_ocr,
+        "preview publication must stay behind token guards and automatic clipboard writes must be absent",
     )
 
     stop_ocr_worker = section(
@@ -282,12 +285,14 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and "var hasText = textOk === true && normalizedText.length > 0;" in apply_ocr
         and "obj.ok = hasText;" in apply_ocr
         and "obj.ocrEmpty = textOk === true && !hasText;" in apply_ocr
-        and "obj.clipboardOk = hasText && clipboardOk === true;" in apply_ocr
-        and '.replace(/^\\s+|\\s+$/g, "");' in async_ocr
+        and "if (hasText && typeof appObj.publishResultPreview" in apply_ocr
+        and "obj.clipboard = false;" in apply_ocr
+        and "obj.clipboardOk = false;" in apply_ocr
+        and r'.replace(/^\s+|\s+$/g, "");' in async_ocr
         and "var code = !textOk" in async_ocr
         and '"AREA_OCR_EMPTY"' in async_ocr
-        and "if (textOk && textValue)" in async_ocr,
-        "empty OCR must use AREA_OCR_EMPTY and skip clipboard success",
+        and "copyPointerAreaTextToClipboard" not in ocr,
+        "empty OCR must use AREA_OCR_EMPTY, skip preview publication, and avoid automatic clipboard writes",
     )
 
     worker = section(
@@ -588,14 +593,15 @@ def verify_pointer_core(result, pointer, ocr):
     group = "pointer-core"
 
     for marker in (
-        "copyPointerTextToClipboard = function",
-        "cm.setPrimaryClip(clip)",
         "rememberPointerValidPick",
         "getRecentPointerPickForRelease",
         "restoreRecentPointerPickForRelease",
         "completePointerCandidateOnRelease",
+        "completePointerTextResult",
         "completePointerTextCopy",
-        "data.clipboardAccepted = copied === true",
+        "publishResultPreview",
+        "data.clipboardAccepted = false",
+        "data.previewQueued",
         "accessibility_current",
         "small_area_fallback",
         "areaHoldDelay: 2000",
@@ -609,9 +615,11 @@ def verify_pointer_core(result, pointer, ocr):
     )
     result.require(
         group,
-        "extract does not report direct clipboard result as success",
-        "copyPointerTextToClipboard(textValue)" not in extract,
-        "extractCurrentPointerText still treats direct clipboard write as success",
+        "extract reports preview instead of clipboard completion",
+        "copyPointerTextToClipboard(textValue)" not in extract
+        and "preview: previewQueued" in extract
+        and "clipboard: false" in extract,
+        "extractCurrentPointerText must report preview state and keep clipboard false",
     )
     result.require(
         group,
@@ -626,49 +634,32 @@ def verify_pointer_core(result, pointer, ocr):
         "extractCurrentPointerText bypasses unified completion",
     )
 
-    clipboard = section(
-        pointer,
-        "FloatBallAppWM.prototype.copyPointerTextToClipboard = function",
-        "FloatBallAppWM.prototype.ensurePointerToolState = function",
-    )
-    for forbidden in (
-        "runPointerClipboardOnMain",
-        "writePointerClipboardMainSync",
-        "copyPointerTextToClipboardVerified",
-        "clipboardCopyToken",
-        "clipboardCopyPending",
-        "clipboardReadbackMatched",
-        "java.util.concurrent.CountDownLatch",
-    ):
-        result.require(
-            group,
-            "obsolete clipboard gate absent " + forbidden,
-            forbidden not in clipboard,
-            "obsolete clipboard completion gate remains: " + forbidden,
-        )
-    result.require(
-        group,
-        "clipboard uses stable direct write",
-        "cm.setPrimaryClip(clip)" in clipboard,
-        "stable direct clipboard write is missing",
-    )
-
     complete = section(
         pointer,
-        "FloatBallAppWM.prototype.completePointerTextCopy = function",
+        "FloatBallAppWM.prototype.completePointerTextResult = function",
         "FloatBallAppWM.prototype.ensurePointerToolState = function",
     )
     result.require(
         group,
-        "accessibility success is independent from clipboard acceptance",
-        "ok: true" in complete and "clipboard: copied === true" in complete,
-        "accessibility success is incorrectly gated by clipboard result",
+        "accessibility success publishes preview without automatic copy",
+        "ok: true" in complete
+        and "publishResultPreview" in complete
+        and "clipboard: false" in complete
+        and "copyPointerTextToClipboard(text)" not in complete,
+        "text success must publish a preview and must not write the clipboard",
+    )
+    result.require(
+        group,
+        "legacy completion alias delegates to result completion",
+        "FloatBallAppWM.prototype.completePointerTextCopy" in complete
+        and "return this.completePointerTextResult" in complete,
+        "legacy completion alias must delegate without restoring clipboard behavior",
     )
 
     recent = section(
         pointer,
         "FloatBallAppWM.prototype.rememberPointerValidPick = function",
-        "FloatBallAppWM.prototype.completePointerTextCopy = function",
+        "FloatBallAppWM.prototype.completePointerTextResult = function",
     )
     for marker in (
         "lastValidPickText",
@@ -685,9 +676,21 @@ def verify_pointer_core(result, pointer, ocr):
     )
     result.require(
         group,
-        "small-area fallback uses unified completion",
-        "completePointerTextCopy(" in fallback,
-        "small-area fallback bypasses unified clipboard completion",
+        "small-area fallback uses unified result completion",
+        "completePointerTextResult(" in fallback
+        and "preview: previewQueued" in fallback
+        and "clipboard: false" in fallback,
+        "small-area fallback must publish the same preview result as normal text pick",
+    )
+
+    result.require(
+        group,
+        "OCR success never writes clipboard automatically",
+        "copyPointerAreaTextToClipboard" not in ocr
+        and "copyClipboard18" not in ocr
+        and "obj.clipboard = false" in ocr
+        and "publishResultPreview" in ocr,
+        "OCR must publish preview instead of copying automatically",
     )
 
     for forbidden in (

@@ -1,4 +1,4 @@
-// @version 1.0.11
+// @version 1.0.12
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -233,6 +233,12 @@ FloatBallAppWM.prototype.close = function() {
     closeStep("flushDebouncedWrites", function() {
       if (FileIO.flushDebouncedWrites() === false) throw "flush returned false";
     });
+    closeStep("disposeResultPreview", function() {
+      if (typeof self.disposeResultPreview === "function") self.disposeResultPreview("ToolHub 关闭");
+    });
+    closeStep("disposePickwordModule", function() {
+      if (typeof self.disposePickwordModule === "function") self.disposePickwordModule("ToolHub 关闭");
+    });
     closeStep("closePointerTool", function() {
       if (typeof self.closePointerTool === "function") self.closePointerTool("ToolHub 关闭", true);
     });
@@ -320,6 +326,8 @@ FloatBallAppWM.prototype.close = function() {
       stateRef.toolAppRoute = null;
       stateRef.toolAppNavStack = [];
       stateRef.panelBackCallbackEntries = [];
+      stateRef.resultPreview = null;
+      stateRef.pickword = null;
       stateRef.receivers = [];
       stateRef.ht = null;
       stateRef.h = null;
@@ -414,6 +422,12 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
               if (act === android.content.Intent.ACTION_CONFIGURATION_CHANGED) {
                 self.cancelDockTimer();
                 self.scheduleScreenReflow("configuration_changed");
+                try {
+                  if (typeof self.onResultPreviewConfigurationChanged === "function") self.onResultPreviewConfigurationChanged();
+                } catch (ePreviewReflow) {}
+                try {
+                  if (typeof self.onPickwordConfigurationChanged === "function") self.onPickwordConfigurationChanged();
+                } catch (ePickwordReflow) {}
                 self.touchActivity();
               }
 

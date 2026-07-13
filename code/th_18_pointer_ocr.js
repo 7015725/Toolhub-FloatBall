@@ -1,4 +1,4 @@
-// @version 1.0.20
+// @version 1.1.0
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -66,47 +66,6 @@
       Math.abs(int18(a.bottom) - int18(b.bottom)) <= s;
   }
 
-  function getContext18() {
-    try { if (typeof context !== "undefined" && context) return context; } catch(e0) {}
-    try {
-      var app = Packages.android.app.ActivityThread.currentApplication();
-      if (app) return app.getApplicationContext ? app.getApplicationContext() : app;
-    } catch(e1) {}
-    return null;
-  }
-
-  function runOnMain18(fn, timeoutMs) {
-    try {
-      var ml = android.os.Looper.getMainLooper();
-      var my = android.os.Looper.myLooper();
-      if (ml !== null && my !== null && ml === my) return fn();
-    } catch(e0) {}
-    var box = { ok: false, value: null, error: null };
-    var latch = new java.util.concurrent.CountDownLatch(1);
-    var h = new android.os.Handler(android.os.Looper.getMainLooper());
-    h.post(new java.lang.Runnable({ run: function() {
-      try { box.value = fn(); box.ok = true; } catch(eRun) { box.error = eRun; }
-      try { latch.countDown(); } catch(eCount) {}
-    }}));
-    var done = latch["await"](timeoutMs || 1500, java.util.concurrent.TimeUnit.MILLISECONDS);
-    if (!done) throw new Error("main thread timeout");
-    if (!box.ok) throw box.error;
-    return box.value;
-  }
-
-  function copyClipboard18(text) {
-    var value = String(text === null || text === undefined ? "" : text);
-    if (!value) return false;
-    return runOnMain18(function() {
-      var ctx = getContext18();
-      if (!ctx) throw new Error("context 不可用");
-      var cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
-      if (!cm) throw new Error("ClipboardManager 不可用");
-      var clip = android.content.ClipData.newPlainText("ToolHub OCR", value);
-      cm.setPrimaryClip(clip);
-      return true;
-    }, 2000) === true;
-  }
 
   function runShortxRectOcr18(rect) {
     var rr = normalizeRect18(rect);
@@ -337,7 +296,7 @@
     return timeoutMs;
   }
 
-  function applyAreaOcrResult18(appObj, st, token, obj, path, rect, textOk, textValue, textError, clipboardOk, clipboardError, code, message, source) {
+  function applyAreaOcrResult18(appObj, st, token, obj, path, rect, textOk, textValue, textError, code, message, source) {
     try {
       if (!st) return false;
       if (Number(st.areaOcrSeq || 0) !== Number(token)) return false;
@@ -359,7 +318,7 @@
       var resultCode = String(code || "");
       var resultMessage = String(message || "");
 
-      // N6：OCR 正常执行但没有文字，不得返回成功码。
+      // OCR 正常执行但没有文字，不得返回成功码。
       if (textOk === true && !hasText) {
         resultCode = "AREA_OCR_EMPTY";
         resultMessage = "框选完成，未识别到文字";
@@ -371,7 +330,6 @@
       obj.ok = hasText;
       obj.type = "area_ocr";
       obj.code = resultCode;
-      obj.message = resultMessage;
       obj.value = normalizedText;
       obj.captureRect = cloneRect18(rect || obj.captureRect || obj.data.captureRect);
       obj.screenshotFilePath = String(path || obj.screenshotFilePath || "");
@@ -380,8 +338,35 @@
       obj.ocrEmpty = textOk === true && !hasText;
       obj.ocrSource = String(source || "rect_async");
       obj.ocrPending = false;
-      obj.clipboardOk = hasText && clipboardOk === true;
-      obj.clipboardError = String(clipboardError || "");
+      obj.clipboard = false;
+      obj.clipboardOk = false;
+      obj.clipboardError = "";
+
+      var previewRet = null;
+      if (hasText && typeof appObj.publishResultPreview === "function") {
+        try {
+          previewRet = appObj.publishResultPreview({
+            kind: "text",
+            source: "pointer_ocr",
+            text: normalizedText,
+            previewText: normalizedText,
+            screenshotPath: obj.screenshotFilePath,
+            rect: obj.captureRect,
+            primaryAction: "pickword",
+            actions: [],
+            createdAt: now18()
+          });
+        } catch(ePreview) {
+          previewRet = { ok: false, code: "RESULT_PREVIEW_FAILED", message: String(ePreview) };
+        }
+      }
+
+      obj.preview = !!(previewRet && previewRet.ok === true);
+      obj.previewId = previewRet && previewRet.previewId ? String(previewRet.previewId) : "";
+      if (hasText) {
+        resultMessage = obj.preview ? "框选识别完成，已显示预览" : "框选识别完成";
+      }
+      obj.message = resultMessage;
 
       obj.data.path = obj.screenshotFilePath;
       obj.data.captureRect = obj.captureRect || null;
@@ -391,8 +376,11 @@
       obj.data.ocrEmpty = obj.ocrEmpty;
       obj.data.ocrSource = obj.ocrSource;
       obj.data.ocrPending = false;
-      obj.data.clipboardOk = obj.clipboardOk;
-      obj.data.clipboardError = obj.clipboardError;
+      obj.data.clipboardAccepted = false;
+      obj.data.clipboardOk = false;
+      obj.data.clipboardError = "";
+      obj.data.previewQueued = obj.preview;
+      obj.data.previewId = obj.previewId;
 
       appObj.setPointerToolResult(obj);
 
@@ -401,21 +389,19 @@
           "pointer area_ocr async result token=" + String(token) +
           " ok=" + String(hasText === true) +
           " empty=" + String(obj.ocrEmpty === true) +
-          " clip=" + String(obj.clipboardOk === true) +
+          " preview=" + String(obj.preview === true) +
           " rect=" + rectKey18(obj.captureRect) +
           " path=" + String(obj.screenshotFilePath || "") +
           " code=" + String(obj.code || "") +
-          " err=" + String(obj.ocrError || "") +
-          " clipErr=" + String(obj.clipboardError || "")
+          " err=" + String(obj.ocrError || "")
         );
       } catch(eLog) {}
 
       try {
-        if (hasText && obj.clipboardOk) appObj.toast("识别完成，已复制");
-        else if (hasText) appObj.toast("识别完成，复制失败");
+        if (hasText && !obj.preview) appObj.toast("识别完成");
         else if (resultCode === "AREA_OCR_EMPTY") appObj.toast("未识别到文字，已保留截图");
         else if (resultCode === "AREA_OCR_TIMEOUT") appObj.toast("OCR 超时，已保留截图");
-        else appObj.toast("截图完成，识别失败");
+        else if (!hasText) appObj.toast("截图完成，识别失败");
       } catch(eToast) {}
 
       return true;
@@ -562,8 +548,6 @@
           false,
           "",
           rr ? "截图路径为空" : "OCR区域为空",
-          false,
-          "",
           screenshotPath ? "AREA_OCR_FAILED" : "AREA_SCREENSHOT_FAILED",
           screenshotPath ? "框选截图完成，识别失败" : "框选完成，截图失败",
           "rect_async"
@@ -597,8 +581,6 @@
             false,
             "",
             "OCR超时 " + String(timeoutMs) + "ms",
-            false,
-            "",
             "AREA_OCR_TIMEOUT",
             "OCR 超时，已保留截图",
             "rect_async_timeout"
@@ -654,22 +636,8 @@
           if (!isAreaOcrTokenCurrent18(st, token)) return;
 
           mainH.post(new java.lang.Runnable({ run: function() {
-            var clipboardOk = false;
-            var clipboardError = "";
-
             try {
-              // 剪贴板写入必须位于最终 token 校验之后。
-              if (!isAreaOcrTokenCurrent18(st, token)) return;
-
-              if (textOk && textValue) {
-                try {
-                  clipboardOk = appObj.copyPointerAreaTextToClipboard(textValue) === true;
-                } catch(eClip) {
-                  clipboardError = String(eClip);
-                }
-              }
-
-              // 防止复制过程中发生重入或新会话切换。
+              // 预览发布必须位于最终 token 校验之后；迟到 OCR 不得覆盖当前结果。
               if (!isAreaOcrTokenCurrent18(st, token)) return;
 
               var hasText = textOk === true && !!textValue;
@@ -678,11 +646,9 @@
                 : (hasText ? "AREA_OCR_SUCCESS" : "AREA_OCR_EMPTY");
               var msg = !textOk
                 ? "框选截图完成，识别失败"
-                : (
-                  hasText
-                    ? (clipboardOk ? "框选识别完成，已复制" : "框选识别完成")
-                    : "框选完成，未识别到文字"
-                );
+                : (hasText ? "框选识别完成" : "框选完成，未识别到文字");
+
+              if (!isAreaOcrTokenCurrent18(st, token)) return;
 
               applyAreaOcrResult18(
                 appObj,
@@ -694,8 +660,6 @@
                 textOk,
                 textValue,
                 textError,
-                clipboardOk,
-                clipboardError,
                 code,
                 msg,
                 "rect_async"
@@ -784,7 +748,6 @@
       installPointerPerf18(proto);
 
       proto.runPointerAreaTextByRect = function(rect) { return runShortxRectOcr18(rect); };
-      proto.copyPointerAreaTextToClipboard = function(text) { return copyClipboard18(text); };
 
       var oldStartPointerTool = proto.startPointerTool;
       proto.startPointerTool = function(options) {

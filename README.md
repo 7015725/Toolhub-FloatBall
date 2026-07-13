@@ -114,7 +114,9 @@ shortx.getShortXDir()/
     │   ├── th_16_entry.js
     │   ├── th_17_pointer.js
     │   ├── th_18_pointer_ocr.js
-    │   └── th_19_position_state.js
+    │   ├── th_19_position_state.js
+    │   ├── th_20_pickword.js
+    │   └── th_21_result_preview.js
     ├── logs/
     │   ├── init.log
     │   └── ShortX_ToolHub_yyyyMMdd.log
@@ -413,6 +415,8 @@ storage engine=sqlite format=structured backend=sqlite-structured path=... exist
 | `th_17_pointer.js` | 指针、取字、框选和状态颜色 |
 | `th_18_pointer_ocr.js` | 截图 OCR 与覆盖层处理 |
 | `th_19_position_state.js` | 悬浮球固定位置、指针布局与尺寸重建事务回滚 |
+| `th_20_pickword.js` | 拾字文字选择、复制、翻译、钉屏与放大镜 |
+| `th_21_result_preview.js` | 取字和 OCR 顶部两行全自绘结果预览 |
 
 ---
 

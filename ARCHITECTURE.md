@@ -2,7 +2,7 @@
 
 更新时间：2026-07-13
 
-本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **24 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载。
+本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **26 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
 
 ---
 
@@ -24,7 +24,7 @@ ShortX JS 任务入口
 - `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
 - `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
 - `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
-- `code/th_*.js`：入口按顺序加载的子模块，当前为 24 个。
+- `code/th_*.js`：入口按顺序加载的子模块，当前为 26 个。
 
 ---
 
@@ -93,7 +93,7 @@ ballRoot / ballContent Touch
 
 ## 3. 模块分层
 
-当前实际加载 24 个子模块，入口 `modules[]` 顺序如下：
+当前实际加载 26 个子模块，入口 `modules[]` 顺序如下：
 
 ```text
 基础能力层
@@ -129,6 +129,10 @@ UI 基础与页面层
   th_17_pointer.js
   th_18_pointer_ocr.js
   th_19_position_state.js
+
+结果与拾字 UI 层
+  th_20_pickword.js
+  th_21_result_preview.js
 ```
 
 模块职责：
@@ -205,6 +209,12 @@ th_18_pointer_ocr.js
 
 th_19_position_state.js
   悬浮球固定位置状态机、指针布局适配、语义回调会话隔离和尺寸重建事务回滚。
+
+th_20_pickword.js
+  拾字文字选择、复制、翻译、钉屏、放大镜和完整资源清理。
+
+th_21_result_preview.js
+  状态栏下方的两行全自绘结果预览、自动消失、连续结果替换和拾字入口。
 ```
 
 说明：
@@ -337,7 +347,7 @@ UPDATE_SECURITY_MODE = 2
 ```text
 shortx.getShortXDir()/ToolHub/
 ├── code/
-│   ├── th_01_base.js ... th_19_position_state.js
+│   ├── th_01_base.js ... th_21_result_preview.js
 │   ├── .installed_manifest.json
 │   ├── .trusted_manifest_version
 │   ├── .trusted_sha_<module>

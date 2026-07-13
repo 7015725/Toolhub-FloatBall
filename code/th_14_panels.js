@@ -1,4 +1,4 @@
-// @version 1.0.13
+// @version 1.0.14
 
 // 根据当前 SETTINGS_THEME 覆盖 T（Animal Island 配色对象），
 // 使设置页所有 UI 元素（首页/分组页/入口卡片）统一跟随主题切换。
@@ -98,7 +98,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
   }
   return [
     { key: "ball", title: "悬浮球", desc: "调整悬浮球大小、图标、位置和面板距离", sections: ["悬浮球"] },
-    { key: "pointer", title: "指针", desc: "调整指针大小、贴边范围、悬停、取字保护、OCR阈值和颜色", sections: ["指针"] },
+    { key: "pointer", title: "指针", desc: "调整指针大小、悬停、结果预览、OCR阈值和颜色", sections: ["指针"] },
     { key: "panel", title: "工具面板", desc: "调整面板排列、文字、位置和吸边", sections: ["面板布局", "面板文字", "吸边与位置"] },
     { key: "theme", title: "换装与装饰", desc: "更换颜色、背景和透明度", sections: ["外观"] },
     { key: "motion", title: "动作与手势", desc: "调整点击、长按和贴边回弹效果", sections: ["动画", "动作与手势"] },
@@ -153,9 +153,17 @@ FloatBallAppWM.prototype.getPointerSettingsBlocks = function() {
       ]
     },
     {
+      key: "result_preview",
+      title: "结果预览",
+      desc: "取字或框选 OCR 成功后，在状态栏下方显示两行预览；点击进入拾字",
+      keys: [
+        "POINTER_RESULT_PREVIEW_TIMEOUT_SEC"
+      ]
+    },
+    {
       key: "text_guard",
       title: "取字保护",
-      desc: "小框误触时回退复制原文字",
+      desc: "小框误触时回退显示原文字预览",
       keys: [
         "POINTER_AREA_SMALL_FALLBACK_TEXT"
       ]
