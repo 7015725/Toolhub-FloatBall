@@ -1,0 +1,308 @@
++        checkAndScroll: function(touchX, touchY) {
++            if (!scrollView || !isDragging || !textView) { this.stopAutoScroll();
++                return; }
++            lastTouchX = touchX;
++            lastTouchY = touchY;
++            var relativeY = touchY + textView.getTop() - scrollView.getScrollY();
++            var scrollViewHeight = scrollView.getHeight();
++            var topZone = scrollViewHeight * SCROLL_EDGE_TOP;
++            var bottomZone = scrollViewHeight * (1 - SCROLL_EDGE_BOTTOM);
++
++            var newDirection = 0; var newSpeed = 0;
++            if (relativeY < topZone) {
++                newDirection = -1;
++                newSpeed = SCROLL_MIN_SPEED + (SCROLL_MAX_SPEED - SCROLL_MIN_SPEED) * ((topZone - relativeY) / topZone);
++            } else if (relativeY > bottomZone) {
++                newDirection = 1;
++                newSpeed = SCROLL_MIN_SPEED + (SCROLL_MAX_SPEED - SCROLL_MIN_SPEED) * ((relativeY - bottomZone) / (scrollViewHeight - bottomZone));
++            }
++
++            this.currentScrollDirection = newDirection;
++            this.currentScrollSpeed = newSpeed;
++
++            if (newDirection !== 0) {
++                this.startAutoScroll();
++            } else {
++                this.stopAutoScroll();
++            }
++        },
++
++        startAutoScroll: function() {
++            if (isAutoScrolling) return;
++            isAutoScrolling = true;
++            this.exactScrollY = scrollView.getScrollY();
++
++            var self = this;
++            autoScrollRunnable = new java.lang.Runnable({
++                run: function() {
++                    if (!isDragging || !isAutoScrolling || !scrollView || self.currentScrollDirection === 0) {
++                        isAutoScrolling = false; return;
++                    }
++
++                    var maxScroll = Math.max(0, textView.getHeight() - scrollView.getHeight());
++
++                    // 完美的浮点累加滚动像素，适配不同的手机帧率
++                    var step = dp(self.currentScrollSpeed) * 0.4;
++
++                    if (self.currentScrollDirection < 0) {
++                        self.exactScrollY -= step;
++                    } else {
++                        self.exactScrollY += step;
++                    }
++
++                    if (self.exactScrollY < 0) self.exactScrollY = 0;
++                    if (self.exactScrollY > maxScroll) self.exactScrollY = maxScroll;
++
++                    var newIntY = Math.round(self.exactScrollY);
++                    var currentIntY = scrollView.getScrollY();
++
++                    if (newIntY !== currentIntY) {
++                        scrollView.scrollTo(0, newIntY);
++                        try { if (textCanvasControl) textCanvasControl.invalidateVisible(); } catch (eInv) {}
++                        self.startCanvasScrollRefresh();
++                        var moveIndex = self.getCharIndexAtPosition(lastTouchX, lastTouchY, true);
++                        if (moveIndex >= 0 && dragStartIndex >= 0) {
++                            self.updateDragSelection(dragStartIndex, moveIndex, dragSnapshot);
++                            self.updateFingerPreview(lastTouchRawX, lastTouchRawY, moveIndex, false);
++                        }
++                    }
++
++                    if (self.exactScrollY > 0 && self.exactScrollY < maxScroll) {
++                        mainHandler.postDelayed(autoScrollRunnable, DIY_CONFIG.SCROLL_DELAY_MS);
++                    } else {
++                        isAutoScrolling = false;
++                    }
++                }
++            });
++            mainHandler.postDelayed(autoScrollRunnable, DIY_CONFIG.SCROLL_DELAY_MS);
++        },
++
++        stopAutoScroll: function() {
++            isAutoScrolling = false;
++            this.currentScrollDirection = 0;
++            if (autoScrollRunnable) {
++                mainHandler.removeCallbacks(autoScrollRunnable);
++                autoScrollRunnable = null;
++            }
++        },
++
++        getCharIndexAtPosition: function(x, y, useCachedLayout) {
++            if (!textCanvasControl || !fullText || fullText.length === 0) return -1;
++            try {
++                var offset = textCanvasControl.getCharIndexAt(x, y);
++                if (offset < 0) return -1;
++                if (offset >= fullText.length) offset = fullText.length - 1;
++                return offset;
++            } catch (e) { return -1; }
++        },
++
++        toggleSelection: function(index) {
++            if (textView) hapticFeedback(textView);
++            if (selectedSet[index]) this.removeFromSelection(index); else this.addToSelection(index);
++        },
++
++        addToSelection: function(index) {
++            if (index < 0 || index >= fullText.length || selectedSet[index]) return;
++            selectedSet[index] = true; selectedIndices = setToArray(selectedSet); dragSelectionCount = selectedIndices.length; this.updateSelectionSpans(index, index); this.updatePreview();
++        },
++
++        removeFromSelection: function(index) {
++            if (index < 0 || index >= fullText.length || !selectedSet[index]) return;
++            delete selectedSet[index]; selectedIndices = setToArray(selectedSet); dragSelectionCount = selectedIndices.length; this.updateSelectionSpans(index, index); this.updatePreview();
++        },
++
++        // Canvas 文本区：选区高亮由 onDraw 根据 selectedSet 自绘。
++        updateSelectionSpans: function(startIndex, endIndex) {
++            try {
++                if (textCanvasControl) {
++                    if (startIndex !== undefined && endIndex !== undefined && startIndex !== null && endIndex !== null && startIndex >= 0 && endIndex >= 0) {
++                        textCanvasControl.invalidateCharRange(startIndex, endIndex);
++                    } else {
++                        textCanvasControl.invalidateVisible();
++                    }
++                }
++            } catch (e) {}
++        },
++
++        updateTextView: function(skipAdjust) {
++                if (textCanvasControl) {
++                textCanvasControl.setText(fullText);
++            }
++            dragSelectionCount = selectedIndices.length;
++            this.updatePreview();
++            if (!skipAdjust) this.adjustScrollViewHeight();
++        },
++
++        collectSelectedRanges: function() {
++            if (selectedIndices.length === 0) return [];
++            var sorted = selectedIndices.slice(0).sort(function(a, b) { return a - b; });
++            var ranges = [];
++            var start = sorted[0];
++            var end = sorted[0] + 1;
++            for (var i = 1; i < sorted.length; i++) {
++                var idx = sorted[i];
++                if (idx === end) {
++                    end = idx + 1;
++                } else {
++                    ranges.push({ start: start, end: end, text: fullText.substring(start, end) });
++                    start = idx;
++                    end = idx + 1;
++                }
++            }
++            ranges.push({ start: start, end: end, text: fullText.substring(start, end) });
++            return ranges;
++        },
++
++                        getPreviewSelectionSignature: function() {
++            if (selectedIndices.length === 0) return "";
++            var sorted = selectedIndices.slice(0).sort(function(a, b) { return a - b; });
++            return String(fullText.length) + ":" + sorted.join(",");
++        },
++
++        getSelectedTextRaw: function() {
++            var ranges = this.collectSelectedRanges();
++            if (ranges.length === 0) return "";
++            var parts = [];
++            for (var i = 0; i < ranges.length; i++) {
++                parts.push(ranges[i].text);
++            }
++            return parts.join("\n");
++        },
++
++        getSelectedText: function() {
++            var sig = this.getPreviewSelectionSignature();
++            if (previewTextOverride !== null && sig !== "" && sig === previewSelectionSignature) return String(previewTextOverride);
++            return this.getSelectedTextRaw();
++        },
++
++        hasPreviewTextOverride: function() {
++            var sig = this.getPreviewSelectionSignature();
++            return previewTextOverride !== null && sig !== "" && sig === previewSelectionSignature;
++        },
++
++        collectSelectedUnionRange: function() {
++            var ranges = this.collectSelectedRanges();
++            if (ranges.length === 0) return null;
++            var start = ranges[0].start;
++            var end = ranges[ranges.length - 1].end;
++            return { start: start, end: end, text: fullText.substring(start, end), ranges: ranges };
++        },
++
++        splitRangeTextForTranslate: function(text) {
++            var raw = String(text == null ? "" : text);
++            var prefix = "";
++            var suffix = "";
++            while (raw.length > 0) {
++                var first = raw.charAt(0);
++                if (first === "\r" || first === "\n") {
++                    prefix += first;
++                    raw = raw.substring(1);
++                } else {
++                    break;
++                }
++            }
++            while (raw.length > 0) {
++                var last = raw.charAt(raw.length - 1);
++                if (last === "\r" || last === "\n") {
++                    suffix = last + suffix;
++                    raw = raw.substring(0, raw.length - 1);
++                } else {
++                    break;
++                }
++            }
++            return { prefix: prefix, core: raw, suffix: suffix };
++        },
++
++        buildTranslatedRangeText: function(parts, translatedText) {
++            var core = String(translatedText == null ? "" : translatedText);
++            return String(parts.prefix || "") + core + String(parts.suffix || "");
++        },
++
++        getLineBreakAfterRange: function(range) {
++            if (!range || range.end >= fullText.length) return "";
++            var first = fullText.charAt(range.end);
++            if (first === "\r") {
++                if (range.end + 1 < fullText.length && fullText.charAt(range.end + 1) === "\n") return "\r\n";
++                return "\r";
++            }
++            if (first === "\n") return "\n";
++            return "";
++        },
++
++        prepareRangeForTranslate: function(range) {
++            var parts = this.splitRangeTextForTranslate(range.text);
++            var structuralSuffix = "";
++            if (!parts.suffix) structuralSuffix = this.getLineBreakAfterRange(range);
++            range.translateParts = parts;
++            range.textToTranslate = parts.core;
++            range.replaceEnd = range.end + structuralSuffix.length;
++            range.structuralSuffix = structuralSuffix;
++        },
++
++        cloneSelectedSet: function(srcSet) {
++            var copy = {};
++            for (var k in srcSet) {
++                if (srcSet.hasOwnProperty(k) && srcSet[k]) copy[k] = true;
++            }
++            return copy;
++        },
++
++        getTopCleanUndoState: function() {
++            while (cleanUndoStack.length > 0) {
++                var state = cleanUndoStack[cleanUndoStack.length - 1];
++                if (!state) { cleanUndoStack.pop(); continue; }
++                if (state.scope === "preview") {
++                    var sig = "";
++                    try { sig = this.getPreviewSelectionSignature(); } catch (e0) { sig = ""; }
++                    if (state.selectionSignature !== sig) { cleanUndoStack.pop(); continue; }
++                }
++                return state;
++            }
++            return null;
++        },
++
++        pushCleanUndoState: function(state) {
++            if (!state) return;
++            cleanUndoStack.push(state);
++            if (cleanUndoStack.length > 20) cleanUndoStack.shift();
++        },
++
++        clearCleanUndoStack: function(scope) {
++            if (!scope) {
++                cleanUndoStack = [];
++                return;
++            }
++            var kept = [];
++            for (var i = 0; i < cleanUndoStack.length; i++) {
++                if (cleanUndoStack[i] && cleanUndoStack[i].scope !== scope) kept.push(cleanUndoStack[i]);
++            }
++            cleanUndoStack = kept;
++        },
++
++        updateCleanButtons: function() {
++            var previewSig = "";
++            try { previewSig = this.getPreviewSelectionSignature(); } catch (e0) { previewSig = ""; }
++            var hasPreviewSelection = selectedIndices.length > 0;
++            var hasLoadedText = fullText && fullText.length > 0;
++            this.updateCleanButtonView(loadedRemoveSpaceBtn, "loaded", "spaces", "去空格", hasLoadedText, false);
++            this.updateCleanButtonView(loadedRemoveNewlineBtn, "loaded", "newlines", "去换行", hasLoadedText, false);
++            this.updateCleanButtonView(previewRemoveSpaceBtn, "preview", "spaces", "去空格", hasPreviewSelection, true, previewSig);
++            this.updateCleanButtonView(previewRemoveNewlineBtn, "preview", "newlines", "去换行", hasPreviewSelection, true, previewSig);
++            if (previewEditBtn) {
++                try {
++                    previewEditBtn.setText("编辑");
++                    previewEditBtn.setEnabled(!!hasPreviewSelection);
++                    previewEditBtn.setAlpha(hasPreviewSelection ? 1.0 : 0.45);
++                    safeTextColor(previewEditBtn, Colors.onPrimary);
++                } catch (eEditBtn) {}
++            }
++        },
++
++        updateCleanButtonView: function(btn, scope, mode, normalText, enabled, isPreview, previewSig) {
++            if (!btn) return;
++            try {
++                var topState = this.getTopCleanUndoState();
++                var isUndo = !!topState && topState.scope === scope && topState.mode === mode;
++                if (isUndo && scope === "preview" && topState.selectionSignature !== previewSig) isUndo = false;
++                btn.setText(isUndo ? "↶ 撤销" : normalText);
++                btn.setEnabled(!!enabled || isUndo);
