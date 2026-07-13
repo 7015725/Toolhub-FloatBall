@@ -1,0 +1,62 @@
+name: apply-result-preview
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  apply:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'fix/result-preview-pickword-v2'
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: fix/result-preview-pickword-v2
+      PATCH_SHA256: 3538516c24dc223cd7e50656c0fdb05fc30f277177677ae43b1197ac9f51df7a
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Rebuild and verify patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .toolhub-result-preview/part-*.patch > /tmp/result-preview.patch
+          echo "$PATCH_SHA256  /tmp/result-preview.patch" | sha256sum -c -
+          git apply --check /tmp/result-preview.patch
+
+      - name: Apply source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply /tmp/result-preview.patch
+          rm -rf .toolhub-result-preview
+          rm -f .github/workflows/apply-result-preview.yml
+          git diff --check
+
+      - name: Commit source changes
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "增加取字结果预览与拾字子模块"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:$TARGET_BRANCH"
