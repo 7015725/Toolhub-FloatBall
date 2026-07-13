@@ -77,39 +77,34 @@ var __toolHubRootDir = null;
 
 function canWriteDirPath(path) {
     try {
-        if (!path) return false;
-        var dir = new java.io.File(String(path));
-        if (!dir.exists() && !dir.mkdirs()) return false;
-        if (!dir.isDirectory()) return false;
-        var probe = new java.io.File(dir, ".write_probe_" + java.lang.System.currentTimeMillis());
-        var out = new java.io.FileOutputStream(probe, false);
-        out.write(49);
-        out.close();
-        try { probe.delete(); } catch (eDelProbe) {}
+        assertWritableDirPath(path, "dir");
         return true;
-    } catch (eProbe) { return false; }
+    } catch (eProbe) {
+        return false;
+    }
 }
 
 function assertWritableDirPath(path, label) {
+    var probe = null;
+    var out = null;
     try {
         if (!path) throw String(label || "dir") + " path empty";
         var dir = new java.io.File(String(path));
         if (!dir.exists() && !dir.mkdirs()) throw String(label || "dir") + " mkdirs failed: " + path;
         if (!dir.isDirectory()) throw String(label || "dir") + " is not directory: " + path;
 
-        var probe = new java.io.File(dir, ".write_probe_" + java.lang.System.currentTimeMillis());
-        var out = new java.io.FileOutputStream(probe, false);
-        try {
-            out.write(49);
-            out.flush();
-        } finally {
-            try { out.close(); } catch (eCloseProbe) {}
-        }
-        try { probe.delete(); } catch (eDelProbe) {}
-
+        var suffix = String(java.lang.System.currentTimeMillis());
+        try { suffix += "_" + String(java.lang.Thread.currentThread().getId()); } catch (eThreadId) {}
+        probe = new java.io.File(dir, ".write_probe_" + suffix);
+        out = new java.io.FileOutputStream(probe, false);
+        out.write(49);
+        out.flush();
         return true;
     } catch (e) {
         throw String(label || "dir") + " not writable: " + String(path) + " / " + String(e);
+    } finally {
+        closeQuietly(out);
+        try { if (probe && probe.exists()) probe.delete(); } catch (eDelProbe) {}
     }
 }
 

@@ -125,10 +125,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "建立 ToolHub 入口冗余审计并清理首批候选"
+      "合并 ToolHub 入口目录可写探针"
     ],
-    "title": "建立 ToolHub 入口冗余审计并清理首批候选"
+    "title": "合并 ToolHub 入口目录可写探针"
   },
   "schema": 3,
-  "version": 20260713013638
+  "version": 20260713020207
 }

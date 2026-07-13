@@ -115,6 +115,7 @@ jobs:
           python3 scripts/verify_js_syntax.py
           python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
           python3 scripts/verify_entry_redundancy_cleanup.py
+          python3 scripts/verify_entry_writable_probe.py
           python3 scripts/verify_sqlite_storage.py
           python3 scripts/verify_sqlite_debounce_race.py
           python3 scripts/verify_ball_position_state.py
