@@ -9,6 +9,7 @@ import argparse
 import base64
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import time
@@ -58,6 +59,22 @@ def read_module_version(path: Path) -> str:
     except Exception:
         pass
     return "0.0.0"
+
+
+def read_entry_version(path: Path):
+    text = path.read_text(encoding="utf-8", errors="replace")
+    for symbol in ("TOOLHUB_ENTRY_VERSION", "MIN_TRUSTED_MANIFEST_VERSION"):
+        match = re.search(r"\bvar\s+%s\s*=\s*(\d+)\s*;" % re.escape(symbol), text)
+        if not match:
+            continue
+        version = int(match.group(1))
+        if version <= 0:
+            raise SystemExit(f"Invalid {symbol} in {path}: {version}")
+        return version, symbol
+    raise SystemExit(
+        "Entry version marker missing: define TOOLHUB_ENTRY_VERSION or "
+        "MIN_TRUSTED_MANIFEST_VERSION in ToolHub.js"
+    )
 
 
 def git_output(args):
@@ -117,12 +134,22 @@ def main() -> None:
             "size": path.stat().st_size,
         }
 
+    entry_hash = sha256_file(ENTRY)
+    entry_version, entry_version_source = read_entry_version(ENTRY)
     version = args.version or int(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
     manifest = {
         "schema": 3,
         "version": version,
         "keyId": args.key_id,
         "alg": "SHA256withRSA",
+        "entry": {
+            "name": "ToolHub.js",
+            "version": entry_version,
+            "versionSource": entry_version_source,
+            "sha256": entry_hash,
+            "size": ENTRY.stat().st_size,
+            "manualUpdate": True,
+        },
         "files": files,
     }
     release = {}
@@ -145,13 +172,14 @@ def main() -> None:
     ])
     SIG.write_text(base64.b64encode(sig_bin).decode("ascii") + "\n", encoding="utf-8")
 
-    entry_hash = sha256_file(ENTRY)
     ENTRY_SHA.write_text(f"{entry_hash}  ToolHub.js\n", encoding="utf-8")
 
     print("== signed manifest ==")
     print(f"manifest_version={manifest['version']}")
     print(f"key_id={manifest['keyId']}")
     print(f"signed_files={len(files)}")
+    print(f"entry_version={entry_version}")
+    print(f"entry_version_source={entry_version_source}")
     if manifest.get("release"):
         rel = manifest["release"]
         print(f"release_title={rel.get('title', '')}")
