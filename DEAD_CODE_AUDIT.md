@@ -10,11 +10,11 @@
 ## 扫描摘要
 
 - 加载模块：`26`
-- 原型方法定义：`391`
-- 唯一原型方法：`377`
-- 已登记重复方法：`14`
+- 原型方法定义：`386`
+- 唯一原型方法：`375`
+- 已登记重复方法：`11`
 - 最终覆盖型候选节点：`0`
-- 受保护覆盖/包装链：`14`
+- 受保护覆盖/包装链：`11`
 - 第一批清理候选：`0`
 
 ## 候选节点
@@ -31,11 +31,8 @@
 |---|---|---|---|
 |`createPointerFrameView`|`intentional_override`|`th_18_pointer_ocr.js`|OCR 扩展统一补充文字、框选和处理状态边框绘制|
 |`createPointerLayoutParams`|`wrapper`|`th_19_position_state.js`|补充屏幕边缘和刘海区域布局参数|
-|`createToolHubUpdateDetailBox`|`deferred_wrapper`|`th_10_shell.js`|在更新详情中追加入口版本差异和入口地址复制操作|
-|`execPointerAction`|`wrapper`|`th_18_pointer_ocr.js`|增加 area_ocr 指针动作模式|
+|`execPointerAction`|`wrapper`|`th_18_pointer_ocr.js`|增加 area_ocr 动作模式|
 |`finishPointerAreaCapture`|`wrapper`|`th_18_pointer_ocr.js`|框选截图完成后异步衔接 OCR|
-|`getToolHubUpdateState`|`deferred_wrapper`|`th_10_shell.js`|设置更新状态加载后补充入口文件版本与手动替换状态|
-|`getToolHubUpdateVisual`|`deferred_wrapper`|`th_10_shell.js`|入口文件落后时在更新胶囊中显示手动替换提醒|
 |`popToolAppPage`|`wrapper`|`th_16_entry.js`|保存按钮后保留临时编辑状态|
 |`removePointerCallbacks`|`wrapper`|`th_19_position_state.js`|关闭指针时同步取消语义调度|
 |`resetPointerToolState`|`wrapper`|`th_19_position_state.js`|重置指针时同步重建语义调度会话|
