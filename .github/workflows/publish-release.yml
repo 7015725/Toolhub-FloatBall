@@ -74,19 +74,3 @@ jobs:
           else
             gh release create "$tag" ToolHub.js ToolHub.js.sha256 manifest.json manifest.sig --target main --title "$title" --notes-file .release_notes
           fi
-
-      - name: Mirror release tag to Gitea
-        shell: bash
-        env:
-          GITEA_PUSH_URL: ${{ secrets.GITEA_PUSH_URL }}
-        run: |
-          if [ -z "$GITEA_PUSH_URL" ]; then
-            echo "GITEA_PUSH_URL is empty, skip Gitea tag mirror"
-            exit 0
-          fi
-          tag="$(cat .release_tag)"
-          if ! git show-ref --verify --quiet "refs/tags/$tag"; then
-            git fetch origin "refs/tags/$tag:refs/tags/$tag"
-          fi
-          git remote add gitea "$GITEA_PUSH_URL"
-          git push gitea "refs/tags/$tag:refs/tags/$tag"
