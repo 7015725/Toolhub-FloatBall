@@ -1,4 +1,4 @@
-// @version 1.2.0
+// @version 1.2.1
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -864,6 +864,11 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       moveRunnable: null,
       inspectRunnable: null,
       stopInspectRunnable: null,
+      inspectRetryRunnable: null,
+      inspectRetryToken: 0,
+      inspectRetryCount: 0,
+      inspectRetryX: -100000,
+      inspectRetryY: -100000,
       inspectHt: null,
       inspectH: null,
       inspectSeq: 0,
@@ -884,9 +889,11 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       inspectLastRequestTs: 0,
       inspectLastCostMs: 0,
       inspectLastNodes: 0,
-      inspectMaxDragMs: 60,
+      inspectMaxDragMs: 90,
+      inspectMaxRetryMs: 160,
       inspectMaxFinalMs: 180,
-      inspectMaxDragNodes: 120,
+      inspectMaxDragNodes: 240,
+      inspectMaxRetryNodes: 600,
       inspectMaxFinalNodes: 420,
       pointerW: 0,
       pointerH: 0,
@@ -1025,6 +1032,14 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.dragUpdatePosted = false;
   st.inspectPosted = false;
   st.draggingInspectPosted = false;
+  try {
+    if (st.handler && st.inspectRetryRunnable) st.handler.removeCallbacks(st.inspectRetryRunnable);
+  } catch (eRemoveInspectRetryReset) {}
+  st.inspectRetryRunnable = null;
+  st.inspectRetryToken = Number(st.inspectRetryToken || 0) + 1;
+  st.inspectRetryCount = 0;
+  st.inspectRetryX = -100000;
+  st.inspectRetryY = -100000;
   st.inspectSeq++;
   st.inspectSession++;
   st.inspectRunning = false;
@@ -1330,12 +1345,18 @@ FloatBallAppWM.prototype.removePointerCallbacks = function(st) {
   try { if (st.handler && st.moveRunnable) st.handler.removeCallbacks(st.moveRunnable); } catch (e0) {}
   try { if (st.handler && st.inspectRunnable) st.handler.removeCallbacks(st.inspectRunnable); } catch (e1) {}
   try { if (st.handler && st.stopInspectRunnable) st.handler.removeCallbacks(st.stopInspectRunnable); } catch (e2) {}
+  try { if (st.handler && st.inspectRetryRunnable) st.handler.removeCallbacks(st.inspectRetryRunnable); } catch (eInspectRetryRemove) {}
   try { if (st.handler && st.areaHoldRunnable) st.handler.removeCallbacks(st.areaHoldRunnable); } catch (eAreaHoldRemove) {}
   try { if (st.handler && st.textReadyRunnable) st.handler.removeCallbacks(st.textReadyRunnable); } catch (eTextReadyRemove) {}
   try { if (st.inspectH) st.inspectH.removeCallbacksAndMessages(null); } catch (e3) {}
   st.moveRunnable = null;
   st.inspectRunnable = null;
   st.stopInspectRunnable = null;
+  st.inspectRetryRunnable = null;
+  st.inspectRetryToken = Number(st.inspectRetryToken || 0) + 1;
+  st.inspectRetryCount = 0;
+  st.inspectRetryX = -100000;
+  st.inspectRetryY = -100000;
   st.areaHoldRunnable = null;
   st.textReadyRunnable = null;
   st.dragUpdatePosted = false;
@@ -2340,52 +2361,89 @@ FloatBallAppWM.prototype.findPointerTextNodeAtBudget = function(root, x, y, star
 
 FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reason, seq, session) {
   var start = th17Now();
+  var reasonText = String(reason || "");
   var isFinal = force === true;
-  var limitMs = isFinal ? 180 : 60;
-  var maxNodes = isFinal ? 420 : 120;
+  var isRetry = !isFinal && reasonText.indexOf("drag_retry") === 0;
+  var limitMs = isFinal ? 180 : (isRetry ? 160 : 90);
+  var maxNodes = isFinal ? 420 : (isRetry ? 600 : 240);
   var st = this.ensurePointerToolState();
-  try { limitMs = isFinal ? Number(st.inspectMaxFinalMs || 120) : Number(st.inspectMaxDragMs || 60); } catch (eLimit) {}
-  try { maxNodes = isFinal ? Number(st.inspectMaxFinalNodes || 260) : Number(st.inspectMaxDragNodes || 120); } catch (eNodes) {}
-  if (isNaN(limitMs) || limitMs < 20) limitMs = isFinal ? 180 : 60;
-  if (isNaN(maxNodes) || maxNodes < 40) maxNodes = isFinal ? 420 : 120;
+  try {
+    if (isFinal) limitMs = Number(st.inspectMaxFinalMs || 180);
+    else if (isRetry) limitMs = Number(st.inspectMaxRetryMs || 160);
+    else limitMs = Number(st.inspectMaxDragMs || 90);
+  } catch (eLimit) {}
+  try {
+    if (isFinal) maxNodes = Number(st.inspectMaxFinalNodes || 420);
+    else if (isRetry) maxNodes = Number(st.inspectMaxRetryNodes || 600);
+    else maxNodes = Number(st.inspectMaxDragNodes || 240);
+  } catch (eNodes) {}
+  if (isNaN(limitMs) || limitMs < 20) limitMs = isFinal ? 180 : (isRetry ? 160 : 90);
+  if (isNaN(maxNodes) || maxNodes < 40) maxNodes = isFinal ? 420 : (isRetry ? 600 : 240);
+
   var count = { n: 0 };
   var result = null;
   var windowsCount = 0;
   var a = this.getPointerUiAutomation(isFinal ? "final" : "scan");
+
+  // 拖动期间优先扫描活动应用根节点。指针和选框自身也是 overlay window，
+  // 先遍历 getWindows() 容易在 60~90ms 预算内耗尽，尚未到达目标应用。
+  var activeRoot = null;
   try {
-    if (a && a.getWindows) {
-      var wins = a.getWindows();
-      if (wins) {
-        try { windowsCount = wins.size(); } catch (eSize) { windowsCount = 0; }
-        for (var wi = 0; wi < windowsCount; wi++) {
-          if (th17Now() - start > limitMs || count.n >= maxNodes) break;
-          var win = null;
-          var rootFromWin = null;
-          try {
-            win = wins.get(wi);
-            if (win) rootFromWin = this.getPointerWindowRoot(win);
-            if (rootFromWin) result = this.findPointerTextNodeAtBudget(rootFromWin, x, y, start, limitMs, maxNodes, count);
-          } catch (eWin) {
-            result = null;
-          } finally {
-            try { if (rootFromWin) rootFromWin.recycle(); } catch (eRootRecycle) {}
+    activeRoot = this.getPointerActiveRoot(isFinal ? "final" : "scan");
+    if (activeRoot) {
+      result = this.findPointerTextNodeAtBudget(
+        activeRoot,
+        x,
+        y,
+        start,
+        limitMs,
+        maxNodes,
+        count
+      );
+    }
+  } catch (eActive) {
+    result = null;
+  } finally {
+    try { if (activeRoot) activeRoot.recycle(); } catch (eRecycleActive) {}
+  }
+
+  // 活动根节点未命中时，再遍历其他交互窗口作为补充。
+  if (!result || !result.text || !result.rect) {
+    try {
+      if (a && a.getWindows) {
+        var wins = a.getWindows();
+        if (wins) {
+          try { windowsCount = wins.size(); } catch (eSize) { windowsCount = 0; }
+          for (var wi = 0; wi < windowsCount; wi++) {
+            if (th17Now() - start > limitMs || count.n >= maxNodes) break;
+            var win = null;
+            var rootFromWin = null;
+            try {
+              win = wins.get(wi);
+              if (win) rootFromWin = this.getPointerWindowRoot(win);
+              if (rootFromWin) {
+                result = this.findPointerTextNodeAtBudget(
+                  rootFromWin,
+                  x,
+                  y,
+                  start,
+                  limitMs,
+                  maxNodes,
+                  count
+                );
+              }
+            } catch (eWin) {
+              result = null;
+            } finally {
+              try { if (rootFromWin) rootFromWin.recycle(); } catch (eRootRecycle) {}
+            }
+            if (result && result.text && result.rect) break;
           }
-          if (result && result.text && result.rect) break;
         }
       }
-    }
-  } catch (eWindows) {}
-  if (!result || !result.text || !result.rect) {
-    var root = null;
-    try {
-      root = this.getPointerActiveRoot(isFinal ? "final" : "scan");
-      if (root) result = this.findPointerTextNodeAtBudget(root, x, y, start, limitMs, maxNodes, count);
-    } catch (eFind) {
-      result = null;
-    } finally {
-      try { if (root) root.recycle(); } catch (eRecycleRoot) {}
-    }
+    } catch (eWindows) {}
   }
+
   var cost = th17Now() - start;
   return {
     seq: seq,
@@ -2393,13 +2451,115 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
     x: x,
     y: y,
     force: isFinal,
-    reason: String(reason || ""),
+    reason: reasonText,
     result: result,
     costMs: cost,
     nodes: count.n,
     windows: windowsCount,
     timedOut: cost >= limitMs || count.n >= maxNodes
   };
+};
+
+FloatBallAppWM.prototype.cancelPointerInspectRetry = function(st, reason) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  if (!pointerState) return false;
+
+  var hadRetry = !!pointerState.inspectRetryRunnable;
+  pointerState.inspectRetryToken = Number(pointerState.inspectRetryToken || 0) + 1;
+  try {
+    if (pointerState.handler && pointerState.inspectRetryRunnable) {
+      pointerState.handler.removeCallbacks(pointerState.inspectRetryRunnable);
+    }
+  } catch (eRemove) {}
+  pointerState.inspectRetryRunnable = null;
+
+  if (reason === "hit" || reason === "reset" || reason === "close") {
+    pointerState.inspectRetryCount = 0;
+    pointerState.inspectRetryX = -100000;
+    pointerState.inspectRetryY = -100000;
+  }
+  return hadRetry;
+};
+
+FloatBallAppWM.prototype.schedulePointerInspectRetry = function(pack) {
+  var st = this.ensurePointerToolState();
+  if (!pack || !st.active || st.closed || !st.dragging || st.mode !== "text_pick") return false;
+
+  var reasonText = String(pack.reason || "");
+  if (reasonText !== "drag" && reasonText.indexOf("drag_retry") !== 0) return false;
+  if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
+
+  if (reasonText === "drag") {
+    st.inspectRetryCount = 0;
+    st.inspectRetryX = Number(pack.x);
+    st.inspectRetryY = Number(pack.y);
+  }
+
+  var maxRetry = 3;
+  if (Number(st.inspectRetryCount || 0) >= maxRetry) {
+    this.cancelPointerInspectRetry(st, "exhausted");
+    return false;
+  }
+
+  this.cancelPointerInspectRetry(st, "replace");
+  st.inspectRetryCount = Number(st.inspectRetryCount || 0) + 1;
+  st.inspectRetryX = Number(pack.x);
+  st.inspectRetryY = Number(pack.y);
+  st.inspectRetryToken = Number(st.inspectRetryToken || 0) + 1;
+
+  var token = Number(st.inspectRetryToken);
+  var session = Number(st.inspectSession || 0);
+  var retryNo = Number(st.inspectRetryCount || 0);
+  var delayMs = pack.timedOut === true ? 120 : 180;
+  var self = this;
+
+  st.inspectRetryRunnable = new java.lang.Runnable({ run: function() {
+    try {
+      if (Number(st.inspectRetryToken || 0) !== token) return;
+      st.inspectRetryRunnable = null;
+      if (!st.active || st.closed || !st.dragging || st.mode !== "text_pick") return;
+      if (Number(st.inspectSession || 0) !== session) return;
+
+      var hp = self.getPointerHotspot();
+      var dx = Number(hp.x) - Number(st.inspectRetryX);
+      var dy = Number(hp.y) - Number(st.inspectRetryY);
+      var retrySlop = Math.max(1, self.dp(4));
+      if (Math.sqrt(dx * dx + dy * dy) > retrySlop) {
+        st.inspectRetryCount = 0;
+        return;
+      }
+
+      try {
+        safeLog(
+          self.L,
+          'd',
+          "pointer stationary inspect retry=" + String(retryNo) +
+          " reason=" + reasonText +
+          " timeout=" + String(pack.timedOut === true)
+        );
+      } catch (eLog) {}
+
+      self.schedulePointerInspectAsync(
+        false,
+        "drag_retry_" + String(retryNo),
+        false,
+        true
+      );
+    } catch (eRun) {
+      try { safeLog(self.L, 'e', "pointer stationary inspect retry fail: " + String(eRun)); } catch (eLogFail) {}
+    }
+  }});
+
+  try {
+    st.handler.postDelayed(st.inspectRetryRunnable, delayMs);
+    return true;
+  } catch (ePost) {
+    st.inspectRetryRunnable = null;
+    return false;
+  }
 };
 
 FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
@@ -2420,7 +2580,9 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
   var result = pack.result;
   var now = th17Now();
   var finishAfterRelease = pack.finishAfterResult === true;
+  var stationaryRetryScheduled = false;
   if (result && result.text && result.rect) {
+    try { this.cancelPointerInspectRetry(st, "hit"); } catch (eCancelRetryHit) {}
     var key = this.pointerTextKeyOf(result);
     st.currentText = String(result.text);
     st.currentRect = th17RectObj(result.rect);
@@ -2446,6 +2608,45 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
       pack.timedOut === true &&
       finishAfterRelease === true &&
       finalTimeoutReason;
+
+    try {
+      stationaryRetryScheduled = this.schedulePointerInspectRetry(pack) === true;
+    } catch (eRetrySchedule) {
+      stationaryRetryScheduled = false;
+    }
+
+    var keepCurrentOnDragTimeout = false;
+    try {
+      var dragTimeoutReason =
+        timeoutReason === "drag" ||
+        timeoutReason.indexOf("drag_retry") === 0;
+      keepCurrentOnDragTimeout =
+        pack.timedOut === true &&
+        finishAfterRelease !== true &&
+        dragTimeoutReason &&
+        stationaryRetryScheduled === true &&
+        !!st.currentText &&
+        !!st.currentRect &&
+        this.pointerRectInside(pack.x, pack.y, st.currentRect) === true;
+    } catch (eKeepCurrent) {
+      keepCurrentOnDragTimeout = false;
+    }
+
+    if (keepCurrentOnDragTimeout) {
+      // 超时不能证明目标已经离开。原地重试完成前保留严格命中的当前候选和悬停计时，
+      // 避免一次 80~90ms 的预算耗尽把即将满足 800ms 的有效候选清空。
+      try { this.refreshPointerTextReadyVisualState(now); } catch (eRefreshKeep) {}
+      try { this.schedulePointerTextReadyVisualRefresh(); } catch (eScheduleKeep) {}
+      try {
+        safeLog(
+          this.L,
+          'd',
+          "pointer drag timeout keep current candidate textLen=" +
+          String(String(st.currentText || "").length) +
+          " reason=" + timeoutReason
+        );
+      } catch (eKeepLog) {}
+    }
 
     var candidateStillHit = false;
     try {
@@ -2510,7 +2711,7 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
       }
     }
 
-    if (!recoveredByLastCandidate) {
+    if (!recoveredByLastCandidate && !keepCurrentOnDragTimeout) {
       try { this.invalidatePointerTextHoverCredential(st, "inspect_empty", true); } catch (eClearReadyTimer) {}
       st.currentText = "";
       st.currentRect = null;
@@ -2617,7 +2818,7 @@ FloatBallAppWM.prototype.preparePointerAccessibilityFinalScan = function(reason)
   return true;
 };
 
-FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, finishAfterResult) {
+FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, finishAfterResult, allowStationary) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed || st.mode !== "text_pick") return false;
   var hp = this.getPointerHotspot();
@@ -2649,7 +2850,7 @@ FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, f
   }
 
   var moved = Math.abs(hp.x - st.lastQueryX) > this.dp(4) || Math.abs(hp.y - st.lastQueryY) > this.dp(4);
-  if (force !== true && !moved) return false;
+  if (force !== true && !moved && allowStationary !== true) return false;
   if (force !== true) {
     var now = th17Now();
     if (now - st.inspectLastRequestTs < 80) return false;
