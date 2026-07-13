@@ -118,63 +118,6 @@
       ]
     },
     {
-      "method": "getToolHubUpdateState",
-      "definitions": [
-        "th_10_shell.js",
-        "th_14_panels.js"
-      ],
-      "effectiveOwner": "th_10_shell.js",
-      "type": "deferred_wrapper",
-      "runtimeMode": "deferred_retry",
-      "reason": "设置更新状态加载后补充入口文件版本与手动替换状态",
-      "wrappers": [
-        {
-          "module": "th_10_shell.js",
-          "owner": "th_14_panels.js",
-          "oldVariable": "oldGetToolHubUpdateState",
-          "installMode": "deferred_retry"
-        }
-      ]
-    },
-    {
-      "method": "getToolHubUpdateVisual",
-      "definitions": [
-        "th_10_shell.js",
-        "th_14_panels.js"
-      ],
-      "effectiveOwner": "th_10_shell.js",
-      "type": "deferred_wrapper",
-      "runtimeMode": "deferred_retry",
-      "reason": "入口文件落后时在更新胶囊中显示手动替换提醒",
-      "wrappers": [
-        {
-          "module": "th_10_shell.js",
-          "owner": "th_14_panels.js",
-          "oldVariable": "oldGetToolHubUpdateVisual",
-          "installMode": "deferred_retry"
-        }
-      ]
-    },
-    {
-      "method": "createToolHubUpdateDetailBox",
-      "definitions": [
-        "th_10_shell.js",
-        "th_14_panels.js"
-      ],
-      "effectiveOwner": "th_10_shell.js",
-      "type": "deferred_wrapper",
-      "runtimeMode": "deferred_retry",
-      "reason": "在更新详情中追加入口版本差异和入口地址复制操作",
-      "wrappers": [
-        {
-          "module": "th_10_shell.js",
-          "owner": "th_14_panels.js",
-          "oldVariable": "oldCreateToolHubUpdateDetailBox",
-          "installMode": "deferred_retry"
-        }
-      ]
-    },
-    {
       "method": "removePointerCallbacks",
       "definitions": [
         "th_17_pointer.js",
