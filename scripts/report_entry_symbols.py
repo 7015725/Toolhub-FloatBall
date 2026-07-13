@@ -335,7 +335,7 @@ def build_report():
             row["name"], row["line"], row["lines"], row["status"], row["entry_calls"], row["entry_tokens"], row["module_calls"], row["module_tokens"], row["dynamic"]))
     lines.append("")
 
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines).rstrip("\n") + "\n"
 
 
 def main():
