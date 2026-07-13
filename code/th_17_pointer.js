@@ -1,4 +1,4 @@
-// @version 1.1.35
+// @version 1.2.0
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -771,7 +771,7 @@ FloatBallAppWM.prototype.completePointerCandidateOnRelease = function(st, succes
       "pointer text release commit source=" + data.source +
       " textLen=" + String(String(pointerState.currentText).length));
   } catch (eLog) {}
-  return this.completePointerTextCopy(
+  return this.completePointerTextResult(
     String(pointerState.currentText),
     th17RectObj(pointerState.currentRect),
     String(successCode || "TEXT_PICK_SUCCESS"),
@@ -779,36 +779,65 @@ FloatBallAppWM.prototype.completePointerCandidateOnRelease = function(st, succes
   ) === true;
 };
 
-FloatBallAppWM.prototype.completePointerTextCopy = function(textValue, rect, successCode, extraData) {
+FloatBallAppWM.prototype.completePointerTextResult = function(textValue, rect, successCode, extraData) {
   var st = this.ensurePointerToolState();
   if (!st.active || st.closed) return false;
   var text = String(textValue === null || textValue === undefined ? "" : textValue);
   if (!text || !rect) return false;
 
-  // 参考正常实现：无障碍取到文字即代表 text_pick 成功。
-  // 剪贴板只是附加动作，不能反过来把已识别文字判为失败。
-  var copied = this.copyPointerTextToClipboard(text) === true;
   var data = {};
   try {
     if (extraData) {
       for (var k in extraData) data[k] = extraData[k];
     }
   } catch (eData) {}
-  data.clipboardAccepted = copied === true;
+
+  var previewRet = null;
+  try {
+    if (typeof this.publishResultPreview === "function") {
+      previewRet = this.publishResultPreview({
+        kind: "text",
+        source: String(data.source || "pointer_text"),
+        text: text,
+        previewText: text,
+        screenshotPath: "",
+        rect: th17RectObj(rect),
+        primaryAction: "pickword",
+        actions: [],
+        createdAt: th17Now()
+      });
+    }
+  } catch (ePreview) {
+    previewRet = { ok: false, code: "RESULT_PREVIEW_FAILED", message: String(ePreview) };
+  }
+
+  data.clipboardAccepted = false;
+  data.previewQueued = !!(previewRet && previewRet.ok === true);
+  data.previewId = previewRet && previewRet.previewId ? String(previewRet.previewId) : "";
 
   this.setPointerToolResult({
     ok: true,
     type: "text_pick",
     code: String(successCode || "TEXT_PICK_SUCCESS"),
-    message: copied ? "取字并复制成功" : "取字成功，但复制到剪贴板失败",
+    message: data.previewQueued ? "取字成功，已显示预览" : "取字成功",
     value: text,
-    clipboard: copied === true,
+    clipboard: false,
+    preview: data.previewQueued,
+    previewId: data.previewId,
     rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
     data: data
   });
-  try { this.toast(copied ? "已复制: " + text : "已取字，但复制失败"); } catch (eToast) {}
-  try { this.closePointerTool(copied ? "已复制到剪贴板" : "取字完成", true); } catch (eClose) {}
+
+  if (!data.previewQueued) {
+    try { this.toast("取字成功"); } catch (eToast) {}
+  }
+  try { this.closePointerTool("取字完成", true); } catch (eClose) {}
   return true;
+};
+
+// 兼容旧调用名：保留方法入口，但不再自动写入剪贴板。
+FloatBallAppWM.prototype.completePointerTextCopy = function(textValue, rect, successCode, extraData) {
+  return this.completePointerTextResult(textValue, rect, successCode, extraData);
 };
 
 FloatBallAppWM.prototype.ensurePointerToolState = function() {
@@ -2810,9 +2839,15 @@ FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect, relea
 
   var textValue = String(st.currentText);
   var completed = this.completePointerCandidateOnRelease(st, successCode, source, extra);
-  var copied = false;
-  try { copied = !!(st.lastResult && st.lastResult.clipboard === true); } catch (eCopied) { copied = false; }
-  return { ok: completed === true, pending: false, text: textValue, clipboard: copied };
+  var previewQueued = false;
+  try { previewQueued = !!(st.lastResult && st.lastResult.preview === true); } catch (ePreviewState) { previewQueued = false; }
+  return {
+    ok: completed === true,
+    pending: false,
+    text: textValue,
+    preview: previewQueued,
+    clipboard: false
+  };
 };
 
 FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
@@ -2980,13 +3015,21 @@ FloatBallAppWM.prototype.finishPointerFallbackText = function() {
   st.currentRect = rect;
   st.currentKey = String(st.boundKey || "");
   try { this.showPointerAreaFrame(rect, "text_hit"); } catch (eFrame) {}
-  var completed = this.completePointerTextCopy(
+  var completed = this.completePointerTextResult(
     textValue,
     rect,
     "TEXT_PICK_FALLBACK_FROM_SMALL_AREA",
     { source: "small_area_fallback", fallback: true }
   );
-  return { ok: completed === true, text: textValue, clipboard: completed === true, fallback: true };
+  var previewQueued = false;
+  try { previewQueued = !!(st.lastResult && st.lastResult.preview === true); } catch (ePreviewState) { previewQueued = false; }
+  return {
+    ok: completed === true,
+    text: textValue,
+    preview: previewQueued,
+    clipboard: false,
+    fallback: true
+  };
 };
 
 FloatBallAppWM.prototype.updatePointerAreaSelection = function(x, y) {

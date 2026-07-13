@@ -25,11 +25,14 @@ def forbid(text, fragment, label):
 
 for name, text in (("README", README), ("ARCHITECTURE", ARCH), ("STRUCTURE", STRUCTURE)):
     require(text, "th_19_position_state.js", name + " th_19 module")
+    require(text, "th_20_pickword.js", name + " th_20 module")
+    require(text, "th_21_result_preview.js", name + " th_21 module")
 
-require(ARCH, "24 个子模块", "architecture module count")
-require(STRUCTURE, "24 个子模块", "structure module count")
-forbid(ARCH, "23 个子模块", "architecture old module count")
-forbid(STRUCTURE, "23 个子模块", "structure old module count")
+require(ARCH, "26 个子模块", "architecture module count")
+require(STRUCTURE, "26 个子模块", "structure module count")
+for old_count in ("23 个子模块", "24 个子模块", "25 个子模块"):
+    forbid(ARCH, old_count, "architecture old module count")
+    forbid(STRUCTURE, old_count, "structure old module count")
 
 require(README, "默认启动 `intentUri`", "README shortcut behavior")
 require(ARCH, "intentUri", "architecture shortcut behavior")
@@ -62,7 +65,9 @@ require(STRUCTURE, "position_state", "structure final load stage")
 
 forbid(ARCH, "manifest.version = 20260703110021", "architecture frozen manifest version")
 forbid(STRUCTURE, "version: 20260703110021", "structure frozen manifest version")
-forbid(STRUCTURE, "files: 22 个模块", "structure old manifest module count")
+for old_files in ("files: 22 个模块", "files: 24 个模块", "files: 25 个模块"):
+    forbid(STRUCTURE, old_files, "structure old manifest module count")
+require(STRUCTURE, "files: 26 个模块", "structure manifest module count")
 
 require(SQLITE, "intentUri", "SQLite shortcut intent field")
 require(SQLITE, "shortcutExecMode", "SQLite shortcut mode field")

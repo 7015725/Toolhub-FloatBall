@@ -136,6 +136,7 @@ jobs:
           python3 scripts/verify_documentation_consistency.py
           python3 scripts/verify_github_only_source.py
           python3 scripts/verify_pointer_regressions.py
+          python3 scripts/verify_result_preview.py
           python3 .github/scripts/verify_manifest_signature.py
 
       - name: Check git whitespace

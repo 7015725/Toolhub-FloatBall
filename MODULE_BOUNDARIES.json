@@ -24,7 +24,19 @@
     "execButtonAction": "th_11_action.js",
     "execShellSmart": "th_10_shell.js",
     "setPendingValue": "th_05_persistence.js",
-    "applyImmediateEffectsForKey": "th_05_persistence.js"
+    "applyImmediateEffectsForKey": "th_05_persistence.js",
+    "completePointerTextResult": "th_17_pointer.js",
+    "completePointerTextCopy": "th_17_pointer.js",
+    "showPickwordText": "th_20_pickword.js",
+    "isPickwordShowing": "th_20_pickword.js",
+    "hidePickwordWindow": "th_20_pickword.js",
+    "disposePickwordModule": "th_20_pickword.js",
+    "onPickwordConfigurationChanged": "th_20_pickword.js",
+    "publishResultPreview": "th_21_result_preview.js",
+    "dismissResultPreview": "th_21_result_preview.js",
+    "openResultPreviewPrimaryAction": "th_21_result_preview.js",
+    "disposeResultPreview": "th_21_result_preview.js",
+    "onResultPreviewConfigurationChanged": "th_21_result_preview.js"
   },
   "duplicateDefinitions": [
     {
