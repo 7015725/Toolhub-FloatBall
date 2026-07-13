@@ -52,9 +52,9 @@
       "version": "1.0.9"
     },
     "th_12_rebuild.js": {
-      "sha256": "65bca091b14b364d8c0b95f3c31acb66285297c7eb6834dafd1b5ff1f13fa2ae",
-      "size": 3970,
-      "version": "1.0.7"
+      "sha256": "272c516a0ab19d895267e6341db827d9ba4f444e1ae940f1fc614fc2ac99d312",
+      "size": 15350,
+      "version": "1.1.0"
     },
     "th_13_panel_ui.js": {
       "sha256": "7154bb5fe7c9d5da74f3ee3e1378fe6b092c771379d31f377a0d32901d47c9a9",
@@ -135,10 +135,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针无障碍取字偶发失效"
+      "建立设置页统一配色契约（第一阶段）"
     ],
-    "title": "修复指针无障碍取字偶发失效"
+    "title": "建立设置页统一配色契约（第一阶段）"
   },
   "schema": 3,
-  "version": 20260713100836
+  "version": 20260713110646
 }
