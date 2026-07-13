@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -87,12 +87,12 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
-  var textColor = T ? T.text : (isDark ? C.textPriDark : C.textPriLight);
-  var secColor = T ? T.sub : (isDark ? C.textSecDark : C.textSecLight);
-  var dividerColor = T ? T.stroke : (isDark ? C.dividerDark : C.dividerLight);
+  var textColor = T ? T.onSurface : (isDark ? C.textPriDark : C.textPriLight);
+  var secColor = T ? T.onSurface2 : (isDark ? C.textSecDark : C.textSecLight);
+  var dividerColor = T ? T.outlineVariant : (isDark ? C.dividerDark : C.dividerLight);
   var primary = T ? T.primary : C.primary;
-  var inputBgColor = T ? T.card2 : (isDark ? C.inputBgDark : C.inputBgLight);
-  var switchOff = T ? T.card2 : (isDark ? (0xFF555555 | 0) : (0xFFCCCCCC | 0));
+  var inputBgColor = T ? T.surface2 : (isDark ? C.inputBgDark : C.inputBgLight);
+  var switchOff = T ? T.surface2 : (isDark ? (0xFF555555 | 0) : (0xFFCCCCCC | 0));
 
   // 紧凑但保留足够触控空间
   var padH = this.dp(14);

@@ -361,3 +361,13 @@ ToolHub/toolhub.db
 - 旧版本无法读取结构化表。
 
 需要先使用新版提供的导出功能生成兼容数据，或者恢复迁移前的完整目录备份。
+## 历史主题数据清理
+
+旧主题模式移除后，结构化 SQLite 存储会执行一次带事务的精确清理：
+
+- 从 `toolhub_settings` 删除已废弃的主题键；
+- 从 Schema 树删除对应设置项，保留其他自定义 Schema 内容；
+- 通过 `deprecated_theme_cleanup_version` 记录迁移版本，避免重复执行；
+- 清理失败时事务回滚，按钮和其他设置不受影响。
+
+该清理不提升 `storage_format_version`，不会触发结构化数据库重建。

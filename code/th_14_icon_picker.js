@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // ToolHub - ShortX 图标选择器模块
 //
 // 阶段 1：承载 showShortXIconPickerPopup。
@@ -159,7 +159,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
   card.setPadding(padH, padV, padH, padV);
-  card.setBackground(self.ui.createStrokeDrawable(T.card, self.withAlpha(T.primaryDeep, isDark ? 0.28 : 0.22), self.dp(1), self.dp(24)));
+  card.setBackground(self.ui.createStrokeDrawable(T.surface, self.withAlpha(T.primary, isDark ? 0.28 : 0.22), self.dp(1), self.dp(24)));
   try { card.setElevation(self.dp(10)); } catch(eCardElev) { safeLog(null, 'e', "catch " + String(eCardElev)); }
 
   var cardLp = new android.widget.FrameLayout.LayoutParams(panelWidth, panelHeight);
@@ -217,12 +217,12 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   titleBox.addView(countTv);
   header.addView(titleBox);
 
-  var closeBtn = self.ui.createCompactFlatButton ? self.ui.createCompactFlatButton(self, "×", T.primaryDeep, function() { dismiss(); }) : self.ui.createFlatButton(self, "×", T.primaryDeep, function() { dismiss(); });
+  var closeBtn = self.ui.createCompactFlatButton ? self.ui.createCompactFlatButton(self, "×", T.primary, function() { dismiss(); }) : self.ui.createFlatButton(self, "×", T.primary, function() { dismiss(); });
   closeBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   closeBtn.setTypeface(null, android.graphics.Typeface.BOLD);
   closeBtn.setPadding(self.dp(8), 0, self.dp(8), 0);
   try { closeBtn.setContentDescription("关闭图标库"); } catch(eCloseDesc) {}
-  try { closeBtn.setBackground(self.ui.createStrokeDrawable(T.primarySoft, self.withAlpha(T.primaryDeep, isDark ? 0.30 : 0.22), self.dp(1), self.dp(18))); } catch(eCloseBg) {}
+  try { closeBtn.setBackground(self.ui.createStrokeDrawable(T.primaryContainer, self.withAlpha(T.primary, isDark ? 0.30 : 0.22), self.dp(1), self.dp(18))); } catch(eCloseBg) {}
   header.addView(closeBtn, new android.widget.LinearLayout.LayoutParams(self.dp(48), self.dp(48)));
   card.addView(header);
 
@@ -235,7 +235,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   searchEt.setFocusable(true);
   searchEt.setFocusableInTouchMode(true);
   searchEt.setPadding(self.dp(14), self.dp(10), self.dp(14), self.dp(10));
-  searchEt.setBackground(self.ui.createStrokeDrawable(T.card2, self.withAlpha(T.primaryDeep, isDark ? 0.24 : 0.18), self.dp(1), self.dp(20)));
+  searchEt.setBackground(self.ui.createStrokeDrawable(T.surface2, self.withAlpha(T.primary, isDark ? 0.24 : 0.18), self.dp(1), self.dp(20)));
   var searchLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(46));
   searchLp.setMargins(0, self.dp(10), 0, self.dp(8));
   card.addView(searchEt, searchLp);
@@ -267,9 +267,9 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
         var item = filterViews[i];
         if (!item || !item.view) continue;
         var active = item.name === popupState.filter;
-        item.view.setTextColor(active ? T.onPrimary : T.primaryDeep);
+        item.view.setTextColor(active ? T.onPrimary : T.primary);
         item.view.setTypeface(null, active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
-        item.view.setBackground(self.ui.createStrokeDrawable(active ? T.primary : T.primarySoft, self.withAlpha(T.primaryDeep, active ? 0.36 : 0.18), self.dp(1), self.dp(16)));
+        item.view.setBackground(self.ui.createStrokeDrawable(active ? T.primary : T.primaryContainer, self.withAlpha(T.primary, active ? 0.36 : 0.18), self.dp(1), self.dp(16)));
       }
     } catch(eTags) { safeLog(null, 'e', "catch " + String(eTags)); }
   }
@@ -311,7 +311,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var pageBarLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(48));
   card.addView(pageBar, pageBarLp);
 
-  var btnPrev = self.ui.createFlatButton(self, "上一页", self.withAlpha(T.primaryDeep, 0.72), function() {
+  var btnPrev = self.ui.createFlatButton(self, "上一页", self.withAlpha(T.primary, 0.72), function() {
     if (popupState.currentPage > 0) { popupState.currentPage--; renderGrid(); }
   });
   try { btnPrev.setContentDescription("上一页"); } catch(ePrevDesc) {}
@@ -324,7 +324,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   pageInfo.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
   pageBar.addView(pageInfo);
 
-  var btnNext = self.ui.createFlatButton(self, "下一页", self.withAlpha(T.primaryDeep, 0.72), function() {
+  var btnNext = self.ui.createFlatButton(self, "下一页", self.withAlpha(T.primary, 0.72), function() {
     popupState.currentPage++;
     renderGrid();
   });
@@ -346,7 +346,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   selectRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
   selectRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
   selectRow.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
-  selectRow.setBackground(self.ui.createStrokeDrawable(T.card2, self.withAlpha(T.primaryDeep, isDark ? 0.22 : 0.16), self.dp(1), self.dp(22)));
+  selectRow.setBackground(self.ui.createStrokeDrawable(T.surface2, self.withAlpha(T.primary, isDark ? 0.22 : 0.16), self.dp(1), self.dp(22)));
   var selectRowLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, self.dp(58));
   selectRowLp.setMargins(0, self.dp(6), 0, 0);
   card.addView(selectRow, selectRowLp);
@@ -412,8 +412,8 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           var frame = new android.widget.FrameLayout(context);
           frame.setClickable(true);
           var isSelected = selectedName === item.name;
-          var frameBg = isSelected ? T.primarySoft : self.withAlpha(cardColor, 0.96);
-          var frameStroke = isSelected ? self.withAlpha(T.primaryDeep, isDark ? 0.50 : 0.42) : self.withAlpha(T.primaryDeep, isDark ? 0.18 : 0.12);
+          var frameBg = isSelected ? T.primaryContainer : self.withAlpha(cardColor, 0.96);
+          var frameStroke = isSelected ? self.withAlpha(T.primary, isDark ? 0.50 : 0.42) : self.withAlpha(T.primary, isDark ? 0.18 : 0.12);
           frame.setBackground(self.ui.createStrokeDrawable(frameBg, frameStroke, isSelected ? self.dp(2) : self.dp(1), self.dp(15)));
 
           var cell = new android.widget.LinearLayout(context);
@@ -438,16 +438,16 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           tv.setMaxLines(1);
           try { tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eTvEll) {}
           tv.setPadding(self.dp(2), self.dp(5), self.dp(2), 0);
-          tv.setTextColor(isSelected ? T.primaryDeep : subTextColor);
+          tv.setTextColor(isSelected ? T.primary : subTextColor);
           cell.addView(tv, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
 
           var favBtn = new android.widget.TextView(context);
           favBtn.setText(isFavoriteIcon(item.name) ? "★" : "☆");
-          favBtn.setTextColor(isFavoriteIcon(item.name) ? T.primaryDeep : self.withAlpha(T.primaryDeep, 0.52));
+          favBtn.setTextColor(isFavoriteIcon(item.name) ? T.primary : self.withAlpha(T.primary, 0.52));
           favBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
           favBtn.setGravity(android.view.Gravity.CENTER);
           favBtn.setTypeface(null, android.graphics.Typeface.BOLD);
-          favBtn.setBackground(self.ui.createRoundDrawable(isFavoriteIcon(item.name) ? T.primarySoft : self.withAlpha(T.card, 0.88), self.dp(9)));
+          favBtn.setBackground(self.ui.createRoundDrawable(isFavoriteIcon(item.name) ? T.primaryContainer : self.withAlpha(T.surface, 0.88), self.dp(9)));
           favBtn.setClickable(true);
           try { favBtn.setContentDescription((isFavoriteIcon(item.name) ? "取消收藏" : "收藏") + String(item.shortName || item.name || "图标")); } catch(eFavDesc) {}
           favBtn.setOnClickListener(new android.view.View.OnClickListener({

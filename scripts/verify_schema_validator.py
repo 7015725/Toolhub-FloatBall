@@ -90,8 +90,14 @@ def main():
     rebuild = REBUILD.read_text(encoding="utf-8")
     extra = EXTRA.read_text(encoding="utf-8")
     errors = []
+    active_config_src = re.sub(
+        r"var DEPRECATED_THEME_CONFIG_KEYS = \{.*?\};",
+        "",
+        src,
+        flags=re.S,
+    )
     for removed_key in REMOVED_THEME_KEYS:
-        if re.search(r"(?m)^\s*%s\s*:" % re.escape(removed_key), src):
+        if re.search(r"(?m)^\s*%s\s*:" % re.escape(removed_key), active_config_src):
             errors.append("removed theme validator/default remains: " + removed_key)
         if re.search(r'\{\s*key:\s*"%s"' % re.escape(removed_key), src):
             errors.append("removed theme schema remains: " + removed_key)

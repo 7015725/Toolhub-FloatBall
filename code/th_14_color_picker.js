@@ -1,4 +1,4 @@
-// @version 0.0.2
+// @version 0.0.3
 // ToolHub - 颜色选择器弹窗模块
 // 依赖：th_14_panels.js 中的 showPopupOverlay()、th_04_theme.js 主题工具、th_06_icon_parser.js 图标解析。
 
@@ -133,14 +133,14 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       b.setTextColor(android.graphics.Color.WHITE);
       b.setPadding(self.dp(16), 0, self.dp(16), 0);
       try { b.setMinHeight(self.dp(50)); } catch(eMinH1) {}
-      try { b.setBackground(self.ui.createStrokeDrawable(T.primaryDeep, self.withAlpha(T.brown || T.primaryDeep, isDark ? 0.28 : 0.18), self.dp(1), self.dp(26))); } catch(eBg1) {}
+      try { b.setBackground(self.ui.createStrokeDrawable(T.primary, self.withAlpha(T.onSurface2 || T.primary, isDark ? 0.28 : 0.18), self.dp(1), self.dp(26))); } catch(eBg1) {}
       try { b.setElevation(self.dp(1)); } catch(eElev) {}
     } else {
       b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-      b.setTextColor(T.brown || T.sub);
+      b.setTextColor(T.onSurface2 || T.onSurface2);
       b.setPadding(self.dp(14), 0, self.dp(14), 0);
       try { b.setMinHeight(self.dp(50)); } catch(eMinH2) {}
-      try { b.setBackground(self.ui.createStrokeDrawable(T.card2 || T.card, self.withAlpha(T.stroke || T.brown, isDark ? 0.42 : 0.55), self.dp(1), self.dp(26))); } catch(eBg2) {}
+      try { b.setBackground(self.ui.createStrokeDrawable(T.surface2 || T.surface, self.withAlpha(T.outlineVariant || T.onSurface2, isDark ? 0.42 : 0.55), self.dp(1), self.dp(26))); } catch(eBg2) {}
       try { b.setElevation(self.dp(1)); } catch(eElev2) {}
     }
     try { b.setClickable(true); b.setFocusable(true); } catch(eClickable) {}
@@ -219,7 +219,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
                   var border = new android.graphics.drawable.GradientDrawable();
                   border.setColor(android.graphics.Color.TRANSPARENT);
                   border.setCornerRadius(self.dp(5));
-                  border.setStroke(self.dp(2), T.primaryDeep);
+                  border.setStroke(self.dp(2), T.primary);
                   cell.setForeground(border);
                  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
               }
@@ -285,7 +285,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               var border = new android.graphics.drawable.GradientDrawable();
               border.setColor(android.graphics.Color.TRANSPARENT);
               border.setCornerRadius(self.dp(5));
-              border.setStroke(self.dp(2), T.primaryDeep);
+              border.setStroke(self.dp(2), T.primary);
               cell.setForeground(border);
              } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           }
@@ -326,7 +326,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
                 var border = new android.graphics.drawable.GradientDrawable();
                 border.setColor(android.graphics.Color.TRANSPARENT);
                 border.setCornerRadius(self.dp(5));
-                border.setStroke(self.dp(2), T.primaryDeep);
+                border.setStroke(self.dp(2), T.primary);
                 matchedCell.setForeground(border);
                } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
             }
