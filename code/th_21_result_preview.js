@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【取字 / OCR 顶部结果预览】=======================
 // 全自绘单实例悬浮预览；点击后把完整文本传给 th_20_pickword.js。
 (function() {
@@ -166,7 +166,7 @@
   function colors21() {
     var dark = isDark21();
     return {
-      bg: android.graphics.Color.parseColor(dark ? "#F21B1B1F" : "#F7FFFFFF"),
+      bg: android.graphics.Color.parseColor(dark ? "#FF1B1B1F" : "#FFFFFFFF"),
       stroke: android.graphics.Color.parseColor(dark ? "#3DFFFFFF" : "#22000000"),
       text: android.graphics.Color.parseColor(dark ? "#FFF8FAFC" : "#FF111827"),
       secondary: android.graphics.Color.parseColor(dark ? "#FFCBD5E1" : "#FF475569"),
@@ -535,21 +535,27 @@
       st.visible = true;
       st.entering = true;
       try {
+        st.root.animate().cancel();
         st.root.setVisibility(android.view.View.VISIBLE);
-        st.root.setAlpha(0.78);
-        st.root.setTranslationY(-dp21(appObj, 8));
+        st.root.setAlpha(1);
+        st.root.setScaleX(0.985);
+        st.root.setScaleY(0.985);
+        st.root.setTranslationY(-dp21(appObj, 6));
         st.root.requestLayout();
         st.root.invalidate();
         st.root.animate()
-          .alpha(1)
+          .scaleX(1)
+          .scaleY(1)
           .translationY(0)
-          .setDuration(180)
+          .setDuration(140)
           .setInterpolator(new android.view.animation.DecelerateInterpolator())
           .start();
       } catch (eEnter) {
         try {
           st.root.setVisibility(android.view.View.VISIBLE);
           st.root.setAlpha(1);
+          st.root.setScaleX(1);
+          st.root.setScaleY(1);
           st.root.setTranslationY(0);
           st.root.requestLayout();
           st.root.invalidate();
@@ -561,16 +567,23 @@
       try {
         st.root.setVisibility(android.view.View.VISIBLE);
         st.root.setAlpha(1);
+        st.root.setScaleX(1);
+        st.root.setScaleY(1);
         st.root.setTranslationY(0);
       } catch (eExistingVisible) {}
       try { st.wm.updateViewLayout(st.root, st.lp); } catch (eUpdate) {}
       try { st.root.requestLayout(); st.root.invalidate(); } catch (eInvalidate) {}
       try {
         st.root.animate().cancel();
-        st.root.setAlpha(0.86);
+        st.root.setAlpha(1);
         st.root.setScaleX(0.985);
         st.root.setScaleY(0.985);
-        st.root.animate().alpha(1).scaleX(1).scaleY(1).setDuration(120).start();
+        st.root.animate()
+          .scaleX(1)
+          .scaleY(1)
+          .setDuration(120)
+          .setInterpolator(new android.view.animation.DecelerateInterpolator())
+          .start();
       } catch (ePulse) {}
       scheduleVisibilityFallback21(appObj, st, st.root);
       st.visible = true;
@@ -655,10 +668,15 @@
             var generation = Number(current.generation || 0);
             try {
               rootRef.animate().cancel();
+              rootRef.setAlpha(1);
+              rootRef.setScaleX(1);
+              rootRef.setScaleY(1);
+              rootRef.setTranslationY(0);
               rootRef.animate()
-                .alpha(0)
-                .translationY(-dp21(self, 8))
-                .setDuration(160)
+                .scaleX(0.985)
+                .scaleY(0.985)
+                .translationY(-dp21(self, 6))
+                .setDuration(120)
                 .setInterpolator(new android.view.animation.AccelerateInterpolator())
                 .withEndAction(new java.lang.Runnable({ run: function() {
                   try {

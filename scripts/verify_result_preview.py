@@ -190,25 +190,44 @@ def main() -> int:
         "top position must respect status bar and cutout safe insets",
         failures,
     )
+    show_state = section(preview, "function showState21(appObj, st)", "function normalizePayload21")
+    dismiss_preview = section(preview, "proto.dismissResultPreview = function(reason, animate)", "proto.openResultPreviewPrimaryAction = function")
     require(
-        "preview / animation and touch feedback",
-        "st.root.setTranslationY(-dp21(appObj, 8))" in preview
-        and ".translationY(-dp21(self, 8))" in preview
-        and ".setDuration(180)" in preview
+        "preview / opaque background",
+        '"#FF1B1B1F"' in preview
+        and '"#FFFFFFFF"' in preview
+        and '"#F21B1B1F"' not in preview
+        and '"#F7FFFFFF"' not in preview,
+        "preview card background must remain fully opaque in light and dark mode",
+        failures,
+    )
+    require(
+        "preview / opaque motion animation",
+        "st.root.setAlpha(1)" in show_state
+        and "st.root.setAlpha(0.78)" not in show_state
+        and "st.root.setAlpha(0.86)" not in show_state
+        and ".alpha(" not in show_state
+        and "st.root.setTranslationY(-dp21(appObj, 6))" in show_state
+        and ".setDuration(140)" in show_state
         and ".scaleX(0.97).scaleY(0.97)" in preview
+        and "rootRef.setAlpha(1)" in dismiss_preview
+        and ".alpha(0)" not in dismiss_preview
+        and ".translationY(-dp21(self, 6))" in dismiss_preview
+        and ".scaleX(0.985)" in dismiss_preview
+        and ".setDuration(120)" in dismiss_preview
         and "st.clickLocked" in preview,
-        "enter/exit and click feedback contracts are incomplete",
+        "preview enter, update and exit animations must not animate whole-window alpha",
         failures,
     )
     require(
         "preview / visible fallback and draw diagnostics",
         "PreviewView.setWillNotDraw(false)" in preview
-        and "st.root.setAlpha(0.78)" in preview
         and "scheduleVisibilityFallback21(appObj, st, st.root)" in preview
         and "rootRef.setVisibility(android.view.View.VISIBLE)" in preview
+        and "rootRef.setAlpha(1)" in preview
         and '"result preview first draw"' in preview
         and '"result preview visual check"' in preview,
-        "preview must remain visible when the entry animation does not advance",
+        "preview must remain visible when the motion animation does not advance",
         failures,
     )
     draw_preview = section(preview, "function drawPreview21(appObj, st, canvas, view)", "function createView21(appObj, st)")

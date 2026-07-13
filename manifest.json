@@ -127,18 +127,18 @@
       "version": "1.0.1"
     },
     "th_21_result_preview.js": {
-      "sha256": "7448cba950e7a2a45a09f13ae2ff009977a5b5124f7a17a6a5e67aa10cd4e109",
-      "size": 28661,
-      "version": "1.0.3"
+      "sha256": "489199f1c8d8bea046eb5e29dad3ae5cb67c7c3f99b72f796690e7dfb92b824f",
+      "size": 29205,
+      "version": "1.0.4"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复顶部预览进入拾字时闪烁"
+      "修复顶部预览透明动效重影"
     ],
-    "title": "修复顶部预览进入拾字时闪烁"
+    "title": "修复顶部预览透明动效重影"
   },
   "schema": 3,
-  "version": 20260713090051
+  "version": 20260713092614
 }
