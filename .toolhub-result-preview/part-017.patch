@@ -1,0 +1,265 @@
++                                    draggingPin = false;
++                                    pinTouchMode = 0;
++                                    try { v.getParent().requestDisallowInterceptTouchEvent(false); } catch (e2) {}
++                                    if (action === MotionEvent.ACTION_UP && !movedPin) {
++                                        if (handlePinDoubleTap(v, event)) return true;
++                                    }
++                                    return wasDragWindow || !isTextScrollTarget;
++                                }
++                            } catch (eTouch) {}
++                            return false;
++                        }
++                    });
++                    pinLayout.setOnTouchListener(pinTouchListener);
++                    pinTextView.setOnTouchListener(pinTouchListener);
++                    try { pinScrollView.setOnTouchListener(pinTouchListener); } catch (ePinScrollTouch) {}
++
++                    self.startPinnedTextBatchLoad(pinnedText);
++
++                    pinWindowManager.addView(pinLayout, pinLayoutParams);
++                    animateWindowEnter(pinLayout);
++                    self.ensureKeepAlive();
++                    mainHandler.postDelayed(new java.lang.Runnable({
++                        run: function() {
++                            try { self.hide(); } catch (eHide) {}
++                        }
++                    }), 60);
++                    showToast("已钉到屏幕，双击钉屏可关闭");
++                } catch (e) {
++                    showToast("钉屏失败: " + e.message);
++                }
++            });
++        },
++
++        removePinnedTextWindow: function() {
++            try {
++                if (pinWindowManager !== null && pinLayout !== null) {
++                    try { pinWindowManager.removeView(pinLayout); } catch (e0) {}
++                }
++            } catch (e) {}
++            this.cancelPinnedTextBatchLoad();
++            pinLayout = null;
++            pinLayoutParams = null;
++            pinTextView = null;
++            pinScrollView = null;
++            pinProgressView = null;
++            pinnedText = "";
++            this.releaseKeepAliveIfIdle();
++        },
++
++        doTranslate: function() {
++            try {
++                if (selectedIndices.length === 0) { showToast("请先选择文字");
++                return; }
++                if (!API_APP_ID || !API_APP_SECRET) { showToast("请先配置翻译接口的 APPID 和 秘钥");
++                return; }
++                if (isTranslating) { showToast("正在翻译中，请稍候...");
++                return; }
++
++                var self = this;
++                var usePreviewOverride = this.hasPreviewTextOverride();
++
++                if (usePreviewOverride) {
++                    var unionRange = this.collectSelectedUnionRange();
++                    if (!unionRange) { showToast("请先选择文字"); return; }
++                    var previewRange = {
++                        start: unionRange.start,
++                        end: unionRange.end,
++                        text: this.getSelectedText()
++                    };
++                    this.prepareRangeForTranslate(previewRange);
++                    if (previewRange.textToTranslate.length > 5000) { showToast("单段文本过长，最多支持5000字符"); return; }
++                    if (previewRange.textToTranslate.length === 0) { showToast("请先选择文字"); return; }
++
++                    isTranslating = true;
++                    showToast("正在翻译预览文字...");
++                    new java.lang.Thread(new java.lang.Runnable({
++                        run: function() {
++                            try {
++                                var translatedText = self.translateTextSyncWithRetry(previewRange.textToTranslate);
++                                translatedText = self.buildTranslatedRangeText(previewRange.translateParts, translatedText);
++                                translatedText = String(translatedText == null ? "" : translatedText) + String(previewRange.structuralSuffix || "");
++                                self.replaceSelectedRanges([{
++                                    start: previewRange.start,
++                                    end: previewRange.replaceEnd,
++                                    translatedText: translatedText,
++                                    selectedTextLength: translatedText.length - String(previewRange.structuralSuffix || "").length
++                                }]);
++                                showToast("翻译并替换完成");
++                            } catch (ePreview) {
++                                showToast(self.getTranslateErrorMessage(ePreview));
++                            } finally {
++                                isTranslating = false;
++                            }
++                        }
++                    })).start();
++                    return;
++                }
++
++                var ranges = this.collectSelectedRanges();
++                if (ranges.length === 0) { showToast("请先选择文字"); return; }
++                var translatableCount = 0;
++                for (var ri = 0; ri < ranges.length; ri++) {
++                    this.prepareRangeForTranslate(ranges[ri]);
++                    if (ranges[ri].textToTranslate.length > 5000) { showToast("单段文本过长，最多支持5000字符"); return; }
++                    if (ranges[ri].textToTranslate.length > 0) translatableCount++;
++                }
++                if (translatableCount === 0) { showToast("请先选择文字"); return; }
++
++                isTranslating = true;
++                showToast(ranges.length > 1 ? ("正在分段翻译 " + ranges.length + " 段...") : "正在翻译...");
++
++                new java.lang.Thread(new java.lang.Runnable({
++                    run: function() {
++                        try {
++                            var replacements = [];
++                            var translatedCount = 0;
++                            for (var i = 0; i < ranges.length; i++) {
++                                var translatedText = ranges[i].text;
++                                if (ranges[i].textToTranslate.length > 0) {
++                                    if (translatedCount > 0) java.lang.Thread.sleep(1200);
++                                    translatedText = self.translateTextSyncWithRetry(ranges[i].textToTranslate);
++                                    translatedText = self.buildTranslatedRangeText(ranges[i].translateParts, translatedText);
++                                    translatedCount++;
++                                }
++                                translatedText = String(translatedText == null ? "" : translatedText) + String(ranges[i].structuralSuffix || "");
++                                replacements.push({
++                                    start: ranges[i].start,
++                                    end: ranges[i].replaceEnd,
++                                    translatedText: translatedText,
++                                    selectedTextLength: translatedText.length - String(ranges[i].structuralSuffix || "").length
++                                });
++                            }
++                            self.replaceSelectedRanges(replacements);
++                            showToast(ranges.length > 1 ? ("翻译并替换完成，共" + ranges.length + "段") : "翻译并替换完成");
++                        } catch (e) {
++                            showToast(self.getTranslateErrorMessage(e));
++                        } finally {
++                            isTranslating = false;
++                        }
++                    }
++                })).start();
++            } catch (e) {
++                isTranslating = false;
++                showToast("翻译启动失败: " + e.message);
++            }
++        },
++
++        doCopy: function() {
++            if (selectedIndices.length === 0) { showToast("请先选择文字");
++            return; }
++            var text = this.getSelectedText(); setClipboard(text); showToast("已复制"); this.hide();
++        }
++    };
++
++    function refreshPickwordTheme20() {
++        try {
++            var cfg = appContext.getResources().getConfiguration();
++            var mode = cfg.uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
++            isDark = mode === android.content.res.Configuration.UI_MODE_NIGHT_YES;
++        } catch (eTheme) {
++            isDark = false;
++        }
++        try {
++            Colors.bg = isDark ? Color.parseColor("#0f172a") : Color.parseColor("#ffffff");
++            Colors.surface = isDark ? Color.parseColor("#1e293b") : Color.parseColor("#f8fafc");
++            Colors.surfaceVariant = isDark ? Color.parseColor("#334155") : Color.parseColor("#f1f5f9");
++            Colors.text = isDark ? Color.parseColor("#f8fafc") : Color.parseColor("#0f172a");
++            Colors.textSecondary = isDark ? Color.parseColor("#94a3b8") : Color.parseColor("#64748b");
++            Colors.textTertiary = isDark ? Color.parseColor("#64748b") : Color.parseColor("#94a3b8");
++            Colors.primaryLight = isDark ? Color.parseColor("#312e81") : Color.parseColor("#e0e7ff");
++            Colors.btnSecondaryBg = isDark ? Color.parseColor("#334155") : Color.parseColor("#f1f5f9");
++            Colors.btnSecondaryPressed = isDark ? Color.parseColor("#475569") : Color.parseColor("#e2e8f0");
++        } catch (eColors) {}
++    }
++
++    function normalizePickwordInput20(text) {
++        if (typeof text === 'function') text = text();
++        if (text === null || text === undefined) return "";
++        return typeof text === 'string' ? text : String(text);
++    }
++
++    function startBigBang(text) {
++        var raw = "";
++        var loaded = "";
++        try {
++            raw = normalizePickwordInput20(text);
++            if (!raw) return { ok: false, code: "EMPTY_TEXT", message: "文本为空" };
++
++            loaded = raw;
++            if (loaded.length > DIY_CONFIG.MAX_CHAR_LIMIT) {
++                loaded = loaded.substring(0, DIY_CONFIG.MAX_CHAR_LIMIT);
++                showToast("文本过长，拾字已载入前" + DIY_CONFIG.MAX_CHAR_LIMIT + "字");
++            }
++
++            refreshPickwordTheme20();
++            拾字Floaty.show(loaded);
++            return {
++                ok: true,
++                code: "PICKWORD_SHOWN",
++                originalLength: raw.length,
++                loadedLength: loaded.length,
++                truncated: loaded.length !== raw.length
++            };
++        } catch (e) {
++            appendMagnifierErrorLog("START", e, "startBigBang");
++            showToast("启动失败: " + e.message);
++            return { ok: false, code: "PICKWORD_FAILED", message: String(e) };
++        }
++    }
++
++    function cancelPickwordCallbacks20() {
++        try { if (longPressHandler) mainHandler.removeCallbacks(longPressHandler); } catch (e0) {}
++        try { if (autoScrollRunnable) mainHandler.removeCallbacks(autoScrollRunnable); } catch (e1) {}
++        try { if (keepAliveTimer) mainHandler.removeCallbacks(keepAliveTimer); } catch (e2) {}
++        try { if (pendingFullTextRunnable) mainHandler.removeCallbacks(pendingFullTextRunnable); } catch (e3) {}
++        try { if (pendingFingerPreviewWarmupRunnable) mainHandler.removeCallbacks(pendingFingerPreviewWarmupRunnable); } catch (e4) {}
++        try { if (pendingAdjustRunnable) mainHandler.removeCallbacks(pendingAdjustRunnable); } catch (e5) {}
++        try { if (pendingDragUpdate) mainHandler.removeCallbacks(pendingDragUpdate); } catch (e6) {}
++        try { if (pinBatchLoadRunnable) mainHandler.removeCallbacks(pinBatchLoadRunnable); } catch (e7) {}
++        try { 拾字Floaty.stopCanvasScrollRefresh(); } catch (e8) {}
++        longPressHandler = null;
++        autoScrollRunnable = null;
++        keepAliveTimer = null;
++        pendingFullTextRunnable = null;
++        pendingFingerPreviewWarmupRunnable = null;
++        pendingAdjustRunnable = null;
++        pendingDragUpdate = null;
++        pinBatchLoadRunnable = null;
++        pinLoadToken++;
++    }
++
++    function installPickword20() {
++        try {
++            if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
++            var proto = FloatBallAppWM.prototype;
++            if (proto.__toolHubPickwordInstalled === true) return true;
++
++            proto.showPickwordText = function(text, meta) {
++                var raw = normalizePickwordInput20(text);
++                if (!raw) return { ok: false, code: "EMPTY_TEXT", message: "文本为空" };
++                if (!this.state) return { ok: false, code: "APP_STATE_UNAVAILABLE", message: "ToolHub 状态不可用" };
++                if (!this.state.pickword) {
++                    this.state.pickword = {
++                        generation: 0,
++                        showing: false,
++                        fullText: "",
++                        loadedText: "",
++                        meta: null,
++                        lastResult: null
++                    };
++                }
++                var ps = this.state.pickword;
++                ps.generation = Number(ps.generation || 0) + 1;
++                ps.fullText = raw;
++                ps.loadedText = raw.length > DIY_CONFIG.MAX_CHAR_LIMIT
++                    ? raw.substring(0, DIY_CONFIG.MAX_CHAR_LIMIT)
++                    : raw;
++                ps.meta = meta || null;
++                var ret = startBigBang(raw);
++                ps.lastResult = ret;
++                ps.showing = !!(ret && ret.ok);
++                try {
++                    safeLog(this.L, ret && ret.ok ? 'i' : 'w',
++                        "pickword show ok=" + String(!!(ret && ret.ok)) +
++                        " originalLen=" + String(raw.length) +
