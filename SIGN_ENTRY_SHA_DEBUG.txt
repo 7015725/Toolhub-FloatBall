@@ -1,19 +1,20 @@
 
 == checkout ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
-sha_file=1c458d020acd214a1e716daf4d5aa2e7f46207dd9ba73a98a633e0c67b34301a  ToolHub.js
-?? SIGN_ENTRY_SHA_DEBUG.txt
+sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
+ M SIGN_ENTRY_SHA_DEBUG.txt
 
 $ generate
 == ToolHub signing review ==
 -- git status --
-?? SIGN_ENTRY_SHA_DEBUG.txt
+ M SIGN_ENTRY_SHA_DEBUG.txt
 -- git diff --stat --
-no unstaged diff
+ SIGN_ENTRY_SHA_DEBUG.txt | 251 +----------------------------------------------
+ 1 file changed, 2 insertions(+), 249 deletions(-)
 -- staged diff --stat --
 no staged diff
 == signed manifest ==
-manifest_version=20260713020100
+manifest_version=20260713020316
 key_id=toolhub-targets-20260703-rsa3072
 signed_files=24
 release_title=合并 ToolHub 入口目录可写探针
@@ -24,35 +25,20 @@ exit_status=0
 == after generate ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
 
 $ manifest
-  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_entry_writable_probe.py", line 39
-    assert_body_end = ENTRY.find('
-                                 ^
-SyntaxError: unterminated string literal (detected at line 39)
-Traceback (most recent call last):
-  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_manifest.py", line 123, in <module>
-    main()
-    ~~~~^^
-  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_manifest.py", line 113, in main
-    subprocess.check_call([sys.executable, "-m", "py_compile"] + py_files, cwd=str(ROOT))
-    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.14.6/x64/lib/python3.14/subprocess.py", line 420, in check_call
-    raise CalledProcessError(retcode, cmd)
-subprocess.CalledProcessError: Command '['/opt/hostedtoolcache/Python/3.14.6/x64/bin/python3', '-m', 'py_compile', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/.github/scripts/es5_scan.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/.github/scripts/verify_manifest_signature.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/generate_signed_manifest.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/report_dead_module_symbols.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/report_entry_symbols.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/report_protected_wrapper_chains.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/report_th09_animation_symbols.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/report_th15_extra_symbols.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_atomic_update.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_ball_position_state.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_ball_rebuild_rollback.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_button_editor_layout.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_content_security.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_documentation_consistency.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_entry_lifecycle.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_entry_redundancy_cleanup.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_entry_writable_probe.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_github_only_source.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_js_syntax.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_manifest.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_module_boundaries.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_module_versions.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_pointer_regressions.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_release_transaction.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_schema_validator.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_shell_bridge_security.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_shell_log_redaction.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_shortcut_security.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_sqlite_debounce_race.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_sqlite_storage.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_startup_status.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_toolapp_layout.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_update_security_mode.py']' returned non-zero exit status 1.
-exit_status=1
+OK manifest_version=20260713020316 files=24 entry_sha=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd
+exit_status=0
 
 == after manifest ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
 
 $ es5
 ES5_ERRORS 0
@@ -61,10 +47,9 @@ exit_status=0
 == after es5 ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
 
 $ syntax
 OK: JavaScript syntax valid for 24 modules
@@ -73,10 +58,9 @@ exit_status=0
 == after syntax ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
 
 $ sqlite
 PASS storage-core
@@ -87,10 +71,9 @@ exit_status=0
 == after sqlite ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
 
 $ position
 OK ball_position_state fixed_edge=1 final_raw=1 edge_layout=1 animation=1 reflow=1 module_order=1
@@ -99,10 +82,9 @@ exit_status=0
 == after position ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
 
 $ toolapp
 OK toolapp_layout checks=22 groups=adaptive-size,shared,single-root
@@ -111,10 +93,9 @@ exit_status=0
 == after toolapp ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
 
 $ button
 Button manager/editor layout verification OK
@@ -123,10 +104,9 @@ exit_status=0
 == after button ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
 
 $ schema
 schema_validator_ok keys=15 settings_effects=1
@@ -135,10 +115,9 @@ exit_status=0
 == after schema ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
 
 $ pointer
 PASS issue-85 / W1 pending fallback stops OCR override
@@ -240,15 +219,13 @@ PASS pointer-core / OCR residue absent pickBallSide18
 PASS pointer-core / OCR residue absent 启动反馈：子模块加载完成
 PASS pointer-core / th18 performance extension remains
 PASS pointer-core / th18 OCR extension remains
-FAIL shared / manifest: scripts/verify_manifest.py failed:
-ayout.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_content_security.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_documentation_consistency.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_entry_lifecycle.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_entry_redundancy_cleanup.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_entry_writable_probe.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_github_only_source.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_js_syntax.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_manifest.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_module_boundaries.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_module_versions.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_pointer_regressions.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_release_transaction.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_schema_validator.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_shell_bridge_security.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_shell_log_redaction.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_shortcut_security.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_sqlite_debounce_race.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_sqlite_storage.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_startup_status.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_toolapp_layout.py', '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_update_security_mode.py']' returned non-zero exit status 1.
-FAIL pointer_regressions passed=99 failed=1
-exit_status=1
+PASS shared / manifest
+OK pointer_regressions issue85=17 text_release=47 pointer_core=35 total=100
+exit_status=0
 
 == after pointer ==
 5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
 sha_file=5d1c9b4e0823fe78292560ca57e04b0bb1014d95b3a4c0da44aba56bbf018ccd  ToolHub.js
- M ToolHub.js.sha256
+ M SIGN_ENTRY_SHA_DEBUG.txt
  M manifest.json
  M manifest.sig
-?? SIGN_ENTRY_SHA_DEBUG.txt
