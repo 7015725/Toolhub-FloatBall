@@ -107,9 +107,9 @@
       "version": "1.0.12"
     },
     "th_17_pointer.js": {
-      "sha256": "ee11596b872cfbdfbbf4748ec334742cf51a8e7d011e18a3bf65fa590c5b72dd",
-      "size": 144633,
-      "version": "1.2.0"
+      "sha256": "662fc93ab55c3abbab4c6c7f79c74aee546d8d500278070a73b27d24e332040b",
+      "size": 151492,
+      "version": "1.2.1"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "dfe25b26e7365d9c92bb7f543ff42e5462fd7d65e6aa8bf80fa455a0efc33a37",
@@ -135,10 +135,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复拾字窗口首次高度跳变"
+      "修复指针无障碍取字偶发失效"
     ],
-    "title": "修复拾字窗口首次高度跳变"
+    "title": "修复指针无障碍取字偶发失效"
   },
   "schema": 3,
-  "version": 20260713095125
+  "version": 20260713100836
 }
