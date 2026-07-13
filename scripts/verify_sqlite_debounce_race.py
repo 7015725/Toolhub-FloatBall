@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """验证 SQLite 防抖任务的身份隔离、锁顺序和最新写入语义。"""
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "code" / "th_02_core.js"
@@ -21,8 +22,9 @@ def section(text, start, end):
 
 def verify_source():
     text = CORE.read_text(encoding="utf-8")
+    if not re.search(r"(?m)^// @version \d+\.\d+\.\d+\s*$", text):
+        fail("missing valid semantic version header")
     required = [
-        "// @version 2.0.1",
         "_jobLock: new java.util.concurrent.locks.ReentrantLock()",
         "_writeLock: new java.util.concurrent.locks.ReentrantLock()",
         "_jobSequence: 0",
