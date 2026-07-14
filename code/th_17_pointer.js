@@ -1,4 +1,4 @@
-// @version 1.2.3
+// @version 1.2.4
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -987,7 +987,22 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       captureRect: null,
       visualRect: null,
       frameKind: "",
-      paint: null
+      paint: null,
+      fallbackPaint: null,
+      drawCount: 0,
+      drawSuccessCount: 0,
+      drawFailCount: 0,
+      lastDrawAt: 0,
+      lastDrawError: "",
+      drawErrorLogged: false,
+      drawFirstSuccessLogged: false,
+      drawInvalidateErrorLogged: false,
+      drawHealthFailureLogged: false,
+      drawRecoveryTried: false,
+      drawFallbackMode: false,
+      drawShadowDisabled: false,
+      drawHealthRunnable: null,
+      drawHealthToken: 0
     };
   }
   var st = this.state.pointerTool;
@@ -1029,6 +1044,22 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   st.dragStarted = false;
   st.moved = false;
   st.closed = false;
+  try { if (st.handler && st.drawHealthRunnable) st.handler.removeCallbacks(st.drawHealthRunnable); } catch (eRemoveDrawHealthReset) {}
+  st.drawHealthRunnable = null;
+  st.drawHealthToken = Number(st.drawHealthToken || 0) + 1;
+  st.drawCount = 0;
+  st.drawSuccessCount = 0;
+  st.drawFailCount = 0;
+  st.lastDrawAt = 0;
+  st.lastDrawError = "";
+  st.drawErrorLogged = false;
+  st.drawFirstSuccessLogged = false;
+  st.drawInvalidateErrorLogged = false;
+  st.drawHealthFailureLogged = false;
+  st.drawRecoveryTried = false;
+  st.drawFallbackMode = false;
+  st.drawShadowDisabled = false;
+  st.fallbackPaint = null;
   st.dragUpdatePosted = false;
   st.inspectPosted = false;
   st.draggingInspectPosted = false;
@@ -1415,6 +1446,9 @@ FloatBallAppWM.prototype.closePointerTool = function(reason, suppressCancel) {
   st.closed = true;
   st.dragging = false;
   st.dragStarted = false;
+  try { if (st.handler && st.drawHealthRunnable) st.handler.removeCallbacks(st.drawHealthRunnable); } catch (eRemoveDrawHealthClose) {}
+  st.drawHealthRunnable = null;
+  st.drawHealthToken = Number(st.drawHealthToken || 0) + 1;
   try { this.hidePointerAreaFrame(); } catch (eFrame) { safeLog(this.L, 'e', "closePointerTool frame fail: " + String(eFrame)); }
   try {
     if (st.added && st.root) {
@@ -1426,6 +1460,7 @@ FloatBallAppWM.prototype.closePointerTool = function(reason, suppressCancel) {
   st.lp = null;
   st.added = false;
   st.paint = null;
+  st.fallbackPaint = null;
   if (!st.resultJson && suppressCancel !== true) {
     this.setPointerToolResult({ ok: false, type: "cancel", code: "USER_CANCEL", message: String(reason || "用户取消") });
   }
@@ -1693,7 +1728,7 @@ FloatBallAppWM.prototype.onPointerScreenChangedReflow = function(reason, oldW, o
     } catch(eRestartHoldReflow) {}
   }
 
-  try { if (st.root) st.root.invalidate(); } catch (ePointerInvalidate) {}
+  try { this.requestPointerRedraw(st); } catch (ePointerInvalidate) {}
   safeLog(this.L, 'i',
     "pointer screen reflow reason=" + String(reason || "") +
     " old=" + String(oldW) + "x" + String(oldH) +
@@ -1704,11 +1739,169 @@ FloatBallAppWM.prototype.onPointerScreenChangedReflow = function(reason, oldW, o
   return true;
 };
 
+FloatBallAppWM.prototype.recordPointerDrawFailure = function(st, stage, errorObj) {
+  var pointerState = st || this.ensurePointerToolState();
+  if (!pointerState) return false;
+  pointerState.drawFailCount = Number(pointerState.drawFailCount || 0) + 1;
+  pointerState.lastDrawError = String(errorObj || "unknown");
+  if (pointerState.drawErrorLogged === true) return false;
+  pointerState.drawErrorLogged = true;
+  try {
+    safeLog(this.L, 'e',
+      "pointer draw fail stage=" + String(stage || "unknown") +
+      " error=" + String(pointerState.lastDrawError) +
+      " size=" + String(pointerState.pointerW || 0) + "x" + String(pointerState.pointerH || 0) +
+      " pos=" + String(pointerState.pointerX || 0) + "," + String(pointerState.pointerY || 0) +
+      " scale=" + String(pointerState.pointerScale || 1) +
+      " mode=" + String(pointerState.mode || "")
+    );
+  } catch (eLog) {}
+  return true;
+};
+
+FloatBallAppWM.prototype.requestPointerRedraw = function(st) {
+  var pointerState = st || this.ensurePointerToolState();
+  if (!pointerState || !pointerState.root) return false;
+  try {
+    if (pointerState.root.postInvalidateOnAnimation) pointerState.root.postInvalidateOnAnimation();
+    else pointerState.root.invalidate();
+    return true;
+  } catch (eInvalidate) {
+    if (pointerState.drawInvalidateErrorLogged !== true) {
+      pointerState.drawInvalidateErrorLogged = true;
+      try { safeLog(this.L, 'w', "pointer redraw request fail: " + String(eInvalidate)); } catch (eLog) {}
+    }
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.drawPointerFallback = function(canvas, st, path, rgb, dp, tipX, tipY, active) {
+  var p = st.fallbackPaint;
+  if (!p) {
+    p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    st.fallbackPaint = p;
+  }
+  try { p.setShader(null); p.clearShadowLayer(); } catch (eClear) {}
+  p.setAntiAlias(true);
+  p.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+  p.setStrokeJoin(android.graphics.Paint.Join.ROUND);
+  p.setStyle(android.graphics.Paint.Style.FILL);
+  p.setARGB(active ? 238 : 222, 255, 255, 255);
+  canvas.drawPath(path, p);
+  p.setStyle(android.graphics.Paint.Style.STROKE);
+  p.setStrokeWidth(dp(active ? 2.2 : 2.0));
+  p.setARGB(255, rgb.r, rgb.g, rgb.b);
+  canvas.drawPath(path, p);
+  p.setStyle(android.graphics.Paint.Style.FILL);
+  p.setARGB(255, rgb.r, rgb.g, rgb.b);
+  canvas.drawCircle(tipX, tipY, dp(active ? 2.2 : 1.8), p);
+  return true;
+};
+
+FloatBallAppWM.prototype.rebuildPointerWindowForDraw = function(st, reason) {
+  var pointerState = st || this.ensurePointerToolState();
+  if (!pointerState || !pointerState.active || pointerState.closed) return false;
+  var oldRoot = pointerState.root;
+  var removed = !pointerState.added || !oldRoot;
+  try {
+    if (!removed && pointerState.wm) {
+      if (pointerState.wm.removeViewImmediate) pointerState.wm.removeViewImmediate(oldRoot);
+      else pointerState.wm.removeView(oldRoot);
+      removed = true;
+    }
+  } catch (eRemove) {
+    var removeMessage = String(eRemove || "");
+    if (removeMessage.indexOf("not attached") >= 0 || removeMessage.indexOf("not been added") >= 0) {
+      removed = true;
+    } else {
+      this.recordPointerDrawFailure(pointerState, "rebuild_remove", eRemove);
+      return false;
+    }
+  }
+  if (!removed) return false;
+
+  pointerState.added = false;
+  pointerState.root = null;
+  pointerState.paint = null;
+  pointerState.fallbackPaint = null;
+  pointerState.drawFallbackMode = true;
+  pointerState.drawShadowDisabled = true;
+  try {
+    pointerState.root = this.createPointerCanvasView(pointerState);
+    if (!pointerState.lp) pointerState.lp = this.createPointerLayoutParams(pointerState);
+    pointerState.wm.addView(pointerState.root, pointerState.lp);
+    pointerState.added = true;
+    pointerState.root.setVisibility(android.view.View.VISIBLE);
+    this.requestPointerRedraw(pointerState);
+    try { safeLog(this.L, 'w', "pointer draw window rebuilt reason=" + String(reason || "health_check")); } catch (eLog) {}
+    return true;
+  } catch (eAdd) {
+    pointerState.added = false;
+    this.recordPointerDrawFailure(pointerState, "rebuild_add", eAdd);
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.schedulePointerDrawHealthCheck = function(st, delayMs) {
+  var pointerState = st || this.ensurePointerToolState();
+  if (!pointerState || !pointerState.active || pointerState.closed) return false;
+  if (!pointerState.handler) pointerState.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
+  try {
+    if (pointerState.drawHealthRunnable) pointerState.handler.removeCallbacks(pointerState.drawHealthRunnable);
+  } catch (eRemove) {}
+  pointerState.drawHealthToken = Number(pointerState.drawHealthToken || 0) + 1;
+  var token = Number(pointerState.drawHealthToken);
+  var waitMs = Math.max(80, Math.min(500, Number(delayMs || 120)));
+  var self = this;
+  pointerState.drawHealthRunnable = new java.lang.Runnable({ run: function() {
+    try {
+      if (Number(pointerState.drawHealthToken || 0) !== token) return;
+      pointerState.drawHealthRunnable = null;
+      if (!pointerState.active || pointerState.closed || !pointerState.added || !pointerState.root) return;
+      if (Number(pointerState.drawSuccessCount || 0) > 0) return;
+      if (pointerState.drawRecoveryTried !== true) {
+        pointerState.drawRecoveryTried = true;
+        pointerState.drawFallbackMode = true;
+        pointerState.drawShadowDisabled = true;
+        try { safeLog(self.L, 'w', "pointer draw first frame missing, rebuild fallback window"); } catch (eLog) {}
+        if (self.rebuildPointerWindowForDraw(pointerState, "first_frame_missing")) {
+          self.schedulePointerDrawHealthCheck(pointerState, 180);
+        }
+        return;
+      }
+      if (pointerState.drawHealthFailureLogged !== true) {
+        pointerState.drawHealthFailureLogged = true;
+        try {
+          safeLog(self.L, 'e',
+            "pointer draw unavailable after recovery" +
+            " count=" + String(pointerState.drawCount || 0) +
+            " failures=" + String(pointerState.drawFailCount || 0) +
+            " last=" + String(pointerState.lastDrawError || "")
+          );
+        } catch (eHealthLog) {}
+      }
+    } catch (eRun) {
+      self.recordPointerDrawFailure(pointerState, "health_check", eRun);
+    }
+  }});
+  try {
+    pointerState.handler.postDelayed(pointerState.drawHealthRunnable, waitMs);
+    return true;
+  } catch (ePost) {
+    pointerState.drawHealthRunnable = null;
+    this.recordPointerDrawFailure(pointerState, "health_post", ePost);
+  }
+  return false;
+};
+
 FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
   var self = this;
   st.paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
   var PointerView = new JavaAdapter(android.view.View, {
     onDraw: function(canvas) {
+      var stage = "prepare";
+      var drawn = false;
+      st.drawCount = Number(st.drawCount || 0) + 1;
       try {
         var p = st.paint;
         var pointerScale = Number(st.pointerScale || 1);
@@ -1736,14 +1929,8 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         } else {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_NORMAL_HEX", 76, 124, 160);
         }
-        var accentR = rgb.r;
-        var accentG = rgb.g;
-        var accentB = rgb.b;
-        p.setAntiAlias(true);
-        p.setStrokeCap(android.graphics.Paint.Cap.ROUND);
-        p.setStrokeJoin(android.graphics.Paint.Join.ROUND);
-        try { p.setShader(null); p.clearShadowLayer(); } catch (e0) {}
 
+        stage = "path";
         var path = new android.graphics.Path();
         path.moveTo(tipX, tipY);
         path.lineTo(tipX, tipY + dp(27));
@@ -1754,34 +1941,104 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         path.lineTo(tipX + dp(24), tipY + dp(19));
         path.close();
 
-        try { toolhubSafeSetShadowLayer(p, dp(3), dp(1), dp(1.5), th17Color(74, 0, 0, 0)); } catch (e1) {}
-        p.setStyle(android.graphics.Paint.Style.FILL);
-        p.setARGB(active ? 92 : (dragging ? 76 : 58), accentR, accentG, accentB);
-        canvas.drawPath(path, p);
+        if (st.drawFallbackMode === true) {
+          stage = "fallback";
+          self.drawPointerFallback(canvas, st, path, rgb, dp, tipX, tipY, active);
+          drawn = true;
+        } else {
+          stage = "paint_setup";
+          p.setAntiAlias(true);
+          p.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+          p.setStrokeJoin(android.graphics.Paint.Join.ROUND);
+          try { p.setShader(null); p.clearShadowLayer(); } catch (eClearPaint) {}
 
-        p.setStyle(android.graphics.Paint.Style.FILL);
-        p.setARGB(active ? 230 : 210, 255, 255, 255);
-        canvas.drawPath(path, p);
-        try { p.clearShadowLayer(); } catch (e2) {}
+          if (st.drawShadowDisabled !== true) {
+            try {
+              toolhubSafeSetShadowLayer(p, dp(3), dp(1), dp(1.5), th17Color(74, 0, 0, 0));
+            } catch (eShadow) {
+              st.drawShadowDisabled = true;
+              try { p.clearShadowLayer(); } catch (eClearShadow) {}
+              self.recordPointerDrawFailure(st, "shadow", eShadow);
+            }
+          }
 
-        p.setStyle(android.graphics.Paint.Style.STROKE);
-        p.setStrokeWidth(dp(active ? 2.2 : 2.0));
-        p.setARGB(active ? 255 : 235, accentR, accentG, accentB);
-        canvas.drawPath(path, p);
+          stage = "accent_fill";
+          p.setStyle(android.graphics.Paint.Style.FILL);
+          p.setARGB(active ? 92 : (dragging ? 76 : 58), rgb.r, rgb.g, rgb.b);
+          canvas.drawPath(path, p);
 
-        p.setStrokeWidth(dp(active ? 1.45 : 1.25));
-        p.setARGB(active ? 245 : 210, accentR, accentG, accentB);
-        canvas.drawLine(tipX + dp(2.5), tipY + dp(7), tipX + dp(2.5), tipY + dp(20), p);
-        canvas.drawLine(tipX + dp(3.5), tipY + dp(20), tipX + dp(8.5), tipY + dp(16), p);
+          stage = "white_fill";
+          p.setStyle(android.graphics.Paint.Style.FILL);
+          p.setARGB(active ? 230 : 210, 255, 255, 255);
+          canvas.drawPath(path, p);
+          try { p.clearShadowLayer(); } catch (eClearShadow2) {}
 
-        p.setStyle(android.graphics.Paint.Style.FILL);
-        p.setARGB(255, accentR, accentG, accentB);
-        canvas.drawCircle(tipX, tipY, dp(active ? 2.2 : 1.8), p);
+          stage = "outline";
+          p.setStyle(android.graphics.Paint.Style.STROKE);
+          p.setStrokeWidth(dp(active ? 2.2 : 2.0));
+          p.setARGB(active ? 255 : 235, rgb.r, rgb.g, rgb.b);
+          canvas.drawPath(path, p);
 
-      } catch (drawError) {}
+          stage = "detail";
+          p.setStrokeWidth(dp(active ? 1.45 : 1.25));
+          p.setARGB(active ? 245 : 210, rgb.r, rgb.g, rgb.b);
+          canvas.drawLine(tipX + dp(2.5), tipY + dp(7), tipX + dp(2.5), tipY + dp(20), p);
+          canvas.drawLine(tipX + dp(3.5), tipY + dp(20), tipX + dp(8.5), tipY + dp(16), p);
+
+          stage = "hotspot";
+          p.setStyle(android.graphics.Paint.Style.FILL);
+          p.setARGB(255, rgb.r, rgb.g, rgb.b);
+          canvas.drawCircle(tipX, tipY, dp(active ? 2.2 : 1.8), p);
+          drawn = true;
+        }
+      } catch (drawError) {
+        self.recordPointerDrawFailure(st, stage, drawError);
+        st.drawFallbackMode = true;
+        st.drawShadowDisabled = true;
+        try {
+          var fallbackScale = Number(st.pointerScale || 1);
+          if (isNaN(fallbackScale) || fallbackScale <= 0) fallbackScale = 1;
+          var fallbackDp = function(v) { return self.dp(Number(v) * fallbackScale); };
+          var fallbackTipX = st.anchorLocalX;
+          var fallbackTipY = st.anchorLocalY;
+          var fallbackRgb = th17PointerColorRgb(self, "POINTER_COLOR_NORMAL_HEX", 76, 124, 160);
+          var fallbackPath = new android.graphics.Path();
+          fallbackPath.moveTo(fallbackTipX, fallbackTipY);
+          fallbackPath.lineTo(fallbackTipX, fallbackTipY + fallbackDp(27));
+          fallbackPath.lineTo(fallbackTipX + fallbackDp(7), fallbackTipY + fallbackDp(21));
+          fallbackPath.lineTo(fallbackTipX + fallbackDp(12), fallbackTipY + fallbackDp(32));
+          fallbackPath.lineTo(fallbackTipX + fallbackDp(19), fallbackTipY + fallbackDp(29));
+          fallbackPath.lineTo(fallbackTipX + fallbackDp(14), fallbackTipY + fallbackDp(19));
+          fallbackPath.lineTo(fallbackTipX + fallbackDp(24), fallbackTipY + fallbackDp(19));
+          fallbackPath.close();
+          self.drawPointerFallback(canvas, st, fallbackPath, fallbackRgb, fallbackDp, fallbackTipX, fallbackTipY, false);
+          drawn = true;
+        } catch (fallbackError) {
+          self.recordPointerDrawFailure(st, "fallback", fallbackError);
+        }
+      }
+
+      if (drawn) {
+        st.drawSuccessCount = Number(st.drawSuccessCount || 0) + 1;
+        st.lastDrawAt = th17Now();
+        if (st.drawFirstSuccessLogged !== true) {
+          st.drawFirstSuccessLogged = true;
+          try {
+            safeLog(self.L, 'd',
+              "pointer draw first success fallback=" + String(st.drawFallbackMode === true) +
+              " recovery=" + String(st.drawRecoveryTried === true)
+            );
+          } catch (eSuccessLog) {}
+        }
+      }
     }
   }, context);
-  try { PointerView.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null); } catch (eLayer) {}
+  if (st.drawFallbackMode !== true) {
+    try { PointerView.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null); } catch (eLayer) {
+      st.drawShadowDisabled = true;
+      this.recordPointerDrawFailure(st, "software_layer", eLayer);
+    }
+  }
   return PointerView;
 };
 
@@ -1828,8 +2085,11 @@ FloatBallAppWM.prototype.showPointerWindow = function(st) {
       st.added = true;
     }
     try { st.root.setVisibility(android.view.View.VISIBLE); } catch (eVisible) {}
+    this.requestPointerRedraw(st);
+    this.schedulePointerDrawHealthCheck(st, 120);
     return true;
   } catch (e0) {
+    this.recordPointerDrawFailure(st, "show_window", e0);
     safeLog(this.L, 'e', "showPointerWindow fail: " + String(e0));
     return false;
   }
@@ -1872,7 +2132,29 @@ FloatBallAppWM.prototype.schedulePointerMove = function(x, y) {
       st.lp.y = st.pendingPointerY;
       st.pointerX = st.lp.x;
       st.pointerY = st.lp.y;
-      try { st.wm.updateViewLayout(st.root, st.lp); } catch (eU) { safeLog(self.L, 'e', "pointer update fail: " + String(eU)); }
+      var pointerLayoutUpdated = true;
+      try {
+        st.wm.updateViewLayout(st.root, st.lp);
+      } catch (eU) {
+        pointerLayoutUpdated = false;
+        safeLog(self.L, 'e', "pointer update fail: " + String(eU));
+        var updateMessage = String(eU || "");
+        if (updateMessage.indexOf("not attached") >= 0 ||
+            updateMessage.indexOf("Invalid display") >= 0 ||
+            updateMessage.indexOf("BadTokenException") >= 0) {
+          st.added = false;
+          st.root = null;
+          st.lp = null;
+          st.paint = null;
+          st.fallbackPaint = null;
+          st.drawFallbackMode = true;
+          st.drawShadowDisabled = true;
+          try { self.showPointerWindow(st); } catch (eRecoverWindow) {
+            self.recordPointerDrawFailure(st, "move_recover", eRecoverWindow);
+          }
+        }
+      }
+      if (pointerLayoutUpdated) self.requestPointerRedraw(st);
       if (st.mode === "area_capture") self.updatePointerAreaSelection();
       else {
         try { self.updatePointerTextStableMotion(th17Now()); } catch (eTextStable) {}
