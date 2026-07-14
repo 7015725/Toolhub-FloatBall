@@ -1,0 +1,49 @@
+status=failed
+$ python3 -m py_compile scripts/verify_schema_validator.py scripts/verify_main_panel_adaptive_layout.py scripts/verify_panel_layout_settings_cleanup.py
+
+exit=0
+
+$ python3 .github/scripts/es5_scan.py
+ES5_ERRORS 0
+exit=0
+
+$ python3 scripts/verify_js_syntax.py
+OK: JavaScript syntax valid for 27 modules
+exit=0
+
+$ python3 scripts/verify_schema_validator.py
+schema_validator_ok keys=18 settings_effects=1
+exit=0
+
+$ python3 scripts/verify_main_panel_runtime_status.py
+OK main_panel_runtime_status methods=6 refresh_ms=800 states=11
+exit=0
+
+$ python3 scripts/verify_main_panel_drag_sort.py
+OK main_panel_drag_sort methods=18 save_calls=1 visible_slots=preserved
+exit=0
+
+$ python3 scripts/verify_main_panel_paging.py
+OK main_panel_paging methods=11 clickable_dots=1 snap=nearest lifecycle=guarded
+exit=0
+
+$ python3 scripts/verify_main_panel_adaptive_layout.py
+OK main_panel_adaptive_layout model=2/3/5/6 width=grid-derived gap=exact
+exit=0
+
+$ python3 scripts/verify_panel_layout_settings_cleanup.py
+OK panel_layout_settings_cleanup ranges=expanded removed=3 preview=shared gap=zero-safe
+exit=0
+
+$ python3 scripts/verify_main_panel_grid_sizing.py
+OK main_panel_grid_sizing width=grid height=viewport window=exact
+exit=0
+
+$ python3 scripts/verify_main_panel_visual_tuning.py
+OK main_panel_visual_tuning settings=normalized alpha=0.92 custom_alpha=preserved single_page_dots=hidden footer=8dp handle=removed
+exit=0
+
+$ python3 scripts/verify_main_panel_close_lifecycle.py
+FAIL main-panel-close-lifecycle: missing unchanged main panel module version: // @version 1.5.0
+exit=1
+
