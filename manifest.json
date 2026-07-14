@@ -105,14 +105,14 @@
       "version": "1.0.3"
     },
     "th_15_extra.js": {
-      "sha256": "3bffd60027139803db74b3ba1ee9ed99919a099114d395f176060767489f891c",
-      "size": 122745,
-      "version": "1.1.12"
+      "sha256": "f2ff8ec89035aefb5059cddba1b0393a2815a661aac3941ce0f129b71c22d361",
+      "size": 123862,
+      "version": "1.1.13"
     },
     "th_15_main_panel.js": {
-      "sha256": "3a070d60066e75b191abeaeaec729243138ce25132b7a24342244aa98b1eaa72",
-      "size": 73452,
-      "version": "1.4.1"
+      "sha256": "50f1a948b51ee4a3591eb0f9b35afb3a5162566dd6d1e60630067b917e66ac2c",
+      "size": 75595,
+      "version": "1.5.0"
     },
     "th_16_entry.js": {
       "sha256": "64b7bc7c0a16667536dabaa9bedbb8b0d36f57ad9efb78790809446adf2975ae",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "微调主面板配置显示与单页底部"
+      "修复主面板网格与窗口尺寸不一致"
     ],
-    "title": "微调主面板配置显示与单页底部"
+    "title": "修复主面板网格与窗口尺寸不一致"
   },
   "schema": 3,
-  "version": 20260714031057
+  "version": 20260714040408
 }
