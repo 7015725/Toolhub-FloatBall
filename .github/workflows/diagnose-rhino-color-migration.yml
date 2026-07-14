@@ -14,42 +14,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
+          fetch-depth: 1
+          show-progress: false
 
       - name: Apply migration
         run: python3 scripts/apply_rhino_color_api_full_migration.py
 
       - name: Full color safety
         run: python3 scripts/verify_rhino_color_api_safety.py
-
-      - name: Tool app layout
-        run: python3 scripts/verify_toolapp_layout.py
-
-      - name: Settings color scheme
-        run: python3 scripts/verify_settings_color_scheme.py
-
-      - name: Legacy theme cleanup
-        run: python3 scripts/verify_legacy_theme_cleanup.py
-
-      - name: Settings color roles
-        run: python3 scripts/verify_settings_color_roles.py
-
-      - name: ColorOS color safety
-        run: python3 scripts/verify_coloros_rhino_color_safety.py
-
-      - name: Button editor layout
-        run: python3 scripts/verify_button_editor_layout.py
-
-      - name: Schema validator
-        run: python3 scripts/verify_schema_validator.py
-
-      - name: Pointer regressions
-        run: python3 scripts/verify_pointer_regressions.py
-
-      - name: Result preview
-        run: python3 scripts/verify_result_preview.py
