@@ -1,0 +1,29 @@
+=== active/config references ===
+code/th_01_base.js:150:    // PANEL_COLS / PANEL_ITEM_SIZE_DP 仅保留给旧面板回退链；
+code/th_01_base.js:152:    PANEL_COLS: { type: "int", min: 1, max: 6, default: 1 },
+code/th_01_base.js:153:    PANEL_ITEM_SIZE_DP: { type: "int", min: 48, max: 120, default: 64 },
+code/th_01_base.js:911:        PANEL_COLS: 1,
+code/th_01_base.js:912:        PANEL_ITEM_SIZE_DP: 60,
+code/th_01_base.js:1093:            sStr.indexOf("\"PANEL_COLS\"") >= 0 ||
+code/th_01_base.js:1094:            sStr.indexOf("\"PANEL_ITEM_SIZE_DP\"") >= 0
+code/th_15_extra.js:79:FloatBallAppWM.prototype.buildPanelView = function(panelType) {
+code/th_15_extra.js:136:  var cols2 = this.config.PANEL_COLS;
+code/th_15_extra.js:139:  var itemPx = this.dp(this.config.PANEL_ITEM_SIZE_DP);
+code/th_15_extra.js:335:FloatBallAppWM.prototype.computePanelX = function(ballX, panelW) {
+code/th_15_extra.js:366:FloatBallAppWM.prototype.tryAdjustPanelY = function(px, py, pw, ph, bx, by) {
+code/th_15_extra.js:2452:        var px = self.computePanelX(bx, pw);
+code/th_15_extra.js:2455:        var r = self.tryAdjustPanelY(px, py, pw, ph, bx, by);
+code/th_05_persistence.js:59:         k === "PANEL_COLS" ||
+code/th_05_persistence.js:60:         k === "PANEL_ITEM_SIZE_DP" ||
+code/th_16_entry.js:603:    layout: { cols: this.config.PANEL_COLS, rows: this.config.PANEL_ROWS },
+scripts/verify_panel_layout_settings_cleanup.py:94:extra_end = EXTRA.find("FloatBallAppWM.prototype.computePanelX", extra_start)
+scripts/verify_panel_layout_settings_cleanup.py:117:forbid(preview, "this.computePanelX(", "legacy preview x")
+scripts/verify_panel_layout_settings_cleanup.py:118:forbid(preview, "this.tryAdjustPanelY(", "legacy preview y")
+=== main panel builders/calls ===
+code/th_14_panels.js:1368:  var raw = this.buildPanelView(route);
+code/th_15_main_panel.js:1469:FloatBallAppWM.prototype.buildMainPanelView = function() {
+code/th_15_extra.js:914:    var raw = this.buildPanelView(r);
+code/th_15_extra.js:1668:    var raw = this.buildPanelView(r);
+code/th_15_extra.js:1783:          var newPanel = self.buildPanelView(type);
+code/th_15_extra.js:1864:      var rawPanel = self.buildPanelView(type);
+code/th_05_persistence.js:246:            var panel = this.buildPanelView("main");
