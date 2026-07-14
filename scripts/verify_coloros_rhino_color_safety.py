@@ -10,6 +10,15 @@ ALL_JS = "\n".join(p.read_text(encoding="utf-8") for p in sorted(CODE.glob("*.js
 
 errors = []
 
+
+def module_version(text, label):
+    match = re.search(r"(?m)^// @version (\d+)\.(\d+)\.(\d+)$", text)
+    if not match:
+        errors.append(label + " version header missing")
+        return (0, 0, 0)
+    return tuple(int(value) for value in match.groups())
+
+
 for token in (
     "new android.graphics.drawable.RippleDrawable",
     "ColorStateList.valueOf(",
@@ -45,10 +54,10 @@ else:
         if token in block:
             errors.append("unsafe overloaded color channel call remains in _th_argb: %s" % token)
 
-if not THEME.startswith("// @version 1.0.3"):
-    errors.append("th_04_theme.js version not bumped to 1.0.3")
-if not MAIN.startswith("// @version 1.5.6"):
-    errors.append("th_15_main_panel.js version not bumped to 1.5.6")
+if module_version(THEME, "th_04_theme.js") < (1, 0, 3):
+    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.3")
+if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 6):
+    errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.6")
 
 if errors:
     for item in errors:
