@@ -17,21 +17,26 @@ DOC_PATHS = (
     ROOT / "STRUCTURE.md",
 )
 
+
 def fail(message):
     raise SystemExit("FAIL main-panel-visual-tuning: " + message)
+
 
 def require(text, fragment, label):
     if fragment not in text:
         fail("missing %s: %s" % (label, fragment))
 
+
 def forbid(text, fragment, label):
     if fragment in text:
         fail("forbidden %s: %s" % (label, fragment))
+
 
 def version(text, expected, name):
     match = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", text)
     if not match or match.group(1) != expected:
         fail("%s expected version %s" % (name, expected))
+
 
 version(BASE, "1.1.8", "th_01_base.js")
 version(MAIN, "1.5.0", "th_15_main_panel.js")
@@ -70,7 +75,8 @@ if "legacyPanelAlpha - 0.85" not in load_source:
     fail("alpha migration must only target the legacy default")
 
 for marker, label in (
-    ("var footerHeight = pageCount > 1 ? spec.footerHeight : this.dp(8)", "compact single-page footer"),
+    ("var footerHeight = pageCount > 1", "conditional footer height"),
+    (": spec.singlePageFooterHeight;", "compact single-page footer"),
     ("if (pageCount > 1) {", "multi-page-only dot container"),
     ("dotTarget.setClickable(pageCount > 1)", "dot click semantics"),
     ("dotTarget.setFocusable(pageCount > 1)", "dot focus semantics"),
@@ -112,18 +118,22 @@ for path in DOC_PATHS:
     require(text, "单页隐藏分页圆点", path.name + " single-page documentation")
     require(text, "0.92", path.name + " alpha documentation")
 
+
 def clamp(value, minimum, maximum):
     return max(minimum, min(maximum, value))
+
 
 if clamp(5, 8, 32) != 8:
     fail("padding normalization model failed")
 if clamp(12, 8, 32) != 12:
     fail("valid padding preservation model failed")
 
+
 def migrate_alpha(value, version_number):
     if version_number < 1 and abs(value - 0.85) < 0.000001:
         return 0.92
     return value
+
 
 if migrate_alpha(0.85, 0) != 0.92:
     fail("legacy default alpha migration model failed")
