@@ -120,9 +120,9 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "662fc93ab55c3abbab4c6c7f79c74aee546d8d500278070a73b27d24e332040b",
-      "size": 151492,
-      "version": "1.2.1"
+      "sha256": "c76a343edd3af2bb014e6967a88560be65fbf3f73773b4facc3ab47f666e5732",
+      "size": 151435,
+      "version": "1.2.2"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "dfe25b26e7365d9c92bb7f543ff42e5462fd7d65e6aa8bf80fa455a0efc33a37",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "将主面板设置与编辑布局收纳到更多菜单"
+      "修改指针框选截图保存目录"
     ],
-    "title": "将主面板设置与编辑布局收纳到更多菜单"
+    "title": "修改指针框选截图保存目录"
   },
   "schema": 3,
-  "version": 20260714083219
+  "version": 20260714084437
 }
