@@ -1,0 +1,51 @@
+status=failed
+$ python3 .github/scripts/es5_scan.py
+ES5_ERRORS 0
+exit=0
+
+$ python3 scripts/verify_js_syntax.py
+OK: JavaScript syntax valid for 27 modules
+exit=0
+
+$ python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+Entry symbol audit verification passed
+exit=0
+
+$ python3 scripts/verify_entry_redundancy_cleanup.py
+Entry redundancy cleanup verification passed
+exit=0
+
+$ python3 scripts/verify_entry_writable_probe.py
+Entry writable probe verification passed
+exit=0
+
+$ python3 scripts/verify_sqlite_storage.py
+PASS storage-core
+PASS storage-icons
+OK sqlite_storage groups=2
+exit=0
+
+$ python3 scripts/verify_sqlite_debounce_race.py
+PASS sqlite-debounce-race
+exit=0
+
+$ python3 scripts/verify_ball_position_state.py
+OK ball_position_state fixed_edge=1 final_raw=1 edge_layout=1 animation=1 reflow=1 module_order=1
+exit=0
+
+$ python3 scripts/verify_ball_rebuild_rollback.py
+OK ball_rebuild_rollback order=transactional rollback=1 guard=1
+exit=0
+
+$ python3 scripts/verify_toolapp_layout.py
+OK toolapp_layout checks=22 groups=adaptive-size,shared,single-root
+exit=0
+
+$ python3 scripts/verify_settings_color_scheme.py
+OK settings_color_scheme targets=8 calls=37 semantic_fields=24 aliases_removed=1
+exit=0
+
+$ python3 scripts/verify_legacy_theme_cleanup.py
+FAIL: 配置过滤标记缺失：if (isDeprecatedThemeConfigKey(k)) continue;
+exit=1
+
