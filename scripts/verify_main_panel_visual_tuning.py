@@ -82,7 +82,7 @@ for marker, label in (
     ("dotTarget.setFocusable(pageCount > 1)", "dot focus semantics"),
     ("pageContext.dotViews = dotViews", "empty single-page dot state"),
     ("pageContext.dotTargets = dotTargets", "empty single-page target state"),
-    ("scroll.setBackgroundColor(this.withAlpha(panelBase, 1.0))", "opaque button viewport"),
+    ("toolhubSafeSetBackgroundColor(scroll, this.withAlpha(panelBase, 1.0))", "opaque button viewport"),
     ("单页没有分页语义", "single-page source contract"),
     ("旧灰色“把手”没有拖动行为", "non-functional handle rationale"),
 ):
