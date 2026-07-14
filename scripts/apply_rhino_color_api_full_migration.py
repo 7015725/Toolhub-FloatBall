@@ -76,15 +76,17 @@ def update_workflows():
 
 
 def main():
+    paths = sorted(CODE.glob("*.js"))
+    originals = {path: read(path) for path in paths}
     install_helpers()
     changes = []
 
-    for path in sorted(CODE.glob("*.js")):
-        original = read(path)
+    for path in paths:
+        current = read(path)
         migrated = rewrite_module(
-            path, original, THEME_PATH, BRIDGE_BEGIN, BRIDGE_END
+            path, current, THEME_PATH, BRIDGE_BEGIN, BRIDGE_END
         )
-        if migrated == original:
+        if migrated == originals[path]:
             continue
         migrated, old_version, new_version = bump_version(migrated, path.name)
         write(path, migrated)
