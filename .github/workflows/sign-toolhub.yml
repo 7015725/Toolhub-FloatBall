@@ -3,45 +3,231 @@ name: sign-toolhub
 on:
   pull_request:
     branches: [main]
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      title:
+        description: '发布标题，写入 manifest.release.title'
+        required: true
+        type: string
+      change:
+        description: '更新记录，写入 manifest.release.changes'
+        required: true
+        type: string
+      date:
+        description: '发布日期，留空由脚本保持为空'
+        required: false
+        type: string
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
-  group: update-th09-audit-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  group: sign-toolhub-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
-  update-audit:
+  sign:
+    name: sign-toolhub
     runs-on: ubuntu-latest
+    environment: signing
     if: >
-      github.event.pull_request.draft == true &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'fix/complete-rhino-color-api-migration-20260714'
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.pull_request.base.ref == 'main' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.draft == false &&
+        (
+          startsWith(github.event.pull_request.head.ref, 'fix/') ||
+          startsWith(github.event.pull_request.head.ref, 'rollback/')
+        )
+      )
+    env:
+      TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
     steps:
-      - name: Checkout branch
+      - name: Checkout selected branch
         uses: actions/checkout@v4
         with:
-          ref: fix/complete-rhino-color-api-migration-20260714
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
           persist-credentials: false
 
-      - name: Update and verify audit
-        run: python3 scripts/update_th09_audit_metadata.py
+      - name: Guard branch
+        shell: bash
+        run: |
+          case "$TARGET_BRANCH" in
+            main)
+              echo "sign-toolhub runs on feature branches only"
+              exit 1
+              ;;
+            fix/*|rollback/*)
+              ;;
+            *)
+              if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+                echo "skip branch: $TARGET_BRANCH"
+                exit 0
+              fi
+              ;;
+          esac
 
-      - name: Commit audit report
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Verify changed module versions
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git fetch --no-tags origin "${{ github.event.pull_request.base.ref }}" --depth=1
+            python3 scripts/verify_changed_module_versions.py --base-ref "origin/${{ github.event.pull_request.base.ref }}"
+          else
+            python3 scripts/verify_changed_module_versions.py --base-ref "HEAD^"
+          fi
+
+      - name: Install signing key
+        shell: bash
+        env:
+          TOOLHUB_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.TOOLHUB_SIGNING_PRIVATE_KEY_PEM }}
+        run: |
+          if [ -z "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" ]; then
+            echo "TOOLHUB_SIGNING_PRIVATE_KEY_PEM is empty"
+            exit 1
+          fi
+          mkdir -p "$HOME/.hermes/toolhub_signing"
+          printf '%s\n' "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" > "$HOME/.hermes/toolhub_signing/private_key.pem"
+          chmod 600 "$HOME/.hermes/toolhub_signing/private_key.pem"
+
+      - name: Check current generated artifacts
+        id: current-generated
+        shell: bash
+        env:
+          INPUT_TITLE: ${{ github.event.inputs.title || '' }}
+          INPUT_CHANGE: ${{ github.event.inputs.change || '' }}
+          RELEASE_DATE: ${{ github.event.inputs.date || '' }}
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          def desired_release():
+              title = os.environ.get('INPUT_TITLE', '').strip()
+              change = os.environ.get('INPUT_CHANGE', '').strip()
+              date = os.environ.get('RELEASE_DATE', '').strip()
+              if os.environ.get('GITHUB_EVENT_NAME') == 'pull_request':
+                  title = os.environ.get('PR_TITLE', '').strip()
+                  change = title
+              if not title:
+                  title = 'ToolHub 自动签名更新'
+              if not change:
+                  change = title
+              release = {'title': title, 'changes': [change]}
+              if date:
+                  release['date'] = date
+              return release
+
+          def run_ok(args):
+              p = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+              print(p.stdout.rstrip())
+              return p.returncode == 0
+
+          current = False
+          if run_ok(['python3', 'scripts/verify_manifest.py']) and run_ok(['python3', '.github/scripts/verify_manifest_signature.py']):
+              manifest = json.loads(Path('manifest.json').read_text(encoding='utf-8'))
+              current = (manifest.get('release') or {}) == desired_release()
+
+          print('current_generated=%s' % str(current).lower())
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
+              f.write('current=%s\n' % str(current).lower())
+          PY
+
+      - name: Generate signed manifest
+        if: steps.current-generated.outputs.current != 'true'
+        shell: bash
+        env:
+          INPUT_TITLE: ${{ github.event.inputs.title || '' }}
+          INPUT_CHANGE: ${{ github.event.inputs.change || '' }}
+          RELEASE_DATE: ${{ github.event.inputs.date || '' }}
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+        run: |
+          title="$INPUT_TITLE"
+          change="$INPUT_CHANGE"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            title="$PR_TITLE"
+            change="$PR_TITLE"
+          fi
+          if [ -z "${title// /}" ]; then
+            title="ToolHub 自动签名更新"
+          fi
+          if [ -z "${change// /}" ]; then
+            change="$title"
+          fi
+          args=(--yes --title "$title" --change "$change")
+          if [ -n "$RELEASE_DATE" ]; then
+            args+=(--date "$RELEASE_DATE")
+          fi
+          python3 scripts/generate_signed_manifest.py "${args[@]}"
+
+      - name: Verify generated JavaScript
+        shell: bash
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+
+      - name: Verify generated storage and position
+        shell: bash
+        run: |
+          python3 scripts/verify_sqlite_storage.py
+          python3 scripts/verify_ball_position_state.py
+
+      - name: Verify generated UI contracts
+        shell: bash
+        run: |
+          python3 scripts/verify_toolapp_layout.py
+          python3 scripts/verify_settings_color_scheme.py
+          python3 scripts/verify_legacy_theme_cleanup.py
+          python3 scripts/verify_settings_color_roles.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/verify_button_editor_layout.py
+          python3 scripts/verify_schema_validator.py
+
+      - name: Verify generated pointer regressions
+        shell: bash
+        run: |
+          python3 scripts/verify_pointer_regressions.py
+          python3 scripts/verify_result_preview.py
+
+      - name: Verify generated manifest signature
+        shell: bash
+        run: python3 .github/scripts/verify_manifest_signature.py
+
+      - name: Check generated whitespace
+        shell: bash
+        run: git diff --check
+
+      - name: Commit generated artifacts
+        if: steps.current-generated.outputs.current != 'true'
+        shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
-          test -n "$TOOLHUB_AUTOMATION_TOKEN"
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add TH09_ANIMATION_AUDIT.md
+          git add manifest.json manifest.sig ToolHub.js.sha256
           if git diff --cached --quiet; then
+            echo "No generated artifact changes"
             exit 0
           fi
-          git commit -m "更新颜色迁移后的 th09 审计报告"
+          git commit -m "统一 Rhino UI 颜色安全调用"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push origin HEAD:fix/complete-rhino-color-api-migration-20260714
+          git push origin "HEAD:$TARGET_BRANCH"
