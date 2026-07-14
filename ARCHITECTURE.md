@@ -201,7 +201,8 @@ th_15_extra.js
   查看器面板、通用面板定位与显示、ToolApp Shell、页面栈、响应式布局、左右滑返回预览。
 
 th_15_main_panel.js
-  主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页吸附与圆点导航、方向展开/退出动画、实时运行状态和显式编辑模式拖动排序。
+  主按钮面板顶部工具栏、可配置自适应网格、安全区域避让、分页吸附与圆点导航、方向展开/退出动画、实时运行状态和显式编辑模式拖动排序。
+- 网格列数由安全宽度、`PANEL_WIDTH_PERCENT`、`PANEL_AUTO_MAX_COLS`、`PANEL_MIN_CARD_WIDTH_DP`、间距和内边距动态计算；`PANEL_CARD_HEIGHT_DP` 与 `PANEL_ROWS` 控制卡片高度和可视行数。
 - 主面板退出动画结束后，旧 View 先保持不可见，注销预测性返回时跳过视觉复位，再通过 `removeViewImmediate()` 移除；generation 只允许最新关闭事务清理共享状态。
 
 th_16_entry.js

@@ -1,5 +1,5 @@
-// @version 1.3.0
-// ToolHub - 主按钮面板第四阶段：分页吸附、圆点导航与页码恢复
+// @version 1.4.0
+// ToolHub - 主按钮面板第五阶段：可配置自适应网格与即时布局参数
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -43,60 +43,163 @@ FloatBallAppWM.prototype.getMainPanelSafeBounds = function() {
 
 FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function() {
   var safe = this.getMainPanelSafeBounds();
-  var density = Number(this.state.density || 1);
-  if (density <= 0) density = 1;
-  var safeWidthDp = safe.width / density;
+  var density = Number(this.state && this.state.density ? this.state.density : 1);
+  if (density <= 0 || isNaN(density)) density = 1;
   var landscape = safe.width > safe.height;
-  var cols = 3;
-  var targetWidthDp = 344;
-  var gapDp = 8;
-  var cardHeightDp = 78;
 
-  if (safeWidthDp < 348) {
-    cols = 2;
-    targetWidthDp = 304;
-    cardHeightDp = 78;
-  } else if (safeWidthDp >= 600 || (landscape && safeWidthDp >= 520)) {
-    cols = 4;
-    targetWidthDp = 424;
-    gapDp = 10;
-    cardHeightDp = 80;
+  function readLayoutNumber(value, fallback, minValue, maxValue, integerOnly) {
+    var n = Number(value);
+    if (isNaN(n)) n = Number(fallback);
+    if (integerOnly === true) n = Math.round(n);
+    if (n < minValue) n = minValue;
+    if (n > maxValue) n = maxValue;
+    return n;
   }
 
-  var panelWidth = Math.min(this.dp(targetWidthDp), safe.width);
-  var panelPadding = this.dp(12);
+  var widthPercent = readLayoutNumber(
+    this.config.PANEL_WIDTH_PERCENT,
+    90,
+    60,
+    100,
+    true
+  );
+  var autoMaxCols = readLayoutNumber(
+    this.config.PANEL_AUTO_MAX_COLS,
+    6,
+    1,
+    6,
+    true
+  );
+  var minCardWidthDp = readLayoutNumber(
+    this.config.PANEL_MIN_CARD_WIDTH_DP,
+    92,
+    72,
+    160,
+    true
+  );
+  var cardHeightDp = readLayoutNumber(
+    this.config.PANEL_CARD_HEIGHT_DP,
+    78,
+    56,
+    120,
+    true
+  );
+  var gapDp = readLayoutNumber(
+    this.config.PANEL_GAP_DP,
+    8,
+    4,
+    24,
+    true
+  );
+  var paddingDp = readLayoutNumber(
+    this.config.PANEL_PADDING_DP,
+    12,
+    8,
+    32,
+    true
+  );
+
+  // 面板宽度由安全区域百分比决定，不再使用手机/横屏/平板固定宽度断点。
+  var panelWidth = Math.floor(safe.width * widthPercent / 100);
+  var minimumPanelWidth = Math.min(safe.width, this.dp(220));
+  panelWidth = Math.min(
+    safe.width,
+    Math.max(minimumPanelWidth, panelWidth)
+  );
+
+  var panelPadding = this.dp(paddingDp);
+  var minimumInnerWidth = this.dp(72);
+  var maximumPadding = Math.max(
+    this.dp(4),
+    Math.floor((panelWidth - minimumInnerWidth) / 2)
+  );
+  if (panelPadding > maximumPadding) panelPadding = maximumPadding;
+
   var gap = this.dp(gapDp);
-  var innerWidth = Math.max(this.dp(200), panelWidth - panelPadding * 2);
+  var innerWidth = Math.max(
+    1,
+    panelWidth - panelPadding * 2
+  );
+  var minCardWidth = this.dp(minCardWidthDp);
+
+  // 列数完全由当前可用宽度计算，再受用户设置的最大列数约束。
+  var cols = Math.floor(
+    (innerWidth + gap) / (minCardWidth + gap)
+  );
+  if (cols < 1) cols = 1;
+  if (cols > autoMaxCols) cols = autoMaxCols;
+
+  // 极窄窗口保护：即使设置了较大的最大列数，也不允许卡片小于基本触控宽度。
+  while (cols > 1) {
+    var candidateWidth = Math.floor(innerWidth / cols) - gap;
+    if (candidateWidth >= this.dp(48)) break;
+    cols--;
+  }
+
   var cellArea = Math.floor(innerWidth / cols);
-  var cardWidth = Math.max(this.dp(72), cellArea - gap);
-  var rowUnit = this.dp(cardHeightDp) + gap;
+  var cardWidth = Math.max(this.dp(48), cellArea - gap);
+  var usedGridWidth = cols * (cardWidth + gap);
+  var gridInset = Math.max(
+    0,
+    Math.floor((innerWidth - usedGridWidth) / 2)
+  );
+
+  var cardHeight = this.dp(cardHeightDp);
+  var rowUnit = cardHeight + gap;
   var headerHeight = this.dp(56);
   var footerHeight = this.dp(24);
   var maxPanelHeight = Math.min(
     safe.height,
     Math.max(this.dp(220), Math.floor(safe.height * 0.78))
   );
-  var maxGridHeight = Math.max(rowUnit, maxPanelHeight - headerHeight - footerHeight - panelPadding * 2 - this.dp(8));
-  var configuredRows = Number(this.config.PANEL_ROWS || 4);
-  if (isNaN(configuredRows) || configuredRows < 1) configuredRows = 4;
-  if (configuredRows > 6) configuredRows = 6;
-  var visibleRows = Math.max(1, Math.min(configuredRows, Math.floor(maxGridHeight / rowUnit)));
+  var maxGridHeight = Math.max(
+    rowUnit,
+    maxPanelHeight -
+      headerHeight -
+      footerHeight -
+      panelPadding * 2 -
+      this.dp(8)
+  );
+
+  var configuredRows = readLayoutNumber(
+    this.config.PANEL_ROWS,
+    4,
+    1,
+    10,
+    true
+  );
+  var visibleRows = Math.max(
+    1,
+    Math.min(
+      configuredRows,
+      Math.floor(maxGridHeight / rowUnit)
+    )
+  );
 
   return {
     safe: safe,
+    layoutMode: 'adaptive',
+    widthPercent: widthPercent,
+    autoMaxCols: autoMaxCols,
+    minCardWidth: minCardWidth,
+    minCardWidthDp: minCardWidthDp,
+    cardHeightDp: cardHeightDp,
     cols: cols,
     panelWidth: panelWidth,
     panelPadding: panelPadding,
     gap: gap,
+    gridInset: gridInset,
+    innerWidth: innerWidth,
     cardWidth: cardWidth,
-    cardHeight: this.dp(cardHeightDp),
+    cardHeight: cardHeight,
     rowUnit: rowUnit,
     headerHeight: headerHeight,
     footerHeight: footerHeight,
     visibleRows: visibleRows,
     maxPanelHeight: maxPanelHeight,
     maxGridHeight: maxGridHeight,
-    landscape: landscape
+    landscape: landscape,
+    safeWidthDp: safe.width / density
   };
 };
 
@@ -1326,6 +1429,11 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
   var spec = this.getMainPanelResponsiveSpec();
+  safeLog(this.L, 'd',
+    'main panel adaptive layout cols=' + String(spec.cols) +
+    ' widthPercent=' + String(spec.widthPercent) +
+    ' card=' + String(spec.cardWidth) + 'x' + String(spec.cardHeight) +
+    ' safeWidthDp=' + String(Math.round(spec.safeWidthDp || 0)));
   var alpha = Number(this.config.PANEL_BG_ALPHA || 0.90);
   if (isNaN(alpha)) alpha = 0.90;
   if (alpha < 0.35) alpha = 0.35;
@@ -1504,6 +1612,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
 
   var grid = new android.widget.GridLayout(context);
   grid.setColumnCount(spec.cols);
+  try { grid.setPadding(spec.gridInset, 0, spec.gridInset, 0); } catch (eGridInset) {}
   try { grid.setRowCount(rows); } catch (eRows) {}
   scroll.addView(grid, new android.widget.FrameLayout.LayoutParams(-1, -2));
 

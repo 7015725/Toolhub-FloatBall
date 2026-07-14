@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【工具：面板位置持久化】======================
 FloatBallAppWM.prototype.savePanelState = function(key, state) {
   if (!key || !state) return;
@@ -51,7 +51,11 @@ FloatBallAppWM.prototype.isThemeEffectKey = function(k) {
 
 FloatBallAppWM.prototype.isPanelLayoutEffectKey = function(k) {
   k = String(k || "");
-  return k === "PANEL_ROWS" ||
+  return k === "PANEL_WIDTH_PERCENT" ||
+         k === "PANEL_AUTO_MAX_COLS" ||
+         k === "PANEL_MIN_CARD_WIDTH_DP" ||
+         k === "PANEL_CARD_HEIGHT_DP" ||
+         k === "PANEL_ROWS" ||
          k === "PANEL_COLS" ||
          k === "PANEL_ITEM_SIZE_DP" ||
          k === "PANEL_GAP_DP" ||

@@ -1,4 +1,4 @@
-// @version 1.1.6
+// @version 1.1.7
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -136,11 +136,17 @@ var ConfigValidator = {
     BALL_POSITION_MIGRATION_VERSION: { type: "int", min: 0, max: 9999, default: 0 },
 
     // 面板布局配置
+    // PANEL_COLS / PANEL_ITEM_SIZE_DP 仅保留给旧面板回退链；
+    // 新主面板统一使用可配置自适应网格。
     PANEL_COLS: { type: "int", min: 1, max: 6, default: 1 },
-    PANEL_ROWS: { type: "int", min: 1, max: 10, default: 6 },
+    PANEL_ITEM_SIZE_DP: { type: "int", min: 48, max: 120, default: 64 },
+    PANEL_WIDTH_PERCENT: { type: "int", min: 60, max: 100, default: 90 },
+    PANEL_AUTO_MAX_COLS: { type: "int", min: 1, max: 6, default: 6 },
+    PANEL_MIN_CARD_WIDTH_DP: { type: "int", min: 72, max: 160, default: 92 },
+    PANEL_CARD_HEIGHT_DP: { type: "int", min: 56, max: 120, default: 78 },
+    PANEL_ROWS: { type: "int", min: 1, max: 10, default: 4 },
     PANEL_BG_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.85 },
     PANEL_ICON_SIZE_DP: { type: "int", min: 16, max: 64, default: 24 },
-    PANEL_ITEM_SIZE_DP: { type: "int", min: 48, max: 120, default: 64 },
     PANEL_GAP_DP: { type: "int", min: 4, max: 24, default: 8 },
     PANEL_PADDING_DP: { type: "int", min: 8, max: 32, default: 12 },
 
@@ -888,12 +894,17 @@ var ConfigManager = {
         POINTER_AREA_MIN_MOVE_DP: 24,
         PANEL_POS_GRAVITY: "bottom",
         PANEL_CUSTOM_OFFSET_Y: 0,
-        PANEL_COLS: 1,
+        PANEL_WIDTH_PERCENT: 90,
+        PANEL_AUTO_MAX_COLS: 6,
+        PANEL_MIN_CARD_WIDTH_DP: 92,
+        PANEL_CARD_HEIGHT_DP: 78,
         PANEL_ROWS: 4,
+        PANEL_GAP_DP: 8,
+        PANEL_PADDING_DP: 12,
+        PANEL_ICON_SIZE_DP: 28,
+        // 旧面板回退链兼容值，不再展示在设置页。
+        PANEL_COLS: 1,
         PANEL_ITEM_SIZE_DP: 60,
-        PANEL_GAP_DP: 5,
-        PANEL_PADDING_DP: 7,
-        PANEL_ICON_SIZE_DP: 32,
         PANEL_LABEL_ENABLED: true,
         PANEL_LABEL_TEXT_SIZE_SP: 12,
         PANEL_LABEL_TOP_MARGIN_DP: 4,
@@ -957,9 +968,39 @@ var ConfigManager = {
         { key: "POINTER_COLOR_CAPTURE_HEX", name: "截图识别颜色", type: "ball_color" },
 
         { type: "section", name: "面板布局" },
+        {
+            key: "PANEL_WIDTH_PERCENT",
+            name: "主面板宽度占比(%)",
+            type: "int",
+            min: 60,
+            max: 100,
+            step: 1
+        },
+        {
+            key: "PANEL_AUTO_MAX_COLS",
+            name: "自动最大列数",
+            type: "int",
+            min: 1,
+            max: 6,
+            step: 1
+        },
+        {
+            key: "PANEL_MIN_CARD_WIDTH_DP",
+            name: "按钮最小宽度(dp)",
+            type: "int",
+            min: 72,
+            max: 160,
+            step: 2
+        },
+        {
+            key: "PANEL_CARD_HEIGHT_DP",
+            name: "按钮高度(dp)",
+            type: "int",
+            min: 56,
+            max: 120,
+            step: 2
+        },
         { key: "PANEL_ROWS", name: "面板可视行数", type: "int", min: 1, max: 10, step: 1 },
-        { key: "PANEL_COLS", name: "面板列数", type: "int", min: 1, max: 6, step: 1 },
-        { key: "PANEL_ITEM_SIZE_DP", name: "面板单元格(dp)", type: "int", min: 48, max: 120, step: 1 },
         { key: "PANEL_GAP_DP", name: "按钮间距(dp)", type: "int", min: 4, max: 24, step: 1 },
         { key: "PANEL_PADDING_DP", name: "面板内边距(dp)", type: "int", min: 8, max: 32, step: 1 },
         { key: "PANEL_ICON_SIZE_DP", name: "面板图标大小(dp)", type: "int", min: 16, max: 64, step: 1 },
@@ -1046,6 +1087,16 @@ var ConfigManager = {
             needReset = true;
         }
         if (!needReset && (
+            sStr.indexOf("PANEL_WIDTH_PERCENT") < 0 ||
+            sStr.indexOf("PANEL_AUTO_MAX_COLS") < 0 ||
+            sStr.indexOf("PANEL_MIN_CARD_WIDTH_DP") < 0 ||
+            sStr.indexOf("PANEL_CARD_HEIGHT_DP") < 0 ||
+            sStr.indexOf("\"PANEL_COLS\"") >= 0 ||
+            sStr.indexOf("\"PANEL_ITEM_SIZE_DP\"") >= 0
+        )) {
+            needReset = true;
+        }
+        if (!needReset && (
             sStr.indexOf("BALL_POSITION_SIDE") < 0 ||
             sStr.indexOf("BALL_POSITION_PERCENT") < 0 ||
             sStr.indexOf("BALL_POSITION_LEVEL") >= 0 ||
@@ -1087,6 +1138,10 @@ var ConfigManager = {
                 schemaItemDiffers("BALL_ICON_SIZE_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("BALL_BG_COLOR_HEX", ["name", "type"]) ||
                 schemaItemDiffers("BALL_POSITION_PERCENT", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("PANEL_WIDTH_PERCENT", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("PANEL_AUTO_MAX_COLS", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("PANEL_MIN_CARD_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("PANEL_CARD_HEIGHT_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_GESTURE_MODE", ["name", "type"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_EDGE_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_COMMIT_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
