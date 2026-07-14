@@ -12,12 +12,15 @@ jobs:
   apply:
     if: github.event.pull_request.head.ref == 'fix/remove-legacy-main-panel-20260714'
     runs-on: ubuntu-latest
+    environment: signing
     steps:
       - name: Checkout head branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -70,10 +73,13 @@ jobs:
             git add CLEANUP_PAYLOAD_RESULT.txt
             if ! git diff --cached --quiet; then
               git commit -m "记录旧主面板清理失败原因"
+              git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
               git push origin HEAD:${{ github.event.pull_request.head.ref }}
             fi
             exit "$status"
           fi
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
       - name: Remove temporary files
         shell: bash
         run: |
@@ -121,10 +127,17 @@ jobs:
           git diff --check
       - name: Commit formal cleanup
         shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
           set -euo pipefail
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
           git commit -m "清理旧主按钮面板回退代码"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
