@@ -1,0 +1,108 @@
+name: diagnose-full-verify
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'agent/panel-layout-position-settings-20260714'
+    runs-on: ubuntu-latest
+    environment: signing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Skip existing result
+        id: existing
+        run: |
+          if [ -f VERIFY_DIAGNOSTIC.txt ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run commands sequentially
+        if: steps.existing.outputs.skip != 'true'
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+
+          commands = [
+              "python3 .github/scripts/es5_scan.py",
+              "python3 scripts/verify_js_syntax.py",
+              "python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md",
+              "python3 scripts/verify_entry_redundancy_cleanup.py",
+              "python3 scripts/verify_entry_writable_probe.py",
+              "python3 scripts/verify_sqlite_storage.py",
+              "python3 scripts/verify_sqlite_debounce_race.py",
+              "python3 scripts/verify_ball_position_state.py",
+              "python3 scripts/verify_ball_rebuild_rollback.py",
+              "python3 scripts/verify_toolapp_layout.py",
+              "python3 scripts/verify_settings_color_scheme.py",
+              "python3 scripts/verify_legacy_theme_cleanup.py",
+              "python3 scripts/verify_settings_color_roles.py",
+              "python3 scripts/verify_button_editor_layout.py",
+              "python3 scripts/verify_button_editor_direct_save.py",
+              "python3 scripts/verify_schema_validator.py",
+              "python3 scripts/verify_entry_lifecycle.py",
+              "python3 scripts/verify_atomic_update.py",
+              "python3 scripts/verify_release_transaction.py",
+              "python3 scripts/verify_startup_status.py",
+              "python3 scripts/verify_main_panel_runtime_status.py",
+              "python3 scripts/verify_main_panel_drag_sort.py",
+              "python3 scripts/verify_main_panel_paging.py",
+              "python3 scripts/verify_main_panel_adaptive_layout.py",
+              "python3 scripts/verify_panel_layout_settings_cleanup.py",
+              "python3 scripts/verify_main_panel_grid_sizing.py",
+              "python3 scripts/verify_main_panel_visual_tuning.py",
+              "python3 scripts/verify_main_panel_close_lifecycle.py",
+              "python3 scripts/verify_update_security_mode.py",
+              "python3 scripts/verify_shell_bridge_security.py",
+              "python3 scripts/verify_shell_log_redaction.py",
+              "python3 scripts/verify_shortcut_security.py",
+              "python3 scripts/verify_content_security.py",
+              "python3 scripts/verify_module_versions.py",
+              "python3 scripts/verify_changed_module_versions.py",
+              "python3 scripts/verify_documentation_consistency.py",
+              "python3 scripts/verify_github_only_source.py",
+              "python3 scripts/verify_pointer_regressions.py",
+              "python3 scripts/verify_result_preview.py",
+              "python3 .github/scripts/verify_manifest_signature.py",
+          ]
+          report = []
+          failed = False
+          for command in commands:
+              proc = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+              report.append("$ " + command)
+              report.append(proc.stdout.rstrip())
+              report.append("exit=%d" % proc.returncode)
+              report.append("")
+              if proc.returncode != 0:
+                  failed = True
+                  break
+          report.insert(0, "status=%s" % ("failed" if failed else "passed"))
+          Path("VERIFY_DIAGNOSTIC.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
+          PY
+
+      - name: Commit diagnostic
+        if: steps.existing.outputs.skip != 'true'
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VERIFY_DIAGNOSTIC.txt
+          git commit -m "记录完整验证失败项"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
