@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 验证主按钮面板第四阶段分页吸附、圆点导航和生命周期清理。
+# 验证主按钮面板整页分页、稳定吸附、圆点导航和生命周期清理。
 
 from pathlib import Path
 import re
