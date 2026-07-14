@@ -2,7 +2,12 @@
 from pathlib import Path
 import re
 
-RECEIVER = r'([A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*|\[[^\]\n]+\])*)'
+IDENT = r'[A-Za-z_$][A-Za-z0-9_$]*'
+SIMPLE_CALL = r'\([^;\n()]*\)'
+RECEIVER = (
+    r'(' + IDENT +
+    r'(?:(?:\.' + IDENT + r')(?:' + SIMPLE_CALL + r')?|\[[^\]\n]+\])*)'
+)
 ARG = r'([^;\n]+?)'
 
 
@@ -75,7 +80,7 @@ def replace_filters(text):
 
 def replace_tint_lists(text):
     methods = sorted(set(re.findall(
-        r'\.([A-Za-z_$][A-Za-z0-9_$]*TintList)\s*\(', text
+        r'\.(' + IDENT + r'TintList)\s*\(', text
     )))
     for method in methods:
         pattern = re.compile(
@@ -116,17 +121,12 @@ def rewrite_color_calls(text):
         text,
     )
     text = re.sub(
-        r'new\s+(?:Packages\.)?android\.content\.res\.ColorStateList\s*\(',
+        r'new\s+(?:Packages\.)?(?:android\.content\.res\.)?ColorStateList\s*\(',
         'toolhubSafeColorStateListFromStates(',
         text,
     )
     text = re.sub(
-        r'new\s+ColorStateList\s*\(',
-        'toolhubSafeColorStateListFromStates(',
-        text,
-    )
-    text = re.sub(
-        r'(?:Packages\.)?android\.content\.res\.ColorStateList\.valueOf\s*\(',
+        r'(?:Packages\.)?(?:android\.content\.res\.)?ColorStateList\.valueOf\s*\(',
         'toolhubSafeColorStateList(',
         text,
     )
@@ -153,13 +153,33 @@ def sync_version_contracts(scripts_dir, self_path, changes):
             continue
         original = path.read_text(encoding='utf-8')
         text = original
-        matched = [(n, o, v) for n, o, v in changes if n in text and o in text]
-        counts = {}
-        for _, old, _ in matched:
-            counts[old] = counts.get(old, 0) + 1
-        for _, old, new in matched:
-            if counts[old] == 1:
-                text = text.replace('"%s"' % old, '"%s"' % new)
-                text = text.replace("'%s'" % old, "'%s'" % new)
+
+        for name, old, new in changes:
+            lines = text.splitlines(True)
+            changed_line = False
+            for index, line in enumerate(lines):
+                if name in line and old in line:
+                    lines[index] = line.replace(old, new)
+                    changed_line = True
+            if changed_line:
+                text = ''.join(lines)
+                continue
+
+            nearby = re.compile(
+                r'(' + re.escape(name) + r'.{0,240}?)(["\']' +
+                re.escape(old) + r'["\'])',
+                re.S,
+            )
+            text, count = nearby.subn(
+                lambda m: m.group(1) + m.group(2).replace(old, new),
+                text,
+                count=1,
+            )
+            if count:
+                continue
+
+            if name in text and text.count(old) == 1:
+                text = text.replace(old, new, 1)
+
         if text != original:
             path.write_text(text.rstrip('\n') + '\n', encoding='utf-8')
