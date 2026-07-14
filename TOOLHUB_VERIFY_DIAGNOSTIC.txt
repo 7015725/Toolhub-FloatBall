@@ -1,0 +1,116 @@
+COMMAND: python3 scripts/verify_module_versions.py
+EXIT: 1
+
+FAIL module-versions: manifest/source version mismatch th_17_pointer.js: 1.2.3 != 1.2.4
+COMMAND: python3 scripts/verify_pointer_regressions.py
+EXIT: 1
+
+/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_pointer_regressions.py:221: SyntaxWarning: "\/" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\/"? A raw string is also an option.
+  and '.replace(/\/+$/g, "")' in screenshot_dir
+PASS issue-85 / W1 pending fallback stops OCR override
+PASS issue-85 / W2 triple tap cancellation delegates to core
+PASS issue-85 / W3 area OCR is asynchronous and token timed
+PASS issue-85 / N1 stale OCR cannot publish preview
+PASS issue-85 / N2 cancelled OCR worker is cleaned up
+PASS issue-85 / W4 OCR rect supports area_ocr
+PASS issue-85 / W5 final timeout is distinct from empty release
+PASS issue-85 / N3 stale candidate reuse is final-scan scoped
+PASS issue-85 / N9 screenshot directory is ShortX ToolHub/screenshots
+PASS issue-85 / W6 bitmap.compress result is checked
+PASS issue-85 / W6 screenshot resources are released
+PASS issue-85 / N4 area screenshot and PNG save are asynchronous
+PASS issue-85 / N6 empty OCR result is not success
+PASS issue-85 / W7 inspect worker cleanup is session scoped
+PASS issue-85 / N7 drag scan prioritizes active application root
+PASS issue-85 / N8 stationary timeout retries preserve valid hover
+PASS issue-85 / S3 hover-area runnable is removable
+PASS issue-85 / S1 pointer state reflows with screen
+PASS issue-85 / N5 screen reflow invalidates stale text candidates
+PASS issue-85 / S1 screen reflow calls pointer hook
+PASS text-release / th17 marker updatePointerTextStableMotion = function
+PASS text-release / th17 marker bindPointerTextHoverCandidate = function
+PASS text-release / th17 marker grantPointerTextHoverCredential = function
+PASS text-release / th17 marker hasPointerTextHoverCredential = function
+PASS text-release / th17 marker textHoverReadyKey
+PASS text-release / th17 marker textHoverReadyRect
+PASS text-release / th17 marker textHoverReadyAt
+PASS text-release / th17 marker lastValidPickReadyAt
+PASS text-release / th17 marker var maxAge = 500
+PASS text-release / th17 marker TEXT_HOVER_NOT_READY
+PASS text-release / th17 marker TEXT_POINTER_OUTSIDE_FRAME
+PASS text-release / th17 marker TEXT_PICK_RECENT_CANDIDATE
+PASS text-release / th17 marker TEXT_PICK_FINAL_SCAN
+PASS text-release / extract gate pointerTextHotspotInsideRect
+PASS text-release / extract gate hasPointerTextHoverCredential
+PASS text-release / extract gate TEXT_HOVER_NOT_READY
+PASS text-release / extract gate TEXT_POINTER_OUTSIDE_FRAME
+PASS text-release / extract gate completePointerCandidateOnRelease
+PASS text-release / unified release completion requires hover credential
+PASS text-release / text stable hover is independent from OCR hold
+PASS text-release / text credential stays inside drawn frame
+PASS text-release / target identity textStableTargetKey
+PASS text-release / target identity stableTargetChanged
+PASS text-release / target identity resetPointerTextStableHover(pointerState, ts, hp, "target_changed")
+PASS text-release / visual ready uses business credential
+PASS text-release / text ready timing is independent from OCR
+PASS text-release / recent candidate lastValidPickReadyAt
+PASS text-release / recent candidate lastValidPickHoverSince
+PASS text-release / recent candidate pointerRectInside
+PASS text-release / recent candidate uses strict frame hit testing
+PASS text-release / position release state uses wall clock
+PASS text-release / final candidate is inside drawn text frame
+PASS text-release / raw movement updates independent stable hover
+PASS text-release / safe release ordering
+PASS text-release / confirmed candidate uses unified credential extraction
+PASS text-release / recent candidate uses unified release completion
+PASS text-release / obsolete symbol absent getRecentReadyPointerPick
+PASS text-release / obsolete symbol absent restoreRecentReadyPointerPick
+PASS text-release / obsolete symbol absent syncPointerTextHoverFromStableHold
+PASS text-release / obsolete symbol absent storeReadyPointerSnapshot
+PASS text-release / obsolete symbol absent getReadyPointerSnapshotForRelease
+PASS text-release / obsolete symbol absent finishReadyPointerSnapshot
+PASS text-release / obsolete symbol absent __toolHubReadyTextSnapshot
+PASS text-release / obsolete symbol absent TEXT_PICK_READY_SNAPSHOT
+PASS text-release / obsolete symbol absent ready_visual_snapshot
+PASS text-release / settings description matches hover credential
+PASS text-release / entry-level runtime pointer patch is absent
+PASS pointer-core / core marker rememberPointerValidPick
+PASS pointer-core / core marker getRecentPointerPickForRelease
+PASS pointer-core / core marker restoreRecentPointerPickForRelease
+PASS pointer-core / core marker completePointerCandidateOnRelease
+PASS pointer-core / core marker completePointerTextResult
+PASS pointer-core / core marker completePointerTextCopy
+PASS pointer-core / core marker publishResultPreview
+PASS pointer-core / core marker data.clipboardAccepted = false
+PASS pointer-core / core marker data.previewQueued
+PASS pointer-core / core marker accessibility_current
+PASS pointer-core / core marker small_area_fallback
+PASS pointer-core / core marker areaHoldDelay: 2000
+PASS pointer-core / extract reports preview instead of clipboard completion
+PASS pointer-core / extract restores recent candidate
+PASS pointer-core / extract uses unified release completion
+PASS pointer-core / accessibility success publishes preview without automatic copy
+PASS pointer-core / legacy completion alias delegates to result completion
+PASS pointer-core / recent cache lastValidPickText
+PASS pointer-core / recent cache lastValidPickRect
+PASS pointer-core / recent cache lastValidPickSession
+PASS pointer-core / recent cache pointerRectInside
+PASS pointer-core / small-area fallback uses unified result completion
+PASS pointer-core / OCR success never writes clipboard automatically
+PASS pointer-core / OCR residue absent installFixedEdgePointer18
+PASS pointer-core / OCR residue absent schedulePointerMoveRaw18
+PASS pointer-core / OCR residue absent fixBallToEdge18
+PASS pointer-core / OCR residue absent pickBallSide18
+PASS pointer-core / OCR residue absent 启动反馈：子模块加载完成
+PASS pointer-core / th18 performance extension remains
+PASS pointer-core / th18 OCR extension remains
+PASS pointer-draw / draw failures are observable
+PASS pointer-draw / fallback pointer survives rich draw failure
+PASS pointer-draw / shadow failure does not abort pointer body
+PASS pointer-draw / first frame has one-shot self heal
+PASS pointer-draw / show move and reflow request redraw
+PASS pointer-draw / detached pointer window is recreated
+PASS pointer-draw / draw health callbacks are session scoped
+FAIL shared / manifest: scripts/verify_manifest.py failed:
+FAIL: sha256 mismatch: th_17_pointer.js
+FAIL pointer_regressions passed=104 failed=1
