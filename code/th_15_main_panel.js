@@ -1,5 +1,5 @@
-// @version 1.1.0
-// ToolHub - 主按钮面板第二阶段：实时运行状态、状态详情与可见期刷新
+// @version 1.2.0
+// ToolHub - 主按钮面板第三阶段：显式编辑模式、拖动排序与事务保存
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -489,8 +489,393 @@ FloatBallAppWM.prototype.startMainPanelRuntimeStatusTicker = function(panel) {
   return false;
 };
 
-FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colors) {
+
+FloatBallAppWM.prototype.isMainPanelEditMode = function() {
+  try {
+    return !!(this.state &&
+      this.state.mainPanelEditMode === true &&
+      this.state.mainPanelEditButtons &&
+      this.state.mainPanelEditButtons.length !== undefined);
+  } catch (e) {}
+  return false;
+};
+
+FloatBallAppWM.prototype.getMainPanelEditPermutationSignature = function(buttons) {
+  var parts = [];
+  try {
+    var list = buttons || [];
+    for (var i = 0; i < list.length; i++) {
+      parts.push(JSON.stringify(list[i] === undefined ? null : list[i]));
+    }
+    parts.sort();
+    return parts.join('\u001e');
+  } catch (e) {
+    safeLog(this.L, 'w', 'main panel edit signature fail: ' + String(e));
+  }
+  return '';
+};
+
+FloatBallAppWM.prototype.cloneMainPanelButtonsForEdit = function() {
+  try {
+    var source = null;
+    try {
+      if (this.panels && this.panels.main) source = this.panels.main;
+    } catch (ePanels) { source = null; }
+    if (!source && typeof ConfigManager !== 'undefined' && ConfigManager && ConfigManager.loadButtons) {
+      source = ConfigManager.loadButtons();
+    }
+    if (!source || source.length === undefined) source = [];
+    return JSON.parse(JSON.stringify(source));
+  } catch (e) {
+    safeLog(this.L, 'e', 'clone main panel buttons for edit fail: ' + String(e));
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.clearMainPanelEditState = function(reason) {
+  try {
+    if (!this.state) return false;
+    this.state.mainPanelEditRenderGeneration = Number(this.state.mainPanelEditRenderGeneration || 0) + 1;
+    this.state.mainPanelEditMode = false;
+    this.state.mainPanelEditButtons = null;
+    this.state.mainPanelEditOriginalSignature = '';
+    this.state.mainPanelEditDirty = false;
+    this.state.mainPanelEditDrag = null;
+    this.state.mainPanelEditDropTargetView = null;
+    this.state.mainPanelEditStatusText = null;
+    this.state.mainPanelEditPreserveDetachPanel = null;
+    safeLog(this.L, 'i', 'main panel edit state cleared reason=' + String(reason || ''));
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'clear main panel edit state fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.rebuildMainPanelForEditMode = function(preserveEdit, reason) {
+  try {
+    if (!this.state || this.state.closing || this.state.closed) return false;
+    var self = this;
+    var oldPanel = this.state.panel;
+    if (preserveEdit === true && oldPanel) {
+      this.state.mainPanelEditPreserveDetachPanel = oldPanel;
+    }
+
+    this.hideMainPanel(true);
+
+    var generation = Number(this.state.mainPanelEditRebuildGeneration || 0) + 1;
+    this.state.mainPanelEditRebuildGeneration = generation;
+    var run = new java.lang.Runnable({ run: function() {
+      try {
+        if (!self.state || Number(self.state.mainPanelEditRebuildGeneration || 0) !== generation) return;
+        if (self.state.closing || self.state.closed) return;
+        self.showPanelAvoidBall('main');
+        if (self.state.mainPanelEditPreserveDetachPanel === oldPanel) {
+          self.state.mainPanelEditPreserveDetachPanel = null;
+        }
+        safeLog(self.L, 'i', 'main panel rebuilt for edit reason=' + String(reason || ''));
+      } catch (eRun) {
+        safeLog(self.L, 'e', 'rebuild main panel for edit run fail: ' + String(eRun));
+      }
+    }});
+
+    if (this.state.h) this.state.h.postDelayed(run, 50);
+    else run.run();
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'e', 'rebuild main panel for edit fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.startMainPanelEditMode = function() {
+  try {
+    if (this.isMainPanelEditMode()) return true;
+    if (String(this.currentPanelKey || 'main') !== 'main') {
+      this.toast('当前面板不支持排序');
+      return false;
+    }
+
+    var buttons = this.cloneMainPanelButtonsForEdit();
+    if (!buttons) {
+      this.toast('无法读取按钮布局');
+      return false;
+    }
+
+    this.state.mainPanelEditButtons = buttons;
+    this.state.mainPanelEditOriginalSignature = this.getMainPanelEditPermutationSignature(buttons);
+    this.state.mainPanelEditDirty = false;
+    this.state.mainPanelEditMode = true;
+    this.state.mainPanelEditDrag = null;
+    this.state.mainPanelEditDropTargetView = null;
+    this.toast('拖动卡片调整顺序');
+    return this.rebuildMainPanelForEditMode(true, 'start');
+  } catch (e) {
+    safeLog(this.L, 'e', 'start main panel edit mode fail: ' + String(e));
+    try { this.toast('无法进入布局编辑'); } catch (eToast) {}
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.cancelMainPanelEditMode = function() {
+  try {
+    if (!this.isMainPanelEditMode()) return false;
+    this.clearMainPanelEditState('cancel');
+    this.toast('已取消布局调整');
+    return this.rebuildMainPanelForEditMode(false, 'cancel');
+  } catch (e) {
+    safeLog(this.L, 'e', 'cancel main panel edit mode fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.saveMainPanelEditMode = function() {
+  try {
+    if (!this.isMainPanelEditMode()) return false;
+    var edited = this.state.mainPanelEditButtons;
+    var originalSignature = String(this.state.mainPanelEditOriginalSignature || '');
+    var editedSignature = this.getMainPanelEditPermutationSignature(edited);
+    if (!originalSignature || editedSignature !== originalSignature) {
+      throw '按钮集合校验失败，已阻止保存';
+    }
+
+    var savedButtons = JSON.parse(JSON.stringify(edited));
+    var saveOk = ConfigManager.saveButtons(savedButtons);
+    if (saveOk === false) throw '按钮顺序写入失败';
+
+    if (!this.panels) this.panels = {};
+    this.panels.main = savedButtons;
+    this.clearMainPanelEditState('save');
+    this.toast('布局已保存');
+    return this.rebuildMainPanelForEditMode(false, 'save');
+  } catch (e) {
+    safeLog(this.L, 'e', 'save main panel edit mode fail: ' + String(e));
+    try { this.toast('保存失败：' + String(e)); } catch (eToast) {}
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.handleMainPanelEditPanelDetached = function(panel) {
+  try {
+    if (!this.state) return false;
+    if (this.state.mainPanelEditPreserveDetachPanel === panel) {
+      this.state.mainPanelEditPreserveDetachPanel = null;
+      return true;
+    }
+    if (this.isMainPanelEditMode()) {
+      this.clearMainPanelEditState('panel_detached');
+      return true;
+    }
+  } catch (e) {
+    safeLog(this.L, 'w', 'handle main panel edit detach fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.buildMainPanelRenderItems = function(rawButtons, editMode) {
+  var items = [];
+  var raw = rawButtons || [];
+  try {
+    for (var i = 0; i < raw.length; i++) {
+      var b = raw[i];
+      if (!b || b.enabled === false) continue;
+      if (String(b.id || '') === 'builtin_settings' && String(b.type || '') === 'open_settings') continue;
+      items.push({ config: b, rawIndex: i, add: false, empty: false });
+    }
+  } catch (e) {
+    safeLog(this.L, 'w', 'build main panel render items fail: ' + String(e));
+  }
+
+  if (editMode === true) {
+    if (items.length === 0) items.push({ config: null, rawIndex: -1, add: false, empty: true });
+  } else {
+    items.push({ config: null, rawIndex: -1, add: true, empty: false });
+  }
+  return items;
+};
+
+FloatBallAppWM.prototype.getMainPanelEditVisibleSlots = function(items) {
+  var slots = [];
+  try {
+    var list = items || [];
+    for (var i = 0; i < list.length; i++) {
+      var item = list[i];
+      if (!item || item.add || item.empty || Number(item.rawIndex) < 0) continue;
+      slots.push(Number(item.rawIndex));
+    }
+    slots.sort(function(a, b) { return a - b; });
+  } catch (e) {
+    slots = [];
+  }
+  return slots;
+};
+
+FloatBallAppWM.prototype.reorderMainPanelEditItems = function(editContext, fromIndex, toIndex) {
+  try {
+    if (!this.isMainPanelEditMode() || !editContext) return false;
+    var items = editContext.items || [];
+    var from = Number(fromIndex);
+    var to = Number(toIndex);
+    if (isNaN(from) || isNaN(to) || from < 0 || to < 0 ||
+        from >= items.length || to >= items.length || from === to) return false;
+    if (!items[from] || items[from].empty || items[from].add ||
+        !items[to] || items[to].empty || items[to].add) return false;
+
+    var slots = this.getMainPanelEditVisibleSlots(items);
+    if (slots.length !== items.length) return false;
+
+    var moved = items.splice(from, 1)[0];
+    items.splice(to, 0, moved);
+
+    var raw = this.state.mainPanelEditButtons;
+    for (var i = 0; i < slots.length; i++) {
+      raw[slots[i]] = items[i].config;
+      items[i].rawIndex = slots[i];
+      items[i].visibleIndex = i;
+    }
+
+    this.state.mainPanelEditDirty = true;
+    try {
+      if (this.state.mainPanelEditStatusText) {
+        this.state.mainPanelEditStatusText.setText('已调整，点击 ✓ 保存');
+      }
+    } catch (eStatus) {}
+    safeLog(this.L, 'i', 'main panel edit reorder from=' + String(from) + ' to=' + String(to));
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'e', 'reorder main panel edit items fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.findMainPanelDragTargetIndex = function(grid, rawX, rawY, count) {
+  try {
+    if (!grid) return -1;
+    var max = Math.min(Number(count || 0), Number(grid.getChildCount ? grid.getChildCount() : 0));
+    var best = -1;
+    var bestDistance = Number.MAX_VALUE;
+    var loc = java.lang.reflect.Array.newInstance(java.lang.Integer.TYPE, 2);
+
+    for (var i = 0; i < max; i++) {
+      var child = grid.getChildAt(i);
+      if (!child) continue;
+      child.getLocationOnScreen(loc);
+      var left = Number(loc[0]);
+      var top = Number(loc[1]);
+      var right = left + Number(child.getWidth ? child.getWidth() : 0);
+      var bottom = top + Number(child.getHeight ? child.getHeight() : 0);
+      if (Number(rawX) >= left && Number(rawX) <= right &&
+          Number(rawY) >= top && Number(rawY) <= bottom) return i;
+
+      var cx = (left + right) / 2;
+      var cy = (top + bottom) / 2;
+      var dx = Number(rawX) - cx;
+      var dy = Number(rawY) - cy;
+      var distance = dx * dx + dy * dy;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = i;
+      }
+    }
+    return best;
+  } catch (e) {
+    safeLog(this.L, 'w', 'find main panel drag target fail: ' + String(e));
+  }
+  return -1;
+};
+
+FloatBallAppWM.prototype.applyMainPanelEditDragVisual = function(view, active) {
+  try {
+    if (!view) return;
+    view.animate().cancel();
+    view.animate()
+      .scaleX(active ? 1.05 : 1.0)
+      .scaleY(active ? 1.05 : 1.0)
+      .alpha(active ? 0.90 : 1.0)
+      .setDuration(active ? 90 : 120)
+      .start();
+    try { view.setElevation(this.dp(active ? 9 : (this.isDarkTheme() ? 0 : 1))); } catch (eElev) {}
+  } catch (e) {}
+};
+
+FloatBallAppWM.prototype.updateMainPanelEditDropTarget = function(targetView, dragView) {
+  try {
+    if (!this.state) return;
+    var old = this.state.mainPanelEditDropTargetView;
+    if (old && old !== dragView && old !== targetView) {
+      old.animate().cancel();
+      old.animate().scaleX(1.0).scaleY(1.0).alpha(1.0).setDuration(90).start();
+    }
+    if (targetView && targetView !== dragView) {
+      targetView.animate().cancel();
+      targetView.animate().scaleX(1.03).scaleY(1.03).alpha(0.72).setDuration(80).start();
+      this.state.mainPanelEditDropTargetView = targetView;
+    } else {
+      this.state.mainPanelEditDropTargetView = null;
+    }
+  } catch (e) {}
+};
+
+FloatBallAppWM.prototype.clearMainPanelEditDropTarget = function(dragView) {
+  try {
+    if (!this.state) return;
+    var target = this.state.mainPanelEditDropTargetView;
+    if (target && target !== dragView) {
+      target.animate().cancel();
+      target.animate().scaleX(1.0).scaleY(1.0).alpha(1.0).setDuration(90).start();
+    }
+    this.state.mainPanelEditDropTargetView = null;
+  } catch (e) {}
+};
+
+FloatBallAppWM.prototype.autoScrollMainPanelEdit = function(scroll, rawY) {
+  try {
+    if (!scroll) return false;
+    var loc = java.lang.reflect.Array.newInstance(java.lang.Integer.TYPE, 2);
+    scroll.getLocationOnScreen(loc);
+    var top = Number(loc[1]);
+    var bottom = top + Number(scroll.getHeight ? scroll.getHeight() : 0);
+    var zone = this.dp(36);
+    var step = this.dp(18);
+    var delta = 0;
+    if (Number(rawY) < top + zone) delta = -step;
+    else if (Number(rawY) > bottom - zone) delta = step;
+    if (delta !== 0) {
+      scroll.scrollBy(0, delta);
+      return true;
+    }
+  } catch (e) {}
+  return false;
+};
+
+FloatBallAppWM.prototype.postMainPanelEditGridRender = function(editContext) {
+  try {
+    if (!this.state || !editContext || !editContext.render) return false;
+    var self = this;
+    var generation = Number(this.state.mainPanelEditRenderGeneration || 0) + 1;
+    this.state.mainPanelEditRenderGeneration = generation;
+    var run = new java.lang.Runnable({ run: function() {
+      try {
+        if (!self.state || Number(self.state.mainPanelEditRenderGeneration || 0) !== generation) return;
+        if (!self.isMainPanelEditMode()) return;
+        if (self.state.panel !== editContext.panel || !self.state.addedPanel) return;
+        editContext.render();
+      } catch (eRun) {
+        safeLog(self.L, 'w', 'main panel edit grid render fail: ' + String(eRun));
+      }
+    }});
+    if (this.state.h) this.state.h.post(run);
+    else run.run();
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'post main panel edit grid render fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colors, editContext) {
   var self = this;
+  var editMode = !!(editContext && editContext.editMode && item && !item.add && !item.empty);
   var frame = new android.widget.FrameLayout(context);
   var gp = new android.widget.GridLayout.LayoutParams();
   gp.width = spec.cardWidth;
@@ -498,8 +883,8 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
   var halfGap = Math.max(1, Math.floor(spec.gap / 2));
   gp.setMargins(halfGap, halfGap, halfGap, halfGap);
   frame.setLayoutParams(gp);
-  frame.setClickable(true);
-  frame.setFocusable(true);
+  frame.setClickable(!item.empty);
+  frame.setFocusable(!item.empty);
   var radius = this.dp(14);
   frame.setBackground(this.createMainPanelRippleBackground(colors.card, colors.stroke, colors.ripple, radius));
   try { frame.setElevation(this.dp(this.isDarkTheme() ? 0 : 1)); frame.setClipToOutline(true); } catch (eElev) {}
@@ -507,12 +892,20 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
   var body = new android.widget.LinearLayout(context);
   body.setOrientation(android.widget.LinearLayout.VERTICAL);
   body.setGravity(android.view.Gravity.CENTER);
-  body.setPadding(this.dp(6), this.dp(7), this.dp(6), this.dp(6));
+  body.setPadding(this.dp(6), this.dp(editMode ? 10 : 7), this.dp(6), this.dp(6));
   frame.addView(body, new android.widget.FrameLayout.LayoutParams(-1, -1));
 
   var iconSize = this.dp(Math.max(24, Math.min(30, Number(this.config.PANEL_ICON_SIZE_DP || 28))));
   var iv = null;
-  if (item.add) {
+  if (item.empty) {
+    var emptyIcon = new android.widget.TextView(context);
+    emptyIcon.setText('—');
+    emptyIcon.setTextColor(colors.secondaryText);
+    emptyIcon.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
+    emptyIcon.setGravity(android.view.Gravity.CENTER);
+    try { emptyIcon.setIncludeFontPadding(false); } catch (eEmptyPad) {}
+    body.addView(emptyIcon, new android.widget.LinearLayout.LayoutParams(iconSize, iconSize));
+  } else if (item.add) {
     var plus = new android.widget.TextView(context);
     plus.setText('+');
     plus.setTextColor(colors.secondaryText);
@@ -529,10 +922,13 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
     body.addView(iv, new android.widget.LinearLayout.LayoutParams(iconSize, iconSize));
   }
 
-  if (this.config.PANEL_LABEL_ENABLED !== false) {
+  if (this.config.PANEL_LABEL_ENABLED !== false || item.empty) {
     var tv = new android.widget.TextView(context);
-    tv.setText(String(item.add ? '添加功能' : ((item.config && item.config.title) || '工具')));
-    tv.setTextColor(item.add ? colors.secondaryText : colors.text);
+    var labelText = item.empty
+      ? '暂无可排序按钮'
+      : (item.add ? '添加功能' : ((item.config && item.config.title) || '工具'));
+    tv.setText(String(labelText));
+    tv.setTextColor((item.add || item.empty) ? colors.secondaryText : colors.text);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, Math.max(10, Math.min(13, Number(this.config.PANEL_LABEL_TEXT_SIZE_SP || 12))));
     tv.setGravity(android.view.Gravity.CENTER);
     tv.setSingleLine(true);
@@ -543,34 +939,142 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
     body.addView(tv, tvLp);
   }
 
-  try { frame.setContentDescription(String(item.add ? '添加功能' : ((item.config && item.config.title) || '工具'))); } catch (eDesc) {}
-  frame.setOnTouchListener(new android.view.View.OnTouchListener({ onTouch: function(v, event) {
-    try {
-      var action = event.getActionMasked();
-      if (action === android.view.MotionEvent.ACTION_DOWN) {
-        v.animate().cancel();
-        v.animate().scaleX(0.97).scaleY(0.97).setDuration(70).start();
-      } else if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
-        v.animate().cancel();
-        v.animate().scaleX(1).scaleY(1).setDuration(100).start();
+  if (editMode) {
+    var orderBadge = new android.widget.TextView(context);
+    orderBadge.setText(String(Number(item.visibleIndex || 0) + 1));
+    orderBadge.setTextColor(colors.secondaryText);
+    orderBadge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 9);
+    orderBadge.setGravity(android.view.Gravity.CENTER);
+    try { orderBadge.setIncludeFontPadding(false); } catch (eOrderPad) {}
+    try { orderBadge.setBackground(this.ui.createRoundDrawable(this.withAlpha(colors.secondaryText, 0.12), this.dp(8))); } catch (eOrderBg) {}
+    var orderLp = new android.widget.FrameLayout.LayoutParams(this.dp(18), this.dp(18), android.view.Gravity.TOP | android.view.Gravity.START);
+    orderLp.leftMargin = this.dp(6);
+    orderLp.topMargin = this.dp(6);
+    frame.addView(orderBadge, orderLp);
+
+    var dragHandle = new android.widget.TextView(context);
+    dragHandle.setText('⋮⋮');
+    dragHandle.setTextColor(colors.secondaryText);
+    dragHandle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+    dragHandle.setGravity(android.view.Gravity.CENTER);
+    try { dragHandle.setIncludeFontPadding(false); } catch (eHandlePad) {}
+    var handleLp = new android.widget.FrameLayout.LayoutParams(this.dp(24), this.dp(22), android.view.Gravity.TOP | android.view.Gravity.END);
+    handleLp.rightMargin = this.dp(4);
+    handleLp.topMargin = this.dp(4);
+    frame.addView(dragHandle, handleLp);
+  }
+
+  var description = item.empty
+    ? '暂无可排序按钮'
+    : (item.add ? '添加功能' : ((item.config && item.config.title) || '工具'));
+  if (editMode) description = '拖动调整顺序：' + String(description) + '，第 ' + String(Number(item.visibleIndex || 0) + 1) + ' 个';
+  try { frame.setContentDescription(String(description)); } catch (eDesc) {}
+
+  if (editMode) {
+    frame.setOnTouchListener(new android.view.View.OnTouchListener({ onTouch: function(v, event) {
+      try {
+        var action = event.getActionMasked();
+        var drag = self.state.mainPanelEditDrag;
+        if (action === android.view.MotionEvent.ACTION_DOWN) {
+          self.touchActivity();
+          try { v.getParent().requestDisallowInterceptTouchEvent(true); } catch (eParentDown) {}
+          self.state.mainPanelEditDrag = {
+            view: v,
+            item: item,
+            fromIndex: Number(item.visibleIndex || 0),
+            targetIndex: Number(item.visibleIndex || 0),
+            downX: Number(event.getRawX()),
+            downY: Number(event.getRawY()),
+            started: false
+          };
+          v.animate().cancel();
+          v.animate().scaleX(0.98).scaleY(0.98).setDuration(60).start();
+          return true;
+        }
+
+        if (!drag || drag.view !== v) return true;
+
+        if (action === android.view.MotionEvent.ACTION_MOVE) {
+          var dx = Number(event.getRawX()) - Number(drag.downX || 0);
+          var dy = Number(event.getRawY()) - Number(drag.downY || 0);
+          if (!drag.started && (dx * dx + dy * dy) >= self.dp(5) * self.dp(5)) {
+            drag.started = true;
+            try { v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); } catch (eHaptic) {}
+            self.applyMainPanelEditDragVisual(v, true);
+          }
+          if (drag.started) {
+            var targetIndex = self.findMainPanelDragTargetIndex(
+              editContext.grid,
+              event.getRawX(),
+              event.getRawY(),
+              editContext.items.length
+            );
+            if (targetIndex >= 0) {
+              drag.targetIndex = targetIndex;
+              self.updateMainPanelEditDropTarget(editContext.grid.getChildAt(targetIndex), v);
+            }
+            self.autoScrollMainPanelEdit(editContext.scroll, event.getRawY());
+          }
+          return true;
+        }
+
+        if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
+          try { v.getParent().requestDisallowInterceptTouchEvent(false); } catch (eParentUp) {}
+          self.applyMainPanelEditDragVisual(v, false);
+          self.clearMainPanelEditDropTarget(v);
+          self.state.mainPanelEditDrag = null;
+
+          if (action === android.view.MotionEvent.ACTION_UP) {
+            if (drag.started && Number(drag.targetIndex) !== Number(drag.fromIndex)) {
+              if (self.reorderMainPanelEditItems(editContext, drag.fromIndex, drag.targetIndex)) {
+                self.toast('顺序已调整，点击 ✓ 保存');
+                self.postMainPanelEditGridRender(editContext);
+              }
+            } else if (!drag.started) {
+              self.toast('拖动卡片调整顺序');
+            }
+          }
+          return true;
+        }
+      } catch (eTouch) {
+        safeLog(self.L, 'w', 'main panel edit touch fail: ' + String(eTouch));
+        try { self.state.mainPanelEditDrag = null; } catch (eClearDrag) {}
       }
-    } catch (eTouch) {}
-    return false;
-  }}));
-  frame.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
-    self.touchActivity();
-    if (item.add) {
-      self.openMainPanelButtonManager(true);
-      return;
-    }
-    self.hideMainPanel(true);
-    self.execButtonAction(item.config, item.rawIndex);
-  }}));
+      return true;
+    }}));
+  } else if (!item.empty) {
+    frame.setOnTouchListener(new android.view.View.OnTouchListener({ onTouch: function(v, event) {
+      try {
+        var action = event.getActionMasked();
+        if (action === android.view.MotionEvent.ACTION_DOWN) {
+          v.animate().cancel();
+          v.animate().scaleX(0.97).scaleY(0.97).setDuration(70).start();
+        } else if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
+          v.animate().cancel();
+          v.animate().scaleX(1).scaleY(1).setDuration(100).start();
+        }
+      } catch (eTouch) {}
+      return false;
+    }}));
+    frame.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
+      self.touchActivity();
+      if (item.add) {
+        self.openMainPanelButtonManager(true);
+        return;
+      }
+      self.hideMainPanel(true);
+      self.execButtonAction(item.config, item.rawIndex);
+    }}));
+  } else {
+    try { frame.setAlpha(0.64); } catch (eEmptyAlpha) {}
+  }
+
   return frame;
 };
 
 FloatBallAppWM.prototype.buildMainPanelView = function() {
   var self = this;
+  var editMode = this.isMainPanelEditMode();
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
@@ -620,7 +1124,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   header.addView(titleBox, titleLp);
 
   var title = new android.widget.TextView(context);
-  title.setText('ToolHub');
+  title.setText(editMode ? '编辑布局' : 'ToolHub');
   title.setTextColor(text);
   title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
   title.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -652,39 +1156,61 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   statusTextLp.leftMargin = this.dp(5);
   statusLine.addView(statusText, statusTextLp);
 
-  try {
-    titleBox.setClickable(true);
-    titleBox.setFocusable(true);
-    titleBox.setContentDescription('ToolHub 运行状态，点击查看详情');
-    titleBox.setBackground(this.ui.createTransparentRippleDrawable(this.withAlpha(primary, isDark ? 0.16 : 0.10), this.dp(10)));
-  } catch (eStatusTarget) {}
-  titleBox.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
-    self.guardClick('main_runtime_status_detail', 260, function() {
-      self.showMainPanelRuntimeStatusDetail();
-    });
-  }}));
+  if (editMode) {
+    dot.setBackground(this.ui.createRoundDrawable(primary, Math.floor(dotSize / 2)));
+    statusText.setText(this.state.mainPanelEditDirty ? '已调整，点击 ✓ 保存' : '拖动卡片调整顺序');
+    statusText.setTextColor(primary);
+    this.state.mainPanelEditStatusText = statusText;
+    try {
+      titleBox.setClickable(false);
+      titleBox.setFocusable(false);
+      titleBox.setContentDescription('主面板布局编辑模式');
+    } catch (eEditStatusTarget) {}
+    try { this.stopMainPanelRuntimeStatusTicker(); } catch (eStopTicker) {}
+  } else {
+    try {
+      titleBox.setClickable(true);
+      titleBox.setFocusable(true);
+      titleBox.setContentDescription('ToolHub 运行状态，点击查看详情');
+      titleBox.setBackground(this.ui.createTransparentRippleDrawable(this.withAlpha(primary, isDark ? 0.16 : 0.10), this.dp(10)));
+    } catch (eStatusTarget) {}
+    titleBox.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
+      self.guardClick('main_runtime_status_detail', 260, function() {
+        self.showMainPanelRuntimeStatusDetail();
+      });
+    }}));
 
-  this.state.mainPanelStatusPanel = panel;
-  this.state.mainPanelStatusLine = statusLine;
-  this.state.mainPanelStatusDot = dot;
-  this.state.mainPanelStatusText = statusText;
-  this.state.mainPanelStatusTarget = titleBox;
-  this.state.mainPanelStatusRenderKey = '';
-  this.refreshMainPanelRuntimeStatus();
+    this.state.mainPanelStatusPanel = panel;
+    this.state.mainPanelStatusLine = statusLine;
+    this.state.mainPanelStatusDot = dot;
+    this.state.mainPanelStatusText = statusText;
+    this.state.mainPanelStatusTarget = titleBox;
+    this.state.mainPanelStatusRenderKey = '';
+    this.refreshMainPanelRuntimeStatus();
+  }
 
-  header.addView(this.createMainPanelToolbarButton('⚙', '设置', function() {
-    self.hideMainPanel(true);
-    self.showPanelAvoidBall('settings');
-  }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
-  header.addView(this.createMainPanelToolbarButton('≡', '编辑布局', function() {
-    self.openMainPanelButtonManager(false);
-  }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
-  header.addView(this.createMainPanelToolbarButton('⋮', '更多', function(v) {
-    self.showMainPanelMoreMenu(v);
-  }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
-  header.addView(this.createMainPanelToolbarButton('×', '关闭', function() {
-    self.hideMainPanel();
-  }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
+  if (editMode) {
+    header.addView(this.createMainPanelToolbarButton('×', '取消排序', function() {
+      self.cancelMainPanelEditMode();
+    }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
+    header.addView(this.createMainPanelToolbarButton('✓', '保存排序', function() {
+      self.saveMainPanelEditMode();
+    }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
+  } else {
+    header.addView(this.createMainPanelToolbarButton('⚙', '设置', function() {
+      self.hideMainPanel(true);
+      self.showPanelAvoidBall('settings');
+    }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
+    header.addView(this.createMainPanelToolbarButton('≡', '编辑布局', function() {
+      self.startMainPanelEditMode();
+    }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
+    header.addView(this.createMainPanelToolbarButton('⋮', '更多', function(v) {
+      self.showMainPanelMoreMenu(v);
+    }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
+    header.addView(this.createMainPanelToolbarButton('×', '关闭', function() {
+      self.hideMainPanel();
+    }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
+  }
 
   var divider = new android.view.View(context);
   divider.setBackgroundColor(this.withAlpha(outline, isDark ? 0.22 : 0.16));
@@ -692,16 +1218,13 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   dividerLp.bottomMargin = this.dp(4);
   panel.addView(divider, dividerLp);
 
-  var items = [];
   var raw = [];
-  try { raw = (this.panels && this.panels[this.currentPanelKey]) ? this.panels[this.currentPanelKey] : []; } catch (eRaw) { raw = []; }
-  for (var i = 0; i < raw.length; i++) {
-    var b = raw[i];
-    if (!b || b.enabled === false) continue;
-    if (String(b.id || '') === 'builtin_settings' && String(b.type || '') === 'open_settings') continue;
-    items.push({ config: b, rawIndex: i, add: false });
+  if (editMode) {
+    try { raw = this.state.mainPanelEditButtons || []; } catch (eEditRaw) { raw = []; }
+  } else {
+    try { raw = (this.panels && this.panels[this.currentPanelKey]) ? this.panels[this.currentPanelKey] : []; } catch (eRaw) { raw = []; }
   }
-  items.push({ config: null, rawIndex: -1, add: true });
+  var items = this.buildMainPanelRenderItems(raw, editMode);
 
   var rows = Math.max(1, Math.ceil(items.length / spec.cols));
   var visibleRows = Math.min(rows, spec.visibleRows);
@@ -719,8 +1242,50 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   grid.setColumnCount(spec.cols);
   try { grid.setRowCount(rows); } catch (eRows) {}
   scroll.addView(grid, new android.widget.FrameLayout.LayoutParams(-1, -2));
+
+  var editContext = editMode ? {
+    editMode: true,
+    panel: panel,
+    grid: grid,
+    scroll: scroll,
+    items: items,
+    spec: spec,
+    colors: colors,
+    render: null
+  } : null;
+
+  function renderMainPanelEditGrid() {
+    if (!editContext || !self.isMainPanelEditMode()) return;
+    var oldY = 0;
+    try { oldY = Number(scroll.getScrollY() || 0); } catch (eOldY) { oldY = 0; }
+
+    var nextItems = self.buildMainPanelRenderItems(self.state.mainPanelEditButtons || [], true);
+    editContext.items = nextItems;
+    grid.removeAllViews();
+    var nextRows = Math.max(1, Math.ceil(nextItems.length / spec.cols));
+    try { grid.setRowCount(nextRows); } catch (eNextRows) {}
+    for (var ri = 0; ri < nextItems.length; ri++) {
+      nextItems[ri].visibleIndex = ri;
+      grid.addView(self.createMainPanelFunctionCard(nextItems[ri], spec, colors, editContext));
+    }
+    try {
+      scroll.post(new java.lang.Runnable({ run: function() {
+        try { scroll.scrollTo(0, oldY); } catch (eRestoreY) {}
+      }}));
+    } catch (ePostY) {}
+    try {
+      if (self.state.mainPanelEditStatusText) {
+        self.state.mainPanelEditStatusText.setText(self.state.mainPanelEditDirty ? '已调整，点击 ✓ 保存' : '拖动卡片调整顺序');
+      }
+    } catch (eStatusText) {}
+    grid.requestLayout();
+    grid.invalidate();
+  }
+
+  if (editContext) editContext.render = renderMainPanelEditGrid;
   for (var j = 0; j < items.length; j++) {
-    grid.addView(this.createMainPanelFunctionCard(items[j], spec, colors));
+    items[j].visibleIndex = j;
+    grid.addView(this.createMainPanelFunctionCard(items[j], spec, colors, editContext));
   }
 
   var footer = new android.widget.LinearLayout(context);
@@ -765,25 +1330,30 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   try {
     panel.addOnAttachStateChangeListener(new android.view.View.OnAttachStateChangeListener({
       onViewAttachedToWindow: function(v) {
-        try { self.startMainPanelRuntimeStatusTicker(panel); } catch (eStartStatus) {}
+        if (!editMode) {
+          try { self.startMainPanelRuntimeStatusTicker(panel); } catch (eStartStatus) {}
+        }
       },
       onViewDetachedFromWindow: function(v) {
         try { self.stopMainPanelRuntimeStatusTicker(panel); } catch (eStopStatus) {}
+        try { self.handleMainPanelEditPanelDetached(panel); } catch (eEditDetach) {}
       }
     }));
   } catch (eAttachStatus) {
-    safeLog(this.L, 'w', 'main panel status attach listener fail: ' + String(eAttachStatus));
+    safeLog(this.L, 'w', 'main panel lifecycle attach listener fail: ' + String(eAttachStatus));
   }
 
-  try {
-    panel.post(new java.lang.Runnable({ run: function() {
-      try {
-        if (self.state && self.state.panel === panel && self.state.addedPanel) {
-          self.startMainPanelRuntimeStatusTicker(panel);
-        }
-      } catch (ePostStatus) {}
-    }}));
-  } catch (ePostStatusOuter) {}
+  if (!editMode) {
+    try {
+      panel.post(new java.lang.Runnable({ run: function() {
+        try {
+          if (self.state && self.state.panel === panel && self.state.addedPanel) {
+            self.startMainPanelRuntimeStatusTicker(panel);
+          }
+        } catch (ePostStatus) {}
+      }}));
+    } catch (ePostStatusOuter) {}
+  }
 
   return panel;
 };
