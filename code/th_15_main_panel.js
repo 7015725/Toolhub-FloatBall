@@ -1,5 +1,5 @@
-// @version 1.0.1
-// ToolHub - 主按钮面板第一阶段：顶部工具栏、自适应网格、安全区域与方向动画
+// @version 1.1.0
+// ToolHub - 主按钮面板第二阶段：实时运行状态、状态详情与可见期刷新
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -238,6 +238,257 @@ FloatBallAppWM.prototype.updateMainPanelPageDots = function(dotViews, activeInde
   } catch (e) {}
 };
 
+
+FloatBallAppWM.prototype.getMainPanelRuntimeStatusSnapshot = function() {
+  var state = this.state || {};
+  var update = {};
+  try {
+    if (typeof TOOLHUB_UPDATE_STATE !== 'undefined' && TOOLHUB_UPDATE_STATE) update = TOOLHUB_UPDATE_STATE;
+  } catch (eUpdateState) { update = {}; }
+
+  var loadCount = 0;
+  var loadNames = [];
+  try {
+    if (typeof loadErrors !== 'undefined' && loadErrors && loadErrors.length !== undefined) {
+      loadCount = Number(loadErrors.length || 0);
+      for (var li = 0; li < loadErrors.length && li < 3; li++) {
+        var loadItem = loadErrors[li] || {};
+        if (loadItem.module) loadNames.push(String(loadItem.module));
+      }
+    }
+  } catch (eLoadErrors) {
+    loadCount = 0;
+    loadNames = [];
+  }
+
+  var moduleCount = 0;
+  try {
+    if (typeof modules !== 'undefined' && modules && modules.length !== undefined) moduleCount = Number(modules.length || 0);
+  } catch (eModules) { moduleCount = 0; }
+
+  var manualRunning = false;
+  var checkRunning = false;
+  try { manualRunning = typeof __manualUpdateRunning !== 'undefined' && __manualUpdateRunning === true; } catch (eManual) {}
+  try { checkRunning = typeof __runtimeUpdateCheckRunning !== 'undefined' && __runtimeUpdateCheckRunning === true; } catch (eCheck) {}
+
+  var updateStatus = '';
+  var availableCount = 0;
+  var updatedCount = 0;
+  var needRestart = false;
+  var securityText = '';
+  var errorText = '';
+  try {
+    updateStatus = String(update.status || '');
+    availableCount = Number(update.availableCount || 0);
+    updatedCount = Number(update.updatedCount || 0);
+    needRestart = update.needRestart === true;
+    securityText = String(update.securityText || '');
+    errorText = String(update.error || '');
+  } catch (eUpdateFields) {}
+
+  if (isNaN(availableCount) || availableCount < 0) availableCount = 0;
+  if (isNaN(updatedCount) || updatedCount < 0) updatedCount = 0;
+
+  function joinDetail(prefix) {
+    var parts = [];
+    if (prefix) parts.push(String(prefix));
+    if (moduleCount > 0) parts.push(String(moduleCount) + ' 个模块');
+    if (securityText) parts.push(securityText);
+    return parts.join(' · ');
+  }
+
+  function makeStatus(key, label, colorText, detail) {
+    var color = android.graphics.Color.GRAY;
+    try { color = android.graphics.Color.parseColor(String(colorText)); } catch (eColor) {}
+    return {
+      key: String(key || 'unknown'),
+      text: String(label || '状态未知'),
+      color: color,
+      detail: String(detail || label || '状态未知'),
+      moduleCount: moduleCount,
+      availableCount: availableCount,
+      updatedCount: updatedCount,
+      needRestart: needRestart,
+      updateStatus: updateStatus
+    };
+  }
+
+  if (state.closed === true) {
+    return makeStatus('stopped', '已停止', '#9CA3AF', joinDetail('ToolHub 已停止'));
+  }
+  if (state.closing === true) {
+    return makeStatus('closing', '正在关闭', '#94A3B8', joinDetail('ToolHub 正在关闭'));
+  }
+  if (loadCount > 0) {
+    var loadDetail = '有 ' + String(loadCount) + ' 个子模块加载失败';
+    if (loadNames.length > 0) loadDetail += '：' + loadNames.join('、');
+    return makeStatus('degraded', '降级运行', '#F59E0B', loadDetail);
+  }
+  if (manualRunning) {
+    return makeStatus('updating', '正在更新', '#3B82F6', joinDetail('正在事务更新子模块'));
+  }
+  if (checkRunning) {
+    return makeStatus('checking', '检查更新', '#3B82F6', joinDetail('正在检查 GitHub 子模块更新'));
+  }
+  if (updateStatus === 'error' || update.ok === false) {
+    return makeStatus('error', '更新异常', '#EF4444', errorText ? ('更新异常：' + errorText) : joinDetail('更新状态异常'));
+  }
+  if (needRestart) {
+    var restartDetail = updatedCount > 0
+      ? ('已更新 ' + String(updatedCount) + ' 个子模块，重启 ToolHub 后生效')
+      : '子模块更新已完成，重启 ToolHub 后生效';
+    return makeStatus('restart', '待重启', '#F59E0B', restartDetail);
+  }
+  if (availableCount > 0 || updateStatus === 'available') {
+    var availableDetail = availableCount > 0
+      ? ('发现 ' + String(availableCount) + ' 个可更新子模块，可在设置页安装')
+      : '发现可更新子模块，可在设置页安装';
+    return makeStatus('available', '发现更新', '#F59E0B', availableDetail);
+  }
+  if (updateStatus === 'plain' || (updateStatus && updateStatus !== 'unknown' && Number(update.mode) === 0)) {
+    return makeStatus('plain', '普通模式', '#F59E0B', joinDetail('普通更新模式，未启用完整签名校验'));
+  }
+  if (updateStatus === 'updated' && updatedCount > 0) {
+    return makeStatus('updated', '更新完成', '#22C55E', joinDetail('启动阶段已补全或修复 ' + String(updatedCount) + ' 个子模块'));
+  }
+  return makeStatus('healthy', '运行正常', '#22C55E', joinDetail('ToolHub 运行正常'));
+};
+
+FloatBallAppWM.prototype.applyMainPanelRuntimeStatusSnapshot = function(snapshot) {
+  try {
+    if (!snapshot || !this.state) return false;
+    var dot = this.state.mainPanelStatusDot;
+    var textView = this.state.mainPanelStatusText;
+    var target = this.state.mainPanelStatusTarget;
+    if (!dot || !textView) return false;
+
+    var key = String(snapshot.key || '');
+    var text = String(snapshot.text || '状态未知');
+    var detail = String(snapshot.detail || text);
+    var changed = String(this.state.mainPanelStatusRenderKey || '') !== (key + '|' + text + '|' + detail);
+
+    if (changed) {
+      var dotSize = this.dp(6);
+      dot.setBackground(this.ui.createRoundDrawable(snapshot.color, Math.floor(dotSize / 2)));
+      textView.setText(text);
+      textView.setTextColor(snapshot.color);
+      try { textView.setContentDescription(text); } catch (eTextDesc) {}
+      try {
+        if (target) target.setContentDescription('ToolHub，' + text + '。点击查看状态详情');
+      } catch (eTargetDesc) {}
+      this.state.mainPanelStatusRenderKey = key + '|' + text + '|' + detail;
+    }
+
+    this.state.mainPanelRuntimeStatus = snapshot;
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'apply main panel runtime status fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.refreshMainPanelRuntimeStatus = function() {
+  try {
+    var snapshot = this.getMainPanelRuntimeStatusSnapshot();
+    this.applyMainPanelRuntimeStatusSnapshot(snapshot);
+    return snapshot;
+  } catch (e) {
+    safeLog(this.L, 'w', 'refresh main panel runtime status fail: ' + String(e));
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.showMainPanelRuntimeStatusDetail = function() {
+  try {
+    this.touchActivity();
+    var snapshot = this.refreshMainPanelRuntimeStatus();
+    if (!snapshot) return false;
+    var detail = String(snapshot.detail || snapshot.text || '状态未知');
+    if (detail.length > 220) detail = detail.substring(0, 217) + '...';
+    this.toast(detail);
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'show main panel runtime status detail fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.stopMainPanelRuntimeStatusTicker = function(panel) {
+  try {
+    if (!this.state) return false;
+    var currentPanel = this.state.mainPanelStatusPanel;
+    if (panel && currentPanel && currentPanel !== panel) return false;
+
+    var runner = this.state.mainPanelStatusRunnable;
+    try {
+      if (runner && this.state.h) this.state.h.removeCallbacks(runner);
+    } catch (eRemove) {}
+
+    this.state.mainPanelStatusGeneration = Number(this.state.mainPanelStatusGeneration || 0) + 1;
+    this.state.mainPanelStatusRunnable = null;
+    this.state.mainPanelStatusPanel = null;
+    this.state.mainPanelStatusLine = null;
+    this.state.mainPanelStatusDot = null;
+    this.state.mainPanelStatusText = null;
+    this.state.mainPanelStatusTarget = null;
+    this.state.mainPanelStatusRenderKey = '';
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'stop main panel runtime status ticker fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.startMainPanelRuntimeStatusTicker = function(panel) {
+  try {
+    if (!panel || !this.state || !this.state.h) return false;
+
+    var line = this.state.mainPanelStatusLine;
+    var dot = this.state.mainPanelStatusDot;
+    var textView = this.state.mainPanelStatusText;
+    var target = this.state.mainPanelStatusTarget;
+
+    this.stopMainPanelRuntimeStatusTicker();
+
+    this.state.mainPanelStatusPanel = panel;
+    this.state.mainPanelStatusLine = line;
+    this.state.mainPanelStatusDot = dot;
+    this.state.mainPanelStatusText = textView;
+    this.state.mainPanelStatusTarget = target;
+    this.state.mainPanelStatusRenderKey = '';
+
+    var self = this;
+    var generation = Number(this.state.mainPanelStatusGeneration || 0) + 1;
+    this.state.mainPanelStatusGeneration = generation;
+    this.refreshMainPanelRuntimeStatus();
+
+    var runner = null;
+    runner = new java.lang.Runnable({ run: function() {
+      try {
+        if (!self.state || Number(self.state.mainPanelStatusGeneration || 0) !== generation) return;
+        if (self.state.closing || self.state.closed || self.state.panel !== panel || !self.state.addedPanel) {
+          self.stopMainPanelRuntimeStatusTicker(panel);
+          return;
+        }
+        self.refreshMainPanelRuntimeStatus();
+        if (self.state.h && Number(self.state.mainPanelStatusGeneration || 0) === generation) {
+          self.state.h.postDelayed(runner, 800);
+        }
+      } catch (eRun) {
+        safeLog(self.L, 'w', 'main panel runtime status tick fail: ' + String(eRun));
+        self.stopMainPanelRuntimeStatusTicker(panel);
+      }
+    }});
+
+    this.state.mainPanelStatusRunnable = runner;
+    this.state.h.postDelayed(runner, 800);
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'start main panel runtime status ticker fail: ' + String(e));
+  }
+  return false;
+};
+
 FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colors) {
   var self = this;
   var frame = new android.widget.FrameLayout(context);
@@ -383,18 +634,43 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   var statusLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
   statusLp.topMargin = this.dp(2);
   titleBox.addView(statusLine, statusLp);
+
   var dot = new android.view.View(context);
   var dotSize = this.dp(6);
-  dot.setBackground(this.ui.createRoundDrawable(android.graphics.Color.parseColor('#22C55E'), Math.floor(dotSize / 2)));
+  dot.setBackground(this.ui.createRoundDrawable(secondaryText, Math.floor(dotSize / 2)));
   statusLine.addView(dot, new android.widget.LinearLayout.LayoutParams(dotSize, dotSize));
+
   var statusText = new android.widget.TextView(context);
-  statusText.setText('运行中');
+  statusText.setText('读取状态');
   statusText.setTextColor(secondaryText);
   statusText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
+  statusText.setSingleLine(true);
+  statusText.setEllipsize(android.text.TextUtils.TruncateAt.END);
   try { statusText.setIncludeFontPadding(false); } catch (eStatusPad) {}
-  var statusTextLp = new android.widget.LinearLayout.LayoutParams(-2, -2);
+  var statusTextLp = new android.widget.LinearLayout.LayoutParams(0, -2);
+  statusTextLp.weight = 1;
   statusTextLp.leftMargin = this.dp(5);
   statusLine.addView(statusText, statusTextLp);
+
+  try {
+    titleBox.setClickable(true);
+    titleBox.setFocusable(true);
+    titleBox.setContentDescription('ToolHub 运行状态，点击查看详情');
+    titleBox.setBackground(this.ui.createTransparentRippleDrawable(this.withAlpha(primary, isDark ? 0.16 : 0.10), this.dp(10)));
+  } catch (eStatusTarget) {}
+  titleBox.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
+    self.guardClick('main_runtime_status_detail', 260, function() {
+      self.showMainPanelRuntimeStatusDetail();
+    });
+  }}));
+
+  this.state.mainPanelStatusPanel = panel;
+  this.state.mainPanelStatusLine = statusLine;
+  this.state.mainPanelStatusDot = dot;
+  this.state.mainPanelStatusText = statusText;
+  this.state.mainPanelStatusTarget = titleBox;
+  this.state.mainPanelStatusRenderKey = '';
+  this.refreshMainPanelRuntimeStatus();
 
   header.addView(this.createMainPanelToolbarButton('⚙', '设置', function() {
     self.hideMainPanel(true);
@@ -485,6 +761,30 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   }
 
   this.state.mainPanelResponsiveSpec = spec;
+
+  try {
+    panel.addOnAttachStateChangeListener(new android.view.View.OnAttachStateChangeListener({
+      onViewAttachedToWindow: function(v) {
+        try { self.startMainPanelRuntimeStatusTicker(panel); } catch (eStartStatus) {}
+      },
+      onViewDetachedFromWindow: function(v) {
+        try { self.stopMainPanelRuntimeStatusTicker(panel); } catch (eStopStatus) {}
+      }
+    }));
+  } catch (eAttachStatus) {
+    safeLog(this.L, 'w', 'main panel status attach listener fail: ' + String(eAttachStatus));
+  }
+
+  try {
+    panel.post(new java.lang.Runnable({ run: function() {
+      try {
+        if (self.state && self.state.panel === panel && self.state.addedPanel) {
+          self.startMainPanelRuntimeStatusTicker(panel);
+        }
+      } catch (ePostStatus) {}
+    }}));
+  } catch (ePostStatusOuter) {}
+
   return panel;
 };
 

@@ -234,7 +234,7 @@ th_19_position_state.js
 | `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
 | `th_14_schema_editor.js` | 设置结构编辑器 |
 | `th_15_extra.js` | 查看器面板、通用面板定位与显示、ToolApp Shell、页面栈、响应式布局、左右滑返回预览 |
-| `th_15_main_panel.js` | 主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页提示和方向展开/退出动画 |
+| `th_15_main_panel.js` | 主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页提示、方向展开/退出动画和实时运行状态 |
 | `th_16_entry.js` | 主线程同步、广播注册、实例注册、`startAsync`、`close`、`dispose`、设置页重启 |
 | `th_17_pointer.js` | 屏幕指针、悬停取字、取字就绪视觉状态、框选区域、小框回退取字、OCR rect 输出 |
 | `th_18_pointer_ocr.js` | 框选截图 OCR 处理、截图区域覆盖层、OCR 任务衔接、指针边框颜色状态补充 |
