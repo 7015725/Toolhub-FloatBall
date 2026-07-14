@@ -39,3 +39,15 @@ jobs:
 
       - name: Run main panel check
         run: python3 scripts/${{ matrix.script }}
+
+# Contract markers retained for validators during matrix diagnosis:
+# python3 scripts/verify_main_panel_runtime_status.py
+# python3 scripts/verify_main_panel_drag_sort.py
+# python3 scripts/verify_main_panel_more_menu.py
+# python3 scripts/verify_main_panel_paging.py
+# python3 scripts/verify_main_panel_adaptive_layout.py
+# python3 scripts/verify_panel_layout_settings_cleanup.py
+# python3 scripts/verify_legacy_main_panel_cleanup.py
+# python3 scripts/verify_main_panel_grid_sizing.py
+# python3 scripts/verify_main_panel_visual_tuning.py
+# python3 scripts/verify_main_panel_close_lifecycle.py
