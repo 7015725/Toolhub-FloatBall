@@ -33,27 +33,53 @@ jobs:
       - name: Apply focused patch
         run: python3 scripts/tmp_fix_main_panel_edge_align.py
 
-      - name: Verify focused contracts
-        shell: bash
+      - name: Verify changed module version
         run: |
           git fetch --no-tags origin main --depth=1
           python3 scripts/verify_changed_module_versions.py --base-ref origin/main
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
+
+      - name: Verify Rhino ES5
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: Verify JavaScript syntax
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: Verify module audits
+        run: |
           python3 scripts/verify_module_boundaries.py
           python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
           python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
           python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
-          python3 scripts/verify_main_panel_grid_sizing.py
-          python3 scripts/verify_main_panel_paging.py
-          python3 scripts/verify_main_panel_adaptive_layout.py
-          python3 scripts/verify_main_panel_visual_tuning.py
-          python3 scripts/verify_main_panel_drag_sort.py
-          python3 scripts/verify_main_panel_runtime_status.py
-          python3 scripts/verify_main_panel_close_lifecycle.py
-          python3 scripts/verify_panel_layout_settings_cleanup.py
-          python3 scripts/verify_legacy_main_panel_cleanup.py
-          git diff --check
+
+      - name: Verify main panel grid sizing
+        run: python3 scripts/verify_main_panel_grid_sizing.py
+
+      - name: Verify main panel paging
+        run: python3 scripts/verify_main_panel_paging.py
+
+      - name: Verify main panel adaptive layout
+        run: python3 scripts/verify_main_panel_adaptive_layout.py
+
+      - name: Verify main panel visual tuning
+        run: python3 scripts/verify_main_panel_visual_tuning.py
+
+      - name: Verify main panel drag sort
+        run: python3 scripts/verify_main_panel_drag_sort.py
+
+      - name: Verify main panel runtime status
+        run: python3 scripts/verify_main_panel_runtime_status.py
+
+      - name: Verify main panel close lifecycle
+        run: python3 scripts/verify_main_panel_close_lifecycle.py
+
+      - name: Verify panel layout settings cleanup
+        run: python3 scripts/verify_panel_layout_settings_cleanup.py
+
+      - name: Verify legacy main panel cleanup
+        run: python3 scripts/verify_legacy_main_panel_cleanup.py
+
+      - name: Check whitespace
+        run: git diff --check
 
       - name: Remove temporary files
         shell: bash
