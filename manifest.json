@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "完成全仓 Rhino 颜色接口安全治理"
+      "统一全仓 Rhino 颜色安全接口"
     ],
-    "title": "完成全仓 Rhino 颜色接口安全治理"
+    "title": "统一全仓 Rhino 颜色安全接口"
   },
   "schema": 3,
-  "version": 20260714151955
+  "version": 20260714152832
 }

@@ -109,7 +109,7 @@ for name in (
     "verify_main_panel_close_lifecycle.py",
 ):
     source = (ROOT / "scripts" / name).read_text(encoding="utf-8")
-    require(source, "1.5.6", name + " current version")
+    require(source, "1.5.7", name + " current version")
     forbid(source, "1.4.0", name + " stale version")
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_visual_tuning.py", "workflow verification")

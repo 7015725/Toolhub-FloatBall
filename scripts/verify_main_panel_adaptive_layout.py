@@ -83,7 +83,7 @@ for name in (
     "verify_main_panel_close_lifecycle.py",
     "verify_main_panel_visual_tuning.py",
 ):
-    require((ROOT / "scripts" / name).read_text(encoding="utf-8"), "1.5.6", name)
+    require((ROOT / "scripts" / name).read_text(encoding="utf-8"), "1.5.7", name)
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_adaptive_layout.py", "workflow")
 require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260714081104;", "entry")
