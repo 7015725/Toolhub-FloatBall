@@ -10,6 +10,19 @@ BRIDGE_BEGIN = "// =======================【Rhino / ColorOS 安全颜色桥】=
 BRIDGE_END = "// =======================【工具：UI样式辅助】======================"
 MODULE_FILE = os.environ.get("MODULE_FILE", "").strip()
 
+NON_CODE = re.compile(
+    r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|//[^\n]*|/\*.*?\*/',
+    re.S,
+)
+
+
+def executable_text(source):
+    def blank(match):
+        value = match.group(0)
+        return "".join("\n" if char == "\n" else " " for char in value)
+    return NON_CODE.sub(blank, source)
+
+
 errors = []
 theme = THEME_PATH.read_text(encoding="utf-8")
 start = theme.find(BRIDGE_BEGIN)
@@ -70,7 +83,8 @@ forbidden_tokens = (
 )
 
 for path in paths:
-    text = theme_without_bridge if path == THEME_PATH else path.read_text(encoding="utf-8")
+    source = theme_without_bridge if path == THEME_PATH else path.read_text(encoding="utf-8")
+    text = executable_text(source)
     for token in forbidden_tokens:
         if token in text:
             errors.append("%s direct token: %s" % (path.name, token))
