@@ -32,8 +32,8 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.5.1":
-    fail("expected th_15_main_panel.js version 1.5.1")
+if not version or version.group(1) != "1.5.2":
+    fail("expected th_15_main_panel.js version 1.5.2")
 
 methods = (
     "getMainPanelRuntimeStatusSnapshot",
