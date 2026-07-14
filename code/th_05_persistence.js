@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // =======================【工具：面板位置持久化】======================
 FloatBallAppWM.prototype.savePanelState = function(key, state) {
   if (!key || !state) return;
@@ -64,8 +64,6 @@ FloatBallAppWM.prototype.isPanelLayoutEffectKey = function(k) {
          k === "PANEL_LABEL_ENABLED" ||
          k === "PANEL_LABEL_TEXT_SIZE_SP" ||
          k === "PANEL_LABEL_TOP_MARGIN_DP" ||
-         k === "PANEL_POS_GRAVITY" ||
-         k === "PANEL_CUSTOM_OFFSET_Y" ||
          k === "BALL_PANEL_GAP_DP";
 };
 
@@ -233,7 +231,7 @@ FloatBallAppWM.prototype._refreshPreviewInternal = function(changedKey) {
             if (changedKey.indexOf("BALL_") === 0) needBall = true;
             if (changedKey.indexOf("PANEL_") === 0) needPanel = true;
             // 球大小改变会影响面板位置
-            if (changedKey === "BALL_SIZE_DP") needPanel = true;
+            if (changedKey === "BALL_SIZE_DP" || changedKey === "BALL_PANEL_GAP_DP") needPanel = true;
         }
 
         // 1. 刷新悬浮球 / 设置页内嵌预览 (保持面板不关闭)
@@ -245,41 +243,83 @@ FloatBallAppWM.prototype._refreshPreviewInternal = function(changedKey) {
 
         // 2. 刷新主面板预览
         if (needPanel) {
-            // 如果当前没有显示主面板，则创建并显示；如果已显示，则替换
-
             var panel = this.buildPanelView("main");
+            var requestedLp = panel.getLayoutParams();
+            var requestedWidth = Number(requestedLp && requestedLp.width || 0);
+            var requestedHeight = Number(requestedLp && requestedLp.height || 0);
+            var exactPreviewSize = requestedWidth > 0 && requestedHeight > 0;
+            var pw;
+            var ph;
 
-            // 计算位置 (使用当前球的位置)
-            var maxH = Math.floor(this.state.screen.h * 0.75);
-            panel.measure(
-                android.view.View.MeasureSpec.makeMeasureSpec(this.state.screen.w, android.view.View.MeasureSpec.AT_MOST),
-                android.view.View.MeasureSpec.makeMeasureSpec(maxH, android.view.View.MeasureSpec.AT_MOST)
-            );
-            var pw = panel.getMeasuredWidth();
-            var ph = panel.getMeasuredHeight();
-            if (ph > maxH) ph = maxH;
+            if (exactPreviewSize) {
+                panel.measure(
+                    android.view.View.MeasureSpec.makeMeasureSpec(
+                        requestedWidth,
+                        android.view.View.MeasureSpec.EXACTLY
+                    ),
+                    android.view.View.MeasureSpec.makeMeasureSpec(
+                        requestedHeight,
+                        android.view.View.MeasureSpec.EXACTLY
+                    )
+                );
+                pw = requestedWidth;
+                ph = requestedHeight;
+            } else {
+                var maxH = Math.floor(this.state.screen.h * 0.75);
+                panel.measure(
+                    android.view.View.MeasureSpec.makeMeasureSpec(
+                        this.state.screen.w,
+                        android.view.View.MeasureSpec.AT_MOST
+                    ),
+                    android.view.View.MeasureSpec.makeMeasureSpec(
+                        maxH,
+                        android.view.View.MeasureSpec.AT_MOST
+                    )
+                );
+                pw = panel.getMeasuredWidth();
+                ph = Math.min(panel.getMeasuredHeight(), maxH);
+            }
 
-            var bx = this.state.ballLp.x;
-            var by = this.state.ballLp.y;
-            var px = this.computePanelX(bx, pw);
-            var py = by;
+            var di = this.getDockInfo();
+            var configuredPos = null;
+            try {
+                if (this.getConfiguredBallPosition) {
+                    configuredPos = this.getConfiguredBallPosition(this.config);
+                }
+            } catch (eConfiguredPos) {
+                configuredPos = null;
+            }
+            var bx = configuredPos
+                ? Number(configuredPos.logicalX)
+                : Number(this.state.ballLp && this.state.ballLp.x || 0);
+            var by = configuredPos
+                ? Number(configuredPos.y)
+                : Number(this.state.ballLp && this.state.ballLp.y || 0);
+            var ballSize = configuredPos
+                ? Number(configuredPos.ballSize)
+                : Number(di.ballSize);
+            var pos = this.getMainPanelPosition
+                ? this.getMainPanelPosition(pw, ph, bx, by, ballSize)
+                : { x: 0, y: 0 };
 
-            // 尝试调整 Y
-            var r = this.tryAdjustPanelY(px, py, pw, ph, bx, by);
-            var finalX = r.ok ? r.x : px;
-            var finalY = r.ok ? r.y : this.clamp(py, 0, this.state.screen.h - ph);
-
-            // 优化闪烁：先添加新面板，再移除旧面板 (这样新面板会在最上层，符合预览需求)
             var oldPanel = this.state.panel;
             var oldAdded = this.state.addedPanel;
+            this.addPanel(panel, pos.x, pos.y, "main");
 
-            // 添加新面板 (addPanel 会更新 this.state.panel)
-            // 注意：addPanel 中已为 main 添加 FLAG_NOT_FOCUSABLE，所以即使在最上层也不会抢走 Settings 的输入焦点
-            this.addPanel(panel, finalX, finalY, "main");
-
-            // 移除旧面板
-            if (oldAdded && oldPanel) {
-                try { this.state.wm.removeView(oldPanel);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+            if (oldAdded && oldPanel && oldPanel !== panel) {
+                try {
+                    if (this.safeRemoveView) {
+                        this.safeRemoveView(oldPanel, "panel-preview-replaced", {
+                            immediate: true,
+                            resetVisual: false,
+                            keepInvisible: true
+                        });
+                    } else {
+                        this.state.wm.removeView(oldPanel);
+                    }
+                } catch(eRemovePreview) {
+                    safeLog(this.L, "w", "remove old preview panel fail: " + String(eRemovePreview));
+                }
             }
         }
 

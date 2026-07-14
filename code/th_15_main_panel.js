@@ -1,4 +1,4 @@
-// @version 1.5.0
+// @version 1.5.1
 // ToolHub - 主按钮面板第六阶段：网格决定面板宽高与精确窗口尺寸
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
@@ -59,7 +59,7 @@ FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function(editMode) {
   var widthPercent = readLayoutNumber(
     this.config.PANEL_WIDTH_PERCENT,
     90,
-    60,
+    35,
     100,
     true
   );
@@ -67,21 +67,21 @@ FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function(editMode) {
     this.config.PANEL_AUTO_MAX_COLS,
     6,
     1,
-    6,
+    10,
     true
   );
   var minCardWidthDp = readLayoutNumber(
     this.config.PANEL_MIN_CARD_WIDTH_DP,
     92,
-    72,
-    160,
+    48,
+    200,
     true
   );
   var cardHeightDp = readLayoutNumber(
     this.config.PANEL_CARD_HEIGHT_DP,
     78,
-    56,
-    120,
+    48,
+    160,
     true
   );
   var gapDp = readLayoutNumber(
@@ -101,7 +101,7 @@ FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function(editMode) {
 
   // 宽度占比只定义可用预算，不再直接作为最终面板宽度。
   var panelWidthBudget = Math.floor(safe.width * widthPercent / 100);
-  var minimumPanelWidth = Math.min(safe.width, this.dp(220));
+  var minimumPanelWidth = Math.min(safe.width, this.dp(160));
   panelWidthBudget = Math.min(
     safe.width,
     Math.max(minimumPanelWidth, panelWidthBudget)
@@ -1892,7 +1892,10 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
 
 FloatBallAppWM.prototype.getMainPanelPosition = function(pw, ph, bx, by, ballSize) {
   var safe = this.getMainPanelSafeBounds();
-  var gap = this.dp(this.config.BALL_PANEL_GAP_DP || 10);
+  var gapDp = Number(this.config.BALL_PANEL_GAP_DP);
+  if (isNaN(gapDp)) gapDp = 10;
+  gapDp = this.clamp(gapDp, 0, 50);
+  var gap = this.dp(gapDp);
   var side = '';
   try { side = String(this.state.dockSide || ''); } catch (eSide) { side = ''; }
   if (side !== 'left' && side !== 'right') {

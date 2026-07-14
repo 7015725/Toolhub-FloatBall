@@ -1,4 +1,4 @@
-// @version 1.1.8
+// @version 1.1.9
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -83,6 +83,17 @@ function isDeprecatedThemeConfigKey(key) {
   return DEPRECATED_THEME_CONFIG_KEYS[String(key || "")] === true;
 }
 
+// 已从设置页和运行时语义中移除；保留识别表仅用于清理旧 SQLite / Schema 数据。
+var REMOVED_SETTINGS_CONFIG_KEYS = {
+  PANEL_POS_GRAVITY: true,
+  PANEL_CUSTOM_OFFSET_Y: true,
+  SAVE_THROTTLE_MS: true
+};
+
+function isRemovedSettingsConfigKey(key) {
+  return REMOVED_SETTINGS_CONFIG_KEYS[String(key || "")] === true;
+}
+
 function stripDeprecatedThemeSchemaItems(value) {
   var changed = false;
 
@@ -93,7 +104,7 @@ function stripDeprecatedThemeSchemaItems(value) {
         var item = node[i];
         if (item && typeof item === "object" &&
             Object.prototype.toString.call(item) !== "[object Array]" &&
-            isDeprecatedThemeConfigKey(item.key)) {
+            (isDeprecatedThemeConfigKey(item.key) || isRemovedSettingsConfigKey(item.key))) {
           changed = true;
           continue;
         }
@@ -140,10 +151,10 @@ var ConfigValidator = {
     // 新主面板统一使用可配置自适应网格。
     PANEL_COLS: { type: "int", min: 1, max: 6, default: 1 },
     PANEL_ITEM_SIZE_DP: { type: "int", min: 48, max: 120, default: 64 },
-    PANEL_WIDTH_PERCENT: { type: "int", min: 60, max: 100, default: 90 },
-    PANEL_AUTO_MAX_COLS: { type: "int", min: 1, max: 6, default: 6 },
-    PANEL_MIN_CARD_WIDTH_DP: { type: "int", min: 72, max: 160, default: 92 },
-    PANEL_CARD_HEIGHT_DP: { type: "int", min: 56, max: 120, default: 78 },
+    PANEL_WIDTH_PERCENT: { type: "int", min: 35, max: 100, default: 90 },
+    PANEL_AUTO_MAX_COLS: { type: "int", min: 1, max: 10, default: 6 },
+    PANEL_MIN_CARD_WIDTH_DP: { type: "int", min: 48, max: 200, default: 92 },
+    PANEL_CARD_HEIGHT_DP: { type: "int", min: 48, max: 160, default: 78 },
     PANEL_ROWS: { type: "int", min: 1, max: 10, default: 4 },
     PANEL_BG_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.92 },
     PANEL_VISUAL_TUNING_VERSION: { type: "int", min: 0, max: 9999, default: 1 },
@@ -200,9 +211,7 @@ var ConfigValidator = {
     IDLE_TIMEOUT_MS: { type: "int", min: 500, max: 5000, default: 1500 },
 
     // 面板位置配置
-    PANEL_POS_GRAVITY: { type: "enum", values: ["top", "bottom", "left", "right", "auto"], default: "bottom" },
-    PANEL_CUSTOM_OFFSET_Y: { type: "int", min: -500, max: 500, default: 0 },
-    BALL_PANEL_GAP_DP: { type: "int", min: 0, max: 50, default: 8 },
+    BALL_PANEL_GAP_DP: { type: "int", min: 0, max: 50, default: 10 },
 
     // 日志配置
     LOG_ENABLE: { type: "bool", default: true },
@@ -232,7 +241,6 @@ var ConfigValidator = {
     DOCK_AFTER_IDLE_MS: { type: "int", min: 200, max: 8000, default: 1500 },
     DOCK_ANIM_MS: { type: "int", min: 50, max: 2000, default: 260 },
     UNDOCK_ANIM_MS: { type: "int", min: 50, max: 2000, default: 180 },
-    SAVE_THROTTLE_MS: { type: "int", min: 0, max: 5000, default: 220 },
 
     // 长按配置
     LONG_PRESS_HAPTIC_ENABLE: { type: "bool", default: true },
@@ -283,7 +291,7 @@ var ConfigValidator = {
   sanitizeConfig: function(config) {
     var out = {};
     for (var k in config) {
-      if (isDeprecatedThemeConfigKey(k)) continue;
+      if (isDeprecatedThemeConfigKey(k) || isRemovedSettingsConfigKey(k)) continue;
       var res = this.validate(k, config[k]);
       if (res.valid) {
         out[k] = res.value;
@@ -497,7 +505,6 @@ var INTERACTION_CONSTANTS = {
   SNAP_ANIMATION_MS: 260,
 
   // 防抖与节流
-  SAVE_THROTTLE_MS: 250,
   SCREEN_MONITOR_THROTTLE_MS: 300,
   DEBOUNCE_WRITE_MS: 250,
   WM_UPDATE_THROTTLE_MS: 10,
@@ -844,7 +851,6 @@ var ConfigManager = {
         ENABLE_ANIMATIONS: true,
         DOCK_ANIM_MS: 260,
         UNDOCK_ANIM_MS: 180,
-        SAVE_THROTTLE_MS: 220,
         LONG_PRESS_HAPTIC_ENABLE: true,
         LONG_PRESS_VIBRATE_MS: 18,
         ENABLE_LONG_PRESS: false,
@@ -893,8 +899,6 @@ var ConfigManager = {
         POINTER_AREA_MIN_HEIGHT_DP: 20,
         POINTER_AREA_MIN_AREA_DP2: 1200,
         POINTER_AREA_MIN_MOVE_DP: 24,
-        PANEL_POS_GRAVITY: "bottom",
-        PANEL_CUSTOM_OFFSET_Y: 0,
         PANEL_WIDTH_PERCENT: 90,
         PANEL_AUTO_MAX_COLS: 6,
         PANEL_MIN_CARD_WIDTH_DP: 92,
@@ -974,7 +978,7 @@ var ConfigManager = {
             key: "PANEL_WIDTH_PERCENT",
             name: "主面板宽度占比(%)",
             type: "int",
-            min: 60,
+            min: 35,
             max: 100,
             step: 1
         },
@@ -983,23 +987,23 @@ var ConfigManager = {
             name: "自动最大列数",
             type: "int",
             min: 1,
-            max: 6,
+            max: 10,
             step: 1
         },
         {
             key: "PANEL_MIN_CARD_WIDTH_DP",
             name: "按钮最小宽度(dp)",
             type: "int",
-            min: 72,
-            max: 160,
+            min: 48,
+            max: 200,
             step: 2
         },
         {
             key: "PANEL_CARD_HEIGHT_DP",
             name: "按钮高度(dp)",
             type: "int",
-            min: 56,
-            max: 120,
+            min: 48,
+            max: 160,
             step: 2
         },
         { key: "PANEL_ROWS", name: "面板可视行数", type: "int", min: 1, max: 10, step: 1 },
@@ -1012,18 +1016,11 @@ var ConfigManager = {
         { key: "PANEL_LABEL_TEXT_SIZE_SP", name: "文字大小(sp)", type: "int", min: 8, max: 24, step: 1 },
         { key: "PANEL_LABEL_TOP_MARGIN_DP", name: "文字上边距(dp)", type: "int", min: 0, max: 20, step: 1 },
 
-        { type: "section", name: "吸边与位置" },
-        { key: "PANEL_POS_GRAVITY", name: "面板默认位置", type: "single_choice", options: [
-            { label: "自动 (Auto)", value: "auto" },
-            { label: "下方 (Bottom)", value: "bottom" },
-            { label: "上方 (Top)", value: "top" }
-        ]},
-        { key: "PANEL_CUSTOM_OFFSET_Y", name: "手动垂直偏移(dp)", type: "int", min: -500, max: 500, step: 1 },
-        { key: "ENABLE_SNAP_TO_EDGE", name: "启用自动吸边", type: "bool" },
-        { key: "DOCK_AFTER_IDLE_MS", name: "无操作吸边延迟(ms)", type: "int", min: 200, max: 8000, step: 100 },
-        { key: "PANEL_IDLE_CLOSE_AND_DOCK_MS", name: "面板无操作：关面板再吸边(ms)", type: "int", min: 200, max: 12000, step: 100 },
+        { type: "section", name: "吸边" },
+        { key: "ENABLE_SNAP_TO_EDGE", name: "启用空闲自动回边", type: "bool" },
+        { key: "DOCK_AFTER_IDLE_MS", name: "无面板时回边延迟(ms)", type: "int", min: 200, max: 8000, step: 100 },
+        { key: "PANEL_IDLE_CLOSE_AND_DOCK_MS", name: "面板显示时回边延迟(ms)", type: "int", min: 200, max: 12000, step: 100 },
         { key: "EDGE_VISIBLE_RATIO", name: "吸边露出比例", type: "float", min: 0.30, max: 1.00, step: 0.05 },
-        { key: "SAVE_THROTTLE_MS", name: "保存位置节流(ms)", type: "int", min: 0, max: 5000, step: 10 },
 
         { type: "section", name: "动画" },
         { key: "ENABLE_ANIMATIONS", name: "启用动画效果", type: "bool" },
@@ -1144,6 +1141,9 @@ var ConfigManager = {
                 schemaItemDiffers("PANEL_AUTO_MAX_COLS", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("PANEL_MIN_CARD_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("PANEL_CARD_HEIGHT_DP", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("ENABLE_SNAP_TO_EDGE", ["name", "type"]) ||
+                schemaItemDiffers("DOCK_AFTER_IDLE_MS", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("PANEL_IDLE_CLOSE_AND_DOCK_MS", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_GESTURE_MODE", ["name", "type"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_EDGE_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("TOOLAPP_BACK_COMMIT_DISTANCE_DP", ["name", "type", "min", "max", "step"]) ||
