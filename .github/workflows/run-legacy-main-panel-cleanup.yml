@@ -1,0 +1,99 @@
+name: run-legacy-main-panel-cleanup
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/remove-legacy-main-panel-20260714'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout head branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Execute cleanup payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import sys
+          import textwrap
+
+          payload_path = Path('.github/workflows/diagnose-legacy-main-panel-cleanup.yml')
+          source = payload_path.read_text(encoding='utf-8')
+          start = "          python3 - <<'PY'\n"
+          end = "\n          PY\n"
+          if start not in source or end not in source:
+              raise SystemExit('cleanup payload markers missing')
+          payload = source.split(start, 1)[1].split(end, 1)[0]
+          payload = textwrap.dedent(payload)
+          target = Path('/tmp/apply_legacy_main_panel_cleanup.py')
+          target.write_text(payload, encoding='utf-8')
+          subprocess.check_call([sys.executable, str(target)])
+          PY
+      - name: Remove temporary files
+        shell: bash
+        run: |
+          rm -f .github/workflows/diagnose-legacy-main-panel-cleanup.yml
+          rm -f .github/workflows/run-legacy-main-panel-cleanup.yml
+          rm -f LEGACY_MAIN_PANEL_REFERENCES.txt
+      - name: Rebuild deterministic audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
+      - name: Validate formal cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main --depth=1
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_schema_validator.py
+          python3 scripts/verify_panel_layout_settings_cleanup.py
+          python3 scripts/verify_legacy_main_panel_cleanup.py
+          python3 scripts/verify_main_panel_runtime_status.py
+          python3 scripts/verify_main_panel_drag_sort.py
+          python3 scripts/verify_main_panel_paging.py
+          python3 scripts/verify_main_panel_adaptive_layout.py
+          python3 scripts/verify_main_panel_grid_sizing.py
+          python3 scripts/verify_main_panel_visual_tuning.py
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_sqlite_storage.py
+          python3 scripts/verify_startup_status.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
+          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+          python3 scripts/verify_documentation_consistency.py
+          git diff --exit-code origin/main -- ToolHub.js
+          git diff --check
+      - name: Commit formal cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "清理旧主按钮面板回退代码"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
