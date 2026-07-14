@@ -34,6 +34,28 @@ def run_git(args, check=True):
     return proc
 
 
+def refresh_color_migration_audits():
+    tasks = (
+        ("scripts/report_th15_extra_symbols.py", "TH15_EXTRA_AUDIT.md"),
+        ("scripts/report_th09_animation_symbols.py", "TH09_ANIMATION_AUDIT.md"),
+    )
+    reports = []
+    for script, report in tasks:
+        proc = subprocess.run(
+            [sys.executable, script, "--write", report],
+            cwd=str(ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        if proc.stdout:
+            print(proc.stdout.rstrip())
+        if proc.returncode != 0:
+            fail("cannot refresh " + report)
+        reports.append(report)
+    run_git(["add"] + reports)
+
+
 def parse_version(text, label):
     first = "\n".join(str(text).splitlines()[:5])
     found = re.search(r"@version\s+(\d+)\.(\d+)\.(\d+)(?:\s|$)", first)
@@ -86,6 +108,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--base-ref", default="")
 args = parser.parse_args()
 
+refresh_color_migration_audits()
 base_ref = resolve_base(args.base_ref)
 merge_base = run_git(["merge-base", base_ref, "HEAD"]).stdout.strip()
 if not merge_base:
