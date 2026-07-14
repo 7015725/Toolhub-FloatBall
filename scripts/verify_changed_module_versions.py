@@ -12,8 +12,6 @@ ROOT = Path(__file__).resolve().parents[1]
 CODE = ROOT / "code"
 ENTRY = ROOT / "ToolHub.js"
 SIGNER = ROOT / "scripts" / "generate_signed_manifest.py"
-SCRIPTS = ROOT / "scripts"
-SELF = Path(__file__).resolve()
 
 
 def fail(message):
@@ -84,46 +82,6 @@ def signed_modules():
     return set(modules)
 
 
-def sync_changed_module_contracts(merge_base):
-    changed_text = run_git(
-        ["diff", "--name-only", merge_base, "HEAD", "--", "code"]
-    ).stdout
-    mappings = []
-    for raw in changed_text.splitlines():
-        rel = raw.strip()
-        if not rel.startswith("code/") or not rel.endswith(".js"):
-            continue
-        current_path = ROOT / rel
-        if not current_path.exists():
-            continue
-        base_obj = "%s:%s" % (merge_base, rel)
-        if run_git(["cat-file", "-e", base_obj], check=False).returncode != 0:
-            continue
-        current_text = current_path.read_text(encoding="utf-8", errors="replace")
-        base_text = run_git(["show", base_obj]).stdout
-        _, current_version = parse_version(current_text, rel)
-        _, base_version = parse_version(base_text, "base " + rel)
-        if current_version != base_version:
-            mappings.append((rel[len("code/"):], base_version, current_version))
-
-    touched = []
-    for path in sorted(SCRIPTS.glob("*.py")):
-        if path.resolve() == SELF:
-            continue
-        original = path.read_text(encoding="utf-8")
-        text = original
-        for module_name, old_version, new_version in mappings:
-            if module_name in text and old_version in text:
-                text = text.replace(old_version, new_version)
-        if text != original:
-            path.write_text(text.rstrip("\n") + "\n", encoding="utf-8")
-            touched.append(str(path.relative_to(ROOT)))
-
-    if touched:
-        run_git(["add"] + touched)
-        print("SYNCED version contracts files=%d" % len(touched))
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--base-ref", default="")
 args = parser.parse_args()
@@ -133,7 +91,6 @@ merge_base = run_git(["merge-base", base_ref, "HEAD"]).stdout.strip()
 if not merge_base:
     fail("empty merge base for " + base_ref)
 
-sync_changed_module_contracts(merge_base)
 modules = signed_modules()
 changed_text = run_git(
     ["diff", "--name-only", merge_base, "HEAD", "--", "code"]
