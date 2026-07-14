@@ -1,0 +1,71 @@
+name: diagnose-main-panel-grid
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'fix/main-panel-grid-sizing-locked-20260714-1156'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: JavaScript syntax
+        continue-on-error: true
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+      - name: Runtime status
+        continue-on-error: true
+        run: python3 scripts/verify_main_panel_runtime_status.py
+      - name: Drag sort
+        continue-on-error: true
+        run: python3 scripts/verify_main_panel_drag_sort.py
+      - name: Paging
+        continue-on-error: true
+        run: python3 scripts/verify_main_panel_paging.py
+      - name: Adaptive layout
+        continue-on-error: true
+        run: python3 scripts/verify_main_panel_adaptive_layout.py
+      - name: Grid sizing
+        continue-on-error: true
+        run: python3 scripts/verify_main_panel_grid_sizing.py
+      - name: Visual tuning
+        continue-on-error: true
+        run: python3 scripts/verify_main_panel_visual_tuning.py
+      - name: Close lifecycle
+        continue-on-error: true
+        run: python3 scripts/verify_main_panel_close_lifecycle.py
+      - name: Button direct save
+        continue-on-error: true
+        run: python3 scripts/verify_button_editor_direct_save.py
+      - name: Schema
+        continue-on-error: true
+        run: python3 scripts/verify_schema_validator.py
+      - name: Module versions
+        continue-on-error: true
+        run: |
+          python3 scripts/verify_module_versions.py
+          python3 scripts/verify_changed_module_versions.py
+      - name: Documentation
+        continue-on-error: true
+        run: python3 scripts/verify_documentation_consistency.py
+      - name: Manifest
+        continue-on-error: true
+        run: |
+          python3 scripts/verify_manifest.py
+          python3 .github/scripts/verify_manifest_signature.py
+      - name: Pointer regressions
+        continue-on-error: true
+        run: |
+          python3 scripts/verify_pointer_regressions.py
+          python3 scripts/verify_result_preview.py
