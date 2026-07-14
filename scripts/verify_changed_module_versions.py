@@ -4,7 +4,6 @@
 import argparse
 import os
 import re
-import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -13,40 +12,6 @@ ROOT = Path(__file__).resolve().parents[1]
 CODE = ROOT / "code"
 ENTRY = ROOT / "ToolHub.js"
 SIGNER = ROOT / "scripts" / "generate_signed_manifest.py"
-PATCH_EXECUTOR = ROOT / "scripts" / "apply_coloros_rhino_color_safety_patch.py"
-
-
-def install_coloros_patch_for_signing():
-    """仅在临时修复分支存在执行器时应用补丁，并让签名提交收纳全部变更。"""
-    if not PATCH_EXECUTOR.exists():
-        return False
-    print("Applying staged ColorOS Rhino color safety patch before signing")
-    subprocess.run([sys.executable, str(PATCH_EXECUTOR)], cwd=str(ROOT), check=True)
-
-    hook = ROOT / ".git" / "hooks" / "pre-commit"
-    hook.parent.mkdir(parents=True, exist_ok=True)
-    hook.write_text(
-        "#!/usr/bin/env bash\n"
-        "set -euo pipefail\n"
-        "cd \"$(git rev-parse --show-toplevel)\"\n"
-        "git show origin/main:scripts/verify_changed_module_versions.py > scripts/verify_changed_module_versions.py\n"
-        "rm -f scripts/apply_coloros_rhino_color_safety_patch.py\n"
-        "rm -f .github/workflows/apply-coloros-rhino-color-safety.yml\n"
-        "git add code/th_04_theme.js code/th_15_main_panel.js \\\n"
-        "  scripts/verify_coloros_rhino_color_safety.py \\\n"
-        "  .github/workflows/verify.yml .github/workflows/sign-toolhub.yml \\\n"
-        "  scripts/verify_changed_module_versions.py \\\n"
-        "  scripts/apply_coloros_rhino_color_safety_patch.py \\\n"
-        "  .github/workflows/apply-coloros-rhino-color-safety.yml\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    hook.chmod(hook.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-    print("Installed pre-commit collector for ColorOS patch")
-    return True
-
-
-COLOROS_PATCH_APPLIED = install_coloros_patch_for_signing()
 
 
 def fail(message):
@@ -196,16 +161,7 @@ if entry_changed:
         % (base_version, base_source, current_version, current_source)
     )
 
-if COLOROS_PATCH_APPLIED:
-    # 补丁在当前工作树中生成，正式版本校验由专项脚本和签名后的下一轮 CI 完成。
-    subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "verify_coloros_rhino_color_safety.py")],
-        cwd=str(ROOT),
-        check=True,
-    )
-    print("Changed module version verification staged ColorOS patch; commit hook will collect sources")
-else:
-    print(
-        "Changed module version verification passed base=%s modules=%d"
-        % (base_ref, checked)
-    )
+print(
+    "Changed module version verification passed base=%s modules=%d"
+    % (base_ref, checked)
+)

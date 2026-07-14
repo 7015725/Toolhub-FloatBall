@@ -1,4 +1,4 @@
-// @version 1.5.5
+// @version 1.5.6
 // ToolHub - 主按钮面板第十阶段：标题栏操作收纳
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
@@ -245,14 +245,15 @@ FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function(editMode) {
 
 FloatBallAppWM.prototype.createMainPanelRippleBackground = function(fillColor, strokeColor, rippleColor, radiusPx) {
   try {
-    var content = this.ui.createStrokeDrawable(fillColor, strokeColor, this.dp(1), radiusPx);
-    if (android.os.Build.VERSION.SDK_INT >= 21) {
-      var mask = this.ui.createRoundDrawable(android.graphics.Color.WHITE, radiusPx);
-      var colors = android.content.res.ColorStateList.valueOf(rippleColor);
-      return new android.graphics.drawable.RippleDrawable(colors, content, mask);
-    }
-    return content;
+    var normal = this.ui.createStrokeDrawable(fillColor, strokeColor, this.dp(1), radiusPx);
+    var pressedFill = toolhubCompositeColor(rippleColor, fillColor);
+    var pressed = this.ui.createStrokeDrawable(pressedFill, strokeColor, this.dp(1), radiusPx);
+    var states = new android.graphics.drawable.StateListDrawable();
+    states.addState(toolhubJintArray([android.R.attr.state_pressed]), pressed);
+    states.addState(toolhubJintArray([]), normal);
+    return states;
   } catch (e) {
+    safeLog(this.L, 'w', 'main panel stable press background fallback: ' + String(e));
     return this.ui.createRoundDrawable(fillColor, radiusPx);
   }
 };

@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -137,6 +137,108 @@ FloatBallAppWM.prototype.vibrateOnce = function(ms) {
    } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 };
 
+// =======================【Rhino / ColorOS 安全颜色桥】=======================
+// Rhino 数字可能在带 int/long/ColorStateList 重载的 Android API 上发生误分派。
+// 所有进入高风险颜色接口的值先规范为 32 位 int，或显式封装为 Java ColorStateList。
+function toolhubColorInt(value, fallback) {
+  var n = Number(value);
+  if (isNaN(n)) n = Number(fallback || 0);
+  if (isNaN(n)) n = 0;
+  return n | 0;
+}
+
+function toolhubJintArray(values) {
+  var src = values || [];
+  var arr = java.lang.reflect.Array.newInstance(java.lang.Integer.TYPE, src.length);
+  for (var i = 0; i < src.length; i++) arr[i] = toolhubColorInt(src[i], 0);
+  return arr;
+}
+
+function toolhubJint2Array(rows) {
+  var src = rows || [];
+  var outer = java.lang.reflect.Array.newInstance(java.lang.Class.forName("[I"), src.length);
+  for (var i = 0; i < src.length; i++) outer[i] = toolhubJintArray(src[i]);
+  return outer;
+}
+
+function toolhubSafeColorStateList(colorValue) {
+  var color = toolhubColorInt(colorValue, 0);
+  return new android.content.res.ColorStateList(
+    toolhubJint2Array([
+      [android.R.attr.state_pressed],
+      [android.R.attr.state_focused],
+      [android.R.attr.state_selected],
+      []
+    ]),
+    toolhubJintArray([color, color, color, color])
+  );
+}
+
+function toolhubSafeSetTextColor(viewObj, colorValue) {
+  if (!viewObj) return false;
+  viewObj.setTextColor(toolhubSafeColorStateList(colorValue));
+  return true;
+}
+
+function toolhubSafeSetGradientColor(drawableObj, colorValue) {
+  if (!drawableObj) return false;
+  drawableObj.setColor(toolhubSafeColorStateList(colorValue));
+  return true;
+}
+
+function toolhubSafeSetGradientStroke(drawableObj, widthPx, colorValue) {
+  if (!drawableObj) return false;
+  var width = Math.max(0, Math.round(Number(widthPx) || 0));
+  drawableObj.setStroke(width, toolhubSafeColorStateList(colorValue));
+  return true;
+}
+
+function toolhubSafeSetTintColor(drawableObj, colorValue) {
+  if (!drawableObj) return false;
+  drawableObj.setTintList(toolhubSafeColorStateList(colorValue));
+  return true;
+}
+
+function toolhubSafeSetPaintColor(paintObj, colorValue) {
+  if (!paintObj) return false;
+  var color = toolhubColorInt(colorValue, 0);
+  paintObj.setARGB(
+    (color >>> 24) & 255,
+    (color >>> 16) & 255,
+    (color >>> 8) & 255,
+    color & 255
+  );
+  return true;
+}
+
+function toolhubColorLuminance(colorValue) {
+  var color = toolhubColorInt(colorValue, 0);
+  var r = (color >>> 16) & 255;
+  var g = (color >>> 8) & 255;
+  var b = color & 255;
+  return (r * 0.299 + g * 0.587 + b * 0.114) / 255.0;
+}
+
+function toolhubCompositeColor(overlayValue, baseValue) {
+  var overlay = toolhubColorInt(overlayValue, 0);
+  var base = toolhubColorInt(baseValue, 0);
+  var sa = (overlay >>> 24) & 255;
+  var sr = (overlay >>> 16) & 255;
+  var sg = (overlay >>> 8) & 255;
+  var sb = overlay & 255;
+  var ba = (base >>> 24) & 255;
+  var br = (base >>> 16) & 255;
+  var bg = (base >>> 8) & 255;
+  var bb = base & 255;
+  var inv = 255 - sa;
+  var outA = sa + Math.round(ba * inv / 255);
+  if (outA <= 0) return 0;
+  var outR = Math.round((sr * sa + br * ba * inv / 255) / outA);
+  var outG = Math.round((sg * sa + bg * ba * inv / 255) / outA);
+  var outB = Math.round((sb * sa + bb * ba * inv / 255) / outA);
+  return ((outA << 24) | (outR << 16) | (outG << 8) | outB) | 0;
+}
+
 // =======================【工具：UI样式辅助】======================
 FloatBallAppWM.prototype.ui = {
     // 基础颜色
@@ -187,7 +289,7 @@ FloatBallAppWM.prototype.ui = {
     createRoundDrawable: function(color, radiusPx) {
         var d = new android.graphics.drawable.GradientDrawable();
         d.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
-        d.setColor(color);
+        toolhubSafeSetGradientColor(d, color);
         d.setCornerRadius(radiusPx);
         return d;
     },
@@ -196,29 +298,29 @@ FloatBallAppWM.prototype.ui = {
     createStrokeDrawable: function(fillColor, strokeColor, strokeWidthPx, radiusPx) {
         var d = new android.graphics.drawable.GradientDrawable();
         d.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
-        if (fillColor) d.setColor(fillColor);
+        if (fillColor !== null && fillColor !== undefined) toolhubSafeSetGradientColor(d, fillColor);
         d.setCornerRadius(radiusPx);
-        d.setStroke(strokeWidthPx, strokeColor);
+        toolhubSafeSetGradientStroke(d, strokeWidthPx, strokeColor);
         return d;
     },
 
-    // 创建按压反馈背景 (StateList)
+    // 创建按压反馈背景。名称保留兼容，实际使用 StateListDrawable，避免 framework RippleDrawable。
     createRippleDrawable: function(normalColor, pressedColor, radiusPx) {
         var sd = new android.graphics.drawable.StateListDrawable();
         var p = this.createRoundDrawable(pressedColor, radiusPx);
         var n = this.createRoundDrawable(normalColor, radiusPx);
-        sd.addState([android.R.attr.state_pressed], p);
-        sd.addState([], n);
+        sd.addState(toolhubJintArray([android.R.attr.state_pressed]), p);
+        sd.addState(toolhubJintArray([]), n);
         return sd;
     },
 
-    // 创建纯色按压反馈 (StateList) - 用于透明背景按钮
+    // 创建透明背景按压反馈。默认态也使用安全 GradientDrawable。
     createTransparentRippleDrawable: function(pressedColor, radiusPx) {
         var sd = new android.graphics.drawable.StateListDrawable();
         var p = this.createRoundDrawable(pressedColor, radiusPx);
-        var n = new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT);
-        sd.addState([android.R.attr.state_pressed], p);
-        sd.addState([], n);
+        var n = this.createRoundDrawable(android.graphics.Color.TRANSPARENT, radiusPx);
+        sd.addState(toolhubJintArray([android.R.attr.state_pressed]), p);
+        sd.addState(toolhubJintArray([]), n);
         return sd;
     },
 
@@ -489,10 +591,11 @@ function _th_hex(c) {
 
 function _th_argb(c) {
   try {
-    var Color = Packages.android.graphics.Color;
-    var ci = Math.floor(Number(c));
-    if (isNaN(ci)) return "NaN";
-    return "a=" + Color.alpha(ci) + " r=" + Color.red(ci) + " g=" + Color.green(ci) + " b=" + Color.blue(ci);
+    var ci = toolhubColorInt(c, 0);
+    return "a=" + ((ci >>> 24) & 255) +
+      " r=" + ((ci >>> 16) & 255) +
+      " g=" + ((ci >>> 8) & 255) +
+      " b=" + (ci & 255);
   } catch (e) {
     return "argb_err";
   }
@@ -843,54 +946,50 @@ FloatBallAppWM.prototype.updateBallContentBackground = function(contentView, use
     var ballColor = this.getMonetAccentForBall();
     try {
       var bgHex = String(this.config.BALL_BG_COLOR_HEX || "").trim();
-      if (bgHex.length > 0) {
-        ballColor = android.graphics.Color.parseColor(bgHex);
-      }
+      if (bgHex.length > 0) ballColor = android.graphics.Color.parseColor(bgHex);
     } catch(eCustomBg) {
       safeLog(this.L, 'e', "BALL_BG_COLOR_HEX parse failed, fallback Monet accent: " + String(eCustomBg));
     }
+
     var dark = this.isDarkTheme();
     var alpha01 = dark ? this.config.BALL_RIPPLE_ALPHA_DARK : this.config.BALL_RIPPLE_ALPHA_LIGHT;
     var rippleColor = this.withAlpha(ballColor, alpha01);
-
-    // # 自定义 PNG/APP 模式下：背景透明
     var fillColor = ballColor;
-    var _usedKind = "none";
-    try { _usedKind = usedIconKind || this.state.usedIconKind || "none";  } catch(eK) { safeLog(null, 'e', "catch " + String(eK)); }
+    var usedKind = "none";
+    try { usedKind = usedIconKind || this.state.usedIconKind || "none"; } catch(eKind) {}
 
     try {
-      var _pngModeBg = Number(this.config.BALL_PNG_MODE || 0);
-      if ((_pngModeBg === 1 && _usedKind === "file") || _usedKind === "app") {
+      var pngMode = Number(this.config.BALL_PNG_MODE || 0);
+      if ((pngMode === 1 && usedKind === "file") || usedKind === "app") {
         fillColor = android.graphics.Color.TRANSPARENT;
       }
-     } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
+    } catch(eBg) {}
 
-    var content = new android.graphics.drawable.GradientDrawable();
-    content.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-    content.setColor(fillColor);
-
-    // # 描边：根据球体颜色亮度自动选择白/黑描边，确保任何背景下都可见
-    if (_usedKind !== "file" && _usedKind !== "app") {
-      try {
-        var Color = android.graphics.Color;
-        var lum = (Color.red(fillColor)*0.299 + Color.green(fillColor)*0.587 + Color.blue(fillColor)*0.114) / 255.0;
-        var strokeInt = lum > 0.55
-          ? Color.parseColor("#33000000")   // 浅球用半透明黑边
-          : Color.parseColor("#55FFFFFF");  // 深球用半透明白边
-        content.setStroke(this.dp(1), strokeInt);
-       } catch(eS) { safeLog(null, 'e', "catch " + String(eS)); }
+    var strokeColor = null;
+    if (usedKind !== "file" && usedKind !== "app") {
+      strokeColor = toolhubColorLuminance(fillColor) > 0.55
+        ? android.graphics.Color.parseColor("#33000000")
+        : android.graphics.Color.parseColor("#55FFFFFF");
     }
 
-    var mask = new android.graphics.drawable.GradientDrawable();
-    mask.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-    mask.setColor(android.graphics.Color.WHITE);
+    var self = this;
+    function makeBallLayer(colorValue) {
+      var layer = new android.graphics.drawable.GradientDrawable();
+      layer.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+      toolhubSafeSetGradientColor(layer, colorValue);
+      if (strokeColor !== null) toolhubSafeSetGradientStroke(layer, self.dp(1), strokeColor);
+      return layer;
+    }
 
-    contentView.setBackground(new android.graphics.drawable.RippleDrawable(
-      android.content.res.ColorStateList.valueOf(rippleColor),
-      content,
-      mask
-    ));
-   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+    var normal = makeBallLayer(fillColor);
+    var pressed = makeBallLayer(toolhubCompositeColor(rippleColor, fillColor));
+    var states = new android.graphics.drawable.StateListDrawable();
+    states.addState(toolhubJintArray([android.R.attr.state_pressed]), pressed);
+    states.addState(toolhubJintArray([]), normal);
+    contentView.setBackground(states);
+  } catch(e) {
+    safeLog(this.L, 'e', "update ball background fail: " + String(e));
+  }
 };
 FloatBallAppWM.prototype.getPanelTextColorInt = function(bgInt) {
   var scheme = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
