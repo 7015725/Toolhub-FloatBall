@@ -201,6 +201,7 @@ th_15_extra.js
 
 th_15_main_panel.js
   主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页吸附与圆点导航、方向展开/退出动画、实时运行状态和显式编辑模式拖动排序。
+- 主面板退出动画结束后，旧 View 先保持不可见，注销预测性返回时跳过视觉复位，再通过 `removeViewImmediate()` 移除；generation 只允许最新关闭事务清理共享状态。
 
 th_16_entry.js
   runOnMainSync、registerReceiverOnMain、startAsync、close、dispose、实例注册、设置页重启与生命周期收尾。

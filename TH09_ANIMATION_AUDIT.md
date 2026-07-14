@@ -10,16 +10,16 @@
 
 ## 文件概况
 
-- 版本：`1.0.6`
-- 行数：`838`
-- 字节数：`31917`
+- 版本：`1.0.7`
+- 行数：`945`
+- 字节数：`34941`
 - ToolHub 加载模块：`27`
-- `th_09` 原型方法定义：`26`
-- `th_09` 唯一原型方法：`26`
+- `th_09` 原型方法定义：`27`
+- `th_09` 唯一原型方法：`27`
 - 模块内重复定义方法：`0`
 - 后续覆盖候选：`0`
 - 受保护覆盖/包装链：`0`
-- 唯一实现：`26`
+- 唯一实现：`27`
 
 ## 异步与生命周期信号
 
@@ -46,7 +46,7 @@
 
 ## `th_09` 唯一实现
 
-`_clearHeavyCachesIfAllHidden`、`applyPanelPredictiveBackProgress`、`armDockTimer`、`attachPanelSystemKeyHandler`、`cancelDockTimer`、`clearHeavyCaches`、`guardClick`、`handlePanelBack`、`handleSystemUiDismiss`、`hideAllPanels`、`hideMainPanel`、`hideMask`、`hidePanelPredictiveBackIndicator`、`hideSettingsPanel`、`hideViewerPanel`、`playBounce`、`registerPanelPredictiveBack`、`resetPanelPredictiveBackVisual`、`safeRemoveView`、`setupDisplayMonitor`、`showMask`、`showPanelPredictiveBackIndicator`、`stopDisplayMonitor`、`touchActivity`、`undockToFull`、`unregisterPanelPredictiveBack`
+`_clearHeavyCachesIfAllHidden`、`applyPanelPredictiveBackProgress`、`armDockTimer`、`attachPanelSystemKeyHandler`、`cancelDockTimer`、`clearHeavyCaches`、`guardClick`、`handlePanelBack`、`handleSystemUiDismiss`、`hideAllPanels`、`hideMainPanel`、`hideMask`、`hideMaskIfNoPanelVisible`、`hidePanelPredictiveBackIndicator`、`hideSettingsPanel`、`hideViewerPanel`、`playBounce`、`registerPanelPredictiveBack`、`resetPanelPredictiveBackVisual`、`safeRemoveView`、`setupDisplayMonitor`、`showMask`、`showPanelPredictiveBackIndicator`、`stopDisplayMonitor`、`touchActivity`、`undockToFull`、`unregisterPanelPredictiveBack`
 
 唯一实现可能由 Android 回调、WindowManager 生命周期或内部状态机间接触发，默认保留。
 

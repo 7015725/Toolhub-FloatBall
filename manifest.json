@@ -45,9 +45,9 @@
       "version": "1.0.2"
     },
     "th_09_animation.js": {
-      "sha256": "ccce746d73dfa21c0d25d8dd62c1d307bf8435e8f5e7ccb4934e7bb15e3803f6",
-      "size": 31917,
-      "version": "1.0.6"
+      "sha256": "3628c6b2f0bab91f1b7d87e72069a3ccf1e4ebad2274da5454b992d72c3cb4c6",
+      "size": 34941,
+      "version": "1.0.7"
     },
     "th_10_shell.js": {
       "sha256": "d4261f2fbe466b27793f1224f9a38accbd24a1b55d028498a68180866e4f86a7",
@@ -148,13 +148,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "手指松开或滚动停止后自动吸附到最近整页",
-      "分页圆点支持点击跳转并补充页码无障碍描述",
-      "普通模式和编辑模式分别记住页码，面板卸载时取消待执行任务"
+      "退出动画结束后旧主面板保持不可见并立即移除",
+      "WindowManager 移除路径跳过预测性返回视觉复位",
+      "通过退出 generation 隔离旧回调，并仅在无其他面板时移除遮罩"
     ],
     "date": "2026-07-14",
-    "title": "完善主面板分页吸附与快速导航"
+    "title": "修复主面板关闭闪烁与旧视图残留"
   },
   "schema": 3,
-  "version": 20260714012907
+  "version": 20260714020020
 }
