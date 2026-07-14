@@ -1,5 +1,5 @@
-// @version 1.5.2
-// ToolHub - 主按钮面板第七阶段：整页分页与稳定吸附
+// @version 1.5.3
+// ToolHub - 主按钮面板第八阶段：同侧安全边缘对齐
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -1975,10 +1975,6 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
 
 FloatBallAppWM.prototype.getMainPanelPosition = function(pw, ph, bx, by, ballSize) {
   var safe = this.getMainPanelSafeBounds();
-  var gapDp = Number(this.config.BALL_PANEL_GAP_DP);
-  if (isNaN(gapDp)) gapDp = 10;
-  gapDp = this.clamp(gapDp, 0, 50);
-  var gap = this.dp(gapDp);
   var side = '';
   try { side = String(this.state.dockSide || ''); } catch (eSide) { side = ''; }
   if (side !== 'left' && side !== 'right') {
@@ -1988,22 +1984,28 @@ FloatBallAppWM.prototype.getMainPanelPosition = function(pw, ph, bx, by, ballSiz
     side = (Number(bx) + Number(ballSize) / 2) <= Number(this.state.screen.w) / 2 ? 'left' : 'right';
   }
 
+  var minX = Number(safe.left);
+  var maxX = Math.max(minX, Number(safe.right) - Number(pw));
   var x;
   if (side === 'left') {
-    x = Number(bx) + Number(ballSize) + gap;
-    if (x + pw > safe.right) x = safe.right - pw;
+    x = minX;
     this.state.mainPanelExpandSide = 'from_left';
   } else {
-    x = Number(bx) - pw - gap;
-    if (x < safe.left) x = safe.left;
+    x = maxX;
     this.state.mainPanelExpandSide = 'from_right';
   }
-  x = this.clamp(Math.floor(x), safe.left, Math.max(safe.left, safe.right - pw));
+  x = this.clamp(Math.floor(x), minX, maxX);
+
   var ballCenterY = Number(by) + Number(ballSize) / 2;
   var y = Math.floor(ballCenterY - ph / 2);
   y = this.clamp(y, safe.top, Math.max(safe.top, safe.bottom - ph));
   this.state.mainPanelBallCenterY = ballCenterY;
   this.state.mainPanelPosition = { x: x, y: y, width: pw, height: ph, ballSide: side };
+  safeLog(this.L, 'd',
+    'main panel edge align side=' + String(side) +
+    ' x=' + String(x) +
+    ' range=' + String(minX) + '..' + String(maxX) +
+    ' width=' + String(pw));
   return { x: x, y: y, type: side === 'left' ? 'right' : 'left' };
 };
 
