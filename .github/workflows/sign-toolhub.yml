@@ -189,17 +189,29 @@ jobs:
           python3 scripts/verify_sqlite_storage.py
           python3 scripts/verify_ball_position_state.py
 
-      - name: Verify generated UI contracts
-        shell: bash
-        run: |
-          python3 scripts/verify_toolapp_layout.py
-          python3 scripts/verify_settings_color_scheme.py
-          python3 scripts/verify_legacy_theme_cleanup.py
-          python3 scripts/verify_settings_color_roles.py
-          python3 scripts/verify_coloros_rhino_color_safety.py
-          python3 scripts/verify_rhino_color_api_safety.py
-          python3 scripts/verify_button_editor_layout.py
-          python3 scripts/verify_schema_validator.py
+      - name: Verify toolapp layout
+        run: python3 scripts/verify_toolapp_layout.py
+
+      - name: Verify settings color scheme
+        run: python3 scripts/verify_settings_color_scheme.py
+
+      - name: Verify legacy theme cleanup
+        run: python3 scripts/verify_legacy_theme_cleanup.py
+
+      - name: Verify settings color roles
+        run: python3 scripts/verify_settings_color_roles.py
+
+      - name: Verify ColorOS color safety
+        run: python3 scripts/verify_coloros_rhino_color_safety.py
+
+      - name: Verify full Rhino color safety
+        run: python3 scripts/verify_rhino_color_api_safety.py
+
+      - name: Verify button editor layout
+        run: python3 scripts/verify_button_editor_layout.py
+
+      - name: Verify schema validator
+        run: python3 scripts/verify_schema_validator.py
 
       - name: Verify generated pointer regressions
         shell: bash
