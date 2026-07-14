@@ -14,11 +14,15 @@ start = theme.find(BRIDGE_BEGIN)
 end = theme.find(BRIDGE_END)
 if start < 0 or end <= start:
     errors.append("central safe color bridge missing")
+    bridge = ""
     theme_without_bridge = theme
 else:
+    bridge = theme[start:end]
     theme_without_bridge = theme[:start] + theme[end:]
 
 helpers = (
+    "toolhubJavaClassName",
+    "toolhubIsColorStateList",
     "toolhubColorInt",
     "toolhubJintArray",
     "toolhubJint2Array",
@@ -41,11 +45,32 @@ helpers = (
     "toolhubSafeSetShadowLayer",
 )
 for helper in helpers:
-    if "function %s(" % helper not in theme:
+    if "function %s(" % helper not in bridge:
         errors.append("missing helper: " + helper)
+
+for required in (
+    "if (toolhubIsColorStateList(colorValue)) return colorValue;",
+    "paintObj.setARGB(",
+    "drawableObj.setTintList(toolhubSafeColorStateList(colorValue));",
+    "targetObj.setColor(java.lang.Integer.valueOf(",
+):
+    if required not in bridge:
+        errors.append("safe bridge contract missing: " + required)
+
+for forbidden in (
+    "targetObj.setColor(color);",
+    "paintObj.setColor(",
+    "Color.alpha(",
+    "Color.red(",
+    "Color.green(",
+    "Color.blue(",
+):
+    if forbidden in bridge:
+        errors.append("unsafe bridge fallback remains: " + forbidden)
 
 for path in sorted(CODE.glob("*.js")):
     text = theme_without_bridge if path == THEME_PATH else path.read_text(encoding="utf-8")
+
     methods = sorted(set(re.findall(
         r"\.((?:set|apply)[A-Za-z0-9_$]*Color[A-Za-z0-9_$]*)\s*\(",
         text,
@@ -53,14 +78,26 @@ for path in sorted(CODE.glob("*.js")):
     if methods:
         errors.append("%s direct color methods: %s" % (path.name, ", ".join(methods)))
 
+    tint_lists = sorted(set(re.findall(
+        r"\.((?:set|apply)[A-Za-z0-9_$]*TintList)\s*\(",
+        text,
+    )))
+    if tint_lists:
+        errors.append("%s direct tint-list methods: %s" % (path.name, ", ".join(tint_lists)))
+
     for token in (
         ".setTint(",
         ".setStroke(",
         ".setShadowLayer(",
         "new android.content.res.ColorStateList(",
         "new Packages.android.content.res.ColorStateList(",
+        "new ColorStateList(",
         "ColorStateList.valueOf(",
         ".addState([",
+        "Color.alpha(",
+        "Color.red(",
+        "Color.green(",
+        "Color.blue(",
     ):
         if token in text:
             errors.append("%s direct token: %s" % (path.name, token))

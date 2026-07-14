@@ -39,13 +39,13 @@ def write(path, text):
 
 def install_helpers():
     theme = read(THEME_PATH)
-    if "function toolhubSafeColorStateListFromStates(" in theme:
-        return
-    marker = "function toolhubColorLuminance(colorValue) {"
-    if marker not in theme:
-        raise SystemExit("FAIL full-color-migration: helper marker missing")
+    start = theme.find(BRIDGE_BEGIN)
+    end = theme.find(BRIDGE_END)
+    if start < 0 or end <= start:
+        raise SystemExit("FAIL full-color-migration: safe bridge markers missing")
     helpers = read(HELPERS_PATH).strip("\n")
-    write(THEME_PATH, theme.replace(marker, helpers + "\n\n" + marker, 1))
+    replacement = BRIDGE_BEGIN + "\n" + helpers + "\n\n"
+    write(THEME_PATH, theme[:start] + replacement + theme[end:])
 
 
 def update_workflows():
