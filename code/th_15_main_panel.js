@@ -1,5 +1,5 @@
-// @version 1.5.4
-// ToolHub - 主按钮面板第九阶段：首帧页恢复与内容防透出
+// @version 1.5.5
+// ToolHub - 主按钮面板第十阶段：标题栏操作收纳
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -327,6 +327,9 @@ FloatBallAppWM.prototype.showMainPanelMoreMenu = function(anchorView) {
       row.setGravity(android.view.Gravity.CENTER_VERTICAL);
       row.setPadding(self.dp(14), 0, self.dp(14), 0);
       row.setMinHeight(self.dp(48));
+      row.setClickable(true);
+      row.setFocusable(true);
+      try { row.setContentDescription(String(label)); } catch (eItemDesc) {}
       row.setBackground(self.ui.createTransparentRippleDrawable(self.withAlpha(textColor, isDark ? 0.15 : 0.09), self.dp(12)));
       row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
         try { if (popup) popup.dismiss(); } catch (eDismiss) {}
@@ -334,6 +337,26 @@ FloatBallAppWM.prototype.showMainPanelMoreMenu = function(anchorView) {
       }}));
       box.addView(row, new android.widget.LinearLayout.LayoutParams(-1, self.dp(48)));
     }
+
+    function addDivider() {
+      var line = new android.view.View(context);
+      line.setBackgroundColor(strokeColor);
+      var lineLp = new android.widget.LinearLayout.LayoutParams(-1, 1);
+      lineLp.leftMargin = self.dp(10);
+      lineLp.rightMargin = self.dp(10);
+      lineLp.topMargin = self.dp(4);
+      lineLp.bottomMargin = self.dp(4);
+      box.addView(line, lineLp);
+    }
+
+    addItem('设置', function() {
+      self.hideMainPanel(true);
+      self.showPanelAvoidBall('settings');
+    });
+    addItem('编辑布局', function() {
+      self.startMainPanelEditMode();
+    });
+    addDivider();
 
     addItem('按钮管理', function() { self.openMainPanelButtonManager(false); });
     addItem('刷新面板', function() {
@@ -1688,13 +1711,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
       self.saveMainPanelEditMode();
     }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
   } else {
-    header.addView(this.createMainPanelToolbarButton('⚙', '设置', function() {
-      self.hideMainPanel(true);
-      self.showPanelAvoidBall('settings');
-    }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
-    header.addView(this.createMainPanelToolbarButton('≡', '编辑布局', function() {
-      self.startMainPanelEditMode();
-    }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));
+    // 普通模式只保留更多和关闭；设置与编辑布局收纳到更多菜单。
     header.addView(this.createMainPanelToolbarButton('⋮', '更多', function(v) {
       self.showMainPanelMoreMenu(v);
     }), new android.widget.LinearLayout.LayoutParams(this.dp(40), this.dp(40)));

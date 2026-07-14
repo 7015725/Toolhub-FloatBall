@@ -36,8 +36,8 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.5.4":
-    fail("expected th_15_main_panel.js version 1.5.4")
+if not version or version.group(1) != "1.5.5":
+    fail("expected th_15_main_panel.js version 1.5.5")
 
 methods = (
     "isMainPanelEditMode",
@@ -92,7 +92,7 @@ for marker, label in (
     ("postMainPanelEditGridRender", "post-event grid rerender"),
     ("'取消排序'", "cancel toolbar action"),
     ("'保存排序'", "save toolbar action"),
-    ("self.startMainPanelEditMode()", "edit toolbar entry"),
+    ("self.startMainPanelEditMode()", "edit overflow menu entry"),
     ("self.execButtonAction(item.config, item.rawIndex)", "normal button action retained"),
     ("'拖动调整顺序：'", "accessibility drag description"),
 ):
@@ -114,7 +114,7 @@ forbid(SOURCE, "FileIO.writeText", "direct file persistence")
 forbid(SOURCE, "setInterval(", "unmanaged drag timer")
 forbid(SOURCE, "new java.lang.Thread", "dedicated drag thread")
 
-require(RUNTIME_VERIFY, 'version.group(1) != "1.5.4"', "runtime verifier current version")
+require(RUNTIME_VERIFY, 'version.group(1) != "1.5.5"', "runtime verifier current version")
 require(WORKFLOW, "python3 scripts/verify_main_panel_drag_sort.py", "workflow drag-sort verification")
 require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260714081104;", "unchanged entry version")
 
