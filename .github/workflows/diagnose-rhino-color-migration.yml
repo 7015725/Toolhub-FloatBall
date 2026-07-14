@@ -8,8 +8,40 @@ permissions:
   contents: read
 
 jobs:
-  diagnose:
+  scan:
+    name: scan-${{ matrix.file }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        file:
+          - th_01_base.js
+          - th_02_core.js
+          - th_03_icon.js
+          - th_04_theme.js
+          - th_05_persistence.js
+          - th_06_icon_parser.js
+          - th_08_content.js
+          - th_09_animation.js
+          - th_10_shell.js
+          - th_11_action.js
+          - th_12_rebuild.js
+          - th_13_panel_ui.js
+          - th_14_panels.js
+          - th_14_button_shortcut.js
+          - th_14_button_icon_editor.js
+          - th_14_button_editor.js
+          - th_14_color_picker.js
+          - th_14_icon_picker.js
+          - th_14_schema_editor.js
+          - th_15_extra.js
+          - th_15_main_panel.js
+          - th_16_entry.js
+          - th_17_pointer.js
+          - th_18_pointer_ocr.js
+          - th_19_position_state.js
+          - th_20_pickword.js
+          - th_21_result_preview.js
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,5 +52,7 @@ jobs:
       - name: Apply migration
         run: python3 scripts/apply_rhino_color_api_full_migration.py
 
-      - name: Full color safety
+      - name: Scan module
+        env:
+          MODULE_FILE: ${{ matrix.file }}
         run: python3 scripts/verify_rhino_color_api_safety.py
