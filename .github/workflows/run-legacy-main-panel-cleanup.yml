@@ -31,7 +31,6 @@ jobs:
           from pathlib import Path
           import subprocess
           import sys
-          import textwrap
 
           payload_path = Path('.github/workflows/diagnose-legacy-main-panel-cleanup.yml')
           source = payload_path.read_text(encoding='utf-8')
@@ -40,7 +39,10 @@ jobs:
           if start not in source or end not in source:
               raise SystemExit('cleanup payload markers missing')
           payload = source.split(start, 1)[1].split(end, 1)[0]
-          payload = textwrap.dedent(payload)
+          payload = '\n'.join(
+              line[10:] if line.startswith('          ') else line
+              for line in payload.splitlines()
+          ) + '\n'
           target = Path('/tmp/apply_legacy_main_panel_cleanup.py')
           target.write_text(payload, encoding='utf-8')
           subprocess.check_call([sys.executable, str(target)])
