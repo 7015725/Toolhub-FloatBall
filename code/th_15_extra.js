@@ -1,4 +1,4 @@
-// @version 1.1.15
+// @version 1.1.16
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -13,7 +13,7 @@ FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
 
   // 面板背景
   var bgDr = new android.graphics.drawable.GradientDrawable();
-  bgDr.setColor(bgColor);
+  toolhubSafeSetColor(bgDr, bgColor);
   bgDr.setCornerRadius(this.dp(16));
   panel.setBackground(bgDr);
   try { panel.setElevation(this.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -35,7 +35,7 @@ FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
     android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
     1 // 1px
   ));
-  sep.setBackgroundColor(dividerColor);
+  toolhubSafeSetBackgroundColor(sep, dividerColor);
   panel.addView(sep);
 
   var scroll = new android.widget.ScrollView(context);
@@ -50,7 +50,7 @@ FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
 
   var tv = new android.widget.TextView(context);
   tv.setText(String(bodyText || ""));
-  tv.setTextColor(codeColor);
+  toolhubSafeSetTextColor(tv, codeColor);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, Number(this.config.CONTENT_VIEWER_TEXT_SP || 12));
   // 增加行距优化阅读
   try { tv.setLineSpacing(this.dp(4), 1.0);  } catch(eLS) { safeLog(null, 'e', "catch " + String(eLS)); }
@@ -627,7 +627,7 @@ FloatBallAppWM.prototype.buildToolAppPreviewBody = function(entry) {
     var titleText = String(this.getToolAppTitle(r) || "ToolHub");
     if (r === "settings") titleText = "设置";
     tvTitle.setText(titleText);
-    tvTitle.setTextColor(T.onSurface);
+    toolhubSafeSetTextColor(tvTitle, T.onSurface);
     tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
     tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
     tvTitle.setGravity(android.view.Gravity.CENTER);
@@ -1242,7 +1242,7 @@ FloatBallAppWM.prototype.buildToolAppShell = function(contentView, title, canBac
 
   var tvTitle = new android.widget.TextView(context);
   tvTitle.setText(String(title || "ToolHub"));
-  tvTitle.setTextColor(T.onSurface);
+  toolhubSafeSetTextColor(tvTitle, T.onSurface);
   tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
   tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
   tvTitle.setGravity(android.view.Gravity.CENTER);
@@ -1773,7 +1773,7 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
 
     // 背景设置在 Container 上
     var bgDr = new android.graphics.drawable.GradientDrawable();
-    bgDr.setColor(isDark ? C.bgDark : C.bgLight);
+    toolhubSafeSetColor(bgDr, isDark ? C.bgDark : C.bgLight);
     bgDr.setCornerRadius(this.dp(12));
     container.setBackground(bgDr);
     try { container.setElevation(this.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -1784,11 +1784,11 @@ FloatBallAppWM.prototype.wrapDraggablePanel = function(contentView, optionsOrTit
     header.setGravity(android.view.Gravity.CENTER_VERTICAL);
     header.setPadding(this.dp(12), this.dp(8), this.dp(8), this.dp(8));
     // 给 Header 一个背景色，区分度更好
-    // header.setBackgroundColor(isDark ? 0x22FFFFFF : 0x11000000);
+    // toolhubSafeSetBackgroundColor(header, isDark ? 0x22FFFFFF : 0x11000000);
 
     var titleTv = new android.widget.TextView(context);
     titleTv.setText(String(title || "Panel"));
-    titleTv.setTextColor(isDark ? C.textPriDark : C.textPriLight);
+    toolhubSafeSetTextColor(titleTv, isDark ? C.textPriDark : C.textPriLight);
     titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
     titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
     var titleLp = new android.widget.LinearLayout.LayoutParams(0, -2);
@@ -2391,10 +2391,10 @@ try {
         if (tintHex.length > 0) {
           try {
             var tintColor2 = android.graphics.Color.parseColor(tintHex);
-            iv.setColorFilter(tintColor2, android.graphics.PorterDuff.Mode.SRC_IN);
+            toolhubSafeSetColorFilter(iv, tintColor2, android.graphics.PorterDuff.Mode.SRC_IN);
            } catch(eTint2) { safeLog(null, 'e', "catch " + String(eTint2)); }
         } else if (usedKind === "android") {
-          try { iv.setColorFilter(android.graphics.Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN);  } catch(eCF) { safeLog(null, 'e', "catch " + String(eCF)); }
+          try { toolhubSafeSetColorFilter(iv, android.graphics.Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN);  } catch(eCF) { safeLog(null, 'e', "catch " + String(eCF)); }
         } else {
           try { iv.clearColorFilter();  } catch(eCL) { safeLog(null, 'e', "catch " + String(eCL)); }
         }
@@ -2495,13 +2495,13 @@ FloatBallAppWM.prototype.buildBallPreviewView = function() {
     texts.setGravity(android.view.Gravity.CENTER_VERTICAL);
     var title = new android.widget.TextView(context);
     title.setText("悬浮球预览");
-    title.setTextColor(T.onSurface);
+    toolhubSafeSetTextColor(title, T.onSurface);
     title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     title.setTypeface(null, android.graphics.Typeface.BOLD);
     texts.addView(title, new android.widget.LinearLayout.LayoutParams(-1, -2));
     var sub = new android.widget.TextView(context);
     sub.setText("复用真实悬浮球渲染逻辑，预览本身不响应拖动");
-    sub.setTextColor(T.onSurface2);
+    toolhubSafeSetTextColor(sub, T.onSurface2);
     sub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     sub.setPadding(0, this.dp(3), 0, 0);
     try { sub.setMaxLines(2); } catch(eMax) {}

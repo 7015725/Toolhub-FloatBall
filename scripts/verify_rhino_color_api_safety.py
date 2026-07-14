@@ -8,6 +8,74 @@ THEME_PATH = CODE / "th_04_theme.js"
 BRIDGE_BEGIN = "// =======================【Rhino / ColorOS 安全颜色桥】======================="
 BRIDGE_END = "// =======================【工具：UI样式辅助】======================"
 
+
+def strip_js_comments_and_strings(text):
+    result = []
+    index = 0
+    length = len(text)
+    state = "code"
+    quote = ""
+    while index < length:
+        ch = text[index]
+        nxt = text[index + 1] if index + 1 < length else ""
+
+        if state == "code":
+            if ch == "/" and nxt == "/":
+                result.extend((" ", " "))
+                index += 2
+                state = "line_comment"
+                continue
+            if ch == "/" and nxt == "*":
+                result.extend((" ", " "))
+                index += 2
+                state = "block_comment"
+                continue
+            if ch in ('"', "'"):
+                result.append(" ")
+                quote = ch
+                index += 1
+                state = "string"
+                continue
+            result.append(ch)
+            index += 1
+            continue
+
+        if state == "line_comment":
+            if ch == "\n":
+                result.append("\n")
+                state = "code"
+            else:
+                result.append(" ")
+            index += 1
+            continue
+
+        if state == "block_comment":
+            if ch == "*" and nxt == "/":
+                result.extend((" ", " "))
+                index += 2
+                state = "code"
+            else:
+                result.append("\n" if ch == "\n" else " ")
+                index += 1
+            continue
+
+        if state == "string":
+            if ch == "\\" and index + 1 < length:
+                result.append(" ")
+                result.append("\n" if nxt == "\n" else " ")
+                index += 2
+                continue
+            if ch == quote:
+                result.append(" ")
+                index += 1
+                state = "code"
+                continue
+            result.append("\n" if ch == "\n" else " ")
+            index += 1
+
+    return "".join(result)
+
+
 errors = []
 theme = THEME_PATH.read_text(encoding="utf-8")
 start = theme.find(BRIDGE_BEGIN)
@@ -68,27 +136,36 @@ for forbidden in (
     if forbidden in bridge:
         errors.append("unsafe bridge fallback remains: " + forbidden)
 
-for path in sorted(CODE.glob("*.js")):
-    text = theme_without_bridge if path == THEME_PATH else path.read_text(encoding="utf-8")
+risky_methods = (
+    "setTextColor",
+    "setHintTextColor",
+    "setLinkTextColor",
+    "setHighlightColor",
+    "setBackgroundColor",
+    "setColor",
+    "setTint",
+    "setColorFilter",
+    "setShadowLayer",
+    "setStroke",
+)
+risky_pattern = re.compile(
+    r"\.((?:%s))\s*\(" % "|".join(re.escape(name) for name in risky_methods)
+)
+tint_list_pattern = re.compile(r"\.((?:set|apply)[A-Za-z0-9_$]*TintList)\s*\(")
 
-    methods = sorted(set(re.findall(
-        r"\.((?:set|apply)[A-Za-z0-9_$]*Color[A-Za-z0-9_$]*)\s*\(",
-        text,
-    )))
+for path in sorted(CODE.glob("*.js")):
+    raw = theme_without_bridge if path == THEME_PATH else path.read_text(encoding="utf-8")
+    text = strip_js_comments_and_strings(raw)
+
+    methods = sorted(set(risky_pattern.findall(text)))
     if methods:
         errors.append("%s direct color methods: %s" % (path.name, ", ".join(methods)))
 
-    tint_lists = sorted(set(re.findall(
-        r"\.((?:set|apply)[A-Za-z0-9_$]*TintList)\s*\(",
-        text,
-    )))
+    tint_lists = sorted(set(tint_list_pattern.findall(text)))
     if tint_lists:
         errors.append("%s direct tint-list methods: %s" % (path.name, ", ".join(tint_lists)))
 
     for token in (
-        ".setTint(",
-        ".setStroke(",
-        ".setShadowLayer(",
         "new android.content.res.ColorStateList(",
         "new Packages.android.content.res.ColorStateList(",
         "new ColorStateList(",

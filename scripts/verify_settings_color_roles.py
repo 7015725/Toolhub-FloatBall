@@ -86,12 +86,12 @@ if "T ? T.primary" in header:
     errors.append("设置章节标题仍直接使用强强调色")
 
 home_header = section(PANELS, "FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function")
-if "tv.setTextColor(T.onSurface);" not in home_header:
-    errors.append("设置首页分区标题未使用常规文字色")
+if "toolhubSafeSetTextColor(tv, T.onSurface);" not in home_header:
+    errors.append("设置首页分区标题未通过安全桥使用常规文字色")
 
 master = section(PANELS, "FloatBallAppWM.prototype.createSettingsMasterMenuItem = function")
-if "title.setTextColor(T.onSurface);" not in master:
-    errors.append("双栏分类标题未使用常规文字色")
+if "toolhubSafeSetTextColor(title, T.onSurface);" not in master:
+    errors.append("双栏分类标题未通过安全桥使用常规文字色")
 
 visual = section(PANELS, "FloatBallAppWM.prototype.getToolHubUpdateVisual = function")
 for marker in ("iconColor:", "labelColor:", "detailColor:", "T.successContainer", "T.warningContainer"):

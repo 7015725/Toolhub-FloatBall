@@ -77,10 +77,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Apply full Rhino color API migration
-        shell: bash
-        run: python3 scripts/apply_rhino_color_api_full_migration.py
-
       - name: Verify changed module versions
         shell: bash
         run: |
@@ -189,17 +185,29 @@ jobs:
           python3 scripts/verify_sqlite_storage.py
           python3 scripts/verify_ball_position_state.py
 
-      - name: Verify generated UI contracts
-        shell: bash
-        run: |
-          python3 scripts/verify_toolapp_layout.py
-          python3 scripts/verify_settings_color_scheme.py
-          python3 scripts/verify_legacy_theme_cleanup.py
-          python3 scripts/verify_settings_color_roles.py
-          python3 scripts/verify_coloros_rhino_color_safety.py
-          python3 scripts/verify_rhino_color_api_safety.py
-          python3 scripts/verify_button_editor_layout.py
-          python3 scripts/verify_schema_validator.py
+      - name: Verify toolapp layout
+        run: python3 scripts/verify_toolapp_layout.py
+
+      - name: Verify settings color scheme
+        run: python3 scripts/verify_settings_color_scheme.py
+
+      - name: Verify legacy theme cleanup
+        run: python3 scripts/verify_legacy_theme_cleanup.py
+
+      - name: Verify settings color roles
+        run: python3 scripts/verify_settings_color_roles.py
+
+      - name: Verify ColorOS color safety
+        run: python3 scripts/verify_coloros_rhino_color_safety.py
+
+      - name: Verify full Rhino color safety
+        run: python3 scripts/verify_rhino_color_api_safety.py
+
+      - name: Verify button editor layout
+        run: python3 scripts/verify_button_editor_layout.py
+
+      - name: Verify schema validator
+        run: python3 scripts/verify_schema_validator.py
 
       - name: Verify generated pointer regressions
         shell: bash
@@ -210,13 +218,6 @@ jobs:
       - name: Verify generated manifest signature
         shell: bash
         run: python3 .github/scripts/verify_manifest_signature.py
-
-      - name: Remove temporary color migration files
-        shell: bash
-        run: |
-          rm -f scripts/apply_rhino_color_api_full_migration.py
-          rm -f scripts/rhino_color_migration_lib.py
-          rm -f scripts/rhino_color_safe_helpers.inc
 
       - name: Check generated whitespace
         shell: bash
@@ -233,8 +234,8 @@ jobs:
             exit 1
           fi
           git config user.name "github-actions[bot]"
-          git config user.email "4189825+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json manifest.sig ToolHub.js.sha256
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
             exit 0

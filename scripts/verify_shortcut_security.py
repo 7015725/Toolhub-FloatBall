@@ -60,7 +60,7 @@ def main():
         ("new shortcut UI does not generate js", '__scBuildDefaultJsCode' not in shortcut and '__scUpdateJsCodeSafe' not in shortcut),
         ("legacy editor only appears for migrated buttons", 'if (legacyJsEnabled)' in shortcut and '新建快捷方式不提供任意 JS 编辑入口' in shortcut),
         ("selecting a shortcut disables legacy", '__scSetLegacyJsEnabled(false)' in shortcut),
-        ("shortcut submodule has a real version", shortcut.startswith("// @version 1.0.0\n")),
+        ("shortcut submodule has a real version", shortcut.startswith("// @version 1.0.1\n")),
     ]
 
     model_checks = [
