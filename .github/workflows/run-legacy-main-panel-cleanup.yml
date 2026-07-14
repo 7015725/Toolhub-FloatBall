@@ -22,6 +22,19 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - name: Normalize README payload anchor
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('README.md')
+          text = path.read_text(encoding='utf-8')
+          old = '- 设置页预览复用正式主面板的尺寸和位置计算。\n'
+          new = '- 设置页预览与正式主面板共用同一套尺寸和位置计算。\n'
+          if text.count(old) != 1:
+              raise SystemExit('README preview anchor expected once')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
+          PY
       - name: Execute cleanup payload
         shell: bash
         run: |
