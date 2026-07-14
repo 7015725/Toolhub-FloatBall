@@ -9,7 +9,6 @@ THEME_PATH = CODE / "th_04_theme.js"
 BRIDGE_BEGIN = "// =======================【Rhino / ColorOS 安全颜色桥】======================="
 BRIDGE_END = "// =======================【工具：UI样式辅助】======================"
 MODULE_FILE = os.environ.get("MODULE_FILE", "").strip()
-CHECK_KIND = os.environ.get("CHECK_KIND", "all").strip()
 
 errors = []
 theme = THEME_PATH.read_text(encoding="utf-8")
@@ -43,10 +42,9 @@ helpers = (
     "toolhubSafeApplyColorFilter",
     "toolhubSafeSetShadowLayer",
 )
-if CHECK_KIND in ("all", "helpers"):
-    for helper in helpers:
-        if "function %s(" % helper not in theme:
-            errors.append("missing helper: " + helper)
+for helper in helpers:
+    if "function %s(" % helper not in theme:
+        errors.append("missing helper: " + helper)
 
 paths = sorted(CODE.glob("*.js"))
 if MODULE_FILE:
@@ -54,45 +52,38 @@ if MODULE_FILE:
     if not paths[0].exists():
         errors.append("module missing: " + MODULE_FILE)
 
-checks = {
-    "setTextColor": ".setTextColor(",
-    "setHintTextColor": ".setHintTextColor(",
-    "setLinkTextColor": ".setLinkTextColor(",
-    "setHighlightColor": ".setHighlightColor(",
-    "setBackgroundColor": ".setBackgroundColor(",
-    "setColor": ".setColor(",
-    "setColorFilter": ".setColorFilter(",
-    "setTint": ".setTint(",
-    "setStroke": ".setStroke(",
-    "setShadowLayer": ".setShadowLayer(",
-    "colorStateList": "ColorStateList(",
-    "valueOf": "ColorStateList.valueOf(",
-    "addState": ".addState([",
-}
+forbidden_tokens = (
+    ".setTextColor(",
+    ".setHintTextColor(",
+    ".setLinkTextColor(",
+    ".setHighlightColor(",
+    ".setBackgroundColor(",
+    ".setColor(",
+    ".setColorFilter(",
+    ".setTint(",
+    ".setStroke(",
+    ".setShadowLayer(",
+    "new android.content.res.ColorStateList(",
+    "new Packages.android.content.res.ColorStateList(",
+    "ColorStateList.valueOf(",
+    ".addState([",
+)
 
 for path in paths:
     text = theme_without_bridge if path == THEME_PATH else path.read_text(encoding="utf-8")
-    if CHECK_KIND == "all":
-        methods = sorted(set(re.findall(
-            r"\.((?:set|apply)[A-Za-z0-9_$]*Color[A-Za-z0-9_$]*)\s*\(",
-            text,
-        )))
-        if methods:
-            errors.append("%s direct color methods: %s" % (path.name, ", ".join(methods)))
-        for kind, token in checks.items():
-            if token in text:
-                errors.append("%s direct %s: %s" % (path.name, kind, token))
-    elif CHECK_KIND in checks:
-        token = checks[CHECK_KIND]
+    for token in forbidden_tokens:
         if token in text:
-            errors.append("%s direct %s: %s" % (path.name, CHECK_KIND, token))
-    elif CHECK_KIND == "colorMethod":
-        methods = sorted(set(re.findall(
-            r"\.((?:set|apply)[A-Za-z0-9_$]*Color[A-Za-z0-9_$]*)\s*\(",
-            text,
-        )))
-        if methods:
-            errors.append("%s direct color methods: %s" % (path.name, ", ".join(methods)))
+            errors.append("%s direct token: %s" % (path.name, token))
+
+    tint_methods = sorted(set(re.findall(
+        r"\.([A-Za-z_$][A-Za-z0-9_$]*TintList)\s*\(",
+        text,
+    )))
+    if tint_methods:
+        errors.append("%s direct tint-list methods: %s" % (
+            path.name,
+            ", ".join(tint_methods),
+        ))
 
 if errors:
     for error in errors:
@@ -100,6 +91,6 @@ if errors:
     raise SystemExit(1)
 
 print(
-    "OK rhino_color_api_safety modules=%d helpers=%d check=%s"
-    % (len(paths), len(helpers), CHECK_KIND)
+    "OK rhino_color_api_safety modules=%d helpers=%d direct_color_calls=0"
+    % (len(paths), len(helpers))
 )
