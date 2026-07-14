@@ -108,18 +108,27 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Run ToolHub verification
-        shell: bash
+      - name: Verify JavaScript and entry
         run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
           python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
           python3 scripts/verify_entry_redundancy_cleanup.py
           python3 scripts/verify_entry_writable_probe.py
+
+      - name: Verify storage and lifecycle
+        run: |
           python3 scripts/verify_sqlite_storage.py
           python3 scripts/verify_sqlite_debounce_race.py
           python3 scripts/verify_ball_position_state.py
           python3 scripts/verify_ball_rebuild_rollback.py
+          python3 scripts/verify_entry_lifecycle.py
+          python3 scripts/verify_atomic_update.py
+          python3 scripts/verify_release_transaction.py
+          python3 scripts/verify_startup_status.py
+
+      - name: Verify settings and editors
+        run: |
           python3 scripts/verify_toolapp_layout.py
           python3 scripts/verify_settings_color_scheme.py
           python3 scripts/verify_legacy_theme_cleanup.py
@@ -129,10 +138,9 @@ jobs:
           python3 scripts/verify_button_editor_layout.py
           python3 scripts/verify_button_editor_direct_save.py
           python3 scripts/verify_schema_validator.py
-          python3 scripts/verify_entry_lifecycle.py
-          python3 scripts/verify_atomic_update.py
-          python3 scripts/verify_release_transaction.py
-          python3 scripts/verify_startup_status.py
+
+      - name: Verify main panel
+        run: |
           python3 scripts/verify_main_panel_runtime_status.py
           python3 scripts/verify_main_panel_drag_sort.py
           python3 scripts/verify_main_panel_more_menu.py
@@ -143,15 +151,24 @@ jobs:
           python3 scripts/verify_main_panel_grid_sizing.py
           python3 scripts/verify_main_panel_visual_tuning.py
           python3 scripts/verify_main_panel_close_lifecycle.py
+
+      - name: Verify security
+        run: |
           python3 scripts/verify_update_security_mode.py
           python3 scripts/verify_shell_bridge_security.py
           python3 scripts/verify_shell_log_redaction.py
           python3 scripts/verify_shortcut_security.py
           python3 scripts/verify_content_security.py
+
+      - name: Verify versions and documentation
+        run: |
           python3 scripts/verify_module_versions.py
           python3 scripts/verify_changed_module_versions.py
           python3 scripts/verify_documentation_consistency.py
           python3 scripts/verify_github_only_source.py
+
+      - name: Verify pointer and signature
+        run: |
           python3 scripts/verify_pointer_regressions.py
           python3 scripts/verify_result_preview.py
           python3 .github/scripts/verify_manifest_signature.py
