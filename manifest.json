@@ -110,9 +110,9 @@
       "version": "1.1.15"
     },
     "th_15_main_panel.js": {
-      "sha256": "b80dbd0671f23487bfef18108517c3646173cbb15504cde3ba91e07e0508e697",
-      "size": 75687,
-      "version": "1.5.1"
+      "sha256": "11721a561ba81b91b995175bf691d386d4e5cea9ebf91a430d5b3b9ca7d32df7",
+      "size": 78477,
+      "version": "1.5.2"
     },
     "th_16_entry.js": {
       "sha256": "eb2afe5ce373f6b4693975d4cfdbce150c3f11d318f2cfe4571fa51a1c11147c",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理旧主按钮面板回退代码"
+      "修复主面板分页滑动回弹"
     ],
-    "title": "清理旧主按钮面板回退代码"
+    "title": "修复主面板分页滑动回弹"
   },
   "schema": 3,
-  "version": 20260714055946
+  "version": 20260714064905
 }

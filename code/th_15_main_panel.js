@@ -1,5 +1,5 @@
-// @version 1.5.1
-// ToolHub - 主按钮面板第六阶段：网格决定面板宽高与精确窗口尺寸
+// @version 1.5.2
+// ToolHub - 主按钮面板第七阶段：整页分页与稳定吸附
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -672,13 +672,13 @@ FloatBallAppWM.prototype.getMainPanelPageHeight = function(pageContext) {
 FloatBallAppWM.prototype.getMainPanelPageMaxScrollY = function(pageContext) {
   try {
     if (!pageContext) return 0;
-    var rows = Number(pageContext.rows || 1);
+    var pageRows = Number(pageContext.pageRows || pageContext.rows || 1);
     var rowUnit = Number(pageContext.spec && pageContext.spec.rowUnit ? pageContext.spec.rowUnit : 1);
     var viewport = Number(pageContext.gridHeight || 0);
-    if (isNaN(rows) || rows < 1) rows = 1;
+    if (isNaN(pageRows) || pageRows < 1) pageRows = 1;
     if (isNaN(rowUnit) || rowUnit < 1) rowUnit = 1;
     if (isNaN(viewport) || viewport < 0) viewport = 0;
-    return Math.max(0, Math.floor(rows * rowUnit - viewport));
+    return Math.max(0, Math.floor(pageRows * rowUnit - viewport));
   } catch (e) {}
   return 0;
 };
@@ -753,6 +753,9 @@ FloatBallAppWM.prototype.scrollMainPanelToPage = function(pageContext, index, an
     var targetY = Math.min(maxY, Math.max(0, Math.floor(page * pageHeight)));
 
     pageContext.programmaticScroll = true;
+    var finishGeneration = Number(pageContext.finishGeneration || 0) + 1;
+    pageContext.finishGeneration = finishGeneration;
+
     if (animate === true && pageContext.scroll.smoothScrollTo) {
       pageContext.scroll.smoothScrollTo(0, targetY);
     } else {
@@ -768,18 +771,46 @@ FloatBallAppWM.prototype.scrollMainPanelToPage = function(pageContext, index, an
     );
 
     var self = this;
-    var finishGeneration = Number(pageContext.finishGeneration || 0) + 1;
-    pageContext.finishGeneration = finishGeneration;
-    var finish = new java.lang.Runnable({ run: function() {
+    var finishAttempts = 0;
+    var finishStableSamples = 0;
+    var finishLastY = null;
+    var finish = null;
+    finish = new java.lang.Runnable({ run: function() {
       try {
         if (!self.state || self.state.mainPanelPagingContext !== pageContext) return;
         if (Number(pageContext.finishGeneration || 0) !== finishGeneration) return;
+
+        var currentY = Number(pageContext.scroll.getScrollY() || 0);
+        if (isNaN(currentY)) currentY = 0;
+        if (finishLastY !== null && Math.abs(currentY - finishLastY) <= 1) {
+          finishStableSamples++;
+        } else {
+          finishStableSamples = 0;
+        }
+        finishLastY = currentY;
+        finishAttempts++;
+
+        var reachedTarget = Math.abs(currentY - targetY) <= 1;
+        if ((reachedTarget && finishStableSamples >= 1) || finishAttempts >= 24) {
+          pageContext.programmaticScroll = false;
+          self.updateMainPanelPageNavigation(pageContext, currentY);
+          return;
+        }
+
+        if (self.state.h) self.state.h.postDelayed(finish, 32);
+        else {
+          pageContext.programmaticScroll = false;
+          self.updateMainPanelPageNavigation(pageContext, currentY);
+        }
+      } catch (eFinish) {
         pageContext.programmaticScroll = false;
-        self.updateMainPanelPageNavigation(pageContext, pageContext.scroll.getScrollY());
-      } catch (eFinish) {}
+      }
     }});
-    if (this.state && this.state.h) this.state.h.postDelayed(finish, animate === true ? 260 : 20);
-    else finish.run();
+    if (this.state && this.state.h) this.state.h.postDelayed(finish, animate === true ? 32 : 16);
+    else {
+      pageContext.programmaticScroll = false;
+      this.updateMainPanelPageNavigation(pageContext, targetY);
+    }
 
     safeLog(this.L, 'd', 'main panel page scroll page=' + String(page) + ' reason=' + String(reason || ''));
     return true;
@@ -803,8 +834,12 @@ FloatBallAppWM.prototype.scheduleMainPanelPageSnap = function(pageContext, delay
     pageContext.snapGeneration = generation;
     var delay = Number(delayMs || 0);
     if (isNaN(delay) || delay < 40) delay = 40;
+    var startedAt = java.lang.System.currentTimeMillis();
+    var lastY = null;
+    var stableSamples = 0;
 
-    var runner = new java.lang.Runnable({ run: function() {
+    var runner = null;
+    runner = new java.lang.Runnable({ run: function() {
       try {
         if (!self.state || self.state.mainPanelPagingContext !== pageContext) return;
         if (Number(pageContext.snapGeneration || 0) !== generation) return;
@@ -812,8 +847,27 @@ FloatBallAppWM.prototype.scheduleMainPanelPageSnap = function(pageContext, delay
         if (pageContext.touching === true) return;
         if (self.state.mainPanelEditDrag && self.state.mainPanelEditDrag.started) return;
 
-        pageContext.snapRunnable = null;
+        var elapsed = java.lang.System.currentTimeMillis() - startedAt;
+        if (pageContext.programmaticScroll === true && elapsed < 1200) {
+          if (self.state.h) self.state.h.postDelayed(runner, 60);
+          return;
+        }
+
         var currentY = Number(pageContext.scroll.getScrollY() || 0);
+        if (isNaN(currentY)) currentY = 0;
+        if (lastY !== null && Math.abs(currentY - lastY) <= 1) {
+          stableSamples++;
+        } else {
+          stableSamples = 0;
+        }
+        lastY = currentY;
+
+        if (stableSamples < 2 && elapsed < 1200) {
+          if (self.state.h) self.state.h.postDelayed(runner, 60);
+          return;
+        }
+
+        pageContext.snapRunnable = null;
         var page = self.getMainPanelPageIndexForScrollY(pageContext, currentY);
         var pageHeight = self.getMainPanelPageHeight(pageContext);
         var maxY = self.getMainPanelPageMaxScrollY(pageContext);
@@ -1466,6 +1520,24 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
   return frame;
 };
 
+FloatBallAppWM.prototype.createMainPanelPageSpacer = function(spec) {
+  var spacer = new android.view.View(context);
+  var lp = new android.widget.GridLayout.LayoutParams();
+  lp.width = spec.cardWidth;
+  lp.height = spec.cardHeight;
+  lp.setMargins(
+    spec.gapBefore,
+    spec.gapBefore,
+    spec.gapAfter,
+    spec.gapAfter
+  );
+  spacer.setLayoutParams(lp);
+  spacer.setVisibility(android.view.View.INVISIBLE);
+  spacer.setClickable(false);
+  spacer.setFocusable(false);
+  return spacer;
+};
+
 FloatBallAppWM.prototype.buildMainPanelView = function() {
   var self = this;
   var editMode = this.isMainPanelEditMode();
@@ -1633,8 +1705,9 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   var rows = Math.max(1, Math.ceil(items.length / spec.cols));
   var visibleRows = Math.min(rows, spec.visibleRows);
   var viewportHeight = visibleRows * spec.rowUnit;
-  var fullGridHeight = rows * spec.rowUnit;
   var pageCount = Math.max(1, Math.ceil(rows / visibleRows));
+  var pageRows = pageCount * visibleRows;
+  var fullGridHeight = pageRows * spec.rowUnit;
   var footerHeight = pageCount > 1
     ? spec.footerHeight
     : spec.singlePageFooterHeight;
@@ -1657,6 +1730,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   safeLog(this.L, 'd',
     'main panel grid sizing cols=' + String(spec.cols) +
     ' grid=' + String(spec.gridWidth) + 'x' + String(fullGridHeight) +
+    ' rows=' + String(rows) + '/' + String(pageRows) +
     ' viewport=' + String(spec.gridWidth) + 'x' + String(viewportHeight) +
     ' panel=' + String(spec.panelWidth) + 'x' + String(panelHeight));
 
@@ -1673,11 +1747,13 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
         var action = event.getActionMasked();
         if (action === android.view.MotionEvent.ACTION_DOWN) {
           pageContext.touching = true;
+          pageContext.finishGeneration = Number(pageContext.finishGeneration || 0) + 1;
+          pageContext.programmaticScroll = false;
           self.cancelMainPanelPageSnap(pageContext);
         } else if (action === android.view.MotionEvent.ACTION_UP ||
                    action === android.view.MotionEvent.ACTION_CANCEL) {
           pageContext.touching = false;
-          self.scheduleMainPanelPageSnap(pageContext, 90, 'touch_release');
+          self.scheduleMainPanelPageSnap(pageContext, 80, 'touch_release');
         }
       }
     } catch (ePageTouch) {}
@@ -1693,7 +1769,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
 
   var grid = new android.widget.GridLayout(context);
   grid.setColumnCount(spec.cols);
-  try { grid.setRowCount(rows); } catch (eRows) {}
+  try { grid.setRowCount(pageRows); } catch (eRows) {}
   scroll.addView(
     grid,
     new android.widget.FrameLayout.LayoutParams(
@@ -1708,6 +1784,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
     grid: grid,
     spec: spec,
     rows: rows,
+    pageRows: pageRows,
     visibleRows: visibleRows,
     gridHeight: viewportHeight,
     fullGridHeight: fullGridHeight,
@@ -1745,10 +1822,13 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
     editContext.items = nextItems;
     grid.removeAllViews();
     var nextRows = Math.max(1, Math.ceil(nextItems.length / spec.cols));
-    try { grid.setRowCount(nextRows); } catch (eNextRows) {}
+    try { grid.setRowCount(pageContext.pageRows); } catch (eNextRows) {}
     for (var ri = 0; ri < nextItems.length; ri++) {
       nextItems[ri].visibleIndex = ri;
       grid.addView(self.createMainPanelFunctionCard(nextItems[ri], spec, colors, editContext));
+    }
+    for (var rf = nextItems.length; rf < pageContext.pageRows * spec.cols; rf++) {
+      grid.addView(self.createMainPanelPageSpacer(spec));
     }
     try {
       scroll.post(new java.lang.Runnable({ run: function() {
@@ -1771,6 +1851,9 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   for (var j = 0; j < items.length; j++) {
     items[j].visibleIndex = j;
     grid.addView(this.createMainPanelFunctionCard(items[j], spec, colors, editContext));
+  }
+  for (var filler = items.length; filler < pageRows * spec.cols; filler++) {
+    grid.addView(this.createMainPanelPageSpacer(spec));
   }
 
   // 单页没有分页语义，不创建绿色圆点；只保留 8dp 底部呼吸空间。
@@ -1849,7 +1932,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
       scroll.setOnScrollChangeListener(new android.view.View.OnScrollChangeListener({ onScrollChange: function(v, sx, sy) {
         self.updateMainPanelPageNavigation(pageContext, sy);
         if (!pageContext.touching && !pageContext.programmaticScroll) {
-          self.scheduleMainPanelPageSnap(pageContext, 170, 'scroll_idle');
+          self.scheduleMainPanelPageSnap(pageContext, 90, 'scroll_idle');
         }
       }}));
     } catch (eScrollListener) {}

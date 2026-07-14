@@ -29,13 +29,13 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(MAIN, "1.5.1", "th_15_main_panel.js")
+version(MAIN, "1.5.2", "th_15_main_panel.js")
 version(EXTRA, "1.1.15", "th_15_extra.js")
 
 for marker, label in (
     ("gridWidth = cols * cellOuterWidth", "grid width identity"),
     ("panelWidth = panelPadding * 2 + gridWidth", "panel width identity"),
-    ("fullGridHeight = rows * spec.rowUnit", "full height identity"),
+    ("fullGridHeight = pageRows * spec.rowUnit", "whole-page full height identity"),
     ("viewportHeight = visibleRows * spec.rowUnit", "viewport identity"),
     ("spec.panelTopPadding +", "top padding"),
     ("spec.dividerHeight +", "divider height"),
@@ -84,21 +84,25 @@ card_width = 120
 gap_before = 5
 gap_after = 6
 padding = 12
-rows = 3
+rows = 4
 card_height = 72
 visible_rows = 3
+page_count = (rows + visible_rows - 1) // visible_rows
+page_rows = page_count * visible_rows
 grid_width = cols * (card_width + gap_before + gap_after)
 panel_width = padding * 2 + grid_width
 row_unit = card_height + gap_before + gap_after
-full_grid_height = rows * row_unit
+full_grid_height = page_rows * row_unit
 viewport_height = visible_rows * row_unit
 if grid_width != cols * (card_width + gap_before + gap_after):
     fail("grid width invariant")
 if panel_width != grid_width + padding * 2:
     fail("panel width invariant")
-if full_grid_height != rows * row_unit:
-    fail("full grid height invariant")
+if full_grid_height != page_rows * row_unit:
+    fail("whole-page full grid height invariant")
+if full_grid_height - viewport_height != (page_count - 1) * viewport_height:
+    fail("whole-page max scroll invariant")
 if viewport_height != visible_rows * row_unit:
     fail("viewport height invariant")
 
-print("OK main_panel_grid_sizing width=grid height=viewport window=exact")
+print("OK main_panel_grid_sizing width=grid height=whole-page viewport window=exact")

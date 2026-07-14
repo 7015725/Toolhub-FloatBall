@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 验证主按钮面板第四阶段分页吸附、圆点导航和生命周期清理。
+# 验证主按钮面板整页分页、稳定吸附、圆点导航和生命周期清理。
 
 from pathlib import Path
 import re
@@ -38,8 +38,8 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.5.1":
-    fail("expected th_15_main_panel.js version 1.5.1")
+if not version or version.group(1) != "1.5.2":
+    fail("expected th_15_main_panel.js version 1.5.2")
 
 methods = (
     "clampMainPanelPageIndex",
@@ -61,6 +61,11 @@ for method in methods:
 
 for marker, label in (
     ("Math.round(y / pageHeight)", "nearest page calculation"),
+    ("pageRows = pageCount * visibleRows", "whole-page row padding"),
+    ("pageRows * spec.rowUnit", "whole-page content height"),
+    ("pageRows * spec.cols", "page spacer cell count"),
+    ("stableSamples < 2", "native fling stability wait"),
+    ("finishStableSamples", "programmatic scroll stability wait"),
     ("Math.min(maxY", "last-page max-scroll clamp"),
     ("pageContext.scroll.smoothScrollTo(0, targetY)", "animated page navigation"),
     ("pageContext.scroll.scrollTo(0, targetY)", "non-animated page restore"),
@@ -88,6 +93,9 @@ for marker, label in (
 ):
     require(SOURCE, marker, label)
 
+if SOURCE.count("FloatBallAppWM.prototype.createMainPanelPageSpacer = function") != 1:
+    fail("expected one page spacer builder")
+
 if SOURCE.count("setOnScrollChangeListener") != 1:
     fail("expected one main-panel scroll change listener")
 
@@ -109,11 +117,12 @@ for fragment, label in (
     ("FileIO.writeText", "direct file write"),
     ("setInterval(", "unmanaged paging interval"),
     ("new java.lang.Thread", "dedicated paging thread"),
+    ("postDelayed(finish, animate === true ? 260 : 20)", "fixed programmatic completion timer"),
 ):
     forbid(paging_source, fragment, label)
 
-require(RUNTIME_VERIFY, 'version.group(1) != "1.5.1"', "runtime verifier current version")
-require(DRAG_VERIFY, 'version.group(1) != "1.5.1"', "drag verifier current version")
+require(RUNTIME_VERIFY, 'version.group(1) != "1.5.2"', "runtime verifier current version")
+require(DRAG_VERIFY, 'version.group(1) != "1.5.2"', "drag verifier current version")
 require(WORKFLOW, "python3 scripts/verify_main_panel_paging.py", "workflow paging verification")
 require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260714081104;", "unchanged entry version")
 
@@ -127,32 +136,38 @@ if not raw.endswith(b"\n") or raw.endswith(b"\n\n"):
 
 visible_rows = 3
 row_unit = 88
-rows = 8
-page_height = visible_rows * row_unit
-viewport = page_height
-max_y = rows * row_unit - viewport
-page_count = 3
 
 
-def clamp_page(index):
-    return max(0, min(page_count - 1, round(index)))
+def paging_model(rows):
+    page_height = visible_rows * row_unit
+    page_count = max(1, (rows + visible_rows - 1) // visible_rows)
+    page_rows = page_count * visible_rows
+    viewport = page_height
+    max_y = page_rows * row_unit - viewport
+
+    def clamp_page(index):
+        return max(0, min(page_count - 1, round(index)))
+
+    def page_for_y(y):
+        y = max(0, min(max_y, y))
+        return clamp_page(round(y / page_height))
+
+    if max_y != (page_count - 1) * page_height:
+        fail("whole-page max scroll invariant failed rows=%d" % rows)
+    for page in range(page_count):
+        target = min(max_y, page * page_height)
+        if page_for_y(target) != page:
+            fail("page target round trip failed rows=%d page=%d" % (rows, page))
+    return page_count, max_y
 
 
-def page_for_y(y):
-    y = max(0, min(max_y, y))
-    return clamp_page(round(y / page_height))
+for rows, expected_pages in ((1, 1), (4, 2), (5, 2), (7, 3), (8, 3)):
+    actual_pages, _ = paging_model(rows)
+    if actual_pages != expected_pages:
+        fail("page count failed rows=%d expected=%d actual=%d" % (rows, expected_pages, actual_pages))
 
-
-if page_for_y(0) != 0:
-    fail("first page model failed")
-if page_for_y(160) != 1:
-    fail("nearest page model failed")
-last_page = page_for_y(9999)
-last_target = min(max_y, last_page * page_height)
-if last_page != 2 or last_target != max_y:
-    fail("last page clamp model failed")
 
 print(
     "OK main_panel_paging methods=%d clickable_dots=1 "
-    "snap=nearest lifecycle=guarded" % len(methods)
+    "snap=stable whole_page=1 partial_page=covered lifecycle=guarded" % len(methods)
 )
