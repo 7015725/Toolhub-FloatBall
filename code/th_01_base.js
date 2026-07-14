@@ -1,4 +1,4 @@
-// @version 1.1.9
+// @version 1.1.10
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -87,7 +87,9 @@ function isDeprecatedThemeConfigKey(key) {
 var REMOVED_SETTINGS_CONFIG_KEYS = {
   PANEL_POS_GRAVITY: true,
   PANEL_CUSTOM_OFFSET_Y: true,
-  SAVE_THROTTLE_MS: true
+  SAVE_THROTTLE_MS: true,
+  PANEL_COLS: true,
+  PANEL_ITEM_SIZE_DP: true
 };
 
 function isRemovedSettingsConfigKey(key) {
@@ -147,10 +149,7 @@ var ConfigValidator = {
     BALL_POSITION_MIGRATION_VERSION: { type: "int", min: 0, max: 9999, default: 0 },
 
     // 面板布局配置
-    // PANEL_COLS / PANEL_ITEM_SIZE_DP 仅保留给旧面板回退链；
-    // 新主面板统一使用可配置自适应网格。
-    PANEL_COLS: { type: "int", min: 1, max: 6, default: 1 },
-    PANEL_ITEM_SIZE_DP: { type: "int", min: 48, max: 120, default: 64 },
+    // 主面板只使用可配置自适应网格。
     PANEL_WIDTH_PERCENT: { type: "int", min: 35, max: 100, default: 90 },
     PANEL_AUTO_MAX_COLS: { type: "int", min: 1, max: 10, default: 6 },
     PANEL_MIN_CARD_WIDTH_DP: { type: "int", min: 48, max: 200, default: 92 },
@@ -907,9 +906,6 @@ var ConfigManager = {
         PANEL_GAP_DP: 8,
         PANEL_PADDING_DP: 12,
         PANEL_ICON_SIZE_DP: 28,
-        // 旧面板回退链兼容值，不再展示在设置页。
-        PANEL_COLS: 1,
-        PANEL_ITEM_SIZE_DP: 60,
         PANEL_LABEL_ENABLED: true,
         PANEL_LABEL_TEXT_SIZE_SP: 12,
         PANEL_LABEL_TOP_MARGIN_DP: 4,
@@ -1082,16 +1078,14 @@ var ConfigManager = {
             } catch (eDeprecatedSchemaWrite) {}
         }
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("PANEL_POS_GRAVITY") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_X_DP") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 || sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_RESULT_PREVIEW_TIMEOUT_SEC") < 0 || sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HIT_HEX") < 0 || sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_COLOR_AREA_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
+        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_X_DP") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 || sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_RESULT_PREVIEW_TIMEOUT_SEC") < 0 || sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HIT_HEX") < 0 || sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_COLOR_AREA_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
             needReset = true;
         }
         if (!needReset && (
             sStr.indexOf("PANEL_WIDTH_PERCENT") < 0 ||
             sStr.indexOf("PANEL_AUTO_MAX_COLS") < 0 ||
             sStr.indexOf("PANEL_MIN_CARD_WIDTH_DP") < 0 ||
-            sStr.indexOf("PANEL_CARD_HEIGHT_DP") < 0 ||
-            sStr.indexOf("\"PANEL_COLS\"") >= 0 ||
-            sStr.indexOf("\"PANEL_ITEM_SIZE_DP\"") >= 0
+            sStr.indexOf("PANEL_CARD_HEIGHT_DP") < 0
         )) {
             needReset = true;
         }

@@ -1,4 +1,4 @@
-// @version 1.0.12
+// @version 1.0.13
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -600,7 +600,24 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
     },
     cfgPanelKey: this.currentPanelKey,
     buttons: (this.panels && this.panels[this.currentPanelKey]) ? this.panels[this.currentPanelKey].length : 0,
-    layout: { cols: this.config.PANEL_COLS, rows: this.config.PANEL_ROWS },
+    layout: (function(app) {
+      try {
+        var spec = app.getMainPanelResponsiveSpec
+          ? app.getMainPanelResponsiveSpec(false)
+          : null;
+        return {
+          mode: spec ? String(spec.layoutMode || "") : "adaptive_grid_sized",
+          cols: spec ? Number(spec.cols || 0) : 0,
+          rows: spec ? Number(spec.visibleRows || 0) : Number(app.config.PANEL_ROWS || 0)
+        };
+      } catch (eLayout) {
+        return {
+          mode: "adaptive_grid_sized",
+          cols: 0,
+          rows: Number(app.config.PANEL_ROWS || 0)
+        };
+      }
+    })(this),
     threadModel: {
       entryThreadMustNotTouchWM: true,
       perOverlaySingleHandlerThread: true,

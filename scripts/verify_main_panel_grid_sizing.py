@@ -30,7 +30,7 @@ def version(text, expected, name):
 
 
 version(MAIN, "1.5.1", "th_15_main_panel.js")
-version(EXTRA, "1.1.14", "th_15_extra.js")
+version(EXTRA, "1.1.15", "th_15_extra.js")
 
 for marker, label in (
     ("gridWidth = cols * cellOuterWidth", "grid width identity"),

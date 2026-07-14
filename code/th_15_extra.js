@@ -1,4 +1,4 @@
-// @version 1.1.14
+// @version 1.1.15
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -77,207 +77,17 @@ FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
 
 // =======================【面板构建：主面板 / 设置面板】======================
 FloatBallAppWM.prototype.buildPanelView = function(panelType) {
-  if (panelType === 'main' && this.buildMainPanelView) return this.buildMainPanelView();
-  if (panelType === "settings" || panelType === "settings_group") return this.buildSettingsPanelView();
-  if (panelType === "btn_editor") return this.buildButtonEditorPanelView();
-  if (panelType === "schema_editor") return this.buildSchemaEditorPanelView();
-
-  var isDark = this.isDarkTheme();
-  var C = this.ui.colors;
-  var TPanel = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
-
-  var bgColor = TPanel && TPanel.background ? TPanel.background : (isDark ? C.bgDark : C.bgLight);
-  var cardColor = TPanel && TPanel.surface ? TPanel.surface : (isDark ? C.cardDark : C.cardLight);
-  var textColor = TPanel && TPanel.onSurface ? TPanel.onSurface : (isDark ? C.textPriDark : C.textPriLight);
-  var panelStrokeColor = TPanel && TPanel.outlineVariant ? TPanel.outlineVariant : (isDark ? C.dividerDark : C.dividerLight);
-  var cardStrokeColor = panelStrokeColor;
-  var primaryColor = TPanel && TPanel.primary ? TPanel.primary : C.primary;
-  var pressedCardColor = this.withAlpha(primaryColor, isDark ? 0.24 : 0.14);
-  var panelRadiusDp = 24;
-  var cardRadiusDp = 16;
-  var panelElevationDp = isDark ? 2 : 4;
-  var cardElevationDp = isDark ? 1 : 2;
-
-  var panel = new android.widget.LinearLayout(context);
-  panel.setOrientation(android.widget.LinearLayout.VERTICAL);
-
-  // 面板背景：统一使用系统明暗与 Monet 语义色
-  // 先设一个柔和临时背景避免裸窗口闪烁，最后再由 updatePanelBackground 统一兜底
-  try {
-    var tmpBg = this.ui.createStrokeDrawable(bgColor, panelStrokeColor, this.dp(1), this.dp(panelRadiusDp));
-    panel.setBackground(tmpBg);
-  } catch(eTmp) {};
-  try { panel.setElevation(this.dp(panelElevationDp));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-
-  var padDp = this.config.PANEL_PADDING_DP;
-  panel.setPadding(
-    this.dp(padDp),
-    this.dp(padDp),
-    this.dp(padDp),
-    this.dp(padDp)
-  );
-
-  var rawBtns = [];
-  try { if (this.panels && this.panels[this.currentPanelKey]) rawBtns = this.panels[this.currentPanelKey]; } catch (e0) { rawBtns = []; }
-
-  // # 启用/禁用：按钮页只渲染启用项（enabled !== false）
-  // # 说明：按钮管理页仍显示全部；这里只影响主面板显示，不改变按钮顺序与索引存储
-  var btns = [];
-  try {
-    if (rawBtns && rawBtns.length) {
-      for (var bi = 0; bi < rawBtns.length; bi++) {
-        var bb = rawBtns[bi];
-        if (bb && bb.enabled === false) continue;
-        btns.push(bb);
-      }
+  var type = String(panelType || "");
+  if (type === "main") {
+    if (typeof this.buildMainPanelView !== "function") {
+      throw new Error("主面板模块未加载：th_15_main_panel.js");
     }
-  } catch (eF) { btns = rawBtns || []; }
-
-  var cols2 = this.config.PANEL_COLS;
-  var rows2 = this.config.PANEL_ROWS;
-
-  var itemPx = this.dp(this.config.PANEL_ITEM_SIZE_DP);
-  var gapPx = this.dp(this.config.PANEL_GAP_DP);
-
-  var contentW = cols2 * itemPx + cols2 * 2 * gapPx;
-
-  // 计算内容高度限制
-  // 每一行的高度 = itemPx + 2 * gapPx
-  var oneRowH = itemPx + gapPx * 2;
-
-  // 实际按钮数量
-  var totalBtns = (btns && btns.length) ? btns.length : 0;
-  // 最小显示的格子数（填满 rows2）
-  var minCells = cols2 * rows2;
-  // 最终渲染的格子总数
-  var totalCells = totalBtns > minCells ? totalBtns : minCells;
-  // 最终行数
-  var finalRows = Math.ceil(totalCells / cols2);
-
-  var scrollH = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
-  if (finalRows > rows2) {
-      scrollH = rows2 * oneRowH;
+    return this.buildMainPanelView();
   }
-
-  var scroll = new android.widget.ScrollView(context);
-  try { scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);  } catch(eOS) { safeLog(null, 'e', "catch " + String(eOS)); }
-  try { scroll.setVerticalScrollBarEnabled(false);  } catch(eSB) { safeLog(null, 'e', "catch " + String(eSB)); }
-  try { scroll.setFillViewport(true);  } catch(eFV) { safeLog(null, 'e', "catch " + String(eFV)); }
-
-  var scrollLp = new android.widget.LinearLayout.LayoutParams(contentW, scrollH);
-  scroll.setLayoutParams(scrollLp);
-
-  var self = this;
-
-  function makePanelCellDrawable(fillColor, pressColor, strokeColor, radiusDp) {
-    var sd = new android.graphics.drawable.StateListDrawable();
-    var p = self.ui.createStrokeDrawable(pressColor, strokeColor, self.dp(1), self.dp(radiusDp));
-    var n = self.ui.createStrokeDrawable(fillColor, strokeColor, self.dp(1), self.dp(radiusDp));
-    sd.addState([android.R.attr.state_pressed], p);
-    sd.addState([], n);
-    return sd;
-  }
-
-  scroll.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
-    onTouch: function(v, e) { self.touchActivity(); return false; }
-  }));
-
-  var grid = new android.widget.GridLayout(context);
-  grid.setColumnCount(cols2);
-
-  // var totalBtns = (btns && btns.length) ? btns.length : 0;
-  // var minCells = cols2 * rows2;
-  // var totalCells = totalBtns > minCells ? totalBtns : minCells;
-
-  var rowCount = Math.ceil(totalCells / cols2);
-  try { grid.setRowCount(rowCount);  } catch(eRC) { safeLog(null, 'e', "catch " + String(eRC)); }
-
-  grid.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
-    onTouch: function(v, e) { self.touchActivity(); return false; }
-  }));
-
-  var i;
-  for (i = 0; i < totalCells; i++) {
-    var btnCfg = (btns && i < totalBtns) ? btns[i] : null;
-
-    var cell = new android.widget.LinearLayout(context);
-    cell.setOrientation(android.widget.LinearLayout.VERTICAL);
-    cell.setGravity(android.view.Gravity.CENTER);
-
-    var lp = new android.widget.GridLayout.LayoutParams();
-    lp.width = itemPx;
-    lp.height = itemPx;
-    lp.setMargins(gapPx, gapPx, gapPx, gapPx);
-    cell.setLayoutParams(lp);
-
-    // 单元格背景：如果是有功能的按钮，给柔和卡片背景；否则透明
-    if (btnCfg) {
-         cell.setBackground(makePanelCellDrawable(cardColor, pressedCardColor, cardStrokeColor, cardRadiusDp));
-         try { cell.setElevation(self.dp(cardElevationDp));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
-    } else {
-         // 空格子占位
-    }
-
-    var iv = new android.widget.ImageView(context);
-    var dr = this.resolveIconDrawable(btnCfg);
-    if (dr) {
-        iv.setImageDrawable(dr);
-        // 主面板是高频工具入口：默认保留图标原色；仅 resolveIconDrawable 内显式 iconTint 时才染色。
-    }
-
-    var ivLp = new android.widget.LinearLayout.LayoutParams(
-      this.dp(this.config.PANEL_ICON_SIZE_DP),
-      this.dp(this.config.PANEL_ICON_SIZE_DP)
-    );
-    iv.setLayoutParams(ivLp);
-    cell.addView(iv);
-
-    if (this.config.PANEL_LABEL_ENABLED) {
-      var tv = new android.widget.TextView(context);
-      var title = (btnCfg && btnCfg.title) ? String(btnCfg.title) : "";
-      tv.setText(title);
-      tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, this.config.PANEL_LABEL_TEXT_SIZE_SP);
-      tv.setTextColor(textColor);
-      tv.setGravity(android.view.Gravity.CENTER);
-      try { tv.setLines(1); tv.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(eL) { safeLog(null, 'e', "catch " + String(eL)); }
-
-      var tvLp = new android.widget.LinearLayout.LayoutParams(
-        android.widget.LinearLayout.LayoutParams.MATCH_PARENT, // 宽度填满，方便居中
-        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-      );
-      tvLp.topMargin = this.dp(this.config.PANEL_LABEL_TOP_MARGIN_DP);
-      tv.setLayoutParams(tvLp);
-      cell.addView(tv);
-    }
-
-    if (btnCfg) {
-      (function(index, btnObj) {
-        cell.setClickable(true);
-        // 使用 Ripple 效果增强点击反馈
-        var rippleDr = makePanelCellDrawable(cardColor, pressedCardColor, cardStrokeColor, cardRadiusDp);
-        cell.setBackground(rippleDr);
-
-        cell.setOnClickListener(new android.view.View.OnClickListener({
-          onClick: function() {
-            self.touchActivity();
-            self.hideMainPanel();
-            self.execButtonAction(btnObj, index);
-          }
-        }));
-      })(i, btnCfg);
-    } else {
-      try { iv.setAlpha(0);  } catch(eA0) { safeLog(null, 'e', "catch " + String(eA0)); }
-      try { cell.setClickable(false);  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
-    }
-
-    grid.addView(cell);
-  }
-
-  scroll.addView(grid);
-  panel.addView(scroll);
-  // 对主面板/查看器面板应用统一主题色（支持 Monet、模板、自定义）
-  try { this.updatePanelBackground(panel); } catch(eTheme) { safeLog(null, 'e', "catch " + String(eTheme)); }
-  return panel;
+  if (type === "settings" || type === "settings_group") return this.buildSettingsPanelView();
+  if (type === "btn_editor") return this.buildButtonEditorPanelView();
+  if (type === "schema_editor") return this.buildSchemaEditorPanelView();
+  throw new Error("不支持的面板类型：" + type);
 };
 
 FloatBallAppWM.prototype.getBestPanelPosition = function(pw, ph, bx, by, ballSize) {
@@ -330,61 +140,6 @@ FloatBallAppWM.prototype.getBestPanelPosition = function(pw, ph, bx, by, ballSiz
   best.x = Math.max(0, Math.min(sw - pw, best.x));
   best.y = Math.max(0, Math.min(sh - ph, best.y));
   return best;
-};
-
-FloatBallAppWM.prototype.computePanelX = function(ballX, panelW) {
-  var gapPx = this.dp(this.config.BALL_PANEL_GAP_DP);
-  var di = this.getDockInfo();
-  var screenW = this.state.screen.w;
-
-  // 1. 优先尝试放在右侧
-  var rightX = ballX + di.ballSize + gapPx;
-  if (rightX + panelW <= screenW) {
-    return rightX;
-  }
-
-  // 2. 右侧放不下，尝试放在左侧
-  var leftX = ballX - gapPx - panelW;
-  if (leftX >= 0) {
-    return leftX;
-  }
-
-  // 3. 两边都放不下（面板太宽），选择空间大的一侧
-  var spaceRight = screenW - (ballX + di.ballSize + gapPx);
-  var spaceLeft = ballX - gapPx;
-
-  if (spaceLeft > spaceRight) {
-    // 左侧空间大，靠左放（可能会覆盖球或被切断，但优先保证左对齐）
-    // 为了防止左边被切断，max(0, leftX)
-    return Math.max(0, leftX);
-  } else {
-    // 右侧空间大
-    return Math.min(screenW - panelW, rightX);
-  }
-};
-
-FloatBallAppWM.prototype.tryAdjustPanelY = function(px, py, pw, ph, bx, by) {
-  var gapPx = this.dp(this.config.BALL_PANEL_GAP_DP);
-  var di = this.getDockInfo();
-
-  var minY = 0;
-  var maxY = this.state.screen.h - ph;
-
-  py = this.clamp(py, minY, maxY);
-
-  if (!this.rectIntersect(px, py, pw, ph, bx, by, di.ballSize, di.ballSize)) return { ok: true, x: px, y: py };
-
-  var pyAbove = by - gapPx - ph;
-  if (pyAbove >= minY && pyAbove <= maxY) {
-    if (!this.rectIntersect(px, pyAbove, pw, ph, bx, by, di.ballSize, di.ballSize)) return { ok: true, x: px, y: pyAbove };
-  }
-
-  var pyBelow = by + di.ballSize + gapPx;
-  if (pyBelow >= minY && pyBelow <= maxY) {
-    if (!this.rectIntersect(px, pyBelow, pw, ph, bx, by, di.ballSize, di.ballSize)) return { ok: true, x: px, y: pyBelow };
-  }
-
-  return { ok: false, x: px, y: py };
 };
 
 FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
@@ -2449,17 +2204,16 @@ FloatBallAppWM.prototype.showViewerPanel = function(title, text) {
         finalX = savedState.x;
         finalY = savedState.y;
     } else {
-        var px = self.computePanelX(bx, pw);
-        var py = by;
-
-        var r = self.tryAdjustPanelY(px, py, pw, ph, bx, by);
-        if (r.ok) {
-            finalX = r.x;
-            finalY = r.y;
-        } else {
-            finalX = px;
-            finalY = self.clamp(py, 0, self.state.screen.h - ph);
-        }
+        var viewerDockInfo = self.getDockInfo();
+        var viewerPos = self.getBestPanelPosition(
+          pw,
+          ph,
+          bx,
+          by,
+          viewerDockInfo.ballSize
+        );
+        finalX = viewerPos.x;
+        finalY = viewerPos.y;
     }
 
     self.addPanel(panelView, finalX, finalY, "viewer");

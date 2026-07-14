@@ -1,6 +1,0 @@
-FAIL README release cleanup note expected 1 occurrence, found 0
-Traceback (most recent call last):
-  File "<stdin>", line 18, in <module>
-  File "/opt/hostedtoolcache/Python/3.14.6/x64/lib/python3.14/subprocess.py", line 420, in check_call
-    raise CalledProcessError(retcode, cmd)
-subprocess.CalledProcessError: Command '['/opt/hostedtoolcache/Python/3.14.6/x64/bin/python3', '/tmp/apply_legacy_main_panel_cleanup.py']' returned non-zero exit status 1.

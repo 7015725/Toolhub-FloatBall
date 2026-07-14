@@ -7,6 +7,7 @@ BASE = (ROOT / "code/th_01_base.js").read_text(encoding="utf-8")
 PERSIST = (ROOT / "code/th_05_persistence.js").read_text(encoding="utf-8")
 MAIN = (ROOT / "code/th_15_main_panel.js").read_text(encoding="utf-8")
 EXTRA = (ROOT / "code/th_15_extra.js").read_text(encoding="utf-8")
+ENTRY = (ROOT / "code/th_16_entry.js").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github/workflows/verify.yml").read_text(encoding="utf-8")
 
 
@@ -30,10 +31,10 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(BASE, "1.1.9", "th_01_base.js")
-version(PERSIST, "1.0.5", "th_05_persistence.js")
+version(BASE, "1.1.10", "th_01_base.js")
+version(PERSIST, "1.0.6", "th_05_persistence.js")
 version(MAIN, "1.5.1", "th_15_main_panel.js")
-version(EXTRA, "1.1.14", "th_15_extra.js")
+version(EXTRA, "1.1.15", "th_15_extra.js")
 
 active_base = re.sub(
     r"var REMOVED_SETTINGS_CONFIG_KEYS = \{.*?\};",
@@ -41,7 +42,7 @@ active_base = re.sub(
     BASE,
     flags=re.S,
 )
-for key in ("PANEL_POS_GRAVITY", "PANEL_CUSTOM_OFFSET_Y", "SAVE_THROTTLE_MS"):
+for key in ("PANEL_POS_GRAVITY", "PANEL_CUSTOM_OFFSET_Y", "SAVE_THROTTLE_MS", "PANEL_COLS", "PANEL_ITEM_SIZE_DP"):
     require(BASE, key + ": true", "legacy cleanup marker " + key)
     if re.search(r"(?m)^\s*%s\s*:" % re.escape(key), active_base):
         fail("removed setting remains active: " + key)
@@ -50,6 +51,7 @@ for key in ("PANEL_POS_GRAVITY", "PANEL_CUSTOM_OFFSET_Y", "SAVE_THROTTLE_MS"):
     forbid(PERSIST, key, "persistence effect key")
     forbid(MAIN, key, "main position key")
     forbid(EXTRA, key, "extra position key")
+    forbid(ENTRY, key, "entry legacy layout key")
 
 for marker, label in (
     ('PANEL_WIDTH_PERCENT: { type: "int", min: 35, max: 100', "width validator"),
@@ -91,7 +93,7 @@ for marker, label in (
 forbid(MAIN, "BALL_PANEL_GAP_DP || 10", "truthy gap fallback")
 
 extra_start = EXTRA.find("FloatBallAppWM.prototype.getBestPanelPosition = function")
-extra_end = EXTRA.find("FloatBallAppWM.prototype.computePanelX", extra_start)
+extra_end = EXTRA.find("FloatBallAppWM.prototype.addPanel", extra_start)
 if extra_start < 0 or extra_end <= extra_start:
     fail("cannot isolate generic position")
 generic_position = EXTRA[extra_start:extra_end]
@@ -116,6 +118,13 @@ for marker, label in (
     require(preview, marker, label)
 forbid(preview, "this.computePanelX(", "legacy preview x")
 forbid(preview, "this.tryAdjustPanelY(", "legacy preview y")
+
+forbid(EXTRA, "FloatBallAppWM.prototype.computePanelX = function", "legacy computePanelX definition")
+forbid(EXTRA, "FloatBallAppWM.prototype.tryAdjustPanelY = function", "legacy tryAdjustPanelY definition")
+forbid(EXTRA, "self.computePanelX(", "legacy viewer computePanelX call")
+forbid(EXTRA, "self.tryAdjustPanelY(", "legacy viewer tryAdjustPanelY call")
+require(EXTRA, "var viewerPos = self.getBestPanelPosition(", "viewer generic position")
+require(ENTRY, "app.getMainPanelResponsiveSpec", "entry adaptive layout status")
 
 require(WORKFLOW, "python3 scripts/verify_panel_layout_settings_cleanup.py", "workflow")
 print("OK panel_layout_settings_cleanup ranges=expanded removed=3 preview=shared gap=zero-safe")

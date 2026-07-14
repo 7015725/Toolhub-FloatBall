@@ -31,8 +31,8 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(BASE, "1.1.9", "th_01_base.js")
-version(PERSIST, "1.0.5", "th_05_persistence.js")
+version(BASE, "1.1.10", "th_01_base.js")
+version(PERSIST, "1.0.6", "th_05_persistence.js")
 version(MAIN, "1.5.1", "th_15_main_panel.js")
 
 start = MAIN.find("FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function")
