@@ -77,48 +77,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Apply optional repository patch
-        id: bootstrap-patch
-        shell: bash
-        run: |
-          if [ -f .github/scripts/apply_main_panel_grid_sizing.py ]; then
-            python3 .github/scripts/apply_main_panel_grid_sizing.py
-            echo "applied=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "applied=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Rebuild deterministic audits
-        if: steps.bootstrap-patch.outputs.applied == 'true'
-        shell: bash
-        run: |
-          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
-          python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
-          python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
-          python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
-          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
-
-      - name: Verify focused panel changes
-        if: steps.bootstrap-patch.outputs.applied == 'true'
-        shell: bash
-        run: |
-          node --check code/th_15_main_panel.js
-          node --check code/th_15_extra.js
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_main_panel_runtime_status.py
-          python3 scripts/verify_main_panel_drag_sort.py
-          python3 scripts/verify_main_panel_paging.py
-          python3 scripts/verify_main_panel_adaptive_layout.py
-          python3 scripts/verify_main_panel_grid_sizing.py
-          python3 scripts/verify_main_panel_visual_tuning.py
-          python3 scripts/verify_main_panel_close_lifecycle.py
-          python3 scripts/verify_button_editor_direct_save.py
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/verify_documentation_consistency.py
-          git diff --exit-code origin/main -- ToolHub.js
-          git diff --check
-
       - name: Verify changed module versions
         shell: bash
         run: |
@@ -251,8 +209,8 @@ jobs:
         shell: bash
         run: git diff --check
 
-      - name: Commit generated artifacts and formal patch
-        if: steps.current-generated.outputs.current != 'true' || steps.bootstrap-patch.outputs.applied == 'true'
+      - name: Commit generated artifacts
+        if: steps.current-generated.outputs.current != 'true'
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
@@ -261,19 +219,13 @@ jobs:
             echo "TOOLHUB_AUTOMATION_TOKEN is empty"
             exit 1
           fi
-          if [ "${{ steps.bootstrap-patch.outputs.applied }}" = "true" ]; then
-            rm -f .github/scripts/apply_main_panel_grid_sizing.py
-            rm -f .github/workflows/apply-main-panel-grid-sizing.yml
-            git checkout "origin/${{ github.event.pull_request.base.ref }}" -- .github/workflows/sign-toolhub.yml
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add manifest.json manifest.sig ToolHub.js.sha256
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
             exit 0
           fi
-          git diff --cached --check
-          git commit -m "修复主面板网格与窗口尺寸不一致"
+          git commit -m "签名 ToolHub 更新"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:$TARGET_BRANCH"
