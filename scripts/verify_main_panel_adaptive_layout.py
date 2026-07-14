@@ -33,7 +33,7 @@ def version(text, expected, name):
 
 version(BASE, "1.1.10", "th_01_base.js")
 version(PERSIST, "1.0.6", "th_05_persistence.js")
-version(MAIN, "1.5.3", "th_15_main_panel.js")
+version(MAIN, "1.5.4", "th_15_main_panel.js")
 
 start = MAIN.find("FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function")
 end = MAIN.find("FloatBallAppWM.prototype.createMainPanelRippleBackground", start)
@@ -83,7 +83,7 @@ for name in (
     "verify_main_panel_close_lifecycle.py",
     "verify_main_panel_visual_tuning.py",
 ):
-    require((ROOT / "scripts" / name).read_text(encoding="utf-8"), "1.5.3", name)
+    require((ROOT / "scripts" / name).read_text(encoding="utf-8"), "1.5.4", name)
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_adaptive_layout.py", "workflow")
 require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260714081104;", "entry")
