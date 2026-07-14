@@ -209,6 +209,23 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         "timeout reuse must be limited to final scans with a fresh candidate under the hotspot",
     )
 
+    screenshot_dir = section(
+        pointer,
+        "FloatBallAppWM.prototype.getPointerScreenshotDir = function()",
+        "FloatBallAppWM.prototype.createPointerScreenshotFile = function()",
+    )
+    result.require(
+        group,
+        "N9 screenshot directory is ShortX ToolHub/screenshots",
+        "shortx.getShortXDir()" in screenshot_dir
+        and '.replace(/\/+$/g, "")' in screenshot_dir
+        and 'new java.io.File(base, "ToolHub/screenshots")' in screenshot_dir
+        and "dir.mkdirs() !== true" in screenshot_dir
+        and "getToolHubAndroidContext" not in screenshot_dir
+        and '"/data/screenshots"' not in screenshot_dir,
+        "pointer screenshots must use shortx.getShortXDir()/ToolHub/screenshots without app-private fallback",
+    )
+
     save_bitmap = section(
         pointer,
         "FloatBallAppWM.prototype.savePointerBitmapToFile = function(bitmap, file)",
