@@ -1,4 +1,4 @@
-// @version 1.1.11
+// @version 1.1.12
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -77,6 +77,7 @@ FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
 
 // =======================【面板构建：主面板 / 设置面板】======================
 FloatBallAppWM.prototype.buildPanelView = function(panelType) {
+  if (panelType === 'main' && this.buildMainPanelView) return this.buildMainPanelView();
   if (panelType === "settings" || panelType === "settings_group") return this.buildSettingsPanelView();
   if (panelType === "btn_editor") return this.buildButtonEditorPanelView();
   if (panelType === "schema_editor") return this.buildSchemaEditorPanelView();
@@ -470,17 +471,24 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
 
   try {
     if (this.config.ENABLE_ANIMATIONS) {
-        panel.setScaleX(0.96);
-        panel.setScaleY(0.96);
-        panel.setAlpha(0);
-        panel.animate()
-          .scaleX(1)
-          .scaleY(1)
-          .alpha(1)
-          .setDuration(180)
-          .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
-          .start();
+        var handledMainEnter = false;
+        if (which === "main" && this.animateMainPanelEnter) {
+          handledMainEnter = this.animateMainPanelEnter(panel, x, y) === true;
+        }
+        if (!handledMainEnter) {
+          panel.setScaleX(0.96);
+          panel.setScaleY(0.96);
+          panel.setAlpha(0);
+          panel.animate()
+            .scaleX(1)
+            .scaleY(1)
+            .alpha(1)
+            .setDuration(180)
+            .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+            .start();
+        }
     } else {
+        panel.setTranslationX(0);
         panel.setScaleX(1);
         panel.setScaleY(1);
         panel.setAlpha(1);
@@ -1953,7 +1961,9 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
       var di = self.getDockInfo();
 
       // 位置计算
-      var pos = self.getBestPanelPosition(pw, ph, bx, by, di.ballSize);
+      var pos = (which === 'main' && self.getMainPanelPosition)
+        ? self.getMainPanelPosition(pw, ph, bx, by, di.ballSize)
+        : self.getBestPanelPosition(pw, ph, bx, by, di.ballSize);
 
       if (savedState && typeof savedState.x === 'number' && typeof savedState.y === 'number') {
           pos.x = savedState.x;

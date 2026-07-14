@@ -3,10 +3,10 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "717985781ebacfd32e702a481f3624fad5a839aca853c3905f3603d22cedb1d6",
-    "size": 82649,
-    "version": 20260507152251,
-    "versionSource": "MIN_TRUSTED_MANIFEST_VERSION"
+    "sha256": "b414db21d35f940c1208bdd0bd05fe2fd7fc1558ea203e2146f5dfe20ce4bb86",
+    "size": 82774,
+    "version": 20260714081104,
+    "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
     "th_01_base.js": {
@@ -45,9 +45,9 @@
       "version": "1.0.2"
     },
     "th_09_animation.js": {
-      "sha256": "35cd3ba3fb69059af71e032bb6cda45b501d440bc191f891d89f0d6d35a98a19",
-      "size": 31137,
-      "version": "1.0.5"
+      "sha256": "ccce746d73dfa21c0d25d8dd62c1d307bf8435e8f5e7ccb4934e7bb15e3803f6",
+      "size": 31917,
+      "version": "1.0.6"
     },
     "th_10_shell.js": {
       "sha256": "d4261f2fbe466b27793f1224f9a38accbd24a1b55d028498a68180866e4f86a7",
@@ -105,9 +105,14 @@
       "version": "1.0.3"
     },
     "th_15_extra.js": {
-      "sha256": "16964397a97f339f597f66512269de1e7b5b0f339cf8e7b0db3f31a84ad1d63b",
-      "size": 122247,
-      "version": "1.1.11"
+      "sha256": "3bffd60027139803db74b3ba1ee9ed99919a099114d395f176060767489f891c",
+      "size": 122745,
+      "version": "1.1.12"
+    },
+    "th_15_main_panel.js": {
+      "sha256": "22a9a670a2a5b9053b4559bba3a6800b7755d67936ff1257ff95dce3f2ecbb47",
+      "size": 25967,
+      "version": "1.0.0"
     },
     "th_16_entry.js": {
       "sha256": "64b7bc7c0a16667536dabaa9bedbb8b0d36f57ad9efb78790809446adf2975ae",
@@ -143,10 +148,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "完善 ToolHub 入口文件更新提醒"
+      "新增固定顶部工具栏与运行状态",
+      "主按钮面板按安全宽度自适应为 2、3、4 列",
+      "增加安全区域定位、滚动分页圆点与左右方向展开动画"
     ],
-    "title": "完善 ToolHub 入口文件更新提醒"
+    "date": "2026-07-14",
+    "title": "重构主按钮面板第一阶段"
   },
   "schema": 3,
-  "version": 20260713152407
+  "version": 20260714001117
 }
