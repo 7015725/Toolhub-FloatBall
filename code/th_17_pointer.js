@@ -1,4 +1,4 @@
-// @version 1.2.1
+// @version 1.2.2
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1164,18 +1164,17 @@ FloatBallAppWM.prototype.getPointerScreenshotDir = function() {
   var base = "";
   try {
     if (typeof shortx !== "undefined" && shortx && shortx.getShortXDir) {
-      base = String(shortx.getShortXDir() || "");
+      base = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
     }
-  } catch (e0) {}
-  if (!base) {
-    try {
-      var ctx = getToolHubAndroidContext ? getToolHubAndroidContext() : null;
-      if (ctx && ctx.getFilesDir) base = String(ctx.getFilesDir().getAbsolutePath());
-    } catch (e1) {}
+  } catch (e0) {
+    base = "";
   }
-  if (!base) throw new Error("无法获取 ShortX 私有目录");
-  var dir = new java.io.File(base + "/data/screenshots");
-  if (!dir.exists()) dir.mkdirs();
+  if (!base) throw new Error("无法获取 ShortX 根目录");
+
+  var dir = new java.io.File(base, "ToolHub/screenshots");
+  if (!dir.exists() && dir.mkdirs() !== true && !dir.exists()) {
+    throw new Error("无法创建截图目录：" + String(dir.getAbsolutePath()));
+  }
   return dir;
 };
 
