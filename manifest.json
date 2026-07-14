@@ -25,9 +25,9 @@
       "version": "2.0.0"
     },
     "th_04_theme.js": {
-      "sha256": "2e4769bf7e869b028b1a133a89e42d46a424f6fe03460f9c8b7521b1a29b9cbd",
-      "size": 45709,
-      "version": "1.0.3"
+      "sha256": "c4546ac21891a05219ab8da745cd07212fdd555799c3a98560215ecec0912645",
+      "size": 48999,
+      "version": "1.0.4"
     },
     "th_05_persistence.js": {
       "sha256": "632361cfa4123574dfa8a21ed5c276b188c1b8bc7d1a4360825cae458ce60da6",
@@ -35,9 +35,9 @@
       "version": "1.0.6"
     },
     "th_06_icon_parser.js": {
-      "sha256": "25b95a5df634a7ee359f3ab798e4d3154a71c24016f7b4bf8a658096644b2484",
-      "size": 22909,
-      "version": "1.0.0"
+      "sha256": "1525812f3f9a27f78057e1fab46088c861c953a8fba9800b9ede0de729f74453",
+      "size": 22920,
+      "version": "1.0.1"
     },
     "th_08_content.js": {
       "sha256": "187b9b5b0d12aa91381e045db70facc4324ba6c6f9f610690683e97e8d1b1699",
@@ -45,9 +45,9 @@
       "version": "1.0.2"
     },
     "th_09_animation.js": {
-      "sha256": "3628c6b2f0bab91f1b7d87e72069a3ccf1e4ebad2274da5454b992d72c3cb4c6",
-      "size": 34941,
-      "version": "1.0.7"
+      "sha256": "b3d521336ef2b44be5c9e2a043cbd6324f9fff8259fd7e9a987f8688b3cec681",
+      "size": 34989,
+      "version": "1.0.8"
     },
     "th_10_shell.js": {
       "sha256": "d4261f2fbe466b27793f1224f9a38accbd24a1b55d028498a68180866e4f86a7",
@@ -65,54 +65,54 @@
       "version": "1.2.4"
     },
     "th_13_panel_ui.js": {
-      "sha256": "e67b0d6999669a8409e15a772443df6d3720f98aceaee9fc9314738a54e47420",
-      "size": 25546,
-      "version": "1.0.6"
-    },
-    "th_14_button_editor.js": {
-      "sha256": "4bb161cbf9d3ec69216be96b30388b6ed6717f4ed931d62443536010f3160c75",
-      "size": 74660,
+      "sha256": "25490ec703b71311f14cb0ebd973f38c14c3a187b38f8283a746c7eef3ff2c05",
+      "size": 25880,
       "version": "1.0.7"
     },
+    "th_14_button_editor.js": {
+      "sha256": "be0512af6a49a378b8cd60a16f1eedb8e2041d1df217551d3d9b97d2ee56c1eb",
+      "size": 74986,
+      "version": "1.0.8"
+    },
     "th_14_button_icon_editor.js": {
-      "sha256": "68f54981b7255248c54ee88add5ccc34b5152b9372e6a29fa3b8a45022a47446",
-      "size": 52230,
-      "version": "1.0.1"
-    },
-    "th_14_button_shortcut.js": {
-      "sha256": "9c54993dbc38c2f808a35d1c3fc2c87a36ef9ad2c16b8cdfa206e8b3cf9fe90c",
-      "size": 57181,
-      "version": "1.0.0"
-    },
-    "th_14_color_picker.js": {
-      "sha256": "782f8194702c3588a13bfde20ca0dd5772534e77275cad6da580ec5140c3a85c",
-      "size": 25636,
-      "version": "0.0.3"
-    },
-    "th_14_icon_picker.js": {
-      "sha256": "53e3bc4222b543b6101c7fc105d57ab0c2d533aff5fef9ad644c26c551d77e8d",
-      "size": 24973,
+      "sha256": "a568f94170b4707d5a0fddc6b48b6b49bfcd630be4fc0ac1a6864c9dddbb4cc2",
+      "size": 52386,
       "version": "1.0.2"
     },
-    "th_14_panels.js": {
-      "sha256": "75d6dde8a58b18fd281360d39b70252eee3f6613cea3c3d7c3b8731e5475d39f",
-      "size": 119429,
-      "version": "1.0.18"
+    "th_14_button_shortcut.js": {
+      "sha256": "baef195b1471558a7fd04abab1eb470678605f909e295ae22d97824ffcbaace9",
+      "size": 57301,
+      "version": "1.0.1"
     },
-    "th_14_schema_editor.js": {
-      "sha256": "c713ba038602e53272aae22852fcb90238047fe8ebf33e35b0c0e5ab1a4781fc",
-      "size": 22196,
+    "th_14_color_picker.js": {
+      "sha256": "d2c906aecb2f911312d2fc496c5584b885bdcf18a569b5ad560d1467a02f1c51",
+      "size": 25876,
+      "version": "0.0.4"
+    },
+    "th_14_icon_picker.js": {
+      "sha256": "7b7f9e7692d1e0ffaa67ccb094dad942a7fb81a97ca672259a54a8d9cb2ac561",
+      "size": 25129,
       "version": "1.0.3"
     },
+    "th_14_panels.js": {
+      "sha256": "84890db02bd887adf4146c90cef25d0bd2090f0b3fafe7ee76ef4d9958a212e7",
+      "size": 119973,
+      "version": "1.0.19"
+    },
+    "th_14_schema_editor.js": {
+      "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
+      "size": 22256,
+      "version": "1.0.4"
+    },
     "th_15_extra.js": {
-      "sha256": "13a814e5743d598f07fbc239b5eb745fcb4285a66d4ff25aa200e3ebe67b6342",
-      "size": 113459,
-      "version": "1.1.15"
+      "sha256": "a7941502326dc117824d2e10d032062bf260e326852282a95167d562e29614f7",
+      "size": 113591,
+      "version": "1.1.16"
     },
     "th_15_main_panel.js": {
-      "sha256": "2fdca03c5141d877a88ff955102c2fc12884f4df1d7e58f48f1a0b8020781af7",
-      "size": 81733,
-      "version": "1.5.6"
+      "sha256": "e89fa4119ce5f22397f45d45ae1ff4621deb126160265f03158c396acf5d55fd",
+      "size": 81901,
+      "version": "1.5.7"
     },
     "th_16_entry.js": {
       "sha256": "eb2afe5ce373f6b4693975d4cfdbce150c3f11d318f2cfe4571fa51a1c11147c",
@@ -120,9 +120,9 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "c76a343edd3af2bb014e6967a88560be65fbf3f73773b4facc3ab47f666e5732",
-      "size": 151435,
-      "version": "1.2.2"
+      "sha256": "9f6fe566c42dd7963daa4a8f638603a7a1b35ad63cec26327166cd1d765fe897",
+      "size": 151447,
+      "version": "1.2.3"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "dfe25b26e7365d9c92bb7f543ff42e5462fd7d65e6aa8bf80fa455a0efc33a37",
@@ -135,9 +135,9 @@
       "version": "1.0.11"
     },
     "th_20_pickword.js": {
-      "sha256": "40f0329b182604dc4de1f792a80978e672f675219f0afdb5e9cd7d9d923ed1bc",
-      "size": 211716,
-      "version": "1.0.2"
+      "sha256": "5851b513ea1cb6148be440de264e88feaa2342c79c93434adf37abccc513b76a",
+      "size": 211793,
+      "version": "1.0.3"
     },
     "th_21_result_preview.js": {
       "sha256": "489199f1c8d8bea046eb5e29dad3ae5cb67c7c3f99b72f796690e7dfb92b824f",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复 ColorOS 水波纹导致的系统软重启"
+      "完成全仓 Rhino 颜色接口迁移"
     ],
-    "title": "修复 ColorOS 水波纹导致的系统软重启"
+    "title": "完成全仓 Rhino 颜色接口迁移"
   },
   "schema": 3,
-  "version": 20260714104956
+  "version": 20260714142624
 }

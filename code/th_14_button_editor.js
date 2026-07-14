@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -21,7 +21,7 @@ FloatBallAppWM.prototype.createButtonManagerActionChip = function(text, textColo
   tv.setGravity(android.view.Gravity.CENTER);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tv.setTypeface(null, android.graphics.Typeface.BOLD);
-  tv.setTextColor(textColor);
+  toolhubSafeSetTextColor(tv, textColor);
   try { tv.setMinHeight(this.dp(48)); tv.setMinimumHeight(this.dp(48)); } catch(eMinH) {}
   try { tv.setMinWidth(this.dp(48)); tv.setMinimumWidth(this.dp(48)); } catch(eMinW) {}
   try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
@@ -29,9 +29,9 @@ FloatBallAppWM.prototype.createButtonManagerActionChip = function(text, textColo
   tv.setPadding(this.dp(10), 0, this.dp(10), 0);
   try {
     var bg = new android.graphics.drawable.GradientDrawable();
-    bg.setColor(this.withAlpha(T.primaryContainer, this.isDarkTheme() ? 0.62 : 0.95));
+    toolhubSafeSetColor(bg, this.withAlpha(T.primaryContainer, this.isDarkTheme() ? 0.62 : 0.95));
     bg.setCornerRadius(this.dp(14));
-    bg.setStroke(this.dp(1), strokeColor || this.withAlpha(T.primary, 0.32));
+    toolhubSafeSetStroke(bg, this.dp(1), strokeColor || this.withAlpha(T.primary, 0.32));
     tv.setBackground(bg);
     try { tv.setElevation(this.dp(1)); } catch(eElev) {}
   } catch(eBg) { safeLog(null, 'e', "catch " + String(eBg)); }
@@ -49,7 +49,7 @@ FloatBallAppWM.prototype.createButtonManagerTextAction = function(text, textColo
   tv.setText(String(text || ""));
   tv.setGravity(android.view.Gravity.CENTER);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-  tv.setTextColor(textColor);
+  toolhubSafeSetTextColor(tv, textColor);
   try { tv.setMinHeight(this.dp(48)); tv.setMinimumHeight(this.dp(48)); } catch(eMinH) {}
   try { tv.setMinWidth(this.dp(48)); tv.setMinimumWidth(this.dp(48)); } catch(eMinW) {}
   try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
@@ -116,7 +116,7 @@ FloatBallAppWM.prototype.createButtonManagerStatusChip = function(enabled, onCli
   tv.setGravity(android.view.Gravity.CENTER);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tv.setTypeface(null, android.graphics.Typeface.BOLD);
-  tv.setTextColor(ok ? T.primary : C.warning);
+  toolhubSafeSetTextColor(tv, ok ? T.primary : C.warning);
   try { tv.setMinHeight(this.dp(48)); tv.setMinimumHeight(this.dp(48)); } catch(eMinH) {}
   try { tv.setMinWidth(this.dp(58)); tv.setMinimumWidth(this.dp(58)); } catch(eMinW) {}
   try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
@@ -141,7 +141,7 @@ FloatBallAppWM.prototype.createButtonManagerMoreButton = function(onClickFn) {
   tv.setText("⋮");
   tv.setGravity(android.view.Gravity.CENTER);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
-  tv.setTextColor(T.onSurface2);
+  toolhubSafeSetTextColor(tv, T.onSurface2);
   try { tv.setMinHeight(this.dp(48)); tv.setMinimumHeight(this.dp(48)); } catch(eMinH) {}
   try { tv.setMinWidth(this.dp(48)); tv.setMinimumWidth(this.dp(48)); } catch(eMinW) {}
   try { tv.setIncludeFontPadding(false); } catch(eFontPad) {}
@@ -232,7 +232,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     headerBox.setPadding(this.dp(10), 0, this.dp(10), this.dp(6));
     var titleTv = new android.widget.TextView(context);
     titleTv.setText(String(btnCfg.title || "管理工具"));
-    titleTv.setTextColor(T.onSurface);
+    toolhubSafeSetTextColor(titleTv, T.onSurface);
     titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
     titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
     titleTv.setSingleLine(true);
@@ -241,7 +241,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     headerBox.addView(titleTv);
     var subTv = new android.widget.TextView(context);
     subTv.setText("更多操作");
-    subTv.setTextColor(T.onSurface2);
+    toolhubSafeSetTextColor(subTv, T.onSurface2);
     subTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
     subTv.setSingleLine(true);
     try { subTv.setIncludeFontPadding(false); } catch(eSubPad) {}
@@ -251,7 +251,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
     box.addView(headerBox, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, headerH));
 
     var divider = new android.view.View(context);
-    divider.setBackgroundColor(this.withAlpha(T.outlineVariant, isDark ? 0.24 : 0.30));
+    toolhubSafeSetBackgroundColor(divider, this.withAlpha(T.outlineVariant, isDark ? 0.24 : 0.30));
     var dividerLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1);
     dividerLp.setMargins(this.dp(6), 0, this.dp(6), this.dp(4));
     box.addView(divider, dividerLp);
@@ -276,7 +276,7 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
         iconTv.setGravity(android.view.Gravity.CENTER);
         iconTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         iconTv.setTypeface(null, android.graphics.Typeface.BOLD);
-        iconTv.setTextColor(menuItem.enabled ? rowColor : self.withAlpha(rowColor, 0.34));
+        toolhubSafeSetTextColor(iconTv, menuItem.enabled ? rowColor : self.withAlpha(rowColor, 0.34));
         try { iconTv.setIncludeFontPadding(false); } catch(eIconPad) {}
         try { iconTv.setBackground(self.ui.createRoundDrawable(self.withAlpha(rowColor, menuItem.enabled ? 0.13 : 0.05), self.dp(12))); } catch(eIconBg) {}
         var iconLp = new android.widget.LinearLayout.LayoutParams(self.dp(32), self.dp(32));
@@ -291,14 +291,14 @@ FloatBallAppWM.prototype.showButtonManagerDropdown = function(anchorView, opts) 
         labelTv.setGravity(android.view.Gravity.CENTER_VERTICAL);
         labelTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         labelTv.setTypeface(null, android.graphics.Typeface.BOLD);
-        labelTv.setTextColor(menuItem.enabled ? rowColor : self.withAlpha(rowColor, 0.34));
+        toolhubSafeSetTextColor(labelTv, menuItem.enabled ? rowColor : self.withAlpha(rowColor, 0.34));
         labelTv.setSingleLine(true);
         try { labelTv.setIncludeFontPadding(false); } catch(eLabelPad) {}
         textBox.addView(labelTv);
         var hintTv = new android.widget.TextView(context);
         hintTv.setText(String(menuItem.hint || ""));
         hintTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-        hintTv.setTextColor(menuItem.enabled ? T.onSurface2 : self.withAlpha(T.onSurface2, 0.38));
+        toolhubSafeSetTextColor(hintTv, menuItem.enabled ? T.onSurface2 : self.withAlpha(T.onSurface2, 0.38));
         hintTv.setSingleLine(true);
         try { hintTv.setIncludeFontPadding(false); } catch(eHintPad) {}
         var hintLp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -359,7 +359,7 @@ FloatBallAppWM.prototype.showButtonManagerActionSheet = function(opts) {
       builder: function(content, closePopup) {
         var desc = new android.widget.TextView(context);
         desc.setText(buttonName);
-        desc.setTextColor(self.getSettingsColorScheme().onSurface2);
+        toolhubSafeSetTextColor(desc, self.getSettingsColorScheme().onSurface2);
         desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
         desc.setSingleLine(true);
         desc.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -371,7 +371,7 @@ FloatBallAppWM.prototype.showButtonManagerActionSheet = function(opts) {
           row.setText(String(label || ""));
           row.setGravity(android.view.Gravity.CENTER_VERTICAL);
           row.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
-          row.setTextColor(enabled ? color : self.withAlpha(color, 0.34));
+          toolhubSafeSetTextColor(row, enabled ? color : self.withAlpha(color, 0.34));
           row.setPadding(self.dp(16), 0, self.dp(16), 0);
           try { row.setMinHeight(self.dp(48)); row.setMinimumHeight(self.dp(48)); } catch(eMinH) {}
           try { row.setIncludeFontPadding(false); } catch(eFontPad) {}
@@ -454,14 +454,14 @@ FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent,
   titleBox.setOrientation(android.widget.LinearLayout.VERTICAL);
   var tv = new android.widget.TextView(context);
   tv.setText(String(title || ""));
-  tv.setTextColor(T.onSurface);
+  toolhubSafeSetTextColor(tv, T.onSurface);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
   tv.setTypeface(null, android.graphics.Typeface.BOLD);
   titleBox.addView(tv);
   if (desc) {
     var dv = new android.widget.TextView(context);
     dv.setText(String(desc));
-    dv.setTextColor(T.onSurface2);
+    toolhubSafeSetTextColor(dv, T.onSurface2);
     dv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
     dv.setPadding(0, this.dp(3), this.dp(8), 0);
     titleBox.addView(dv);
@@ -471,7 +471,7 @@ FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent,
   header.addView(titleBox, titleLp);
   var toggleTv = new android.widget.TextView(context);
   toggleTv.setText(expanded ? "折叠 ▲" : "展开 ▼");
-  toggleTv.setTextColor(T.primary);
+  toolhubSafeSetTextColor(toggleTv, T.primary);
   toggleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   toggleTv.setTypeface(null, android.graphics.Typeface.BOLD);
   header.addView(toggleTv);
@@ -597,7 +597,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
       var stroke = (kind === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
       var box = new android.widget.TextView(context);
       box.setText(String(n.msg));
-      box.setTextColor(color);
+      toolhubSafeSetTextColor(box, color);
       box.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       box.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
       box.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -620,7 +620,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
       var bg2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
       var stroke2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
       tv.setText(String(msg || ""));
-      tv.setTextColor(color2);
+      toolhubSafeSetTextColor(tv, color2);
       tv.setBackground(self.ui.createStrokeDrawable(bg2, stroke2, self.dp(1), self.dp(14)));
       tv.setVisibility(android.view.View.VISIBLE);
       setButtonEditorNotice(msg, kind);
@@ -661,7 +661,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     var hintTv = new android.widget.TextView(context);
     hintTv.setText("共 " + buttons.length + " 个 · 启用 " + enabledCount + " · 暂停 " + disabledCount);
-    hintTv.setTextColor(subTextColor);
+    toolhubSafeSetTextColor(hintTv, subTextColor);
     hintTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     header.addView(hintTv);
 
@@ -832,7 +832,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
         var infoTv = new android.widget.TextView(context);
         infoTv.setText(String(btnCfg.title || "无标题"));
-        infoTv.setTextColor(textColor);
+        toolhubSafeSetTextColor(infoTv, textColor);
         infoTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
         infoTv.setTypeface(null, android.graphics.Typeface.BOLD);
         infoTv.setSingleLine(true);
@@ -842,7 +842,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         var detailTv = new android.widget.TextView(context);
         var desc = self.getButtonManagerTypeLabel(btnCfg) + " · " + self.getButtonManagerSummary(btnCfg);
         detailTv.setText(desc);
-        detailTv.setTextColor(subTextColor);
+        toolhubSafeSetTextColor(detailTv, subTextColor);
         detailTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
         detailTv.setSingleLine(true);
         detailTv.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -914,7 +914,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
         var emptyIcon = new android.widget.ImageView(context);
         emptyIcon.setImageResource(android.R.drawable.ic_menu_add);
-        emptyIcon.setColorFilter(subTextColor);
+        toolhubSafeApplyColorFilter(emptyIcon, subTextColor);
         var eiLp = new android.widget.LinearLayout.LayoutParams(self.dp(48), self.dp(48));
         emptyIcon.setLayoutParams(eiLp);
         emptyBox.addView(emptyIcon);
@@ -922,7 +922,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         var emptyTv = new android.widget.TextView(context);
         var emptyMsg = activeQuery ? "没有匹配的工具，点清空查看全部" : (activeFilter !== "all" ? "当前筛选没有工具，切回全部查看" : "暂无按钮，点击右上角添加");
         emptyTv.setText(emptyMsg);
-        emptyTv.setTextColor(subTextColor);
+        toolhubSafeSetTextColor(emptyTv, subTextColor);
         emptyTv.setPadding(0, self.dp(16), 0, 0);
         emptyBox.addView(emptyTv);
 
@@ -1047,7 +1047,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
 
     var typeLbl = new android.widget.TextView(context);
     typeLbl.setText("按下后要做什么");
-    typeLbl.setTextColor(subTextColor);
+    toolhubSafeSetTextColor(typeLbl, subTextColor);
     typeLbl.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     typeWrap.addView(typeLbl);
 
@@ -1102,7 +1102,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     for (var i = 0; i < types.length; i++) {
         var rb = new android.widget.RadioButton(context);
         rb.setText(types[i].txt);
-        rb.setTextColor(textColor);
+        toolhubSafeSetTextColor(rb, textColor);
         rb.setTag(types[i].val);
         try { rb.setChecked(types[i].val === selectedTypeVal);  } catch(eC0) { safeLog(null, 'e', "catch " + String(eC0)); }
         try { rb.setSingleLine(true);  } catch(eSL) { safeLog(null, 'e', "catch " + String(eSL)); }
@@ -1238,7 +1238,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     try { shellRootRow.setMinimumHeight(self.dp(48)); } catch(eRootRowH) {}
     var shellRootText = new android.widget.TextView(context);
     shellRootText.setText("使用 Root 权限");
-    shellRootText.setTextColor(textColor);
+    toolhubSafeSetTextColor(shellRootText, textColor);
     shellRootText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
     var shellRootTextLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     shellRootTextLp.weight = 1;

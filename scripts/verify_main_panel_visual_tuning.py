@@ -39,7 +39,7 @@ def version(text, expected, name):
 
 
 version(BASE, "1.1.10", "th_01_base.js")
-version(MAIN, "1.5.6", "th_15_main_panel.js")
+version(MAIN, "1.5.7", "th_15_main_panel.js")
 
 for marker, label in (
     ('PANEL_BG_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.92 }', "alpha validator default"),
@@ -109,7 +109,7 @@ for name in (
     "verify_main_panel_close_lifecycle.py",
 ):
     source = (ROOT / "scripts" / name).read_text(encoding="utf-8")
-    require(source, "1.5.6", name + " current version")
+    require(source, "1.5.7", name + " current version")
     forbid(source, "1.4.0", name + " stale version")
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_visual_tuning.py", "workflow verification")

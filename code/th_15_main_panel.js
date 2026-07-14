@@ -1,4 +1,4 @@
-// @version 1.5.6
+// @version 1.5.7
 // ToolHub - 主按钮面板第十阶段：标题栏操作收纳
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
@@ -266,7 +266,7 @@ FloatBallAppWM.prototype.createMainPanelToolbarButton = function(text, descripti
   var pressColor = this.withAlpha(textColor, this.isDarkTheme() ? 0.18 : 0.12);
   var v = new android.widget.TextView(context);
   v.setText(String(text || ''));
-  v.setTextColor(textColor);
+  toolhubSafeSetTextColor(v, textColor);
   v.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, text === '×' ? 23 : 19);
   v.setGravity(android.view.Gravity.CENTER);
   v.setPadding(0, 0, 0, 0);
@@ -323,7 +323,7 @@ FloatBallAppWM.prototype.showMainPanelMoreMenu = function(anchorView) {
     function addItem(label, action) {
       var row = new android.widget.TextView(context);
       row.setText(String(label));
-      row.setTextColor(textColor);
+      toolhubSafeSetTextColor(row, textColor);
       row.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
       row.setGravity(android.view.Gravity.CENTER_VERTICAL);
       row.setPadding(self.dp(14), 0, self.dp(14), 0);
@@ -341,7 +341,7 @@ FloatBallAppWM.prototype.showMainPanelMoreMenu = function(anchorView) {
 
     function addDivider() {
       var line = new android.view.View(context);
-      line.setBackgroundColor(strokeColor);
+      toolhubSafeSetBackgroundColor(line, strokeColor);
       var lineLp = new android.widget.LinearLayout.LayoutParams(-1, 1);
       lineLp.leftMargin = self.dp(10);
       lineLp.rightMargin = self.dp(10);
@@ -550,7 +550,7 @@ FloatBallAppWM.prototype.applyMainPanelRuntimeStatusSnapshot = function(snapshot
       var dotSize = this.dp(6);
       dot.setBackground(this.ui.createRoundDrawable(snapshot.color, Math.floor(dotSize / 2)));
       textView.setText(text);
-      textView.setTextColor(snapshot.color);
+      toolhubSafeSetTextColor(textView, snapshot.color);
       try { textView.setContentDescription(text); } catch (eTextDesc) {}
       try {
         if (target) target.setContentDescription('ToolHub，' + text + '。点击查看状态详情');
@@ -1387,7 +1387,7 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
   if (item.empty) {
     var emptyIcon = new android.widget.TextView(context);
     emptyIcon.setText('—');
-    emptyIcon.setTextColor(colors.secondaryText);
+    toolhubSafeSetTextColor(emptyIcon, colors.secondaryText);
     emptyIcon.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
     emptyIcon.setGravity(android.view.Gravity.CENTER);
     try { emptyIcon.setIncludeFontPadding(false); } catch (eEmptyPad) {}
@@ -1395,7 +1395,7 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
   } else if (item.add) {
     var plus = new android.widget.TextView(context);
     plus.setText('+');
-    plus.setTextColor(colors.secondaryText);
+    toolhubSafeSetTextColor(plus, colors.secondaryText);
     plus.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 27);
     plus.setGravity(android.view.Gravity.CENTER);
     plus.setTypeface(null, android.graphics.Typeface.NORMAL);
@@ -1415,7 +1415,7 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
       ? '暂无可排序按钮'
       : (item.add ? '添加功能' : ((item.config && item.config.title) || '工具'));
     tv.setText(String(labelText));
-    tv.setTextColor((item.add || item.empty) ? colors.secondaryText : colors.text);
+    toolhubSafeSetTextColor(tv, (item.add || item.empty) ? colors.secondaryText : colors.text);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, Math.max(10, Math.min(13, Number(this.config.PANEL_LABEL_TEXT_SIZE_SP || 12))));
     tv.setGravity(android.view.Gravity.CENTER);
     tv.setSingleLine(true);
@@ -1429,7 +1429,7 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
   if (editMode) {
     var orderBadge = new android.widget.TextView(context);
     orderBadge.setText(String(Number(item.visibleIndex || 0) + 1));
-    orderBadge.setTextColor(colors.secondaryText);
+    toolhubSafeSetTextColor(orderBadge, colors.secondaryText);
     orderBadge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 9);
     orderBadge.setGravity(android.view.Gravity.CENTER);
     try { orderBadge.setIncludeFontPadding(false); } catch (eOrderPad) {}
@@ -1441,7 +1441,7 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
 
     var dragHandle = new android.widget.TextView(context);
     dragHandle.setText('⋮⋮');
-    dragHandle.setTextColor(colors.secondaryText);
+    toolhubSafeSetTextColor(dragHandle, colors.secondaryText);
     dragHandle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     dragHandle.setGravity(android.view.Gravity.CENTER);
     try { dragHandle.setIncludeFontPadding(false); } catch (eHandlePad) {}
@@ -1640,7 +1640,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
 
   var title = new android.widget.TextView(context);
   title.setText(editMode ? '编辑布局' : 'ToolHub');
-  title.setTextColor(text);
+  toolhubSafeSetTextColor(title, text);
   title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
   title.setTypeface(null, android.graphics.Typeface.BOLD);
   title.setSingleLine(true);
@@ -1661,7 +1661,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
 
   var statusText = new android.widget.TextView(context);
   statusText.setText('读取状态');
-  statusText.setTextColor(secondaryText);
+  toolhubSafeSetTextColor(statusText, secondaryText);
   statusText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
   statusText.setSingleLine(true);
   statusText.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -1674,7 +1674,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   if (editMode) {
     dot.setBackground(this.ui.createRoundDrawable(primary, Math.floor(dotSize / 2)));
     statusText.setText(this.state.mainPanelEditDirty ? '已调整，点击 ✓ 保存' : '拖动卡片调整顺序');
-    statusText.setTextColor(primary);
+    toolhubSafeSetTextColor(statusText, primary);
     this.state.mainPanelEditStatusText = statusText;
     try {
       titleBox.setClickable(false);
@@ -1722,7 +1722,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   }
 
   var divider = new android.view.View(context);
-  divider.setBackgroundColor(this.withAlpha(outline, isDark ? 0.22 : 0.16));
+  toolhubSafeSetBackgroundColor(divider, this.withAlpha(outline, isDark ? 0.22 : 0.16));
   var dividerLp = new android.widget.LinearLayout.LayoutParams(-1, 1);
   dividerLp.bottomMargin = this.dp(4);
   panel.addView(divider, dividerLp);
@@ -1777,7 +1777,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   scroll.setFillViewport(false);
   scroll.setVerticalScrollBarEnabled(false);
   scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);
-  try { scroll.setBackgroundColor(this.withAlpha(panelBase, 1.0)); } catch (eViewportBg) {}
+  try { toolhubSafeSetBackgroundColor(scroll, this.withAlpha(panelBase, 1.0)); } catch (eViewportBg) {}
   scroll.setOnTouchListener(new android.view.View.OnTouchListener({ onTouch: function(v, event) {
     self.touchActivity();
     try {

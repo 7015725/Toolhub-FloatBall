@@ -30,7 +30,7 @@ def require(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.0.7":
+if not version or version.group(1) != "1.0.8":
     fail("expected th_09_animation.js version 1.0.7")
 
 for method in (
@@ -115,7 +115,7 @@ if not (
 ):
     fail("required order is invisible -> unregister without reset -> immediate remove")
 
-if 'version.group(1) != "1.5.6"' not in (
+if 'version.group(1) != "1.5.7"' not in (
     ROOT / "scripts" / "verify_main_panel_paging.py"
 ).read_text(encoding="utf-8"):
     fail("main panel paging verifier version changed unexpectedly")

@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -107,7 +107,7 @@ FloatBallAppWM.prototype.renderInlineNoticeNow = function() {
         var stroke = self.withAlpha ? self.withAlpha(color, isDark ? 0.44 : 0.28) : color;
         var tv = new android.widget.TextView(context);
         tv.setText(msg);
-        tv.setTextColor(color);
+        toolhubSafeSetTextColor(tv, color);
         tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
         tv.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
         tv.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -207,6 +207,94 @@ function toolhubSafeSetPaintColor(paintObj, colorValue) {
     (color >>> 16) & 255,
     (color >>> 8) & 255,
     color & 255
+  );
+  return true;
+}
+
+function toolhubSafeColorStateListFromStates(stateRows, colorValues) {
+  return new android.content.res.ColorStateList(
+    toolhubJint2Array(stateRows || []),
+    toolhubJintArray(colorValues || [])
+  );
+}
+
+function toolhubSafeSetHintTextColor(viewObj, colorValue) {
+  if (!viewObj) return false;
+  viewObj.setHintTextColor(toolhubSafeColorStateList(colorValue));
+  return true;
+}
+
+function toolhubSafeSetLinkTextColor(viewObj, colorValue) {
+  if (!viewObj) return false;
+  viewObj.setLinkTextColor(toolhubSafeColorStateList(colorValue));
+  return true;
+}
+
+function toolhubSafeSetHighlightColor(viewObj, colorValue) {
+  if (!viewObj) return false;
+  viewObj.setHighlightColor(toolhubColorInt(colorValue, 0));
+  return true;
+}
+
+function toolhubSafeSetBackgroundColor(viewObj, colorValue) {
+  if (!viewObj) return false;
+  var background = new android.graphics.drawable.GradientDrawable();
+  background.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+  toolhubSafeSetGradientColor(background, colorValue);
+  viewObj.setBackground(background);
+  return true;
+}
+
+function toolhubSafeSetColor(targetObj, colorValue) {
+  if (!targetObj) return false;
+  var className = "";
+  try { className = String(targetObj.getClass().getName()); } catch (eClass) {}
+  if (className.indexOf("Paint") >= 0) return toolhubSafeSetPaintColor(targetObj, colorValue);
+  if (className.indexOf("GradientDrawable") >= 0) return toolhubSafeSetGradientColor(targetObj, colorValue);
+  var color = toolhubColorInt(colorValue, 0);
+  try { targetObj.setColor(toolhubSafeColorStateList(color)); return true; } catch (eState) {}
+  try { targetObj.setColor(java.lang.Integer.valueOf(color)); return true; } catch (eInteger) {}
+  try { targetObj.setColor(color); return true; } catch (eInt) {}
+  return false;
+}
+
+function toolhubSafeSetStroke(targetObj, widthPx, colorValue) {
+  if (!targetObj) return false;
+  var width = Math.max(0, Math.round(Number(widthPx) || 0));
+  try { targetObj.setStroke(width, toolhubSafeColorStateList(colorValue)); return true; } catch (eState) {}
+  try { targetObj.setStroke(width, java.lang.Integer.valueOf(toolhubColorInt(colorValue, 0))); return true; } catch (eInteger) {}
+  return false;
+}
+
+function toolhubSafeApplyColorStateList(targetObj, methodName, listObj) {
+  if (!targetObj || !methodName) return false;
+  targetObj[String(methodName)](listObj);
+  return true;
+}
+
+function toolhubSafeSetColorFilter(drawableObj, colorValue, modeObj) {
+  if (!drawableObj) return false;
+  var filter = new android.graphics.PorterDuffColorFilter(
+    java.lang.Integer.valueOf(toolhubColorInt(colorValue, 0)),
+    modeObj || android.graphics.PorterDuff.Mode.SRC_IN
+  );
+  drawableObj.setColorFilter(filter);
+  return true;
+}
+
+function toolhubSafeApplyColorFilter(drawableObj, filterObj) {
+  if (!drawableObj) return false;
+  drawableObj.setColorFilter(filterObj);
+  return true;
+}
+
+function toolhubSafeSetShadowLayer(targetObj, radius, dx, dy, colorValue) {
+  if (!targetObj) return false;
+  targetObj.setShadowLayer(
+    Number(radius) || 0,
+    Number(dx) || 0,
+    Number(dy) || 0,
+    toolhubColorInt(colorValue, 0)
   );
   return true;
 }
@@ -368,7 +456,7 @@ FloatBallAppWM.prototype.ui = {
     createFlatButton: function(app, txt, txtColor, onClick) {
         var btn = new android.widget.TextView(context);
         btn.setText(txt);
-        btn.setTextColor(txtColor);
+        toolhubSafeSetTextColor(btn, txtColor);
         btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         btn.setPadding(app.dp(12), app.dp(6), app.dp(12), app.dp(6));
         btn.setGravity(android.view.Gravity.CENTER);
@@ -397,7 +485,7 @@ FloatBallAppWM.prototype.ui = {
     createSolidButton: function(app, txt, bgColor, txtColor, onClick) {
         var btn = new android.widget.TextView(context);
         btn.setText(txt);
-        btn.setTextColor(txtColor);
+        toolhubSafeSetTextColor(btn, txtColor);
         btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         btn.setTypeface(null, android.graphics.Typeface.BOLD);
         btn.setPadding(app.dp(16), app.dp(8), app.dp(16), app.dp(8));
@@ -436,8 +524,8 @@ FloatBallAppWM.prototype.ui = {
 
         var lb = new android.widget.TextView(context);
         lb.setText(label);
-        lb.setTextColor(this.colors.textSecLight); // 默认用浅色主题副文本色，外部可覆盖
-        try { if (app.isDarkTheme && app.isDarkTheme()) lb.setTextColor(this.colors.textSecDark);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+        toolhubSafeSetTextColor(lb, this.colors.textSecLight); // 默认用浅色主题副文本色，外部可覆盖
+        try { if (app.isDarkTheme && app.isDarkTheme()) toolhubSafeSetTextColor(lb, this.colors.textSecDark);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         lb.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
         var lpLb = new android.widget.LinearLayout.LayoutParams(0, -2);
         lpLb.weight = 1;
@@ -446,8 +534,8 @@ FloatBallAppWM.prototype.ui = {
         var et = new android.widget.EditText(context);
         et.setText(initVal ? String(initVal) : "");
         et.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-        et.setTextColor(this.colors.textPriLight);
-        try { if (app.isDarkTheme && app.isDarkTheme()) et.setTextColor(this.colors.textPriDark);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+        toolhubSafeSetTextColor(et, this.colors.textPriLight);
+        try { if (app.isDarkTheme && app.isDarkTheme()) toolhubSafeSetTextColor(et, this.colors.textPriDark);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
         // 输入框背景优化
         var strokeColor = this.colors.dividerLight;
@@ -508,7 +596,7 @@ FloatBallAppWM.prototype.ui = {
 
         // 错误提示
         var errTv = new android.widget.TextView(context);
-        errTv.setTextColor(this.colors.danger);
+        toolhubSafeSetTextColor(errTv, this.colors.danger);
         errTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
         errTv.setVisibility(android.view.View.GONE);
         box.addView(errTv);
@@ -545,7 +633,7 @@ FloatBallAppWM.prototype.ui = {
         panel.setOrientation(android.widget.LinearLayout.VERTICAL);
 
         var bgDr = new android.graphics.drawable.GradientDrawable();
-        bgDr.setColor(bgColor);
+        toolhubSafeSetColor(bgDr, bgColor);
         bgDr.setCornerRadius(app.dp(16));
         panel.setBackground(bgDr);
         try { panel.setElevation(app.dp(8));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -1005,7 +1093,7 @@ FloatBallAppWM.prototype.applyTextColorRecursive = function(v, colorInt) {
   try {
     if (!v) return;
     if (v instanceof android.widget.TextView) {
-      v.setTextColor(colorInt);
+      toolhubSafeSetTextColor(v, colorInt);
     }
     if (v instanceof android.view.ViewGroup) {
       var i, n = v.getChildCount();
@@ -1037,9 +1125,9 @@ FloatBallAppWM.prototype.updatePanelBackground = function(panelView) {
 
     var bg = new android.graphics.drawable.GradientDrawable();
     bg.setCornerRadius(this.dp(24));
-    bg.setColor(bgInt);
+    toolhubSafeSetColor(bg, bgInt);
     try {
-      bg.setStroke(this.dp(1), this.withAlpha(strokeBase, isDark ? 0.28 : 0.22));
+      toolhubSafeSetStroke(bg, this.dp(1), this.withAlpha(strokeBase, isDark ? 0.28 : 0.22));
     } catch(eStroke) { safeLog(null, 'e', "catch " + String(eStroke)); }
     panelView.setBackground(bg);
 

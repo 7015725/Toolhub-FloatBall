@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // ToolHub - button shortcut inline selector module
 // Stage 2 split: shortcut inline picker logic moved out of th_14_panels.js.
 
@@ -207,7 +207,7 @@ function __scDrawableToBitmap(drawable, targetPx) {
 
         var legacyWarn = new android.widget.TextView(context);
         legacyWarn.setText("旧版 JS 兼容模式：仅用于没有 intentUri 的历史按钮。重新选择快捷方式后将自动关闭。");
-        legacyWarn.setTextColor(subTextColor);
+        toolhubSafeSetTextColor(legacyWarn, subTextColor);
         legacyWarn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
         legacyWarn.setPadding(0, 0, 0, self.dp(6));
         legacyJsWrap.addView(legacyWarn);
@@ -217,7 +217,7 @@ function __scDrawableToBitmap(drawable, targetPx) {
         legacyRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
         var legacyTitle = new android.widget.TextView(context);
         legacyTitle.setText("保留旧版 JS 执行");
-        legacyTitle.setTextColor(textColor);
+        toolhubSafeSetTextColor(legacyTitle, textColor);
         legacyTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         var legacyTitleLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
         legacyTitleLp.weight = 1;
@@ -265,7 +265,7 @@ scHeader.setPadding(self.dp(10), self.dp(10), self.dp(10), self.dp(10));
 
 var scHeaderTv = new android.widget.TextView(context);
 scHeaderTv.setText("选择快捷方式（点击展开）");
-scHeaderTv.setTextColor(textColor);
+toolhubSafeSetTextColor(scHeaderTv, textColor);
 scHeaderTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
 var scHeaderTvLp = new android.widget.LinearLayout.LayoutParams(0, -2);
 scHeaderTvLp.weight = 1;
@@ -275,7 +275,7 @@ scHeader.addView(scHeaderTv);
 var scRefreshTv = new android.widget.TextView(context);
 // 这段代码的主要内容/用途：手动刷新快捷方式列表（用于你"添加到桌面"后立即重新加载）
 scRefreshTv.setText("刷新");
-scRefreshTv.setTextColor(subTextColor);
+toolhubSafeSetTextColor(scRefreshTv, subTextColor);
 scRefreshTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
 scRefreshTv.setPadding(self.dp(10), self.dp(6), self.dp(10), self.dp(6));
 scRefreshTv.setClickable(true);
@@ -302,7 +302,7 @@ scRefreshTv.setOnClickListener(new android.view.View.OnClickListener({
 scHeader.addView(scRefreshTv);
 var scArrowTv = new android.widget.TextView(context);
 scArrowTv.setText("▼");
-scArrowTv.setTextColor(subTextColor);
+toolhubSafeSetTextColor(scArrowTv, subTextColor);
 scArrowTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
 scHeader.addView(scArrowTv);
 
@@ -319,7 +319,7 @@ scBody.addView(scSearchWrap.view);
 // # 状态提示
 var scHint = new android.widget.TextView(context);
 scHint.setText("");
-scHint.setTextColor(subTextColor);
+toolhubSafeSetTextColor(scHint, subTextColor);
 scHint.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
 scHint.setPadding(0, self.dp(6), 0, self.dp(6));
 scBody.addView(scHint);
@@ -347,8 +347,8 @@ try {
     gdBox.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
     gdBox.setCornerRadius(self.dp(10));
     var _isDark0 = self.isDarkTheme();
-    gdBox.setColor(_isDark0 ? C.cardDark : C.cardLight);
-    gdBox.setStroke(self.dp(1), _isDark0 ? C.dividerDark : C.dividerLight);
+    toolhubSafeSetColor(gdBox, _isDark0 ? C.cardDark : C.cardLight);
+    toolhubSafeSetStroke(gdBox, self.dp(1), _isDark0 ? C.dividerDark : C.dividerLight);
     scListBox.setBackground(gdBox);
     scListBox.setPadding(self.dp(6), self.dp(6), self.dp(6), self.dp(6));
  } catch(eBg0) { safeLog(null, 'e', "catch " + String(eBg0)); }
@@ -578,12 +578,12 @@ var __scAdapter = new android.widget.BaseAdapter({
                 vv.setLayoutParams(lpVv);
 
                 var t1 = new android.widget.TextView(context);
-                t1.setTextColor(textColor);
+                toolhubSafeSetTextColor(t1, textColor);
                 t1.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
                 vv.addView(t1);
 
                 var t2 = new android.widget.TextView(context);
-                t2.setTextColor(subTextColor);
+                toolhubSafeSetTextColor(t2, subTextColor);
                 t2.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
                 t2.setPadding(0, self.dp(2), 0, 0);
                 vv.addView(t2);
