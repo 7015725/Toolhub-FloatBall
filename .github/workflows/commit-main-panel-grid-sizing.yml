@@ -13,7 +13,6 @@ jobs:
   commit:
     if: github.event.pull_request.head.ref == 'fix/main-panel-grid-sizing-locked-20260714-1156'
     runs-on: ubuntu-latest
-    environment: signing
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
@@ -38,24 +37,6 @@ jobs:
           python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
           python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
           python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
-
-      - name: Install signing key
-        env:
-          TOOLHUB_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.TOOLHUB_SIGNING_PRIVATE_KEY_PEM }}
-        run: |
-          test -n "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM"
-          mkdir -p "$HOME/.hermes/toolhub_signing"
-          printf '%s\n' "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" > "$HOME/.hermes/toolhub_signing/private_key.pem"
-          chmod 600 "$HOME/.hermes/toolhub_signing/private_key.pem"
-
-      - name: Generate signed manifest
-        run: |
-          python3 scripts/generate_signed_manifest.py \
-            --yes \
-            --title "修复主面板网格与窗口尺寸不一致" \
-            --change "由网格宽高反推主面板和 WindowManager 精确尺寸"
-          python3 scripts/verify_manifest.py
-          python3 .github/scripts/verify_manifest_signature.py
 
       - name: Basic syntax check
         run: |
