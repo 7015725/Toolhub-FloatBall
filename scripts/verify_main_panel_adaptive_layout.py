@@ -50,9 +50,9 @@ def module_version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-module_version(BASE, "1.1.7", "th_01_base.js")
+module_version(BASE, "1.1.8", "th_01_base.js")
 module_version(PERSIST, "1.0.4", "th_05_persistence.js")
-module_version(MAIN, "1.4.0", "th_15_main_panel.js")
+module_version(MAIN, "1.4.1", "th_15_main_panel.js")
 
 for method in (
     "getMainPanelSafeBounds",
@@ -169,7 +169,7 @@ for verifier_name in (
     "verify_main_panel_close_lifecycle.py",
 ):
     verifier = (ROOT / "scripts" / verifier_name).read_text(encoding="utf-8")
-    require(verifier, "1.4.0", verifier_name + " current version")
+    require(verifier, "1.4.1", verifier_name + " current version")
     forbid(verifier, "1.3.0", verifier_name + " stale version")
 
 require(

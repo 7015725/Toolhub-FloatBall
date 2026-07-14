@@ -10,9 +10,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "549a2c6461430bf5631cc72184746efdda9ed0c0ed830b7ecdb5488419693ce4",
-      "size": 73822,
-      "version": "1.1.7"
+      "sha256": "47a69f4416f8280fdfa8b6a73b5ec3ab0918c108778972baf8d918c1329e28c4",
+      "size": 75902,
+      "version": "1.1.8"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -110,9 +110,9 @@
       "version": "1.1.12"
     },
     "th_15_main_panel.js": {
-      "sha256": "ca3a4ab633d07c7bab61d5c76276c299cb99a0e37df2582da123f18ae98401a4",
-      "size": 73107,
-      "version": "1.4.0"
+      "sha256": "3a070d60066e75b191abeaeaec729243138ce25132b7a24342244aa98b1eaa72",
+      "size": 73452,
+      "version": "1.4.1"
     },
     "th_16_entry.js": {
       "sha256": "64b7bc7c0a16667536dabaa9bedbb8b0d36f57ad9efb78790809446adf2975ae",
@@ -148,13 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "移除固定宽度和 2/3/4 列断点，按安全宽度自动计算列数",
-      "新增面板宽度占比、自动最大列数、按钮最小宽度和按钮高度设置",
-      "布局参数沿用设置预览与保存后的即时刷新链"
+      "微调主面板配置显示与单页底部"
     ],
-    "date": "2026-07-14",
-    "title": "主面板改为可配置自适应布局"
+    "title": "微调主面板配置显示与单页底部"
   },
   "schema": 3,
-  "version": 20260714023452
+  "version": 20260714031057
 }

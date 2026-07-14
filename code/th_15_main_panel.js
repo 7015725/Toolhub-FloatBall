@@ -1,5 +1,5 @@
-// @version 1.4.0
-// ToolHub - 主按钮面板第五阶段：可配置自适应网格与即时布局参数
+// @version 1.4.1
+// ToolHub - 主按钮面板第五阶段微调：配置规范化、单页底部与背景可读性
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -1685,47 +1685,77 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
     grid.addView(this.createMainPanelFunctionCard(items[j], spec, colors, editContext));
   }
 
+  // 单页没有分页语义，不创建绿色圆点；只保留 8dp 底部呼吸空间。
+  // 多页才显示可点击圆点。旧灰色“把手”没有拖动行为，移除以免产生错误暗示。
+  var footerHeight = pageCount > 1 ? spec.footerHeight : this.dp(8);
   var footer = new android.widget.LinearLayout(context);
   footer.setOrientation(android.widget.LinearLayout.VERTICAL);
   footer.setGravity(android.view.Gravity.CENTER);
-  panel.addView(footer, new android.widget.LinearLayout.LayoutParams(-1, spec.footerHeight));
-  var dots = new android.widget.LinearLayout(context);
-  dots.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-  dots.setGravity(android.view.Gravity.CENTER);
-  footer.addView(dots, new android.widget.LinearLayout.LayoutParams(-1, this.dp(14)));
+  panel.addView(
+    footer,
+    new android.widget.LinearLayout.LayoutParams(-1, footerHeight)
+  );
+
   var dotViews = [];
   var dotTargets = [];
-  for (var p = 0; p < pageCount; p++) {
-    var dotTarget = new android.widget.FrameLayout(context);
-    dotTarget.setClickable(pageCount > 1);
-    dotTarget.setFocusable(pageCount > 1);
-    var targetLp = new android.widget.LinearLayout.LayoutParams(this.dp(24), this.dp(14));
-    dots.addView(dotTarget, targetLp);
+  if (pageCount > 1) {
+    var dots = new android.widget.LinearLayout(context);
+    dots.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    dots.setGravity(android.view.Gravity.CENTER);
+    footer.addView(
+      dots,
+      new android.widget.LinearLayout.LayoutParams(-1, this.dp(14))
+    );
 
-    var pageDot = new android.view.View(context);
-    var pdLp = new android.widget.FrameLayout.LayoutParams(this.dp(5), this.dp(5), android.view.Gravity.CENTER);
-    dotTarget.addView(pageDot, pdLp);
-    dotViews.push(pageDot);
-    dotTargets.push(dotTarget);
+    for (var p = 0; p < pageCount; p++) {
+      var dotTarget = new android.widget.FrameLayout(context);
+      dotTarget.setClickable(pageCount > 1);
+      dotTarget.setFocusable(pageCount > 1);
+      var targetLp = new android.widget.LinearLayout.LayoutParams(
+        this.dp(24),
+        this.dp(14)
+      );
+      dots.addView(dotTarget, targetLp);
 
-    (function(pageIndex, targetView) {
-      targetView.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
-        self.touchActivity();
-        self.guardClick('main_page_dot_' + String(pageIndex), 180, function() {
-          self.scrollMainPanelToPage(pageContext, pageIndex, true, 'dot_click');
-        });
-      }}));
-    })(p, dotTarget);
+      var pageDot = new android.view.View(context);
+      var pdLp = new android.widget.FrameLayout.LayoutParams(
+        this.dp(5),
+        this.dp(5),
+        android.view.Gravity.CENTER
+      );
+      dotTarget.addView(pageDot, pdLp);
+      dotViews.push(pageDot);
+      dotTargets.push(dotTarget);
+
+      (function(pageIndex, targetView) {
+        targetView.setOnClickListener(
+          new android.view.View.OnClickListener({ onClick: function() {
+            self.touchActivity();
+            self.guardClick(
+              'main_page_dot_' + String(pageIndex),
+              180,
+              function() {
+                self.scrollMainPanelToPage(
+                  pageContext,
+                  pageIndex,
+                  true,
+                  'dot_click'
+                );
+              }
+            );
+          }})
+        );
+      })(p, dotTarget);
+    }
+    this.updateMainPanelPageDots(
+      dotViews,
+      0,
+      dotTargets,
+      pageCount
+    );
   }
   pageContext.dotViews = dotViews;
   pageContext.dotTargets = dotTargets;
-  this.updateMainPanelPageDots(dotViews, 0, dotTargets, pageCount);
-
-  var handle = new android.view.View(context);
-  handle.setBackground(this.ui.createRoundDrawable(this.withAlpha(secondaryText, 0.38), this.dp(2)));
-  var handleLp = new android.widget.LinearLayout.LayoutParams(this.dp(24), this.dp(3));
-  handleLp.topMargin = this.dp(2);
-  footer.addView(handle, handleLp);
 
   if (pageCount > 1 && android.os.Build.VERSION.SDK_INT >= 23) {
     try {
