@@ -792,6 +792,108 @@ def verify_pointer_core(result, pointer, ocr):
     )
 
 
+def verify_pointer_draw_visibility(result, pointer):
+    group = "pointer-draw"
+    state = section(
+        pointer,
+        "FloatBallAppWM.prototype.ensurePointerToolState = function()",
+        "FloatBallAppWM.prototype.resetPointerToolState = function",
+    )
+    reset = section(
+        pointer,
+        "FloatBallAppWM.prototype.resetPointerToolState = function",
+        "FloatBallAppWM.prototype.setPointerToolResult = function",
+    )
+    close = section(
+        pointer,
+        "FloatBallAppWM.prototype.closePointerTool = function",
+        "FloatBallAppWM.prototype.pointerPositionFromBall = function",
+    )
+    canvas = section(
+        pointer,
+        "FloatBallAppWM.prototype.recordPointerDrawFailure = function",
+        "FloatBallAppWM.prototype.createPointerLayoutParams = function",
+    )
+    show = section(
+        pointer,
+        "FloatBallAppWM.prototype.showPointerWindow = function",
+        "FloatBallAppWM.prototype.getPointerHotspot = function",
+    )
+    move = section(
+        pointer,
+        "FloatBallAppWM.prototype.schedulePointerMove = function",
+        "FloatBallAppWM.prototype.resetPointerAreaHold = function",
+    )
+    reflow = section(
+        pointer,
+        "FloatBallAppWM.prototype.onPointerScreenChangedReflow = function",
+        "FloatBallAppWM.prototype.recordPointerDrawFailure = function",
+    )
+
+    result.require(
+        group,
+        "draw failures are observable",
+        "pointer draw fail stage=" in canvas
+        and "recordPointerDrawFailure(st, stage, drawError)" in canvas
+        and "catch (drawError) {}" not in canvas,
+        "pointer onDraw must log one scoped failure instead of swallowing it",
+    )
+    result.require(
+        group,
+        "fallback pointer survives rich draw failure",
+        "drawPointerFallback" in canvas
+        and "st.drawFallbackMode = true;" in canvas
+        and 'recordPointerDrawFailure(st, "fallback", fallbackError)' in canvas
+        and "if (st.drawFallbackMode !== true)" in canvas,
+        "rich rendering must fall back to a shadow-free pointer and skip software layer during recovery",
+    )
+    result.require(
+        group,
+        "shadow failure does not abort pointer body",
+        'recordPointerDrawFailure(st, "shadow", eShadow)' in canvas
+        and "st.drawShadowDisabled = true;" in canvas
+        and canvas.find('recordPointerDrawFailure(st, "shadow", eShadow)')
+        < canvas.find('stage = "accent_fill"'),
+        "shadow setup must be isolated before the pointer body is drawn",
+    )
+    result.require(
+        group,
+        "first frame has one-shot self heal",
+        "schedulePointerDrawHealthCheck" in canvas
+        and "rebuildPointerWindowForDraw" in canvas
+        and "drawRecoveryTried" in state
+        and "drawHealthRunnable" in state
+        and "first frame missing, rebuild fallback window" in canvas,
+        "pointer state must track first-frame health and rebuild once in fallback mode",
+    )
+    result.require(
+        group,
+        "show move and reflow request redraw",
+        "requestPointerRedraw(st);" in show
+        and "schedulePointerDrawHealthCheck(st, 120);" in show
+        and "self.requestPointerRedraw(st);" in move
+        and "this.requestPointerRedraw(st);" in reflow,
+        "pointer must request a frame after addView, movement, and screen reflow",
+    )
+    result.require(
+        group,
+        "detached pointer window is recreated",
+        'updateMessage.indexOf("not attached")' in move
+        and 'updateMessage.indexOf("Invalid display")' in move
+        and 'updateMessage.indexOf("BadTokenException")' in move
+        and "self.showPointerWindow(st)" in move,
+        "updateViewLayout attachment failures must recreate the pointer window",
+    )
+    result.require(
+        group,
+        "draw health callbacks are session scoped",
+        "drawHealthToken" in state
+        and "removeCallbacks(st.drawHealthRunnable)" in reset
+        and "removeCallbacks(st.drawHealthRunnable)" in close,
+        "reset and close must cancel stale draw-health callbacks",
+    )
+
+
 def main():
     required = [
         POINTER,
@@ -818,6 +920,7 @@ def main():
     verify_issue_85(result, pointer, ocr, position, animation)
     verify_text_release(result, pointer, position, panels, entry)
     verify_pointer_core(result, pointer, ocr)
+    verify_pointer_draw_visibility(result, pointer)
     verify_manifest(result)
 
     for name in result.passed:
@@ -831,9 +934,10 @@ def main():
     issue_count = sum(1 for name in result.passed if name.startswith("issue-85 /"))
     release_count = sum(1 for name in result.passed if name.startswith("text-release /"))
     core_count = sum(1 for name in result.passed if name.startswith("pointer-core /"))
+    draw_count = sum(1 for name in result.passed if name.startswith("pointer-draw /"))
     print(
-        "OK pointer_regressions issue85=%d text_release=%d pointer_core=%d total=%d"
-        % (issue_count, release_count, core_count, len(result.passed))
+        "OK pointer_regressions issue85=%d text_release=%d pointer_core=%d pointer_draw=%d total=%d"
+        % (issue_count, release_count, core_count, draw_count, len(result.passed))
     )
     return 0
 
