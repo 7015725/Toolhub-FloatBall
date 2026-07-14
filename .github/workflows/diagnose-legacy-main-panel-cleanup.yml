@@ -1,4 +1,4 @@
-name: diagnose-legacy-main-panel-cleanup
+name: apply-legacy-main-panel-cleanup
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  diagnose:
+  apply:
     if: github.event.pull_request.head.ref == 'fix/remove-legacy-main-panel-20260714'
     runs-on: ubuntu-latest
     steps:
@@ -17,32 +17,441 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-      - name: Write reference report
+          fetch-depth: 0
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Apply cleanup
+        shell: bash
         run: |
-          set -u
-          {
-            printf '%s\n' '=== active/config references ==='
-            grep -RIn --exclude-dir=.git \
-              --exclude='diagnose-legacy-main-panel-cleanup.yml' \
-              --exclude='LEGACY_MAIN_PANEL_REFERENCES.txt' \
-              -E 'PANEL_COLS|PANEL_ITEM_SIZE_DP|computePanelX|tryAdjustPanelY|buildPanelView = function' \
-              code scripts README.md ARCHITECTURE.md STRUCTURE.md .github || true
-            printf '%s\n' '=== main panel builders/calls ==='
-            grep -RIn --exclude-dir=.git \
-              --exclude='LEGACY_MAIN_PANEL_REFERENCES.txt' \
-              -E 'buildMainPanelView = function|buildPanelView\("main"\)|buildPanelView\(' \
-              code scripts || true
-          } > LEGACY_MAIN_PANEL_REFERENCES.txt
-          cat LEGACY_MAIN_PANEL_REFERENCES.txt
-      - name: Commit report
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          ROOT = Path('.')
+
+          def read(path):
+              return (ROOT / path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              (ROOT / path).write_text(text, encoding='utf-8', newline='\n')
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit('FAIL %s expected 1 occurrence, found %d' % (label, count))
+              return text.replace(old, new, 1)
+
+          def regex_once(text, pattern, replacement, label, flags=0):
+              updated, count = re.subn(pattern, replacement, text, count=1, flags=flags)
+              if count != 1:
+                  raise SystemExit('FAIL %s expected 1 regex match, found %d' % (label, count))
+              return updated
+
+          # th_01_base.js: retire old fixed-grid config and fix removed-schema reset check.
+          path = 'code/th_01_base.js'
+          text = read(path)
+          text = replace_once(text, '// @version 1.1.9', '// @version 1.1.10', 'base version')
+          text = replace_once(
+              text,
+              '  SAVE_THROTTLE_MS: true\n};',
+              '  SAVE_THROTTLE_MS: true,\n  PANEL_COLS: true,\n  PANEL_ITEM_SIZE_DP: true\n};',
+              'removed settings map',
+          )
+          text = replace_once(
+              text,
+              '    // PANEL_COLS / PANEL_ITEM_SIZE_DP 仅保留给旧面板回退链；\n'
+              '    // 新主面板统一使用可配置自适应网格。\n'
+              '    PANEL_COLS: { type: "int", min: 1, max: 6, default: 1 },\n'
+              '    PANEL_ITEM_SIZE_DP: { type: "int", min: 48, max: 120, default: 64 },\n',
+              '    // 主面板只使用可配置自适应网格。\n',
+              'legacy validator entries',
+          )
+          text = replace_once(
+              text,
+              '        // 旧面板回退链兼容值，不再展示在设置页。\n'
+              '        PANEL_COLS: 1,\n'
+              '        PANEL_ITEM_SIZE_DP: 60,\n',
+              '',
+              'legacy defaults',
+          )
+          text = replace_once(
+              text,
+              ' || sStr.indexOf("PANEL_POS_GRAVITY") < 0',
+              '',
+              'removed gravity schema reset check',
+          )
+          text = replace_once(
+              text,
+              '            sStr.indexOf("PANEL_CARD_HEIGHT_DP") < 0 ||\n'
+              '            sStr.indexOf("\\"PANEL_COLS\\"") >= 0 ||\n'
+              '            sStr.indexOf("\\"PANEL_ITEM_SIZE_DP\\"") >= 0\n',
+              '            sStr.indexOf("PANEL_CARD_HEIGHT_DP") < 0\n',
+              'legacy schema reset keys',
+          )
+          write(path, text)
+
+          # th_05_persistence.js: old keys no longer cause layout refresh.
+          path = 'code/th_05_persistence.js'
+          text = read(path)
+          text = replace_once(text, '// @version 1.0.5', '// @version 1.0.6', 'persistence version')
+          text = replace_once(
+              text,
+              '         k === "PANEL_ROWS" ||\n'
+              '         k === "PANEL_COLS" ||\n'
+              '         k === "PANEL_ITEM_SIZE_DP" ||\n'
+              '         k === "PANEL_GAP_DP" ||',
+              '         k === "PANEL_ROWS" ||\n'
+              '         k === "PANEL_GAP_DP" ||',
+              'persistence legacy effect keys',
+          )
+          write(path, text)
+
+          # th_15_extra.js: only route to the dedicated main-panel module.
+          path = 'code/th_15_extra.js'
+          text = read(path)
+          text = replace_once(text, '// @version 1.1.14', '// @version 1.1.15', 'extra version')
+          new_builder = '''FloatBallAppWM.prototype.buildPanelView = function(panelType) {
+            var type = String(panelType || "");
+            if (type === "main") {
+              if (typeof this.buildMainPanelView !== "function") {
+                throw new Error("主面板模块未加载：th_15_main_panel.js");
+              }
+              return this.buildMainPanelView();
+            }
+            if (type === "settings" || type === "settings_group") return this.buildSettingsPanelView();
+            if (type === "btn_editor") return this.buildButtonEditorPanelView();
+            if (type === "schema_editor") return this.buildSchemaEditorPanelView();
+            throw new Error("不支持的面板类型：" + type);
+          };
+
+          FloatBallAppWM.prototype.getBestPanelPosition'''
+          text = regex_once(
+              text,
+              r'FloatBallAppWM\.prototype\.buildPanelView = function\(panelType\) \{.*?\n\};\n\nFloatBallAppWM\.prototype\.getBestPanelPosition',
+              new_builder,
+              'replace legacy main panel builder',
+              re.S,
+          )
+          text = regex_once(
+              text,
+              r'FloatBallAppWM\.prototype\.computePanelX = function\(ballX, panelW\) \{.*?\n\};\n\nFloatBallAppWM\.prototype\.tryAdjustPanelY = function\(px, py, pw, ph, bx, by\) \{.*?\n\};\n\nFloatBallAppWM\.prototype\.addPanel = function',
+              'FloatBallAppWM.prototype.addPanel = function',
+              'remove old position helpers',
+              re.S,
+          )
+          text = replace_once(
+              text,
+              '''    var finalX, finalY;
+
+              if (savedState && typeof savedState.x === 'number' && typeof savedState.y === 'number') {
+                  finalX = savedState.x;
+                  finalY = savedState.y;
+              } else {
+                  var px = self.computePanelX(bx, pw);
+                  var py = by;
+
+                  var r = self.tryAdjustPanelY(px, py, pw, ph, bx, by);
+                  if (r.ok) {
+                      finalX = r.x;
+                      finalY = r.y;
+                  } else {
+                      finalX = px;
+                      finalY = self.clamp(py, 0, self.state.screen.h - ph);
+                  }
+              }
+''',
+              '''    var finalX, finalY;
+
+              if (savedState && typeof savedState.x === 'number' && typeof savedState.y === 'number') {
+                  finalX = savedState.x;
+                  finalY = savedState.y;
+              } else {
+                  var viewerDockInfo = self.getDockInfo();
+                  var viewerPos = self.getBestPanelPosition(
+                    pw,
+                    ph,
+                    bx,
+                    by,
+                    viewerDockInfo.ballSize
+                  );
+                  finalX = viewerPos.x;
+                  finalY = viewerPos.y;
+              }
+''',
+              'viewer generic position migration',
+          )
+          write(path, text)
+
+          # th_16_entry.js: report actual adaptive layout instead of removed fixed columns.
+          path = 'code/th_16_entry.js'
+          text = read(path)
+          text = replace_once(text, '// @version 1.0.12', '// @version 1.0.13', 'entry version')
+          text = replace_once(
+              text,
+              '    layout: { cols: this.config.PANEL_COLS, rows: this.config.PANEL_ROWS },',
+              '''    layout: (function(app) {
+                try {
+                  var spec = app.getMainPanelResponsiveSpec
+                    ? app.getMainPanelResponsiveSpec(false)
+                    : null;
+                  return {
+                    mode: spec ? String(spec.layoutMode || "") : "adaptive_grid_sized",
+                    cols: spec ? Number(spec.cols || 0) : 0,
+                    rows: spec ? Number(spec.visibleRows || 0) : Number(app.config.PANEL_ROWS || 0)
+                  };
+                } catch (eLayout) {
+                  return {
+                    mode: "adaptive_grid_sized",
+                    cols: 0,
+                    rows: Number(app.config.PANEL_ROWS || 0)
+                  };
+                }
+              })(this),''',
+              'startup adaptive layout status',
+          )
+          write(path, text)
+
+          # Keep existing verifier version contracts aligned.
+          version_updates = (
+              ('th_01_base.js', '1.1.9', '1.1.10'),
+              ('th_05_persistence.js', '1.0.5', '1.0.6'),
+              ('th_15_extra.js', '1.1.14', '1.1.15'),
+              ('th_16_entry.js', '1.0.12', '1.0.13'),
+          )
+          for verifier in list((ROOT / 'scripts').glob('*.py')) + list((ROOT / '.github/scripts').glob('*.py')):
+              body = verifier.read_text(encoding='utf-8')
+              updated = body
+              for module_name, old_version, new_version in version_updates:
+                  if module_name in updated and old_version in updated:
+                      updated = updated.replace(old_version, new_version)
+              if updated != body:
+                  verifier.write_text(updated, encoding='utf-8', newline='\n')
+
+          # Existing panel cleanup verifier now covers both old layout keys and entry status.
+          path = 'scripts/verify_panel_layout_settings_cleanup.py'
+          text = read(path)
+          text = replace_once(
+              text,
+              'EXTRA = (ROOT / "code/th_15_extra.js").read_text(encoding="utf-8")\nWORKFLOW',
+              'EXTRA = (ROOT / "code/th_15_extra.js").read_text(encoding="utf-8")\nENTRY = (ROOT / "code/th_16_entry.js").read_text(encoding="utf-8")\nWORKFLOW',
+              'cleanup verifier entry source',
+          )
+          text = replace_once(
+              text,
+              'for key in ("PANEL_POS_GRAVITY", "PANEL_CUSTOM_OFFSET_Y", "SAVE_THROTTLE_MS"):',
+              'for key in ("PANEL_POS_GRAVITY", "PANEL_CUSTOM_OFFSET_Y", "SAVE_THROTTLE_MS", "PANEL_COLS", "PANEL_ITEM_SIZE_DP"):',
+              'cleanup verifier removed keys',
+          )
+          text = replace_once(
+              text,
+              '    forbid(EXTRA, key, "extra position key")\n',
+              '    forbid(EXTRA, key, "extra position key")\n    forbid(ENTRY, key, "entry legacy layout key")\n',
+              'cleanup verifier entry forbid',
+          )
+          text = replace_once(
+              text,
+              'extra_end = EXTRA.find("FloatBallAppWM.prototype.computePanelX", extra_start)',
+              'extra_end = EXTRA.find("FloatBallAppWM.prototype.addPanel", extra_start)',
+              'cleanup verifier generic boundary',
+          )
+          text = replace_once(
+              text,
+              'forbid(preview, "this.tryAdjustPanelY(", "legacy preview y")\n\nrequire(WORKFLOW,',
+              '''forbid(preview, "this.tryAdjustPanelY(", "legacy preview y")
+
+          forbid(EXTRA, "FloatBallAppWM.prototype.computePanelX = function", "legacy computePanelX definition")
+          forbid(EXTRA, "FloatBallAppWM.prototype.tryAdjustPanelY = function", "legacy tryAdjustPanelY definition")
+          forbid(EXTRA, "self.computePanelX(", "legacy viewer computePanelX call")
+          forbid(EXTRA, "self.tryAdjustPanelY(", "legacy viewer tryAdjustPanelY call")
+          require(EXTRA, "var viewerPos = self.getBestPanelPosition(", "viewer generic position")
+          require(ENTRY, "app.getMainPanelResponsiveSpec", "entry adaptive layout status")
+
+          require(WORKFLOW,''',
+              'cleanup verifier legacy helper contract',
+          )
+          write(path, text)
+
+          # Schema validator treats old fixed-grid keys like other removed settings.
+          path = 'scripts/verify_schema_validator.py'
+          text = read(path)
+          text = replace_once(
+              text,
+              '    "SAVE_THROTTLE_MS",\n]',
+              '    "SAVE_THROTTLE_MS",\n    "PANEL_COLS",\n    "PANEL_ITEM_SIZE_DP",\n]',
+              'schema verifier removed keys',
+          )
+          write(path, text)
+
+          # Dedicated regression verifier.
+          verifier = '''#!/usr/bin/env python3
+          from pathlib import Path
+          import re
+
+          ROOT = Path(__file__).resolve().parents[1]
+          BASE = (ROOT / "code/th_01_base.js").read_text(encoding="utf-8")
+          PERSIST = (ROOT / "code/th_05_persistence.js").read_text(encoding="utf-8")
+          EXTRA = (ROOT / "code/th_15_extra.js").read_text(encoding="utf-8")
+          MAIN = (ROOT / "code/th_15_main_panel.js").read_text(encoding="utf-8")
+          ENTRY = (ROOT / "code/th_16_entry.js").read_text(encoding="utf-8")
+          WORKFLOW = (ROOT / ".github/workflows/verify.yml").read_text(encoding="utf-8")
+          README = (ROOT / "README.md").read_text(encoding="utf-8")
+
+          def fail(message):
+              raise SystemExit("FAIL legacy-main-panel-cleanup: " + message)
+
+          def require(text, marker, label):
+              if marker not in text:
+                  fail("missing %s: %s" % (label, marker))
+
+          def forbid(text, marker, label):
+              if marker in text:
+                  fail("forbidden %s: %s" % (label, marker))
+
+          def version(text, expected, name):
+              match = re.search(r"(?m)^// @version ([0-9]+\\.[0-9]+\\.[0-9]+)$", text)
+              if not match or match.group(1) != expected:
+                  fail("%s expected version %s" % (name, expected))
+
+          version(BASE, "1.1.10", "th_01_base.js")
+          version(PERSIST, "1.0.6", "th_05_persistence.js")
+          version(EXTRA, "1.1.15", "th_15_extra.js")
+          version(MAIN, "1.5.1", "th_15_main_panel.js")
+          version(ENTRY, "1.0.13", "th_16_entry.js")
+
+          removed_map = re.search(r"var REMOVED_SETTINGS_CONFIG_KEYS = \\{(.*?)\\};", BASE, re.S)
+          if not removed_map:
+              fail("removed settings map missing")
+          for key in ("PANEL_COLS", "PANEL_ITEM_SIZE_DP"):
+              require(removed_map.group(1), key + ": true", "cleanup marker " + key)
+
+          active_base = re.sub(r"var REMOVED_SETTINGS_CONFIG_KEYS = \\{.*?\\};", "", BASE, flags=re.S)
+          for key in ("PANEL_COLS", "PANEL_ITEM_SIZE_DP"):
+              forbid(active_base, key, "active base key")
+              forbid(PERSIST, key, "persistence key")
+              forbid(EXTRA, key, "extra key")
+              forbid(ENTRY, key, "entry key")
+
+          builder_start = EXTRA.find("FloatBallAppWM.prototype.buildPanelView = function")
+          builder_end = EXTRA.find("FloatBallAppWM.prototype.getBestPanelPosition", builder_start)
+          if builder_start < 0 or builder_end <= builder_start:
+              fail("cannot isolate buildPanelView")
+          builder = EXTRA[builder_start:builder_end]
+          require(builder, 'if (type === "main")', "explicit main route")
+          require(builder, 'typeof this.buildMainPanelView !== "function"', "module guard")
+          require(builder, 'throw new Error("主面板模块未加载：th_15_main_panel.js")', "module error")
+          require(builder, "return this.buildMainPanelView();", "dedicated builder")
+          for marker in ("GridLayout", "cols2", "itemPx", "totalCells", "makePanelCellDrawable"):
+              forbid(builder, marker, "legacy fixed-grid builder")
+
+          require(MAIN, "FloatBallAppWM.prototype.buildMainPanelView = function()", "modern builder")
+          require(MAIN, "layoutMode: 'adaptive_grid_sized'", "adaptive grid model")
+          forbid(EXTRA, "FloatBallAppWM.prototype.computePanelX = function", "computePanelX definition")
+          forbid(EXTRA, "FloatBallAppWM.prototype.tryAdjustPanelY = function", "tryAdjustPanelY definition")
+          forbid(EXTRA, "self.computePanelX(", "computePanelX call")
+          forbid(EXTRA, "self.tryAdjustPanelY(", "tryAdjustPanelY call")
+          require(EXTRA, "var viewerPos = self.getBestPanelPosition(", "viewer generic positioning")
+          require(ENTRY, "app.getMainPanelResponsiveSpec", "adaptive startup layout")
+          require(ENTRY, 'mode: "adaptive_grid_sized"', "startup layout fallback mode")
+          forbid(active_base, 'sStr.indexOf("PANEL_POS_GRAVITY") < 0', "removed schema reset requirement")
+          require(WORKFLOW, "python3 scripts/verify_legacy_main_panel_cleanup.py", "workflow entry")
+          require(README, "旧固定网格回退构建器已删除", "README cleanup note")
+
+          print("OK legacy_main_panel_cleanup fallback=removed old_keys=2 viewer=generic entry=adaptive")
+          '''
+          verifier = '\n'.join(line[10:] if line.startswith('          ') else line for line in verifier.splitlines()) + '\n'
+          write('scripts/verify_legacy_main_panel_cleanup.py', verifier)
+
+          # Register verifier in CI.
+          path = '.github/workflows/verify.yml'
+          text = read(path)
+          text = replace_once(
+              text,
+              '          python3 scripts/verify_panel_layout_settings_cleanup.py\n'
+              '          python3 scripts/verify_main_panel_grid_sizing.py',
+              '          python3 scripts/verify_panel_layout_settings_cleanup.py\n'
+              '          python3 scripts/verify_legacy_main_panel_cleanup.py\n'
+              '          python3 scripts/verify_main_panel_grid_sizing.py',
+              'verify workflow entry',
+          )
+          write(path, text)
+
+          # Document the single main-panel implementation and retired internal keys.
+          path = 'README.md'
+          text = read(path)
+          text = replace_once(
+              text,
+              '宽度占比只决定可用预算，不会直接把面板拉伸到对应屏幕宽度。最后一行按钮不足一整行时，只保留正常的空网格槽位，不会额外扩大面板右侧。',
+              '宽度占比只决定可用预算，不会直接把面板拉伸到对应屏幕宽度。最后一行按钮不足一整行时，只保留正常的空网格槽位，不会额外扩大面板右侧。旧固定网格回退构建器已删除；`th_15_main_panel.js` 未加载时会明确报告模块错误，不再静默显示旧版主面板。',
+              'README main implementation note',
+          )
+          text = replace_once(
+              text,
+              '保存位置节流\n```',
+              '保存位置节流\n旧固定列数（`PANEL_COLS`）\n旧固定按钮尺寸（`PANEL_ITEM_SIZE_DP`）\n```',
+              'README removed internal keys',
+          )
+          text = replace_once(
+              text,
+              '- 设置页预览与正式主面板共用同一套尺寸和位置计算。\n',
+              '- 设置页预览与正式主面板共用同一套尺寸和位置计算。\n- 删除旧固定列数、固定正方形按钮和空格补齐回退构建器，主面板只保留 `th_15_main_panel.js` 单一实现。\n',
+              'README release cleanup note',
+          )
+          write(path, text)
+
+          print('OK formal cleanup patch applied')
+          PY
+      - name: Remove temporary files
+        shell: bash
         run: |
+          rm -f .github/workflows/diagnose-legacy-main-panel-cleanup.yml
+          rm -f LEGACY_MAIN_PANEL_REFERENCES.txt
+      - name: Rebuild deterministic audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
+      - name: Validate formal cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main --depth=1
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_schema_validator.py
+          python3 scripts/verify_panel_layout_settings_cleanup.py
+          python3 scripts/verify_legacy_main_panel_cleanup.py
+          python3 scripts/verify_main_panel_runtime_status.py
+          python3 scripts/verify_main_panel_drag_sort.py
+          python3 scripts/verify_main_panel_paging.py
+          python3 scripts/verify_main_panel_adaptive_layout.py
+          python3 scripts/verify_main_panel_grid_sizing.py
+          python3 scripts/verify_main_panel_visual_tuning.py
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_sqlite_storage.py
+          python3 scripts/verify_startup_status.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
+          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+          python3 scripts/verify_documentation_consistency.py
+          git diff --exit-code origin/main -- ToolHub.js
+          git diff --check
+      - name: Commit formal cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add LEGACY_MAIN_PANEL_REFERENCES.txt
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "记录旧主面板引用"
+          git add -A
+          git commit -m "清理旧主按钮面板回退代码"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
-      - name: Keep PR locked
-        run: exit 1
