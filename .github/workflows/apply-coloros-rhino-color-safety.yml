@@ -68,3 +68,5 @@ jobs:
             .github/workflows/apply-coloros-rhino-color-safety.yml
           git commit -m "修复 ColorOS 水波纹导致的系统软重启"
           git push origin HEAD:fix/coloros-rhino-color-safety-20260714
+
+# trigger: 2
