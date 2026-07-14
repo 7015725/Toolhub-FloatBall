@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import os
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -7,6 +8,7 @@ CODE = ROOT / "code"
 THEME_PATH = CODE / "th_04_theme.js"
 BRIDGE_BEGIN = "// =======================【Rhino / ColorOS 安全颜色桥】======================="
 BRIDGE_END = "// =======================【工具：UI样式辅助】======================"
+MODULE_FILE = os.environ.get("MODULE_FILE", "").strip()
 
 errors = []
 theme = THEME_PATH.read_text(encoding="utf-8")
@@ -44,7 +46,13 @@ for helper in helpers:
     if "function %s(" % helper not in theme:
         errors.append("missing helper: " + helper)
 
-for path in sorted(CODE.glob("*.js")):
+paths = sorted(CODE.glob("*.js"))
+if MODULE_FILE:
+    paths = [CODE / MODULE_FILE]
+    if not paths[0].exists():
+        errors.append("module missing: " + MODULE_FILE)
+
+for path in paths:
     text = theme_without_bridge if path == THEME_PATH else path.read_text(encoding="utf-8")
     methods = sorted(set(re.findall(
         r"\.((?:set|apply)[A-Za-z0-9_$]*Color[A-Za-z0-9_$]*)\s*\(",
@@ -72,5 +80,5 @@ if errors:
 
 print(
     "OK rhino_color_api_safety modules=%d helpers=%d direct_color_calls=0"
-    % (len(list(CODE.glob("*.js"))), len(helpers))
+    % (len(paths), len(helpers))
 )
