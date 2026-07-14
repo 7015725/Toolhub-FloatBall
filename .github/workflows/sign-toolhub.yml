@@ -37,7 +37,10 @@ jobs:
       (
         github.event.pull_request.base.ref == 'main' &&
         github.event.pull_request.head.repo.full_name == github.repository &&
-        github.event.pull_request.draft == false &&
+        (
+          github.event.pull_request.draft == false ||
+          github.event.pull_request.head.ref == 'fix/complete-rhino-color-api-migration-20260714'
+        ) &&
         (
           startsWith(github.event.pull_request.head.ref, 'fix/') ||
           startsWith(github.event.pull_request.head.ref, 'rollback/')
@@ -217,6 +220,7 @@ jobs:
           rm -f scripts/apply_rhino_color_api_full_migration.py
           rm -f scripts/rhino_color_migration_lib.py
           rm -f scripts/rhino_color_safe_helpers.inc
+          rm -f .github/workflows/diagnose-rhino-color-migration.yml
 
       - name: Check generated whitespace
         shell: bash
@@ -233,7 +237,7 @@ jobs:
             exit 1
           fi
           git config user.name "github-actions[bot]"
-          git config user.email "4189825+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
