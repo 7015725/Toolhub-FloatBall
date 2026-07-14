@@ -1,6 +1,7 @@
 name: apply-main-panel-grid-sizing
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - fix/main-panel-grid-sized-window-20260714-1115
