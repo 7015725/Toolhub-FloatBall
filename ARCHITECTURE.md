@@ -200,7 +200,7 @@ th_15_extra.js
   查看器面板、通用面板定位与显示、ToolApp Shell、页面栈、响应式布局、左右滑返回预览。
 
 th_15_main_panel.js
-  主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页提示和方向展开/退出动画。
+  主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页提示、方向展开/退出动画和实时运行状态。
 
 th_16_entry.js
   runOnMainSync、registerReceiverOnMain、startAsync、close、dispose、实例注册、设置页重启与生命周期收尾。
