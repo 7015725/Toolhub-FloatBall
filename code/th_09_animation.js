@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -43,27 +43,65 @@ FloatBallAppWM.prototype.playBounce = function(v) {
   step();
 };
 
-FloatBallAppWM.prototype.safeRemoveView = function(v, whichName) {
+FloatBallAppWM.prototype.safeRemoveView = function(v, whichName, options) {
+  var opts = options || {};
   try {
     if (!v) return { ok: true, skipped: true };
+
+    var keepInvisible = opts.keepInvisible === true;
+    var resetVisual = opts.resetVisual !== false;
+    var immediate = opts.immediate === true || !!(this.state && this.state.closing);
+
     try { v.animate().cancel(); } catch (eAnimCancel) {}
     try { v.clearAnimation(); } catch (eClearAnim) {}
-    try { if (this.unregisterPanelPredictiveBack) this.unregisterPanelPredictiveBack(v); } catch (eBack) {}
-    if (!this.state || !this.state.wm) return { ok: false, err: "WindowManager missing", where: whichName || "" };
-    if (this.state.closing) this.state.wm.removeViewImmediate(v);
-    else this.state.wm.removeView(v);
-    return { ok: true, immediate: !!(this.state && this.state.closing) };
+
+    // 对退出动画完成后的主面板先锁定不可见，避免注销回调或异步移除期间
+    // 再参与一帧 Surface 合成。
+    if (keepInvisible) {
+      try { v.setVisibility(android.view.View.INVISIBLE); } catch (eInvisible) {}
+      try { v.setAlpha(0); } catch (eAlpha) {}
+    }
+
+    try {
+      if (this.unregisterPanelPredictiveBack) {
+        this.unregisterPanelPredictiveBack(v, resetVisual);
+      }
+    } catch (eBack) {}
+
+    if (!this.state || !this.state.wm) {
+      return { ok: false, err: "WindowManager missing", where: whichName || "" };
+    }
+
+    if (immediate && this.state.wm.removeViewImmediate) {
+      this.state.wm.removeViewImmediate(v);
+    } else {
+      this.state.wm.removeView(v);
+    }
+
+    return {
+      ok: true,
+      immediate: immediate,
+      resetVisual: resetVisual,
+      keepInvisible: keepInvisible
+    };
   } catch (e) {
     var err = String(e);
     try {
       if (this.state && this.state.wm) {
+        // 立即移除失败时仍尝试普通移除；keepInvisible 已保证旧 View 不会闪回。
         this.state.wm.removeView(v);
-        return { ok: true, fallbackRemove: true, firstErr: err };
+        return {
+          ok: true,
+          fallbackRemove: true,
+          firstErr: err,
+          keepInvisible: opts.keepInvisible === true
+        };
       }
     } catch (e2) {
       err = err + "; fallback=" + String(e2);
     }
-    safeLog(this.L, 'w',  "removeView fail which=" + String(whichName || "") + " err=" + err);
+    safeLog(this.L, 'w',
+      "removeView fail which=" + String(whichName || "") + " err=" + err);
     return { ok: false, err: err, where: whichName || "" };
   }
 };
@@ -78,39 +116,96 @@ FloatBallAppWM.prototype.hideMask = function() {
   this.state.addedMask = false;
 };
 
+FloatBallAppWM.prototype.hideMaskIfNoPanelVisible = function() {
+  try {
+    if (!this.state) return false;
+    if (this.state.addedPanel) return false;
+    if (this.state.addedSettings) return false;
+    if (this.state.addedViewer) return false;
+    this.hideMask();
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', "conditional mask hide fail: " + String(e));
+  }
+  return false;
+};
+
 FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
-  if (!this.state.addedPanel) return;
-  if (!this.state.panel) return;
+  if (!this.state || !this.state.addedPanel || !this.state.panel) return;
 
   var self = this;
   var panel = this.state.panel;
+  var shouldAnimate = !(
+    immediate === true ||
+    this.state.closing ||
+    !this.config.ENABLE_ANIMATIONS ||
+    !this.animateMainPanelExit
+  );
 
-  function finishHideMainPanel() {
+  if (shouldAnimate && this.state.mainPanelExitAnimating) return;
+
+  var generation = Number(this.state.mainPanelExitGeneration || 0) + 1;
+  if (generation > 1000000000) generation = 1;
+  this.state.mainPanelExitGeneration = generation;
+  this.state.mainPanelExitAnimating = true;
+
+  var finished = false;
+
+  function finishHideMainPanel(reason) {
+    if (finished) return;
+    finished = true;
+
+    var isLatest = false;
+    var isCurrent = false;
     try {
-      if (self.state.panel !== panel) return;
-      self.safeRemoveView(panel, "panel");
+      isLatest = Number(self.state.mainPanelExitGeneration || 0) === generation;
+      isCurrent = self.state.panel === panel;
+    } catch (eIdentity) {}
+
+    // 捕获到的旧 View 无论是否仍是当前面板，都必须移除。
+    // 先保持不可见，跳过预测性返回视觉复位，并立即提交 WindowManager 移除。
+    var removeResult = self.safeRemoveView(panel, "panel", {
+      immediate: true,
+      resetVisual: false,
+      keepInvisible: true
+    });
+
+    // 旧关闭回调不能清空后来创建的新面板状态。
+    if (isCurrent && isLatest) {
       self.state.panel = null;
       self.state.panelLp = null;
       self.state.addedPanel = false;
+    }
+
+    if (isLatest) {
       self.state.mainPanelExitAnimating = false;
-      self.hideMask();
+      if (self.hideMaskIfNoPanelVisible) self.hideMaskIfNoPanelVisible();
+      else if (!self.state.addedPanel &&
+               !self.state.addedSettings &&
+               !self.state.addedViewer) self.hideMask();
       self.touchActivity();
       self._clearHeavyCachesIfAllHidden("hideMainPanel");
-    } catch (eFinish) {
-      self.state.mainPanelExitAnimating = false;
-      safeLog(self.L, 'e', "finish hide main panel fail: " + String(eFinish));
     }
+
+    safeLog(self.L, 'd',
+      "main panel hide finish generation=" + String(generation) +
+      " latest=" + String(isLatest) +
+      " current=" + String(isCurrent) +
+      " reason=" + String(reason || "") +
+      " remove=" + JSON.stringify(removeResult || {}));
   }
 
-  if (immediate === true || this.state.closing || !this.config.ENABLE_ANIMATIONS || !this.animateMainPanelExit) {
+  if (!shouldAnimate) {
     try { panel.animate().cancel(); } catch (eCancel) {}
-    finishHideMainPanel();
+    finishHideMainPanel("immediate");
     return;
   }
 
-  if (this.state.mainPanelExitAnimating) return;
-  this.state.mainPanelExitAnimating = true;
-  if (this.animateMainPanelExit(panel, finishHideMainPanel) !== true) finishHideMainPanel();
+  if (this.animateMainPanelExit(panel, function() {
+    finishHideMainPanel("animation_end");
+  }) !== true) {
+    finishHideMainPanel("animation_fallback");
+  }
 };
 
 FloatBallAppWM.prototype.hideSettingsPanel = function() {
@@ -365,20 +460,33 @@ FloatBallAppWM.prototype.applyPanelPredictiveBackProgress = function(panel, even
   } catch (e) {}
 };
 
-FloatBallAppWM.prototype.unregisterPanelPredictiveBack = function(panel) {
+FloatBallAppWM.prototype.unregisterPanelPredictiveBack = function(panel, resetVisual) {
   try {
-    var entries = this.state.panelBackCallbackEntries || [];
+    var entries = (this.state && this.state.panelBackCallbackEntries)
+      ? this.state.panelBackCallbackEntries
+      : [];
     var kept = [];
     for (var i = 0; i < entries.length; i++) {
       var it = entries[i];
       if (!it || it.view === panel) {
-        try { if (it && it.dispatcher && it.callback) it.dispatcher.unregisterOnBackInvokedCallback(it.callback); } catch (eUnreg) {}
+        try {
+          if (it && it.dispatcher && it.callback) {
+            it.dispatcher.unregisterOnBackInvokedCallback(it.callback);
+          }
+        } catch (eUnreg) {}
       } else {
         kept.push(it);
       }
     }
-    this.state.panelBackCallbackEntries = kept;
-    this.resetPanelPredictiveBackVisual(panel);
+    if (this.state) this.state.panelBackCallbackEntries = kept;
+
+    // 正常取消预测性返回时恢复视觉；WindowManager 移除路径可显式跳过，
+    // 防止退出动画 alpha=0 后又被恢复为 alpha=1。
+    if (resetVisual !== false) {
+      this.resetPanelPredictiveBackVisual(panel);
+    } else {
+      try { this.hidePanelPredictiveBackIndicator(); } catch (eIndicator) {}
+    }
   } catch (e) {
     safeLog(this.L, 'w', "unregister predictive back fail: " + String(e));
   }
@@ -835,4 +943,3 @@ FloatBallAppWM.prototype.stopDisplayMonitor = function() {
   this.state.displayListener = null;
   this.state.dm = null;
 };
-
