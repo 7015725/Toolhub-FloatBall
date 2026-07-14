@@ -21,10 +21,10 @@ EXPECTED = {
     "BALL_ICON_RES_NAME": {"type": "ball_shortx_icon", "validator_type": "string", "name": "内置图标"},
     "BALL_ICON_TINT_HEX": {"type": "ball_color", "validator_type": "string", "name": "图标颜色"},
     "BALL_ICON_SIZE_DP": {"type": "int", "name": "图标大小", "min": 12, "max": 80},
-    "PANEL_WIDTH_PERCENT": {"type": "int", "name": "主面板宽度占比(%)", "min": 60, "max": 100},
-    "PANEL_AUTO_MAX_COLS": {"type": "int", "name": "自动最大列数", "min": 1, "max": 6},
-    "PANEL_MIN_CARD_WIDTH_DP": {"type": "int", "name": "按钮最小宽度(dp)", "min": 72, "max": 160},
-    "PANEL_CARD_HEIGHT_DP": {"type": "int", "name": "按钮高度(dp)", "min": 56, "max": 120},
+    "PANEL_WIDTH_PERCENT": {"type": "int", "name": "主面板宽度占比(%)", "min": 35, "max": 100},
+    "PANEL_AUTO_MAX_COLS": {"type": "int", "name": "自动最大列数", "min": 1, "max": 10},
+    "PANEL_MIN_CARD_WIDTH_DP": {"type": "int", "name": "按钮最小宽度(dp)", "min": 48, "max": 200},
+    "PANEL_CARD_HEIGHT_DP": {"type": "int", "name": "按钮高度(dp)", "min": 48, "max": 160},
     "PANEL_ROWS": {"type": "int", "name": "面板可视行数", "min": 1, "max": 10},
     "PANEL_GAP_DP": {"type": "int", "name": "按钮间距(dp)", "min": 4, "max": 24},
     "PANEL_PADDING_DP": {"type": "int", "name": "面板内边距(dp)", "min": 8, "max": 32},
@@ -34,6 +34,12 @@ EXPECTED = {
     "BALL_POSITION_SIDE": {"type": "single_choice", "validator_type": "enum", "name": "停靠边缘", "labels": ["左侧", "右侧"]},
     "BALL_POSITION_PERCENT": {"type": "int", "name": "高度位置(%)", "min": 0, "max": 100},
 }
+
+REMOVED_SETTINGS_KEYS = [
+    "PANEL_POS_GRAVITY",
+    "PANEL_CUSTOM_OFFSET_Y",
+    "SAVE_THROTTLE_MS",
+]
 
 REMOVED_THEME_KEYS = [
     "SETTINGS_THEME",
@@ -100,6 +106,21 @@ def main():
         src,
         flags=re.S,
     )
+    active_config_src = re.sub(
+        r"var REMOVED_SETTINGS_CONFIG_KEYS = \{.*?\};",
+        "",
+        active_config_src,
+        flags=re.S,
+    )
+    for removed_key in REMOVED_SETTINGS_KEYS:
+        if re.search(r"(?m)^\s*%s\s*:" % re.escape(removed_key), active_config_src):
+            errors.append("removed setting validator/default remains: " + removed_key)
+        if re.search(r'\{\s*key:\s*"%s"' % re.escape(removed_key), src):
+            errors.append("removed setting schema remains: " + removed_key)
+        if removed_key in persistence:
+            errors.append("removed setting effect remains: " + removed_key)
+        if removed_key not in src:
+            errors.append("removed setting cleanup marker missing: " + removed_key)
     for removed_key in REMOVED_THEME_KEYS:
         if re.search(r"(?m)^\s*%s\s*:" % re.escape(removed_key), active_config_src):
             errors.append("removed theme validator/default remains: " + removed_key)

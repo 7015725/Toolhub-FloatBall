@@ -1,4 +1,4 @@
-// @version 1.1.13
+// @version 1.1.14
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -281,80 +281,52 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
 };
 
 FloatBallAppWM.prototype.getBestPanelPosition = function(pw, ph, bx, by, ballSize) {
-  var mode = String(this.config.PANEL_POS_GRAVITY || "bottom").toLowerCase();
-  var gap = this.dp(this.config.BALL_PANEL_GAP_DP);
+  var gapDp = Number(this.config.BALL_PANEL_GAP_DP);
+  if (isNaN(gapDp)) gapDp = 10;
+  gapDp = this.clamp(gapDp, 0, 50);
+  var gap = this.dp(gapDp);
   var sw = this.state.screen.w;
   var sh = this.state.screen.h;
-
   var candidates = [];
 
   function makeCand(type) {
-      if (type === "bottom") {
-          return {
-              x: Math.max(0, Math.min(sw - pw, bx + (ballSize - pw) / 2)),
-              y: by + ballSize + gap,
-              type: "bottom"
-          };
-      }
-      if (type === "top") {
-          return {
-              x: Math.max(0, Math.min(sw - pw, bx + (ballSize - pw) / 2)),
-              y: by - ph - gap,
-              type: "top"
-          };
-      }
-      if (type === "right") {
-          return {
-              x: bx + ballSize + gap,
-              y: by,
-              type: "right"
-          };
-      }
-      if (type === "left") {
-          return {
-              x: bx - pw - gap,
-              y: by,
-              type: "left"
-          };
-      }
-      return null;
+    if (type === "bottom") {
+      return {
+        x: Math.max(0, Math.min(sw - pw, bx + (ballSize - pw) / 2)),
+        y: by + ballSize + gap,
+        type: "bottom"
+      };
+    }
+    if (type === "top") {
+      return {
+        x: Math.max(0, Math.min(sw - pw, bx + (ballSize - pw) / 2)),
+        y: by - ph - gap,
+        type: "top"
+      };
+    }
+    if (type === "right") {
+      return { x: bx + ballSize + gap, y: by, type: "right" };
+    }
+    if (type === "left") {
+      return { x: bx - pw - gap, y: by, type: "left" };
+    }
+    return null;
   }
 
-  if (mode === "top") {
-      candidates.push(makeCand("top"));
-      candidates.push(makeCand("bottom"));
-  } else if (mode === "left") {
-      candidates.push(makeCand("left"));
-      candidates.push(makeCand("right"));
-      candidates.push(makeCand("bottom"));
-  } else if (mode === "right") {
-      candidates.push(makeCand("right"));
-      candidates.push(makeCand("left"));
-      candidates.push(makeCand("bottom"));
-  } else {
-      // Default bottom or auto
-      candidates.push(makeCand("bottom"));
-      candidates.push(makeCand("top"));
-      candidates.push(makeCand("right"));
-      candidates.push(makeCand("left"));
-  }
+  // 通用旧面板固定采用自动候选顺序；主面板使用 getMainPanelPosition()。
+  candidates.push(makeCand("bottom"));
+  candidates.push(makeCand("top"));
+  candidates.push(makeCand("right"));
+  candidates.push(makeCand("left"));
 
-  var diyY = this.dp(this.config.PANEL_CUSTOM_OFFSET_Y || 0);
-
-  // Find first valid
   for (var i = 0; i < candidates.length; i++) {
-      var c = candidates[i];
-      if (c) {
-          c.y += diyY;
-          if (c.x >= 0 && c.x + pw <= sw && c.y >= 0 && c.y + ph <= sh) {
-              return c;
-          }
-      }
+    var c = candidates[i];
+    if (c && c.x >= 0 && c.x + pw <= sw && c.y >= 0 && c.y + ph <= sh) {
+      return c;
+    }
   }
 
-  // Fallback: pick primary and clamp
-  var best = candidates[0];
-  if (!best) best = { x: 0, y: 0 };
+  var best = candidates[0] || { x: 0, y: 0, type: "bottom" };
   best.x = Math.max(0, Math.min(sw - pw, best.x));
   best.y = Math.max(0, Math.min(sh - ph, best.y));
   return best;

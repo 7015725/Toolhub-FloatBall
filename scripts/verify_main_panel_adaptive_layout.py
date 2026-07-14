@@ -31,9 +31,9 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(BASE, "1.1.8", "th_01_base.js")
-version(PERSIST, "1.0.4", "th_05_persistence.js")
-version(MAIN, "1.5.0", "th_15_main_panel.js")
+version(BASE, "1.1.9", "th_01_base.js")
+version(PERSIST, "1.0.5", "th_05_persistence.js")
+version(MAIN, "1.5.1", "th_15_main_panel.js")
 
 start = MAIN.find("FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function")
 end = MAIN.find("FloatBallAppWM.prototype.createMainPanelRippleBackground", start)
@@ -83,7 +83,7 @@ for name in (
     "verify_main_panel_close_lifecycle.py",
     "verify_main_panel_visual_tuning.py",
 ):
-    require((ROOT / "scripts" / name).read_text(encoding="utf-8"), "1.5.0", name)
+    require((ROOT / "scripts" / name).read_text(encoding="utf-8"), "1.5.1", name)
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_adaptive_layout.py", "workflow")
 require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260714081104;", "entry")
@@ -94,7 +94,7 @@ for doc in ("README.md", "ARCHITECTURE.md", "STRUCTURE.md"):
 def model(safe_width, width_percent=90, padding=12, gap=8, minimum_card=92, max_columns=6):
     budget = min(
         safe_width,
-        max(min(safe_width, 220), math.floor(safe_width * width_percent / 100)),
+        max(min(safe_width, 160), math.floor(safe_width * width_percent / 100)),
     )
     grid_budget = budget - padding * 2
     columns = max(

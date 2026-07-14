@@ -10,9 +10,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "47a69f4416f8280fdfa8b6a73b5ec3ab0918c108778972baf8d918c1329e28c4",
-      "size": 75902,
-      "version": "1.1.8"
+      "sha256": "73a0455d53db4d91c0326e9dc85bfb75523d2cea21a35fbeffd33aad8163c98d",
+      "size": 75710,
+      "version": "1.1.9"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -30,9 +30,9 @@
       "version": "1.0.2"
     },
     "th_05_persistence.js": {
-      "sha256": "4cd4b723f3c5c3f56100c628e26b04bd15fe99e286e42ffadce9b58c1d2e0017",
-      "size": 15190,
-      "version": "1.0.4"
+      "sha256": "9a075f329817e480e2d0001c3bb8c20643d444a1ab1c060a31f1da9b2c0636df",
+      "size": 16725,
+      "version": "1.0.5"
     },
     "th_06_icon_parser.js": {
       "sha256": "25b95a5df634a7ee359f3ab798e4d3154a71c24016f7b4bf8a658096644b2484",
@@ -105,14 +105,14 @@
       "version": "1.0.3"
     },
     "th_15_extra.js": {
-      "sha256": "f2ff8ec89035aefb5059cddba1b0393a2815a661aac3941ce0f129b71c22d361",
-      "size": 123862,
-      "version": "1.1.13"
+      "sha256": "d8240d9c6f0eef555e08879dc164c068668c78c42ca8738eebc5153b35cf48f8",
+      "size": 123118,
+      "version": "1.1.14"
     },
     "th_15_main_panel.js": {
-      "sha256": "50f1a948b51ee4a3591eb0f9b35afb3a5162566dd6d1e60630067b917e66ac2c",
-      "size": 75595,
-      "version": "1.5.0"
+      "sha256": "b80dbd0671f23487bfef18108517c3646173cbb15504cde3ba91e07e0508e697",
+      "size": 75687,
+      "version": "1.5.1"
     },
     "th_16_entry.js": {
       "sha256": "64b7bc7c0a16667536dabaa9bedbb8b0d36f57ad9efb78790809446adf2975ae",
@@ -148,10 +148,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复主面板网格与窗口尺寸不一致"
+      "移除无效位置设置，扩大自适应布局范围并统一主面板预览位置"
     ],
-    "title": "修复主面板网格与窗口尺寸不一致"
+    "date": "2026-07-14",
+    "title": "清理无效面板设置并扩大布局范围"
   },
   "schema": 3,
-  "version": 20260714040408
+  "version": 20260714045556
 }

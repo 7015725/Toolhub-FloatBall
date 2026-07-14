@@ -54,7 +54,7 @@ for key in KEYS:
 required_base = [
     "function isDeprecatedThemeConfigKey(key)",
     "function stripDeprecatedThemeSchemaItems(value)",
-    "if (isDeprecatedThemeConfigKey(k)) continue;",
+    "if (isDeprecatedThemeConfigKey(k) || isRemovedSettingsConfigKey(k)) continue;",
     "var deprecatedSchemaCleanup = stripDeprecatedThemeSchemaItems(s);",
 ]
 for marker in required_base:
