@@ -10,10 +10,17 @@ THEME_PATH = CODE / "th_04_theme.js"
 HELPERS_PATH = SCRIPTS / "rhino_color_safe_helpers.inc"
 VERIFY_WORKFLOW = ROOT / ".github" / "workflows" / "verify.yml"
 SIGN_WORKFLOW = ROOT / ".github" / "workflows" / "sign-toolhub.yml"
+DIAG_WORKFLOW = ROOT / ".github" / "workflows" / "diagnose-rhino-color-migration.yml"
 SELF_PATH = Path(__file__).resolve()
 
 BRIDGE_BEGIN = "// =======================【Rhino / ColorOS 安全颜色桥】======================="
 BRIDGE_END = "// =======================【工具：UI样式辅助】======================"
+DRAFT_EXCEPTION = """        (
+          github.event.pull_request.draft == false ||
+          github.event.pull_request.head.ref == 'fix/complete-rhino-color-api-migration-20260714'
+        ) &&
+"""
+STANDARD_DRAFT = "        github.event.pull_request.draft == false &&\n"
 TEMP_STEP = """      - name: Apply full Rhino color API migration
         shell: bash
         run: python3 scripts/apply_rhino_color_api_full_migration.py
@@ -25,6 +32,7 @@ TEMP_CLEANUP = """      - name: Remove temporary color migration files
           rm -f scripts/apply_rhino_color_api_full_migration.py
           rm -f scripts/rhino_color_migration_lib.py
           rm -f scripts/rhino_color_safe_helpers.inc
+          rm -f .github/workflows/diagnose-rhino-color-migration.yml
 
 """
 
@@ -58,6 +66,7 @@ def update_workflows():
     write(VERIFY_WORKFLOW, verify)
 
     sign = read(SIGN_WORKFLOW)
+    sign = sign.replace(DRAFT_EXCEPTION, STANDARD_DRAFT, 1)
     sign = sign.replace(TEMP_STEP, "", 1)
     sign = sign.replace(TEMP_CLEANUP, "", 1)
     sign = sign.replace(
@@ -73,6 +82,9 @@ def update_workflows():
     if new_line not in sign:
         sign = sign.replace(old_line, old_line + new_line, 1)
     write(SIGN_WORKFLOW, sign)
+
+    if DIAG_WORKFLOW.exists():
+        DIAG_WORKFLOW.unlink()
 
 
 def main():
