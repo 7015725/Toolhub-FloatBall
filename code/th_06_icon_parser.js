@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // =======================【工具：吸边数据】======================
 FloatBallAppWM.prototype.getDockInfo = function() {
   var ballSize = this.dp(this.config.BALL_SIZE_DP);
@@ -428,7 +428,7 @@ FloatBallAppWM.prototype.resolveShortXDrawable = function(name, tintHex) {
     if (dr && tintHex) {
       try {
         dr = dr.mutate();
-        dr.setColorFilter(android.graphics.Color.parseColor(String(tintHex)), android.graphics.PorterDuff.Mode.SRC_IN);
+        toolhubSafeSetColorFilter(dr, android.graphics.Color.parseColor(String(tintHex)), android.graphics.PorterDuff.Mode.SRC_IN);
        } catch(eTint) { safeLog(null, 'e', "catch " + String(eTint)); }
     }
     return dr;
@@ -529,4 +529,3 @@ FloatBallAppWM.prototype.getShortXIconCatalog = function(forceReload) {
   this._shortxIconCatalog = out;
   return out;
 };
-

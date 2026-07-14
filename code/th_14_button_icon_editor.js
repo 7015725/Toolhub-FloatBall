@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // ToolHub - button icon editor module
 // Stage 3: icon source / ShortX icon preview / tint inline editor split from th_14_panels.js.
 
@@ -61,7 +61,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
 
     var iconSelectLabel = new android.widget.TextView(context);
     iconSelectLabel.setText("图标来源");
-    iconSelectLabel.setTextColor(subTextColor);
+    toolhubSafeSetTextColor(iconSelectLabel, subTextColor);
     iconSelectLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     iconSelectWrap.addView(iconSelectLabel);
 
@@ -71,7 +71,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
 
     var rbIconFile = new android.widget.RadioButton(context);
     rbIconFile.setText("本地图片\nPNG/JPG 绝对路径");
-    rbIconFile.setTextColor(textColor);
+    toolhubSafeSetTextColor(rbIconFile, textColor);
     rbIconFile.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     rbIconFile.setTag("file");
     rbIconFile.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
@@ -79,7 +79,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
 
     var rbIconShortX = new android.widget.RadioButton(context);
     rbIconShortX.setText("ShortX 内置\n可点选图标 + 调色");
-    rbIconShortX.setTextColor(textColor);
+    toolhubSafeSetTextColor(rbIconShortX, textColor);
     rbIconShortX.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     rbIconShortX.setTag("shortx");
     rbIconShortX.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
@@ -300,7 +300,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
     shortxPickerState.previewIv = shortxPreviewIv;
 
     var shortxPreviewNameTv = new android.widget.TextView(context);
-    shortxPreviewNameTv.setTextColor(textColor);
+    toolhubSafeSetTextColor(shortxPreviewNameTv, textColor);
     shortxPreviewNameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     try { shortxPreviewNameTv.setSingleLine(true); shortxPreviewNameTv.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(eEL0) { safeLog(null, 'e', "catch " + String(eEL0)); }
     shortxPreviewCard.addView(shortxPreviewNameTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
@@ -383,15 +383,15 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
 
     var shortxPickerHead = new android.widget.TextView(context);
     shortxPickerHead.setText("ShortX 图标库（分页模式，按宽度自动排列，支持搜索 / 分类 / 点击即选中）");
-    shortxPickerHead.setTextColor(subTextColor);
+    toolhubSafeSetTextColor(shortxPickerHead, subTextColor);
     shortxPickerHead.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     shortxPickerHead.setPadding(self.dp(12), self.dp(10), self.dp(12), self.dp(6));
     shortxPickerWrap.addView(shortxPickerHead);
 
     var shortxSearchEt = new android.widget.EditText(context);
     shortxSearchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-    shortxSearchEt.setTextColor(textColor);
-    try { shortxSearchEt.setHintTextColor(subTextColor);  } catch(eHintColor) { safeLog(null, 'e', "catch " + String(eHintColor)); }
+    toolhubSafeSetTextColor(shortxSearchEt, textColor);
+    try { toolhubSafeSetHintTextColor(shortxSearchEt, subTextColor);  } catch(eHintColor) { safeLog(null, 'e', "catch " + String(eHintColor)); }
     shortxSearchEt.setHint("搜索图标名，如 share / home / save");
     shortxSearchEt.setSingleLine(true);
     shortxSearchEt.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
@@ -402,7 +402,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
     shortxPickerState.searchEt = shortxSearchEt;
 
     var shortxStatusTv = new android.widget.TextView(context);
-    shortxStatusTv.setTextColor(subTextColor);
+    toolhubSafeSetTextColor(shortxStatusTv, subTextColor);
     shortxStatusTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
     shortxStatusTv.setPadding(self.dp(12), 0, self.dp(12), self.dp(6));
     shortxPickerWrap.addView(shortxStatusTv);
@@ -429,7 +429,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
     shortxPickerState.prevBtn = btnPrevPage;
 
     var shortxPageInfo = new android.widget.TextView(context);
-    shortxPageInfo.setTextColor(textColor);
+    toolhubSafeSetTextColor(shortxPageInfo, textColor);
     shortxPageInfo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     shortxPageInfo.setGravity(android.view.Gravity.CENTER);
     shortxPageInfo.setPadding(self.dp(12), 0, self.dp(12), 0);
@@ -553,7 +553,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
 
                     var tv = new android.widget.TextView(context);
                     tv.setText(String(entry.shortName));
-                    tv.setTextColor(isSelected ? C.primary : textColor);
+                    toolhubSafeSetTextColor(tv, isSelected ? C.primary : textColor);
                     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
                     tv.setGravity(android.view.Gravity.CENTER);
                     try { tv.setLines(2); tv.setEllipsize(android.text.TextUtils.TruncateAt.END);  } catch(eLines0) { safeLog(null, 'e', "catch " + String(eLines0)); }
@@ -821,7 +821,7 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
 
         var tv = new android.widget.TextView(context);
         tv.setText(String(label));
-        tv.setTextColor(textColor);
+        toolhubSafeSetTextColor(tv, textColor);
         tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
         tv.setGravity(android.view.Gravity.CENTER);
         wrap.addView(tv);
@@ -886,8 +886,8 @@ FloatBallAppWM.prototype.buildButtonIconEditorInline = function(opts) {
         try {
             var fileSelected = (type === "file");
             var shortxSelected = (type === "shortx");
-            rbIconFile.setTextColor(fileSelected ? C.primary : textColor);
-            rbIconShortX.setTextColor(shortxSelected ? C.primary : textColor);
+            toolhubSafeSetTextColor(rbIconFile, fileSelected ? C.primary : textColor);
+            toolhubSafeSetTextColor(rbIconShortX, shortxSelected ? C.primary : textColor);
             rbIconFile.setBackground(self.ui.createStrokeDrawable(self.withAlpha(fileSelected ? C.primary : cardColor, fileSelected ? 0.16 : 0.80), fileSelected ? C.primary : dividerColor, self.dp(1), self.dp(12)));
             rbIconShortX.setBackground(self.ui.createStrokeDrawable(self.withAlpha(shortxSelected ? C.primary : cardColor, shortxSelected ? 0.16 : 0.80), shortxSelected ? C.primary : dividerColor, self.dp(1), self.dp(12)));
         } catch(eIconSourceStyle0) { safeLog(null, 'e', "catch " + String(eIconSourceStyle0)); }

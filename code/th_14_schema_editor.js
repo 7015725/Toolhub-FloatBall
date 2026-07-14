@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // ToolHub - 设置结构编辑器模块
 // 依赖：th_14_panels.js 的设置页主题/基础 UI，th_05_persistence.js 的 ConfigManager。
 // 加载顺序：th_14_panels.js 之后，th_15_extra.js 之前。
@@ -44,7 +44,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     var tv = new android.widget.TextView(context);
     tv.setText(String(txt || ""));
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, sp || 13);
-    tv.setTextColor(color || textColor);
+    toolhubSafeSetTextColor(tv, color || textColor);
     if (bold) tv.setTypeface(null, android.graphics.Typeface.BOLD);
     return tv;
   }
@@ -52,7 +52,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
   function makeChip(txt, color, onClick) {
     var tv = new android.widget.TextView(context);
     tv.setText(String(txt || ""));
-    tv.setTextColor(color || primaryDeep);
+    toolhubSafeSetTextColor(tv, color || primaryDeep);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     tv.setGravity(android.view.Gravity.CENTER);
     tv.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -292,7 +292,7 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     try {
       var color = String(kind || "info") === "error" ? dangerColor : primaryDeep;
       schemaInlineNotice.setText(String(msg || ""));
-      schemaInlineNotice.setTextColor(color);
+      toolhubSafeSetTextColor(schemaInlineNotice, color);
       schemaInlineNotice.setBackground(self.ui.createStrokeDrawable(self.withAlpha(color, isDark ? 0.18 : 0.08), self.withAlpha(color, isDark ? 0.42 : 0.25), self.dp(1), self.dp(14)));
       schemaInlineNotice.setVisibility(android.view.View.VISIBLE);
     } catch(eNotice) {}
@@ -312,9 +312,9 @@ FloatBallAppWM.prototype.buildSchemaEditorPanelView = function() {
     box.addView(makeText(label, 12, subTextColor, false));
     var et = new android.widget.EditText(context);
     et.setText(String(editItem[key] !== undefined && editItem[key] !== null ? editItem[key] : ""));
-    et.setTextColor(textColor);
+    toolhubSafeSetTextColor(et, textColor);
     et.setHint(String(hint || ""));
-    et.setHintTextColor(self.withAlpha(subTextColor, 0.55));
+    toolhubSafeSetHintTextColor(et, self.withAlpha(subTextColor, 0.55));
     et.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
     et.setSingleLine(true);
     et.setBackground(self.ui.createStrokeDrawable(inputBgColor, self.withAlpha(strokeColor, 0.55), self.dp(1), self.dp(12)));

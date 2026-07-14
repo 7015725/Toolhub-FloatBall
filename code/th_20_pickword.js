@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -169,15 +169,15 @@
             []
         ]);
         var colors = jintArray([safeColor, safeColor, safeColor, safeColor]);
-        return new ColorStateList(states, colors);
+        return toolhubSafeColorStateListFromStates(states, colors);
     }
 
     function safeTextColor(viewObj, colorValue) {
-        try { viewObj.setTextColor(safeColorStateList(colorValue)); } catch (e) {}
+        try { toolhubSafeSetTextColor(viewObj, safeColorStateList(colorValue)); } catch (e) {}
     }
 
     function safeGdColor(drawableObj, colorValue) {
-        try { drawableObj.setColor(safeColorStateList(colorValue)); } catch (e) {}
+        try { toolhubSafeSetColor(drawableObj, safeColorStateList(colorValue)); } catch (e) {}
     }
 
     var mainHandler = new Handler(Looper.getMainLooper());
@@ -937,7 +937,7 @@
         drawable.setShape(GradientDrawable.RECTANGLE);
         safeGdColor(drawable, color);
         drawable.setCornerRadius(dp(radiusDp));
-        try { drawable.setStroke(Math.max(1, Math.round(dp(strokeDp || 1))), toColorInt(strokeColor)); } catch (e) {}
+        try { toolhubSafeSetStroke(drawable, Math.max(1, Math.round(dp(strokeDp || 1))), toColorInt(strokeColor)); } catch (e) {}
         return drawable;
     }
 
@@ -3112,14 +3112,14 @@
                         edit.setText(String(oldText == null ? "" : oldText));
                         edit.setTextSize(uiTextSize(14, 16));
                         safeTextColor(edit, Colors.text);
-                        try { edit.setHintTextColor(safeColorStateList(Colors.textSecondary)); } catch (eHint) {}
+                        try { toolhubSafeSetHintTextColor(edit, safeColorStateList(Colors.textSecondary)); } catch (eHint) {}
                         edit.setGravity(Gravity.TOP | Gravity.START);
                         edit.setMinLines(5);
                         edit.setMaxLines(10);
                         edit.setSingleLine(false);
                         try { edit.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES); } catch (eInput) {}
                         edit.setPadding(0, 0, 0, 0);
-                        try { edit.setBackgroundColor(Color.TRANSPARENT); } catch (eBg) {}
+                        try { toolhubSafeSetBackgroundColor(edit, Color.TRANSPARENT); } catch (eBg) {}
                         var editLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(150, 210));
                         inputCard.addView(edit, editLp);
 

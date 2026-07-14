@@ -77,10 +77,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Apply full Rhino color API migration
-        shell: bash
-        run: python3 scripts/apply_rhino_color_api_full_migration.py
-
       - name: Verify changed module versions
         shell: bash
         run: |
@@ -223,13 +219,6 @@ jobs:
         shell: bash
         run: python3 .github/scripts/verify_manifest_signature.py
 
-      - name: Remove temporary color migration files
-        shell: bash
-        run: |
-          rm -f scripts/apply_rhino_color_api_full_migration.py
-          rm -f scripts/rhino_color_migration_lib.py
-          rm -f scripts/rhino_color_safe_helpers.inc
-
       - name: Check generated whitespace
         shell: bash
         run: git diff --check
@@ -245,8 +234,8 @@ jobs:
             exit 1
           fi
           git config user.name "github-actions[bot]"
-          git config user.email "4189825+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json manifest.sig ToolHub.js.sha256
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
             exit 0

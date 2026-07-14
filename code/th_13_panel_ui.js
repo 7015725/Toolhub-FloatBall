@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -8,7 +8,7 @@ FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
 
   var h = new android.widget.TextView(context);
   h.setText(String(item.name || ""));
-  h.setTextColor(color);
+  toolhubSafeSetTextColor(h, color);
   h.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
   h.setTypeface(null, android.graphics.Typeface.BOLD);
   h.setPadding(this.dp(14), this.dp(16), this.dp(14), this.dp(6));
@@ -107,7 +107,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
       );
       lineLp.setMargins(padH, 0, padH, 0);
       line.setLayoutParams(lineLp);
-      line.setBackgroundColor(this.withAlpha ? this.withAlpha(dividerColor, isDark ? 0.36 : 0.28) : dividerColor);
+      toolhubSafeSetBackgroundColor(line, this.withAlpha ? this.withAlpha(dividerColor, isDark ? 0.36 : 0.28) : dividerColor);
       parent.addView(line);
   }
 
@@ -134,7 +134,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
 
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
-    tv.setTextColor(textColor);
+    toolhubSafeSetTextColor(tv, textColor);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     var tvLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     tvLp.weight = 1;
@@ -153,11 +153,11 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
         var thumbColors = [primary, switchOff];
         var trackColors = [self.withAlpha(primary, 0.5), self.withAlpha(switchOff, 0.5)];
 
-        var thumbList = new android.content.res.ColorStateList(states, thumbColors);
-        var trackList = new android.content.res.ColorStateList(states, trackColors);
+        var thumbList = toolhubSafeColorStateListFromStates(states, thumbColors);
+        var trackList = toolhubSafeColorStateListFromStates(states, trackColors);
 
-        sw.setThumbTintList(thumbList);
-        sw.setTrackTintList(trackList);
+        toolhubSafeApplyColorStateList(sw, "setThumbTintList", thumbList);
+        toolhubSafeApplyColorStateList(sw, "setTrackTintList", trackList);
      } catch(eColor) { safeLog(null, 'e', "catch " + String(eColor)); }
 
     var cur = !!self.getPendingValue(item.key);
@@ -198,7 +198,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
 
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
-    tv.setTextColor(textColor);
+    toolhubSafeSetTextColor(tv, textColor);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     var tvLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     tvLp.weight = 1;
@@ -206,7 +206,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     line1.addView(tv);
 
     var valTv = new android.widget.TextView(context);
-    valTv.setTextColor(primary);
+    toolhubSafeSetTextColor(valTv, primary);
     valTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
     valTv.setTypeface(null, android.graphics.Typeface.BOLD);
     valTv.setGravity(android.view.Gravity.CENTER);
@@ -235,8 +235,8 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
 
     // 优化 SeekBar 颜色
     try {
-        sb.getThumb().setTint(primary);
-        sb.getProgressDrawable().setTint(primary);
+        toolhubSafeSetTintColor(sb.getThumb(), primary);
+        toolhubSafeSetTintColor(sb.getProgressDrawable(), primary);
      } catch(eColor) { safeLog(null, 'e', "catch " + String(eColor)); }
 
     // 配置 SeekBar
@@ -297,7 +297,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
 
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
-    tv.setTextColor(textColor);
+    toolhubSafeSetTextColor(tv, textColor);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     var tvLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
     tvLp.weight = 1;
@@ -307,7 +307,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     // 样式化文本按钮
     var btn = new android.widget.TextView(context);
     btn.setText("打开");
-    btn.setTextColor(primary);
+    toolhubSafeSetTextColor(btn, primary);
     btn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
     btn.setTypeface(null, android.graphics.Typeface.BOLD);
     btn.setGravity(android.view.Gravity.CENTER);
@@ -377,7 +377,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
 
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
-    tv.setTextColor(textColor);
+    toolhubSafeSetTextColor(tv, textColor);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     var titleTvLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
     tv.setLayoutParams(titleTvLp);
@@ -395,9 +395,9 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     var curVal = self.getPendingValue(item.key);
     if (curVal === undefined || curVal === null) curVal = "";
     et.setText(String(curVal));
-    et.setTextColor(textColor);
+    toolhubSafeSetTextColor(et, textColor);
     et.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-    try { et.setHintTextColor(secColor); } catch(eHint) { safeLog(null, 'e', "catch " + String(eHint)); }
+    try { toolhubSafeSetHintTextColor(et, secColor); } catch(eHint) { safeLog(null, 'e', "catch " + String(eHint)); }
     et.setBackground(self.ui.createStrokeDrawable(inputBgColor, self.withAlpha(dividerColor, isDark ? 0.48 : 0.34), self.dp(1), self.dp(12)));
     et.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
     et.setSingleLine(true);
@@ -441,7 +441,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     // === 单选类型 (RadioGroup) ===
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
-    tv.setTextColor(textColor);
+    toolhubSafeSetTextColor(tv, textColor);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     row.addView(tv);
 
@@ -462,14 +462,14 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
         (function(opt) {
             var rb = new android.widget.RadioButton(context);
             rb.setText(String(opt.label));
-            rb.setTextColor(textColor);
+            toolhubSafeSetTextColor(rb, textColor);
             rb.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
             try { rb.setMinHeight(self.dp(40)); rb.setMinimumHeight(self.dp(40)); rb.setIncludeFontPadding(false); } catch(eRbSize) {}
             // 颜色优化
             try {
                 var states = [[android.R.attr.state_checked], [-android.R.attr.state_checked]];
                 var colors = [primary, secColor];
-                rb.setButtonTintList(new android.content.res.ColorStateList(states, colors));
+                toolhubSafeApplyColorStateList(rb, "setButtonTintList", toolhubSafeColorStateListFromStates(states, colors));
              } catch(eC) { safeLog(null, 'e', "catch " + String(eC)); }
 
             rb.setId(android.view.View.generateViewId ? android.view.View.generateViewId() : i);
@@ -500,7 +500,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     row.setOrientation(android.widget.LinearLayout.VERTICAL);
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
-    tv.setTextColor(textColor);
+    toolhubSafeSetTextColor(tv, textColor);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     row.addView(tv);
 
@@ -510,7 +510,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     iconRow.setPadding(0, self.dp(6), 0, 0);
 
     var nameTv = new android.widget.TextView(context);
-    nameTv.setTextColor(secColor);
+    toolhubSafeSetTextColor(nameTv, secColor);
     nameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
     var nameTvLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
     nameTv.setLayoutParams(nameTvLp);
@@ -565,7 +565,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     row.setOrientation(android.widget.LinearLayout.VERTICAL);
     var tv = new android.widget.TextView(context);
     tv.setText(String(item.name));
-    tv.setTextColor(textColor);
+    toolhubSafeSetTextColor(tv, textColor);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     row.addView(tv);
 
@@ -578,7 +578,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     colorRow.addView(previewDot);
 
     var colorValueTv = new android.widget.TextView(context);
-    colorValueTv.setTextColor(secColor);
+    toolhubSafeSetTextColor(colorValueTv, secColor);
     colorValueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
     var colorValueLp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
     colorValueTv.setLayoutParams(colorValueLp);
@@ -636,7 +636,7 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
      // 兜底文本
      var tv = new android.widget.TextView(context);
      tv.setText(String(item.name));
-     tv.setTextColor(secColor);
+     toolhubSafeSetTextColor(tv, secColor);
      row.addView(tv);
      parent.addView(row);
   }

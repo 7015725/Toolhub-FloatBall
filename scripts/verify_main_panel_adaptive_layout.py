@@ -33,7 +33,7 @@ def version(text, expected, name):
 
 version(BASE, "1.1.10", "th_01_base.js")
 version(PERSIST, "1.0.6", "th_05_persistence.js")
-version(MAIN, "1.5.6", "th_15_main_panel.js")
+version(MAIN, "1.5.7", "th_15_main_panel.js")
 
 start = MAIN.find("FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function")
 end = MAIN.find("FloatBallAppWM.prototype.createMainPanelRippleBackground", start)

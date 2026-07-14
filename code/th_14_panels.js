@@ -1,4 +1,4 @@
-// @version 1.0.18
+// @version 1.0.19
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -179,7 +179,7 @@ FloatBallAppWM.prototype.createPointerSettingsBlockDesc = function(parent, block
     var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
     var tv = new android.widget.TextView(context);
     tv.setText(String(blockDef.desc || ""));
-    tv.setTextColor(T.onSurface2);
+    toolhubSafeSetTextColor(tv, T.onSurface2);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     tv.setPadding(this.dp(16), 0, this.dp(16), this.dp(8));
     parent.addView(tv, new android.widget.LinearLayout.LayoutParams(-1, -2));
@@ -251,7 +251,7 @@ FloatBallAppWM.prototype.createBallSettingsSubtabBar = function(parent, onChange
       chip.setSingleLine(true);
       chip.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
       chip.setTypeface(null, selected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
-      chip.setTextColor(selected ? T.onPrimary : T.primary);
+      toolhubSafeSetTextColor(chip, selected ? T.onPrimary : T.primary);
       chip.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
       try { chip.setMinHeight(self.dp(44)); chip.setMinimumHeight(self.dp(44)); } catch(eMinH) {}
       try { chip.setMinWidth(self.dp(44)); chip.setMinimumWidth(self.dp(44)); } catch(eMinW) {}
@@ -324,7 +324,7 @@ FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function(parent, icon
   var tvIcon = new android.widget.TextView(context);
   tvIcon.setText(String(icon || "✦"));
   tvIcon.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-  tvIcon.setTextColor(T.primary);
+  toolhubSafeSetTextColor(tvIcon, T.primary);
   tvIcon.setGravity(android.view.Gravity.CENTER);
   tvIcon.setBackground(this.ui.createRoundDrawable(T.primaryContainer, this.dp(10)));
   var iconLp = new android.widget.LinearLayout.LayoutParams(this.dp(26), this.dp(26));
@@ -332,7 +332,7 @@ FloatBallAppWM.prototype.createSettingsHomeSectionHeader = function(parent, icon
   row.addView(tvIcon, iconLp);
   var tv = new android.widget.TextView(context);
   tv.setText(String(title || ""));
-  tv.setTextColor(T.onSurface);
+  toolhubSafeSetTextColor(tv, T.onSurface);
   tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
   tv.setTypeface(null, android.graphics.Typeface.BOLD);
   row.addView(tv, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
@@ -381,7 +381,7 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   try { row.setElevation(this.dp(1)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   var badge = new android.widget.TextView(context);
   badge.setText(this.getSettingsHomeIcon ? this.getSettingsHomeIcon(title) : "✦");
-  badge.setTextColor(T.primary);
+  toolhubSafeSetTextColor(badge, T.primary);
   badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   badge.setGravity(android.view.Gravity.CENTER);
   badge.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -394,13 +394,13 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   texts.setOrientation(android.widget.LinearLayout.VERTICAL);
   var tvTitle = new android.widget.TextView(context);
   tvTitle.setText(String(title || ""));
-  tvTitle.setTextColor(T.onSurface);
+  toolhubSafeSetTextColor(tvTitle, T.onSurface);
   tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
   tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
   texts.addView(tvTitle);
   var tvDesc = new android.widget.TextView(context);
   tvDesc.setText(String(desc || ""));
-  tvDesc.setTextColor(T.onSurface2);
+  toolhubSafeSetTextColor(tvDesc, T.onSurface2);
   tvDesc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tvDesc.setPadding(0, this.dp(2), this.dp(6), 0);
   try { tvDesc.setSingleLine(false); } catch(eSL) { safeLog(null, 'e', "catch " + String(eSL)); }
@@ -408,7 +408,7 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   row.addView(texts, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
   var tvGo = new android.widget.TextView(context);
   tvGo.setText("›");
-  tvGo.setTextColor(T.primary);
+  toolhubSafeSetTextColor(tvGo, T.primary);
   tvGo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
   tvGo.setTypeface(null, android.graphics.Typeface.BOLD);
   tvGo.setGravity(android.view.Gravity.CENTER);
@@ -599,7 +599,7 @@ FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, o
 
   var iconTv = new android.widget.TextView(context);
   iconTv.setText(String(visual.icon || "✓"));
-  iconTv.setTextColor(visual.iconColor);
+  toolhubSafeSetTextColor(iconTv, visual.iconColor);
   iconTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compact ? 12 : 13);
   iconTv.setGravity(android.view.Gravity.CENTER);
   iconTv.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -607,7 +607,7 @@ FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, o
 
   var labelTv = new android.widget.TextView(context);
   labelTv.setText(String(visual.label || "更新状态"));
-  labelTv.setTextColor(visual.labelColor);
+  toolhubSafeSetTextColor(labelTv, visual.labelColor);
   labelTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compact ? 11 : 12);
   labelTv.setTypeface(null, android.graphics.Typeface.BOLD);
   labelTv.setSingleLine(true);
@@ -618,7 +618,7 @@ FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, o
 
   var detailTv = new android.widget.TextView(context);
   detailTv.setText(expanded ? "收起" : String(visual.sub || "详情"));
-  detailTv.setTextColor(visual.detailColor);
+  toolhubSafeSetTextColor(detailTv, visual.detailColor);
   detailTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
   detailTv.setGravity(android.view.Gravity.CENTER);
   detailTv.setSingleLine(true);
@@ -861,7 +861,7 @@ FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
   function addLine(app, parent, textValue, colorValue, spValue, bold) {
     var tv = new android.widget.TextView(context);
     tv.setText(String(textValue || ""));
-    tv.setTextColor(colorValue);
+    toolhubSafeSetTextColor(tv, colorValue);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, spValue);
     tv.setLineSpacing(app.dp(1), 1.04);
     if (bold) tv.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -976,7 +976,7 @@ FloatBallAppWM.prototype.createSettingsConfigStatusPill = function(statusLabel, 
 
   var dot = new android.widget.TextView(context);
   dot.setText("●");
-  dot.setTextColor(statusValueColor || T.primary);
+  toolhubSafeSetTextColor(dot, statusValueColor || T.primary);
   dot.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 9);
   dot.setGravity(android.view.Gravity.CENTER);
   pill.addView(dot, new android.widget.LinearLayout.LayoutParams(this.dp(14), -2));
@@ -986,14 +986,14 @@ FloatBallAppWM.prototype.createSettingsConfigStatusPill = function(statusLabel, 
   texts.setGravity(android.view.Gravity.CENTER_VERTICAL);
   var labelTv = new android.widget.TextView(context);
   labelTv.setText(String(statusLabel || "已保存"));
-  labelTv.setTextColor(T.onSurface2);
+  toolhubSafeSetTextColor(labelTv, T.onSurface2);
   labelTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 9);
   labelTv.setSingleLine(true);
   try { labelTv.setMaxWidth(this.dp(compact ? 74 : 92)); labelTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eLabelEll) {}
   texts.addView(labelTv, new android.widget.LinearLayout.LayoutParams(-2, -2));
   var valueTv = new android.widget.TextView(context);
   valueTv.setText(String(statusValue || "当前生效"));
-  valueTv.setTextColor(statusValueColor || T.onSurface);
+  toolhubSafeSetTextColor(valueTv, statusValueColor || T.onSurface);
   valueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compact ? 11 : 12);
   valueTv.setTypeface(null, android.graphics.Typeface.BOLD);
   valueTv.setSingleLine(true);
@@ -1031,7 +1031,7 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   island.setText("✦");
   island.setGravity(android.view.Gravity.CENTER);
   island.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compactWelcome ? 22 : 24);
-  island.setTextColor(T.primary);
+  toolhubSafeSetTextColor(island, T.primary);
   island.setTypeface(null, android.graphics.Typeface.BOLD);
   island.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.22 : 0.16), this.dp(1), this.dp(18)));
   var iconSize = compactWelcome ? this.dp(48) : this.dp(50);
@@ -1044,7 +1044,7 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   textsCol.setGravity(android.view.Gravity.CENTER_VERTICAL);
   var titleMain = new android.widget.TextView(context);
   titleMain.setText("ToolHub 设置");
-  titleMain.setTextColor(T.onSurface);
+  toolhubSafeSetTextColor(titleMain, T.onSurface);
   titleMain.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compactWelcome ? 17 : 20);
   titleMain.setTypeface(null, android.graphics.Typeface.BOLD);
   titleMain.setSingleLine(true);
@@ -1052,7 +1052,7 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
   textsCol.addView(titleMain, new android.widget.LinearLayout.LayoutParams(-1, -2));
   var titleSub = new android.widget.TextView(context);
   titleSub.setText("管理工具、外观与更新");
-  titleSub.setTextColor(T.onSurface2);
+  toolhubSafeSetTextColor(titleSub, T.onSurface2);
   titleSub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   titleSub.setSingleLine(true);
   titleSub.setPadding(0, this.dp(3), 0, 0);
@@ -1177,7 +1177,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   top.setPadding(this.dp(2), 0, this.dp(2), this.dp(8));
   var crumb = new android.widget.TextView(context);
   crumb.setText("‹ 返回分类");
-  crumb.setTextColor(T.primary);
+  toolhubSafeSetTextColor(crumb, T.primary);
   crumb.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   crumb.setTypeface(null, android.graphics.Typeface.BOLD);
   crumb.setPadding(0, 0, 0, this.dp(4));
@@ -1187,13 +1187,13 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   top.addView(crumb, new android.widget.LinearLayout.LayoutParams(-1, -2));
   var tvTitle = new android.widget.TextView(context);
   tvTitle.setText(String(title || this.getSettingsGroupTitle(groupKey) || "设置详情"));
-  tvTitle.setTextColor(T.onSurface);
+  toolhubSafeSetTextColor(tvTitle, T.onSurface);
   tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
   top.addView(tvTitle, new android.widget.LinearLayout.LayoutParams(-1, -2));
   var tvDesc = new android.widget.TextView(context);
   tvDesc.setText(String(desc || "在右侧整理这一组设置，左侧目录保持常驻"));
-  tvDesc.setTextColor(T.onSurface2);
+  toolhubSafeSetTextColor(tvDesc, T.onSurface2);
   tvDesc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tvDesc.setPadding(0, this.dp(4), 0, 0);
   top.addView(tvDesc, new android.widget.LinearLayout.LayoutParams(-1, -2));
@@ -1211,7 +1211,7 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
       var stroke = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
       var tv = new android.widget.TextView(context);
       tv.setText(String(msg || ""));
-      tv.setTextColor(color);
+      toolhubSafeSetTextColor(tv, color);
       tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       tv.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
       tv.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
@@ -1342,7 +1342,7 @@ FloatBallAppWM.prototype.buildSettingsRouteDetailPane = function(route, title, d
   top.setPadding(this.dp(2), 0, this.dp(2), this.dp(8));
   var crumb = new android.widget.TextView(context);
   crumb.setText("‹ 返回分类");
-  crumb.setTextColor(T.primary);
+  toolhubSafeSetTextColor(crumb, T.primary);
   crumb.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   crumb.setTypeface(null, android.graphics.Typeface.BOLD);
   crumb.setPadding(0, 0, 0, this.dp(4));
@@ -1352,13 +1352,13 @@ FloatBallAppWM.prototype.buildSettingsRouteDetailPane = function(route, title, d
   top.addView(crumb, new android.widget.LinearLayout.LayoutParams(-1, -2));
   var tvTitle = new android.widget.TextView(context);
   tvTitle.setText(String(title || this.getToolAppTitle(route) || "详情"));
-  tvTitle.setTextColor(T.onSurface);
+  toolhubSafeSetTextColor(tvTitle, T.onSurface);
   tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
   top.addView(tvTitle, new android.widget.LinearLayout.LayoutParams(-1, -2));
   var tvDesc = new android.widget.TextView(context);
   tvDesc.setText(String(desc || "在右侧窗格内完成这一项设置"));
-  tvDesc.setTextColor(T.onSurface2);
+  toolhubSafeSetTextColor(tvDesc, T.onSurface2);
   tvDesc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tvDesc.setPadding(0, this.dp(4), 0, 0);
   top.addView(tvDesc, new android.widget.LinearLayout.LayoutParams(-1, -2));
@@ -1395,7 +1395,7 @@ FloatBallAppWM.prototype.createSettingsMasterMenuItem = function(parent, cat, se
   var icon = new android.widget.TextView(context);
   icon.setText(String(cat && cat.icon || "✦"));
   icon.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
-  icon.setTextColor(selected ? T.primary : T.onSurface);
+  toolhubSafeSetTextColor(icon, selected ? T.primary : T.onSurface);
   icon.setGravity(android.view.Gravity.CENTER);
   icon.setBackground(this.ui.createRoundDrawable(selected ? T.surface : T.primaryContainer, this.dp(13)));
   var iconLp = new android.widget.LinearLayout.LayoutParams(this.dp(38), this.dp(38));
@@ -1405,13 +1405,13 @@ FloatBallAppWM.prototype.createSettingsMasterMenuItem = function(parent, cat, se
   texts.setOrientation(android.widget.LinearLayout.VERTICAL);
   var title = new android.widget.TextView(context);
   title.setText(String(cat && cat.title || ""));
-  title.setTextColor(T.onSurface);
+  toolhubSafeSetTextColor(title, T.onSurface);
   title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
   title.setTypeface(null, android.graphics.Typeface.BOLD);
   texts.addView(title, new android.widget.LinearLayout.LayoutParams(-1, -2));
   var desc = new android.widget.TextView(context);
   desc.setText(String(cat && cat.desc || ""));
-  desc.setTextColor(T.onSurface2);
+  toolhubSafeSetTextColor(desc, T.onSurface2);
   desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
   desc.setPadding(0, this.dp(2), 0, 0);
   try { desc.setMaxLines(2); } catch(eMax) {}
@@ -1532,13 +1532,13 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
     try { navCard.setElevation(this.dp(1)); } catch(eNavElev) {}
     var navTitle = new android.widget.TextView(context);
     navTitle.setText("设置目录");
-    navTitle.setTextColor(T.onSurface);
+    toolhubSafeSetTextColor(navTitle, T.onSurface);
     navTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
     navTitle.setTypeface(null, android.graphics.Typeface.BOLD);
     navCard.addView(navTitle, new android.widget.LinearLayout.LayoutParams(-1, -2));
     var navSub = new android.widget.TextView(context);
     navSub.setText("选择左侧分类，右侧整理对应设置");
-    navSub.setTextColor(T.onSurface2);
+    toolhubSafeSetTextColor(navSub, T.onSurface2);
     navSub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
     navSub.setPadding(0, this.dp(3), 0, this.dp(10));
     navCard.addView(navSub, new android.widget.LinearLayout.LayoutParams(-1, -2));
@@ -1624,7 +1624,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
       hIcon.setText(String(selectedCat && selectedCat.icon || "✦"));
       hIcon.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20);
       hIcon.setGravity(android.view.Gravity.CENTER);
-      hIcon.setTextColor(T.primary);
+      toolhubSafeSetTextColor(hIcon, T.primary);
       hIcon.setBackground(self.ui.createRoundDrawable(T.primaryContainer, self.dp(15)));
       var hIconLp = new android.widget.LinearLayout.LayoutParams(self.dp(46), self.dp(46));
       hIconLp.setMargins(0, 0, self.dp(12), 0);
@@ -1633,13 +1633,13 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
       hTexts.setOrientation(android.widget.LinearLayout.VERTICAL);
       var hTitle = new android.widget.TextView(context);
       hTitle.setText(String(selectedCat && selectedCat.title || "设置分类"));
-      hTitle.setTextColor(T.onSurface);
+      toolhubSafeSetTextColor(hTitle, T.onSurface);
       hTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
       hTitle.setTypeface(null, android.graphics.Typeface.BOLD);
       hTexts.addView(hTitle, new android.widget.LinearLayout.LayoutParams(-1, -2));
       var hDesc = new android.widget.TextView(context);
       hDesc.setText(String(selectedCat && selectedCat.desc || ""));
-      hDesc.setTextColor(T.onSurface2);
+      toolhubSafeSetTextColor(hDesc, T.onSurface2);
       hDesc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       hDesc.setPadding(0, self.dp(3), 0, 0);
       hTexts.addView(hDesc, new android.widget.LinearLayout.LayoutParams(-1, -2));
@@ -1715,7 +1715,7 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
   var deco = new android.widget.TextView(context);
   deco.setText(spec && (spec.isExpandedWidth || spec.isWideWidth) ? "────────        ────────" : "──────              ──────");
   deco.setGravity(android.view.Gravity.CENTER);
-  deco.setTextColor(this.withAlpha(T.primary, isDark ? 0.30 : 0.24));
+  toolhubSafeSetTextColor(deco, this.withAlpha(T.primary, isDark ? 0.30 : 0.24));
   deco.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
   if (!(spec && spec.isLandscape)) bottom.addView(deco, new android.widget.LinearLayout.LayoutParams(-1, this.dp(14)));
   var bottomSave = this.ui.createSolidButton(this, "保存设置", T.primary, T.onPrimary, saveSettingsNow);
@@ -1768,7 +1768,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
       var stroke = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
       var tv = new android.widget.TextView(context);
       tv.setText(String(msg || ""));
-      tv.setTextColor(color);
+      toolhubSafeSetTextColor(tv, color);
       tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       tv.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
       tv.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
@@ -1794,7 +1794,7 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
 
   var tvPreview = new android.widget.TextView(context);
   tvPreview.setText("边调边看");
-  tvPreview.setTextColor(T.primary);
+  toolhubSafeSetTextColor(tvPreview, T.primary);
   tvPreview.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   tvPreview.setTypeface(null, android.graphics.Typeface.BOLD);
   tvPreview.setPadding(0, 0, this.dp(4), 0);
@@ -1806,8 +1806,8 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
       var states = [[android.R.attr.state_checked], [-android.R.attr.state_checked]];
       var thumbColors = [T.primary, isDark ? T.surface2 : (0xFFCCCCCC | 0)];
       var trackColors = [self.withAlpha(T.primary, 0.5), self.withAlpha(isDark ? T.surface2 : (0xFFCCCCCC | 0), 0.5)];
-      switchPreview.setThumbTintList(new android.content.res.ColorStateList(states, thumbColors));
-      switchPreview.setTrackTintList(new android.content.res.ColorStateList(states, trackColors));
+      toolhubSafeApplyColorStateList(switchPreview, "setThumbTintList", toolhubSafeColorStateListFromStates(states, thumbColors));
+      toolhubSafeApplyColorStateList(switchPreview, "setTrackTintList", toolhubSafeColorStateListFromStates(states, trackColors));
    } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
 
   switchPreview.setChecked(!!self.state.previewMode);
@@ -1817,12 +1817,12 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
           self.state.previewMode = !!checked;
           if (checked) {
               setSettingsGroupNotice("边调边看已开启", "ok");
-              tvPreview.setTextColor(T.primary);
+              toolhubSafeSetTextColor(tvPreview, T.primary);
               previewBox.setBackground(self.ui.createRoundDrawable(self.withAlpha(T.primaryContainer, isDark ? 0.70 : 0.95), self.dp(16)));
               self.refreshPreview();
           } else {
               setSettingsGroupNotice("预览模式已关闭", "info");
-              tvPreview.setTextColor(0xFF888888 | 0);
+              toolhubSafeSetTextColor(tvPreview, 0xFF888888 | 0);
               previewBox.setBackground(null);
               if (self.state.addedPanel) self.hideMainPanel();
               self.rebuildBallForNewSize(true);
@@ -2097,7 +2097,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
       } catch(eSuperDetach) {}
     }
   }, context);
-  root.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42));
+  toolhubSafeSetBackgroundColor(root, self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42));
   root.setClickable(true);
   try { root.setFocusable(true); root.setFocusableInTouchMode(true); } catch(eRootFocus) {}
   try {
@@ -2215,7 +2215,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   header.setGravity(android.view.Gravity.CENTER_VERTICAL);
   var titleTv = new android.widget.TextView(context);
   titleTv.setText(String(title || ""));
-  titleTv.setTextColor(T.onSurface);
+  toolhubSafeSetTextColor(titleTv, T.onSurface);
   titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
   titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
   header.addView(titleTv, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));

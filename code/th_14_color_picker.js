@@ -1,4 +1,4 @@
-// @version 0.0.3
+// @version 0.0.4
 // ToolHub - 颜色选择器弹窗模块
 // 依赖：th_14_panels.js 中的 showPopupOverlay()、th_04_theme.js 主题工具、th_06_icon_parser.js 图标解析。
 
@@ -130,14 +130,14 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
     try { b.setIncludeFontPadding(false); } catch(eFontPad) {}
     if (primary) {
       b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-      b.setTextColor(android.graphics.Color.WHITE);
+      toolhubSafeSetTextColor(b, android.graphics.Color.WHITE);
       b.setPadding(self.dp(16), 0, self.dp(16), 0);
       try { b.setMinHeight(self.dp(50)); } catch(eMinH1) {}
       try { b.setBackground(self.ui.createStrokeDrawable(T.primary, self.withAlpha(T.onSurface2 || T.primary, isDark ? 0.28 : 0.18), self.dp(1), self.dp(26))); } catch(eBg1) {}
       try { b.setElevation(self.dp(1)); } catch(eElev) {}
     } else {
       b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-      b.setTextColor(T.onSurface2 || T.onSurface2);
+      toolhubSafeSetTextColor(b, T.onSurface2 || T.onSurface2);
       b.setPadding(self.dp(14), 0, self.dp(14), 0);
       try { b.setMinHeight(self.dp(50)); } catch(eMinH2) {}
       try { b.setBackground(self.ui.createStrokeDrawable(T.surface2 || T.surface, self.withAlpha(T.outlineVariant || T.onSurface2, isDark ? 0.42 : 0.55), self.dp(1), self.dp(26))); } catch(eBg2) {}
@@ -165,7 +165,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       // ========== 最近使用颜色 ==========
       var recentTitle = new android.widget.TextView(context);
       recentTitle.setText("最近用过的小颜色");
-      recentTitle.setTextColor(subTextColor);
+      toolhubSafeSetTextColor(recentTitle, subTextColor);
       recentTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       recentTitle.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(3));
       content.addView(recentTitle);
@@ -177,7 +177,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
 
       var recentEmptyTv = new android.widget.TextView(context);
       recentEmptyTv.setText("还没有最近颜色");
-      recentEmptyTv.setTextColor(subTextColor);
+      toolhubSafeSetTextColor(recentEmptyTv, subTextColor);
       recentEmptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
       recentEmptyTv.setPadding(self.dp(12), self.dp(3), self.dp(12), self.dp(6));
       recentEmptyTv.setVisibility(android.view.View.GONE);
@@ -208,7 +208,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               swatch.setLayoutParams(new android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
               try {
                 var bg = new android.graphics.drawable.GradientDrawable();
-                bg.setColor(android.graphics.Color.parseColor(hex));
+                toolhubSafeSetColor(bg, android.graphics.Color.parseColor(hex));
                 bg.setCornerRadius(self.dp(5));
                 swatch.setBackground(bg);
                } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -217,9 +217,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
               if (selectedColor === hex) {
                 try {
                   var border = new android.graphics.drawable.GradientDrawable();
-                  border.setColor(android.graphics.Color.TRANSPARENT);
+                  toolhubSafeSetColor(border, android.graphics.Color.TRANSPARENT);
                   border.setCornerRadius(self.dp(5));
-                  border.setStroke(self.dp(2), T.primary);
+                  toolhubSafeSetStroke(border, self.dp(2), T.primary);
                   cell.setForeground(border);
                  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
               }
@@ -249,7 +249,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       // 21 色常用颜色
       var commonTitle = new android.widget.TextView(context);
       commonTitle.setText("糖果常用色");
-      commonTitle.setTextColor(subTextColor);
+      toolhubSafeSetTextColor(commonTitle, subTextColor);
       commonTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       commonTitle.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(3));
       content.addView(commonTitle);
@@ -274,7 +274,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           swatch.setLayoutParams(new android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
           try {
             var bg = new android.graphics.drawable.GradientDrawable();
-            bg.setColor(android.graphics.Color.parseColor(hex));
+            toolhubSafeSetColor(bg, android.graphics.Color.parseColor(hex));
             bg.setCornerRadius(self.dp(5));
             swatch.setBackground(bg);
            } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
@@ -283,9 +283,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           if (selectedColor === hex) {
             try {
               var border = new android.graphics.drawable.GradientDrawable();
-              border.setColor(android.graphics.Color.TRANSPARENT);
+              toolhubSafeSetColor(border, android.graphics.Color.TRANSPARENT);
               border.setCornerRadius(self.dp(5));
-              border.setStroke(self.dp(2), T.primary);
+              toolhubSafeSetStroke(border, self.dp(2), T.primary);
               cell.setForeground(border);
              } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
           }
@@ -324,9 +324,9 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
             if (matchedCell) {
               try {
                 var border = new android.graphics.drawable.GradientDrawable();
-                border.setColor(android.graphics.Color.TRANSPARENT);
+                toolhubSafeSetColor(border, android.graphics.Color.TRANSPARENT);
                 border.setCornerRadius(self.dp(5));
-                border.setStroke(self.dp(2), T.primary);
+                toolhubSafeSetStroke(border, self.dp(2), T.primary);
                 matchedCell.setForeground(border);
                } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
             }
@@ -337,15 +337,15 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
 
       // 颜色值编辑：合并到颜色面板中，支持手动输入 #RRGGBB / #AARRGGBB。
       var valueTv = new android.widget.TextView(context);
-      valueTv.setTextColor(textColor);
+      toolhubSafeSetTextColor(valueTv, textColor);
       valueTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       valueTv.setPadding(self.dp(12), self.dp(3), self.dp(12), self.dp(3));
       content.addView(valueTv);
 
       colorValueInput = new android.widget.EditText(context);
       colorValueInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
-      colorValueInput.setTextColor(textColor);
-      try { colorValueInput.setHintTextColor(subTextColor); } catch(eHintColorInput) { safeLog(null, 'e', "catch " + String(eHintColorInput)); }
+      toolhubSafeSetTextColor(colorValueInput, textColor);
+      try { toolhubSafeSetHintTextColor(colorValueInput, subTextColor); } catch(eHintColorInput) { safeLog(null, 'e', "catch " + String(eHintColorInput)); }
       colorValueInput.setHint("留空 = 跟随主题；支持 #RRGGBB / #AARRGGBB");
       colorValueInput.setSingleLine(true);
       colorValueInput.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
@@ -425,7 +425,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
 
           var label = new android.widget.TextView(context);
           label.setText(rgbLabels[idx]);
-          label.setTextColor(textColor);
+          toolhubSafeSetTextColor(label, textColor);
           label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
           label.setMinWidth(self.dp(20));
           row.addView(label);
@@ -439,7 +439,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
           rgbSeeks.push(seek);
 
           var valTv = new android.widget.TextView(context);
-          valTv.setTextColor(subTextColor);
+          toolhubSafeSetTextColor(valTv, subTextColor);
           valTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
           valTv.setMinWidth(self.dp(28));
           row.addView(valTv);
@@ -493,7 +493,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
 
       var alphaLabel = new android.widget.TextView(context);
       alphaLabel.setText("A");
-      alphaLabel.setTextColor(textColor);
+      toolhubSafeSetTextColor(alphaLabel, textColor);
       alphaLabel.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       alphaLabel.setMinWidth(self.dp(20));
       alphaRow.addView(alphaLabel);
@@ -506,7 +506,7 @@ FloatBallAppWM.prototype.showColorPickerPopup = function(opts) {
       alphaRow.addView(alphaSeek);
 
       alphaValTv = new android.widget.TextView(context);
-      alphaValTv.setTextColor(subTextColor);
+      toolhubSafeSetTextColor(alphaValTv, subTextColor);
       alphaValTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
       alphaValTv.setMinWidth(self.dp(28));
       alphaRow.addView(alphaValTv);

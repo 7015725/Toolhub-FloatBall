@@ -39,7 +39,7 @@ def version(text, expected, name):
 
 
 version(BASE, "1.1.10", "th_01_base.js")
-version(MAIN, "1.5.6", "th_15_main_panel.js")
+version(MAIN, "1.5.7", "th_15_main_panel.js")
 
 for marker, label in (
     ('PANEL_BG_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.92 }', "alpha validator default"),

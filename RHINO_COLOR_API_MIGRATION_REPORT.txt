@@ -1,0 +1,3 @@
+FAIL th_04_theme.js direct color methods: applyTextColorRecursive
+FAIL th_14_button_shortcut.js direct color methods: setCacheColorHint
+FAIL th_21_result_preview.js direct color methods: setColor

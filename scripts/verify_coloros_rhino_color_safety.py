@@ -55,9 +55,9 @@ else:
             errors.append("unsafe overloaded color channel call remains in _th_argb: %s" % token)
 
 if module_version(THEME, "th_04_theme.js") < (1, 0, 3):
-    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.3")
+    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.4")
 if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 6):
-    errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.6")
+    errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.7")
 
 if errors:
     for item in errors:

@@ -1,4 +1,4 @@
-// @version 1.2.2
+// @version 1.2.3
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1754,7 +1754,7 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         path.lineTo(tipX + dp(24), tipY + dp(19));
         path.close();
 
-        try { p.setShadowLayer(dp(3), dp(1), dp(1.5), th17Color(74, 0, 0, 0)); } catch (e1) {}
+        try { toolhubSafeSetShadowLayer(p, dp(3), dp(1), dp(1.5), th17Color(74, 0, 0, 0)); } catch (e1) {}
         p.setStyle(android.graphics.Paint.Style.FILL);
         p.setARGB(active ? 92 : (dragging ? 76 : 58), accentR, accentG, accentB);
         canvas.drawPath(path, p);

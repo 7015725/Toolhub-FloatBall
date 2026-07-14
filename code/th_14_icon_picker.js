@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // ToolHub - ShortX 图标选择器模块
 //
 // 阶段 1：承载 showShortXIconPickerPopup。
@@ -152,8 +152,8 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   var pageSize = colCount * rowCount;
 
   var rootOverlay = new android.widget.FrameLayout(context);
-  try { rootOverlay.setBackgroundColor(self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42)); }
-  catch(eOverlayBg) { rootOverlay.setBackgroundColor(0x33000000); }
+  try { toolhubSafeSetBackgroundColor(rootOverlay, self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42)); }
+  catch(eOverlayBg) { toolhubSafeSetBackgroundColor(rootOverlay, 0x33000000); }
   rootOverlay.setClickable(true);
 
   var card = new android.widget.LinearLayout(context);
@@ -205,14 +205,14 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
 
   var titleTv = new android.widget.TextView(context);
   titleTv.setText("岛上图标库");
-  titleTv.setTextColor(textColor);
+  toolhubSafeSetTextColor(titleTv, textColor);
   titleTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
   titleTv.setTypeface(null, android.graphics.Typeface.BOLD);
   titleBox.addView(titleTv);
 
   var countTv = new android.widget.TextView(context);
   countTv.setText("共 " + catalog.length + " 个图标");
-  countTv.setTextColor(subTextColor);
+  toolhubSafeSetTextColor(countTv, subTextColor);
   countTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
   titleBox.addView(countTv);
   header.addView(titleBox);
@@ -228,8 +228,8 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
 
   var searchEt = new android.widget.EditText(context);
   searchEt.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
-  searchEt.setTextColor(textColor);
-  try { searchEt.setHintTextColor(subTextColor);  } catch(eHint) { safeLog(null, 'e', "catch " + String(eHint)); }
+  toolhubSafeSetTextColor(searchEt, textColor);
+  try { toolhubSafeSetHintTextColor(searchEt, subTextColor);  } catch(eHint) { safeLog(null, 'e', "catch " + String(eHint)); }
   searchEt.setHint("寻找岛上图标，如 share / home");
   searchEt.setSingleLine(true);
   searchEt.setFocusable(true);
@@ -267,7 +267,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
         var item = filterViews[i];
         if (!item || !item.view) continue;
         var active = item.name === popupState.filter;
-        item.view.setTextColor(active ? T.onPrimary : T.primary);
+        toolhubSafeSetTextColor(item.view, active ? T.onPrimary : T.primary);
         item.view.setTypeface(null, active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
         item.view.setBackground(self.ui.createStrokeDrawable(active ? T.primary : T.primaryContainer, self.withAlpha(T.primary, active ? 0.36 : 0.18), self.dp(1), self.dp(16)));
       }
@@ -318,7 +318,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   pageBar.addView(btnPrev, new android.widget.LinearLayout.LayoutParams(self.dp(78), self.dp(48)));
 
   var pageInfo = new android.widget.TextView(context);
-  pageInfo.setTextColor(self.withAlpha(textColor, 0.76));
+  toolhubSafeSetTextColor(pageInfo, self.withAlpha(textColor, 0.76));
   pageInfo.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   pageInfo.setGravity(android.view.Gravity.CENTER);
   pageInfo.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
@@ -352,7 +352,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   card.addView(selectRow, selectRowLp);
 
   var selectNameTv = new android.widget.TextView(context);
-  selectNameTv.setTextColor(textColor);
+  toolhubSafeSetTextColor(selectNameTv, textColor);
   selectNameTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
   selectNameTv.setSingleLine(true);
   try { selectNameTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eEll) {}
@@ -398,7 +398,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
       if (pageItems.length === 0) {
         var emptyTv = new android.widget.TextView(context);
         emptyTv.setText(popupState.filter === "收藏" ? "收藏夹还空着，点图标左上角星标收藏" : "没有找到这枚小图标");
-        emptyTv.setTextColor(subTextColor);
+        toolhubSafeSetTextColor(emptyTv, subTextColor);
         emptyTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         emptyTv.setGravity(android.view.Gravity.CENTER);
         emptyTv.setPadding(0, self.dp(60), 0, self.dp(60));
@@ -438,12 +438,12 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           tv.setMaxLines(1);
           try { tv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eTvEll) {}
           tv.setPadding(self.dp(2), self.dp(5), self.dp(2), 0);
-          tv.setTextColor(isSelected ? T.primary : subTextColor);
+          toolhubSafeSetTextColor(tv, isSelected ? T.primary : subTextColor);
           cell.addView(tv, new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
 
           var favBtn = new android.widget.TextView(context);
           favBtn.setText(isFavoriteIcon(item.name) ? "★" : "☆");
-          favBtn.setTextColor(isFavoriteIcon(item.name) ? T.primary : self.withAlpha(T.primary, 0.52));
+          toolhubSafeSetTextColor(favBtn, isFavoriteIcon(item.name) ? T.primary : self.withAlpha(T.primary, 0.52));
           favBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
           favBtn.setGravity(android.view.Gravity.CENTER);
           favBtn.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -467,7 +467,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
           if (isSelected) {
             var badge = new android.widget.TextView(context);
             badge.setText("✓");
-            badge.setTextColor(T.onPrimary);
+            toolhubSafeSetTextColor(badge, T.onPrimary);
             badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
             badge.setGravity(android.view.Gravity.CENTER);
             badge.setTypeface(null, android.graphics.Typeface.BOLD);

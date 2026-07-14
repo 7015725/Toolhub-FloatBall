@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -348,12 +348,12 @@ FloatBallAppWM.prototype.showPanelPredictiveBackIndicator = function(edge) {
       v.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 30);
       v.setTypeface(null, android.graphics.Typeface.BOLD);
       v.setGravity(android.view.Gravity.CENTER);
-      v.setTextColor(android.graphics.Color.WHITE);
+      toolhubSafeSetTextColor(v, android.graphics.Color.WHITE);
       try {
         var bg = new android.graphics.drawable.GradientDrawable();
         bg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
         var c = (this.ui && this.ui.colors && this.ui.colors.primary) ? this.ui.colors.primary : android.graphics.Color.parseColor("#005BC0");
-        bg.setColor(this.withAlpha ? this.withAlpha(c, 0.92) : c);
+        toolhubSafeSetColor(bg, this.withAlpha ? this.withAlpha(c, 0.92) : c);
         v.setBackground(bg);
         v.setElevation(this.dp(12));
       } catch (eBg) {}
@@ -689,8 +689,8 @@ FloatBallAppWM.prototype.showMask = function() {
   var mask = new android.widget.FrameLayout(context);
 
   // 遮罩层背景：轻微的黑色半透明，提升层次感
-  try { mask.setBackgroundColor(android.graphics.Color.parseColor("#33000000")); } catch (e0) {
-      mask.setBackgroundColor(0x33000000);
+  try { toolhubSafeSetBackgroundColor(mask, android.graphics.Color.parseColor("#33000000")); } catch (e0) {
+      toolhubSafeSetBackgroundColor(mask, 0x33000000);
   }
 
   mask.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
