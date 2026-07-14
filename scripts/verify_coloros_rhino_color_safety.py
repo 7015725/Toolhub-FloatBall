@@ -23,6 +23,8 @@ for token in (
     "new android.graphics.drawable.RippleDrawable",
     "ColorStateList.valueOf(",
     "android.content.res.ColorStateList.valueOf(",
+    "android.R.attr.selectableItemBackground",
+    "android.R.attr.selectableItemBackgroundBorderless",
 ):
     if token in ALL_JS:
         errors.append("forbidden framework ripple token remains: %s" % token)
@@ -42,6 +44,9 @@ for token in (
 
 if "StateListDrawable" not in THEME or "updateBallContentBackground" not in THEME:
     errors.append("ball background is not protected by StateListDrawable")
+for token in ("createPressedStateDrawable", "createTransparentPressedStateDrawable"):
+    if token not in THEME:
+        errors.append("stable pressed-state helper missing: %s" % token)
 if "StateListDrawable" not in MAIN or "createMainPanelRippleBackground" not in MAIN:
     errors.append("main panel card background is not protected by StateListDrawable")
 
@@ -54,9 +59,9 @@ else:
         if token in block:
             errors.append("unsafe overloaded color channel call remains in _th_argb: %s" % token)
 
-if module_version(THEME, "th_04_theme.js") < (1, 0, 3):
-    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.4")
-if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 6):
+if module_version(THEME, "th_04_theme.js") < (1, 0, 5):
+    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.5")
+if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 7):
     errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.7")
 
 if errors:
