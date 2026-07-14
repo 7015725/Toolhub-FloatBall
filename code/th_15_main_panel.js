@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // ToolHub - 主按钮面板第一阶段：顶部工具栏、自适应网格、安全区域与方向动画
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
@@ -568,4 +568,3 @@ FloatBallAppWM.prototype.animateMainPanelExit = function(panel, endFn) {
   }
   return false;
 };
-

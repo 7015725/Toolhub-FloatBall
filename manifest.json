@@ -110,9 +110,9 @@
       "version": "1.1.12"
     },
     "th_15_main_panel.js": {
-      "sha256": "22a9a670a2a5b9053b4559bba3a6800b7755d67936ff1257ff95dce3f2ecbb47",
-      "size": 25967,
-      "version": "1.0.0"
+      "sha256": "621abddacece728227478d74cdb2d7e6619bbe091b0fc2e1c6be0d066a6580a2",
+      "size": 25966,
+      "version": "1.0.1"
     },
     "th_16_entry.js": {
       "sha256": "64b7bc7c0a16667536dabaa9bedbb8b0d36f57ad9efb78790809446adf2975ae",
@@ -156,5 +156,5 @@
     "title": "重构主按钮面板第一阶段"
   },
   "schema": 3,
-  "version": 20260714001117
+  "version": 20260714002800
 }
