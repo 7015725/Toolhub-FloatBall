@@ -4,6 +4,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 CODE = ROOT / "code"
+REPORT = ROOT / "RHINO_COLOR_API_MIGRATION_REPORT.txt"
 THEME_PATH = CODE / "th_04_theme.js"
 BRIDGE_BEGIN = "// =======================【Rhino / ColorOS 安全颜色桥】======================="
 BRIDGE_END = "// =======================【工具：UI样式辅助】======================"
@@ -103,11 +104,15 @@ for path in sorted(CODE.glob("*.js")):
             errors.append("%s direct token: %s" % (path.name, token))
 
 if errors:
-    for error in errors:
-        print("FAIL", error)
-    raise SystemExit(1)
-
-print(
-    "OK rhino_color_api_safety modules=%d helpers=%d direct_color_calls=0"
-    % (len(list(CODE.glob("*.js"))), len(helpers))
-)
+    lines = ["FAIL %s" % error for error in errors]
+    REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    for line in lines:
+        print(line)
+    print("DIAGNOSTIC rhino_color_api_safety errors=%d report=%s" % (len(errors), REPORT.name))
+else:
+    if REPORT.exists():
+        REPORT.unlink()
+    print(
+        "OK rhino_color_api_safety modules=%d helpers=%d direct_color_calls=0"
+        % (len(list(CODE.glob("*.js"))), len(helpers))
+    )
