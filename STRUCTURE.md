@@ -80,7 +80,7 @@ Toolhub-FloatBall/
     └── ... 其他专项回归脚本
 ```
 
-当前实际加载 **27 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，主按钮面板第一阶段由 `th_15_main_panel.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
+当前实际加载 **27 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
 
 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而保留的历史编号；本仓库延续现有文件名，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
 
@@ -234,7 +234,7 @@ th_19_position_state.js
 | `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
 | `th_14_schema_editor.js` | 设置结构编辑器 |
 | `th_15_extra.js` | 查看器面板、通用面板定位与显示、ToolApp Shell、页面栈、响应式布局、左右滑返回预览 |
-| `th_15_main_panel.js` | 主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页提示、方向展开/退出动画和实时运行状态 |
+| `th_15_main_panel.js` | 主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页提示、方向展开/退出动画、实时运行状态和显式编辑模式拖动排序 |
 | `th_16_entry.js` | 主线程同步、广播注册、实例注册、`startAsync`、`close`、`dispose`、设置页重启 |
 | `th_17_pointer.js` | 屏幕指针、悬停取字、取字就绪视觉状态、框选区域、小框回退取字、OCR rect 输出 |
 | `th_18_pointer_ocr.js` | 框选截图 OCR 处理、截图区域覆盖层、OCR 任务衔接、指针边框颜色状态补充 |
@@ -299,8 +299,9 @@ state
 
 主面板 panel
 ├── 固定顶部工具栏
+│   └── 普通模式 / 布局编辑模式（取消、保存）
 ├── ScrollView
-│   └── GridLayout 自适应按钮网格
+│   └── GridLayout 自适应按钮网格 / 拖动排序
 └── 分页圆点 / 底部把手
 
 遮罩 mask
