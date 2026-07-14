@@ -3,51 +3,164 @@ name: verify
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  main-panel:
-    name: main-panel-${{ matrix.script }}
+  verify:
+    name: verify
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        script:
-          - verify_main_panel_runtime_status.py
-          - verify_main_panel_drag_sort.py
-          - verify_main_panel_more_menu.py
-          - verify_main_panel_paging.py
-          - verify_main_panel_adaptive_layout.py
-          - verify_panel_layout_settings_cleanup.py
-          - verify_legacy_main_panel_cleanup.py
-          - verify_main_panel_grid_sizing.py
-          - verify_main_panel_visual_tuning.py
-          - verify_main_panel_close_lifecycle.py
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          show-progress: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - name: Run main panel check
-        run: python3 scripts/${{ matrix.script }}
+      - name: Verify module boundaries
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/verify_module_boundaries.py 2>&1 | tee module-boundary-report.txt
 
-# Contract markers retained for validators during matrix diagnosis:
-# python3 scripts/verify_main_panel_runtime_status.py
-# python3 scripts/verify_main_panel_drag_sort.py
-# python3 scripts/verify_main_panel_more_menu.py
-# python3 scripts/verify_main_panel_paging.py
-# python3 scripts/verify_main_panel_adaptive_layout.py
-# python3 scripts/verify_panel_layout_settings_cleanup.py
-# python3 scripts/verify_legacy_main_panel_cleanup.py
-# python3 scripts/verify_main_panel_grid_sizing.py
-# python3 scripts/verify_main_panel_visual_tuning.py
-# python3 scripts/verify_main_panel_close_lifecycle.py
+      - name: Upload module boundary report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-boundary-report
+          path: module-boundary-report.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify dead code audit
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md 2>&1 | tee dead-code-audit-log.txt
+
+      - name: Upload dead code audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dead-code-audit-report
+          path: |
+            DEAD_CODE_AUDIT.md
+            dead-code-audit-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify protected wrapper audit
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md 2>&1 | tee protected-wrapper-audit-log.txt
+
+      - name: Upload protected wrapper audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: protected-wrapper-audit-report
+          path: |
+            PROTECTED_WRAPPER_AUDIT.md
+            protected-wrapper-audit-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify th_15 standalone audit
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md 2>&1 | tee th15-extra-audit-log.txt
+
+      - name: Upload th_15 standalone audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: th15-extra-audit-report
+          path: |
+            TH15_EXTRA_AUDIT.md
+            th15-extra-audit-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify th_09 standalone audit
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md 2>&1 | tee th09-animation-audit-log.txt
+
+      - name: Upload th_09 standalone audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: th09-animation-audit-report
+          path: |
+            TH09_ANIMATION_AUDIT.md
+            th09-animation-audit-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Run ToolHub verification
+        shell: bash
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/verify_entry_redundancy_cleanup.py
+          python3 scripts/verify_entry_writable_probe.py
+          python3 scripts/verify_sqlite_storage.py
+          python3 scripts/verify_sqlite_debounce_race.py
+          python3 scripts/verify_ball_position_state.py
+          python3 scripts/verify_ball_rebuild_rollback.py
+          python3 scripts/verify_toolapp_layout.py
+          python3 scripts/verify_settings_color_scheme.py
+          python3 scripts/verify_legacy_theme_cleanup.py
+          python3 scripts/verify_settings_color_roles.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/verify_button_editor_layout.py
+          python3 scripts/verify_button_editor_direct_save.py
+          python3 scripts/verify_schema_validator.py
+          python3 scripts/verify_entry_lifecycle.py
+          python3 scripts/verify_atomic_update.py
+          python3 scripts/verify_release_transaction.py
+          python3 scripts/verify_startup_status.py
+          python3 scripts/verify_main_panel_runtime_status.py
+          python3 scripts/verify_main_panel_drag_sort.py
+          python3 scripts/verify_main_panel_more_menu.py
+          python3 scripts/verify_main_panel_paging.py
+          python3 scripts/verify_main_panel_adaptive_layout.py
+          python3 scripts/verify_panel_layout_settings_cleanup.py
+          python3 scripts/verify_legacy_main_panel_cleanup.py
+          python3 scripts/verify_main_panel_grid_sizing.py
+          python3 scripts/verify_main_panel_visual_tuning.py
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_update_security_mode.py
+          python3 scripts/verify_shell_bridge_security.py
+          python3 scripts/verify_shell_log_redaction.py
+          python3 scripts/verify_shortcut_security.py
+          python3 scripts/verify_content_security.py
+          python3 scripts/verify_module_versions.py
+          python3 scripts/verify_changed_module_versions.py
+          python3 scripts/verify_documentation_consistency.py
+          python3 scripts/verify_github_only_source.py
+          python3 scripts/verify_pointer_regressions.py
+          python3 scripts/verify_result_preview.py
+          python3 .github/scripts/verify_manifest_signature.py
+
+      - name: Check git whitespace
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags origin "${{ github.base_ref }}" --depth=1
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          else
+            git show --check --pretty=oneline --summary HEAD
