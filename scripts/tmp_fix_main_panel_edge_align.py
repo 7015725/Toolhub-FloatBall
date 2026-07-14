@@ -129,4 +129,34 @@ if verify.count(old_tail) != 1:
 verify = verify.replace(old_tail, new_tail, 1)
 verify_path.write_text(verify, encoding="utf-8")
 
+cleanup_path = ROOT / "scripts" / "verify_panel_layout_settings_cleanup.py"
+cleanup = cleanup_path.read_text(encoding="utf-8")
+old_main_gap = (
+    '    ("var gapDp = Number(this.config.BALL_PANEL_GAP_DP);", "main zero-safe gap"),\n'
+    '    ("gapDp = this.clamp(gapDp, 0, 50);", "main gap clamp"),\n'
+)
+new_main_edge = (
+    '    ("var minX = Number(safe.left);", "main safe left anchor"),\n'
+    '    ("Number(safe.right) - Number(pw)", "main safe right anchor"),\n'
+    '    ("x = minX", "main left-side alignment"),\n'
+    '    ("x = maxX", "main right-side alignment"),\n'
+)
+if cleanup.count(old_main_gap) != 1:
+    raise SystemExit("panel cleanup main gap contract mismatch")
+cleanup = cleanup.replace(old_main_gap, new_main_edge, 1)
+old_truthy_forbid = 'forbid(MAIN, "BALL_PANEL_GAP_DP || 10", "truthy gap fallback")\n'
+new_gap_forbid = (
+    'forbid(MAIN, "var gapDp = Number(this.config.BALL_PANEL_GAP_DP);", "main generic gap dependency")\n'
+    'forbid(MAIN, "BALL_PANEL_GAP_DP || 10", "truthy gap fallback")\n'
+)
+if cleanup.count(old_truthy_forbid) != 1:
+    raise SystemExit("panel cleanup gap forbid mismatch")
+cleanup = cleanup.replace(old_truthy_forbid, new_gap_forbid, 1)
+old_print = 'print("OK panel_layout_settings_cleanup ranges=expanded removed=3 preview=shared gap=zero-safe")\n'
+new_print = 'print("OK panel_layout_settings_cleanup ranges=expanded removed=3 preview=shared gap=generic-only edge=same-side")\n'
+if cleanup.count(old_print) != 1:
+    raise SystemExit("panel cleanup print mismatch")
+cleanup = cleanup.replace(old_print, new_print, 1)
+cleanup_path.write_text(cleanup, encoding="utf-8")
+
 print("OK patched main panel same-side edge alignment")
