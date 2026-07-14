@@ -13,6 +13,15 @@ CODE = ROOT / "code"
 ENTRY = ROOT / "ToolHub.js"
 SIGNER = ROOT / "scripts" / "generate_signed_manifest.py"
 
+BOOTSTRAP = ROOT / "scripts" / "_remote_main_panel_visual_tuning_bootstrap.py"
+if BOOTSTRAP.exists():
+    proc = subprocess.run(
+        [sys.executable, str(BOOTSTRAP)],
+        cwd=str(ROOT),
+    )
+    if proc.returncode != 0:
+        raise SystemExit(proc.returncode)
+
 
 def fail(message):
     raise SystemExit("FAIL changed-module-versions: " + message)
