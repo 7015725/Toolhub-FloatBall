@@ -1,5 +1,5 @@
-// @version 1.5.3
-// ToolHub - 主按钮面板第八阶段：同侧安全边缘对齐
+// @version 1.5.4
+// ToolHub - 主按钮面板第九阶段：首帧页恢复与内容防透出
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -896,17 +896,21 @@ FloatBallAppWM.prototype.scheduleMainPanelPageSnap = function(pageContext, delay
 FloatBallAppWM.prototype.restoreMainPanelPage = function(pageContext) {
   try {
     if (!pageContext || !pageContext.scroll) return false;
-    var saved = 0;
-    if (pageContext.editMode) saved = Number(this.state.mainPanelEditPageIndex || 0);
-    else saved = Number(this.state.mainPanelPageIndex || 0);
+    if (pageContext.initialPageReady === true || pageContext.initialPageScheduled === true) return true;
+
+    var saved = Number(pageContext.initialPage || 0);
+    if (pageContext.editMode) saved = Number(this.state.mainPanelEditPageIndex || saved);
+    else saved = Number(this.state.mainPanelPageIndex || saved);
     saved = this.clampMainPanelPageIndex(saved, pageContext.pageCount);
+    pageContext.initialPage = saved;
 
     var self = this;
     pageContext.scroll.post(new java.lang.Runnable({ run: function() {
       try {
         if (!self.state || self.state.mainPanelPagingContext !== pageContext) return;
         if (self.state.panel !== pageContext.panel || !self.state.addedPanel) return;
-        self.scrollMainPanelToPage(pageContext, saved, false, 'restore');
+        self.scrollMainPanelToPage(pageContext, saved, false, 'restore_fallback');
+        pageContext.initialPageReady = true;
       } catch (eRestore) {}
     }}));
     return true;
@@ -923,6 +927,17 @@ FloatBallAppWM.prototype.disposeMainPanelPaging = function(panel) {
     if (!pageContext) return false;
     if (panel && pageContext.panel !== panel) return false;
     this.cancelMainPanelPageSnap(pageContext);
+    try {
+      var initialPageListener = pageContext.initialPageListener;
+      var initialPageObserver = pageContext.scroll && pageContext.scroll.getViewTreeObserver
+        ? pageContext.scroll.getViewTreeObserver()
+        : null;
+      if (initialPageListener && initialPageObserver && initialPageObserver.isAlive()) {
+        initialPageObserver.removeOnPreDrawListener(initialPageListener);
+      }
+    } catch (eInitialDispose) {}
+    pageContext.initialPageListener = null;
+    pageContext.initialPageScheduled = false;
     pageContext.finishGeneration = Number(pageContext.finishGeneration || 0) + 1;
     pageContext.touching = false;
     pageContext.programmaticScroll = false;
@@ -1708,6 +1723,10 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   var pageCount = Math.max(1, Math.ceil(rows / visibleRows));
   var pageRows = pageCount * visibleRows;
   var fullGridHeight = pageRows * spec.rowUnit;
+  var initialPage = editMode
+    ? Number(this.state.mainPanelEditPageIndex || 0)
+    : Number(this.state.mainPanelPageIndex || 0);
+  initialPage = this.clampMainPanelPageIndex(initialPage, pageCount);
   var footerHeight = pageCount > 1
     ? spec.footerHeight
     : spec.singlePageFooterHeight;
@@ -1740,6 +1759,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   scroll.setFillViewport(false);
   scroll.setVerticalScrollBarEnabled(false);
   scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);
+  try { scroll.setBackgroundColor(this.withAlpha(panelBase, 1.0)); } catch (eViewportBg) {}
   scroll.setOnTouchListener(new android.view.View.OnTouchListener({ onTouch: function(v, event) {
     self.touchActivity();
     try {
@@ -1793,7 +1813,11 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
     dotViews: [],
     dotTargets: [],
     editMode: editMode,
-    activePage: 0,
+    activePage: initialPage,
+    initialPage: initialPage,
+    initialPageReady: initialPage === 0,
+    initialPageScheduled: false,
+    initialPageListener: null,
     touching: false,
     programmaticScroll: false,
     snapGeneration: 0,
@@ -1919,13 +1943,53 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
     }
     this.updateMainPanelPageDots(
       dotViews,
-      0,
+      initialPage,
       dotTargets,
       pageCount
     );
   }
   pageContext.dotViews = dotViews;
   pageContext.dotTargets = dotTargets;
+
+  if (initialPage > 0) {
+    try {
+      var initialPageObserver = scroll.getViewTreeObserver();
+      var initialPageListener = null;
+      initialPageListener = new android.view.ViewTreeObserver.OnPreDrawListener({ onPreDraw: function() {
+        try {
+          var activeObserver = scroll.getViewTreeObserver();
+          if (activeObserver && activeObserver.isAlive()) {
+            activeObserver.removeOnPreDrawListener(initialPageListener);
+          }
+        } catch (eInitialRemove) {}
+        pageContext.initialPageListener = null;
+        pageContext.initialPageScheduled = false;
+        try {
+          self.scrollMainPanelToPage(
+            pageContext,
+            pageContext.initialPage,
+            false,
+            'initial_pre_draw'
+          );
+          pageContext.initialPageReady = true;
+          scroll.invalidate();
+          return false;
+        } catch (eInitialRestore) {
+          pageContext.initialPageReady = true;
+          safeLog(self.L, 'w', 'main panel initial page pre-draw fail: ' + String(eInitialRestore));
+        }
+        return true;
+      }});
+      if (initialPageObserver && initialPageObserver.isAlive()) {
+        initialPageObserver.addOnPreDrawListener(initialPageListener);
+        pageContext.initialPageListener = initialPageListener;
+        pageContext.initialPageScheduled = true;
+      }
+    } catch (eInitialObserver) {
+      pageContext.initialPageScheduled = false;
+      safeLog(this.L, 'w', 'main panel initial page observer fail: ' + String(eInitialObserver));
+    }
+  }
 
   if (pageCount > 1 && android.os.Build.VERSION.SDK_INT >= 23) {
     try {

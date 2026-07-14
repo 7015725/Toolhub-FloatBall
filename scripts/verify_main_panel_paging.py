@@ -38,8 +38,8 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.5.3":
-    fail("expected th_15_main_panel.js version 1.5.3")
+if not version or version.group(1) != "1.5.4":
+    fail("expected th_15_main_panel.js version 1.5.4")
 
 methods = (
     "clampMainPanelPageIndex",
@@ -80,7 +80,7 @@ for marker, label in (
     ("'touch_release'", "release snap"),
     ("'scroll_idle'", "fling idle snap"),
     ("'dot_click'", "dot navigation"),
-    ("'restore'", "page restore"),
+    ("'restore_fallback'", "page restore fallback"),
     ("dotTarget.setClickable(pageCount > 1)", "clickable dots"),
     ("dotTarget.setFocusable(pageCount > 1)", "focusable dots"),
     ("'第 ' + String(i + 1) + ' 页，共 '", "page accessibility description"),
@@ -88,6 +88,14 @@ for marker, label in (
     ("android.view.MotionEvent.ACTION_UP", "touch release"),
     ("android.view.MotionEvent.ACTION_CANCEL", "touch cancel"),
     ("self.restoreMainPanelPage(pageContext)", "attach restore"),
+    ("initialPage = this.clampMainPanelPageIndex(initialPage, pageCount)", "saved page determined during build"),
+    ("initialPageReady: initialPage === 0", "first-page ready state"),
+    ("new android.view.ViewTreeObserver.OnPreDrawListener", "pre-draw page restore"),
+    ("removeOnPreDrawListener(initialPageListener)", "one-shot pre-draw cleanup"),
+    ("'initial_pre_draw'", "pre-draw restore reason"),
+    ("return false", "wrong first frame cancellation"),
+    ("restore_fallback", "attach restore fallback"),
+    ("initialPageObserver.removeOnPreDrawListener(initialPageListener)", "detach pre-draw cleanup"),
     ("self.disposeMainPanelPaging(panel)", "detach cleanup"),
     ("self.scheduleMainPanelPageSnap(pageContext, 60, 'edit_render')", "edit rerender alignment"),
 ):
@@ -121,8 +129,8 @@ for fragment, label in (
 ):
     forbid(paging_source, fragment, label)
 
-require(RUNTIME_VERIFY, 'version.group(1) != "1.5.3"', "runtime verifier current version")
-require(DRAG_VERIFY, 'version.group(1) != "1.5.3"', "drag verifier current version")
+require(RUNTIME_VERIFY, 'version.group(1) != "1.5.4"', "runtime verifier current version")
+require(DRAG_VERIFY, 'version.group(1) != "1.5.4"', "drag verifier current version")
 require(WORKFLOW, "python3 scripts/verify_main_panel_paging.py", "workflow paging verification")
 require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260714081104;", "unchanged entry version")
 
