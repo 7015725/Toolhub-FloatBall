@@ -1,4 +1,4 @@
-name: Diagnose ColorOS press safety
+name: Diagnose Rhino color safety
 
 on:
   pull_request:
@@ -19,32 +19,25 @@ jobs:
           ref: fix/coloros-press-feedback-safety-corrective-20260715
           fetch-depth: 0
 
-      - name: Fetch main
-        run: git fetch --no-tags origin main
+      - name: Capture Rhino color safety output
+        id: capture
+        continue-on-error: true
+        shell: bash
+        run: |
+          python3 scripts/verify_rhino_color_api_safety.py > agent_rhino_color_safety.log 2>&1
+          rc=$?
+          cat agent_rhino_color_safety.log
+          exit "$rc"
 
-      - name: Changed module versions
-        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+      - name: Upload Rhino diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rhino-color-safety-diagnostics
+          path: agent_rhino_color_safety.log
+          if-no-files-found: error
+          retention-days: 1
 
-      - name: ColorOS safety
-        run: python3 scripts/verify_coloros_rhino_color_safety.py
-
-      - name: Rhino color safety
-        run: python3 scripts/verify_rhino_color_api_safety.py
-
-      - name: Settings color scheme
-        run: python3 scripts/verify_settings_color_scheme.py
-
-      - name: Settings color roles
-        run: python3 scripts/verify_settings_color_roles.py
-
-      - name: ToolApp layout
-        run: python3 scripts/verify_toolapp_layout.py
-
-      - name: ES5 scan
-        run: python3 .github/scripts/es5_scan.py
-
-      - name: JavaScript syntax
-        run: python3 scripts/verify_js_syntax.py
-
-      - name: Diff check
-        run: git diff --check
+      - name: Preserve failure status
+        if: steps.capture.outcome != 'success'
+        run: exit 1
