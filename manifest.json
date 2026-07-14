@@ -10,9 +10,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "73a0455d53db4d91c0326e9dc85bfb75523d2cea21a35fbeffd33aad8163c98d",
-      "size": 75710,
-      "version": "1.1.9"
+      "sha256": "42e93c63884c8ea37da3470f52358522ca5fc2325c518754d2bafa8aa471885e",
+      "size": 75271,
+      "version": "1.1.10"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -30,9 +30,9 @@
       "version": "1.0.2"
     },
     "th_05_persistence.js": {
-      "sha256": "9a075f329817e480e2d0001c3bb8c20643d444a1ab1c060a31f1da9b2c0636df",
-      "size": 16725,
-      "version": "1.0.5"
+      "sha256": "632361cfa4123574dfa8a21ed5c276b188c1b8bc7d1a4360825cae458ce60da6",
+      "size": 16655,
+      "version": "1.0.6"
     },
     "th_06_icon_parser.js": {
       "sha256": "25b95a5df634a7ee359f3ab798e4d3154a71c24016f7b4bf8a658096644b2484",
@@ -105,9 +105,9 @@
       "version": "1.0.3"
     },
     "th_15_extra.js": {
-      "sha256": "d8240d9c6f0eef555e08879dc164c068668c78c42ca8738eebc5153b35cf48f8",
-      "size": 123118,
-      "version": "1.1.14"
+      "sha256": "13a814e5743d598f07fbc239b5eb745fcb4285a66d4ff25aa200e3ebe67b6342",
+      "size": 113459,
+      "version": "1.1.15"
     },
     "th_15_main_panel.js": {
       "sha256": "b80dbd0671f23487bfef18108517c3646173cbb15504cde3ba91e07e0508e697",
@@ -115,9 +115,9 @@
       "version": "1.5.1"
     },
     "th_16_entry.js": {
-      "sha256": "64b7bc7c0a16667536dabaa9bedbb8b0d36f57ad9efb78790809446adf2975ae",
-      "size": 24276,
-      "version": "1.0.12"
+      "sha256": "eb2afe5ce373f6b4693975d4cfdbce150c3f11d318f2cfe4571fa51a1c11147c",
+      "size": 24791,
+      "version": "1.0.13"
     },
     "th_17_pointer.js": {
       "sha256": "662fc93ab55c3abbab4c6c7f79c74aee546d8d500278070a73b27d24e332040b",
@@ -148,11 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "移除无效位置设置，扩大自适应布局范围并统一主面板预览位置"
+      "清理旧主按钮面板回退代码"
     ],
-    "date": "2026-07-14",
-    "title": "清理无效面板设置并扩大布局范围"
+    "title": "清理旧主按钮面板回退代码"
   },
   "schema": 3,
-  "version": 20260714045556
+  "version": 20260714055946
 }
