@@ -34,7 +34,8 @@ docs/security-config-clean.md
 - Schema 使用递归关系节点保存数组、对象和选项。
 - 旧 JSON 文档表和配置文件会在迁移成功后删除。
 - ToolApp 设置页支持手机、横屏和平板宽屏布局。
-- 主按钮面板采用可配置自适应网格，宽度占比只用于确定列数预算，由卡片、精确间距和可视行数计算网格，再由网格决定面板宽高；WindowManager 使用同一精确尺寸，避免右侧额外空白；布局支持 35%～100% 宽度预算、最多 10 列、48～200dp 分列参考宽度和 48～160dp 按钮高度；主面板按悬浮球停靠边缘自动展开，球与面板距离支持 0dp；默认背景透明度为 0.92，并继续支持实时运行状态、拖动排序、分页吸附、新增和编辑按钮直接保存、单页隐藏分页圆点和关闭闪烁。
+- 主按钮面板采用可配置自适应网格：宽度占比只用于确定列数预算，网格根据卡片尺寸、精确间距和可视行数计算，面板与 WindowManager 使用同一精确宽高，避免右侧额外空白。
+- 主面板支持实时运行状态、拖动排序、分页吸附、新增和编辑按钮直接保存、单页隐藏分页圆点和关闭闪烁；默认背景透明度为 0.92。
 - 支持按钮搜索、筛选、启停、排序和编辑。
 - 支持悬浮球拖动唤出指针、悬停取字、小框回退和框选 OCR。
 - 支持 Android 返回键、预测性返回和 ToolApp 横向滑动返回。
@@ -183,10 +184,11 @@ updated_at
 
 ```text
 BALL_SIZE_DP          integer  45
-PANEL_BG_ALPHA        real     0.85
+PANEL_BG_ALPHA        real     0.92
+PANEL_WIDTH_PERCENT   integer  90
+BALL_PANEL_GAP_DP     integer  10
 ENABLE_ANIMATIONS     boolean  1
 BALL_POSITION_SIDE    text     right
-THEME_DAY_BG_HEX      null
 ```
 
 ### 按钮
@@ -381,6 +383,58 @@ storage engine=sqlite format=structured backend=sqlite-structured path=... exist
 
 ---
 
+## 主面板布局与吸边
+
+### 布局计算
+
+主面板采用“网格决定面板宽高”的尺寸链：
+
+```text
+安全区域与宽度占比
+        ↓
+计算可用宽度预算和实际列数
+        ↓
+计算卡片宽度、精确间距与网格宽高
+        ↓
+由网格反推面板宽高
+        ↓
+WindowManager 使用同一精确尺寸
+```
+
+宽度占比只决定可用预算，不会直接把面板拉伸到对应屏幕宽度。最后一行按钮不足一整行时，只保留正常的空网格槽位，不会额外扩大面板右侧。
+
+| 设置项 | 有效范围 | 默认值 | 说明 |
+|---|---:|---:|---|
+| 主面板宽度占比 | 35%～100% | 90% | 用于计算列数的宽度预算 |
+| 自动最大列数 | 1～10 | 6 | 实际列数仍受安全宽度和按钮宽度限制 |
+| 按钮最小宽度 | 48～200dp | 92dp | 自动分列使用的参考最小宽度 |
+| 按钮高度 | 48～160dp | 78dp | 卡片固定高度 |
+| 面板可视行数 | 1～10 | 4 | 超出后按页滚动 |
+| 按钮间距 | 4～24dp | 8dp | 奇数像素会拆分为前后精确间距 |
+| 面板内边距 | 8～32dp | 12dp | 参与最终面板宽度计算 |
+| 球与面板距离 | 0～50dp | 10dp | `0dp` 是有效配置，不会回退到默认值 |
+
+### 吸边设置
+
+- `停靠边缘` 和 `高度位置(%)` 决定悬浮球固定位置。
+- `吸边露出比例` 决定吸边状态下悬浮球保留在屏幕内的比例。
+- `启用空闲自动回边` 只控制空闲状态下的自动回边计时。
+- `无面板时回边延迟` 仅在没有面板显示时生效。
+- `面板显示时回边延迟` 只控制悬浮球回边，不会自动关闭主面板。
+- 主面板根据悬浮球停靠边缘自动选择展开方向，并在安全区域内完成最终裁剪。
+
+以下旧设置已从设置页和运行时语义中移除，启动规范化时会清理旧 SQLite 和旧 Schema 数据：
+
+```text
+面板默认位置
+手动垂直偏移
+保存位置节流
+```
+
+设置页预览与正式主面板共用同一套精确宽高和位置计算，保存布局参数后会按当前配置重新构建主面板。
+
+---
+
 ## 按钮动作
 
 | type | 行为 |
@@ -414,7 +468,8 @@ storage engine=sqlite format=structured backend=sqlite-structured path=... exist
 | `th_12_rebuild.js` | 配置变化后的重建 |
 | `th_13_panel_ui.js` | 设置项基础 UI |
 | `th_14_*` | 设置页、按钮编辑、图标、颜色和 Schema 编辑器 |
-| `th_15_extra.js` | 主面板、ToolApp Shell、页面栈和响应式布局 |
+| `th_15_extra.js` | ToolApp Shell、页面栈、面板显示和精确 WindowManager 尺寸 |
+| `th_15_main_panel.js` | 主按钮面板、自适应网格、分页、拖动排序和运行状态 |
 | `th_16_entry.js` | 启动、广播、关闭和资源释放 |
 | `th_17_pointer.js` | 指针、取字、框选和状态颜色 |
 | `th_18_pointer_ocr.js` | 截图 OCR 与覆盖层处理 |
@@ -451,7 +506,7 @@ storage engine=sqlite format=structured backend=sqlite-structured path=... exist
 
 ```bash
 python3 .github/scripts/es5_scan.py
-python3 scripts/verify_sqlite_persistence.py
+python3 scripts/verify_sqlite_storage.py
 python3 scripts/verify_manifest.py
 python3 .github/scripts/verify_manifest_signature.py
 ```
@@ -459,6 +514,18 @@ python3 .github/scripts/verify_manifest_signature.py
 ---
 
 ## 更新记录
+
+### 2026-07-14
+
+**完善主面板自适应布局与吸边设置**
+
+- 主面板改为由网格实际宽高反推面板和 WindowManager 精确尺寸，修复右侧额外空白。
+- 主面板宽度预算扩大为 35%～100%，自动最大列数扩大为 1～10。
+- 按钮分列参考宽度扩大为 48～200dp，按钮高度扩大为 48～160dp。
+- 球与面板距离支持有效的 `0dp` 配置。
+- 设置页预览复用正式主面板的尺寸和位置计算。
+- 清理“面板默认位置”“手动垂直偏移”“保存位置节流”三个无效设置。
+- 调整吸边设置名称，使文案与实际运行行为一致。
 
 ### 2026-07-13
 
