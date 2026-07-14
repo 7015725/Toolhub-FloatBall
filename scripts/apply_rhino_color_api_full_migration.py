@@ -19,6 +19,14 @@ TEMP_STEP = """      - name: Apply full Rhino color API migration
         run: python3 scripts/apply_rhino_color_api_full_migration.py
 
 """
+TEMP_CLEANUP = """      - name: Remove temporary color migration files
+        shell: bash
+        run: |
+          rm -f scripts/apply_rhino_color_api_full_migration.py
+          rm -f scripts/rhino_color_migration_lib.py
+          rm -f scripts/rhino_color_safe_helpers.inc
+
+"""
 
 
 def read(path):
@@ -51,6 +59,7 @@ def update_workflows():
 
     sign = read(SIGN_WORKFLOW)
     sign = sign.replace(TEMP_STEP, "", 1)
+    sign = sign.replace(TEMP_CLEANUP, "", 1)
     sign = sign.replace(
         "          git add -A\n",
         "          git add manifest.json manifest.sig ToolHub.js.sha256\n",
