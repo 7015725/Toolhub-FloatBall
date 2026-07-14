@@ -203,6 +203,7 @@ th_15_extra.js
 th_15_main_panel.js
   主按钮面板顶部工具栏、可配置自适应网格、安全区域避让、分页吸附与圆点导航、方向展开/退出动画、实时运行状态和显式编辑模式拖动排序。
 - 网格列数由安全宽度、`PANEL_WIDTH_PERCENT`、`PANEL_AUTO_MAX_COLS`、`PANEL_MIN_CARD_WIDTH_DP`、间距和内边距动态计算；`PANEL_CARD_HEIGHT_DP` 与 `PANEL_ROWS` 控制卡片高度和可视行数。
+- 设置加载时通过 `ConfigValidator.sanitizeConfig()` 规范化旧越界值并回写结构化 SQLite；旧默认透明度 `0.85` 一次性迁移到 `0.92`，其他自定义透明度保持不变。单页隐藏分页圆点并使用 8dp 底部留白，多页才创建圆点导航。
 - 主面板退出动画结束后，旧 View 先保持不可见，注销预测性返回时跳过视觉复位，再通过 `removeViewImmediate()` 移除；generation 只允许最新关闭事务清理共享状态。
 
 th_16_entry.js

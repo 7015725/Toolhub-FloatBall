@@ -1,4 +1,4 @@
-// @version 1.1.7
+// @version 1.1.8
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -145,7 +145,8 @@ var ConfigValidator = {
     PANEL_MIN_CARD_WIDTH_DP: { type: "int", min: 72, max: 160, default: 92 },
     PANEL_CARD_HEIGHT_DP: { type: "int", min: 56, max: 120, default: 78 },
     PANEL_ROWS: { type: "int", min: 1, max: 10, default: 4 },
-    PANEL_BG_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.85 },
+    PANEL_BG_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.92 },
+    PANEL_VISUAL_TUNING_VERSION: { type: "int", min: 0, max: 9999, default: 1 },
     PANEL_ICON_SIZE_DP: { type: "int", min: 16, max: 64, default: 24 },
     PANEL_GAP_DP: { type: "int", min: 4, max: 24, default: 8 },
     PANEL_PADDING_DP: { type: "int", min: 8, max: 32, default: 12 },
@@ -908,7 +909,8 @@ var ConfigManager = {
         PANEL_LABEL_ENABLED: true,
         PANEL_LABEL_TEXT_SIZE_SP: 12,
         PANEL_LABEL_TOP_MARGIN_DP: 4,
-        PANEL_BG_ALPHA: 0.85,
+        PANEL_BG_ALPHA: 0.92,
+        PANEL_VISUAL_TUNING_VERSION: 1,
         BALL_PANEL_GAP_DP: 10,
         LOG_ENABLE: true,
         LOG_DEBUG: true,
@@ -1225,6 +1227,30 @@ var ConfigManager = {
             } catch (e) {}
         }
 
+        // 主面板视觉微调迁移：
+        // 1. 仅把未迁移且仍等于旧默认值 0.85 的背景透明度提升为 0.92；
+        // 2. 用户主动设置的其他透明度保持不变；
+        // 3. 迁移标记是内部设置，不展示在 Schema 页面。
+        var panelVisualTuningDirty = false;
+        try {
+            var panelVisualTuningVersion = 0;
+            if (user && typeof user.PANEL_VISUAL_TUNING_VERSION !== "undefined") {
+                panelVisualTuningVersion = Number(user.PANEL_VISUAL_TUNING_VERSION);
+                if (isNaN(panelVisualTuningVersion)) panelVisualTuningVersion = 0;
+            }
+
+            if (!loaded) {
+                merged.PANEL_VISUAL_TUNING_VERSION = 1;
+            } else if (panelVisualTuningVersion < 1) {
+                var legacyPanelAlpha = Number(merged.PANEL_BG_ALPHA);
+                if (!isNaN(legacyPanelAlpha) &&
+                    Math.abs(legacyPanelAlpha - 0.85) < 0.000001) {
+                    merged.PANEL_BG_ALPHA = 0.92;
+                }
+                merged.PANEL_VISUAL_TUNING_VERSION = 1;
+                panelVisualTuningDirty = true;
+            }
+        } catch (ePanelVisualMigration) {}
 
         // 旧自由坐标或高/低预设一次性迁移为“左/右 + 单一高度百分比”。
         var positionMigrationDirty = false;
@@ -1292,10 +1318,28 @@ var ConfigManager = {
             }
         } catch (ePositionMigration) {}
 
-        if (loaded && positionMigrationDirty) {
+        // 先统一规范化，再决定是否回写。这样旧 SQLite 中的 5dp 内边距等
+        // 越界值不会继续在设置页显示为旧值、运行时却按下限生效。
+        var sanitizedSettings = ConfigValidator.sanitizeConfig(merged);
+        var settingsSanitizedDirty = false;
+        try {
+            settingsSanitizedDirty =
+                JSON.stringify(sanitizedSettings) !== JSON.stringify(merged);
+        } catch (eSanitizedCompare) {
+            settingsSanitizedDirty = false;
+        }
+
+        if (loaded && (
+            positionMigrationDirty ||
+            panelVisualTuningDirty ||
+            settingsSanitizedDirty
+        )) {
             try {
-                FileIO.writeTextAtomic(PATH_SETTINGS, JSON.stringify(merged, null, 2));
-            } catch (ePositionMigrationWrite) {}
+                FileIO.writeTextAtomic(
+                    PATH_SETTINGS,
+                    JSON.stringify(sanitizedSettings, null, 2)
+                );
+            } catch (eSettingsNormalizeWrite) {}
         }
 
         // # 仅当文件不存在时才写入默认值，避免因读取失败导致用户配置被覆盖
@@ -1304,12 +1348,15 @@ var ConfigManager = {
                  var f = new java.io.File(PATH_SETTINGS);
                  if (!f.exists()) {
                      // # 原子写：避免 settings.json 写一半导致配置损坏
-                     FileIO.writeTextAtomic(PATH_SETTINGS, JSON.stringify(merged, null, 2));
+                     FileIO.writeTextAtomic(
+                         PATH_SETTINGS,
+                         JSON.stringify(sanitizedSettings, null, 2)
+                     );
                  }
              } catch(e) {}
         }
 
-        this._settingsCache = ConfigValidator.sanitizeConfig(merged);
+        this._settingsCache = sanitizedSettings;
         return this._settingsCache;
     },
     saveSettings: function(obj) {
