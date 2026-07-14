@@ -61,6 +61,11 @@ def update_workflows():
     sign = sign.replace(TEMP_STEP, "", 1)
     sign = sign.replace(TEMP_CLEANUP, "", 1)
     sign = sign.replace(
+        "4189825+github-actions[bot]@users.noreply.github.com",
+        "41898282+github-actions[bot]@users.noreply.github.com",
+        1,
+    )
+    sign = sign.replace(
         "          git add -A\n",
         "          git add manifest.json manifest.sig ToolHub.js.sha256\n",
         1,
