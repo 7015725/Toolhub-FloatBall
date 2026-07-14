@@ -120,9 +120,9 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "9f6fe566c42dd7963daa4a8f638603a7a1b35ad63cec26327166cd1d765fe897",
-      "size": 151447,
-      "version": "1.2.3"
+      "sha256": "7aaa798c2c578144ca2042eea6988650d200a82970138e251ec6251dba124639",
+      "size": 163215,
+      "version": "1.2.4"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "dfe25b26e7365d9c92bb7f543ff42e5462fd7d65e6aa8bf80fa455a0efc33a37",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复签名任务版本校验历史拉取"
+      "修复指针绘制空白并增加自愈"
     ],
-    "title": "修复签名任务版本校验历史拉取"
+    "title": "修复指针绘制空白并增加自愈"
   },
   "schema": 3,
-  "version": 20260714153814
+  "version": 20260714164555
 }
