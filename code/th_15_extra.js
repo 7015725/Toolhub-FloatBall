@@ -1,4 +1,4 @@
-// @version 1.1.12
+// @version 1.1.13
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -1925,28 +1925,57 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
           resizeHandles = wrapped.handles;
       }
 
-      // # 限制面板最大高度
+      // # 主面板宽高由网格模型精确给出；其他面板继续使用通用 AT_MOST 测量。
       var maxH = Math.floor(self.state.screen.h * 0.75);
-      panelView.measure(
-        android.view.View.MeasureSpec.makeMeasureSpec(self.state.screen.w, android.view.View.MeasureSpec.AT_MOST),
-        android.view.View.MeasureSpec.makeMeasureSpec(maxH, android.view.View.MeasureSpec.AT_MOST)
-      );
+      var requestedLp = panelView.getLayoutParams();
+      var requestedWidth = Number(requestedLp && requestedLp.width || 0);
+      var requestedHeight = Number(requestedLp && requestedLp.height || 0);
+      var exactMainSize =
+        which === 'main' &&
+        requestedWidth > 0 &&
+        requestedHeight > 0;
+      var pw = 0;
+      var ph = 0;
 
-      var pw = panelView.getMeasuredWidth();
-      var ph = panelView.getMeasuredHeight();
-
-      // Load saved state
+      // Load saved state（主面板不支持拖拽缩放，不读取保存尺寸）。
       var savedState = null;
       if (enableDrag && self.loadPanelState) {
           savedState = self.loadPanelState(which);
       }
 
-      if (savedState && savedState.w && savedState.h) {
-          pw = savedState.w;
-          ph = savedState.h;
+      if (exactMainSize) {
+          panelView.measure(
+            android.view.View.MeasureSpec.makeMeasureSpec(
+              requestedWidth,
+              android.view.View.MeasureSpec.EXACTLY
+            ),
+            android.view.View.MeasureSpec.makeMeasureSpec(
+              requestedHeight,
+              android.view.View.MeasureSpec.EXACTLY
+            )
+          );
+          pw = requestedWidth;
+          ph = requestedHeight;
+          safeLog(self.L, 'd',
+            'main panel exact window size=' + String(pw) + 'x' + String(ph));
       } else {
-           // 显式设置面板高度
-          if (ph > maxH) {
+          panelView.measure(
+            android.view.View.MeasureSpec.makeMeasureSpec(
+              self.state.screen.w,
+              android.view.View.MeasureSpec.AT_MOST
+            ),
+            android.view.View.MeasureSpec.makeMeasureSpec(
+              maxH,
+              android.view.View.MeasureSpec.AT_MOST
+            )
+          );
+          pw = panelView.getMeasuredWidth();
+          ph = panelView.getMeasuredHeight();
+
+          if (savedState && savedState.w && savedState.h) {
+              pw = savedState.w;
+              ph = savedState.h;
+          } else if (ph > maxH) {
               ph = maxH;
           }
       }

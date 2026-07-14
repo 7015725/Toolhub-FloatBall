@@ -1,5 +1,5 @@
-// @version 1.4.1
-// ToolHub - 主按钮面板第五阶段微调：配置规范化、单页底部与背景可读性
+// @version 1.5.0
+// ToolHub - 主按钮面板第六阶段：网格决定面板宽高与精确窗口尺寸
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -41,7 +41,7 @@ FloatBallAppWM.prototype.getMainPanelSafeBounds = function() {
   };
 };
 
-FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function() {
+FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function(editMode) {
   var safe = this.getMainPanelSafeBounds();
   var density = Number(this.state && this.state.density ? this.state.density : 1);
   if (density <= 0 || isNaN(density)) density = 1;
@@ -99,66 +99,96 @@ FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function() {
     true
   );
 
-  // 面板宽度由安全区域百分比决定，不再使用手机/横屏/平板固定宽度断点。
-  var panelWidth = Math.floor(safe.width * widthPercent / 100);
+  // 宽度占比只定义可用预算，不再直接作为最终面板宽度。
+  var panelWidthBudget = Math.floor(safe.width * widthPercent / 100);
   var minimumPanelWidth = Math.min(safe.width, this.dp(220));
-  panelWidth = Math.min(
+  panelWidthBudget = Math.min(
     safe.width,
-    Math.max(minimumPanelWidth, panelWidth)
+    Math.max(minimumPanelWidth, panelWidthBudget)
   );
 
   var panelPadding = this.dp(paddingDp);
-  var minimumInnerWidth = this.dp(72);
+  var minimumGridWidth = this.dp(72);
   var maximumPadding = Math.max(
     this.dp(4),
-    Math.floor((panelWidth - minimumInnerWidth) / 2)
+    Math.floor((panelWidthBudget - minimumGridWidth) / 2)
   );
   if (panelPadding > maximumPadding) panelPadding = maximumPadding;
 
-  var gap = this.dp(gapDp);
-  var innerWidth = Math.max(
+  var gridWidthBudget = Math.max(
     1,
-    panelWidth - panelPadding * 2
+    panelWidthBudget - panelPadding * 2
   );
+  var gap = this.dp(gapDp);
+  var gapBefore = Math.floor(gap / 2);
+  var gapAfter = gap - gapBefore;
   var minCardWidth = this.dp(minCardWidthDp);
 
-  // 列数完全由当前可用宽度计算，再受用户设置的最大列数约束。
+  // 预算只负责确定列数；最终宽度由卡片和精确 margin 反推。
   var cols = Math.floor(
-    (innerWidth + gap) / (minCardWidth + gap)
+    (gridWidthBudget + gap) / (minCardWidth + gap)
   );
   if (cols < 1) cols = 1;
   if (cols > autoMaxCols) cols = autoMaxCols;
 
-  // 极窄窗口保护：即使设置了较大的最大列数，也不允许卡片小于基本触控宽度。
+  var minimumTouchWidth = this.dp(48);
+  var cardWidth = 0;
   while (cols > 1) {
-    var candidateWidth = Math.floor(innerWidth / cols) - gap;
-    if (candidateWidth >= this.dp(48)) break;
+    cardWidth = Math.floor(
+      (gridWidthBudget - cols * gap) / cols
+    );
+    if (cardWidth >= minimumTouchWidth) break;
     cols--;
   }
-
-  var cellArea = Math.floor(innerWidth / cols);
-  var cardWidth = Math.max(this.dp(48), cellArea - gap);
-  var usedGridWidth = cols * (cardWidth + gap);
-  var gridInset = Math.max(
-    0,
-    Math.floor((innerWidth - usedGridWidth) / 2)
+  cardWidth = Math.max(
+    minimumTouchWidth,
+    Math.floor((gridWidthBudget - cols * gap) / cols)
   );
 
+  // 工具栏只提供网格最低宽度；需要扩展时把差值平均分配给各列。
+  var toolbarMinGridWidth = Math.min(
+    gridWidthBudget,
+    this.dp(editMode === true ? 180 : 236)
+  );
+  var naturalGridWidth = cols * (cardWidth + gap);
+  if (naturalGridWidth < toolbarMinGridWidth) {
+    var expandedCardWidth = Math.ceil(
+      (toolbarMinGridWidth - cols * gap) / cols
+    );
+    var expandedGridWidth = cols * (expandedCardWidth + gap);
+    if (expandedGridWidth <= gridWidthBudget) {
+      cardWidth = expandedCardWidth;
+    }
+  }
+
+  var cellOuterWidth = cardWidth + gapBefore + gapAfter;
+  var gridWidth = cols * cellOuterWidth;
+  var panelWidth = panelPadding * 2 + gridWidth;
+
   var cardHeight = this.dp(cardHeightDp);
-  var rowUnit = cardHeight + gap;
+  var cellOuterHeight = cardHeight + gapBefore + gapAfter;
+  var rowUnit = cellOuterHeight;
   var headerHeight = this.dp(56);
   var footerHeight = this.dp(24);
+  var singlePageFooterHeight = this.dp(8);
+  var panelTopPadding = this.dp(8);
+  var panelBottomPadding = this.dp(8);
+  var dividerHeight = 1;
+  var dividerBottomMargin = this.dp(4);
   var maxPanelHeight = Math.min(
     safe.height,
     Math.max(this.dp(220), Math.floor(safe.height * 0.78))
   );
+  var fixedVerticalHeight =
+    panelTopPadding +
+    headerHeight +
+    dividerHeight +
+    dividerBottomMargin +
+    footerHeight +
+    panelBottomPadding;
   var maxGridHeight = Math.max(
     rowUnit,
-    maxPanelHeight -
-      headerHeight -
-      footerHeight -
-      panelPadding * 2 -
-      this.dp(8)
+    maxPanelHeight - fixedVerticalHeight
   );
 
   var configuredRows = readLayoutNumber(
@@ -178,8 +208,10 @@ FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function() {
 
   return {
     safe: safe,
-    layoutMode: 'adaptive',
+    layoutMode: 'adaptive_grid_sized',
     widthPercent: widthPercent,
+    panelWidthBudget: panelWidthBudget,
+    gridWidthBudget: gridWidthBudget,
     autoMaxCols: autoMaxCols,
     minCardWidth: minCardWidth,
     minCardWidthDp: minCardWidthDp,
@@ -188,13 +220,21 @@ FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function() {
     panelWidth: panelWidth,
     panelPadding: panelPadding,
     gap: gap,
-    gridInset: gridInset,
-    innerWidth: innerWidth,
+    gapBefore: gapBefore,
+    gapAfter: gapAfter,
+    gridWidth: gridWidth,
     cardWidth: cardWidth,
     cardHeight: cardHeight,
+    cellOuterWidth: cellOuterWidth,
+    cellOuterHeight: cellOuterHeight,
     rowUnit: rowUnit,
     headerHeight: headerHeight,
     footerHeight: footerHeight,
+    singlePageFooterHeight: singlePageFooterHeight,
+    panelTopPadding: panelTopPadding,
+    panelBottomPadding: panelBottomPadding,
+    dividerHeight: dividerHeight,
+    dividerBottomMargin: dividerBottomMargin,
     visibleRows: visibleRows,
     maxPanelHeight: maxPanelHeight,
     maxGridHeight: maxGridHeight,
@@ -1230,8 +1270,12 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
   var gp = new android.widget.GridLayout.LayoutParams();
   gp.width = spec.cardWidth;
   gp.height = spec.cardHeight;
-  var halfGap = Math.max(1, Math.floor(spec.gap / 2));
-  gp.setMargins(halfGap, halfGap, halfGap, halfGap);
+  gp.setMargins(
+    spec.gapBefore,
+    spec.gapBefore,
+    spec.gapAfter,
+    spec.gapAfter
+  );
   frame.setLayoutParams(gp);
   frame.setClickable(!item.empty);
   frame.setFocusable(!item.empty);
@@ -1428,7 +1472,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
-  var spec = this.getMainPanelResponsiveSpec();
+  var spec = this.getMainPanelResponsiveSpec(editMode);
   safeLog(this.L, 'd',
     'main panel adaptive layout cols=' + String(spec.cols) +
     ' widthPercent=' + String(spec.widthPercent) +
@@ -1455,7 +1499,12 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
 
   var panel = new android.widget.LinearLayout(context);
   panel.setOrientation(android.widget.LinearLayout.VERTICAL);
-  panel.setPadding(spec.panelPadding, this.dp(8), spec.panelPadding, this.dp(8));
+  panel.setPadding(
+    spec.panelPadding,
+    spec.panelTopPadding,
+    spec.panelPadding,
+    spec.panelBottomPadding
+  );
   panel.setBackground(this.ui.createStrokeDrawable(
     this.withAlpha(panelBase, alpha),
     this.withAlpha(outline, isDark ? 0.30 : 0.24),
@@ -1463,7 +1512,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
     this.dp(22)
   ));
   try { panel.setElevation(this.dp(isDark ? 3 : 6)); panel.setClipToOutline(true); } catch (ePanelElev) {}
-  panel.setLayoutParams(new android.view.ViewGroup.LayoutParams(spec.panelWidth, -2));
+  // 最终精确宽高在网格行数和页数确定后统一设置。
 
   var header = new android.widget.LinearLayout(context);
   header.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -1583,8 +1632,34 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
 
   var rows = Math.max(1, Math.ceil(items.length / spec.cols));
   var visibleRows = Math.min(rows, spec.visibleRows);
-  var gridHeight = visibleRows * spec.rowUnit;
+  var viewportHeight = visibleRows * spec.rowUnit;
+  var fullGridHeight = rows * spec.rowUnit;
   var pageCount = Math.max(1, Math.ceil(rows / visibleRows));
+  var footerHeight = pageCount > 1
+    ? spec.footerHeight
+    : spec.singlePageFooterHeight;
+  var panelHeight =
+    spec.panelTopPadding +
+    spec.headerHeight +
+    spec.dividerHeight +
+    spec.dividerBottomMargin +
+    viewportHeight +
+    footerHeight +
+    spec.panelBottomPadding;
+
+  panel.setLayoutParams(
+    new android.view.ViewGroup.LayoutParams(
+      spec.panelWidth,
+      panelHeight
+    )
+  );
+
+  safeLog(this.L, 'd',
+    'main panel grid sizing cols=' + String(spec.cols) +
+    ' grid=' + String(spec.gridWidth) + 'x' + String(fullGridHeight) +
+    ' viewport=' + String(spec.gridWidth) + 'x' + String(viewportHeight) +
+    ' panel=' + String(spec.panelWidth) + 'x' + String(panelHeight));
+
   var pageContext = null;
 
   var scroll = new android.widget.ScrollView(context);
@@ -1608,13 +1683,24 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
     } catch (ePageTouch) {}
     return false;
   }}));
-  panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, gridHeight));
+  panel.addView(
+    scroll,
+    new android.widget.LinearLayout.LayoutParams(
+      spec.gridWidth,
+      viewportHeight
+    )
+  );
 
   var grid = new android.widget.GridLayout(context);
   grid.setColumnCount(spec.cols);
-  try { grid.setPadding(spec.gridInset, 0, spec.gridInset, 0); } catch (eGridInset) {}
   try { grid.setRowCount(rows); } catch (eRows) {}
-  scroll.addView(grid, new android.widget.FrameLayout.LayoutParams(-1, -2));
+  scroll.addView(
+    grid,
+    new android.widget.FrameLayout.LayoutParams(
+      spec.gridWidth,
+      fullGridHeight
+    )
+  );
 
   pageContext = {
     panel: panel,
@@ -1623,7 +1709,9 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
     spec: spec,
     rows: rows,
     visibleRows: visibleRows,
-    gridHeight: gridHeight,
+    gridHeight: viewportHeight,
+    fullGridHeight: fullGridHeight,
+    panelHeight: panelHeight,
     pageCount: pageCount,
     dotViews: [],
     dotTargets: [],
@@ -1687,7 +1775,6 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
 
   // 单页没有分页语义，不创建绿色圆点；只保留 8dp 底部呼吸空间。
   // 多页才显示可点击圆点。旧灰色“把手”没有拖动行为，移除以免产生错误暗示。
-  var footerHeight = pageCount > 1 ? spec.footerHeight : this.dp(8);
   var footer = new android.widget.LinearLayout(context);
   footer.setOrientation(android.widget.LinearLayout.VERTICAL);
   footer.setGravity(android.view.Gravity.CENTER);
