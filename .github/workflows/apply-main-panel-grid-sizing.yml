@@ -1,0 +1,68 @@
+name: apply-main-panel-grid-sizing
+
+on:
+  push:
+    branches:
+      - fix/main-panel-grid-sized-window-20260714-1115
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: fix/main-panel-grid-sized-window-20260714-1115
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Apply grid-sized panel patch
+        run: python3 .github/scripts/apply_main_panel_grid_sizing.py
+
+      - name: Validate focused changes
+        run: |
+          node --check code/th_15_main_panel.js
+          node --check code/th_15_extra.js
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_main_panel_runtime_status.py
+          python3 scripts/verify_main_panel_drag_sort.py
+          python3 scripts/verify_main_panel_paging.py
+          python3 scripts/verify_main_panel_adaptive_layout.py
+          python3 scripts/verify_main_panel_grid_sizing.py
+          python3 scripts/verify_main_panel_visual_tuning.py
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_button_editor_direct_save.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_documentation_consistency.py
+          git diff --exit-code origin/main -- ToolHub.js
+          git diff --check
+
+      - name: Rebuild deterministic audits
+        run: |
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
+
+      - name: Remove bootstrap files
+        run: |
+          rm -f .github/scripts/apply_main_panel_grid_sizing.py
+          rm -f .github/workflows/apply-main-panel-grid-sizing.yml
+
+      - name: Commit formal changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "修复主面板网格与窗口尺寸不一致"
+          git push origin HEAD:fix/main-panel-grid-sized-window-20260714-1115
