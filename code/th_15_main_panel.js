@@ -1,5 +1,5 @@
-// @version 1.2.0
-// ToolHub - 主按钮面板第三阶段：显式编辑模式、拖动排序与事务保存
+// @version 1.3.0
+// ToolHub - 主按钮面板第四阶段：分页吸附、圆点导航与页码恢复
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
 
@@ -221,19 +221,31 @@ FloatBallAppWM.prototype.showMainPanelMoreMenu = function(anchorView) {
   return false;
 };
 
-FloatBallAppWM.prototype.updateMainPanelPageDots = function(dotViews, activeIndex) {
+FloatBallAppWM.prototype.updateMainPanelPageDots = function(dotViews, activeIndex, targetViews, pageCount) {
   try {
     if (!dotViews || !dotViews.length) return;
     var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
     var active = T && T.primary ? T.primary : this.ui.colors.primary;
     var inactive = T && T.outlineVariant ? this.withAlpha(T.outlineVariant, 0.42) : this.withAlpha(active, 0.28);
+    var count = Number(pageCount || dotViews.length || 1);
+    if (isNaN(count) || count < 1) count = dotViews.length || 1;
     for (var i = 0; i < dotViews.length; i++) {
-      var size = this.dp(i === activeIndex ? 7 : 5);
+      var selected = i === activeIndex;
+      var size = this.dp(selected ? 7 : 5);
       var lp = dotViews[i].getLayoutParams();
       lp.width = size;
       lp.height = size;
       dotViews[i].setLayoutParams(lp);
-      dotViews[i].setBackground(this.ui.createRoundDrawable(i === activeIndex ? active : inactive, Math.floor(size / 2)));
+      dotViews[i].setBackground(this.ui.createRoundDrawable(selected ? active : inactive, Math.floor(size / 2)));
+      try { dotViews[i].setSelected(selected); } catch (eSelected) {}
+      try {
+        if (targetViews && targetViews[i]) {
+          targetViews[i].setSelected(selected);
+          targetViews[i].setContentDescription(
+            '第 ' + String(i + 1) + ' 页，共 ' + String(count) + ' 页' + (selected ? '，当前页' : '')
+          );
+        }
+      } catch (eTarget) {}
     }
   } catch (e) {}
 };
@@ -489,6 +501,241 @@ FloatBallAppWM.prototype.startMainPanelRuntimeStatusTicker = function(panel) {
   return false;
 };
 
+
+
+FloatBallAppWM.prototype.clampMainPanelPageIndex = function(index, pageCount) {
+  var count = Number(pageCount || 1);
+  var value = Number(index || 0);
+  if (isNaN(count) || count < 1) count = 1;
+  if (isNaN(value)) value = 0;
+  value = Math.round(value);
+  if (value < 0) value = 0;
+  if (value >= count) value = count - 1;
+  return value;
+};
+
+FloatBallAppWM.prototype.getMainPanelPageHeight = function(pageContext) {
+  try {
+    if (!pageContext) return 1;
+    var visibleRows = Number(pageContext.visibleRows || 1);
+    var rowUnit = Number(pageContext.spec && pageContext.spec.rowUnit ? pageContext.spec.rowUnit : 1);
+    if (isNaN(visibleRows) || visibleRows < 1) visibleRows = 1;
+    if (isNaN(rowUnit) || rowUnit < 1) rowUnit = 1;
+    return Math.max(1, Math.floor(visibleRows * rowUnit));
+  } catch (e) {}
+  return 1;
+};
+
+FloatBallAppWM.prototype.getMainPanelPageMaxScrollY = function(pageContext) {
+  try {
+    if (!pageContext) return 0;
+    var rows = Number(pageContext.rows || 1);
+    var rowUnit = Number(pageContext.spec && pageContext.spec.rowUnit ? pageContext.spec.rowUnit : 1);
+    var viewport = Number(pageContext.gridHeight || 0);
+    if (isNaN(rows) || rows < 1) rows = 1;
+    if (isNaN(rowUnit) || rowUnit < 1) rowUnit = 1;
+    if (isNaN(viewport) || viewport < 0) viewport = 0;
+    return Math.max(0, Math.floor(rows * rowUnit - viewport));
+  } catch (e) {}
+  return 0;
+};
+
+FloatBallAppWM.prototype.getMainPanelPageIndexForScrollY = function(pageContext, scrollY) {
+  try {
+    if (!pageContext) return 0;
+    var y = Number(scrollY || 0);
+    if (isNaN(y)) y = 0;
+    var maxY = this.getMainPanelPageMaxScrollY(pageContext);
+    if (y < 0) y = 0;
+    if (y > maxY) y = maxY;
+    var pageHeight = this.getMainPanelPageHeight(pageContext);
+    return this.clampMainPanelPageIndex(Math.round(y / pageHeight), pageContext.pageCount);
+  } catch (e) {}
+  return 0;
+};
+
+FloatBallAppWM.prototype.rememberMainPanelPageIndex = function(pageContext, index) {
+  try {
+    if (!this.state || !pageContext) return false;
+    var value = this.clampMainPanelPageIndex(index, pageContext.pageCount);
+    if (pageContext.editMode) this.state.mainPanelEditPageIndex = value;
+    else this.state.mainPanelPageIndex = value;
+    pageContext.activePage = value;
+    return true;
+  } catch (e) {}
+  return false;
+};
+
+FloatBallAppWM.prototype.updateMainPanelPageNavigation = function(pageContext, scrollY) {
+  try {
+    if (!pageContext) return 0;
+    var active = this.getMainPanelPageIndexForScrollY(pageContext, scrollY);
+    this.rememberMainPanelPageIndex(pageContext, active);
+    this.updateMainPanelPageDots(
+      pageContext.dotViews,
+      active,
+      pageContext.dotTargets,
+      pageContext.pageCount
+    );
+    return active;
+  } catch (e) {
+    safeLog(this.L, 'w', 'update main panel page navigation fail: ' + String(e));
+  }
+  return 0;
+};
+
+FloatBallAppWM.prototype.cancelMainPanelPageSnap = function(pageContext) {
+  try {
+    var current = pageContext || (this.state ? this.state.mainPanelPagingContext : null);
+    if (!current) return false;
+    var runner = current.snapRunnable;
+    try {
+      if (runner && this.state && this.state.h) this.state.h.removeCallbacks(runner);
+    } catch (eRemove) {}
+    current.snapGeneration = Number(current.snapGeneration || 0) + 1;
+    current.snapRunnable = null;
+    return true;
+  } catch (e) {}
+  return false;
+};
+
+FloatBallAppWM.prototype.scrollMainPanelToPage = function(pageContext, index, animate, reason) {
+  try {
+    if (!pageContext || !pageContext.scroll) return false;
+    this.cancelMainPanelPageSnap(pageContext);
+
+    var page = this.clampMainPanelPageIndex(index, pageContext.pageCount);
+    var pageHeight = this.getMainPanelPageHeight(pageContext);
+    var maxY = this.getMainPanelPageMaxScrollY(pageContext);
+    var targetY = Math.min(maxY, Math.max(0, Math.floor(page * pageHeight)));
+
+    pageContext.programmaticScroll = true;
+    if (animate === true && pageContext.scroll.smoothScrollTo) {
+      pageContext.scroll.smoothScrollTo(0, targetY);
+    } else {
+      pageContext.scroll.scrollTo(0, targetY);
+    }
+
+    this.rememberMainPanelPageIndex(pageContext, page);
+    this.updateMainPanelPageDots(
+      pageContext.dotViews,
+      page,
+      pageContext.dotTargets,
+      pageContext.pageCount
+    );
+
+    var self = this;
+    var finishGeneration = Number(pageContext.finishGeneration || 0) + 1;
+    pageContext.finishGeneration = finishGeneration;
+    var finish = new java.lang.Runnable({ run: function() {
+      try {
+        if (!self.state || self.state.mainPanelPagingContext !== pageContext) return;
+        if (Number(pageContext.finishGeneration || 0) !== finishGeneration) return;
+        pageContext.programmaticScroll = false;
+        self.updateMainPanelPageNavigation(pageContext, pageContext.scroll.getScrollY());
+      } catch (eFinish) {}
+    }});
+    if (this.state && this.state.h) this.state.h.postDelayed(finish, animate === true ? 260 : 20);
+    else finish.run();
+
+    safeLog(this.L, 'd', 'main panel page scroll page=' + String(page) + ' reason=' + String(reason || ''));
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'scroll main panel to page fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.scheduleMainPanelPageSnap = function(pageContext, delayMs, reason) {
+  try {
+    if (!pageContext || Number(pageContext.pageCount || 1) <= 1) return false;
+    if (pageContext.touching === true) return false;
+    try {
+      if (this.state && this.state.mainPanelEditDrag && this.state.mainPanelEditDrag.started) return false;
+    } catch (eDrag) {}
+
+    this.cancelMainPanelPageSnap(pageContext);
+    var self = this;
+    var generation = Number(pageContext.snapGeneration || 0) + 1;
+    pageContext.snapGeneration = generation;
+    var delay = Number(delayMs || 0);
+    if (isNaN(delay) || delay < 40) delay = 40;
+
+    var runner = new java.lang.Runnable({ run: function() {
+      try {
+        if (!self.state || self.state.mainPanelPagingContext !== pageContext) return;
+        if (Number(pageContext.snapGeneration || 0) !== generation) return;
+        if (self.state.panel !== pageContext.panel || !self.state.addedPanel) return;
+        if (pageContext.touching === true) return;
+        if (self.state.mainPanelEditDrag && self.state.mainPanelEditDrag.started) return;
+
+        pageContext.snapRunnable = null;
+        var currentY = Number(pageContext.scroll.getScrollY() || 0);
+        var page = self.getMainPanelPageIndexForScrollY(pageContext, currentY);
+        var pageHeight = self.getMainPanelPageHeight(pageContext);
+        var maxY = self.getMainPanelPageMaxScrollY(pageContext);
+        var targetY = Math.min(maxY, Math.max(0, Math.floor(page * pageHeight)));
+
+        if (Math.abs(targetY - currentY) <= 1) {
+          self.updateMainPanelPageNavigation(pageContext, currentY);
+          return;
+        }
+        self.scrollMainPanelToPage(pageContext, page, true, reason || 'snap');
+      } catch (eRun) {
+        safeLog(self.L, 'w', 'main panel page snap fail: ' + String(eRun));
+      }
+    }});
+
+    pageContext.snapRunnable = runner;
+    if (this.state && this.state.h) this.state.h.postDelayed(runner, delay);
+    else runner.run();
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'schedule main panel page snap fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.restoreMainPanelPage = function(pageContext) {
+  try {
+    if (!pageContext || !pageContext.scroll) return false;
+    var saved = 0;
+    if (pageContext.editMode) saved = Number(this.state.mainPanelEditPageIndex || 0);
+    else saved = Number(this.state.mainPanelPageIndex || 0);
+    saved = this.clampMainPanelPageIndex(saved, pageContext.pageCount);
+
+    var self = this;
+    pageContext.scroll.post(new java.lang.Runnable({ run: function() {
+      try {
+        if (!self.state || self.state.mainPanelPagingContext !== pageContext) return;
+        if (self.state.panel !== pageContext.panel || !self.state.addedPanel) return;
+        self.scrollMainPanelToPage(pageContext, saved, false, 'restore');
+      } catch (eRestore) {}
+    }}));
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'restore main panel page fail: ' + String(e));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.disposeMainPanelPaging = function(panel) {
+  try {
+    if (!this.state) return false;
+    var pageContext = this.state.mainPanelPagingContext;
+    if (!pageContext) return false;
+    if (panel && pageContext.panel !== panel) return false;
+    this.cancelMainPanelPageSnap(pageContext);
+    pageContext.finishGeneration = Number(pageContext.finishGeneration || 0) + 1;
+    pageContext.touching = false;
+    pageContext.programmaticScroll = false;
+    this.state.mainPanelPagingContext = null;
+    return true;
+  } catch (e) {
+    safeLog(this.L, 'w', 'dispose main panel paging fail: ' + String(e));
+  }
+  return false;
+};
 
 FloatBallAppWM.prototype.isMainPanelEditMode = function() {
   try {
@@ -1230,18 +1477,56 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   var visibleRows = Math.min(rows, spec.visibleRows);
   var gridHeight = visibleRows * spec.rowUnit;
   var pageCount = Math.max(1, Math.ceil(rows / visibleRows));
+  var pageContext = null;
 
   var scroll = new android.widget.ScrollView(context);
   scroll.setFillViewport(false);
   scroll.setVerticalScrollBarEnabled(false);
   scroll.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);
-  scroll.setOnTouchListener(new android.view.View.OnTouchListener({ onTouch: function() { self.touchActivity(); return false; }}));
+  scroll.setOnTouchListener(new android.view.View.OnTouchListener({ onTouch: function(v, event) {
+    self.touchActivity();
+    try {
+      if (pageContext) {
+        var action = event.getActionMasked();
+        if (action === android.view.MotionEvent.ACTION_DOWN) {
+          pageContext.touching = true;
+          self.cancelMainPanelPageSnap(pageContext);
+        } else if (action === android.view.MotionEvent.ACTION_UP ||
+                   action === android.view.MotionEvent.ACTION_CANCEL) {
+          pageContext.touching = false;
+          self.scheduleMainPanelPageSnap(pageContext, 90, 'touch_release');
+        }
+      }
+    } catch (ePageTouch) {}
+    return false;
+  }}));
   panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, gridHeight));
 
   var grid = new android.widget.GridLayout(context);
   grid.setColumnCount(spec.cols);
   try { grid.setRowCount(rows); } catch (eRows) {}
   scroll.addView(grid, new android.widget.FrameLayout.LayoutParams(-1, -2));
+
+  pageContext = {
+    panel: panel,
+    scroll: scroll,
+    grid: grid,
+    spec: spec,
+    rows: rows,
+    visibleRows: visibleRows,
+    gridHeight: gridHeight,
+    pageCount: pageCount,
+    dotViews: [],
+    dotTargets: [],
+    editMode: editMode,
+    activePage: 0,
+    touching: false,
+    programmaticScroll: false,
+    snapGeneration: 0,
+    finishGeneration: 0,
+    snapRunnable: null
+  };
+  this.state.mainPanelPagingContext = pageContext;
 
   var editContext = editMode ? {
     editMode: true,
@@ -1270,7 +1555,10 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
     }
     try {
       scroll.post(new java.lang.Runnable({ run: function() {
-        try { scroll.scrollTo(0, oldY); } catch (eRestoreY) {}
+        try {
+          scroll.scrollTo(0, oldY);
+          self.scheduleMainPanelPageSnap(pageContext, 60, 'edit_render');
+        } catch (eRestoreY) {}
       }}));
     } catch (ePostY) {}
     try {
@@ -1297,15 +1585,32 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   dots.setGravity(android.view.Gravity.CENTER);
   footer.addView(dots, new android.widget.LinearLayout.LayoutParams(-1, this.dp(14)));
   var dotViews = [];
+  var dotTargets = [];
   for (var p = 0; p < pageCount; p++) {
+    var dotTarget = new android.widget.FrameLayout(context);
+    dotTarget.setClickable(pageCount > 1);
+    dotTarget.setFocusable(pageCount > 1);
+    var targetLp = new android.widget.LinearLayout.LayoutParams(this.dp(24), this.dp(14));
+    dots.addView(dotTarget, targetLp);
+
     var pageDot = new android.view.View(context);
-    var pdLp = new android.widget.LinearLayout.LayoutParams(this.dp(5), this.dp(5));
-    pdLp.leftMargin = this.dp(3);
-    pdLp.rightMargin = this.dp(3);
-    dots.addView(pageDot, pdLp);
+    var pdLp = new android.widget.FrameLayout.LayoutParams(this.dp(5), this.dp(5), android.view.Gravity.CENTER);
+    dotTarget.addView(pageDot, pdLp);
     dotViews.push(pageDot);
+    dotTargets.push(dotTarget);
+
+    (function(pageIndex, targetView) {
+      targetView.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
+        self.touchActivity();
+        self.guardClick('main_page_dot_' + String(pageIndex), 180, function() {
+          self.scrollMainPanelToPage(pageContext, pageIndex, true, 'dot_click');
+        });
+      }}));
+    })(p, dotTarget);
   }
-  this.updateMainPanelPageDots(dotViews, 0);
+  pageContext.dotViews = dotViews;
+  pageContext.dotTargets = dotTargets;
+  this.updateMainPanelPageDots(dotViews, 0, dotTargets, pageCount);
 
   var handle = new android.view.View(context);
   handle.setBackground(this.ui.createRoundDrawable(this.withAlpha(secondaryText, 0.38), this.dp(2)));
@@ -1316,11 +1621,10 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   if (pageCount > 1 && android.os.Build.VERSION.SDK_INT >= 23) {
     try {
       scroll.setOnScrollChangeListener(new android.view.View.OnScrollChangeListener({ onScrollChange: function(v, sx, sy) {
-        var pageHeight = Math.max(1, visibleRows * spec.rowUnit);
-        var active = Math.round(Number(sy || 0) / pageHeight);
-        if (active < 0) active = 0;
-        if (active >= pageCount) active = pageCount - 1;
-        self.updateMainPanelPageDots(dotViews, active);
+        self.updateMainPanelPageNavigation(pageContext, sy);
+        if (!pageContext.touching && !pageContext.programmaticScroll) {
+          self.scheduleMainPanelPageSnap(pageContext, 170, 'scroll_idle');
+        }
       }}));
     } catch (eScrollListener) {}
   }
@@ -1330,12 +1634,14 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
   try {
     panel.addOnAttachStateChangeListener(new android.view.View.OnAttachStateChangeListener({
       onViewAttachedToWindow: function(v) {
+        try { self.restoreMainPanelPage(pageContext); } catch (eRestorePage) {}
         if (!editMode) {
           try { self.startMainPanelRuntimeStatusTicker(panel); } catch (eStartStatus) {}
         }
       },
       onViewDetachedFromWindow: function(v) {
         try { self.stopMainPanelRuntimeStatusTicker(panel); } catch (eStopStatus) {}
+        try { self.disposeMainPanelPaging(panel); } catch (eDisposePage) {}
         try { self.handleMainPanelEditPanelDetached(panel); } catch (eEditDetach) {}
       }
     }));
