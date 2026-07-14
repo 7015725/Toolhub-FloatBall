@@ -1,6 +1,6 @@
 # ToolHub-FloatBall 整体结构说明
 
-更新时间：2026-07-13
+更新时间：2026-07-14
 
 本文档用于整理 `7015725/Toolhub-FloatBall` 当前代码结构、启动链路、模块职责和主要状态流。项目运行环境为 **ShortX / Rhino ES5 JavaScript**，入口文件负责安全更新和模块加载，核心业务集中挂载到 `FloatBallAppWM.prototype`。
 
@@ -64,6 +64,7 @@ Toolhub-FloatBall/
 │   ├── th_14_icon_picker.js
 │   ├── th_14_schema_editor.js
 │   ├── th_15_extra.js
+│   ├── th_15_main_panel.js
 │   ├── th_16_entry.js
 │   ├── th_17_pointer.js
 │   ├── th_18_pointer_ocr.js
@@ -79,7 +80,7 @@ Toolhub-FloatBall/
     └── ... 其他专项回归脚本
 ```
 
-当前实际加载 **26 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
+当前实际加载 **27 个子模块**。`th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，主按钮面板第一阶段由 `th_15_main_panel.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
 
 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而保留的历史编号；本仓库延续现有文件名，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
 
@@ -232,7 +233,8 @@ th_19_position_state.js
 | `th_14_color_picker.js` | 颜色选择器：最近色、常用色、RGB、透明度、实时预览 |
 | `th_14_icon_picker.js` | ShortX 图标选择器：搜索、分页、收藏、最近、过滤、Overlay |
 | `th_14_schema_editor.js` | 设置结构编辑器 |
-| `th_15_extra.js` | 主面板构建、ToolApp Shell、页面栈、响应式布局、左右滑返回预览 |
+| `th_15_extra.js` | 查看器面板、通用面板定位与显示、ToolApp Shell、页面栈、响应式布局、左右滑返回预览 |
+| `th_15_main_panel.js` | 主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页提示和方向展开/退出动画 |
 | `th_16_entry.js` | 主线程同步、广播注册、实例注册、`startAsync`、`close`、`dispose`、设置页重启 |
 | `th_17_pointer.js` | 屏幕指针、悬停取字、取字就绪视觉状态、框选区域、小框回退取字、OCR rect 输出 |
 | `th_18_pointer_ocr.js` | 框选截图 OCR 处理、截图区域覆盖层、OCR 任务衔接、指针边框颜色状态补充 |
@@ -296,7 +298,10 @@ state
 └── ballContent
 
 主面板 panel
-└── GridLayout 按钮网格
+├── 固定顶部工具栏
+├── ScrollView
+│   └── GridLayout 自适应按钮网格
+└── 分页圆点 / 底部把手
 
 遮罩 mask
 └── 点击空白关闭所有面板
@@ -561,7 +566,7 @@ schema: 3
 version: 以当前 manifest.json 为准
 alg: SHA256withRSA
 keyId: toolhub-targets-20260703-rsa3072
-files: 26 个模块
+files: 27 个模块
 ```
 
 ---

@@ -113,6 +113,7 @@ shortx.getShortXDir()/
     │   ├── th_14_icon_picker.js
     │   ├── th_14_schema_editor.js
     │   ├── th_15_extra.js
+    │   ├── th_15_main_panel.js
     │   ├── th_16_entry.js
     │   ├── th_17_pointer.js
     │   ├── th_18_pointer_ocr.js

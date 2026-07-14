@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -78,19 +78,39 @@ FloatBallAppWM.prototype.hideMask = function() {
   this.state.addedMask = false;
 };
 
-FloatBallAppWM.prototype.hideMainPanel = function() {
+FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
   if (!this.state.addedPanel) return;
   if (!this.state.panel) return;
 
-  this.safeRemoveView(this.state.panel, "panel");
-  this.state.panel = null;
-  this.state.panelLp = null;
-  this.state.addedPanel = false;
+  var self = this;
+  var panel = this.state.panel;
 
-  this.hideMask();
-  this.touchActivity();
+  function finishHideMainPanel() {
+    try {
+      if (self.state.panel !== panel) return;
+      self.safeRemoveView(panel, "panel");
+      self.state.panel = null;
+      self.state.panelLp = null;
+      self.state.addedPanel = false;
+      self.state.mainPanelExitAnimating = false;
+      self.hideMask();
+      self.touchActivity();
+      self._clearHeavyCachesIfAllHidden("hideMainPanel");
+    } catch (eFinish) {
+      self.state.mainPanelExitAnimating = false;
+      safeLog(self.L, 'e', "finish hide main panel fail: " + String(eFinish));
+    }
+  }
 
-  this._clearHeavyCachesIfAllHidden("hideMainPanel");
+  if (immediate === true || this.state.closing || !this.config.ENABLE_ANIMATIONS || !this.animateMainPanelExit) {
+    try { panel.animate().cancel(); } catch (eCancel) {}
+    finishHideMainPanel();
+    return;
+  }
+
+  if (this.state.mainPanelExitAnimating) return;
+  this.state.mainPanelExitAnimating = true;
+  if (this.animateMainPanelExit(panel, finishHideMainPanel) !== true) finishHideMainPanel();
 };
 
 FloatBallAppWM.prototype.hideSettingsPanel = function() {
