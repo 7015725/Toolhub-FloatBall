@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -496,6 +496,40 @@ FloatBallAppWM.prototype.createButtonEditorCollapsibleSection = function(parent,
   lp.setMargins(0, this.dp(8), 0, this.dp(8));
   parent.addView(card, lp);
   return body;
+};
+
+
+FloatBallAppWM.prototype.commitButtonEditorChange = function(buttons, editIndex, buttonConfig) {
+  try {
+    var source = buttons || [];
+    var nextButtons = JSON.parse(JSON.stringify(source));
+    var nextButton = JSON.parse(JSON.stringify(buttonConfig || {}));
+    var idx = Number(editIndex);
+
+    if (idx === -1) {
+      nextButtons.push(nextButton);
+    } else {
+      if (isNaN(idx) || idx < 0 || idx >= nextButtons.length) {
+        throw "按钮索引已变化，请返回列表后重试";
+      }
+      nextButtons[idx] = nextButton;
+    }
+
+    var saveOk = ConfigManager.saveButtons(nextButtons);
+    if (saveOk === false) throw "按钮配置写入失败";
+
+    if (!this.panels) this.panels = {};
+    this.panels.main = JSON.parse(JSON.stringify(nextButtons));
+    this.state.tempButtons = JSON.parse(JSON.stringify(nextButtons));
+
+    safeLog(this.L, "i",
+      "button editor direct save mode=" + (idx === -1 ? "add" : "edit") +
+      " count=" + String(nextButtons.length));
+    return nextButtons;
+  } catch (e) {
+    safeLog(this.L, "e", "commit button editor change fail: " + String(e));
+    throw e;
+  }
 };
 
 FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
@@ -1306,7 +1340,17 @@ appWrap.addView(inputAppLaunchUser.view);
     btnCancelLp.rightMargin = self.dp(8);
     bottomBar.addView(btnCancel, btnCancelLp);
 
-    var btnSave = self.ui.createSolidButton(self, "先存起来", T.primary, T.onPrimary, function() {
+    var btnSave = self.ui.createSolidButton(self, "保存", T.primary, T.onPrimary, function() {
+        if (self.state.buttonEditorSaveRunning) return;
+        self.state.buttonEditorSaveRunning = true;
+
+        function finishButtonEditorSaveBusy() {
+            try { self.state.buttonEditorSaveRunning = false; } catch(eBusyFlag) {}
+            try { btnSave.setEnabled(true); btnSave.setAlpha(1.0); } catch(eBusyView) {}
+        }
+
+        try { btnSave.setEnabled(false); btnSave.setAlpha(0.56); } catch(eDisableSave) {}
+
         try {
             var newBtn = targetBtn;
             newBtn.title = inputTitle.getValue();
@@ -1407,30 +1451,34 @@ try {
                 }
             }
             if (!isValid) {
+                finishButtonEditorSaveBusy();
                 updateInlineNotice(editInlineNotice, validationMessage || "请补全必填项", "error");
                 try { scroll.post(new java.lang.Runnable({ run: function() { try { scroll.fullScroll(android.view.View.FOCUS_DOWN); } catch(eScrollNotice) {} } })); } catch(ePostNotice) {}
                 return;
             }
 
+            // 新增/编辑页的“保存”直接提交当前按钮事务。
+            // buttons 是列表页的 tempButtons 副本，因此此前尚未提交的排序、启停等修改
+            // 会与本次新增/编辑一起原子保存，避免返回列表后二次确认和状态分叉。
+            self.commitButtonEditorChange(buttons, editIdx, newBtn);
 
-
-            if (editIdx === -1) {
-                buttons.push(newBtn);
-            } else {
-                buttons[editIdx] = newBtn;
-            }
-
-            // # 编辑页只写入 tempButtons，最终由列表页“保存布置”统一落盘。
             self.state.keepBtnEditorState = true;
-
             self.state.editingButtonIndex = null;
-            setButtonEditorNotice("已暂存，请在列表页点击保存布置", "ok");
+            setButtonEditorNotice(
+                editIdx === -1
+                    ? "添加成功，主面板已更新"
+                    : "保存成功，主面板已更新",
+                "ok"
+            );
+            finishButtonEditorSaveBusy();
+
             if (self.state.toolAppActive && self.popToolAppPage) {
                 self.state.keepBtnEditorState = true;
-                self.popToolAppPage("button_edit_save");
+                self.popToolAppPage("button_edit_direct_save");
             } else refreshPanel();
         } catch (e) {
-            updateInlineNotice(editInlineNotice, "暂存失败: " + e, "error");
+            finishButtonEditorSaveBusy();
+            updateInlineNotice(editInlineNotice, "保存失败: " + e, "error");
             try { scroll.post(new java.lang.Runnable({ run: function() { try { scroll.fullScroll(android.view.View.FOCUS_DOWN); } catch(eScrollFail) {} } })); } catch(ePostFail) {}
         }
     });

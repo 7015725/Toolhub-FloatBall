@@ -186,6 +186,7 @@ th_14_button_icon_editor.js
 
 th_14_button_editor.js
   按钮管理紧凑列表、搜索筛选、状态 chip、更多菜单、排序模式、按钮编辑页、动作参数、保存校验与页面内反馈。
+- 按钮编辑页的“保存”通过 `ConfigManager.saveButtons()` 直接提交当前按钮事务，成功后同步 `panels.main` 与 `tempButtons`；列表页仍负责排序、启停、复制和删除的批量保存。
 
 th_14_color_picker.js
   颜色选择器：常用色、最近色、RGB、透明度、实时预览。
