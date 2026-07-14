@@ -11,6 +11,7 @@ HELPERS_PATH = SCRIPTS / "rhino_color_safe_helpers.inc"
 VERIFY_WORKFLOW = ROOT / ".github" / "workflows" / "verify.yml"
 SIGN_WORKFLOW = ROOT / ".github" / "workflows" / "sign-toolhub.yml"
 DIAG_WORKFLOW = ROOT / ".github" / "workflows" / "diagnose-rhino-color-migration.yml"
+SETTINGS_ROLES_VERIFY = SCRIPTS / "verify_settings_color_roles.py"
 SELF_PATH = Path(__file__).resolve()
 
 BRIDGE_BEGIN = "// =======================【Rhino / ColorOS 安全颜色桥】======================="
@@ -54,6 +55,21 @@ def install_helpers():
         raise SystemExit("FAIL full-color-migration: helper marker missing")
     helpers = read(HELPERS_PATH).strip("\n")
     write(THEME_PATH, theme.replace(marker, helpers + "\n\n" + marker, 1))
+
+
+def update_validator_contracts():
+    text = read(SETTINGS_ROLES_VERIFY)
+    old_home = 'if "tv.setTextColor(T.onSurface);" not in home_header:'
+    new_home = 'if "toolhubSafeSetTextColor(tv, T.onSurface);" not in home_header:'
+    old_master = 'if "title.setTextColor(T.onSurface);" not in master:'
+    new_master = 'if "toolhubSafeSetTextColor(title, T.onSurface);" not in master:'
+    if old_home not in text and new_home not in text:
+        raise SystemExit("FAIL full-color-migration: settings home color contract missing")
+    if old_master not in text and new_master not in text:
+        raise SystemExit("FAIL full-color-migration: settings master color contract missing")
+    text = text.replace(old_home, new_home, 1)
+    text = text.replace(old_master, new_master, 1)
+    write(SETTINGS_ROLES_VERIFY, text)
 
 
 def update_workflows():
@@ -107,6 +123,7 @@ def main():
         raise SystemExit("FAIL full-color-migration: no modules changed")
 
     sync_version_contracts(SCRIPTS, SELF_PATH, changes)
+    update_validator_contracts()
     update_workflows()
     print("MIGRATION modules=%d" % len(changes))
 
