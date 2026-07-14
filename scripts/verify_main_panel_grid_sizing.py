@@ -29,7 +29,7 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(MAIN, "1.5.2", "th_15_main_panel.js")
+version(MAIN, "1.5.3", "th_15_main_panel.js")
 version(EXTRA, "1.1.15", "th_15_extra.js")
 
 for marker, label in (
@@ -47,6 +47,11 @@ for marker, label in (
     ("spec.gapBefore", "leading card margin"),
     ("spec.gapAfter", "trailing card margin"),
     ("main panel grid sizing cols=", "grid diagnostics"),
+    ("var minX = Number(safe.left)", "safe left anchor"),
+    ("Number(safe.right) - Number(pw)", "safe right anchor"),
+    ("x = minX", "left-side edge alignment"),
+    ("x = maxX", "right-side edge alignment"),
+    ("main panel edge align side=", "edge alignment diagnostics"),
 ):
     require(MAIN, marker, label)
 
@@ -54,6 +59,8 @@ for fragment, label in (
     ("grid.setPadding(spec.gridInset", "grid inset"),
     ("new android.widget.LinearLayout.LayoutParams(-1, gridHeight)", "match scroll"),
     ("new android.widget.FrameLayout.LayoutParams(-1, -2)", "match grid"),
+    ("Number(bx) + Number(ballSize) + gap", "ball-inside left anchor"),
+    ("Number(bx) - pw - gap", "ball-inside right anchor"),
 ):
     forbid(MAIN, fragment, label)
 
@@ -105,4 +112,16 @@ if full_grid_height - viewport_height != (page_count - 1) * viewport_height:
 if viewport_height != visible_rows * row_unit:
     fail("viewport height invariant")
 
-print("OK main_panel_grid_sizing width=grid height=whole-page viewport window=exact")
+safe_left = 12
+safe_right = 708
+original_panel_width = panel_width
+left_x = safe_left
+right_x = max(safe_left, safe_right - panel_width)
+if left_x != safe_left:
+    fail("left-side safe edge invariant")
+if right_x + panel_width != safe_right:
+    fail("right-side safe edge invariant")
+if panel_width != original_panel_width:
+    fail("edge alignment must not change panel width")
+
+print("OK main_panel_grid_sizing width=grid height=whole-page viewport window=exact edge=same-side")

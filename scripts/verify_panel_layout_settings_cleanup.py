@@ -33,7 +33,7 @@ def version(text, expected, name):
 
 version(BASE, "1.1.10", "th_01_base.js")
 version(PERSIST, "1.0.6", "th_05_persistence.js")
-version(MAIN, "1.5.2", "th_15_main_panel.js")
+version(MAIN, "1.5.3", "th_15_main_panel.js")
 version(EXTRA, "1.1.15", "th_15_extra.js")
 
 active_base = re.sub(
@@ -86,10 +86,13 @@ for marker, label in (
     ("    48,\n    200,\n    true\n  );\n  var cardHeightDp", "runtime card width range"),
     ("    48,\n    160,\n    true\n  );\n  var gapDp", "runtime card height range"),
     ("var minimumPanelWidth = Math.min(safe.width, this.dp(160));", "minimum panel budget"),
-    ("var gapDp = Number(this.config.BALL_PANEL_GAP_DP);", "main zero-safe gap"),
-    ("gapDp = this.clamp(gapDp, 0, 50);", "main gap clamp"),
+    ("var minX = Number(safe.left);", "main safe left anchor"),
+    ("Number(safe.right) - Number(pw)", "main safe right anchor"),
+    ("x = minX", "main left-side alignment"),
+    ("x = maxX", "main right-side alignment"),
 ):
     require(MAIN, marker, label)
+forbid(MAIN, "var gapDp = Number(this.config.BALL_PANEL_GAP_DP);", "main generic gap dependency")
 forbid(MAIN, "BALL_PANEL_GAP_DP || 10", "truthy gap fallback")
 
 extra_start = EXTRA.find("FloatBallAppWM.prototype.getBestPanelPosition = function")
@@ -127,4 +130,4 @@ require(EXTRA, "var viewerPos = self.getBestPanelPosition(", "viewer generic pos
 require(ENTRY, "app.getMainPanelResponsiveSpec", "entry adaptive layout status")
 
 require(WORKFLOW, "python3 scripts/verify_panel_layout_settings_cleanup.py", "workflow")
-print("OK panel_layout_settings_cleanup ranges=expanded removed=3 preview=shared gap=zero-safe")
+print("OK panel_layout_settings_cleanup ranges=expanded removed=3 preview=shared gap=generic-only edge=same-side")

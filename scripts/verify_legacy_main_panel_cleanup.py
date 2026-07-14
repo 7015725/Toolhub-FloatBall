@@ -30,7 +30,7 @@ def version(text, expected, name):
 version(BASE, "1.1.10", "th_01_base.js")
 version(PERSIST, "1.0.6", "th_05_persistence.js")
 version(EXTRA, "1.1.15", "th_15_extra.js")
-version(MAIN, "1.5.2", "th_15_main_panel.js")
+version(MAIN, "1.5.3", "th_15_main_panel.js")
 version(ENTRY, "1.0.13", "th_16_entry.js")
 
 removed_map = re.search(r"var REMOVED_SETTINGS_CONFIG_KEYS = \{(.*?)\};", BASE, re.S)
