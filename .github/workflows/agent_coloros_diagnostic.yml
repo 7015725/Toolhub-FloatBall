@@ -1,0 +1,50 @@
+name: Diagnose ColorOS press safety
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'fix/coloros-press-feedback-safety-corrective-20260715'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/coloros-press-feedback-safety-corrective-20260715
+          fetch-depth: 0
+
+      - name: Fetch main
+        run: git fetch --no-tags origin main
+
+      - name: Changed module versions
+        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: ColorOS safety
+        run: python3 scripts/verify_coloros_rhino_color_safety.py
+
+      - name: Rhino color safety
+        run: python3 scripts/verify_rhino_color_api_safety.py
+
+      - name: Settings color scheme
+        run: python3 scripts/verify_settings_color_scheme.py
+
+      - name: Settings color roles
+        run: python3 scripts/verify_settings_color_roles.py
+
+      - name: ToolApp layout
+        run: python3 scripts/verify_toolapp_layout.py
+
+      - name: ES5 scan
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: JavaScript syntax
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: Diff check
+        run: git diff --check
