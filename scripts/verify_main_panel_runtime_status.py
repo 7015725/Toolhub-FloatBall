@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 验证主按钮面板第二阶段实时运行状态与生命周期约束。
+# 验证主按钮面板实时运行状态、生命周期以及颜色安全修复后的模块版本契约。
 
 from pathlib import Path
 import re
