@@ -1,8 +1,8 @@
 # ToolHub 技术架构
 
-更新时间：2026-07-13
+更新时间：2026-07-14
 
-本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **26 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
+本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **27 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，主按钮面板第一阶段由 `th_15_main_panel.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
 
 ---
 
@@ -75,7 +75,7 @@ ballRoot / ballContent Touch
    └─ 打开主面板 panel
           │
           ▼
-      按钮网格
+      顶部工具栏 + 自适应按钮网格
           │
           └─ execButtonAction(btn, idx)
                  ├─ open_settings → ToolApp 设置
@@ -93,7 +93,7 @@ ballRoot / ballContent Touch
 
 ## 3. 模块分层
 
-当前实际加载 26 个子模块，入口 `modules[]` 顺序如下：
+当前实际加载 27 个子模块，入口 `modules[]` 顺序如下：
 
 ```text
 基础能力层
@@ -121,6 +121,7 @@ UI 基础与页面层
   th_14_icon_picker.js
   th_14_schema_editor.js
   th_15_extra.js
+  th_15_main_panel.js
 
 生命周期入口层
   th_16_entry.js
@@ -196,7 +197,10 @@ th_14_schema_editor.js
   设置结构编辑器。
 
 th_15_extra.js
-  主面板构建、ToolApp Shell、页面栈、响应式布局、左右滑返回预览。
+  查看器面板、通用面板定位与显示、ToolApp Shell、页面栈、响应式布局、左右滑返回预览。
+
+th_15_main_panel.js
+  主按钮面板顶部工具栏、自适应 2/3/4 列网格、安全区域避让、分页提示和方向展开/退出动画。
 
 th_16_entry.js
   runOnMainSync、registerReceiverOnMain、startAsync、close、dispose、实例注册、设置页重启与生命周期收尾。
