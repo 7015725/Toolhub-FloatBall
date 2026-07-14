@@ -38,8 +38,8 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.3.0":
-    fail("expected th_15_main_panel.js version 1.3.0")
+if not version or version.group(1) != "1.4.0":
+    fail("expected th_15_main_panel.js version 1.4.0")
 
 methods = (
     "clampMainPanelPageIndex",
@@ -112,8 +112,8 @@ for fragment, label in (
 ):
     forbid(paging_source, fragment, label)
 
-require(RUNTIME_VERIFY, 'version.group(1) != "1.3.0"', "runtime verifier current version")
-require(DRAG_VERIFY, 'version.group(1) != "1.3.0"', "drag verifier current version")
+require(RUNTIME_VERIFY, 'version.group(1) != "1.4.0"', "runtime verifier current version")
+require(DRAG_VERIFY, 'version.group(1) != "1.4.0"', "drag verifier current version")
 require(WORKFLOW, "python3 scripts/verify_main_panel_paging.py", "workflow paging verification")
 require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260714081104;", "unchanged entry version")
 

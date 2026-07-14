@@ -10,9 +10,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "debd69a87d1f1347710171994824df310295202aecde9ed57cc38990c4f3e346",
-      "size": 71803,
-      "version": "1.1.6"
+      "sha256": "549a2c6461430bf5631cc72184746efdda9ed0c0ed830b7ecdb5488419693ce4",
+      "size": 73822,
+      "version": "1.1.7"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -30,9 +30,9 @@
       "version": "1.0.2"
     },
     "th_05_persistence.js": {
-      "sha256": "b70d91fb82d2c9f4317522c9f66a6d29e080ee98633d2e39668a38b6be6f5c59",
-      "size": 15025,
-      "version": "1.0.3"
+      "sha256": "4cd4b723f3c5c3f56100c628e26b04bd15fe99e286e42ffadce9b58c1d2e0017",
+      "size": 15190,
+      "version": "1.0.4"
     },
     "th_06_icon_parser.js": {
       "sha256": "25b95a5df634a7ee359f3ab798e4d3154a71c24016f7b4bf8a658096644b2484",
@@ -110,9 +110,9 @@
       "version": "1.1.12"
     },
     "th_15_main_panel.js": {
-      "sha256": "3f074e956f92ad2d6107287dcb998bf3564834ba492184102e5edb95b871d6d3",
-      "size": 70650,
-      "version": "1.3.0"
+      "sha256": "ca3a4ab633d07c7bab61d5c76276c299cb99a0e37df2582da123f18ae98401a4",
+      "size": 73107,
+      "version": "1.4.0"
     },
     "th_16_entry.js": {
       "sha256": "64b7bc7c0a16667536dabaa9bedbb8b0d36f57ad9efb78790809446adf2975ae",
@@ -148,10 +148,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修正按钮新增与编辑保存逻辑"
+      "移除固定宽度和 2/3/4 列断点，按安全宽度自动计算列数",
+      "新增面板宽度占比、自动最大列数、按钮最小宽度和按钮高度设置",
+      "布局参数沿用设置预览与保存后的即时刷新链"
     ],
-    "title": "修正按钮新增与编辑保存逻辑"
+    "date": "2026-07-14",
+    "title": "主面板改为可配置自适应布局"
   },
   "schema": 3,
-  "version": 20260714021859
+  "version": 20260714023452
 }
