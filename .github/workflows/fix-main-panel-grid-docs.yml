@@ -1,0 +1,63 @@
+name: fix-main-panel-grid-docs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.pull_request.head.ref == 'fix/main-panel-grid-sizing-locked-20260714-1156'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Restore visual tuning documentation marker
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('README.md')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          found = 0
+          for i, line in enumerate(lines):
+              if line.startswith('- 主按钮面板采用可配置自适应网格'):
+                  lines[i] = (
+                      '- 主按钮面板采用可配置自适应网格，宽度占比只用于确定列数预算，'
+                      '由卡片、精确间距和可视行数计算网格，再由网格决定面板宽高；'
+                      'WindowManager 使用同一精确尺寸，避免右侧额外空白；默认背景透明度为 0.92，'
+                      '并继续支持实时运行状态、拖动排序、分页吸附、新增和编辑按钮直接保存、'
+                      '单页隐藏分页圆点和关闭闪烁。'
+                  )
+                  found += 1
+          if found != 1:
+              raise SystemExit('README main panel bullet count=' + str(found))
+          path.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
+          PY
+          python3 scripts/verify_main_panel_visual_tuning.py
+          python3 scripts/verify_main_panel_grid_sizing.py
+      - name: Remove diagnostics
+        run: |
+          rm -f .github/workflows/diagnose-main-panel-grid.yml
+          rm -f .github/workflows/fix-main-panel-grid-docs.yml
+      - name: Commit documentation fix
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          test -n "$TOOLHUB_AUTOMATION_TOKEN"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "补全主面板网格尺寸文档说明"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
