@@ -29,7 +29,7 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(MAIN, "1.5.5", "th_15_main_panel.js")
+version(MAIN, "1.5.6", "th_15_main_panel.js")
 version(EXTRA, "1.1.15", "th_15_extra.js")
 
 for marker, label in (

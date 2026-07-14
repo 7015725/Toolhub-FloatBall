@@ -25,9 +25,9 @@
       "version": "2.0.0"
     },
     "th_04_theme.js": {
-      "sha256": "ace46d5f563f594fb961a0736c135b526d7c0926c7d137e0876fd19ba41af653",
-      "size": 42471,
-      "version": "1.0.2"
+      "sha256": "2e4769bf7e869b028b1a133a89e42d46a424f6fe03460f9c8b7521b1a29b9cbd",
+      "size": 45709,
+      "version": "1.0.3"
     },
     "th_05_persistence.js": {
       "sha256": "632361cfa4123574dfa8a21ed5c276b188c1b8bc7d1a4360825cae458ce60da6",
@@ -110,9 +110,9 @@
       "version": "1.1.15"
     },
     "th_15_main_panel.js": {
-      "sha256": "84c460bcd1d4681f0feba031f41c40ac57eb7ecd4f4fede35dc96f867e318abb",
-      "size": 81584,
-      "version": "1.5.5"
+      "sha256": "2fdca03c5141d877a88ff955102c2fc12884f4df1d7e58f48f1a0b8020781af7",
+      "size": 81733,
+      "version": "1.5.6"
     },
     "th_16_entry.js": {
       "sha256": "eb2afe5ce373f6b4693975d4cfdbce150c3f11d318f2cfe4571fa51a1c11147c",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修改指针框选截图保存目录"
+      "修复 ColorOS 水波纹导致的系统软重启"
     ],
-    "title": "修改指针框选截图保存目录"
+    "title": "修复 ColorOS 水波纹导致的系统软重启"
   },
   "schema": 3,
-  "version": 20260714084437
+  "version": 20260714104956
 }

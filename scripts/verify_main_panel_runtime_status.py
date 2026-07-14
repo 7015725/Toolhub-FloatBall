@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 验证主按钮面板第二阶段实时运行状态与生命周期约束。
+# 验证主按钮面板实时运行状态、生命周期以及颜色安全修复后的模块版本契约。
 
 from pathlib import Path
 import re
@@ -32,8 +32,8 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.5.5":
-    fail("expected th_15_main_panel.js version 1.5.5")
+if not version or version.group(1) != "1.5.6":
+    fail("expected th_15_main_panel.js version 1.5.6")
 
 methods = (
     "getMainPanelRuntimeStatusSnapshot",
