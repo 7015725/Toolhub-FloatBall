@@ -8,96 +8,51 @@ permissions:
   contents: read
 
 jobs:
-  diagnose:
+  scan:
+    name: scan-${{ matrix.file }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        file:
+          - th_01_base.js
+          - th_02_core.js
+          - th_03_icon.js
+          - th_04_theme.js
+          - th_05_persistence.js
+          - th_06_icon_parser.js
+          - th_08_content.js
+          - th_09_animation.js
+          - th_10_shell.js
+          - th_11_action.js
+          - th_12_rebuild.js
+          - th_13_panel_ui.js
+          - th_14_panels.js
+          - th_14_button_shortcut.js
+          - th_14_button_icon_editor.js
+          - th_14_button_editor.js
+          - th_14_color_picker.js
+          - th_14_icon_picker.js
+          - th_14_schema_editor.js
+          - th_15_extra.js
+          - th_15_main_panel.js
+          - th_16_entry.js
+          - th_17_pointer.js
+          - th_18_pointer_ocr.js
+          - th_19_position_state.js
+          - th_20_pickword.js
+          - th_21_result_preview.js
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           show-progress: false
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
 
       - name: Apply migration
         run: python3 scripts/apply_rhino_color_api_full_migration.py
 
-      - name: Verify full color safety
+      - name: Scan module
+        env:
+          MODULE_FILE: ${{ matrix.file }}
         run: python3 scripts/verify_rhino_color_api_safety.py
-
-      - name: Verify ColorOS color safety
-        run: python3 scripts/verify_coloros_rhino_color_safety.py
-
-      - name: Verify ES5 compatibility
-        run: python3 .github/scripts/es5_scan.py
-
-      - name: Verify JavaScript syntax
-        run: python3 scripts/verify_js_syntax.py
-
-      - name: Verify module versions
-        run: python3 scripts/verify_module_versions.py
-
-      - name: Verify changed module versions
-        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
-
-      - name: Verify settings and editors
-        run: |
-          python3 scripts/verify_toolapp_layout.py
-          python3 scripts/verify_settings_color_scheme.py
-          python3 scripts/verify_legacy_theme_cleanup.py
-          python3 scripts/verify_settings_color_roles.py
-          python3 scripts/verify_button_editor_layout.py
-          python3 scripts/verify_button_editor_direct_save.py
-          python3 scripts/verify_schema_validator.py
-
-      - name: Verify main panel
-        run: |
-          python3 scripts/verify_main_panel_runtime_status.py
-          python3 scripts/verify_main_panel_drag_sort.py
-          python3 scripts/verify_main_panel_more_menu.py
-          python3 scripts/verify_main_panel_paging.py
-          python3 scripts/verify_main_panel_adaptive_layout.py
-          python3 scripts/verify_panel_layout_settings_cleanup.py
-          python3 scripts/verify_legacy_main_panel_cleanup.py
-          python3 scripts/verify_main_panel_grid_sizing.py
-          python3 scripts/verify_main_panel_visual_tuning.py
-          python3 scripts/verify_main_panel_close_lifecycle.py
-
-      - name: Verify pointer and preview
-        run: |
-          python3 scripts/verify_pointer_regressions.py
-          python3 scripts/verify_result_preview.py
-
-      - name: Verify storage lifecycle and security
-        run: |
-          python3 scripts/verify_sqlite_storage.py
-          python3 scripts/verify_sqlite_debounce_race.py
-          python3 scripts/verify_ball_position_state.py
-          python3 scripts/verify_ball_rebuild_rollback.py
-          python3 scripts/verify_entry_lifecycle.py
-          python3 scripts/verify_atomic_update.py
-          python3 scripts/verify_release_transaction.py
-          python3 scripts/verify_startup_status.py
-          python3 scripts/verify_update_security_mode.py
-          python3 scripts/verify_shell_bridge_security.py
-          python3 scripts/verify_shell_log_redaction.py
-          python3 scripts/verify_shortcut_security.py
-          python3 scripts/verify_content_security.py
-
-      - name: Verify audits and documentation
-        run: |
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
-          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
-          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
-          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
-          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
-          python3 scripts/verify_entry_redundancy_cleanup.py
-          python3 scripts/verify_documentation_consistency.py
-          python3 scripts/verify_github_only_source.py
-
-      - name: Check whitespace
-        run: git diff --check
