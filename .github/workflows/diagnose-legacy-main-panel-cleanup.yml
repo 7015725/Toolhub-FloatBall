@@ -1,0 +1,28 @@
+name: diagnose-legacy-main-panel-cleanup
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'fix/remove-legacy-main-panel-20260714'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Locate legacy main panel references
+        run: |
+          set -u
+          printf '%s\n' '=== active/config references ==='
+          grep -RIn --exclude-dir=.git --exclude='diagnose-legacy-main-panel-cleanup.yml' \
+            -E 'PANEL_COLS|PANEL_ITEM_SIZE_DP|computePanelX|tryAdjustPanelY|buildPanelView = function' \
+            code scripts README.md ARCHITECTURE.md STRUCTURE.md .github || true
+          printf '%s\n' '=== main panel builders ==='
+          grep -RIn --exclude-dir=.git -E 'buildMainPanelView = function|buildPanelView\("main"\)|buildPanelView\(' code scripts || true
+          printf '%s\n' '=== lock PR until formal cleanup ==='
+          exit 1
