@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""验证 ColorOS/Rhino 颜色桥、稳定按压反馈及其默认值回退契约。"""
 from pathlib import Path
 import re
 
