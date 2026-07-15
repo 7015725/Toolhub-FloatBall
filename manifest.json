@@ -140,18 +140,18 @@
       "version": "1.0.3"
     },
     "th_21_result_preview.js": {
-      "sha256": "5254e378d61c7d623956726ac5a6d86ffd7a2ac0468da39799af1c2fe06a7dcd",
-      "size": 40667,
-      "version": "1.1.0"
+      "sha256": "d1cfabfac214162816549f740889e1255f1ffb43596b5b303d624f863b891fa5",
+      "size": 41095,
+      "version": "1.1.1"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修正指针扫描超时分类与日志换行"
+      "统一取字预览亮暗主题判断"
     ],
-    "title": "修正指针扫描超时分类与日志换行"
+    "title": "统一取字预览亮暗主题判断"
   },
   "schema": 3,
-  "version": 20260715123432
+  "version": 20260715140318
 }
