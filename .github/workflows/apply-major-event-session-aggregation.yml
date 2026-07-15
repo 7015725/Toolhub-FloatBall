@@ -24,6 +24,19 @@ jobs:
           ref: fix/major-event-session-aggregation-20260715
           fetch-depth: 0
 
+      - name: Fix patch replacement escaping
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply_major_event_session_aggregation.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'recent_pattern.subn(recent_replacement, text, count=1)'
+          new = 'recent_pattern.subn(lambda match: recent_replacement, text, count=1)'
+          if old not in text:
+              raise SystemExit('subn replacement anchor missing')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Apply aggregation patch
         run: python3 scripts/apply_major_event_session_aggregation.py
 
