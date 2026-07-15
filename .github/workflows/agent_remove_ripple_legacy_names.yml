@@ -54,19 +54,26 @@ jobs:
       - name: Verify Rhino color safety
         run: python3 scripts/verify_rhino_color_api_safety.py
 
-      - name: Verify main panel contracts
-        shell: bash
-        run: |
-          python3 scripts/verify_main_panel_runtime_status.py
-          python3 scripts/verify_main_panel_drag_sort.py
-          python3 scripts/verify_main_panel_more_menu.py
-          python3 scripts/verify_main_panel_paging.py
-          python3 scripts/verify_main_panel_adaptive_layout.py
-          python3 scripts/verify_main_panel_grid_sizing.py
-          python3 scripts/verify_main_panel_visual_tuning.py
-          python3 scripts/verify_main_panel_close_lifecycle.py
-          python3 scripts/verify_legacy_main_panel_cleanup.py
-          python3 scripts/verify_panel_layout_settings_cleanup.py
+      - name: Verify main panel runtime
+        run: python3 scripts/verify_main_panel_runtime_status.py
+      - name: Verify main panel drag sort
+        run: python3 scripts/verify_main_panel_drag_sort.py
+      - name: Verify main panel more menu
+        run: python3 scripts/verify_main_panel_more_menu.py
+      - name: Verify main panel paging
+        run: python3 scripts/verify_main_panel_paging.py
+      - name: Verify main panel adaptive layout
+        run: python3 scripts/verify_main_panel_adaptive_layout.py
+      - name: Verify main panel grid sizing
+        run: python3 scripts/verify_main_panel_grid_sizing.py
+      - name: Verify main panel visual tuning
+        run: python3 scripts/verify_main_panel_visual_tuning.py
+      - name: Verify main panel close lifecycle
+        run: python3 scripts/verify_main_panel_close_lifecycle.py
+      - name: Verify legacy main panel cleanup
+        run: python3 scripts/verify_legacy_main_panel_cleanup.py
+      - name: Verify panel layout settings cleanup
+        run: python3 scripts/verify_panel_layout_settings_cleanup.py
 
       - name: Verify audits and syntax
         shell: bash
