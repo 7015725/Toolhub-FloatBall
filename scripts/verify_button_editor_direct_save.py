@@ -37,8 +37,8 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.1.0":
-    fail("expected th_14_button_editor.js version 1.1.0")
+if not version or version.group(1) != "1.1.1":
+    fail("expected th_14_button_editor.js version 1.1.1")
 
 action_version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", ACTION)
 if not action_version or action_version.group(1) != "1.1.0":
@@ -85,8 +85,12 @@ for marker, label in (
     ("列出用户应用", "user app filter"),
     ("列出系统应用", "system app filter"),
     ("列出分身/其他用户应用", "other-user app filter"),
-    ("inputPkg.input.setText", "package backfill"),
-    ("inputUserId.input.setText", "user id backfill"),
+    ("selectedPkg: str(targetBtn.pkg)", "picker package state"),
+    ("selectedUserId: initialUserId", "picker user state"),
+    ("getPkg: function()", "picker package getter"),
+    ("getUserId: function()", "picker user getter"),
+    ("appPickerInline.getPkg()", "picker package save"),
+    ("appPickerInline.getUserId()", "picker user save"),
 ):
     require(SOURCE, marker, label)
 
@@ -95,6 +99,10 @@ for fragment, label in (
     ('{ key: "open_settings", label: "设置" }', "settings manager filter"),
     ('if (t === "intent") return "Intent"', "intent type label"),
     ('if (t === "intent") return String(b.intent', "intent summary"),
+    ('应用包名 (Package)', "app package editor field"),
+    ('启动用户ID (', "app user editor field"),
+    ("inputPkg", "app package input object"),
+    ("inputAppLaunchUser", "app user input object"),
     ("先存起来", "old temporary button wording"),
     ("已暂存，请在列表页点击保存布置", "old second-save notice"),
     ("编辑页只写入 tempButtons", "old temporary-only contract"),
@@ -181,5 +189,6 @@ if original[1]["title"] != "B" or next_edit[1]["title"] != "B2":
 print(
     "OK button_editor_direct_save "
     "add=transactional edit=transactional list_batch=normalized "
-    "app_picker=users_system_profiles intent_type=removed settings_type=removed"
+    "app_picker=users_system_profiles app_fields=picker_only "
+    "intent_type=removed settings_type=removed"
 )
