@@ -26,8 +26,8 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.5.7":
-    fail("expected th_15_main_panel.js version 1.5.7")
+if not version or version.group(1) != "1.5.8":
+    fail("expected th_15_main_panel.js version 1.5.8")
 
 if SOURCE.count("FloatBallAppWM.prototype.showMainPanelMoreMenu = function") != 1:
     fail("showMainPanelMoreMenu must have exactly one definition")

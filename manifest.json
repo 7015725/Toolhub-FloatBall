@@ -25,9 +25,9 @@
       "version": "2.0.0"
     },
     "th_04_theme.js": {
-      "sha256": "d1f237952ab4c80c83413cb50918b0841d6ba4724f457153857fab62013f2e53",
-      "size": 51178,
-      "version": "1.0.6"
+      "sha256": "140e167d92aceea13fbdab61781809156f15de30bc9e078b8a6dfc105b48eef0",
+      "size": 50717,
+      "version": "1.0.7"
     },
     "th_05_persistence.js": {
       "sha256": "632361cfa4123574dfa8a21ed5c276b188c1b8bc7d1a4360825cae458ce60da6",
@@ -95,9 +95,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "84890db02bd887adf4146c90cef25d0bd2090f0b3fafe7ee76ef4d9958a212e7",
-      "size": 119973,
-      "version": "1.0.19"
+      "sha256": "afcee7b6b78781b248ea21845e421c9464334c4cb0d8737b473a2ae8273fbcb0",
+      "size": 119979,
+      "version": "1.0.20"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -110,9 +110,9 @@
       "version": "1.1.16"
     },
     "th_15_main_panel.js": {
-      "sha256": "e89fa4119ce5f22397f45d45ae1ff4621deb126160265f03158c396acf5d55fd",
-      "size": 81901,
-      "version": "1.5.7"
+      "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
+      "size": 81937,
+      "version": "1.5.8"
     },
     "th_16_entry.js": {
       "sha256": "eb2afe5ce373f6b4693975d4cfdbce150c3f11d318f2cfe4571fa51a1c11147c",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复悬浮球按压反馈默认值语义"
+      "收口水波纹旧命名"
     ],
-    "title": "修复悬浮球按压反馈默认值语义"
+    "title": "收口水波纹旧命名"
   },
   "schema": 3,
-  "version": 20260715002810
+  "version": 20260715004748
 }

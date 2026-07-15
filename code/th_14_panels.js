@@ -1,4 +1,4 @@
-// @version 1.0.19
+// @version 1.0.20
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -377,7 +377,7 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   var itemRadius = spec ? spec.itemRadius : this.dp(18);
   row.setPadding(this.dp(12), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(8) : this.dp(10), this.dp(10), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(8) : this.dp(10));
   row.setMinimumHeight(spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(72) : this.dp(76));
-  row.setBackground(this.ui.createRippleDrawable(T.surface, this.withAlpha(T.primary, isDark ? 0.14 : 0.08), itemRadius));
+  row.setBackground(this.ui.createPressedStateDrawable(T.surface, this.withAlpha(T.primary, isDark ? 0.14 : 0.08), itemRadius));
   try { row.setElevation(this.dp(1)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   var badge = new android.widget.TextView(context);
   badge.setText(this.getSettingsHomeIcon ? this.getSettingsHomeIcon(title) : "✦");
