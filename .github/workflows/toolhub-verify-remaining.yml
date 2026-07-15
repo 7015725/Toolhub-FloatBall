@@ -1,0 +1,75 @@
+name: 定位按钮布局之后的验证失败项
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'agent/app-picker-cleanup-20260715'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/app-picker-cleanup-20260715
+          fetch-depth: 0
+
+      - name: 定位后续首个失败命令
+        shell: bash
+        run: |
+          set +e
+          commands=(
+            'python3 scripts/verify_button_editor_layout.py'
+            'python3 scripts/verify_button_editor_direct_save.py'
+            'python3 scripts/verify_schema_validator.py'
+            'python3 scripts/verify_entry_lifecycle.py'
+            'python3 scripts/verify_atomic_update.py'
+            'python3 scripts/verify_release_transaction.py'
+            'python3 scripts/verify_startup_status.py'
+            'python3 scripts/verify_main_panel_runtime_status.py'
+            'python3 scripts/verify_main_panel_drag_sort.py'
+            'python3 scripts/verify_main_panel_more_menu.py'
+            'python3 scripts/verify_main_panel_paging.py'
+            'python3 scripts/verify_main_panel_adaptive_layout.py'
+            'python3 scripts/verify_panel_layout_settings_cleanup.py'
+            'python3 scripts/verify_legacy_main_panel_cleanup.py'
+            'python3 scripts/verify_main_panel_grid_sizing.py'
+            'python3 scripts/verify_main_panel_visual_tuning.py'
+            'python3 scripts/verify_main_panel_close_lifecycle.py'
+            'python3 scripts/verify_update_security_mode.py'
+            'python3 scripts/verify_shell_bridge_security.py'
+            'python3 scripts/verify_shell_log_redaction.py'
+            'python3 scripts/verify_shortcut_security.py'
+            'python3 scripts/verify_content_security.py'
+            'python3 scripts/verify_major_event_logging.py'
+            'python3 scripts/verify_module_versions.py'
+            'python3 scripts/verify_changed_module_versions.py'
+            'python3 scripts/verify_documentation_consistency.py'
+            'python3 scripts/verify_github_only_source.py'
+            'python3 scripts/verify_pointer_regressions.py'
+            'python3 scripts/verify_result_preview.py'
+            'python3 .github/scripts/verify_manifest_signature.py'
+          )
+          : > TOOLHUB_VERIFY_REMAINING_FAILURE.txt
+          for cmd in "${commands[@]}"; do
+            echo "== $cmd ==" | tee -a TOOLHUB_VERIFY_REMAINING_FAILURE.txt
+            bash -lc "$cmd" >> TOOLHUB_VERIFY_REMAINING_FAILURE.txt 2>&1
+            status=$?
+            echo "status=$status" | tee -a TOOLHUB_VERIFY_REMAINING_FAILURE.txt
+            if [ "$status" -ne 0 ]; then break; fi
+          done
+          rm -f .github/workflows/toolhub-verify-remaining.yml
+          exit 0
+
+      - name: 提交诊断
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m '记录按钮布局之后的验证失败项'
+          git push origin HEAD:agent/app-picker-cleanup-20260715
