@@ -104,7 +104,7 @@ def main() -> int:
     )
     require(
         "pickword / no private exit hook",
-        'require(\'events\')' not in pickword
+        "require('events')" not in pickword
         and 'events.on("exit"' not in pickword,
         "ToolHub lifecycle must own cleanup",
         failures,
@@ -181,27 +181,33 @@ def main() -> int:
         "appObj.state.resultPreview" in preview
         and "payload: null" in preview
         and "root: null" in preview
+        and "rootRender: null" in preview
         and "added: false" in preview,
         "preview state must be a single instance on app.state",
         failures,
     )
+
+    create_view = section(preview, "function createView21(appObj, st)", "function createLp21(appObj, st)")
+    draw_preview = section(preview, "function drawPreview21(appObj, st, canvas, view, render)", "function cancelDismiss21(st)")
     require(
-        "preview / generation guarded timeout",
-        "st.generation = Number(st.generation || 0) + 1" in preview
-        and "if (Number(st.generation || 0) !== token) return;" in preview
-        and "dismissRunnable" in preview,
-        "old timeout callbacks must not dismiss newer results",
+        "preview / canvas-only custom rendering",
+        "new JavaAdapter(android.view.View" in create_view
+        and "onDraw: function(canvas)" in create_view
+        and "canvas.drawRoundRect" in draw_preview
+        and "canvas.drawText" in draw_preview
+        and "new android.widget.TextView" not in preview
+        and "new android.widget.LinearLayout" not in preview
+        and "new android.widget.FrameLayout" not in preview,
+        "preview must remain Canvas-only without native child widgets",
         failures,
     )
     require(
-        "preview / custom draw and two-line truncation",
-        "new JavaAdapter(android.view.View" in preview
-        and "onDraw: function(canvas)" in preview
-        and "paint.breakText" in preview
+        "preview / two-line truncation",
+        "paint.breakText" in preview
         and "st.line1" in preview
         and "st.line2" in preview
         and 'var ellipsis = "…"' in preview,
-        "preview must be a fully custom drawn two-line card",
+        "preview must retain custom two-line truncation",
         failures,
     )
     require(
@@ -212,8 +218,6 @@ def main() -> int:
         "top position must respect status bar and cutout safe insets",
         failures,
     )
-    show_state = section(preview, "function showState21(appObj, st)", "function normalizePayload21")
-    dismiss_preview = section(preview, "proto.dismissResultPreview = function(reason, animate)", "proto.openResultPreviewPrimaryAction = function")
     require(
         "preview / opaque background",
         '"#FF1B1B1F"' in preview
@@ -224,36 +228,6 @@ def main() -> int:
         failures,
     )
     require(
-        "preview / opaque motion animation",
-        "st.root.setAlpha(1)" in show_state
-        and "st.root.setAlpha(0.78)" not in show_state
-        and "st.root.setAlpha(0.86)" not in show_state
-        and ".alpha(" not in show_state
-        and "st.root.setTranslationY(-dp21(appObj, 6))" in show_state
-        and ".setDuration(140)" in show_state
-        and ".scaleX(0.97).scaleY(0.97)" in preview
-        and "rootRef.setAlpha(1)" in dismiss_preview
-        and ".alpha(0)" not in dismiss_preview
-        and ".translationY(-dp21(self, 6))" in dismiss_preview
-        and ".scaleX(0.985)" in dismiss_preview
-        and ".setDuration(120)" in dismiss_preview
-        and "st.clickLocked" in preview,
-        "preview enter, update and exit animations must not animate whole-window alpha",
-        failures,
-    )
-    require(
-        "preview / visible fallback and draw diagnostics",
-        "PreviewView.setWillNotDraw(false)" in preview
-        and "scheduleVisibilityFallback21(appObj, st, st.root)" in preview
-        and "rootRef.setVisibility(android.view.View.VISIBLE)" in preview
-        and "rootRef.setAlpha(1)" in preview
-        and '"result preview first draw"' in preview
-        and '"result preview visual check"' in preview,
-        "preview must remain visible when the motion animation does not advance",
-        failures,
-    )
-    draw_preview = section(preview, "function drawPreview21(appObj, st, canvas, view)", "function createView21(appObj, st)")
-    require(
         "preview / paint color avoids ColorLong overload",
         "function setPaintColor21(paint, color)" in preview
         and "paint.setARGB(" in preview
@@ -262,6 +236,63 @@ def main() -> int:
         "custom drawing must use explicit ARGB channels instead of overloaded Paint.setColor",
         failures,
     )
+    require(
+        "preview / no software layer",
+        "LAYER_TYPE_NONE" in create_view
+        and "LAYER_TYPE_SOFTWARE" not in preview,
+        "Canvas preview must not allocate a software off-screen layer that can stall the first frame",
+        failures,
+    )
+
+    show_state = section(preview, "function showState21(appObj, st)", "function normalizePayload21")
+    first_draw = section(preview, "function markFirstDraw21(appObj, st, rootRef, render)", "function createView21(appObj, st)")
+    schedule_dismiss = section(preview, "function scheduleDismiss21(appObj, st, rootRef, render)", "function startEnterAnimation21")
+    watchdog = section(preview, "function scheduleVisibilityFallback21(appObj, st, rootRef, render, attempt)", "function showState21")
+    require(
+        "preview / timeout begins after first draw",
+        "scheduleDismiss21(" not in show_state
+        and "scheduleDismiss21(appObj, st, rootRef, render);" in first_draw
+        and "if (Number(render.firstDrawAt || 0) <= 0) return false;" in schedule_dismiss
+        and '"result preview dismiss scheduled"' in schedule_dismiss,
+        "display timeout must start only after a successful Canvas frame",
+        failures,
+    )
+    require(
+        "preview / root-token isolation",
+        "rootSequence" in preview
+        and "rootToken" in preview
+        and "rootRender" in preview
+        and "function isCurrentRoot21(st, rootRef, render)" in preview
+        and "st.root !== rootRef" in preview
+        and "st.rootRender !== render" in preview
+        and '"result preview stale draw ignored"' in preview,
+        "late callbacks from removed roots must not mutate the current preview generation",
+        failures,
+    )
+    require(
+        "preview / draw watchdog and single rebuild",
+        "forceRootTraversal21" in watchdog
+        and "rebuildRoot21" in watchdog
+        and "failRender21" in watchdog
+        and "st.renderRebuildCount" in watchdog
+        and '"result preview draw stalled"' in preview
+        and '"result preview root rebuild"' in preview
+        and '"result preview render failed"' in preview,
+        "a missing first frame must be retried, rebuilt once, then failed without a late flash",
+        failures,
+    )
+    require(
+        "preview / opaque motion animation",
+        "rootRef.setAlpha(1)" in preview
+        and ".alpha(0)" not in preview
+        and ".scaleX(0.97).scaleY(0.97)" in preview
+        and ".translationY(-dp21(self, 6))" in preview
+        and ".setDuration(120)" in preview
+        and "st.clickLocked" in preview,
+        "preview enter, update, touch and exit feedback must not animate whole-window alpha",
+        failures,
+    )
+
     action = section(preview, "proto.openResultPreviewPrimaryAction = function()", "proto.disposeResultPreview = function")
     require(
         "preview / primary handoff removes preview before pickword",
@@ -327,7 +358,7 @@ def main() -> int:
     )
     require(
         "settings / timeout schema and block",
-        'POINTER_RESULT_PREVIEW_TIMEOUT_SEC: 3' in base
+        "POINTER_RESULT_PREVIEW_TIMEOUT_SEC: 3" in base
         and 'name: "结果预览停留时间(秒)"' in base
         and 'key: "result_preview"' in panels
         and '"POINTER_RESULT_PREVIEW_TIMEOUT_SEC"' in panels,
