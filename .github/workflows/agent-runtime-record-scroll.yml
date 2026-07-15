@@ -35,226 +35,240 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
+          import traceback
+
+          def require(condition, message):
+              if not condition:
+                  raise RuntimeError(message)
 
           def replace_once(text, old, new, label):
               count = text.count(old)
-              if count != 1:
-                  raise SystemExit('%s expected once, found %d' % (label, count))
+              require(count == 1, '%s expected once, found %d' % (label, count))
               return text.replace(old, new, 1)
 
-          panels_path = Path('code/th_14_panels.js')
-          panels = panels_path.read_text(encoding='utf-8')
-          panels = replace_once(
-              panels,
-              '// @version 1.0.24',
-              '// @version 1.0.25',
-              'th_14 version'
-          )
+          try:
+              panels_path = Path('code/th_14_panels.js')
+              panels = panels_path.read_text(encoding='utf-8')
+              panels = replace_once(panels, '// @version 1.0.24', '// @version 1.0.25', 'th_14 version')
 
-          block_start = panels.index('FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function(anchorView) {')
-          block_end = panels.index('FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function', block_start)
-          replacement = '''FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function() {
-            return false;
-          };
+              diagnostic_re = re.compile(
+                  r'FloatBallAppWM\.prototype\.startColorSafetyRuntimeSelfTestFromSettings = function\(anchorView\) \{.*?'
+                  r'(?=FloatBallAppWM\.prototype\.buildSettingsGroupDetailPane = function)',
+                  re.S
+              )
+              replacement = '''FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function() {
+                return false;
+              };
 
-          FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function() {
-            return false;
-          };
+              FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function() {
+                return false;
+              };
 
-          FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function() {
-            return false;
-          };
+              FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function() {
+                return false;
+              };
 
-          FloatBallAppWM.prototype.copySettingsInteractionStressSummaryFromSettings = function() {
-            return false;
-          };
+              FloatBallAppWM.prototype.copySettingsInteractionStressSummaryFromSettings = function() {
+                return false;
+              };
 
-          FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
-            var isDark = this.isDarkTheme();
-            var T = this.getSettingsColorScheme();
-            var card = new android.widget.LinearLayout(context);
-            card.setOrientation(android.widget.LinearLayout.VERTICAL);
-            card.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(12));
-            card.setBackground(this.ui.createStrokeDrawable(
-              T.surface,
-              this.withAlpha(T.primary, isDark ? 0.28 : 0.18),
-              this.dp(1),
-              this.dp(18)
-            ));
-            try { card.setContentDescription("ToolHub 运行记录"); } catch(eDesc) {}
-            return card;
-          };
+              FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
+                var isDark = this.isDarkTheme();
+                var T = this.getSettingsColorScheme();
+                var card = new android.widget.LinearLayout(context);
+                card.setOrientation(android.widget.LinearLayout.VERTICAL);
+                card.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(12));
+                card.setBackground(this.ui.createStrokeDrawable(
+                  T.surface,
+                  this.withAlpha(T.primary, isDark ? 0.28 : 0.18),
+                  this.dp(1),
+                  this.dp(18)
+                ));
+                try { card.setContentDescription("ToolHub 运行记录"); } catch(eDesc) {}
+                return card;
+              };
 
-          '''
-          panels = panels[:block_start] + replacement + panels[block_end:]
+              '''
+              panels, count = diagnostic_re.subn(replacement, panels, count=1)
+              require(count == 1, 'diagnostic section replacement failed')
 
-          wide_old = '''  if (String(groupKey || "") === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
-            try {
-              var colorSafetyCard = this.createColorSafetyRuntimeDiagnosticCard();
-              var colorSafetyCardLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-              colorSafetyCardLp.setMargins(this.dp(2), this.dp(4), this.dp(2), this.dp(8));
-              root.addView(colorSafetyCard, colorSafetyCardLp);
-            } catch(eColorSafetyCard) { safeLog(this.L, "e", "create color safety diagnostic card fail error=" + String(eColorSafetyCard)); }
-          }
+              wide_start = panels.index('FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function')
+              wide_end = panels.index('FloatBallAppWM.prototype.buildSettingsRouteDetailPane = function', wide_start)
+              wide = panels[wide_start:wide_end]
+              wide_fixed_re = re.compile(
+                  r'\n  if \(String\(groupKey \|\| ""\) === "debug" && this\.createColorSafetyRuntimeDiagnosticCard\) \{.*?'
+                  r'root\.addView\(colorSafetyCard, colorSafetyCardLp\);.*?\n  \}\n',
+                  re.S
+              )
+              wide, count = wide_fixed_re.subn('\n', wide, count=1)
+              require(count == 1, 'wide fixed runtime card removal failed')
+              wide_insert = '''
+                if (String(groupKey || "") === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
+                  try {
+                    var colorSafetyCard = this.createColorSafetyRuntimeDiagnosticCard();
+                    var colorSafetyCardLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+                    colorSafetyCardLp.setMargins(this.dp(2), this.dp(4), this.dp(2), this.dp(8));
+                    box.addView(colorSafetyCard, colorSafetyCardLp);
+                  } catch(eColorSafetyCard) { safeLog(this.L, "e", "create runtime records card fail error=" + String(eColorSafetyCard)); }
+                }
+              '''
+              wide = replace_once(wide, '  scroll.addView(box);\n', '  scroll.addView(box);\n' + wide_insert, 'wide scroll child')
+              panels = panels[:wide_start] + wide + panels[wide_end:]
 
-          '''
-          panels = replace_once(panels, wide_old, '', 'wide fixed diagnostic card')
+              compact_start = panels.index('FloatBallAppWM.prototype.buildSettingsGroupPanelView = function')
+              compact_end = panels.index('FloatBallAppWM.prototype.showPopupOverlay = function', compact_start)
+              compact = panels[compact_start:compact_end]
+              compact_fixed_re = re.compile(
+                  r'\n  // 手机紧凑布局同样显示 ColorOS 颜色安全诊断卡。\n'
+                  r'  if \(activeGroupKey === "debug" && this\.createColorSafetyRuntimeDiagnosticCard\) \{.*?'
+                  r'panel\.addView\(colorSafetyCardCompact, colorSafetyCardCompactLp\);.*?\n  \}\n',
+                  re.S
+              )
+              compact, count = compact_fixed_re.subn('\n', compact, count=1)
+              require(count == 1, 'compact fixed runtime card removal failed')
+              compact_insert = '''
+                if (activeGroupKey === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
+                  try {
+                    var colorSafetyCardCompact = this.createColorSafetyRuntimeDiagnosticCard();
+                    var colorSafetyCardCompactLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+                    colorSafetyCardCompactLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
+                    box.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);
+                  } catch(eColorSafetyCardCompact) {
+                    safeLog(this.L, "e", "create compact runtime records card fail error=" + String(eColorSafetyCardCompact));
+                  }
+                }
+              '''
+              compact = replace_once(compact, '  scroll.addView(box);\n', '  scroll.addView(box);\n' + compact_insert, 'compact scroll child')
+              panels = panels[:compact_start] + compact + panels[compact_end:]
 
-          wide_anchor = '''  box.setPadding(0, this.dp(2), 0, this.dp(16));
-            scroll.addView(box);
-          '''
-          wide_insert = wide_anchor + '''  if (String(groupKey || "") === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
-            try {
-              var colorSafetyCard = this.createColorSafetyRuntimeDiagnosticCard();
-              var colorSafetyCardLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-              colorSafetyCardLp.setMargins(this.dp(2), this.dp(4), this.dp(2), this.dp(8));
-              box.addView(colorSafetyCard, colorSafetyCardLp);
-            } catch(eColorSafetyCard) { safeLog(this.L, "e", "create runtime records card fail error=" + String(eColorSafetyCard)); }
-          }
-          '''
-          panels = replace_once(panels, wide_anchor, wide_insert, 'wide scroll content anchor')
+              for forbidden in (
+                  'self.runColorSafetyRuntimeSelfTest(160)',
+                  'self.runSettingsInteractionStressTest(120)',
+                  'root.addView(colorSafetyCard, colorSafetyCardLp);',
+                  'panel.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);',
+                  '运行 160 次自检',
+                  '运行 120 次设置控件压力测试',
+                  '复制诊断摘要',
+                  '复制控件压力摘要',
+              ):
+                  require(forbidden not in panels, 'forbidden runtime diagnostic UI remains: %s' % forbidden)
+              for required in (
+                  'box.addView(colorSafetyCard, colorSafetyCardLp);',
+                  'box.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);',
+                  'card.setContentDescription("ToolHub 运行记录")',
+              ):
+                  require(required in panels, 'runtime records fix missing: %s' % required)
+              panels_path.write_text(panels, encoding='utf-8')
 
-          compact_old = '''  // 手机紧凑布局同样显示 ColorOS 颜色安全诊断卡。
-            if (activeGroupKey === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
-              try {
-                var colorSafetyCardCompact = this.createColorSafetyRuntimeDiagnosticCard();
-                var colorSafetyCardCompactLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-                colorSafetyCardCompactLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
-                panel.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);
-              } catch(eColorSafetyCardCompact) {
-                safeLog(this.L, "e", "create compact color safety diagnostic card fail error=" + String(eColorSafetyCardCompact));
-              }
-            }
+              verify_path = Path('scripts/verify_coloros_rhino_color_safety.py')
+              verify = verify_path.read_text(encoding='utf-8')
+              verify_re = re.compile(
+                  r'for token in \(\n    "FloatBallAppWM\.prototype\.startColorSafetyRuntimeSelfTestFromSettings = function",.*?'
+                  r'(?=argb = re\.search)',
+                  re.S
+              )
+              verify_block = '''for token in (
+                  "FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function",
+                  "FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function",
+                  "FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function",
+                  "FloatBallAppWM.prototype.copySettingsInteractionStressSummaryFromSettings = function",
+                  "FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function",
+                  'card.setContentDescription("ToolHub 运行记录")',
+                  'box.addView(colorSafetyCard, colorSafetyCardLp);',
+                  'box.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);',
+                  "create runtime records card fail",
+                  "create compact runtime records card fail",
+              ):
+                  if token not in PANELS:
+                      errors.append("runtime records scroll contract missing: %s" % token)
 
-          '''
-          panels = replace_once(panels, compact_old, '', 'compact fixed diagnostic card')
+              for forbidden in (
+                  "self.runColorSafetyRuntimeSelfTest(160)",
+                  "self.runSettingsInteractionStressTest(120)",
+                  "运行 160 次自检",
+                  "运行 120 次设置控件压力测试",
+                  "复制诊断摘要",
+                  "复制控件压力摘要",
+                  "root.addView(colorSafetyCard, colorSafetyCardLp);",
+                  "panel.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);",
+              ):
+                  if forbidden in PANELS:
+                      errors.append("removed runtime diagnostic UI remains: %s" % forbidden)
 
-          compact_anchor = '''  box.setPadding(0, this.dp(4), 0, this.dp(12));
-            scroll.addView(box);
-          '''
-          compact_insert = compact_anchor + '''  if (activeGroupKey === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
-            try {
-              var colorSafetyCardCompact = this.createColorSafetyRuntimeDiagnosticCard();
-              var colorSafetyCardCompactLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-              colorSafetyCardCompactLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
-              box.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);
-            } catch(eColorSafetyCardCompact) {
-              safeLog(this.L, "e", "create compact runtime records card fail error=" + String(eColorSafetyCardCompact));
-            }
-          }
-          '''
-          panels = replace_once(panels, compact_anchor, compact_insert, 'compact scroll content anchor')
+              if ALL_JS.count(".runColorSafetyRuntimeSelfTest(") != 0:
+                  errors.append("runtime color self-test must not have a settings invocation")
+              if ALL_JS.count(".runSettingsInteractionStressTest(") != 0:
+                  errors.append("settings interaction stress test must not have a settings invocation")
 
-          for forbidden in (
-              'self.runColorSafetyRuntimeSelfTest(160)',
-              'self.runSettingsInteractionStressTest(120)',
-              'root.addView(colorSafetyCard, colorSafetyCardLp);',
-              'panel.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);',
-              '运行 160 次自检',
-              '运行 120 次设置控件压力测试',
-          ):
-              if forbidden in panels:
-                  raise SystemExit('forbidden runtime diagnostic UI remains: %s' % forbidden)
+              for token in (
+                  "FloatBallAppWM.prototype.runSettingsInteractionStressTest = function",
+                  "new android.widget.Switch(context)",
+                  "new android.widget.SeekBar(context)",
+                  "createTransparentPressedStateDrawable(rowPressedColor",
+                  'createSolidButton(this, "压力测试"',
+                  "ToolHub/diagnostics/settings-interaction-last.json",
+                  "settings interaction stress start",
+                  "settings interaction stress pass",
+                  "settings interaction stress fail",
+                  "loops = Math.max(1, Math.min(200, loops))",
+              ):
+                  if token not in PANEL_UI:
+                      errors.append("settings interaction stress implementation missing: %s" % token)
 
-          for required in (
-              'box.addView(colorSafetyCard, colorSafetyCardLp);',
-              'box.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);',
-              'card.setContentDescription("ToolHub 运行记录")',
-          ):
-              if required not in panels:
-                  raise SystemExit('runtime records fix missing: %s' % required)
+              stress_block = re.search(r"FloatBallAppWM.prototype.runSettingsInteractionStressTest = function\\(iterations\\) \\{.*?\\n\\};", PANEL_UI, re.S)
+              if not stress_block:
+                  errors.append("settings interaction stress method missing")
+              else:
+                  block = stress_block.group(0)
+                  for forbidden in ("setPendingValue(", "commitPendingUserCfg(", "state.wm.addView", "setOnCheckedChangeListener("):
+                      if forbidden in block:
+                          errors.append("settings interaction stress test mutates live settings or window state: %s" % forbidden)
 
-          panels_path.write_text(panels, encoding='utf-8')
+              records_block = re.search(r"FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function\\(\\) \\{.*?\\n\\};", PANELS, re.S)
+              if not records_block:
+                  errors.append("runtime records card method missing")
+              else:
+                  block = records_block.group(0)
+                  for token in ('new android.widget.LinearLayout(context)', 'card.setContentDescription("ToolHub 运行记录")', 'return card;'):
+                      if token not in block:
+                          errors.append("runtime records card contract missing: %s" % token)
+                  for forbidden in ("运行 160 次自检", "运行 120 次设置控件压力测试", "ColorOS 颜色安全自检"):
+                      if forbidden in block:
+                          errors.append("runtime records card still exposes diagnostic test: %s" % forbidden)
 
-          verify_path = Path('scripts/verify_coloros_rhino_color_safety.py')
-          verify = verify_path.read_text(encoding='utf-8')
-          replace_start = verify.index('for token in (\n    "FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function",')
-          replace_end = verify.index('argb = re.search', replace_start)
-          verify_block = '''for token in (
-              "FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function",
-              "FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function",
-              "FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function",
-              "FloatBallAppWM.prototype.copySettingsInteractionStressSummaryFromSettings = function",
-              "FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function",
-              'card.setContentDescription("ToolHub 运行记录")',
-              'box.addView(colorSafetyCard, colorSafetyCardLp);',
-              'box.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);',
-              "create runtime records card fail",
-              "create compact runtime records card fail",
-          ):
-              if token not in PANELS:
-                  errors.append("runtime records scroll contract missing: %s" % token)
-
-          for forbidden in (
-              "self.runColorSafetyRuntimeSelfTest(160)",
-              "self.runSettingsInteractionStressTest(120)",
-              "运行 160 次自检",
-              "运行 120 次设置控件压力测试",
-              "复制诊断摘要",
-              "复制控件压力摘要",
-              "root.addView(colorSafetyCard, colorSafetyCardLp);",
-              "panel.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);",
-          ):
-              if forbidden in PANELS:
-                  errors.append("removed runtime diagnostic UI remains: %s" % forbidden)
-
-          if ALL_JS.count(".runColorSafetyRuntimeSelfTest(") != 0:
-              errors.append("runtime color self-test must not have a settings invocation")
-          if ALL_JS.count(".runSettingsInteractionStressTest(") != 0:
-              errors.append("settings interaction stress test must not have a settings invocation")
-
-          for token in (
-              "FloatBallAppWM.prototype.runSettingsInteractionStressTest = function",
-              "new android.widget.Switch(context)",
-              "new android.widget.SeekBar(context)",
-              "createTransparentPressedStateDrawable(rowPressedColor",
-              'createSolidButton(this, "压力测试"',
-              "ToolHub/diagnostics/settings-interaction-last.json",
-              "settings interaction stress start",
-              "settings interaction stress pass",
-              "settings interaction stress fail",
-              "loops = Math.max(1, Math.min(200, loops))",
-          ):
-              if token not in PANEL_UI:
-                  errors.append("settings interaction stress implementation missing: %s" % token)
-
-          stress_block = re.search(r"FloatBallAppWM.prototype.runSettingsInteractionStressTest = function\\(iterations\\) \\{.*?\\n\\};", PANEL_UI, re.S)
-          if not stress_block:
-              errors.append("settings interaction stress method missing")
-          else:
-              block = stress_block.group(0)
-              for forbidden in ("setPendingValue(", "commitPendingUserCfg(", "state.wm.addView", "setOnCheckedChangeListener("):
-                  if forbidden in block:
-                      errors.append("settings interaction stress test mutates live settings or window state: %s" % forbidden)
-
-          records_block = re.search(r"FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function\\(\\) \\{.*?\\n\\};", PANELS, re.S)
-          if not records_block:
-              errors.append("runtime records card method missing")
-          else:
-              block = records_block.group(0)
-              for token in ('new android.widget.LinearLayout(context)', 'card.setContentDescription("ToolHub 运行记录")', 'return card;'):
-                  if token not in block:
-                      errors.append("runtime records card contract missing: %s" % token)
-              for forbidden in ("运行 160 次自检", "运行 120 次设置控件压力测试", "ColorOS 颜色安全自检"):
-                  if forbidden in block:
-                      errors.append("runtime records card still exposes diagnostic test: %s" % forbidden)
-
-          '''
-          verify = verify[:replace_start] + verify_block + verify[replace_end:]
-          verify = replace_once(
-              verify,
-              'if module_version(PANELS, "th_14_panels.js") < (1, 0, 24):\n    errors.append("th_14_panels.js version below settings interaction stress entry baseline 1.0.24")',
-              'if module_version(PANELS, "th_14_panels.js") < (1, 0, 25):\n    errors.append("th_14_panels.js version below runtime records scroll baseline 1.0.25")',
-              'panels verifier version baseline'
-          )
-          verify = replace_once(
-              verify,
-              'print("OK coloros_rhino_color_safety framework_ripple=0 safe_helpers=8")',
-              'print("OK coloros_rhino_color_safety framework_ripple=0 safe_helpers=8 runtime_records_scroll=1 diagnostics_ui=0")',
-              'verifier success summary'
-          )
-          verify_path.write_text(verify, encoding='utf-8')
+              '''
+              verify, count = verify_re.subn(verify_block, verify, count=1)
+              require(count == 1, 'verifier diagnostic section replacement failed')
+              verify = replace_once(
+                  verify,
+                  'if module_version(PANELS, "th_14_panels.js") < (1, 0, 24):\n    errors.append("th_14_panels.js version below settings interaction stress entry baseline 1.0.24")',
+                  'if module_version(PANELS, "th_14_panels.js") < (1, 0, 25):\n    errors.append("th_14_panels.js version below runtime records scroll baseline 1.0.25")',
+                  'panels verifier version baseline'
+              )
+              verify = replace_once(
+                  verify,
+                  'print("OK coloros_rhino_color_safety framework_ripple=0 safe_helpers=8")',
+                  'print("OK coloros_rhino_color_safety framework_ripple=0 safe_helpers=8 runtime_records_scroll=1 diagnostics_ui=0")',
+                  'verifier success summary'
+              )
+              verify_path.write_text(verify, encoding='utf-8')
+              print('PATCH_OK')
+          except Exception:
+              detail = traceback.format_exc()
+              Path('patch-error.txt').write_text(detail, encoding='utf-8')
+              print(detail)
+              raise
           PY
+
+      - name: Upload patch failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-record-patch-error
+          path: patch-error.txt
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Verify changes
         shell: bash
@@ -271,7 +285,7 @@ jobs:
       - name: Commit fix
         shell: bash
         run: |
-          rm -f .github/workflows/agent-runtime-record-scroll.yml
+          rm -f .github/workflows/agent-runtime-record-scroll.yml patch-error.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add code/th_14_panels.js scripts/verify_coloros_rhino_color_safety.py .github/workflows/agent-runtime-record-scroll.yml
