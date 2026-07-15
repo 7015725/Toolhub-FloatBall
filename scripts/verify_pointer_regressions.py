@@ -628,6 +628,22 @@ def verify_text_release(result, pointer, position, panels, entry):
         "recent candidate does not use unified release completion",
     )
 
+    result.require(
+        group,
+        "final scan reuses prepared automation and caps fallback windows",
+        "preparedAutomation" in pointer
+        and 'preparedAutomation || this.getPointerUiAutomation(isFinal ? "final_prepare" : "scan")' in pointer
+        and 'this.getPointerUiAutomation("final_prepare")' in pointer
+        and 'this.getPointerActiveRoot(isFinal ? "final_scan" : "scan", a)' in pointer
+        and "activeWindowId" in pointer
+        and "maxExtraWindows = isFinal ? 2 : 1" in pointer
+        and "windowsScanned" in pointer
+        and "windowsQueryMs" in pointer
+        and "windowsScanMs" in pointer
+        and "fallbackSkippedDueBudget" in pointer,
+        "final accessibility scan must reuse one UiAutomation and bound extra-window Binder work",
+    )
+
     for forbidden in (
         "getRecentReadyPointerPick",
         "restoreRecentReadyPointerPick",
