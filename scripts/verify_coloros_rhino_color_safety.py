@@ -87,6 +87,12 @@ for token in (
     "loops = Math.max(1, Math.min(300, loops))",
     "drawableClass.indexOf(\"RippleDrawable\") >= 0",
     "colorState.getColorForState(pressedState, normalColor)",
+    "FloatBallAppWM.prototype.getColorSafetyRuntimeResultFile = function",
+    "FloatBallAppWM.prototype.saveColorSafetyRuntimeSelfTestResult = function",
+    "FloatBallAppWM.prototype.loadColorSafetyRuntimeSelfTestResult = function",
+    "FloatBallAppWM.prototype.formatColorSafetyRuntimeSelfTestSummary = function",
+    "ToolHub/diagnostics/color-safety-last.json",
+    "result.completedAt = Number(java.lang.System.currentTimeMillis())",
 ):
     if token not in THEME:
         errors.append("runtime color self-test contract missing: %s" % token)
@@ -95,12 +101,20 @@ for token in (
     "FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function",
     "self.runColorSafetyRuntimeSelfTest(160)",
     "String(groupKey || \"\") === \"debug\"",
-    "不附着窗口、不使用 framework RippleDrawable，也不会自动运行",
+    "不会自动运行。结果保存到 ToolHub/diagnostics/color-safety-last.json，可复制摘要",
+    "FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function",
+    "clipboard.setPrimaryClip(clip)",
+    "复制诊断摘要",
 ):
     if token not in PANELS:
         errors.append("settings runtime diagnostic contract missing: %s" % token)
 if ALL_JS.count(".runColorSafetyRuntimeSelfTest(") != 1:
     errors.append("runtime color self-test must have exactly one manual invocation")
+copy_block = re.search(r"FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function\(\) \{.*?\n\};", PANELS, re.S)
+if not copy_block:
+    errors.append("runtime diagnostic copy method missing")
+elif copy_block.group(0).count(".setPrimaryClip(") != 1:
+    errors.append("runtime diagnostic copy method must have exactly one clipboard write")
 if PANELS.count("createColorSafetyRuntimeDiagnosticCard();") < 2:
     errors.append("runtime diagnostic card is not wired into both wide and compact settings layouts")
 for token in (
@@ -122,10 +136,10 @@ else:
 
 if module_version(BASE, "th_01_base.js") < (1, 1, 12):
     errors.append("th_01_base.js version below pressed feedback baseline 1.1.12")
-if module_version(THEME, "th_04_theme.js") < (1, 0, 9):
-    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.9")
-if module_version(PANELS, "th_14_panels.js") < (1, 0, 22):
-    errors.append("th_14_panels.js version below runtime diagnostic compact-layout baseline 1.0.22")
+if module_version(THEME, "th_04_theme.js") < (1, 0, 10):
+    errors.append("th_04_theme.js version below ColorOS result persistence baseline 1.0.10")
+if module_version(PANELS, "th_14_panels.js") < (1, 0, 23):
+    errors.append("th_14_panels.js version below runtime diagnostic export baseline 1.0.23")
 if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 8):
     errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.8")
 
