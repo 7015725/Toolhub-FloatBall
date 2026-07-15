@@ -1,4 +1,4 @@
-// @version 1.1.10
+// @version 1.1.11
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -468,8 +468,8 @@ var CONST_BALL_INIT_Y_DP = 220;
 var CONST_BALL_FALLBACK_LIGHT = "#FF005BC0";
 var CONST_BALL_FALLBACK_DARK = "#FFA8C7FA";
 var CONST_SHORTX_PACKAGE = "tornaco.apps.shortx";
-var CONST_BALL_RIPPLE_ALPHA_LIGHT = 0.22;
-var CONST_BALL_RIPPLE_ALPHA_DARK = 0.28;
+var CONST_BALL_PRESS_ALPHA_LIGHT = 0.22;
+var CONST_BALL_PRESS_ALPHA_DARK = 0.28;
 var CONST_ACTION_CLOSE_ALL_RULE = "shortx.wm.floatball.CLOSE";
 var CONST_WM_THREAD_NAME = "SX-WM-FLOATBALL-HT";
 var CONST_LOG_PREFIX = "ShortX_ToolHub";
