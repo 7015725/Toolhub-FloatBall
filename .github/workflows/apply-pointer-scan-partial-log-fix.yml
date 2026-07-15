@@ -1,16 +1,15 @@
 name: apply-pointer-scan-partial-log-fix
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened]
+  push:
+    branches: [fix/pointer-scan-partial-log-20260715]
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/pointer-scan-partial-log-20260715'
+    if: github.ref == 'refs/heads/fix/pointer-scan-partial-log-20260715'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,13 +18,12 @@ jobs:
           fetch-depth: 0
           token: ${{ github.token }}
       - run: python3 scripts/_apply_pointer_scan_partial_log_fix.py
-      - run: |
-          rm -f scripts/_apply_pointer_scan_partial_log_fix.py
-          rm -f .github/workflows/apply-pointer-scan-partial-log-fix.yml
       - run: python3 .github/scripts/es5_scan.py
       - run: python3 scripts/verify_js_syntax.py
-      - run: |
-          python3 - <<'PY'
+      - name: Verify pointer contracts
+        run: |
+          set +e
+          python3 - <<'PY' > pointer_verify.log 2>&1
           import importlib.util
           from pathlib import Path
           path = Path('scripts/verify_pointer_regressions.py')
@@ -35,9 +33,21 @@ jobs:
           module.verify_manifest = lambda result: None
           raise SystemExit(module.main())
           PY
+          status=$?
+          cat pointer_verify.log
+          exit $status
+      - name: Upload pointer verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pointer-partial-log-verify
+          path: pointer_verify.log
       - run: python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
       - run: git diff --check
       - run: |
+          rm -f scripts/_apply_pointer_scan_partial_log_fix.py
+          rm -f .github/workflows/apply-pointer-scan-partial-log-fix.yml
+          rm -f pointer_verify.log
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
