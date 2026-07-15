@@ -120,9 +120,9 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "e3604b3ebcb45a578aef3eeb7435c2025ba11e9990d3d06cde10ac5957a62d0b",
-      "size": 168841,
-      "version": "1.2.6"
+      "sha256": "6187f45edcdbbf26d048233d8f128f46354895bf764bb0a5abeddf5b3f461723",
+      "size": 171129,
+      "version": "1.2.7"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "3d86a567b30c93b912de35e0e9d622dcdefb805187e25538a1f5ee4f92fb7454",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "收敛指针最终扫描耗时"
+      "绑定指针绘制健康检查到当前 root"
     ],
-    "title": "收敛指针最终扫描耗时"
+    "title": "绑定指针绘制健康检查到当前 root"
   },
   "schema": 3,
-  "version": 20260715113517
+  "version": 20260715115149
 }

@@ -907,6 +907,18 @@ def verify_pointer_draw_visibility(result, pointer):
     )
     result.require(
         group,
+        "draw health is bound to one pointer root",
+        "pointerRootDrawSuccessToken" in state
+        and "isCurrentPointerRoot" in canvas
+        and "var rootRef = pointerState.root;" in canvas
+        and "var rootToken = Number(pointerState.pointerRootToken || 0);" in canvas
+        and "st.pointerRootDrawSuccessToken = rootToken;" in canvas
+        and 'rebuildPointerWindowForDraw(pointerState, "first_frame_missing", rootRef, rootToken)' in canvas
+        and "requestPointerRedraw(pointerState, newRoot, newRootToken)" in canvas,
+        "health, rebuild and redraw callbacks must stay scoped to the root that scheduled them",
+    )
+    result.require(
+        group,
         "show move and reflow request redraw",
         "requestPointerRedraw(st);" in show
         and "schedulePointerDrawHealthCheck(st, 120);" in show
