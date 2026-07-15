@@ -1,4 +1,4 @@
-// @version 1.2.7
+// @version 1.2.8
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -105,6 +105,16 @@ function th17CleanNodeText(v) {
   var s = "";
   try { s = String(v); } catch (e0) { s = ""; }
   s = s.replace(/^\s+|\s+$/g, "");
+  return s;
+}
+
+function th17LogSingleLine(value, maxLen) {
+  var s = "";
+  try { s = String(value === null || value === undefined ? "" : value); } catch (e0) { s = ""; }
+  s = s.replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+  var limit = Number(maxLen || 160);
+  if (isNaN(limit) || limit < 16) limit = 160;
+  if (s.length > limit) s = s.substring(0, limit) + "...";
   return s;
 }
 
@@ -596,7 +606,7 @@ FloatBallAppWM.prototype.grantPointerTextHoverCredential = function(st, atTs) {
   try {
     safeLog(this.L, 'i',
       "pointer text hover credential granted elapsed=" + String(Math.max(0, ts - since)) +
-      " key=" + key
+      " key=" + th17LogSingleLine(key, 180)
     );
   } catch (eLog) {}
   return true;
@@ -2743,7 +2753,8 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
   var activeRootMs = 0;
   var windowsQueryMs = 0;
   var windowsScanMs = 0;
-  var fallbackSkippedDueBudget = false;
+  var fallbackPartial = false;
+  var fallbackSkipReason = "";
 
   var automationStart = th17Now();
   var a = preparedAutomation || this.getPointerUiAutomation(isFinal ? "final_prepare" : "scan");
@@ -2781,7 +2792,8 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
     var maxExtraWindows = isFinal ? 2 : 1;
     var remainingBeforeWindows = limitMs - (th17Now() - start);
     if (remainingBeforeWindows <= minFallbackBudgetMs) {
-      fallbackSkippedDueBudget = true;
+      fallbackPartial = true;
+      fallbackSkipReason = "low_budget";
     } else {
       try {
         if (a && a.getWindows) {
@@ -2793,12 +2805,19 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
             var windowsScanStart = th17Now();
             for (var wi = 0; wi < windowsCount; wi++) {
               var elapsedBeforeWindow = th17Now() - start;
-              if (elapsedBeforeWindow >= limitMs || count.n >= maxNodes) {
-                fallbackSkippedDueBudget = true;
+              if (elapsedBeforeWindow >= limitMs) {
+                fallbackPartial = true;
+                fallbackSkipReason = "time_budget";
+                break;
+              }
+              if (count.n >= maxNodes) {
+                fallbackPartial = true;
+                fallbackSkipReason = "node_budget";
                 break;
               }
               if (windowsScanned >= maxExtraWindows) {
-                fallbackSkippedDueBudget = true;
+                fallbackPartial = true;
+                fallbackSkipReason = "window_cap";
                 break;
               }
 
@@ -2812,7 +2831,8 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
 
                 var remainingForRoot = limitMs - (th17Now() - start);
                 if (remainingForRoot <= 15) {
-                  fallbackSkippedDueBudget = true;
+                  fallbackPartial = true;
+                  fallbackSkipReason = "low_budget";
                   break;
                 }
 
@@ -2844,7 +2864,15 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
   }
 
   var cost = th17Now() - start;
-  var timedOut = cost >= limitMs || count.n >= maxNodes || fallbackSkippedDueBudget === true;
+  var budgetTimedOut =
+    cost >= limitMs ||
+    count.n >= maxNodes ||
+    fallbackSkipReason === "time_budget" ||
+    fallbackSkipReason === "node_budget" ||
+    fallbackSkipReason === "low_budget";
+  // 普通 drag/retry 达到主动窗口上限只表示部分扫描，不属于预算超时。
+  // final scan 仍把任何未扫描窗口视为不完整，保留 TEXT_SCAN_TIMEOUT 语义。
+  var timedOut = budgetTimedOut || (isFinal && fallbackPartial);
   return {
     seq: seq,
     session: session,
@@ -2862,6 +2890,8 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
     activeRootMs: activeRootMs,
     windowsQueryMs: windowsQueryMs,
     windowsScanMs: windowsScanMs,
+    partialWindows: fallbackPartial,
+    skipReason: fallbackSkipReason,
     timedOut: timedOut
   };
 };
@@ -2896,6 +2926,11 @@ FloatBallAppWM.prototype.schedulePointerInspectRetry = function(pack) {
 
   var reasonText = String(pack.reason || "");
   if (reasonText !== "drag" && reasonText.indexOf("drag_retry") !== 0) return false;
+  if (
+    pack.partialWindows === true &&
+    String(pack.skipReason || "") === "window_cap" &&
+    pack.timedOut !== true
+  ) return false;
   if (!st.handler) st.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
 
   if (reasonText === "drag") {
@@ -3136,7 +3171,7 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
   }
   try {
     if (Number(pack.costMs || 0) > 80 || pack.timedOut === true) {
-      safeLog(this.L, 'i', "pointer inspect cost=" + String(pack.costMs) + " budget=" + String(pack.budgetMs || 0) + " nodes=" + String(pack.nodes) + " windows=" + String(pack.windows) + " scanned=" + String(pack.windowsScanned || 0) + " automation=" + String(pack.automationMs || 0) + " active=" + String(pack.activeRootMs || 0) + " windowsQuery=" + String(pack.windowsQueryMs || 0) + " windowsScan=" + String(pack.windowsScanMs || 0) + " reason=" + String(pack.reason) + " timeout=" + String(pack.timedOut === true));
+      safeLog(this.L, 'i', "pointer inspect cost=" + String(pack.costMs) + " budget=" + String(pack.budgetMs || 0) + " nodes=" + String(pack.nodes) + " windows=" + String(pack.windows) + " scanned=" + String(pack.windowsScanned || 0) + " automation=" + String(pack.automationMs || 0) + " active=" + String(pack.activeRootMs || 0) + " windowsQuery=" + String(pack.windowsQueryMs || 0) + " windowsScan=" + String(pack.windowsScanMs || 0) + " reason=" + th17LogSingleLine(pack.reason, 80) + " partial=" + String(pack.partialWindows === true) + " skipReason=" + th17LogSingleLine(pack.skipReason, 40) + " timeout=" + String(pack.timedOut === true));
     }
   } catch (eLog) {}
   if (pack.finishAfterResult === true && st.active && !st.closed) {

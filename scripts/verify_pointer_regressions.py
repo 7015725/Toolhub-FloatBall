@@ -382,6 +382,19 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and "inspectRetryRunnable" in pointer_state,
         "timed-out drag scans must retry at the same hotspot without discarding a still-valid candidate",
     )
+    result.require(
+        group,
+        "window cap is partial but not drag timeout",
+        "var fallbackPartial = false;" in snapshot_scan
+        and 'fallbackSkipReason = "window_cap";' in snapshot_scan
+        and "var budgetTimedOut =" in snapshot_scan
+        and "var timedOut = budgetTimedOut || (isFinal && fallbackPartial);" in snapshot_scan
+        and "partialWindows: fallbackPartial" in snapshot_scan
+        and "skipReason: fallbackSkipReason" in snapshot_scan
+        and "pack.partialWindows === true" in retry_scan
+        and 'String(pack.skipReason || "") === "window_cap"' in retry_scan,
+        "drag window caps must remain observable without being classified or retried as budget timeouts",
+    )
 
     remove_callbacks = section(
         pointer,
@@ -548,6 +561,19 @@ def verify_text_release(result, pointer, position, panels, entry):
         "areaHoldSince" not in ready,
         "text ready state is coupled to OCR timing",
     )
+    credential = section(
+        pointer,
+        "FloatBallAppWM.prototype.grantPointerTextHoverCredential = function",
+        "FloatBallAppWM.prototype.hasPointerTextHoverCredential = function",
+    )
+    result.require(
+        group,
+        "dynamic credential key log stays on one line",
+        "function th17LogSingleLine(value, maxLen)" in pointer
+        and "th17LogSingleLine(key, 180)" in credential
+        and '" key=" + key' not in credential,
+        "hover credential logs must escape line separators instead of emitting raw candidate text",
+    )
 
     recent = section(
         pointer,
@@ -640,7 +666,9 @@ def verify_text_release(result, pointer, position, panels, entry):
         and "windowsScanned" in pointer
         and "windowsQueryMs" in pointer
         and "windowsScanMs" in pointer
-        and "fallbackSkippedDueBudget" in pointer,
+        and "fallbackPartial" in pointer
+        and "fallbackSkipReason" in pointer
+        and "budgetTimedOut" in pointer,
         "final accessibility scan must reuse one UiAutomation and bound extra-window Binder work",
     )
 
