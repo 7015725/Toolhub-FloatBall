@@ -66,12 +66,12 @@ replace_all_required(
     "main panel pressed overlay variable",
 )
 
-# 所有主面板静态契约同步到新模块版本。
+# 所有主面板静态契约同步到新模块版本，包括嵌入源码头的完整文本。
 updated_contracts = []
 for path in sorted(SCRIPTS.glob("verify_*.py")):
     text = path.read_text(encoding="utf-8")
-    if '"1.5.7"' in text:
-        path.write_text(text.replace('"1.5.7"', '"1.5.8"'), encoding="utf-8")
+    if "1.5.7" in text:
+        path.write_text(text.replace("1.5.7", "1.5.8"), encoding="utf-8")
         updated_contracts.append(path.name)
 
 replace_all_required(
