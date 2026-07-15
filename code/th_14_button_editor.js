@@ -944,7 +944,7 @@ FloatBallAppWM.prototype.buildButtonAppPickerInline = function(opts) {
       var items = [];
       try { items = loadItems(); } catch(eLoad) { items = []; }
       try {
-        self.runOnUiThreadSafe(function() { applyLoaded(items, generation); });
+        list.post(new java.lang.Runnable({ run: function() { applyLoaded(items, generation); } }));
       } catch(eUi) {
         try { list.post(new java.lang.Runnable({ run: function() { applyLoaded(items, generation); } })); } catch(ePost) {}
       }
