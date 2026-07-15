@@ -1,0 +1,2 @@
+MAJOR_EVENT_LOGGING_ERRORS 1
+ERROR major-event logging contract missing: 最近异常事件
