@@ -8,8 +8,8 @@ text = path.read_text(encoding="utf-8")
 errors = []
 
 match = re.search(r"^//\s*@version\s+(\d+)\.(\d+)\.(\d+)", text)
-if not match or tuple(map(int, match.groups())) < (1, 0, 6):
-    errors.append("th_08_content.js version below major-event severity baseline 1.0.6")
+if not match or tuple(map(int, match.groups())) < (1, 0, 7):
+    errors.append("th_08_content.js version below major-event severity baseline 1.0.7")
 
 required = (
     "TH_MAJOR ",
@@ -57,6 +57,18 @@ required = (
     "最近故障会话",
     "故障会话",
     "重复折叠",
+    "getRecentMajorFaultGroups",
+    "getMajorFaultSessionDetail",
+    "showMajorFaultSessionDetail",
+    "formatMajorFaultGroupDetail",
+    "formatMajorFaultEventDetail",
+    "buildMajorFaultClickableSummary",
+    "android.text.style.ClickableSpan",
+    "android.text.method.LinkMovementMethod",
+    "故障会话详情",
+    "点击任一故障会话查看详情",
+    "完整事件顺序",
+    "Boot 判断",
     'wrap(p, "createColorSafetyRuntimeDiagnosticCard"',
     '"WM_ADD_BEGIN"',
     '"WM_ADD_DONE"',
@@ -133,4 +145,4 @@ if errors:
     for error in errors:
         print("ERROR", error)
     raise SystemExit(1)
-print("OK major_event_logging daily_log_only=1 test_lifecycle=1 test_interruption=1 runtime_records=1 severity_filter=1 details_toggle=1 session_aggregation=1 duplicate_collapse=1 crash_handler_singleton=1 wm_checkpoints=1 content_api_preserved=1")
+print("OK major_event_logging daily_log_only=1 test_lifecycle=1 test_interruption=1 runtime_records=1 severity_filter=1 details_toggle=1 session_aggregation=1 duplicate_collapse=1 detail_view=1 clickable_fault_sessions=1 raw_event_order=1 pid_boot_evidence=1 crash_handler_singleton=1 wm_checkpoints=1 content_api_preserved=1")
