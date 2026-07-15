@@ -25,9 +25,9 @@
       "version": "2.0.0"
     },
     "th_04_theme.js": {
-      "sha256": "93dc5d71428c57afd5eac9119f7715d34f551d0fc34420f004b8afaced2fd4dc",
-      "size": 50468,
-      "version": "1.0.8"
+      "sha256": "41d79651c377b7ad0bada1d6e8a66f35dc7de00adf0e09f0699e81326494e21d",
+      "size": 55495,
+      "version": "1.0.9"
     },
     "th_05_persistence.js": {
       "sha256": "632361cfa4123574dfa8a21ed5c276b188c1b8bc7d1a4360825cae458ce60da6",
@@ -95,9 +95,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "afcee7b6b78781b248ea21845e421c9464334c4cb0d8737b473a2ae8273fbcb0",
-      "size": 119979,
-      "version": "1.0.20"
+      "sha256": "2836d9975398a0153fe5f4c1255a01597ca3548f81d60bcede7b773f433b56ad",
+      "size": 126639,
+      "version": "1.0.21"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "闭环迁移悬浮球按压透明度配置"
+      "增加 ColorOS 颜色安全运行时自检"
     ],
-    "title": "闭环迁移悬浮球按压透明度配置"
+    "title": "增加 ColorOS 颜色安全运行时自检"
   },
   "schema": 3,
-  "version": 20260715005808
+  "version": 20260715011247
 }

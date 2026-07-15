@@ -1,4 +1,4 @@
-// @version 1.0.8
+// @version 1.0.9
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -1090,6 +1090,76 @@ FloatBallAppWM.prototype.getBallPressedOverlayAlpha = function(isDark) {
   } catch (eCurrent) { alpha01 = fallback; }
   if (!(alpha01 >= 0 && alpha01 <= 1)) alpha01 = fallback;
   return Math.max(0, Math.min(1, alpha01));
+};
+
+FloatBallAppWM.prototype.getColorSafetyRuntimeContext = function() {
+  var out = { manufacturer: "", brand: "", model: "", display: "", release: "", sdk: 0, dark: false, pressAlpha: 0, process: "" };
+  try { out.manufacturer = String(android.os.Build.MANUFACTURER || ""); } catch(e0) {}
+  try { out.brand = String(android.os.Build.BRAND || ""); } catch(e1) {}
+  try { out.model = String(android.os.Build.MODEL || ""); } catch(e2) {}
+  try { out.display = String(android.os.Build.DISPLAY || ""); } catch(e3) {}
+  try { out.release = String(android.os.Build.VERSION.RELEASE || ""); } catch(e4) {}
+  try { out.sdk = Number(android.os.Build.VERSION.SDK_INT || 0); } catch(e5) { out.sdk = 0; }
+  try { out.dark = this.isDarkTheme ? !!this.isDarkTheme() : false; } catch(e6) { out.dark = false; }
+  try { out.pressAlpha = Number(this.getBallPressedOverlayAlpha(out.dark)); } catch(e7) { out.pressAlpha = 0; }
+  try {
+    var pi = getProcessInfo("color_safety_runtime");
+    out.process = String(pi.processName || pi.packageName || "");
+  } catch(e8) {}
+  return out;
+};
+
+FloatBallAppWM.prototype.runColorSafetyRuntimeSelfTest = function(iterations) {
+  var loops = parseInt(String(iterations), 10);
+  if (isNaN(loops) || loops <= 0) loops = 160;
+  loops = Math.max(1, Math.min(300, loops));
+  var startedAt = java.lang.System.currentTimeMillis();
+  var runtime = this.getColorSafetyRuntimeContext ? this.getColorSafetyRuntimeContext() : {};
+  var result = { ok: false, loops: loops, durationMs: 0, drawableClass: "", layerClass: "", error: "", runtime: runtime };
+  safeLog(this.L, "i", "color safety self-test start loops=" + String(loops) + " manufacturer=" + String(runtime.manufacturer || "") + " model=" + String(runtime.model || "") + " sdk=" + String(runtime.sdk || 0) + " process=" + String(runtime.process || ""));
+  try {
+    var palette = [
+      android.graphics.Color.parseColor("#FF005BC0"),
+      android.graphics.Color.parseColor("#FFA8C7FA"),
+      android.graphics.Color.parseColor("#FF22C55E"),
+      android.graphics.Color.parseColor("#FFBA1A1A")
+    ];
+    var pressedState = toolhubJintArray([android.R.attr.state_pressed]);
+    var defaultState = toolhubJintArray([]);
+    for (var i = 0; i < loops; i++) {
+      var normalColor = palette[i % palette.length];
+      var overlayAlpha = (i % 2 === 0) ? CONST_BALL_PRESS_ALPHA_LIGHT : CONST_BALL_PRESS_ALPHA_DARK;
+      var pressedColor = toolhubCompositeColor(this.withAlpha(normalColor, overlayAlpha), normalColor);
+      var drawable = this.ui.createPressedStateDrawable(normalColor, pressedColor, this.dp(8 + (i % 5)));
+      var drawableClass = toolhubJavaClassName(drawable);
+      if (!drawable || drawableClass.indexOf("StateListDrawable") < 0 || drawableClass.indexOf("RippleDrawable") >= 0) throw "unsafe drawable class at loop " + String(i) + ": " + drawableClass;
+      drawable.setState(pressedState);
+      var pressedLayer = drawable.getCurrent();
+      var pressedLayerClass = toolhubJavaClassName(pressedLayer);
+      if (!pressedLayer || pressedLayerClass.indexOf("GradientDrawable") < 0 || pressedLayerClass.indexOf("RippleDrawable") >= 0) throw "unsafe pressed layer at loop " + String(i) + ": " + pressedLayerClass;
+      drawable.setState(defaultState);
+      var normalLayer = drawable.getCurrent();
+      var normalLayerClass = toolhubJavaClassName(normalLayer);
+      if (!normalLayer || normalLayerClass.indexOf("GradientDrawable") < 0 || normalLayerClass.indexOf("RippleDrawable") >= 0) throw "unsafe default layer at loop " + String(i) + ": " + normalLayerClass;
+      var colorState = toolhubSafeColorStateListFromStates([[android.R.attr.state_pressed], []], [pressedColor, normalColor]);
+      if (!toolhubIsColorStateList(colorState)) throw "ColorStateList creation failed at loop " + String(i);
+      var resolvedPressed = toolhubColorInt(colorState.getColorForState(pressedState, normalColor), 0);
+      var resolvedDefault = toolhubColorInt(colorState.getDefaultColor(), 0);
+      if (resolvedPressed !== toolhubColorInt(pressedColor, 0)) throw "pressed color mismatch at loop " + String(i);
+      if (resolvedDefault !== toolhubColorInt(normalColor, 0)) throw "default color mismatch at loop " + String(i);
+      result.drawableClass = drawableClass;
+      result.layerClass = pressedLayerClass;
+    }
+    result.ok = true;
+  } catch(eTest) {
+    result.ok = false;
+    result.error = String(eTest);
+  }
+  result.durationMs = Math.max(0, Number(java.lang.System.currentTimeMillis() - startedAt));
+  try { if (!this.state) this.state = {}; this.state.colorSafetyRuntimeSelfTest = result; } catch(eState) {}
+  if (result.ok) safeLog(this.L, "i", "color safety self-test pass loops=" + String(result.loops) + " durationMs=" + String(result.durationMs) + " drawable=" + String(result.drawableClass) + " layer=" + String(result.layerClass));
+  else safeLog(this.L, "e", "color safety self-test fail loops=" + String(result.loops) + " durationMs=" + String(result.durationMs) + " error=" + String(result.error));
+  return result;
 };
 
 FloatBallAppWM.prototype.updateBallContentBackground = function(contentView, usedIconKind) {
