@@ -26,6 +26,25 @@ jobs:
       - name: Apply result persistence and export
         run: python3 scripts/apply_color_safety_result_export.py
 
+      - name: Scope clipboard contract to diagnostic copy method
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/verify_coloros_rhino_color_safety.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''if ALL_JS.count(".setPrimaryClip(") != 1:
+              errors.append("runtime diagnostic summary must have exactly one clipboard write")'''
+          new = '''copy_block = re.search(r"FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function\\(\\) \\{.*?\\n\\};", PANELS, re.S)
+          if not copy_block:
+              errors.append("runtime diagnostic copy method missing")
+          elif copy_block.group(0).count(".setPrimaryClip(") != 1:
+              errors.append("runtime diagnostic copy method must have exactly one clipboard write")'''
+          if text.count(old) != 1:
+              raise SystemExit('clipboard contract marker mismatch')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Refresh dead code audit
         run: python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
 
