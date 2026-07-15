@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.1.0
 // =======================【Shell 按钮诊断】=======================
 FloatBallAppWM.prototype.getShellDiagCommandMeta = function(cmdPlain, cmdB64) {
   var plain = "";
@@ -176,35 +176,74 @@ FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
     var pkg = btn.pkg ? String(btn.pkg) : "";
     if (!pkg) { this.toast("按钮#" + idx + " 缺少 pkg"); return; }
 
-    var it = context.getPackageManager().getLaunchIntentForPackage(pkg);
-    if (!it) { this.toast("无法启动 " + pkg); return; }
+    var launchUid = 0;
+    try {
+      if (btn.launchUserId != null && String(btn.launchUserId).length > 0) launchUid = parseInt(String(btn.launchUserId), 10);
+    } catch(eLU0) { launchUid = 0; }
+    if (isNaN(launchUid)) launchUid = 0;
+
+    var userHandle = null;
+    var launcherApps = null;
+    var launchComponent = null;
+    var it = null;
+    try { userHandle = android.os.UserHandle.of(launchUid); } catch(eUserHandle) { userHandle = null; }
+    try { launcherApps = context.getSystemService(android.content.Context.LAUNCHER_APPS_SERVICE); } catch(eLauncherApps) { launcherApps = null; }
+
+    // 主用户优先走 PackageManager；分身/工作资料用户通过 LauncherApps 查询其独立启动 Activity。
+    if (launchUid === 0) {
+      try { it = context.getPackageManager().getLaunchIntentForPackage(pkg); } catch(eMainIntent) { it = null; }
+    }
+    if (!it && launcherApps && userHandle) {
+      try {
+        var launchActivities = launcherApps.getActivityList(pkg, userHandle);
+        if (launchActivities && launchActivities.size() > 0) {
+          var launchInfo = launchActivities.get(0);
+          launchComponent = launchInfo ? launchInfo.getComponentName() : null;
+          if (launchComponent) {
+            it = new android.content.Intent(android.content.Intent.ACTION_MAIN);
+            it.addCategory(android.content.Intent.CATEGORY_LAUNCHER);
+            it.setComponent(launchComponent);
+          }
+        }
+      } catch(eProfileIntent) {
+        safeLog(this.L, 'w', "resolve profile app fail pkg=" + pkg + " uid=" + String(launchUid) + " err=" + String(eProfileIntent));
+        it = null;
+      }
+    }
+    if (!it) {
+      this.toast("用户 " + String(launchUid) + " 中无法启动 " + pkg);
+      safeLog(this.L, 'e', "app launch activity missing pkg=" + pkg + " uid=" + String(launchUid));
+      return;
+    }
 
     it.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
-
-// # 系统级跨用户启动：Context.startActivityAsUser
-// 这段代码的主要内容/用途：支持"主应用/分身应用"选择，避免弹出选择器或误启动到另一用户。
-// 说明：当未配置 launchUserId 时，默认使用 0（主用户）；失败则回退 startActivity。
-var launchUid = 0;
-try {
-  if (btn.launchUserId != null && String(btn.launchUserId).length > 0) launchUid = parseInt(String(btn.launchUserId), 10);
-} catch(eLU0) { launchUid = 0; }
-if (isNaN(launchUid)) launchUid = 0;
-
-try {
-  // 运行日志：记录跨用户启动参数（便于定位分身启动失败原因）
-  safeLog(this.L, 'i',  "startAsUser(app) idx=" + idx + " pkg=" + pkg + " launchUserId=" + launchUid);
-  if (launchUid !== 0) {
-    context.startActivityAsUser(it, android.os.UserHandle.of(launchUid));
-  } else {
-    context.startActivity(it);
-  }
-} catch (eA) {
-  // # 兜底：某些 ROM/权限限制下 startActivityAsUser 可能抛异常，回退普通启动
-  try { context.startActivity(it);  } catch(eA2) { safeLog(null, 'e', "catch " + String(eA2)); }
-  this.toast("启动失败");
-  safeLog(this.L, 'e',  "start app fail pkg=" + pkg + " uid=" + String(launchUid) + " err=" + String(eA));
-}
-return;
+    try {
+      safeLog(this.L, 'i', "startAsUser(app) idx=" + idx + " pkg=" + pkg + " launchUserId=" + launchUid);
+      if (launchUid !== 0 && userHandle) context.startActivityAsUser(it, userHandle);
+      else context.startActivity(it);
+      return;
+    } catch (eA) {
+      // 分身启动失败时不能回退到主用户，避免误启动同包名的主应用。
+      if (launchUid !== 0 && launcherApps && userHandle && launchComponent) {
+        try {
+          launcherApps.startMainActivity(launchComponent, userHandle, null, null);
+          safeLog(this.L, 'i', "startMainActivity(app fallback) ok pkg=" + pkg + " uid=" + String(launchUid));
+          return;
+        } catch(eProfileFallback) {
+          safeLog(this.L, 'e', "startMainActivity(app fallback) fail pkg=" + pkg + " uid=" + String(launchUid) + " err=" + String(eProfileFallback));
+        }
+      } else {
+        try {
+          context.startActivity(it);
+          return;
+        } catch(eMainFallback) {
+          safeLog(this.L, 'e', "start app main fallback fail pkg=" + pkg + " err=" + String(eMainFallback));
+        }
+      }
+      this.toast("启动失败");
+      safeLog(this.L, 'e', "start app fail pkg=" + pkg + " uid=" + String(launchUid) + " err=" + String(eA));
+      return;
+    }
   }
 
   if (t === "shell") {
