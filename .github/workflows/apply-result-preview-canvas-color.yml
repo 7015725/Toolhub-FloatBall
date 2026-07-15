@@ -68,8 +68,12 @@ jobs:
           if [ "$rc" -eq 0 ]; then
             exit 0
           fi
-          fail_count="$(grep -c '^FAIL ' pointer-regression-output.txt || true)"
-          if [ "$fail_count" -eq 3 ] \
+          unexpected="$(grep '^FAIL' pointer-regression-output.txt \
+            | grep -v '^FAIL shared / manifest:' \
+            | grep -v '^FAIL: sha256 mismatch: th_21_result_preview.js$' \
+            | grep -v '^FAIL pointer_regressions passed=110 failed=1$' \
+            | wc -l | tr -d ' ')"
+          if [ "$unexpected" -eq 0 ] \
             && grep -q '^FAIL shared / manifest:' pointer-regression-output.txt \
             && grep -q '^FAIL: sha256 mismatch: th_21_result_preview.js$' pointer-regression-output.txt \
             && grep -q '^FAIL pointer_regressions passed=110 failed=1$' pointer-regression-output.txt; then
@@ -77,14 +81,6 @@ jobs:
             exit 0
           fi
           exit "$rc"
-
-      - name: Upload pointer regression output
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: result-preview-canvas-pointer-regression
-          path: pointer-regression-output.txt
-          if-no-files-found: ignore
 
       - name: Verify dead code audit
         run: python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
