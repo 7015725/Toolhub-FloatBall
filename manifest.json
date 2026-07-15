@@ -95,9 +95,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "4d11fc21d01e3c5544ae32a20b172f312031d7e300b38f28670a7c507b5c0692",
-      "size": 136102,
-      "version": "1.0.24"
+      "sha256": "bb96c2f40a42e9afc850ea59830d58e00bd1aa12c11d6b06e35beffc940aecbf",
+      "size": 122126,
+      "version": "1.0.25"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "增加故障会话详情展开"
+      "取消运行自检并修复运行记录滚动"
     ],
-    "title": "增加故障会话详情展开"
+    "title": "取消运行自检并修复运行记录滚动"
   },
   "schema": 3,
-  "version": 20260715045121
+  "version": 20260715052800
 }
