@@ -24,17 +24,25 @@ jobs:
       - name: Apply patch
         run: python3 scripts/_apply_result_preview_canvas_color.py
 
-      - name: Fix generated verifier scope
+      - name: Normalize generated sources
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          path = Path('scripts/verify_result_preview.py')
-          text = path.read_text(encoding='utf-8')
-          old = 'and "android.graphics.PixelFormat.TRANSLUCENT" not in create_lp,'
-          new = 'and "android.graphics.PixelFormat.TRANSLUCENT" not in preview,'
-          if old not in text:
+
+          verifier = Path('scripts/verify_result_preview.py')
+          verifier_text = verifier.read_text(encoding='utf-8')
+          old_scope = 'and "android.graphics.PixelFormat.TRANSLUCENT" not in create_lp,'
+          new_scope = 'and "android.graphics.PixelFormat.TRANSLUCENT" not in preview,'
+          if old_scope not in verifier_text:
               raise SystemExit('missing generated verifier scope anchor')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          verifier.write_text(verifier_text.replace(old_scope, new_scope, 1), encoding='utf-8')
+
+          preview = Path('code/th_21_result_preview.js')
+          preview_text = preview.read_text(encoding='utf-8')
+          direct_bg = '    try { PreviewView.setBackgroundColor(android.graphics.Color.TRANSPARENT); } catch (eBackground) {}\n'
+          if direct_bg not in preview_text:
+              raise SystemExit('missing direct background color anchor')
+          preview.write_text(preview_text.replace(direct_bg, '', 1), encoding='utf-8')
           PY
 
       - name: Verify Rhino ES5
