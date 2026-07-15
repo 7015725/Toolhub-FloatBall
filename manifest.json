@@ -70,9 +70,9 @@
       "version": "1.0.9"
     },
     "th_14_button_editor.js": {
-      "sha256": "51534aae2509e1b11608daf9c4b58ff7eeb3b1f1bc38dba85e510263f1412802",
-      "size": 96633,
-      "version": "1.1.0"
+      "sha256": "3df91a233ef9d6c7f21f19e39f123e711136f4af568c25c20739ae8a2e6e32d6",
+      "size": 97706,
+      "version": "1.1.1"
     },
     "th_14_button_icon_editor.js": {
       "sha256": "a568f94170b4707d5a0fddc6b48b6b49bfcd630be4fc0ac1a6864c9dddbb4cc2",
@@ -153,5 +153,5 @@
     "title": "隐藏应用按钮内部配置字段"
   },
   "schema": 3,
-  "version": 20260715075957
+  "version": 20260715084648
 }

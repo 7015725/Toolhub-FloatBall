@@ -35,6 +35,8 @@ def main():
         ("manager uses compact card marker", "按钮管理紧凑列表卡片：信息 + 状态 + 更多" in button_text),
         ("manager shows enabled/disabled count", "共 \" + buttons.length + \" 个 · 启用 \" + enabledCount + \" · 暂停 \" + disabledCount" in button_text),
         ("manager has filter chips", "buttonManagerFilter" in button_text and "快捷方式" in button_text and "broadcast" in button_text),
+        ("app editor hides package and user fields", "应用包名 (Package)" not in button_text and "启动用户ID (" not in button_text),
+        ("app picker owns package and user state", "selectedPkg: str(targetBtn.pkg)" in button_text and "selectedUserId: initialUserId" in button_text and "getPkg: function()" in button_text and "getUserId: function()" in button_text),
         ("manager has sort mode", "buttonManagerSortMode" in button_text and "sortMode ? \"完成\" : \"排序\"" in button_text),
         ("manager action sheet keeps deferred save wording", "点保存布置生效" in button_text and "点不改了可撤销" in button_text),
         ("manager list item toggle is deferred", "已暂停，点保存布置生效" in button_text and "已启用，点保存布置生效" in button_text),
