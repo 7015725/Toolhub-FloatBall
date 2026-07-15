@@ -1,4 +1,4 @@
-// @version 1.0.23
+// @version 1.0.24
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -1217,6 +1217,61 @@ FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = fun
   return false;
 };
 
+
+FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function(anchorView) {
+  var self = this;
+  try {
+    if (!this.state) return;
+    if (this.state.settingsInteractionStressRunning) { try { this.toast("设置页控件压力测试正在进行"); } catch(eToast0) {} return; }
+    if (!this.runSettingsInteractionStressTest) { try { this.toast("设置页控件压力测试模块未加载"); } catch(eToast1) {} return; }
+    this.state.settingsInteractionStressRunning = true;
+    safeLog(this.L, "i", "settings interaction stress requested from settings loops=120");
+    try { this.toast("正在运行设置页控件压力测试"); } catch(eToast2) {}
+    var task = new java.lang.Runnable({
+      run: function() {
+        var ret = null;
+        try { ret = self.runSettingsInteractionStressTest(120); }
+        catch(eRun) { ret = { ok: false, loops: 120, durationMs: 0, error: String(eRun) }; safeLog(self.L, "e", "settings interaction stress run fail error=" + String(eRun)); }
+        try { self.state.settingsInteractionStressRunning = false; self.state.settingsInteractionStressResult = ret; } catch(eState) {}
+        try {
+          var msg = ret && ret.ok ? ("设置页控件压力测试通过：" + String(ret.loops || 0) + " 次，" + String(ret.durationMs || 0) + "ms") : ("设置页控件压力测试失败：" + String(ret && ret.error ? ret.error : "unknown"));
+          if (self.setInlineNotice) self.setInlineNotice(msg, ret && ret.ok ? "ok" : "error"); else self.toast(msg);
+        } catch(eNotice) {}
+        try {
+          var route = self.state && self.state.toolAppRoute ? String(self.state.toolAppRoute) : "";
+          if (self.state && self.state.toolAppActive && route === "settings_group" && self.replaceToolAppPage) self.replaceToolAppPage("settings_group");
+        } catch(eRefresh) {}
+      }
+    });
+    if (anchorView && anchorView.post) anchorView.post(task);
+    else new android.os.Handler(android.os.Looper.getMainLooper()).post(task);
+  } catch(eStart) {
+    try { this.state.settingsInteractionStressRunning = false; } catch(eFlag) {}
+    safeLog(this.L, "e", "start settings interaction stress fail error=" + String(eStart));
+    try { this.toast("启动设置页控件压力测试失败"); } catch(eToast3) {}
+  }
+};
+
+FloatBallAppWM.prototype.copySettingsInteractionStressSummaryFromSettings = function() {
+  try {
+    var last = this.getLastSettingsInteractionStressResult ? this.getLastSettingsInteractionStressResult() : (this.state ? this.state.settingsInteractionStressResult : null);
+    if (!last) { try { this.toast("请先运行设置页控件压力测试"); } catch(eToast0) {} return false; }
+    var text = this.formatSettingsInteractionStressSummary ? this.formatSettingsInteractionStressSummary(last) : "";
+    if (!text) { try { this.toast("控件压力摘要生成失败"); } catch(eToast1) {} return false; }
+    var clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+    if (!clipboard) throw "clipboard service unavailable";
+    var clip = android.content.ClipData.newPlainText("ToolHub 设置页控件压力测试", text);
+    clipboard.setPrimaryClip(clip);
+    safeLog(this.L, "i", "settings interaction stress summary copied length=" + String(text.length));
+    try { this.toast("控件压力摘要已复制"); } catch(eToast2) {}
+    return true;
+  } catch(eCopy) {
+    safeLog(this.L, "e", "copy settings interaction stress summary fail error=" + String(eCopy));
+    try { this.toast("复制控件压力摘要失败"); } catch(eToast3) {}
+  }
+  return false;
+};
+
 FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -1224,6 +1279,8 @@ FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
   var T = this.getSettingsColorScheme();
   var running = !!(this.state && this.state.colorSafetyRuntimeSelfTestRunning);
   var last = this.getLastColorSafetyRuntimeSelfTestResult ? this.getLastColorSafetyRuntimeSelfTestResult() : (this.state ? this.state.colorSafetyRuntimeSelfTest : null);
+  var interactionRunning = !!(this.state && this.state.settingsInteractionStressRunning);
+  var interactionLast = this.getLastSettingsInteractionStressResult ? this.getLastSettingsInteractionStressResult() : (this.state ? this.state.settingsInteractionStressResult : null);
   var runtime = this.getColorSafetyRuntimeContext ? this.getColorSafetyRuntimeContext() : {};
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -1238,7 +1295,7 @@ FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
   card.addView(title, new android.widget.LinearLayout.LayoutParams(-1, -2));
 
   var desc = new android.widget.TextView(context);
-  desc.setText("手动创建并切换 160 组 StateListDrawable 与 ColorStateList；不会自动运行。结果保存到 ToolHub/diagnostics/color-safety-last.json，可复制摘要。");
+  desc.setText("颜色底层自检验证 Drawable/ColorStateList；控件压力测试验证实际 Row、Switch、SeekBar 与按钮。两项都只手动运行，不保存设置、不附着新窗口。");
   toolhubSafeSetTextColor(desc, T.onSurface2);
   desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   desc.setPadding(0, this.dp(5), 0, 0);
@@ -1278,6 +1335,34 @@ FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
   var copyButtonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(46));
   copyButtonLp.setMargins(0, this.dp(8), 0, 0);
   card.addView(copyButton, copyButtonLp);
+
+  var interactionStatus = new android.widget.TextView(context);
+  var interactionStatusText = "控件压力：尚未运行";
+  var interactionStatusColor = T.onSurface2;
+  if (interactionRunning) { interactionStatusText = "控件压力：正在执行"; interactionStatusColor = T.primary; }
+  else if (interactionLast && interactionLast.ok) { interactionStatusText = "控件压力：通过 · " + String(interactionLast.loops || 0) + " 次 · " + String(interactionLast.durationMs || 0) + "ms"; interactionStatusColor = T.success || T.primary; }
+  else if (interactionLast && interactionLast.error) { interactionStatusText = "控件压力：失败 · " + String(interactionLast.error); interactionStatusColor = T.danger || C.error || T.primary; }
+  interactionStatus.setText(interactionStatusText);
+  toolhubSafeSetTextColor(interactionStatus, interactionStatusColor);
+  interactionStatus.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  interactionStatus.setPadding(0, this.dp(12), 0, 0);
+  try { interactionStatus.setMaxLines(3); interactionStatus.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eInteractionStatus) {}
+  card.addView(interactionStatus, new android.widget.LinearLayout.LayoutParams(-1, -2));
+
+  var interactionButton = this.ui.createSolidButton(this, interactionRunning ? "控件压力测试进行中" : "运行 120 次设置控件压力测试", T.primary, T.onPrimary, function(v) { self.startSettingsInteractionStressTestFromSettings(v); });
+  try { interactionButton.setEnabled(!interactionRunning && !running); if (interactionRunning || running) interactionButton.setAlpha(0.62); } catch(eInteractionEnabled) {}
+  try { interactionButton.setContentDescription("运行设置页真实控件压力测试"); } catch(eInteractionDesc) {}
+  var interactionButtonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(48));
+  interactionButtonLp.setMargins(0, this.dp(8), 0, 0);
+  card.addView(interactionButton, interactionButtonLp);
+
+  var hasInteractionResult = !!interactionLast;
+  var interactionCopyButton = this.ui.createSolidButton(this, hasInteractionResult ? "复制控件压力摘要" : "暂无控件压力结果", T.primaryContainer || T.surface2, T.primary, function() { self.copySettingsInteractionStressSummaryFromSettings(); });
+  try { interactionCopyButton.setEnabled(hasInteractionResult && !interactionRunning && !running); if (!hasInteractionResult || interactionRunning || running) interactionCopyButton.setAlpha(0.62); } catch(eInteractionCopyEnabled) {}
+  try { interactionCopyButton.setContentDescription("复制设置页控件压力测试摘要"); } catch(eInteractionCopyDesc) {}
+  var interactionCopyButtonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(46));
+  interactionCopyButtonLp.setMargins(0, this.dp(8), 0, 0);
+  card.addView(interactionCopyButton, interactionCopyButtonLp);
   return card;
 };
 

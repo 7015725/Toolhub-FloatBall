@@ -9,6 +9,7 @@ BASE = (CODE / "th_01_base.js").read_text(encoding="utf-8")
 THEME = (CODE / "th_04_theme.js").read_text(encoding="utf-8")
 MAIN = (CODE / "th_15_main_panel.js").read_text(encoding="utf-8")
 PANELS = (CODE / "th_14_panels.js").read_text(encoding="utf-8")
+PANEL_UI = (CODE / "th_13_panel_ui.js").read_text(encoding="utf-8")
 ALL_JS = "\n".join(p.read_text(encoding="utf-8") for p in sorted(CODE.glob("*.js")))
 
 errors = []
@@ -101,7 +102,7 @@ for token in (
     "FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function",
     "self.runColorSafetyRuntimeSelfTest(160)",
     "String(groupKey || \"\") === \"debug\"",
-    "不会自动运行。结果保存到 ToolHub/diagnostics/color-safety-last.json，可复制摘要",
+    "两项都只手动运行，不保存设置、不附着新窗口",
     "FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function",
     "clipboard.setPrimaryClip(clip)",
     "复制诊断摘要",
@@ -110,6 +111,39 @@ for token in (
         errors.append("settings runtime diagnostic contract missing: %s" % token)
 if ALL_JS.count(".runColorSafetyRuntimeSelfTest(") != 1:
     errors.append("runtime color self-test must have exactly one manual invocation")
+for token in (
+    "FloatBallAppWM.prototype.runSettingsInteractionStressTest = function",
+    "new android.widget.Switch(context)",
+    "new android.widget.SeekBar(context)",
+    "createTransparentPressedStateDrawable(rowPressedColor",
+    'createSolidButton(this, "压力测试"',
+    "ToolHub/diagnostics/settings-interaction-last.json",
+    "settings interaction stress start",
+    "settings interaction stress pass",
+    "settings interaction stress fail",
+    "loops = Math.max(1, Math.min(200, loops))",
+):
+    if token not in PANEL_UI:
+        errors.append("settings interaction stress contract missing: %s" % token)
+if ALL_JS.count(".runSettingsInteractionStressTest(") != 1:
+    errors.append("settings interaction stress test must have exactly one manual invocation")
+stress_block = re.search(r"FloatBallAppWM.prototype.runSettingsInteractionStressTest = function\(iterations\) \{.*?\n\};", PANEL_UI, re.S)
+if not stress_block:
+    errors.append("settings interaction stress method missing")
+else:
+    block = stress_block.group(0)
+    for forbidden in ("setPendingValue(", "commitPendingUserCfg(", "state.wm.addView", "setOnCheckedChangeListener("):
+        if forbidden in block:
+            errors.append("settings interaction stress test mutates live settings or window state: %s" % forbidden)
+for token in (
+    "FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function",
+    "self.runSettingsInteractionStressTest(120)",
+    "FloatBallAppWM.prototype.copySettingsInteractionStressSummaryFromSettings = function",
+    "运行 120 次设置控件压力测试",
+    "复制控件压力摘要",
+):
+    if token not in PANELS:
+        errors.append("settings interaction stress settings entry missing: %s" % token)
 copy_block = re.search(r"FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function\(\) \{.*?\n\};", PANELS, re.S)
 if not copy_block:
     errors.append("runtime diagnostic copy method missing")
@@ -138,8 +172,10 @@ if module_version(BASE, "th_01_base.js") < (1, 1, 12):
     errors.append("th_01_base.js version below pressed feedback baseline 1.1.12")
 if module_version(THEME, "th_04_theme.js") < (1, 0, 10):
     errors.append("th_04_theme.js version below ColorOS result persistence baseline 1.0.10")
-if module_version(PANELS, "th_14_panels.js") < (1, 0, 23):
-    errors.append("th_14_panels.js version below runtime diagnostic export baseline 1.0.23")
+if module_version(PANEL_UI, "th_13_panel_ui.js") < (1, 0, 9):
+    errors.append("th_13_panel_ui.js version below settings interaction stress baseline 1.0.9")
+if module_version(PANELS, "th_14_panels.js") < (1, 0, 24):
+    errors.append("th_14_panels.js version below settings interaction stress entry baseline 1.0.24")
 if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 8):
     errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.8")
 
