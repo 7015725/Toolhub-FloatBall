@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 // =======================【Content：解析 settings URI】=======================
 // 这段代码的主要内容/用途：识别 content://settings/(system|secure|global)/KEY 并用 Settings.* get/put 更稳
 FloatBallAppWM.prototype.parseSettingsUri = function(uriStr) {
@@ -720,6 +720,110 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
   function formatSeverityEvent(item) {
     return majorSeverityLabel(majorSeverityOf(item)) + " " + formatEvent(item);
   }
+  function majorFaultSessionKey(item) {
+    var root = String(item && (item.previousSid || item.sid) || "");
+    if (root) return "session:" + root;
+    return "fallback:" + [
+      String(item && item.classification || ""),
+      String(item && item.test || ""),
+      String(item && (item.phase || item.lastPhase) || ""),
+      String(item && item.target || ""),
+      String(item && item.which || "")
+    ].join(":");
+  }
+  function majorFaultDuplicateKey(item) {
+    return [
+      String(item && item.event || ""),
+      String(item && item.type || ""),
+      String(item && (item.phase || item.lastPhase) || ""),
+      String(item && item.classification || ""),
+      String(item && item.test || ""),
+      String(item && item.target || ""),
+      String(item && item.which || ""),
+      String(item && item.status || ""),
+      String(item && item.error || "")
+    ].join("|");
+  }
+  function majorFaultPriority(item) {
+    var severity = majorSeverityOf(item);
+    var base = severity === "fatal" ? 300 : (severity === "error" ? 200 : 100);
+    var event = String(item && item.event || "");
+    if (event === "UNCAUGHT") return base + 60;
+    if (event === "TEST_INTERRUPTED") return base + 50;
+    if (event === "RECOVERED_INTERRUPTION") return base + 40;
+    if (event === "INCIDENT") return base + 30;
+    if (event === "TEST_END") return base + 20;
+    if (event === "CHECKPOINT") return base + 10;
+    return base;
+  }
+  function majorFaultEvidenceLabel(item) {
+    var label = eventLabel(item && item.event);
+    var phase = String(item && (item.phase || item.lastPhase) || "");
+    var type = String(item && item.type || "");
+    if (item && item.event === "CHECKPOINT" && phase) label += "(" + phase + ")";
+    else if (item && item.event === "INCIDENT" && type) label += "(" + type + ")";
+    return label;
+  }
+  function aggregateMajorAbnormalEvents(list, limit) {
+    var groups = [], byKey = {};
+    var n = Math.floor(Number(limit || 8));
+    if (isNaN(n) || n < 1) n = 8;
+    if (n > 12) n = 12;
+    for (var i = 0; i < list.length; i++) {
+      var item = list[i];
+      if (!isMajorAbnormalEvent(item)) continue;
+      var key = majorFaultSessionKey(item);
+      var group = byKey[key];
+      if (!group) {
+        group = {
+          key: key,
+          firstTime: item.time || "",
+          lastTime: item.time || "",
+          severity: majorSeverityOf(item),
+          representative: item,
+          priority: majorFaultPriority(item),
+          count: 0,
+          duplicateCount: 0,
+          evidence: [],
+          fingerprints: {}
+        };
+        byKey[key] = group;
+        groups.push(group);
+      }
+      group.count++;
+      group.lastTime = item.time || group.lastTime;
+      var priority = majorFaultPriority(item);
+      if (priority > group.priority) {
+        group.priority = priority;
+        group.severity = majorSeverityOf(item);
+        group.representative = item;
+      }
+      var fingerprint = majorFaultDuplicateKey(item);
+      if (group.fingerprints[fingerprint]) {
+        group.duplicateCount++;
+      } else {
+        group.fingerprints[fingerprint] = true;
+        if (group.evidence.length < 6) group.evidence.push(majorFaultEvidenceLabel(item));
+      }
+    }
+    if (groups.length > n) groups = groups.slice(groups.length - n);
+    return groups;
+  }
+  function formatMajorFaultGroup(group) {
+    var item = group && group.representative ? group.representative : {};
+    var parts = [];
+    parts.push(String(group && group.lastTime || item.time || "").substring(5));
+    parts.push("故障会话");
+    if (item.classification) parts.push("分类=" + String(item.classification));
+    if (item.test) parts.push("测试=" + String(item.test));
+    if (item.lastPhase || item.phase) parts.push("最后阶段=" + String(item.lastPhase || item.phase));
+    if (item.which) parts.push("面板=" + String(item.which));
+    if (item.target) parts.push("目标=" + String(item.target));
+    if (group && group.evidence && group.evidence.length) parts.push("证据=" + group.evidence.join(" > "));
+    if (group && group.count > 1) parts.push("事件=" + String(group.count));
+    if (group && group.duplicateCount > 0) parts.push("重复折叠=" + String(group.duplicateCount));
+    return majorSeverityLabel(group && group.severity || majorSeverityOf(item)) + " " + parts.join(" · ");
+  }
   function recentSeverityEvents(app, limit, mode) {
     var n = Math.floor(Number(limit || 8));
     if (isNaN(n) || n < 1) n = 8;
@@ -731,17 +835,20 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
       if (mode === "abnormal" && !isMajorAbnormalEvent(all[i])) continue;
       out.push(all[i]);
     }
-    if (out.length > n) out = out.slice(out.length - n);
+    if (mode !== "abnormal" && out.length > n) out = out.slice(out.length - n);
     return out;
   }
   function severitySummary(app, limit, mode) {
     try {
       var list = recentSeverityEvents(app, limit, mode);
-      if (!list.length) {
-        return mode === "abnormal"
-          ? "暂无异常事件；正常会话与成功检查点已折叠"
-          : "暂无重大事件记录";
+      if (mode === "abnormal") {
+        var groups = aggregateMajorAbnormalEvents(list, limit);
+        if (!groups.length) return "暂无故障会话；正常会话与成功检查点已折叠";
+        var faultLines = [];
+        for (var gi = 0; gi < groups.length; gi++) faultLines.push(formatMajorFaultGroup(groups[gi]));
+        return faultLines.join("\n");
       }
+      if (!list.length) return "暂无重大事件记录";
       var lines = [];
       for (var i = 0; i < list.length; i++) lines.push(formatSeverityEvent(list[i]));
       return lines.join("\n");
@@ -767,10 +874,10 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
         var clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
         if (!clipboard) throw "clipboard service unavailable";
         clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
-          normalized === "all" ? "ToolHub 全部重大事件" : "ToolHub 异常事件",
+          normalized === "all" ? "ToolHub 全部重大事件" : "ToolHub 故障会话摘要",
           text
         ));
-        try { this.toast(normalized === "all" ? "全部重大事件已复制" : "异常事件已复制"); } catch (eToast) {}
+        try { this.toast(normalized === "all" ? "全部重大事件已复制" : "故障会话摘要已复制"); } catch (eToast) {}
         return true;
       } catch (e) {
         safeLog(this.L, "e", "copy severity major events fail error=" + String(e));
@@ -808,7 +915,7 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
 
           function refreshSeverityView() {
             try {
-              title.setText(showAll ? "全部重大事件" : "最近异常事件");
+              title.setText(showAll ? "全部重大事件" : "最近故障会话");
               summary.setText(showAll
                 ? self.getRecentMajorEventDetailSummary(16)
                 : self.getRecentAbnormalEventSummary(8));
