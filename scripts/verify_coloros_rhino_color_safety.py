@@ -8,6 +8,7 @@ CODE = ROOT / "code"
 BASE = (CODE / "th_01_base.js").read_text(encoding="utf-8")
 THEME = (CODE / "th_04_theme.js").read_text(encoding="utf-8")
 MAIN = (CODE / "th_15_main_panel.js").read_text(encoding="utf-8")
+PANELS = (CODE / "th_14_panels.js").read_text(encoding="utf-8")
 ALL_JS = "\n".join(p.read_text(encoding="utf-8") for p in sorted(CODE.glob("*.js")))
 
 errors = []
@@ -77,6 +78,29 @@ if "createPressedStateDrawable(bgColor, pressedColor" not in THEME:
     errors.append("solid button does not use pressed-state helper")
 if "StateListDrawable" not in MAIN or "createMainPanelPressedBackground" not in MAIN:
     errors.append("main panel card background is not protected by StateListDrawable")
+for token in (
+    "FloatBallAppWM.prototype.getColorSafetyRuntimeContext = function",
+    "FloatBallAppWM.prototype.runColorSafetyRuntimeSelfTest = function",
+    "color safety self-test start",
+    "color safety self-test pass",
+    "color safety self-test fail",
+    "loops = Math.max(1, Math.min(300, loops))",
+    "drawableClass.indexOf(\"RippleDrawable\") >= 0",
+    "colorState.getColorForState(pressedState, normalColor)",
+):
+    if token not in THEME:
+        errors.append("runtime color self-test contract missing: %s" % token)
+for token in (
+    "FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function",
+    "FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function",
+    "self.runColorSafetyRuntimeSelfTest(160)",
+    "String(groupKey || \"\") === \"debug\"",
+    "不附着窗口、不使用 framework RippleDrawable，也不会自动运行",
+):
+    if token not in PANELS:
+        errors.append("settings runtime diagnostic contract missing: %s" % token)
+if ALL_JS.count(".runColorSafetyRuntimeSelfTest(") != 1:
+    errors.append("runtime color self-test must have exactly one manual invocation")
 
 argb = re.search(r"function _th_argb\(c\) \{.*?\n\}", THEME, re.S)
 if not argb:
@@ -89,8 +113,10 @@ else:
 
 if module_version(BASE, "th_01_base.js") < (1, 1, 12):
     errors.append("th_01_base.js version below pressed feedback baseline 1.1.12")
-if module_version(THEME, "th_04_theme.js") < (1, 0, 8):
-    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.8")
+if module_version(THEME, "th_04_theme.js") < (1, 0, 9):
+    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.9")
+if module_version(PANELS, "th_14_panels.js") < (1, 0, 21):
+    errors.append("th_14_panels.js version below runtime diagnostic baseline 1.0.21")
 if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 8):
     errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.8")
 
