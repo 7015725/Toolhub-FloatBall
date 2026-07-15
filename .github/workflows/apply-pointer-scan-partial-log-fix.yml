@@ -1,15 +1,16 @@
 name: apply-pointer-scan-partial-log-fix
 
 on:
-  push:
-    branches: [fix/pointer-scan-partial-log-20260715]
+  pull_request:
+    branches: [main]
+    types: [synchronize]
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: github.ref == 'refs/heads/fix/pointer-scan-partial-log-20260715'
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/pointer-scan-partial-log-20260715'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
