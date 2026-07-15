@@ -1,0 +1,60 @@
+name: apply-major-fault-detail-view
+
+on:
+  push:
+    branches:
+      - fix/major-fault-detail-view-20260715
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-major-fault-detail-view
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '完成故障会话详情展开') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/major-fault-detail-view-20260715
+          fetch-depth: 0
+
+      - name: Apply detail patch
+        run: python3 scripts/apply_major_fault_detail_view.py
+
+      - name: Check JavaScript syntax
+        run: node --check code/th_08_content.js
+
+      - name: Verify major event detail contracts
+        run: python3 scripts/verify_major_event_logging.py
+
+      - name: Verify Content security
+        run: python3 scripts/verify_content_security.py
+
+      - name: Refresh dead code audit
+        run: |
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+
+      - name: Check whitespace
+        run: git diff --check
+
+      - name: Remove temporary patch files
+        run: |
+          rm -f scripts/apply_major_fault_detail_view.py
+          rm -f .github/workflows/apply-major-fault-detail-view.yml
+
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add code/th_08_content.js
+          git add scripts/verify_major_event_logging.py scripts/verify_content_security.py
+          git add DEAD_CODE_AUDIT.md
+          git add -u scripts/apply_major_fault_detail_view.py .github/workflows/apply-major-fault-detail-view.yml
+          git commit -m "完成故障会话详情展开"
+          git push origin HEAD:fix/major-fault-detail-view-20260715
