@@ -44,7 +44,20 @@ jobs:
         run: node --check code/th_08_content.js
 
       - name: Verify major event aggregation
-        run: python3 scripts/verify_major_event_logging.py
+        run: |
+          set +e
+          python3 scripts/verify_major_event_logging.py > major-event-verify-error.txt 2>&1
+          status=$?
+          cat major-event-verify-error.txt
+          if [ "$status" -ne 0 ]; then
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git add major-event-verify-error.txt
+            git commit -m "记录故障会话聚合回归错误"
+            git push origin HEAD:fix/major-event-session-aggregation-20260715
+            exit "$status"
+          fi
+          rm -f major-event-verify-error.txt
 
       - name: Verify Content security
         run: python3 scripts/verify_content_security.py
