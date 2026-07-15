@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""校验 Shell 诊断日志不输出明文命令或完整结果对象。"""
+"""校验 Shell 诊断日志不输出明文命令、令牌或完整结果对象。"""
 from pathlib import Path
 import hashlib
 
@@ -27,7 +27,9 @@ require(ACTION, 'fingerprint=" + String(meta.fingerprint', "fingerprint-only dia
 require(ACTION, 'meta.kind === "shortx_shared_da"', "shared DA classification")
 require(ACTION, 'meta.kind === "shortx_private_da"', "private DA classification")
 require(ACTION, 'err_type=diagnostic_exception', "sanitized diagnostic error")
-require(SHELL, 'err_type=" + String(ret && ret.err ? "broadcast_error" : "")', "sanitized bridge result")
+require(SHELL, 'err_type=" + String(ret && ret.errType ? ret.errType : "")', "sanitized bridge result")
+require(SHELL, 'token=" + String(resolved.hasToken === true)', "boolean token diagnostic")
+require(SHELL, 'has_token=" + String(result.hasToken)', "boolean config token diagnostic")
 require(ACTION, 'err_type=" + String(r && r.err ? "broadcast_error" : "unknown")', "sanitized action failure")
 
 for text, label in ((ACTION, "action"), (SHELL, "shell")):
@@ -36,6 +38,9 @@ for text, label in ((ACTION, "action"), (SHELL, "shell")):
 
 forbid(ACTION, "if (p.length > 220) p = p.substring(0, 220)", "legacy command truncation")
 forbid(ACTION, '" preview="', "preview log field")
+forbid(SHELL, '" token_value="', "token value log field")
+forbid(SHELL, '" tokenValue="', "token value log field camelcase")
+forbid(SHELL, 'JSON.stringify(cfg)', "complete shell config serialization")
 
 
 def classify(command):
