@@ -1,0 +1,45 @@
+name: apply-major-event-severity-patch
+
+on:
+  push:
+    branches:
+      - fix/major-event-severity-filter-20260715
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout patch branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/major-event-severity-filter-20260715
+          fetch-depth: 0
+
+      - name: Apply severity filter patch
+        run: python3 scripts/apply_major_event_severity_patch.py
+
+      - name: Verify patched files
+        run: |
+          node --check code/th_08_content.js
+          python3 scripts/verify_major_event_logging.py
+          python3 scripts/verify_content_security.py
+          python3 .github/scripts/es5_scan.py
+          git diff --check
+
+      - name: Remove temporary patch files
+        run: |
+          rm -f scripts/apply_major_event_severity_patch.py
+          rm -f .github/workflows/apply-major-event-severity-patch.yml
+
+      - name: Commit patched implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_08_content.js scripts/verify_major_event_logging.py scripts/verify_content_security.py
+          git add -u scripts/apply_major_event_severity_patch.py .github/workflows/apply-major-event-severity-patch.yml
+          git commit -m "分层展示重大事件记录"
+          git push origin HEAD:fix/major-event-severity-filter-20260715
