@@ -2690,7 +2690,7 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
   var fallbackSkippedDueBudget = false;
 
   var automationStart = th17Now();
-  var a = preparedAutomation || this.getPointerUiAutomation(isFinal ? "final_scan" : "scan");
+  var a = preparedAutomation || this.getPointerUiAutomation(isFinal ? "final_prepare" : "scan");
   automationMs = th17Now() - automationStart;
 
   // 优先扫描活动应用根节点，并复用同一个 UiAutomation。
@@ -2741,7 +2741,10 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
                 fallbackSkippedDueBudget = true;
                 break;
               }
-              if (windowsScanned >= maxExtraWindows) break;
+              if (windowsScanned >= maxExtraWindows) {
+                fallbackSkippedDueBudget = true;
+                break;
+              }
 
               var win = null;
               var rootFromWin = null;
