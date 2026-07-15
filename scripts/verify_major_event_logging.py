@@ -8,8 +8,8 @@ text = path.read_text(encoding="utf-8")
 errors = []
 
 match = re.search(r"^//\s*@version\s+(\d+)\.(\d+)\.(\d+)", text)
-if not match or tuple(map(int, match.groups())) < (1, 0, 4):
-    errors.append("th_08_content.js version below major-event test lifecycle baseline 1.0.4")
+if not match or tuple(map(int, match.groups())) < (1, 0, 5):
+    errors.append("th_08_content.js version below major-event severity baseline 1.0.5")
 
 required = (
     "TH_MAJOR ",
@@ -41,6 +41,16 @@ required = (
     "copyRecentMajorEventSummary",
     "最近重大事件",
     "复制最近重大事件",
+    "majorSeverityOf",
+    "isMajorAbnormalEvent",
+    "getRecentAbnormalEventSummary",
+    "getRecentMajorEventDetailSummary",
+    "copyCurrentMajorEventSummary",
+    "__toolHubMajorSeverityPatch",
+    "最近异常事件",
+    "查看全部事件",
+    "只看异常",
+    "复制当前摘要",
     'wrap(p, "createColorSafetyRuntimeDiagnosticCard"',
     '"WM_ADD_BEGIN"',
     '"WM_ADD_DONE"',
@@ -117,4 +127,4 @@ if errors:
     for error in errors:
         print("ERROR", error)
     raise SystemExit(1)
-print("OK major_event_logging daily_log_only=1 test_lifecycle=1 test_interruption=1 runtime_records=1 crash_handler_singleton=1 wm_checkpoints=1 content_api_preserved=1")
+print("OK major_event_logging daily_log_only=1 test_lifecycle=1 test_interruption=1 runtime_records=1 severity_filter=1 details_toggle=1 crash_handler_singleton=1 wm_checkpoints=1 content_api_preserved=1")
