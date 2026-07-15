@@ -1,4 +1,4 @@
-// @version 1.1.0
+// @version 1.1.1
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -115,6 +115,39 @@
     try { if (!rect && ret && ret.captureRect) rect = normalizeRect18(ret.captureRect); } catch(e4) {}
     try { if (!rect && ret && ret.visualRect) rect = normalizeRect18(ret.visualRect); } catch(e5) {}
     return rect;
+  }
+
+  function isUsableScreenshotPath18(path) {
+    var value = "";
+    try { value = String(path || "").replace(/^\s+|\s+$/g, ""); } catch(e0) { value = ""; }
+    if (!value || value.charAt(0) !== "/") return false;
+    try {
+      var file = new java.io.File(value);
+      return file.isFile() === true;
+    } catch(e1) {}
+    return false;
+  }
+
+  function pickScreenshotPath18(obj, ret) {
+    var path = "";
+    try {
+      path = String(
+        (obj && obj.screenshotFilePath) ||
+        (obj && obj.data && obj.data.path) ||
+        (ret && ret.screenshotFilePath) ||
+        ""
+      );
+    } catch(e0) { path = ""; }
+    path = path.replace(/^\s+|\s+$/g, "");
+    return isUsableScreenshotPath18(path) ? path : "";
+  }
+
+  function canDispatchAreaOcr18(st, obj, ret) {
+    if (!st || !obj) return false;
+    if (ret && ret.fallback === true) return false;
+    if (String(obj.type || "") !== "area_capture") return false;
+    if (String(obj.code || "") !== "AREA_CAPTURE_SUCCESS") return false;
+    return true;
   }
 
   function applyPerfDefaults18(appObj) {
@@ -484,7 +517,17 @@
       if (!appObj || !st) return false;
 
       var rr = cloneRect18(rect);
-      var screenshotPath = String(path || "");
+      var screenshotPath = String(path || "").replace(/^\s+|\s+$/g, "");
+      if (!rr || !isUsableScreenshotPath18(screenshotPath)) {
+        try {
+          safeLog(appObj.L, 'w',
+            "pointer area_ocr dispatch skipped reason=" +
+            (!rr ? "invalid_rect" : "invalid_path") +
+            " rect=" + rectKey18(rr) +
+            " path=" + screenshotPath);
+        } catch(eSkipLog) {}
+        return false;
+      }
 
       // 新 token 先使旧任务失效，再清理旧 worker 和 timeout。
       var token = Number(st.areaOcrSeq || 0) + 1;
@@ -782,7 +825,14 @@
           return { ok: !!(ret && ret.ok), type: "pointer_started", mode: "area_ocr", base: ret || null };
         }
         var normalRet = oldStartPointerTool.call(this, options);
-        try { applyPerfDefaults18(this); } catch(ePerfStart) {}
+        try {
+          var normalSt = this.ensurePointerToolState ? this.ensurePointerToolState() : null;
+          if (normalSt) {
+            normalSt.areaOcrRequested = false;
+            normalSt.areaOcrSource = "";
+          }
+          applyPerfDefaults18(this);
+        } catch(ePerfStart) {}
         return normalRet;
       };
 
@@ -825,33 +875,26 @@
         try {
           if (!st || !obj) return oldRet;
 
-          var code = String(obj.code || "");
-          if (
-            code === "AREA_CAPTURE_TIMEOUT" ||
-            code === "AREA_CAPTURE_WORKER_FAILED"
-          ) {
-            return oldRet;
-          }
-
           var wantText = !!(
             st.areaOcrRequested === true ||
             String(obj.type || "") === "area_capture"
           );
           if (!wantText) return oldRet;
+          if (!canDispatchAreaOcr18(st, obj, ret)) return oldRet;
 
-          var path = "";
-          try {
-            path = String(
-              obj.screenshotFilePath ||
-              obj.value ||
-              (obj.data && obj.data.path) ||
-              ""
-            );
-          } catch (ePathCompleted) {
-            path = "";
-          }
-
+          var path = pickScreenshotPath18(obj, ret);
           var rect = pickOcrRect18(obj, ret);
+          if (!path || !rect) {
+            try {
+              safeLog(this.L, 'w',
+                "pointer area_ocr completion skipped reason=" +
+                (!rect ? "invalid_rect" : "invalid_path") +
+                " token=" + String(token) +
+                " rect=" + rectKey18(rect) +
+                " path=" + path);
+            } catch(eSkipCompletedLog) {}
+            return oldRet;
+          }
 
           var scheduled = scheduleAreaOcrAsync18(
             this,
@@ -916,13 +959,24 @@
           return ret;
         }
         if (!wantText) return ret;
+        if (ret && ret.fallback === true) return ret;
         try {
           if (!st && this.ensurePointerToolState) st = this.ensurePointerToolState();
           var obj = st && st.lastResult ? st.lastResult : null;
           if (!obj) obj = {};
-          var path = "";
-          try { path = String(obj.screenshotFilePath || obj.value || (obj.data && obj.data.path) || ""); } catch(ePath) { path = ""; }
+          if (!canDispatchAreaOcr18(st, obj, ret)) return ret;
+          var path = pickScreenshotPath18(obj, ret);
           var rect = pickOcrRect18(obj, ret);
+          if (!path || !rect) {
+            try {
+              safeLog(this.L, 'w',
+                "pointer area_ocr sync dispatch skipped reason=" +
+                (!rect ? "invalid_rect" : "invalid_path") +
+                " rect=" + rectKey18(rect) +
+                " path=" + path);
+            } catch(eSkipSyncLog) {}
+            return ret;
+          }
 
           // W3：截图完成后立即返回触摸结束链路，OCR 放入独立 HandlerThread。
           // timeout 到期只更新当前 OCR token 的结果，旧 token 不允许覆盖新会话。

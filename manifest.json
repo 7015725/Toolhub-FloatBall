@@ -120,14 +120,14 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "7aaa798c2c578144ca2042eea6988650d200a82970138e251ec6251dba124639",
-      "size": 163215,
-      "version": "1.2.4"
+      "sha256": "245fcd14a724516a490e993db826f52d215e1158bdcd79cdc4adf6180b30f0ac",
+      "size": 163724,
+      "version": "1.2.5"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "dfe25b26e7365d9c92bb7f543ff42e5462fd7d65e6aa8bf80fa455a0efc33a37",
-      "size": 35263,
-      "version": "1.1.0"
+      "sha256": "3d86a567b30c93b912de35e0e9d622dcdefb805187e25538a1f5ee4f92fb7454",
+      "size": 37314,
+      "version": "1.1.1"
     },
     "th_19_position_state.js": {
       "sha256": "e66f007cf35702cdef47b007e95b42e6f077dc6033353853763ceb0439ca6c03",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复顶部预览首帧与计时竞态"
+      "修复指针生命周期与 OCR 调度竞态"
     ],
-    "title": "修复顶部预览首帧与计时竞态"
+    "title": "修复指针生命周期与 OCR 调度竞态"
   },
   "schema": 3,
-  "version": 20260715102441
+  "version": 20260715111354
 }
