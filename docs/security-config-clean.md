@@ -1,24 +1,32 @@
 # ToolHub 安全配置
 
-`code/th_12_rebuild.js` 注入 Shell、Shortcut 和 Content 的安全配置。
+`code/th_10_shell.js` 负责 Shell 广播桥的兼容配置、迁移和执行；`code/th_12_rebuild.js` 继续注入 Shortcut、Content 等安全配置，并为未安装的配置项提供后备定义。
 
 ## Shell 广播桥
 
 默认配置：
 
-- `SHELL_BRIDGE_MODE = strict`
-- `SHELL_BRIDGE_REQUIRE_TOKEN = true`
+- `SHELL_BRIDGE_MODE = compat`
+- `SHELL_BRIDGE_REQUIRE_TOKEN = false`
 - `SHELL_BRIDGE_TARGET_PACKAGE = ""`
 - `SHELL_BRIDGE_TARGET_CLASS = ""`
 - `SHELL_BRIDGE_TOKEN = ""`
+- `SHELL_BRIDGE_MIGRATION_VERSION = 0`
 
-默认状态下，Shell 广播桥会拒绝发送，直到配置显式目标和非空令牌。
+默认使用 `shortx.toolhub.SHELL` 隐式广播，与现有 ShortX `ToolHub_shell执行` 监听规则兼容。广播发送成功只表示 Android 接受了广播，不代表 ShortX 已经完成命令执行。
 
 模式说明：
 
-- `strict`：必须配置目标和令牌。
-- `explicit`：必须配置目标；是否要求令牌由 `SHELL_BRIDGE_REQUIRE_TOKEN` 决定。
-- `compat`：允许隐式广播；是否要求令牌由 `SHELL_BRIDGE_REQUIRE_TOKEN` 决定。仅用于明确需要旧协议兼容的环境。
+- `compat`：允许无显式目标的隐式广播；是否要求令牌由 `SHELL_BRIDGE_REQUIRE_TOKEN` 决定。
+- `explicit`：必须配置目标包名或组件；是否要求令牌由 `SHELL_BRIDGE_REQUIRE_TOKEN` 决定。
+- `strict`：必须配置显式目标和非空令牌。
+
+旧配置会执行一次兼容迁移：
+
+- 迁移版本未完成、没有目标且模式为 `strict` 或 `explicit`：迁移为 `compat`，恢复原有隐式广播链路。
+- 迁移版本未完成、模式为 `compat`、没有目标、要求令牌但令牌为空：关闭令牌强制要求。
+- 已配置目标的 `explicit` / `strict` 保持不变。
+- 迁移完成后，用户再次明确保存的无效严格配置不会被静默降级，执行时会返回明确的目标或令牌缺失错误。
 
 Shell 按钮的 `root` 字段默认按 `false` 处理。只有按钮明确保存 `root: true` 时才请求 Root 执行。
 
