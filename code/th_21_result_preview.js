@@ -1,4 +1,4 @@
-// @version 1.1.0
+// @version 1.1.1
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击后把完整文本传给 th_20_pickword.js。
 (function() {
@@ -163,23 +163,26 @@
     return st;
   }
 
-  function isDark21() {
+  function colors21(appObj) {
+    var dark = false;
+    var themeSource = "toolhub_unavailable";
     try {
-      var cfg = context.getResources().getConfiguration();
-      var mode = cfg.uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
-      return mode === android.content.res.Configuration.UI_MODE_NIGHT_YES;
-    } catch (e0) {}
-    return false;
-  }
-
-  function colors21() {
-    var dark = isDark21();
+      if (appObj && typeof appObj.isDarkTheme === "function") {
+        dark = appObj.isDarkTheme() === true;
+        themeSource = "toolhub";
+      }
+    } catch (eTheme) {
+      dark = false;
+      themeSource = "toolhub_error";
+    }
     return {
       bg: android.graphics.Color.parseColor(dark ? "#FF1B1B1F" : "#FFFFFFFF"),
       stroke: android.graphics.Color.parseColor(dark ? "#3DFFFFFF" : "#22000000"),
       text: android.graphics.Color.parseColor(dark ? "#FFF8FAFC" : "#FF111827"),
       secondary: android.graphics.Color.parseColor(dark ? "#FFCBD5E1" : "#FF475569"),
-      pressed: android.graphics.Color.parseColor(dark ? "#2638BDF8" : "#1A0EA5E9")
+      pressed: android.graphics.Color.parseColor(dark ? "#2638BDF8" : "#1A0EA5E9"),
+      themeDark: dark,
+      themeSource: themeSource
     };
   }
 
@@ -319,6 +322,8 @@
     render.firstDrawLogged = false;
     render.visibleStartedAt = 0;
     render.pressed = false;
+    render.themeDark = false;
+    render.themeSource = "";
     render.disposed = false;
     render.attachedAt = now21();
     st.drawCount = 0;
@@ -337,7 +342,11 @@
   }
 
   function drawPreview21(appObj, st, canvas, view, render) {
-    var c = colors21();
+    var c = colors21(appObj);
+    if (render) {
+      render.themeDark = c.themeDark === true;
+      render.themeSource = String(c.themeSource || "");
+    }
     var width = view.getWidth();
     var height = view.getHeight();
     if (width <= 0 || height <= 0) return false;
@@ -508,7 +517,9 @@
         " alpha=" + String(rootRef.getAlpha()) +
         " visibility=" + String(rootRef.getVisibility()) +
         " lpY=" + String(st.lp ? st.lp.y : -1) +
-        " drawCount=" + String(render.drawCount));
+        " drawCount=" + String(render.drawCount) +
+        " theme=" + String(render.themeDark === true ? "dark" : "light") +
+        " themeSource=" + String(render.themeSource || ""));
     } catch (eFirstDrawLog) {}
 
     scheduleDismiss21(appObj, st, rootRef, render);
@@ -536,6 +547,8 @@
       visibleStartedAt: 0,
       attachedAt: now21(),
       pressed: false,
+      themeDark: false,
+      themeSource: "",
       disposed: false,
       enterStarted: false
     };
