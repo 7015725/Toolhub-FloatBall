@@ -55,9 +55,9 @@
       "version": "1.0.8"
     },
     "th_11_action.js": {
-      "sha256": "b6832cd24a0354f1ddd10a98bf2a313397d3379bd3f5f35bb2fbf7df16894365",
-      "size": 26094,
-      "version": "1.0.9"
+      "sha256": "6d5e432e56da06cedbe0dabc46fe51b400539a2b8838879273f2b58d3f8eace7",
+      "size": 27874,
+      "version": "1.1.0"
     },
     "th_12_rebuild.js": {
       "sha256": "a54ba99b8e75c429ba29f40ccc80e85f96de651a4cfaac088f51b103437e9bcf",
@@ -70,9 +70,9 @@
       "version": "1.0.9"
     },
     "th_14_button_editor.js": {
-      "sha256": "be0512af6a49a378b8cd60a16f1eedb8e2041d1df217551d3d9b97d2ee56c1eb",
-      "size": 74986,
-      "version": "1.0.8"
+      "sha256": "51534aae2509e1b11608daf9c4b58ff7eeb3b1f1bc38dba85e510263f1412802",
+      "size": 96633,
+      "version": "1.1.0"
     },
     "th_14_button_icon_editor.js": {
       "sha256": "a568f94170b4707d5a0fddc6b48b6b49bfcd630be4fc0ac1a6864c9dddbb4cc2",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "取消运行自检并修复运行记录滚动"
+      "优化应用按钮选择并清理旧类型"
     ],
-    "title": "取消运行自检并修复运行记录滚动"
+    "title": "优化应用按钮选择并清理旧类型"
   },
   "schema": 3,
-  "version": 20260715052800
+  "version": 20260715074356
 }
