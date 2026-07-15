@@ -1,0 +1,91 @@
+name: Diagnose ball press remaining checks
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'fix/ball-press-feedback-semantics-20260715'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/ball-press-feedback-semantics-20260715
+          fetch-depth: 0
+
+      - name: Entry symbols
+        run: python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+      - name: Entry redundancy
+        run: python3 scripts/verify_entry_redundancy_cleanup.py
+      - name: Entry writable probe
+        run: python3 scripts/verify_entry_writable_probe.py
+      - name: SQLite storage
+        run: python3 scripts/verify_sqlite_storage.py
+      - name: SQLite debounce race
+        run: python3 scripts/verify_sqlite_debounce_race.py
+      - name: Ball position state
+        run: python3 scripts/verify_ball_position_state.py
+      - name: Ball rebuild rollback
+        run: python3 scripts/verify_ball_rebuild_rollback.py
+      - name: Button editor direct save
+        run: python3 scripts/verify_button_editor_direct_save.py
+      - name: Entry lifecycle
+        run: python3 scripts/verify_entry_lifecycle.py
+      - name: Atomic update
+        run: python3 scripts/verify_atomic_update.py
+      - name: Release transaction
+        run: python3 scripts/verify_release_transaction.py
+      - name: Startup status
+        run: python3 scripts/verify_startup_status.py
+      - name: Main panel runtime
+        run: python3 scripts/verify_main_panel_runtime_status.py
+      - name: Main panel drag sort
+        run: python3 scripts/verify_main_panel_drag_sort.py
+      - name: Main panel more menu
+        run: python3 scripts/verify_main_panel_more_menu.py
+      - name: Main panel paging
+        run: python3 scripts/verify_main_panel_paging.py
+      - name: Main panel adaptive layout
+        run: python3 scripts/verify_main_panel_adaptive_layout.py
+      - name: Panel settings cleanup
+        run: python3 scripts/verify_panel_layout_settings_cleanup.py
+      - name: Legacy main panel cleanup
+        run: python3 scripts/verify_legacy_main_panel_cleanup.py
+      - name: Main panel grid sizing
+        run: python3 scripts/verify_main_panel_grid_sizing.py
+      - name: Main panel visual tuning
+        run: python3 scripts/verify_main_panel_visual_tuning.py
+      - name: Main panel close lifecycle
+        run: python3 scripts/verify_main_panel_close_lifecycle.py
+      - name: Update security mode
+        run: python3 scripts/verify_update_security_mode.py
+      - name: Shell bridge security
+        run: python3 scripts/verify_shell_bridge_security.py
+      - name: Shell log redaction
+        run: python3 scripts/verify_shell_log_redaction.py
+      - name: Shortcut security
+        run: python3 scripts/verify_shortcut_security.py
+      - name: Content security
+        run: python3 scripts/verify_content_security.py
+      - name: Module versions
+        run: python3 scripts/verify_module_versions.py
+      - name: Fetch main
+        run: git fetch --no-tags origin main
+      - name: Changed module versions
+        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+      - name: Documentation consistency
+        run: python3 scripts/verify_documentation_consistency.py
+      - name: GitHub only source
+        run: python3 scripts/verify_github_only_source.py
+      - name: Pointer regressions
+        run: python3 scripts/verify_pointer_regressions.py
+      - name: Result preview
+        run: python3 scripts/verify_result_preview.py
+      - name: Manifest signature
+        run: python3 .github/scripts/verify_manifest_signature.py
