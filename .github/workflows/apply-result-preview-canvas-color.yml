@@ -78,6 +78,14 @@ jobs:
           fi
           exit "$rc"
 
+      - name: Upload pointer regression output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-preview-canvas-pointer-regression
+          path: pointer-regression-output.txt
+          if-no-files-found: ignore
+
       - name: Verify dead code audit
         run: python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
 
