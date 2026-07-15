@@ -228,6 +228,21 @@ def main() -> int:
         failures,
     )
     require(
+        "preview / unified ToolHub theme source",
+        "function isDark21()" not in preview
+        and "UI_MODE_NIGHT_MASK" not in preview
+        and "function colors21(appObj)" in preview
+        and 'typeof appObj.isDarkTheme === "function"' in preview
+        and "appObj.isDarkTheme() === true" in preview
+        and "var c = colors21(appObj);" in draw_preview
+        and "themeDark: dark" in preview
+        and "themeSource: themeSource" in preview
+        and '" theme=" + String(render.themeDark === true ? "dark" : "light")' in preview
+        and '" themeSource=" + String(render.themeSource || "")' in preview,
+        "result preview must use the shared ToolHub theme decision and expose the chosen source in first-draw diagnostics",
+        failures,
+    )
+    require(
         "preview / paint color avoids ColorLong overload",
         "function setPaintColor21(paint, color)" in preview
         and "paint.setARGB(" in preview
