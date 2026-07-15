@@ -1,4 +1,4 @@
-// @version 1.1.11
+// @version 1.1.12
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -89,7 +89,9 @@ var REMOVED_SETTINGS_CONFIG_KEYS = {
   PANEL_CUSTOM_OFFSET_Y: true,
   SAVE_THROTTLE_MS: true,
   PANEL_COLS: true,
-  PANEL_ITEM_SIZE_DP: true
+  PANEL_ITEM_SIZE_DP: true,
+  BALL_RIPPLE_ALPHA_LIGHT: true,
+  BALL_RIPPLE_ALPHA_DARK: true
 };
 
 function isRemovedSettingsConfigKey(key) {
@@ -167,6 +169,9 @@ var ConfigValidator = {
     BALL_ICON_SIZE_DP: { type: "int", min: 12, max: 80, default: 22 },
     BALL_PNG_MODE: { type: "int", min: 0, max: 2, default: 1 },
     BALL_IDLE_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.6 },
+    BALL_PRESS_ALPHA_LIGHT: { type: "float", min: 0, max: 1, default: 0.22 },
+    BALL_PRESS_ALPHA_DARK: { type: "float", min: 0, max: 1, default: 0.28 },
+    BALL_PRESS_ALPHA_MIGRATION_VERSION: { type: "int", min: 0, max: 9999, default: 1 },
 
     // 指针配置
     POINTER_SCALE_PERCENT: { type: "int", min: 70, max: 140, default: 100 },
@@ -877,6 +882,9 @@ var ConfigManager = {
         BALL_ICON_TINT_HEX: "",
         BALL_BG_COLOR_HEX: "",
         BALL_IDLE_ALPHA: 0.6,
+        BALL_PRESS_ALPHA_LIGHT: CONST_BALL_PRESS_ALPHA_LIGHT,
+        BALL_PRESS_ALPHA_DARK: CONST_BALL_PRESS_ALPHA_DARK,
+        BALL_PRESS_ALPHA_MIGRATION_VERSION: 1,
         BALL_POSITION_SIDE: "right",
         BALL_POSITION_PERCENT: 22,
         BALL_POSITION_MIGRATION_VERSION: 0,
@@ -1209,10 +1217,11 @@ var ConfigManager = {
 
         var merged = JSON.parse(JSON.stringify(this.defaultSettings));
         var loaded = false;
+        var user = null;
 
         if (txt) {
             try {
-                var user = JSON.parse(txt);
+                user = JSON.parse(txt);
                 // 合并用户设置（允许新增键值）
                 for (var k in user) {
                     merged[k] = user[k];
@@ -1245,6 +1254,45 @@ var ConfigManager = {
                 panelVisualTuningDirty = true;
             }
         } catch (ePanelVisualMigration) {}
+
+        // 悬浮球按压透明度配置迁移：
+        // 1. 将旧 Ripple 命名键迁移到 Press 命名键；
+        // 2. 已存在的新键优先，避免覆盖用户当前配置；
+        // 3. 迁移后由清理表移除旧键，不再进入运行时。
+        var ballPressAlphaMigrationDirty = false;
+        try {
+            var ballPressMigrationVersion = 0;
+            if (user && typeof user.BALL_PRESS_ALPHA_MIGRATION_VERSION !== "undefined") {
+                ballPressMigrationVersion = Number(user.BALL_PRESS_ALPHA_MIGRATION_VERSION);
+                if (isNaN(ballPressMigrationVersion)) ballPressMigrationVersion = 0;
+            }
+
+            var hasLegacyPressLight = !!(user && typeof user.BALL_RIPPLE_ALPHA_LIGHT !== "undefined");
+            var hasLegacyPressDark = !!(user && typeof user.BALL_RIPPLE_ALPHA_DARK !== "undefined");
+            var hasCurrentPressLight = !!(user && typeof user.BALL_PRESS_ALPHA_LIGHT !== "undefined");
+            var hasCurrentPressDark = !!(user && typeof user.BALL_PRESS_ALPHA_DARK !== "undefined");
+
+            if (!loaded) {
+                merged.BALL_PRESS_ALPHA_MIGRATION_VERSION = 1;
+            } else if (ballPressMigrationVersion < 1 || hasLegacyPressLight || hasLegacyPressDark) {
+                if (!hasCurrentPressLight && hasLegacyPressLight) {
+                    var legacyPressLight = Number(user.BALL_RIPPLE_ALPHA_LIGHT);
+                    if (!isNaN(legacyPressLight) && legacyPressLight >= 0 && legacyPressLight <= 1) {
+                        merged.BALL_PRESS_ALPHA_LIGHT = legacyPressLight;
+                    }
+                }
+                if (!hasCurrentPressDark && hasLegacyPressDark) {
+                    var legacyPressDark = Number(user.BALL_RIPPLE_ALPHA_DARK);
+                    if (!isNaN(legacyPressDark) && legacyPressDark >= 0 && legacyPressDark <= 1) {
+                        merged.BALL_PRESS_ALPHA_DARK = legacyPressDark;
+                    }
+                }
+                try { delete merged.BALL_RIPPLE_ALPHA_LIGHT; } catch (eDeletePressLight) {}
+                try { delete merged.BALL_RIPPLE_ALPHA_DARK; } catch (eDeletePressDark) {}
+                merged.BALL_PRESS_ALPHA_MIGRATION_VERSION = 1;
+                ballPressAlphaMigrationDirty = true;
+            }
+        } catch (eBallPressAlphaMigration) {}
 
         // 旧自由坐标或高/低预设一次性迁移为“左/右 + 单一高度百分比”。
         var positionMigrationDirty = false;
@@ -1326,6 +1374,7 @@ var ConfigManager = {
         if (loaded && (
             positionMigrationDirty ||
             panelVisualTuningDirty ||
+            ballPressAlphaMigrationDirty ||
             settingsSanitizedDirty
         )) {
             try {

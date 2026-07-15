@@ -10,9 +10,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "c1f6549f193f8bde5e51171e27e182d3e98313f7db7e9e90036787b681d6ef49",
-      "size": 75269,
-      "version": "1.1.11"
+      "sha256": "96bd3efa012c035a09dffe7cf87d50d7acb20b0adb937c1d81a897d13b2f2c89",
+      "size": 78152,
+      "version": "1.1.12"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -25,9 +25,9 @@
       "version": "2.0.0"
     },
     "th_04_theme.js": {
-      "sha256": "140e167d92aceea13fbdab61781809156f15de30bc9e078b8a6dfc105b48eef0",
-      "size": 50717,
-      "version": "1.0.7"
+      "sha256": "93dc5d71428c57afd5eac9119f7715d34f551d0fc34420f004b8afaced2fd4dc",
+      "size": 50468,
+      "version": "1.0.8"
     },
     "th_05_persistence.js": {
       "sha256": "632361cfa4123574dfa8a21ed5c276b188c1b8bc7d1a4360825cae458ce60da6",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "收口水波纹旧命名"
+      "闭环迁移悬浮球按压透明度配置"
     ],
-    "title": "收口水波纹旧命名"
+    "title": "闭环迁移悬浮球按压透明度配置"
   },
   "schema": 3,
-  "version": 20260715004748
+  "version": 20260715005808
 }
