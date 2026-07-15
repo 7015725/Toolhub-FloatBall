@@ -86,6 +86,10 @@ text = text.replace("< (1, 0, 6)", "< (1, 0, 7)")
 text = text.replace("baseline 1.0.6", "baseline 1.0.7")
 text = text.replace("< (1, 5, 7)", "< (1, 5, 8)")
 text = text.replace("baseline 1.5.7", "baseline 1.5.8")
+text = text.replace(
+    'if "StateListDrawable" not in MAIN or "createMainPanelRippleBackground" not in MAIN:',
+    'if "StateListDrawable" not in MAIN or "createMainPanelPressedBackground" not in MAIN:',
+)
 anchor = '''for token in ("createPressedStateDrawable", "createTransparentPressedStateDrawable", "getBallPressedOverlayAlpha"):\n    if token not in THEME:\n        errors.append("stable pressed-state helper missing: %s" % token)\n'''
 addition = anchor + '''for token in ("createRippleDrawable", "createTransparentRippleDrawable", "createMainPanelRippleBackground"):\n    if token in ALL_JS:\n        errors.append("legacy ripple helper name remains: %s" % token)\n'''
 if text.count(anchor) != 1:
