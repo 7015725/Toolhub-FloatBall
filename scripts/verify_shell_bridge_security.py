@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""验证 Shell 广播桥的安全默认值和显式兼容边界。"""
+"""验证 Shell 广播桥兼容迁移、安全边界和 Root 显式策略。"""
 
 from pathlib import Path
 
@@ -20,24 +20,36 @@ def forbid(text, fragment, label):
         raise AssertionError("forbidden %s: %s" % (label, fragment))
 
 
-# 配置默认值：默认 strict，令牌要求开启。
-require(REBUILD, 'SHELL_BRIDGE_MODE", { type: "enum", values: ["compat", "explicit", "strict"], default: "strict"', "strict schema default")
-require(REBUILD, 'putDefault("SHELL_BRIDGE_MODE", "strict")', "strict runtime default")
-require(REBUILD, 'SHELL_BRIDGE_REQUIRE_TOKEN", { type: "bool", default: true }', "token schema default")
-require(REBUILD, 'putDefault("SHELL_BRIDGE_REQUIRE_TOKEN", true)', "token runtime default")
-forbid(REBUILD, 'putDefault("SHELL_BRIDGE_MODE", "compat")', "legacy compat default")
+# th_10 在 th_12 之前加载，先建立可工作的兼容默认值；th_12 只能补缺，不能覆盖。
+require(SHELL, "var migrationTargetVersion = 1;", "migration version")
+require(SHELL, 'ConfigValidator.schemas.SHELL_BRIDGE_MODE = {', "compat schema installer")
+require(SHELL, 'default: "compat"', "compat schema default")
+require(SHELL, 'ConfigManager.defaultSettings.SHELL_BRIDGE_MODE = "compat";', "compat runtime default")
+require(SHELL, 'ConfigManager.defaultSettings.SHELL_BRIDGE_REQUIRE_TOKEN = false;', "compat token default")
+require(SHELL, 'ConfigManager.defaultSettings.SHELL_BRIDGE_MIGRATION_VERSION = 0;', "migration default")
+require(REBUILD, 'if (typeof ConfigValidator.schemas[key] === "undefined")', "schema does not overwrite")
+require(REBUILD, 'if (typeof ConfigManager.defaultSettings[key] === "undefined")', "defaults do not overwrite")
 
-# execShellSmart：未知模式收敛 strict；只有 compat 可无目标；strict 强制令牌。
-require(SHELL, 'this.config.SHELL_BRIDGE_MODE || "strict"', "shell strict fallback")
-require(SHELL, 'bridgeMode !== "compat" && bridgeMode !== "explicit" && bridgeMode !== "strict"', "mode allowlist")
-require(SHELL, 'else if (bridgeMode === "compat")', "explicit compat implicit target")
-require(SHELL, 'throw "shell bridge target missing mode=" + bridgeMode', "missing target block")
-require(SHELL, 'var requireToken = (bridgeMode === "strict") || (this.config.SHELL_BRIDGE_REQUIRE_TOKEN === true);', "strict token policy")
-require(SHELL, 'throw "shell bridge token missing mode=" + bridgeMode', "missing token block")
+# 兼容迁移：仅迁移未完成版本的无目标失败组合，并持久化一次。
+require(SHELL, "function resolveConfig(app)", "resolver")
+require(SHELL, 'migrationVersion < migrationTargetVersion', "version guard")
+require(SHELL, '!targetPkg && !targetCls && mode !== "compat"', "missing target migration")
+require(SHELL, 'migrationReason = "legacy_missing_target";', "missing target reason")
+require(SHELL, 'migrationReason = "legacy_missing_token";', "missing token reason")
+require(SHELL, 'cfg.SHELL_BRIDGE_MIGRATION_VERSION = migrationTargetVersion;', "migration marker persistence")
+require(SHELL, 'ConfigManager.saveSettings(cfg);', "migration settings save")
+require(SHELL, 'shell bridge config mode=', "startup/runtime diagnostic")
+require(SHELL, 'var resolved = resolveConfig(this);', "execution uses resolver")
+
+# 安全边界：完成迁移后的 explicit/strict 无目标仍拒绝，strict 仍强制非空令牌。
+require(SHELL, 'resolved.targetMode !== "implicit"', "non implicit target guard")
+require(SHELL, 'throw "shell bridge target missing mode=" + String(resolved.mode || "")', "missing target block")
+require(SHELL, 'requireToken: (mode === "strict") || requireToken', "strict token policy")
+require(SHELL, 'throw "shell bridge token missing mode=" + String(resolved.mode || "")', "missing token block")
 require(SHELL, 'var requestedRoot = (needRoot === true);', "explicit root only")
-forbid(SHELL, 'SHELL_BRIDGE_MODE || "compat"', "legacy shell fallback")
+forbid(SHELL, 'var requestedRoot = true;', "forced root")
 
-# 自定义广播进入 Shell bridge 时必须复用相同策略。
+# 自定义广播进入 Shell bridge 时继续保持 strict/target/token 约束。
 require(ACTION, 'this.config.SHELL_BRIDGE_MODE || "strict"', "broadcast strict fallback")
 require(ACTION, 'shellBridgeBlockErr = "shell bridge target missing mode=" + bridgeMode', "broadcast target block")
 require(ACTION, 'var requireToken = (bridgeMode === "strict") || (this.config.SHELL_BRIDGE_REQUIRE_TOKEN === true);', "broadcast token policy")
@@ -58,29 +70,96 @@ require(EDITOR, 'newBtn.root = !!shellRootSwitch.isChecked();', "root switch per
 forbid(EDITOR, 'newBtn.root = true;', "forced root persistence")
 
 
-def policy(mode=None, target=False, token=False, require_token=True, root=None):
-    value = (mode or "strict").strip().lower()
-    if value not in ("compat", "explicit", "strict"):
-        value = "strict"
-    if not target and value != "compat":
-        return {"allowed": False, "reason": "target", "mode": value, "root": root is True}
-    token_required = value == "strict" or require_token is True
+def resolve_policy(
+    mode=None,
+    target=False,
+    token=False,
+    require_token=False,
+    migration_version=0,
+    root=None,
+):
+    raw = (mode or "").strip().lower()
+    if raw not in ("compat", "explicit", "strict"):
+        raw = "explicit" if target else "compat"
+
+    migrated = False
+    reason = ""
+    if migration_version < 1:
+        if not target and raw != "compat":
+            raw = "compat"
+            require_token = False
+            migrated = True
+            reason = "legacy_missing_target"
+        elif not target and raw == "compat" and require_token and not token:
+            require_token = False
+            migrated = True
+            reason = "legacy_missing_token"
+        migration_version = 1
+
+    if not target and raw != "compat":
+        return {
+            "allowed": False,
+            "reason": "target",
+            "mode": raw,
+            "migrated": migrated,
+            "migration_reason": reason,
+            "root": root is True,
+        }
+
+    token_required = raw == "strict" or require_token is True
     if token_required and not token:
-        return {"allowed": False, "reason": "token", "mode": value, "root": root is True}
-    return {"allowed": True, "reason": "", "mode": value, "root": root is True}
+        return {
+            "allowed": False,
+            "reason": "token",
+            "mode": raw,
+            "migrated": migrated,
+            "migration_reason": reason,
+            "root": root is True,
+        }
+
+    return {
+        "allowed": True,
+        "reason": "",
+        "mode": raw,
+        "migrated": migrated,
+        "migration_reason": reason,
+        "root": root is True,
+    }
 
 
 cases = [
-    (policy(), {"allowed": False, "reason": "target", "mode": "strict", "root": False}),
-    (policy(mode="unknown", target=True, token=False), {"allowed": False, "reason": "token", "mode": "strict", "root": False}),
-    (policy(mode="strict", target=True, token=True), {"allowed": True, "reason": "", "mode": "strict", "root": False}),
-    (policy(mode="compat", target=False, token=False, require_token=False), {"allowed": True, "reason": "", "mode": "compat", "root": False}),
-    (policy(mode="compat", target=False, token=False, require_token=True), {"allowed": False, "reason": "token", "mode": "compat", "root": False}),
-    (policy(mode="explicit", target=True, token=True, root=True), {"allowed": True, "reason": "", "mode": "explicit", "root": True}),
+    (
+        resolve_policy(),
+        {"allowed": True, "reason": "", "mode": "compat", "migrated": False, "migration_reason": "", "root": False},
+    ),
+    (
+        resolve_policy(mode="strict", target=False, token=False, require_token=True, migration_version=0),
+        {"allowed": True, "reason": "", "mode": "compat", "migrated": True, "migration_reason": "legacy_missing_target", "root": False},
+    ),
+    (
+        resolve_policy(mode="compat", target=False, token=False, require_token=True, migration_version=0),
+        {"allowed": True, "reason": "", "mode": "compat", "migrated": True, "migration_reason": "legacy_missing_token", "root": False},
+    ),
+    (
+        resolve_policy(mode="strict", target=True, token=True, require_token=False, migration_version=1),
+        {"allowed": True, "reason": "", "mode": "strict", "migrated": False, "migration_reason": "", "root": False},
+    ),
+    (
+        resolve_policy(mode="strict", target=True, token=False, require_token=False, migration_version=1),
+        {"allowed": False, "reason": "token", "mode": "strict", "migrated": False, "migration_reason": "", "root": False},
+    ),
+    (
+        resolve_policy(mode="explicit", target=False, token=False, require_token=False, migration_version=1),
+        {"allowed": False, "reason": "target", "mode": "explicit", "migrated": False, "migration_reason": "", "root": False},
+    ),
+    (
+        resolve_policy(mode="unknown", target=True, token=False, require_token=False, migration_version=0, root=True),
+        {"allowed": True, "reason": "", "mode": "explicit", "migrated": False, "migration_reason": "", "root": True},
+    ),
 ]
 
 for actual, expected in cases:
     if actual != expected:
         raise AssertionError("policy mismatch: actual=%r expected=%r" % (actual, expected))
 
-print("Shell bridge security verification passed")
+print("Shell bridge compatibility/security verification passed")
