@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -524,9 +524,9 @@ FloatBallAppWM.prototype.ui = {
         btn.setPadding(app.dp(12), app.dp(6), app.dp(12), app.dp(6));
         btn.setGravity(android.view.Gravity.CENTER);
         this.applyButtonTouchTarget(app, btn, 48);
-        // use divider color or just low alpha text color for ripple
-        var rippleColor = app.withAlpha ? app.withAlpha(txtColor, 0.1) : 0x22888888;
-        btn.setBackground(this.createTransparentRippleDrawable(rippleColor, app.dp(8)));
+        // 使用低透明度文字色作为稳定按压反馈。
+        var pressedColor = app.withAlpha ? app.withAlpha(txtColor, 0.1) : 0x22888888;
+        btn.setBackground(this.createTransparentPressedStateDrawable(pressedColor, app.dp(8)));
         btn.setOnClickListener(new android.view.View.OnClickListener({
             onClick: function(v) {
                 app.touchActivity();
@@ -555,7 +555,7 @@ FloatBallAppWM.prototype.ui = {
         btn.setGravity(android.view.Gravity.CENTER);
         this.applyButtonTouchTarget(app, btn, 48);
         var pressedColor = app.withAlpha ? app.withAlpha(bgColor, 0.8) : bgColor;
-        btn.setBackground(this.createRippleDrawable(bgColor, pressedColor, app.dp(24)));
+        btn.setBackground(this.createPressedStateDrawable(bgColor, pressedColor, app.dp(24)));
         try { btn.setElevation(app.dp(2));  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
         btn.setOnClickListener(new android.view.View.OnClickListener({
             onClick: function(v) {
@@ -1092,6 +1092,25 @@ FloatBallAppWM.prototype.getMonetAccentForBall = function() {
   return fb;
 };
 
+FloatBallAppWM.prototype.getBallPressedOverlayAlpha = function(isDark) {
+  var alpha01 = NaN;
+  try {
+    alpha01 = Number(isDark ? this.config.BALL_PRESS_ALPHA_DARK : this.config.BALL_PRESS_ALPHA_LIGHT);
+  } catch (eCurrent) { alpha01 = NaN; }
+
+  // 兼容旧配置键；新代码不再使用 Ripple 语义命名。
+  if (!(alpha01 >= 0 && alpha01 <= 1)) {
+    try {
+      alpha01 = Number(isDark ? this.config.BALL_RIPPLE_ALPHA_DARK : this.config.BALL_RIPPLE_ALPHA_LIGHT);
+    } catch (eLegacy) { alpha01 = NaN; }
+  }
+
+  if (!(alpha01 >= 0 && alpha01 <= 1)) {
+    alpha01 = isDark ? CONST_BALL_PRESS_ALPHA_DARK : CONST_BALL_PRESS_ALPHA_LIGHT;
+  }
+  return Math.max(0, Math.min(1, alpha01));
+};
+
 FloatBallAppWM.prototype.updateBallContentBackground = function(contentView, usedIconKind) {
   try {
     var ballColor = this.getMonetAccentForBall();
@@ -1103,8 +1122,8 @@ FloatBallAppWM.prototype.updateBallContentBackground = function(contentView, use
     }
 
     var dark = this.isDarkTheme();
-    var alpha01 = dark ? this.config.BALL_RIPPLE_ALPHA_DARK : this.config.BALL_RIPPLE_ALPHA_LIGHT;
-    var rippleColor = this.withAlpha(ballColor, alpha01);
+    var alpha01 = this.getBallPressedOverlayAlpha(dark);
+    var pressedOverlayColor = this.withAlpha(ballColor, alpha01);
     var fillColor = ballColor;
     var usedKind = "none";
     try { usedKind = usedIconKind || this.state.usedIconKind || "none"; } catch(eKind) {}
@@ -1133,7 +1152,7 @@ FloatBallAppWM.prototype.updateBallContentBackground = function(contentView, use
     }
 
     var normal = makeBallLayer(fillColor);
-    var pressed = makeBallLayer(toolhubCompositeColor(rippleColor, fillColor));
+    var pressed = makeBallLayer(toolhubCompositeColor(pressedOverlayColor, fillColor));
     var states = new android.graphics.drawable.StateListDrawable();
     states.addState(toolhubJintArray([android.R.attr.state_pressed]), pressed);
     states.addState(toolhubJintArray([]), normal);

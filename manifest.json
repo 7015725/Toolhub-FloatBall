@@ -10,9 +10,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "42e93c63884c8ea37da3470f52358522ca5fc2325c518754d2bafa8aa471885e",
-      "size": 75271,
-      "version": "1.1.10"
+      "sha256": "c1f6549f193f8bde5e51171e27e182d3e98313f7db7e9e90036787b681d6ef49",
+      "size": 75269,
+      "version": "1.1.11"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -25,9 +25,9 @@
       "version": "2.0.0"
     },
     "th_04_theme.js": {
-      "sha256": "0e4d10d5f5ee75b1eb2953b5a2011d64297d8c824f890c6ddd578bae8ce8deda",
-      "size": 50496,
-      "version": "1.0.5"
+      "sha256": "d1f237952ab4c80c83413cb50918b0841d6ba4724f457153857fab62013f2e53",
+      "size": 51178,
+      "version": "1.0.6"
     },
     "th_05_persistence.js": {
       "sha256": "632361cfa4123574dfa8a21ed5c276b188c1b8bc7d1a4360825cae458ce60da6",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "消除设置页间接水波纹风险"
+      "修复悬浮球按压反馈默认值语义"
     ],
-    "title": "消除设置页间接水波纹风险"
+    "title": "修复悬浮球按压反馈默认值语义"
   },
   "schema": 3,
-  "version": 20260715000149
+  "version": 20260715002810
 }
