@@ -1,4 +1,4 @@
-// @version 1.0.21
+// @version 1.0.22
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -1966,6 +1966,18 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   var settingsGroupNoticeLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
   settingsGroupNoticeLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
   panel.addView(settingsGroupNotice, settingsGroupNoticeLp);
+
+  // 手机紧凑布局同样显示 ColorOS 颜色安全诊断卡。
+  if (activeGroupKey === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
+    try {
+      var colorSafetyCardCompact = this.createColorSafetyRuntimeDiagnosticCard();
+      var colorSafetyCardCompactLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+      colorSafetyCardCompactLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
+      panel.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);
+    } catch(eColorSafetyCardCompact) {
+      safeLog(this.L, "e", "create compact color safety diagnostic card fail error=" + String(eColorSafetyCardCompact));
+    }
+  }
 
   if (activeGroupKey === "ball" && this.buildBallPreviewView) {
     try {

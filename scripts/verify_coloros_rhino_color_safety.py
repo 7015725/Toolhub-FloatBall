@@ -101,6 +101,15 @@ for token in (
         errors.append("settings runtime diagnostic contract missing: %s" % token)
 if ALL_JS.count(".runColorSafetyRuntimeSelfTest(") != 1:
     errors.append("runtime color self-test must have exactly one manual invocation")
+if PANELS.count("createColorSafetyRuntimeDiagnosticCard();") < 2:
+    errors.append("runtime diagnostic card is not wired into both wide and compact settings layouts")
+for token in (
+    'activeGroupKey === "debug"',
+    "colorSafetyCardCompact",
+    "create compact color safety diagnostic card fail",
+):
+    if token not in PANELS:
+        errors.append("compact runtime diagnostic contract missing: %s" % token)
 
 argb = re.search(r"function _th_argb\(c\) \{.*?\n\}", THEME, re.S)
 if not argb:
@@ -115,8 +124,8 @@ if module_version(BASE, "th_01_base.js") < (1, 1, 12):
     errors.append("th_01_base.js version below pressed feedback baseline 1.1.12")
 if module_version(THEME, "th_04_theme.js") < (1, 0, 9):
     errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.9")
-if module_version(PANELS, "th_14_panels.js") < (1, 0, 21):
-    errors.append("th_14_panels.js version below runtime diagnostic baseline 1.0.21")
+if module_version(PANELS, "th_14_panels.js") < (1, 0, 22):
+    errors.append("th_14_panels.js version below runtime diagnostic compact-layout baseline 1.0.22")
 if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 8):
     errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.8")
 
