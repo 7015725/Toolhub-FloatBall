@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // =======================【Content：解析 settings URI】=======================
 // 这段代码的主要内容/用途：识别 content://settings/(system|secure|global)/KEY 并用 Settings.* get/put 更稳
 FloatBallAppWM.prototype.parseSettingsUri = function(uriStr) {
@@ -698,6 +698,152 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
     if (item.error) parts.push("错误=" + String(item.error));
     return parts.join(" · ");
   }
+  function majorSeverityOf(item) {
+    var event = String(item && item.event || "");
+    var phase = String(item && (item.phase || item.lastPhase) || "");
+    var status = String(item && item.status || "").toLowerCase();
+    if (event === "UNCAUGHT" || event === "RECOVERED_INTERRUPTION" || event === "TEST_INTERRUPTED") return "fatal";
+    if (event === "INCIDENT") return "error";
+    if (event === "TEST_END" && status && status !== "passed") return "error";
+    if (event === "SESSION_END" && status && status !== "clean") return "error";
+    if (event === "CHECKPOINT" && (phase.indexOf("_FAIL") >= 0 || phase === "PANEL_BUILD_FAIL")) return "error";
+    return "info";
+  }
+  function majorSeverityLabel(level) {
+    if (level === "fatal") return "[严重]";
+    if (level === "error") return "[异常]";
+    return "[信息]";
+  }
+  function isMajorAbnormalEvent(item) {
+    return majorSeverityOf(item) !== "info";
+  }
+  function formatSeverityEvent(item) {
+    return majorSeverityLabel(majorSeverityOf(item)) + " " + formatEvent(item);
+  }
+  function recentSeverityEvents(app, limit, mode) {
+    var n = Math.floor(Number(limit || 8));
+    if (isNaN(n) || n < 1) n = 8;
+    if (n > 20) n = 20;
+    var all = [];
+    try { all = app.L && app.L.getRecentMajorEvents ? app.L.getRecentMajorEvents(30) : []; } catch (e) { all = []; }
+    var out = [];
+    for (var i = 0; i < all.length; i++) {
+      if (mode === "abnormal" && !isMajorAbnormalEvent(all[i])) continue;
+      out.push(all[i]);
+    }
+    if (out.length > n) out = out.slice(out.length - n);
+    return out;
+  }
+  function severitySummary(app, limit, mode) {
+    try {
+      var list = recentSeverityEvents(app, limit, mode);
+      if (!list.length) {
+        return mode === "abnormal"
+          ? "暂无异常事件；正常会话与成功检查点已折叠"
+          : "暂无重大事件记录";
+      }
+      var lines = [];
+      for (var i = 0; i < list.length; i++) lines.push(formatSeverityEvent(list[i]));
+      return lines.join("\n");
+    } catch (e) {
+      return "读取重大事件失败：" + String(e);
+    }
+  }
+  function installMajorSeverityRuntimeCard(proto) {
+    if (!proto || proto.__toolHubMajorSeverityPatch === true) return;
+    proto.getRecentAbnormalEventSummary = function(limit) {
+      return severitySummary(this, limit || 8, "abnormal");
+    };
+    proto.getRecentMajorEventDetailSummary = function(limit) {
+      return severitySummary(this, limit || 16, "all");
+    };
+    proto.copyCurrentMajorEventSummary = function(mode) {
+      try {
+        var normalized = String(mode || "abnormal") === "all" ? "all" : "abnormal";
+        var text = normalized === "all"
+          ? this.getRecentMajorEventDetailSummary(20)
+          : this.getRecentAbnormalEventSummary(12);
+        if (!text) return false;
+        var clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+        if (!clipboard) throw "clipboard service unavailable";
+        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
+          normalized === "all" ? "ToolHub 全部重大事件" : "ToolHub 异常事件",
+          text
+        ));
+        try { this.toast(normalized === "all" ? "全部重大事件已复制" : "异常事件已复制"); } catch (eToast) {}
+        return true;
+      } catch (e) {
+        safeLog(this.L, "e", "copy severity major events fail error=" + String(e));
+        try { this.toast("复制重大事件失败"); } catch (eToast2) {}
+      }
+      return false;
+    };
+
+    var oldCard = proto.createColorSafetyRuntimeDiagnosticCard;
+    if (typeof oldCard === "function" && oldCard.__majorSeverityWrapped !== true) {
+      var severityCard = function() {
+        var card = oldCard.apply(this, arguments);
+        try {
+          var self = this;
+          var title = null, summary = null, copyButton = null;
+          var count = card && card.getChildCount ? card.getChildCount() : 0;
+          for (var i = 0; i < count; i++) {
+            var child = card.getChildAt(i);
+            var childText = "";
+            try { if (child && child.getText) childText = String(child.getText() || ""); } catch (eText) {}
+            if (childText === "最近重大事件") {
+              title = child;
+              if (i + 1 < count) summary = card.getChildAt(i + 1);
+              if (i + 2 < count) copyButton = card.getChildAt(i + 2);
+              break;
+            }
+          }
+          if (!title || !summary) return card;
+
+          var showAll = false;
+          var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
+          var C = this.ui && this.ui.colors ? this.ui.colors : null;
+          var bg = T && T.surface2 ? T.surface2 : (T && T.primaryContainer ? T.primaryContainer : android.graphics.Color.LTGRAY);
+          var fg = T && T.onSurface ? T.onSurface : (C ? C.textPriLight : android.graphics.Color.DKGRAY);
+
+          function refreshSeverityView() {
+            try {
+              title.setText(showAll ? "全部重大事件" : "最近异常事件");
+              summary.setText(showAll
+                ? self.getRecentMajorEventDetailSummary(16)
+                : self.getRecentAbnormalEventSummary(8));
+              if (toggleButton) toggleButton.setText(showAll ? "只看异常" : "查看全部事件");
+            } catch (eRefresh) {
+              safeLog(self.L, "w", "refresh major severity view fail error=" + String(eRefresh));
+            }
+          }
+
+          if (copyButton && copyButton.setText && copyButton.setOnClickListener) {
+            copyButton.setText("复制当前摘要");
+            copyButton.setOnClickListener(new android.view.View.OnClickListener({
+              onClick: function() { self.copyCurrentMajorEventSummary(showAll ? "all" : "abnormal"); }
+            }));
+          }
+
+          var toggleButton = this.ui.createSolidButton(this, "查看全部事件", bg, fg, function() {
+            showAll = !showAll;
+            refreshSeverityView();
+          });
+          var toggleLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(46));
+          toggleLp.setMargins(0, this.dp(8), 0, 0);
+          card.addView(toggleButton, toggleLp);
+          refreshSeverityView();
+        } catch (eCard) {
+          safeLog(this.L, "w", "install major severity card fail error=" + String(eCard));
+        }
+        return card;
+      };
+      severityCard.__majorSeverityWrapped = true;
+      proto.createColorSafetyRuntimeDiagnosticCard = severityCard;
+    }
+    proto.__toolHubMajorSeverityPatch = true;
+  }
+
   function patchRuntime() {
     if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM.prototype) return;
     var p = FloatBallAppWM.prototype;
@@ -912,6 +1058,7 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
         return card;
       };
     });
+    installMajorSeverityRuntimeCard(p);
   }
 
   var BaseLogger = ToolHubLogger;
