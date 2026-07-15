@@ -1,0 +1,56 @@
+name: ToolHub App 补丁诊断
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'fix/app-picker-hide-internal-fields-20260715'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/app-picker-hide-internal-fields-20260715
+          fetch-depth: 0
+
+      - name: 复现并保存失败原因
+        shell: bash
+        run: |
+          if [ -f PATCH_FAILURE.txt ]; then
+            echo "diagnostic already captured"
+            exit 0
+          fi
+          git fetch --no-tags origin main
+          git show origin/main:.github/workflows/toolhub-app-picker-hide-fields.yml > /tmp/source-workflow.yml
+          python3 - <<'PY'
+          import base64
+          import gzip
+          import re
+          from pathlib import Path
+
+          text = Path('/tmp/source-workflow.yml').read_text(encoding='utf-8')
+          match = re.search(r"printf '%s' '([^']+)' \| base64", text)
+          if not match:
+              raise SystemExit('payload missing')
+          payload = gzip.decompress(base64.b64decode(match.group(1))).decode('utf-8')
+          Path('/tmp/toolhub_app_picker_patch.py').write_text(payload, encoding='utf-8')
+          PY
+          set +e
+          python3 /tmp/toolhub_app_picker_patch.py > /tmp/patch-output.txt 2>&1
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            printf 'unexpected success\n' > PATCH_FAILURE.txt
+          else
+            cp /tmp/patch-output.txt PATCH_FAILURE.txt
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PATCH_FAILURE.txt
+          git commit -m "记录应用按钮补丁失败原因"
+          git push origin HEAD:fix/app-picker-hide-internal-fields-20260715
