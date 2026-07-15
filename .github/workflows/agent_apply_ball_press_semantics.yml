@@ -38,18 +38,32 @@ jobs:
           git add code/th_01_base.js code/th_04_theme.js scripts/verify_coloros_rhino_color_safety.py
           git commit -m "修复悬浮球按压反馈默认值语义"
 
-      - name: Verify committed changes
-        shell: bash
-        run: |
-          git fetch --no-tags origin main
-          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
-          python3 scripts/verify_coloros_rhino_color_safety.py
-          python3 scripts/verify_rhino_color_api_safety.py
-          python3 scripts/verify_settings_color_scheme.py
-          python3 scripts/verify_settings_color_roles.py
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          git diff --check origin/main...HEAD
+      - name: Fetch main
+        run: git fetch --no-tags origin main
+
+      - name: Verify changed module versions
+        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify ColorOS safety
+        run: python3 scripts/verify_coloros_rhino_color_safety.py
+
+      - name: Verify Rhino color safety
+        run: python3 scripts/verify_rhino_color_api_safety.py
+
+      - name: Verify settings color scheme
+        run: python3 scripts/verify_settings_color_scheme.py
+
+      - name: Verify settings color roles
+        run: python3 scripts/verify_settings_color_roles.py
+
+      - name: Verify ES5
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: Verify JavaScript syntax
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: Verify diff whitespace
+        run: git diff --check origin/main...HEAD
 
       - name: Push source commit
         shell: bash
