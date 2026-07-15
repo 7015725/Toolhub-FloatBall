@@ -140,18 +140,18 @@
       "version": "1.0.3"
     },
     "th_21_result_preview.js": {
-      "sha256": "489199f1c8d8bea046eb5e29dad3ae5cb67c7c3f99b72f796690e7dfb92b824f",
-      "size": 29205,
-      "version": "1.0.4"
+      "sha256": "5254e378d61c7d623956726ac5a6d86ffd7a2ac0468da39799af1c2fe06a7dcd",
+      "size": 40667,
+      "version": "1.1.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "隐藏应用按钮内部配置字段"
+      "修复顶部预览首帧与计时竞态"
     ],
-    "title": "隐藏应用按钮内部配置字段"
+    "title": "修复顶部预览首帧与计时竞态"
   },
   "schema": 3,
-  "version": 20260715084648
+  "version": 20260715102441
 }

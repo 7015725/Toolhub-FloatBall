@@ -1,6 +1,6 @@
-// @version 1.0.4
+// @version 1.1.0
 // =======================【取字 / OCR 顶部结果预览】=======================
-// 全自绘单实例悬浮预览；点击后把完整文本传给 th_20_pickword.js。
+// Canvas 全自绘单实例悬浮预览；点击后把完整文本传给 th_20_pickword.js。
 (function() {
   function now21() {
     try { return java.lang.System.currentTimeMillis(); } catch (e0) {}
@@ -122,8 +122,11 @@
       appObj.state.resultPreview = {
         generation: 0,
         sequence: 0,
+        rootSequence: 0,
+        rootToken: 0,
         payload: null,
         root: null,
+        rootRender: null,
         lp: null,
         wm: null,
         added: false,
@@ -136,6 +139,9 @@
         handler: null,
         drawCount: 0,
         firstDrawLogged: false,
+        visibleStartedAt: 0,
+        dismissScheduledAt: 0,
+        renderRebuildCount: 0,
         line1: "",
         line2: "",
         measuredWidth: 0,
@@ -151,6 +157,9 @@
     }
     var st = appObj.state.resultPreview;
     if (!st.handler) st.handler = mainHandler21();
+    if (st.rootSequence === undefined) st.rootSequence = 0;
+    if (st.rootToken === undefined) st.rootToken = 0;
+    if (st.renderRebuildCount === undefined) st.renderRebuildCount = 0;
     return st;
   }
 
@@ -299,11 +308,39 @@
     st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
   }
 
-  function drawPreview21(appObj, st, canvas, view) {
+  function syncRender21(render, st) {
+    if (!render || !st) return;
+    render.generation = Number(st.generation || 0);
+    render.payloadId = String(st.payload && st.payload.id ? st.payload.id : "");
+    render.line1 = String(st.line1 || "");
+    render.line2 = String(st.line2 || "");
+    render.drawCount = 0;
+    render.firstDrawAt = 0;
+    render.firstDrawLogged = false;
+    render.visibleStartedAt = 0;
+    render.pressed = false;
+    render.disposed = false;
+    render.attachedAt = now21();
+    st.drawCount = 0;
+    st.firstDrawLogged = false;
+    st.visibleStartedAt = 0;
+    st.dismissScheduledAt = 0;
+  }
+
+  function isCurrentRoot21(st, rootRef, render) {
+    if (!st || !rootRef || !render) return false;
+    if (render.disposed === true) return false;
+    if (st.root !== rootRef || st.rootRender !== render) return false;
+    if (Number(st.rootToken || 0) !== Number(render.rootToken || 0)) return false;
+    if (Number(st.generation || 0) !== Number(render.generation || 0)) return false;
+    return true;
+  }
+
+  function drawPreview21(appObj, st, canvas, view, render) {
     var c = colors21();
     var width = view.getWidth();
     var height = view.getHeight();
-    if (width <= 0 || height <= 0) return;
+    if (width <= 0 || height <= 0) return false;
     var bg = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     var rect = new android.graphics.RectF(dp21(appObj, 1), dp21(appObj, 1), width - dp21(appObj, 1), height - dp21(appObj, 1));
     bg.setStyle(android.graphics.Paint.Style.FILL);
@@ -314,42 +351,206 @@
     setPaintColor21(bg, c.stroke);
     canvas.drawRoundRect(rect, dp21(appObj, 12), dp21(appObj, 12), bg);
 
+
     var textPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     setPaintColor21(textPaint, c.text);
     textPaint.setTextSize(sp21(14));
     var x = dp21(appObj, 14);
-    if (st.line2) {
-      canvas.drawText(new java.lang.String(st.line1), x, dp21(appObj, 25), textPaint);
+    var line1 = String(render && render.line1 !== undefined ? render.line1 : st.line1 || "");
+    var line2 = String(render && render.line2 !== undefined ? render.line2 : st.line2 || "");
+    if (line2) {
+      canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 25), textPaint);
       setPaintColor21(textPaint, c.secondary);
-      canvas.drawText(new java.lang.String(st.line2), x, dp21(appObj, 47), textPaint);
+      canvas.drawText(new java.lang.String(line2), x, dp21(appObj, 47), textPaint);
     } else {
-      canvas.drawText(new java.lang.String(st.line1), x, dp21(appObj, 30), textPaint);
+      canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 30), textPaint);
     }
+    return true;
+  }
+
+  function cancelDismiss21(st) {
+    if (!st) return;
+    try {
+      if (st.handler && st.dismissRunnable) st.handler.removeCallbacks(st.dismissRunnable);
+    } catch (e0) {}
+    st.dismissRunnable = null;
+    st.dismissScheduledAt = 0;
+  }
+
+  function cancelVisibilityFallback21(st) {
+    if (!st) return;
+    try {
+      if (st.handler && st.visibilityFallbackRunnable) st.handler.removeCallbacks(st.visibilityFallbackRunnable);
+    } catch (e0) {}
+    st.visibilityFallbackRunnable = null;
+  }
+
+  function timeoutMs21(appObj) {
+    var seconds = 3;
+    try { seconds = Number(appObj && appObj.config ? appObj.config.POINTER_RESULT_PREVIEW_TIMEOUT_SEC : 3); } catch (e0) { seconds = 3; }
+    if (isNaN(seconds)) seconds = 3;
+    seconds = clamp21(seconds, 1, 10);
+    return Math.round(seconds * 1000);
+  }
+
+  function scheduleDismiss21(appObj, st, rootRef, render) {
+    cancelDismiss21(st);
+    if (!isCurrentRoot21(st, rootRef, render)) return false;
+    if (Number(render.firstDrawAt || 0) <= 0) return false;
+    var token = Number(st.generation || 0);
+    var rootToken = Number(render.rootToken || 0);
+    var timeoutMs = timeoutMs21(appObj);
+    st.dismissScheduledAt = now21();
+    st.dismissRunnable = new java.lang.Runnable({ run: function() {
+      try {
+        if (Number(st.generation || 0) !== token) return;
+        if (!isCurrentRoot21(st, rootRef, render)) return;
+        var visibleMs = Math.max(0, now21() - Number(render.firstDrawAt || now21()));
+        try {
+          safeLog(appObj.L, 'i',
+            "result preview timeout" +
+            " id=" + String(render.payloadId || "") +
+            " generation=" + String(token) +
+            " rootToken=" + String(rootToken) +
+            " visibleMs=" + String(visibleMs) +
+            " timeoutMs=" + String(timeoutMs));
+        } catch (eLog) {}
+        appObj.dismissResultPreview("timeout", true);
+      } catch (e0) {}
+    }});
+    try {
+      var posted = st.handler.postDelayed(st.dismissRunnable, timeoutMs) === true;
+      if (posted) {
+        try {
+          safeLog(appObj.L, 'i',
+            "result preview dismiss scheduled" +
+            " id=" + String(render.payloadId || "") +
+            " generation=" + String(token) +
+            " rootToken=" + String(rootToken) +
+            " timeoutMs=" + String(timeoutMs));
+        } catch (eLogSchedule) {}
+      }
+      return posted;
+    } catch (ePost) {
+      st.dismissRunnable = null;
+      st.dismissScheduledAt = 0;
+    }
+    return false;
+  }
+
+  function startEnterAnimation21(appObj, st, rootRef, render) {
+    if (!isCurrentRoot21(st, rootRef, render)) return false;
+    if (render.enterStarted === true) return true;
+    render.enterStarted = true;
+    try {
+      rootRef.animate().cancel();
+      rootRef.setVisibility(android.view.View.VISIBLE);
+      rootRef.setAlpha(1);
+      rootRef.setScaleX(0.985);
+      rootRef.setScaleY(0.985);
+      rootRef.setTranslationY(-dp21(appObj, 6));
+      rootRef.animate()
+        .scaleX(1)
+        .scaleY(1)
+        .translationY(0)
+        .setDuration(140)
+        .setInterpolator(new android.view.animation.DecelerateInterpolator())
+        .start();
+      return true;
+    } catch (eEnter) {
+      try {
+        rootRef.setVisibility(android.view.View.VISIBLE);
+        rootRef.setAlpha(1);
+        rootRef.setScaleX(1);
+        rootRef.setScaleY(1);
+        rootRef.setTranslationY(0);
+      } catch (eFallback) {}
+    }
+    return false;
+  }
+
+  function markFirstDraw21(appObj, st, rootRef, render) {
+    if (!isCurrentRoot21(st, rootRef, render)) {
+      try {
+        safeLog(appObj.L, 'd',
+          "result preview stale draw ignored" +
+          " id=" + String(render && render.payloadId || "") +
+          " generation=" + String(render && render.generation || 0) +
+          " rootToken=" + String(render && render.rootToken || 0));
+      } catch (eStaleLog) {}
+      return false;
+    }
+    st.drawCount = Number(render.drawCount || 0);
+    if (Number(render.firstDrawAt || 0) > 0) return true;
+
+    render.firstDrawAt = now21();
+    render.visibleStartedAt = render.firstDrawAt;
+    render.firstDrawLogged = true;
+    st.firstDrawLogged = true;
+    st.visible = true;
+    st.visibleStartedAt = render.firstDrawAt;
+    cancelVisibilityFallback21(st);
+
+    var attached = false;
+    try {
+      attached = rootRef.isAttachedToWindow ? rootRef.isAttachedToWindow() === true : rootRef.getWindowToken() !== null;
+    } catch (eAttached) {}
+    try {
+      safeLog(appObj.L, 'i',
+        "result preview first draw" +
+        " id=" + String(render.payloadId || "") +
+        " generation=" + String(render.generation || 0) +
+        " rootToken=" + String(render.rootToken || 0) +
+        " attached=" + String(attached) +
+        " attachCostMs=" + String(Math.max(0, render.firstDrawAt - Number(render.attachedAt || render.firstDrawAt))) +
+        " width=" + String(rootRef.getWidth()) +
+        " height=" + String(rootRef.getHeight()) +
+        " alpha=" + String(rootRef.getAlpha()) +
+        " visibility=" + String(rootRef.getVisibility()) +
+        " lpY=" + String(st.lp ? st.lp.y : -1) +
+        " drawCount=" + String(render.drawCount));
+    } catch (eFirstDrawLog) {}
+
+    scheduleDismiss21(appObj, st, rootRef, render);
+    try {
+      st.handler.post(new java.lang.Runnable({ run: function() {
+        try { startEnterAnimation21(appObj, st, rootRef, render); } catch (eEnter) {}
+      }}));
+    } catch (ePostEnter) {
+      startEnterAnimation21(appObj, st, rootRef, render);
+    }
+    return true;
   }
 
   function createView21(appObj, st) {
     var self = appObj;
+    var render = {
+      rootToken: Number(st.rootToken || 0),
+      generation: Number(st.generation || 0),
+      payloadId: String(st.payload && st.payload.id ? st.payload.id : ""),
+      line1: String(st.line1 || ""),
+      line2: String(st.line2 || ""),
+      drawCount: 0,
+      firstDrawAt: 0,
+      firstDrawLogged: false,
+      visibleStartedAt: 0,
+      attachedAt: now21(),
+      pressed: false,
+      disposed: false,
+      enterStarted: false
+    };
     var PreviewView = new JavaAdapter(android.view.View, {
       onDraw: function(canvas) {
-        st.drawCount = Number(st.drawCount || 0) + 1;
-        if (st.firstDrawLogged !== true) {
-          st.firstDrawLogged = true;
-          try {
-            safeLog(self.L, 'i',
-              "result preview first draw" +
-              " width=" + String(this.getWidth()) +
-              " height=" + String(this.getHeight()) +
-              " alpha=" + String(this.getAlpha()) +
-              " visibility=" + String(this.getVisibility()) +
-              " lpY=" + String(st.lp ? st.lp.y : -1) +
-              " drawCount=" + String(st.drawCount));
-          } catch (eFirstDrawLog) {}
-        }
-        try { drawPreview21(self, st, canvas, this); } catch (eDraw) {
+        var current = isCurrentRoot21(st, this, render);
+        if (current) render.drawCount = Number(render.drawCount || 0) + 1;
+        var drawn = false;
+        try { drawn = drawPreview21(self, st, canvas, this, render) === true; } catch (eDraw) {
           try { safeLog(self.L, 'e', "result preview draw fail: " + String(eDraw)); } catch (eDrawLog) {}
         }
+        if (current && drawn) markFirstDraw21(self, st, this, render);
       },
       onTouchEvent: function(event) {
+        if (!isCurrentRoot21(st, this, render)) return false;
         try {
           var action = event.getActionMasked ? event.getActionMasked() : event.getAction();
           if (action === android.view.MotionEvent.ACTION_DOWN) {
@@ -359,6 +560,8 @@
             st.downRawY = event.getRawY();
             st.downAt = now21();
             st.touchMoved = false;
+            render.pressed = true;
+            try { this.invalidate(); } catch (eInvalidateDown) {}
             try { this.animate().cancel(); } catch (eCancel) {}
             try { this.animate().scaleX(0.97).scaleY(0.97).setDuration(70).start(); } catch (eScale) {}
             return true;
@@ -371,13 +574,15 @@
             return true;
           }
           if (action === android.view.MotionEvent.ACTION_UP) {
+            render.pressed = false;
+            try { this.invalidate(); } catch (eInvalidateUp) {}
             try { this.animate().scaleX(1).scaleY(1).setDuration(80).start(); } catch (eUpScale) {}
-            if (!st.touchMoved && st.clickLocked !== true) {
-              self.openResultPreviewPrimaryAction();
-            }
+            if (!st.touchMoved && st.clickLocked !== true) self.openResultPreviewPrimaryAction();
             return true;
           }
           if (action === android.view.MotionEvent.ACTION_CANCEL) {
+            render.pressed = false;
+            try { this.invalidate(); } catch (eInvalidateCancel) {}
             try { this.animate().scaleX(1).scaleY(1).setDuration(80).start(); } catch (eCancelScale) {}
             st.touchMoved = false;
             return true;
@@ -390,8 +595,9 @@
     PreviewView.setFocusable(false);
     try { PreviewView.setWillNotDraw(false); } catch (eWillNotDraw) {}
     try { PreviewView.setVisibility(android.view.View.VISIBLE); } catch (eVisible) {}
-    try { PreviewView.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null); } catch (eLayer) {}
-    return PreviewView;
+    // 不创建软件离屏图层；保持 Canvas 全自绘，但让 WindowManager 正常驱动首帧 traversal。
+    try { PreviewView.setLayerType(android.view.View.LAYER_TYPE_NONE, null); } catch (eLayer) {}
+    return { view: PreviewView, render: render };
   }
 
   function createLp21(appObj, st) {
@@ -412,40 +618,148 @@
     return lp;
   }
 
-  function cancelDismiss21(st) {
-    if (!st) return;
+  function detachRoot21(appObj, st, rootRef, render) {
+    if (render) render.disposed = true;
     try {
-      if (st.handler && st.dismissRunnable) st.handler.removeCallbacks(st.dismissRunnable);
-    } catch (e0) {}
-    st.dismissRunnable = null;
+      if (rootRef && st.wm) st.wm.removeView(rootRef);
+    } catch (eRemove) {
+      try {
+        if (typeof appObj.safeRemoveView === "function" && rootRef) appObj.safeRemoveView(rootRef, "resultPreview");
+      } catch (eSafe) {}
+    }
+    if (st.root === rootRef) {
+      st.root = null;
+      st.rootRender = null;
+      st.added = false;
+      st.visible = false;
+      st.entering = false;
+      st.exiting = false;
+    }
+    return true;
   }
 
-  function cancelVisibilityFallback21(st) {
-    if (!st) return;
-    try {
-      if (st.handler && st.visibilityFallbackRunnable) {
-        st.handler.removeCallbacks(st.visibilityFallbackRunnable);
-      }
-    } catch (e0) {}
-    st.visibilityFallbackRunnable = null;
+  function removeView21(appObj, st) {
+    if (!st) return false;
+    cancelDismiss21(st);
+    cancelVisibilityFallback21(st);
+    var rootRef = st.root;
+    var render = st.rootRender;
+    detachRoot21(appObj, st, rootRef, render);
+    st.lp = null;
+    st.clickLocked = false;
+    st.drawCount = 0;
+    st.firstDrawLogged = false;
+    st.visibleStartedAt = 0;
+    st.dismissScheduledAt = 0;
+    return true;
   }
 
-  function scheduleVisibilityFallback21(appObj, st, rootRef) {
-    if (!st || !rootRef) return false;
+  function forceRootTraversal21(appObj, st, rootRef, render, attempt) {
+    if (!isCurrentRoot21(st, rootRef, render)) return false;
+    try { rootRef.animate().cancel(); } catch (eCancel) {}
+    try { rootRef.setVisibility(android.view.View.VISIBLE); } catch (eVisible) {}
+    try { rootRef.setAlpha(1); } catch (eAlpha) {}
+    try { rootRef.setScaleX(0.985); } catch (eScaleX) {}
+    try { rootRef.setScaleY(0.985); } catch (eScaleY) {}
+    try { rootRef.setTranslationY(-dp21(appObj, 6)); } catch (eTranslation) {}
+    try { rootRef.setLayerType(android.view.View.LAYER_TYPE_NONE, null); } catch (eLayer) {}
+    try { rootRef.requestLayout(); } catch (eLayout) {}
+    try { rootRef.invalidate(); } catch (eInvalidate) {}
+    try {
+      if (rootRef.postInvalidateOnAnimation) rootRef.postInvalidateOnAnimation();
+    } catch (ePostInvalidate) {}
+    try {
+      if (st.wm && st.lp) st.wm.updateViewLayout(rootRef, st.lp);
+    } catch (eUpdate) {}
+    try {
+      safeLog(appObj.L, 'w',
+        "result preview draw stalled" +
+        " id=" + String(render.payloadId || "") +
+        " generation=" + String(render.generation || 0) +
+        " rootToken=" + String(render.rootToken || 0) +
+        " attempt=" + String(attempt) +
+        " drawCount=" + String(render.drawCount || 0));
+    } catch (eLog) {}
+    return true;
+  }
+
+  function attachNewRoot21(appObj, st) {
+    st.rootSequence = Number(st.rootSequence || 0) + 1;
+    st.rootToken = Number(st.rootSequence || 0);
+    var built = createView21(appObj, st);
+    st.root = built.view;
+    st.rootRender = built.render;
+    syncRender21(st.rootRender, st);
+    st.rootRender.rootToken = Number(st.rootToken || 0);
+    st.rootRender.enterStarted = false;
+    if (!st.lp) st.lp = createLp21(appObj, st);
+    st.lp.width = st.measuredWidth;
+    st.lp.height = st.measuredHeight;
+    st.lp.y = topInset21(st.root) + dp21(appObj, 8);
+
+    st.root.setVisibility(android.view.View.VISIBLE);
+    st.root.setAlpha(1);
+    st.root.setScaleX(0.985);
+    st.root.setScaleY(0.985);
+    st.root.setTranslationY(-dp21(appObj, 6));
+    st.wm.addView(st.root, st.lp);
+    st.added = true;
+    st.visible = false;
+    st.entering = true;
+    st.rootRender.attachedAt = now21();
+    try { st.root.requestLayout(); } catch (eLayout) {}
+    try { st.root.invalidate(); } catch (eInvalidate) {}
+    try { if (st.root.postInvalidateOnAnimation) st.root.postInvalidateOnAnimation(); } catch (ePostInvalidate) {}
+    scheduleVisibilityFallback21(appObj, st, st.root, st.rootRender, 1);
+    st.entering = false;
+    return true;
+  }
+
+  function rebuildRoot21(appObj, st, rootRef, render) {
+    if (!isCurrentRoot21(st, rootRef, render)) return false;
+    cancelVisibilityFallback21(st);
+    st.renderRebuildCount = Number(st.renderRebuildCount || 0) + 1;
+    try {
+      safeLog(appObj.L, 'w',
+        "result preview root rebuild" +
+        " id=" + String(render.payloadId || "") +
+        " generation=" + String(render.generation || 0) +
+        " oldRootToken=" + String(render.rootToken || 0) +
+        " rebuild=" + String(st.renderRebuildCount));
+    } catch (eLog) {}
+    detachRoot21(appObj, st, rootRef, render);
+    return attachNewRoot21(appObj, st);
+  }
+
+  function failRender21(appObj, st, rootRef, render) {
+    if (!isCurrentRoot21(st, rootRef, render)) return false;
+    try {
+      safeLog(appObj.L, 'e',
+        "result preview render failed" +
+        " id=" + String(render.payloadId || "") +
+        " generation=" + String(render.generation || 0) +
+        " rootToken=" + String(render.rootToken || 0) +
+        " rebuilds=" + String(st.renderRebuildCount || 0));
+    } catch (eLog) {}
+    cancelVisibilityFallback21(st);
+    detachRoot21(appObj, st, rootRef, render);
+    st.lp = null;
+    return false;
+  }
+
+  function scheduleVisibilityFallback21(appObj, st, rootRef, render, attempt) {
+    if (!st || !rootRef || !render) return false;
     cancelVisibilityFallback21(st);
     var token = Number(st.generation || 0);
+    var rootToken = Number(render.rootToken || 0);
+    var attemptNo = Math.max(1, Number(attempt || 1));
+    var delayMs = attemptNo === 1 ? 260 : 360;
     st.visibilityFallbackRunnable = new java.lang.Runnable({ run: function() {
       try {
         st.visibilityFallbackRunnable = null;
         if (Number(st.generation || 0) !== token) return;
-        if (st.added !== true || st.root !== rootRef) return;
-
-        try { rootRef.animate().cancel(); } catch (eCancel) {}
-        try { rootRef.setVisibility(android.view.View.VISIBLE); } catch (eVisible) {}
-        try { rootRef.setAlpha(1); } catch (eAlpha) {}
-        try { rootRef.setTranslationY(0); } catch (eTranslation) {}
-        try { rootRef.requestLayout(); } catch (eLayout) {}
-        try { rootRef.invalidate(); } catch (eInvalidate) {}
+        if (!isCurrentRoot21(st, rootRef, render)) return;
+        if (Number(render.firstDrawAt || 0) > 0) return;
 
         var attached = false;
         try {
@@ -460,135 +774,81 @@
             " width=" + String(rootRef.getWidth()) +
             " height=" + String(rootRef.getHeight()) +
             " lpY=" + String(st.lp ? st.lp.y : -1) +
-            " drawCount=" + String(st.drawCount || 0));
-        } catch (eLog) {}
+            " drawCount=" + String(render.drawCount || 0) +
+            " generation=" + String(token) +
+            " rootToken=" + String(rootToken) +
+            " attempt=" + String(attemptNo));
+        } catch (eVisualLog) {}
+
+        forceRootTraversal21(appObj, st, rootRef, render, attemptNo);
+        if (attemptNo === 1) {
+          scheduleVisibilityFallback21(appObj, st, rootRef, render, 2);
+          return;
+        }
+        if (Number(st.renderRebuildCount || 0) < 1) {
+          rebuildRoot21(appObj, st, rootRef, render);
+          return;
+        }
+        failRender21(appObj, st, rootRef, render);
       } catch (eFallback) {
         try { safeLog(appObj.L, 'e', "result preview visibility fallback fail: " + String(eFallback)); } catch (eFallbackLog) {}
       }
     }});
     try {
-      return st.handler.postDelayed(st.visibilityFallbackRunnable, 260) === true;
+      return st.handler.postDelayed(st.visibilityFallbackRunnable, delayMs) === true;
     } catch (ePost) {
       st.visibilityFallbackRunnable = null;
     }
     return false;
   }
 
-  function removeView21(appObj, st) {
-    if (!st) return false;
-    cancelDismiss21(st);
-    cancelVisibilityFallback21(st);
-    try {
-      if (st.added && st.root && st.wm) st.wm.removeView(st.root);
-    } catch (eRemove) {
-      try {
-        if (typeof appObj.safeRemoveView === "function" && st.root) appObj.safeRemoveView(st.root, "resultPreview");
-      } catch (eSafe) {}
-    }
-    st.root = null;
-    st.lp = null;
-    st.added = false;
-    st.visible = false;
-    st.entering = false;
-    st.exiting = false;
-    st.clickLocked = false;
-    st.drawCount = 0;
-    st.firstDrawLogged = false;
-    return true;
-  }
-
-  function timeoutMs21(appObj) {
-    var seconds = 3;
-    try { seconds = Number(appObj && appObj.config ? appObj.config.POINTER_RESULT_PREVIEW_TIMEOUT_SEC : 3); } catch (e0) { seconds = 3; }
-    if (isNaN(seconds)) seconds = 3;
-    seconds = clamp21(seconds, 1, 10);
-    return Math.round(seconds * 1000);
-  }
-
-  function scheduleDismiss21(appObj, st) {
-    cancelDismiss21(st);
-    var token = Number(st.generation || 0);
-    st.dismissRunnable = new java.lang.Runnable({ run: function() {
-      try {
-        if (Number(st.generation || 0) !== token) return;
-        appObj.dismissResultPreview("timeout", true);
-      } catch (e0) {}
-    }});
-    try { st.handler.postDelayed(st.dismissRunnable, timeoutMs21(appObj)); } catch (ePost) { st.dismissRunnable = null; }
-  }
-
   function showState21(appObj, st) {
     if (!st || !st.payload || !st.payload.text) return false;
     prepareLines21(appObj, st);
+    cancelDismiss21(st);
+    cancelVisibilityFallback21(st);
     try { st.wm = st.wm || (appObj.state && appObj.state.wm) || context.getSystemService(android.content.Context.WINDOW_SERVICE); } catch (eWm) {}
     if (!st.wm) return false;
 
-    if (!st.root) st.root = createView21(appObj, st);
-    if (!st.lp) st.lp = createLp21(appObj, st);
+    if (!st.root || !st.added || !st.rootRender) {
+      st.renderRebuildCount = 0;
+      return attachNewRoot21(appObj, st);
+    }
+
+    var rootRef = st.root;
+    var render = st.rootRender;
+    syncRender21(render, st);
+    render.rootToken = Number(st.rootToken || 0);
+    render.enterStarted = true;
+    st.renderRebuildCount = 0;
     st.lp.width = st.measuredWidth;
     st.lp.height = st.measuredHeight;
-    st.lp.y = topInset21(st.root) + dp21(appObj, 8);
+    st.lp.y = topInset21(rootRef) + dp21(appObj, 8);
 
-    if (!st.added) {
-      st.wm.addView(st.root, st.lp);
-      st.added = true;
-      st.visible = true;
-      st.entering = true;
-      try {
-        st.root.animate().cancel();
-        st.root.setVisibility(android.view.View.VISIBLE);
-        st.root.setAlpha(1);
-        st.root.setScaleX(0.985);
-        st.root.setScaleY(0.985);
-        st.root.setTranslationY(-dp21(appObj, 6));
-        st.root.requestLayout();
-        st.root.invalidate();
-        st.root.animate()
-          .scaleX(1)
-          .scaleY(1)
-          .translationY(0)
-          .setDuration(140)
-          .setInterpolator(new android.view.animation.DecelerateInterpolator())
-          .start();
-      } catch (eEnter) {
-        try {
-          st.root.setVisibility(android.view.View.VISIBLE);
-          st.root.setAlpha(1);
-          st.root.setScaleX(1);
-          st.root.setScaleY(1);
-          st.root.setTranslationY(0);
-          st.root.requestLayout();
-          st.root.invalidate();
-        } catch (eEnterFallback) {}
-      }
-      scheduleVisibilityFallback21(appObj, st, st.root);
-      st.entering = false;
-    } else {
-      try {
-        st.root.setVisibility(android.view.View.VISIBLE);
-        st.root.setAlpha(1);
-        st.root.setScaleX(1);
-        st.root.setScaleY(1);
-        st.root.setTranslationY(0);
-      } catch (eExistingVisible) {}
-      try { st.wm.updateViewLayout(st.root, st.lp); } catch (eUpdate) {}
-      try { st.root.requestLayout(); st.root.invalidate(); } catch (eInvalidate) {}
-      try {
-        st.root.animate().cancel();
-        st.root.setAlpha(1);
-        st.root.setScaleX(0.985);
-        st.root.setScaleY(0.985);
-        st.root.animate()
-          .scaleX(1)
-          .scaleY(1)
-          .setDuration(120)
-          .setInterpolator(new android.view.animation.DecelerateInterpolator())
-          .start();
-      } catch (ePulse) {}
-      scheduleVisibilityFallback21(appObj, st, st.root);
-      st.visible = true;
+    try {
+      rootRef.animate().cancel();
+      rootRef.setVisibility(android.view.View.VISIBLE);
+      rootRef.setAlpha(1);
+      rootRef.setScaleX(1);
+      rootRef.setScaleY(1);
+      rootRef.setTranslationY(0);
+      st.wm.updateViewLayout(rootRef, st.lp);
+      rootRef.requestLayout();
+      rootRef.invalidate();
+      if (rootRef.postInvalidateOnAnimation) rootRef.postInvalidateOnAnimation();
+      rootRef.setScaleX(0.985);
+      rootRef.setScaleY(0.985);
+      rootRef.animate()
+        .scaleX(1)
+        .scaleY(1)
+        .setDuration(120)
+        .setInterpolator(new android.view.animation.DecelerateInterpolator())
+        .start();
+    } catch (eUpdate) {
+      try { rootRef.requestLayout(); rootRef.invalidate(); } catch (eInvalidate) {}
     }
-    scheduleDismiss21(appObj, st);
+    scheduleVisibilityFallback21(appObj, st, rootRef, render, 1);
+    st.visible = false;
     return true;
   }
 
@@ -628,6 +888,9 @@
         st.generation = Number(st.generation || 0) + 1;
         st.payload = normalized;
         st.clickLocked = false;
+        st.renderRebuildCount = 0;
+        cancelDismiss21(st);
+        cancelVisibilityFallback21(st);
         var self = this;
         runOnMain21(function() {
           try {
@@ -640,6 +903,7 @@
                 "result preview publish id=" + normalized.id +
                 " source=" + normalized.source +
                 " textLen=" + String(normalized.text.length) +
+                " generation=" + String(current.generation || 0) +
                 " shown=" + String(shown === true));
             } catch (eLog) {}
           } catch (eShow) {
@@ -653,19 +917,31 @@
         var self = this;
         var st = ensureState21(this);
         if (!st) return false;
+        var visibleMs = Math.max(0, now21() - Number(st.visibleStartedAt || now21()));
         st.generation = Number(st.generation || 0) + 1;
         cancelDismiss21(st);
+        cancelVisibilityFallback21(st);
         st.lastReason = String(reason || "");
+        try {
+          safeLog(this.L, 'i',
+            "result preview dismiss" +
+            " reason=" + String(reason || "") +
+            " visibleMs=" + String(visibleMs) +
+            " rootToken=" + String(st.rootToken || 0));
+        } catch (eDismissLog) {}
         runOnMain21(function() {
           var current = ensureState21(self);
           if (!current || !current.root || !current.added) {
             if (current) removeView21(self, current);
             return;
           }
+          var rootRef = current.root;
+          var render = current.rootRender;
+          var generation = Number(current.generation || 0);
+          var rootToken = Number(current.rootToken || 0);
+          if (render) render.disposed = true;
           if (animate !== false) {
             current.exiting = true;
-            var rootRef = current.root;
-            var generation = Number(current.generation || 0);
             try {
               rootRef.animate().cancel();
               rootRef.setAlpha(1);
@@ -681,6 +957,7 @@
                 .withEndAction(new java.lang.Runnable({ run: function() {
                   try {
                     if (Number(current.generation || 0) !== generation) return;
+                    if (current.root !== rootRef || Number(current.rootToken || 0) !== rootToken) return;
                     removeView21(self, current);
                   } catch (eEnd) {}
                 }}))
@@ -688,7 +965,7 @@
               return;
             } catch (eAnim) {}
           }
-          removeView21(self, current);
+          if (current.root === rootRef && Number(current.rootToken || 0) === rootToken) removeView21(self, current);
         });
         return true;
       };
@@ -698,14 +975,14 @@
         if (!st || !st.payload || st.clickLocked === true) return false;
         st.clickLocked = true;
         cancelDismiss21(st);
+        cancelVisibilityFallback21(st);
         st.generation = Number(st.generation || 0) + 1;
         var payload = st.payload;
         var ret = null;
         var removedForHandoff = false;
         try {
           removedForHandoff = removeView21(this, st) === true;
-          safeLog(this.L, 'i',
-            "result preview primary handoff removed=" + String(removedForHandoff));
+          safeLog(this.L, 'i', "result preview primary handoff removed=" + String(removedForHandoff));
         } catch (eHandoff) {
           try { this.dismissResultPreview("primary_action_handoff", false); } catch (eDismissFallback) {}
         }
@@ -725,9 +1002,7 @@
         }
         if (ret && ret.ok === true) return true;
         st.clickLocked = false;
-        try { this.publishResultPreview(payload); } catch (eRestore) {
-          try { scheduleDismiss21(this, st); } catch (eRestoreSchedule) {}
-        }
+        try { this.publishResultPreview(payload); } catch (eRestore) {}
         try { this.toast("拾字打开失败"); } catch (eToast) {}
         return false;
       };
@@ -754,13 +1029,20 @@
         runOnMain21(function() {
           try {
             var current = ensureState21(self);
-            if (!current || !current.payload || !current.root || !current.added) return;
+            if (!current || !current.payload || !current.root || !current.added || !current.rootRender) return;
+            current.generation = Number(current.generation || 0) + 1;
             prepareLines21(self, current);
+            syncRender21(current.rootRender, current);
+            current.rootRender.rootToken = Number(current.rootToken || 0);
+            current.rootRender.enterStarted = true;
             current.lp.width = current.measuredWidth;
             current.lp.height = current.measuredHeight;
             current.lp.y = topInset21(current.root) + dp21(self, 8);
             current.wm.updateViewLayout(current.root, current.lp);
+            current.root.requestLayout();
             current.root.invalidate();
+            if (current.root.postInvalidateOnAnimation) current.root.postInvalidateOnAnimation();
+            scheduleVisibilityFallback21(self, current, current.root, current.rootRender, 1);
           } catch (eReflow) {
             try { safeLog(self.L, 'w', "result preview reflow fail: " + String(eReflow)); } catch (eLog) {}
           }
