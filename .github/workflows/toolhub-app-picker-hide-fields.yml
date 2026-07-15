@@ -1,0 +1,351 @@
+name: ToolHub App 内部字段清理
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'fix/app-picker-hide-internal-fields-20260715'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/app-picker-hide-internal-fields-20260715
+          fetch-depth: 0
+
+      - name: 修改 App 选择器
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              p = Path(path)
+              text = p.read_text(encoding="utf-8")
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit("%s replacement count=%d" % (label, count))
+              p.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          editor = "code/th_14_button_editor.js"
+
+          replace_once(
+              editor,
+              "// @version 1.1.0",
+              "// @version 1.1.1",
+              "editor version",
+          )
+
+          replace_once(
+              editor,
+              '''  var appWrap = opt.appWrap;
+  var inputPkg = opt.inputPkg;
+  var inputUserId = opt.inputUserId;
+  var inputTitle = opt.inputTitle;
+  var C = opt.C || (self.ui && self.ui.colors) || {};
+  var textColor = opt.textColor;
+  var subTextColor = opt.subTextColor;
+  if (!appWrap || !inputPkg || !inputUserId) return null;''',
+              '''  var appWrap = opt.appWrap;
+  var inputTitle = opt.inputTitle;
+  var C = opt.C || (self.ui && self.ui.colors) || {};
+  var textColor = opt.textColor;
+  var subTextColor = opt.subTextColor;
+  if (!appWrap) return null;''',
+              "picker options",
+          )
+
+          replace_once(
+              editor,
+              '''  var primaryUserId = currentUserId();
+  var state = {
+    expanded: false,
+    loading: false,
+    loaded: false,
+    allItems: [],
+    showUserApps: true,
+    showSystemApps: true,
+    showOtherUsers: true,
+    generation: 0
+  };''',
+              '''  var primaryUserId = currentUserId();
+  var initialUserId = primaryUserId;
+  try {
+    var initialUserRaw = targetBtn.launchUserId != null ? targetBtn.launchUserId : targetBtn.userId;
+    if (initialUserRaw != null && String(initialUserRaw).length > 0) {
+      var parsedInitialUserId = parseInt(String(initialUserRaw), 10);
+      if (!isNaN(parsedInitialUserId) && parsedInitialUserId >= 0) initialUserId = parsedInitialUserId;
+    }
+  } catch(eInitialUser) { initialUserId = primaryUserId; }
+  var state = {
+    expanded: false,
+    loading: false,
+    loaded: false,
+    allItems: [],
+    showUserApps: true,
+    showSystemApps: true,
+    showOtherUsers: true,
+    generation: 0,
+    selectedPkg: str(targetBtn.pkg),
+    selectedUserId: initialUserId,
+    selectionError: ""
+  };''',
+              "picker state",
+          )
+
+          replace_once(
+              editor,
+              '''  var configuredPkg = str(targetBtn.pkg);
+  var configuredUser = (targetBtn.launchUserId != null) ? str(targetBtn.launchUserId) : "0";''',
+              '''  var configuredPkg = str(state.selectedPkg);
+  var configuredUser = str(state.selectedUserId);''',
+              "picker header state",
+          )
+
+          replace_once(
+              editor,
+              '''    try {
+      hint.setText("共扫描 " + str(source.length) + " 个，当前显示 " + str(out.length) + " 个");
+    } catch(eHint) {}''',
+              '''    try {
+      if (!state.selectionError) {
+        hint.setText("共扫描 " + str(source.length) + " 个，当前显示 " + str(out.length) + " 个");
+      }
+    } catch(eHint) {}''',
+              "picker result hint",
+          )
+
+          replace_once(
+              editor,
+              '''  createFilterRow("列出用户应用", true, function(value) { state.showUserApps = value; });
+  createFilterRow("列出系统应用", true, function(value) { state.showSystemApps = value; });
+  createFilterRow("列出分身/其他用户应用", true, function(value) { state.showOtherUsers = value; });
+
+  function applyLoaded(items, generation) {''',
+              '''  createFilterRow("列出用户应用", true, function(value) { state.showUserApps = value; });
+  createFilterRow("列出系统应用", true, function(value) { state.showSystemApps = value; });
+  createFilterRow("列出分身/其他用户应用", true, function(value) { state.showOtherUsers = value; });
+
+  function setSelectionError(message) {
+    var msg = str(message).replace(/^\\s+|\\s+$/g, "");
+    state.selectionError = msg;
+    try {
+      toolhubSafeSetTextColor(hint, msg ? (C.error || C.danger || subTextColor) : subTextColor);
+      if (msg) hint.setText(msg);
+      else if (state.loaded) renderNow();
+      else hint.setText("");
+    } catch(eSelectionError) {}
+  }
+
+  function applyLoaded(items, generation) {''',
+              "picker selection error",
+          )
+
+          replace_once(
+              editor,
+              '''    try { inputPkg.input.setText(str(item.pkg)); inputPkg.setError(null); } catch(ePkg) {}
+    try { inputUserId.input.setText(str(item.userId)); } catch(eUser) {}
+    try {
+      var currentTitle = inputTitle && inputTitle.getValue ? str(inputTitle.getValue()).replace(/^\\s+|\\s+$/g, "") : "";''',
+              '''    state.selectedPkg = str(item.pkg);
+    state.selectedUserId = Number(item.userId);
+    setSelectionError("");
+    try {
+      var currentTitle = inputTitle && inputTitle.getValue ? str(inputTitle.getValue()).replace(/^\\s+|\\s+$/g, "") : "";''',
+              "picker selection backfill",
+          )
+
+          replace_once(
+              editor,
+              '''  appWrap.addView(header);
+  appWrap.addView(body);
+  return { wrap: appWrap, reload: function() { load(true); } };''',
+              '''  appWrap.addView(header);
+  appWrap.addView(body);
+  return {
+    wrap: appWrap,
+    reload: function() { load(true); },
+    getPkg: function() {
+      return str(state.selectedPkg).replace(/^\\s+|\\s+$/g, "");
+    },
+    getUserId: function() {
+      var userId = parseInt(str(state.selectedUserId), 10);
+      return (!isNaN(userId) && userId >= 0) ? userId : primaryUserId;
+    },
+    setSelectionError: function(message) {
+      setSelectionError(message);
+    }
+  };''',
+              "picker getters",
+          )
+
+          replace_once(
+              editor,
+              '''    var appWrap = new android.widget.LinearLayout(context);
+    appWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
+    var inputPkg = self.ui.createInputGroup(self, "应用包名 (Package)", targetBtn.pkg, false, "可手动填写，也可从下方应用列表选择");
+    appWrap.addView(inputPkg.view);
+    var inputAppLaunchUser = self.ui.createInputGroup(self, "启动用户ID (主=0 / 分身=10/999 等)", (targetBtn.launchUserId != null ? String(targetBtn.launchUserId) : ""), false, "选择应用后自动回填；留空默认 0");
+    appWrap.addView(inputAppLaunchUser.view);
+    self.buildButtonAppPickerInline({
+        targetBtn: targetBtn,
+        appWrap: appWrap,
+        inputPkg: inputPkg,
+        inputUserId: inputAppLaunchUser,
+        inputTitle: inputTitle,
+        C: C,
+        textColor: textColor,
+        subTextColor: subTextColor
+    });''',
+              '''    var appWrap = new android.widget.LinearLayout(context);
+    appWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
+    var appPickerInline = self.buildButtonAppPickerInline({
+        targetBtn: targetBtn,
+        appWrap: appWrap,
+        inputTitle: inputTitle,
+        C: C,
+        textColor: textColor,
+        subTextColor: subTextColor
+    });''',
+              "app form fields",
+          )
+
+          replace_once(
+              editor,
+              '''            } else if (newBtn.type === "app") {
+                var p = inputPkg.getValue();
+                if (!p) { markInvalid(inputPkg, "请输入包名"); }
+                else { inputPkg.setError(null); newBtn.pkg = p; }// # 保存：启动用户ID（可选）
+try {
+    var au = inputAppLaunchUser.getValue();
+    au = (au != null) ? String(au).trim() : "";
+    if (au && au.length > 0) {
+        var aui = parseInt(au, 10);
+        if (!isNaN(aui)) newBtn.launchUserId = aui;
+    }
+ } catch(eAU) { safeLog(null, 'e', "catch " + String(eAU)); }
+
+            } else if (newBtn.type === "broadcast") {''',
+              '''            } else if (newBtn.type === "app") {
+                var p = appPickerInline && appPickerInline.getPkg ? String(appPickerInline.getPkg() || "") : "";
+                p = p.replace(/^\\s+|\\s+$/g, "");
+                if (!p) {
+                    try { if (appPickerInline && appPickerInline.setSelectionError) appPickerInline.setSelectionError("请先选择应用"); } catch(eAppError) {}
+                    markInvalid(null, "请先选择应用");
+                } else {
+                    try { if (appPickerInline && appPickerInline.setSelectionError) appPickerInline.setSelectionError(""); } catch(eAppClear) {}
+                    newBtn.pkg = p;
+                    try {
+                        var appUserId = appPickerInline && appPickerInline.getUserId ? Number(appPickerInline.getUserId()) : 0;
+                        if (!isNaN(appUserId) && appUserId >= 0) newBtn.launchUserId = appUserId;
+                    } catch(eAppUser) { newBtn.launchUserId = 0; }
+                }
+
+            } else if (newBtn.type === "broadcast") {''',
+              "app save",
+          )
+
+          verifier = "scripts/verify_button_editor_direct_save.py"
+          replace_once(
+              verifier,
+              'version.group(1) != "1.1.0"',
+              'version.group(1) != "1.1.1"',
+              "verifier editor version condition",
+          )
+          replace_once(
+              verifier,
+              'expected th_14_button_editor.js version 1.1.0',
+              'expected th_14_button_editor.js version 1.1.1',
+              "verifier editor version message",
+          )
+          replace_once(
+              verifier,
+              '''    ("inputPkg.input.setText", "package backfill"),
+    ("inputUserId.input.setText", "user id backfill"),''',
+              '''    ("selectedPkg: str(targetBtn.pkg)", "picker package state"),
+    ("selectedUserId: initialUserId", "picker user state"),
+    ("getPkg: function()", "picker package getter"),
+    ("getUserId: function()", "picker user getter"),
+    ("appPickerInline.getPkg()", "picker package save"),
+    ("appPickerInline.getUserId()", "picker user save"),''',
+              "verifier picker markers",
+          )
+          replace_once(
+              verifier,
+              '''    ('if (t === "intent") return String(b.intent', "intent summary"),
+    ("先存起来", "old temporary button wording"),''',
+              '''    ('if (t === "intent") return String(b.intent', "intent summary"),
+    ('应用包名 (Package)', "app package editor field"),
+    ('启动用户ID (', "app user editor field"),
+    ("inputPkg", "app package input object"),
+    ("inputAppLaunchUser", "app user input object"),
+    ("先存起来", "old temporary button wording"),''',
+              "verifier hidden app fields",
+          )
+          replace_once(
+              verifier,
+              '"app_picker=users_system_profiles intent_type=removed settings_type=removed"',
+              '"app_picker=users_system_profiles app_fields=picker_only intent_type=removed settings_type=removed"',
+              "verifier summary",
+          )
+
+          layout = "scripts/verify_button_editor_layout.py"
+          replace_once(
+              layout,
+              '''        ("manager has filter chips", "buttonManagerFilter" in button_text and "快捷方式" in button_text and "broadcast" in button_text),
+        ("manager has sort mode", "buttonManagerSortMode" in button_text and "sortMode ? \\"完成\\" : \\"排序\\"" in button_text),''',
+              '''        ("manager has filter chips", "buttonManagerFilter" in button_text and "快捷方式" in button_text and "broadcast" in button_text),
+        ("app editor hides package and user fields", "应用包名 (Package)" not in button_text and "启动用户ID (" not in button_text),
+        ("app picker owns package and user state", "selectedPkg: str(targetBtn.pkg)" in button_text and "selectedUserId: initialUserId" in button_text and "getPkg: function()" in button_text and "getUserId: function()" in button_text),
+        ("manager has sort mode", "buttonManagerSortMode" in button_text and "sortMode ? \\"完成\\" : \\"排序\\"" in button_text),''',
+              "layout app picker checks",
+          )
+
+          docs = "docs/button-types.md"
+          replace_once(
+              docs,
+              "| `app` | 包名、启动用户 ID | 启动主用户、分身或其他资料用户中的应用 |",
+              "| `app` | 应用选择器 | 启动主用户、分身或其他资料用户中的应用 |",
+              "docs type table",
+          )
+          replace_once(
+              docs,
+              "App 类型保留手动填写包名和用户 ID，同时提供已安装应用选择器：",
+              "App 类型只提供已安装应用选择器，包名和用户 ID 作为内部配置保存，不再显示可编辑输入框：",
+              "docs picker intro",
+          )
+          replace_once(
+              docs,
+              "- 选中应用后回填包名和启动用户 ID；标题为空时同时回填应用名称。",
+              "- 选中应用后内部保存包名和启动用户 ID；标题为空时同时回填应用名称。",
+              "docs picker selection",
+          )
+
+          workflow = Path(".github/workflows/toolhub-app-picker-hide-fields.yml")
+          if workflow.exists():
+              workflow.unlink()
+          PY
+
+      - name: 静态验证
+        shell: bash
+        run: |
+          node --check code/th_14_button_editor.js
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_button_editor_layout.py
+          python3 scripts/verify_button_editor_direct_save.py
+          git diff --check
+
+      - name: 提交修改
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "隐藏应用按钮内部配置字段"
+          git push origin HEAD:fix/app-picker-hide-internal-fields-20260715
