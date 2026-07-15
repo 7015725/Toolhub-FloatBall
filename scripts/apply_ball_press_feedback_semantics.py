@@ -26,6 +26,22 @@ BASE.write_text(base, encoding="utf-8")
 
 theme = THEME.read_text(encoding="utf-8")
 theme = replace_once(theme, "// @version 1.0.5", "// @version 1.0.6", "theme version")
+theme = replace_once(
+    theme,
+    '''        // use divider color or just low alpha text color for ripple
+        var rippleColor = app.withAlpha ? app.withAlpha(txtColor, 0.1) : 0x22888888;
+        btn.setBackground(this.createTransparentRippleDrawable(rippleColor, app.dp(8)));''',
+    '''        // 使用低透明度文字色作为稳定按压反馈。
+        var pressedColor = app.withAlpha ? app.withAlpha(txtColor, 0.1) : 0x22888888;
+        btn.setBackground(this.createTransparentPressedStateDrawable(pressedColor, app.dp(8)));''',
+    "flat button pressed semantics",
+)
+theme = replace_once(
+    theme,
+    "        btn.setBackground(this.createRippleDrawable(bgColor, pressedColor, app.dp(24)));",
+    "        btn.setBackground(this.createPressedStateDrawable(bgColor, pressedColor, app.dp(24)));",
+    "solid button pressed semantics",
+)
 old_block = '''FloatBallAppWM.prototype.updateBallContentBackground = function(contentView, usedIconKind) {
   try {
     var ballColor = this.getMonetAccentForBall();'''
@@ -93,7 +109,11 @@ if "var rippleColor" in THEME:
 if "var alpha01 = dark ? this.config.BALL_RIPPLE_ALPHA_DARK" in THEME:
     errors.append("ball pressed alpha still reads legacy keys directly")
 if "var alpha01 = this.getBallPressedOverlayAlpha(dark);" not in THEME:
-    errors.append("ball background does not use pressed alpha resolver")''',
+    errors.append("ball background does not use pressed alpha resolver")
+if "createTransparentPressedStateDrawable(pressedColor" not in THEME:
+    errors.append("flat button does not use pressed-state helper")
+if "createPressedStateDrawable(bgColor, pressedColor" not in THEME:
+    errors.append("solid button does not use pressed-state helper")''',
     "pressed semantics checks",
 )
 verify = replace_once(
