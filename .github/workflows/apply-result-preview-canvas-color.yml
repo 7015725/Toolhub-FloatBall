@@ -68,19 +68,26 @@ jobs:
           if [ "$rc" -eq 0 ]; then
             exit 0
           fi
-          unexpected="$(grep '^FAIL' pointer-regression-output.txt \
-            | grep -v '^FAIL shared / manifest:' \
-            | grep -v '^FAIL: sha256 mismatch: th_21_result_preview.js$' \
-            | grep -v '^FAIL pointer_regressions passed=110 failed=1$' \
-            | wc -l | tr -d ' ')"
-          if [ "$unexpected" -eq 0 ] \
-            && grep -q '^FAIL shared / manifest:' pointer-regression-output.txt \
-            && grep -q '^FAIL: sha256 mismatch: th_21_result_preview.js$' pointer-regression-output.txt \
-            && grep -q '^FAIL pointer_regressions passed=110 failed=1$' pointer-regression-output.txt; then
-            echo 'Only the expected pre-signing manifest mismatch is present.'
-            exit 0
-          fi
-          exit "$rc"
+          python3 - <<'PY'
+          from pathlib import Path
+
+          lines = [line for line in Path('pointer-regression-output.txt').read_text(encoding='utf-8').splitlines() if line.startswith('FAIL')]
+          allowed = (
+              'FAIL shared / manifest:',
+              'FAIL: sha256 mismatch: th_21_result_preview.js',
+              'FAIL pointer_regressions passed=110 failed=1',
+          )
+          unexpected = [line for line in lines if not any(line.startswith(prefix) for prefix in allowed)]
+          required = [
+              any(line.startswith('FAIL shared / manifest:') for line in lines),
+              'FAIL: sha256 mismatch: th_21_result_preview.js' in lines,
+              'FAIL pointer_regressions passed=110 failed=1' in lines,
+          ]
+          if unexpected or not all(required):
+              print('Unexpected pointer regression failures:', unexpected)
+              raise SystemExit(1)
+          print('Only the expected pre-signing manifest mismatch is present.')
+          PY
 
       - name: Verify dead code audit
         run: python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
