@@ -1,4 +1,4 @@
-// @version 1.0.24
+// @version 1.0.25
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -1159,210 +1159,35 @@ FloatBallAppWM.prototype.getSettingsHomeCategoryDefs = function(useMonetHome) {
 };
 
 
-FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function(anchorView) {
-  var self = this;
-  try {
-    if (!this.state) return;
-    if (this.state.colorSafetyRuntimeSelfTestRunning) { try { this.toast("颜色安全自检正在进行"); } catch(eToast0) {} return; }
-    if (!this.runColorSafetyRuntimeSelfTest) { try { this.toast("颜色安全自检模块未加载"); } catch(eToast1) {} return; }
-    this.state.colorSafetyRuntimeSelfTestRunning = true;
-    safeLog(this.L, "i", "color safety self-test requested from settings loops=160");
-    try { this.toast("正在运行颜色安全自检"); } catch(eToast2) {}
-    new java.lang.Thread(new java.lang.Runnable({
-      run: function() {
-        var ret = null;
-        try { ret = self.runColorSafetyRuntimeSelfTest(160); }
-        catch(eRun) { ret = { ok: false, loops: 160, durationMs: 0, error: String(eRun) }; safeLog(self.L, "e", "color safety settings self-test thread fail error=" + String(eRun)); }
-        try { self.state.colorSafetyRuntimeSelfTestRunning = false; self.state.colorSafetyRuntimeSelfTest = ret; } catch(eState) {}
-        try {
-          self.runOnUiThreadSafe(function() {
-            try {
-              var msg = ret && ret.ok ? ("颜色安全自检通过：" + String(ret.loops || 0) + " 次，" + String(ret.durationMs || 0) + "ms") : ("颜色安全自检失败：" + String(ret && ret.error ? ret.error : "unknown"));
-              if (self.setInlineNotice) self.setInlineNotice(msg, ret && ret.ok ? "ok" : "error"); else self.toast(msg);
-            } catch(eNotice) {}
-            try {
-              var route = self.state && self.state.toolAppRoute ? String(self.state.toolAppRoute) : "";
-              if (self.state && self.state.toolAppActive && route === "settings_group" && self.replaceToolAppPage) self.replaceToolAppPage("settings_group");
-            } catch(eRefresh) {}
-          });
-        } catch(eUi) {
-          try { if (anchorView && anchorView.post) anchorView.post(new java.lang.Runnable({ run: function() { try { self.toast(ret && ret.ok ? "颜色安全自检通过" : "颜色安全自检失败"); } catch(ePost) {} } })); } catch(ePostOuter) {}
-        }
-      }
-    }, "toolhub-color-safety-self-test")).start();
-  } catch(eStart) {
-    try { this.state.colorSafetyRuntimeSelfTestRunning = false; } catch(eFlag) {}
-    safeLog(this.L, "e", "start color safety self-test fail error=" + String(eStart));
-    try { this.toast("启动颜色安全自检失败"); } catch(eToast3) {}
-  }
-};
-
-FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function() {
-  try {
-    var last = this.getLastColorSafetyRuntimeSelfTestResult ? this.getLastColorSafetyRuntimeSelfTestResult() : (this.state ? this.state.colorSafetyRuntimeSelfTest : null);
-    if (!last) { try { this.toast("请先运行颜色安全自检"); } catch(eToast0) {} return false; }
-    var text = this.formatColorSafetyRuntimeSelfTestSummary ? this.formatColorSafetyRuntimeSelfTestSummary(last) : "";
-    if (!text) { try { this.toast("诊断摘要生成失败"); } catch(eToast1) {} return false; }
-    var clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
-    if (!clipboard) throw "clipboard service unavailable";
-    var clip = android.content.ClipData.newPlainText("ToolHub 颜色安全自检", text);
-    clipboard.setPrimaryClip(clip);
-    safeLog(this.L, "i", "color safety diagnostic summary copied length=" + String(text.length));
-    try { this.toast("诊断摘要已复制"); } catch(eToast2) {}
-    return true;
-  } catch(eCopy) {
-    safeLog(this.L, "e", "copy color safety diagnostic summary fail error=" + String(eCopy));
-    try { this.toast("复制诊断摘要失败"); } catch(eToast3) {}
-  }
+FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function() {
   return false;
 };
 
+FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function() {
+  return false;
+};
 
-FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function(anchorView) {
-  var self = this;
-  try {
-    if (!this.state) return;
-    if (this.state.settingsInteractionStressRunning) { try { this.toast("设置页控件压力测试正在进行"); } catch(eToast0) {} return; }
-    if (!this.runSettingsInteractionStressTest) { try { this.toast("设置页控件压力测试模块未加载"); } catch(eToast1) {} return; }
-    this.state.settingsInteractionStressRunning = true;
-    safeLog(this.L, "i", "settings interaction stress requested from settings loops=120");
-    try { this.toast("正在运行设置页控件压力测试"); } catch(eToast2) {}
-    var task = new java.lang.Runnable({
-      run: function() {
-        var ret = null;
-        try { ret = self.runSettingsInteractionStressTest(120); }
-        catch(eRun) { ret = { ok: false, loops: 120, durationMs: 0, error: String(eRun) }; safeLog(self.L, "e", "settings interaction stress run fail error=" + String(eRun)); }
-        try { self.state.settingsInteractionStressRunning = false; self.state.settingsInteractionStressResult = ret; } catch(eState) {}
-        try {
-          var msg = ret && ret.ok ? ("设置页控件压力测试通过：" + String(ret.loops || 0) + " 次，" + String(ret.durationMs || 0) + "ms") : ("设置页控件压力测试失败：" + String(ret && ret.error ? ret.error : "unknown"));
-          if (self.setInlineNotice) self.setInlineNotice(msg, ret && ret.ok ? "ok" : "error"); else self.toast(msg);
-        } catch(eNotice) {}
-        try {
-          var route = self.state && self.state.toolAppRoute ? String(self.state.toolAppRoute) : "";
-          if (self.state && self.state.toolAppActive && route === "settings_group" && self.replaceToolAppPage) self.replaceToolAppPage("settings_group");
-        } catch(eRefresh) {}
-      }
-    });
-    if (anchorView && anchorView.post) anchorView.post(task);
-    else new android.os.Handler(android.os.Looper.getMainLooper()).post(task);
-  } catch(eStart) {
-    try { this.state.settingsInteractionStressRunning = false; } catch(eFlag) {}
-    safeLog(this.L, "e", "start settings interaction stress fail error=" + String(eStart));
-    try { this.toast("启动设置页控件压力测试失败"); } catch(eToast3) {}
-  }
+FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function() {
+  return false;
 };
 
 FloatBallAppWM.prototype.copySettingsInteractionStressSummaryFromSettings = function() {
-  try {
-    var last = this.getLastSettingsInteractionStressResult ? this.getLastSettingsInteractionStressResult() : (this.state ? this.state.settingsInteractionStressResult : null);
-    if (!last) { try { this.toast("请先运行设置页控件压力测试"); } catch(eToast0) {} return false; }
-    var text = this.formatSettingsInteractionStressSummary ? this.formatSettingsInteractionStressSummary(last) : "";
-    if (!text) { try { this.toast("控件压力摘要生成失败"); } catch(eToast1) {} return false; }
-    var clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
-    if (!clipboard) throw "clipboard service unavailable";
-    var clip = android.content.ClipData.newPlainText("ToolHub 设置页控件压力测试", text);
-    clipboard.setPrimaryClip(clip);
-    safeLog(this.L, "i", "settings interaction stress summary copied length=" + String(text.length));
-    try { this.toast("控件压力摘要已复制"); } catch(eToast2) {}
-    return true;
-  } catch(eCopy) {
-    safeLog(this.L, "e", "copy settings interaction stress summary fail error=" + String(eCopy));
-    try { this.toast("复制控件压力摘要失败"); } catch(eToast3) {}
-  }
   return false;
 };
 
 FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
-  var self = this;
   var isDark = this.isDarkTheme();
-  var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
-  var running = !!(this.state && this.state.colorSafetyRuntimeSelfTestRunning);
-  var last = this.getLastColorSafetyRuntimeSelfTestResult ? this.getLastColorSafetyRuntimeSelfTestResult() : (this.state ? this.state.colorSafetyRuntimeSelfTest : null);
-  var interactionRunning = !!(this.state && this.state.settingsInteractionStressRunning);
-  var interactionLast = this.getLastSettingsInteractionStressResult ? this.getLastSettingsInteractionStressResult() : (this.state ? this.state.settingsInteractionStressResult : null);
-  var runtime = this.getColorSafetyRuntimeContext ? this.getColorSafetyRuntimeContext() : {};
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
   card.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(12));
-  card.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.primary, isDark ? 0.28 : 0.18), this.dp(1), this.dp(18)));
-
-  var title = new android.widget.TextView(context);
-  title.setText("ColorOS 颜色安全自检");
-  toolhubSafeSetTextColor(title, T.onSurface);
-  title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
-  title.setTypeface(null, android.graphics.Typeface.BOLD);
-  card.addView(title, new android.widget.LinearLayout.LayoutParams(-1, -2));
-
-  var desc = new android.widget.TextView(context);
-  desc.setText("颜色底层自检验证 Drawable/ColorStateList；控件压力测试验证实际 Row、Switch、SeekBar 与按钮。两项都只手动运行，不保存设置、不附着新窗口。");
-  toolhubSafeSetTextColor(desc, T.onSurface2);
-  desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-  desc.setPadding(0, this.dp(5), 0, 0);
-  card.addView(desc, new android.widget.LinearLayout.LayoutParams(-1, -2));
-
-  var device = new android.widget.TextView(context);
-  device.setText("设备：" + String(runtime.manufacturer || runtime.brand || "未知") + " " + String(runtime.model || "") + " · Android " + String(runtime.release || "") + " / SDK " + String(runtime.sdk || 0) + " · 按压透明度 " + String(runtime.pressAlpha));
-  toolhubSafeSetTextColor(device, T.onSurface2);
-  device.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-  device.setPadding(0, this.dp(7), 0, 0);
-  card.addView(device, new android.widget.LinearLayout.LayoutParams(-1, -2));
-
-  var status = new android.widget.TextView(context);
-  var statusText = "状态：尚未运行";
-  var statusColor = T.onSurface2;
-  if (running) { statusText = "状态：正在执行"; statusColor = T.primary; }
-  else if (last && last.ok) { statusText = "状态：通过 · " + String(last.loops || 0) + " 次 · " + String(last.durationMs || 0) + "ms"; statusColor = T.success || T.primary; }
-  else if (last && last.error) { statusText = "状态：失败 · " + String(last.error); statusColor = T.danger || C.error || T.primary; }
-  status.setText(statusText);
-  toolhubSafeSetTextColor(status, statusColor);
-  status.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-  status.setPadding(0, this.dp(8), 0, 0);
-  try { status.setMaxLines(3); status.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eStatus) {}
-  card.addView(status, new android.widget.LinearLayout.LayoutParams(-1, -2));
-
-  var button = this.ui.createSolidButton(this, running ? "自检进行中" : "运行 160 次自检", T.primary, T.onPrimary, function(v) { self.startColorSafetyRuntimeSelfTestFromSettings(v); });
-  try { button.setEnabled(!running); if (running) button.setAlpha(0.62); } catch(eEnabled) {}
-  try { button.setContentDescription("运行 ColorOS 颜色安全自检"); } catch(eDesc) {}
-  var buttonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(48));
-  buttonLp.setMargins(0, this.dp(10), 0, 0);
-  card.addView(button, buttonLp);
-
-  var hasResult = !!last;
-  var copyButton = this.ui.createSolidButton(this, hasResult ? "复制诊断摘要" : "暂无可复制结果", T.primaryContainer || T.surface2, T.primary, function() { self.copyColorSafetyRuntimeSelfTestSummaryFromSettings(); });
-  try { copyButton.setEnabled(hasResult && !running); if (!hasResult || running) copyButton.setAlpha(0.62); } catch(eCopyEnabled) {}
-  try { copyButton.setContentDescription("复制 ColorOS 颜色安全诊断摘要"); } catch(eCopyDesc) {}
-  var copyButtonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(46));
-  copyButtonLp.setMargins(0, this.dp(8), 0, 0);
-  card.addView(copyButton, copyButtonLp);
-
-  var interactionStatus = new android.widget.TextView(context);
-  var interactionStatusText = "控件压力：尚未运行";
-  var interactionStatusColor = T.onSurface2;
-  if (interactionRunning) { interactionStatusText = "控件压力：正在执行"; interactionStatusColor = T.primary; }
-  else if (interactionLast && interactionLast.ok) { interactionStatusText = "控件压力：通过 · " + String(interactionLast.loops || 0) + " 次 · " + String(interactionLast.durationMs || 0) + "ms"; interactionStatusColor = T.success || T.primary; }
-  else if (interactionLast && interactionLast.error) { interactionStatusText = "控件压力：失败 · " + String(interactionLast.error); interactionStatusColor = T.danger || C.error || T.primary; }
-  interactionStatus.setText(interactionStatusText);
-  toolhubSafeSetTextColor(interactionStatus, interactionStatusColor);
-  interactionStatus.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-  interactionStatus.setPadding(0, this.dp(12), 0, 0);
-  try { interactionStatus.setMaxLines(3); interactionStatus.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eInteractionStatus) {}
-  card.addView(interactionStatus, new android.widget.LinearLayout.LayoutParams(-1, -2));
-
-  var interactionButton = this.ui.createSolidButton(this, interactionRunning ? "控件压力测试进行中" : "运行 120 次设置控件压力测试", T.primary, T.onPrimary, function(v) { self.startSettingsInteractionStressTestFromSettings(v); });
-  try { interactionButton.setEnabled(!interactionRunning && !running); if (interactionRunning || running) interactionButton.setAlpha(0.62); } catch(eInteractionEnabled) {}
-  try { interactionButton.setContentDescription("运行设置页真实控件压力测试"); } catch(eInteractionDesc) {}
-  var interactionButtonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(48));
-  interactionButtonLp.setMargins(0, this.dp(8), 0, 0);
-  card.addView(interactionButton, interactionButtonLp);
-
-  var hasInteractionResult = !!interactionLast;
-  var interactionCopyButton = this.ui.createSolidButton(this, hasInteractionResult ? "复制控件压力摘要" : "暂无控件压力结果", T.primaryContainer || T.surface2, T.primary, function() { self.copySettingsInteractionStressSummaryFromSettings(); });
-  try { interactionCopyButton.setEnabled(hasInteractionResult && !interactionRunning && !running); if (!hasInteractionResult || interactionRunning || running) interactionCopyButton.setAlpha(0.62); } catch(eInteractionCopyEnabled) {}
-  try { interactionCopyButton.setContentDescription("复制设置页控件压力测试摘要"); } catch(eInteractionCopyDesc) {}
-  var interactionCopyButtonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(46));
-  interactionCopyButtonLp.setMargins(0, this.dp(8), 0, 0);
-  card.addView(interactionCopyButton, interactionCopyButtonLp);
+  card.setBackground(this.ui.createStrokeDrawable(
+    T.surface,
+    this.withAlpha(T.primary, isDark ? 0.28 : 0.18),
+    this.dp(1),
+    this.dp(18)
+  ));
+  try { card.setContentDescription("ToolHub 运行记录"); } catch(eDesc) {}
   return card;
 };
 
@@ -1429,14 +1254,6 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
     } catch(eGDN) { safeLog(null, 'e', "catch " + String(eGDN)); }
   }
 
-  if (String(groupKey || "") === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
-    try {
-      var colorSafetyCard = this.createColorSafetyRuntimeDiagnosticCard();
-      var colorSafetyCardLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-      colorSafetyCardLp.setMargins(this.dp(2), this.dp(4), this.dp(2), this.dp(8));
-      root.addView(colorSafetyCard, colorSafetyCardLp);
-    } catch(eColorSafetyCard) { safeLog(this.L, "e", "create color safety diagnostic card fail error=" + String(eColorSafetyCard)); }
-  }
 
   if (String(groupKey || "") === "ball" && this.buildBallPreviewView) {
     try {
@@ -1454,6 +1271,15 @@ FloatBallAppWM.prototype.buildSettingsGroupDetailPane = function(groupKey, title
   if (columns <= 1) box.setOrientation(android.widget.LinearLayout.VERTICAL);
   box.setPadding(0, this.dp(2), 0, this.dp(16));
   scroll.addView(box);
+
+  if (String(groupKey || "") === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
+    try {
+      var colorSafetyCard = this.createColorSafetyRuntimeDiagnosticCard();
+      var colorSafetyCardLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+      colorSafetyCardLp.setMargins(this.dp(2), this.dp(4), this.dp(2), this.dp(8));
+      box.addView(colorSafetyCard, colorSafetyCardLp);
+    } catch(eColorSafetyCard) { safeLog(this.L, "e", "create runtime records card fail error=" + String(eColorSafetyCard)); }
+  }
   scroll.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, { onTouch: function(v, e) { self.touchActivity(); return false; }}));
 
   var schema = this.getConfigSchema();
@@ -2080,17 +1906,6 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   settingsGroupNoticeLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
   panel.addView(settingsGroupNotice, settingsGroupNoticeLp);
 
-  // 手机紧凑布局同样显示 ColorOS 颜色安全诊断卡。
-  if (activeGroupKey === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
-    try {
-      var colorSafetyCardCompact = this.createColorSafetyRuntimeDiagnosticCard();
-      var colorSafetyCardCompactLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-      colorSafetyCardCompactLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
-      panel.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);
-    } catch(eColorSafetyCardCompact) {
-      safeLog(this.L, "e", "create compact color safety diagnostic card fail error=" + String(eColorSafetyCardCompact));
-    }
-  }
 
   if (activeGroupKey === "ball" && this.buildBallPreviewView) {
     try {
@@ -2110,6 +1925,17 @@ FloatBallAppWM.prototype.buildSettingsGroupPanelView = function() {
   if (columns <= 1) box.setOrientation(android.widget.LinearLayout.VERTICAL);
   box.setPadding(0, this.dp(4), 0, this.dp(12));
   scroll.addView(box);
+
+  if (activeGroupKey === "debug" && this.createColorSafetyRuntimeDiagnosticCard) {
+    try {
+      var colorSafetyCardCompact = this.createColorSafetyRuntimeDiagnosticCard();
+      var colorSafetyCardCompactLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+      colorSafetyCardCompactLp.setMargins(this.dp(2), this.dp(2), this.dp(2), this.dp(8));
+      box.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);
+    } catch(eColorSafetyCardCompact) {
+      safeLog(this.L, "e", "create compact runtime records card fail error=" + String(eColorSafetyCardCompact));
+    }
+  }
 
   scroll.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
     onTouch: function(v, e) { self.touchActivity(); return false; }

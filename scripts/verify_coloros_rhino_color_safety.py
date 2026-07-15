@@ -99,18 +99,37 @@ for token in (
         errors.append("runtime color self-test contract missing: %s" % token)
 for token in (
     "FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function",
-    "FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function",
-    "self.runColorSafetyRuntimeSelfTest(160)",
-    "String(groupKey || \"\") === \"debug\"",
-    "两项都只手动运行，不保存设置、不附着新窗口",
     "FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function",
-    "clipboard.setPrimaryClip(clip)",
-    "复制诊断摘要",
+    "FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function",
+    "FloatBallAppWM.prototype.copySettingsInteractionStressSummaryFromSettings = function",
+    "FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function",
+    'card.setContentDescription("ToolHub 运行记录")',
+    'box.addView(colorSafetyCard, colorSafetyCardLp);',
+    'box.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);',
+    "create runtime records card fail",
+    "create compact runtime records card fail",
 ):
     if token not in PANELS:
-        errors.append("settings runtime diagnostic contract missing: %s" % token)
-if ALL_JS.count(".runColorSafetyRuntimeSelfTest(") != 1:
-    errors.append("runtime color self-test must have exactly one manual invocation")
+        errors.append("runtime records scroll contract missing: %s" % token)
+
+for forbidden in (
+    "self.runColorSafetyRuntimeSelfTest(160)",
+    "self.runSettingsInteractionStressTest(120)",
+    "运行 160 次自检",
+    "运行 120 次设置控件压力测试",
+    "复制诊断摘要",
+    "复制控件压力摘要",
+    "root.addView(colorSafetyCard, colorSafetyCardLp);",
+    "panel.addView(colorSafetyCardCompact, colorSafetyCardCompactLp);",
+):
+    if forbidden in PANELS:
+        errors.append("removed runtime diagnostic UI remains: %s" % forbidden)
+
+if ALL_JS.count(".runColorSafetyRuntimeSelfTest(") != 0:
+    errors.append("runtime color self-test must not have a settings invocation")
+if ALL_JS.count(".runSettingsInteractionStressTest(") != 0:
+    errors.append("settings interaction stress test must not have a settings invocation")
+
 for token in (
     "FloatBallAppWM.prototype.runSettingsInteractionStressTest = function",
     "new android.widget.Switch(context)",
@@ -124,9 +143,8 @@ for token in (
     "loops = Math.max(1, Math.min(200, loops))",
 ):
     if token not in PANEL_UI:
-        errors.append("settings interaction stress contract missing: %s" % token)
-if ALL_JS.count(".runSettingsInteractionStressTest(") != 1:
-    errors.append("settings interaction stress test must have exactly one manual invocation")
+        errors.append("settings interaction stress implementation missing: %s" % token)
+
 stress_block = re.search(r"FloatBallAppWM.prototype.runSettingsInteractionStressTest = function\(iterations\) \{.*?\n\};", PANEL_UI, re.S)
 if not stress_block:
     errors.append("settings interaction stress method missing")
@@ -135,29 +153,18 @@ else:
     for forbidden in ("setPendingValue(", "commitPendingUserCfg(", "state.wm.addView", "setOnCheckedChangeListener("):
         if forbidden in block:
             errors.append("settings interaction stress test mutates live settings or window state: %s" % forbidden)
-for token in (
-    "FloatBallAppWM.prototype.startSettingsInteractionStressTestFromSettings = function",
-    "self.runSettingsInteractionStressTest(120)",
-    "FloatBallAppWM.prototype.copySettingsInteractionStressSummaryFromSettings = function",
-    "运行 120 次设置控件压力测试",
-    "复制控件压力摘要",
-):
-    if token not in PANELS:
-        errors.append("settings interaction stress settings entry missing: %s" % token)
-copy_block = re.search(r"FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function\(\) \{.*?\n\};", PANELS, re.S)
-if not copy_block:
-    errors.append("runtime diagnostic copy method missing")
-elif copy_block.group(0).count(".setPrimaryClip(") != 1:
-    errors.append("runtime diagnostic copy method must have exactly one clipboard write")
-if PANELS.count("createColorSafetyRuntimeDiagnosticCard();") < 2:
-    errors.append("runtime diagnostic card is not wired into both wide and compact settings layouts")
-for token in (
-    'activeGroupKey === "debug"',
-    "colorSafetyCardCompact",
-    "create compact color safety diagnostic card fail",
-):
-    if token not in PANELS:
-        errors.append("compact runtime diagnostic contract missing: %s" % token)
+
+records_block = re.search(r"FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function\(\) \{.*?\n\};", PANELS, re.S)
+if not records_block:
+    errors.append("runtime records card method missing")
+else:
+    block = records_block.group(0)
+    for token in ('new android.widget.LinearLayout(context)', 'card.setContentDescription("ToolHub 运行记录")', 'return card;'):
+        if token not in block:
+            errors.append("runtime records card contract missing: %s" % token)
+    for forbidden in ("运行 160 次自检", "运行 120 次设置控件压力测试", "ColorOS 颜色安全自检"):
+        if forbidden in block:
+            errors.append("runtime records card still exposes diagnostic test: %s" % forbidden)
 
 argb = re.search(r"function _th_argb\(c\) \{.*?\n\}", THEME, re.S)
 if not argb:
@@ -174,8 +181,8 @@ if module_version(THEME, "th_04_theme.js") < (1, 0, 10):
     errors.append("th_04_theme.js version below ColorOS result persistence baseline 1.0.10")
 if module_version(PANEL_UI, "th_13_panel_ui.js") < (1, 0, 9):
     errors.append("th_13_panel_ui.js version below settings interaction stress baseline 1.0.9")
-if module_version(PANELS, "th_14_panels.js") < (1, 0, 24):
-    errors.append("th_14_panels.js version below settings interaction stress entry baseline 1.0.24")
+if module_version(PANELS, "th_14_panels.js") < (1, 0, 25):
+    errors.append("th_14_panels.js version below runtime records scroll baseline 1.0.25")
 if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 8):
     errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.8")
 
@@ -184,4 +191,4 @@ if errors:
         print("FAIL", item)
     raise SystemExit(1)
 
-print("OK coloros_rhino_color_safety framework_ripple=0 safe_helpers=8")
+print("OK coloros_rhino_color_safety framework_ripple=0 safe_helpers=8 runtime_records_scroll=1 diagnostics_ui=0")
