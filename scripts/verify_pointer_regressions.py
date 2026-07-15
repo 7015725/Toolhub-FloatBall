@@ -764,6 +764,18 @@ def verify_pointer_core(result, pointer, ocr):
         and "publishResultPreview" in ocr,
         "OCR must publish preview instead of copying automatically",
     )
+    result.require(
+        group,
+        "OCR dispatch requires successful screenshot artifacts",
+        "canDispatchAreaOcr18" in ocr
+        and 'String(obj.type || "") !== "area_capture"' in ocr
+        and 'String(obj.code || "") !== "AREA_CAPTURE_SUCCESS"' in ocr
+        and "pickScreenshotPath18" in ocr
+        and "obj.value ||" not in ocr
+        and "ret.fallback === true" in ocr
+        and "pointer area_ocr dispatch skipped reason=" in ocr,
+        "OCR must reject fallback text and invalid screenshot parameters before mutating result state",
+    )
 
     for forbidden in (
         "installFixedEdgePointer18",
@@ -837,6 +849,17 @@ def verify_pointer_draw_visibility(result, pointer):
         and "recordPointerDrawFailure(st, stage, drawError)" in canvas
         and "catch (drawError) {}" not in canvas,
         "pointer onDraw must log one scoped failure instead of swallowing it",
+    )
+    result.require(
+        group,
+        "stale pointer roots cannot draw with cleared shared paint",
+        "pointerRootToken" in state
+        and "st.root !== this" in canvas
+        and "Number(st.pointerRootToken || 0) !== rootToken" in canvas
+        and "var p = pointerPaint;" in canvas
+        and "var p = st.paint;" not in canvas
+        and "st.pointerRootToken = Number(st.pointerRootToken || 0) + 1;" in close,
+        "pointer Canvas roots must use a private Paint and reject late onDraw callbacks",
     )
     result.require(
         group,

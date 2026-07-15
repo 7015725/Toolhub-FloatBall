@@ -1,4 +1,4 @@
-// @version 1.2.4
+// @version 1.2.5
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1002,7 +1002,8 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       drawFallbackMode: false,
       drawShadowDisabled: false,
       drawHealthRunnable: null,
-      drawHealthToken: 0
+      drawHealthToken: 0,
+      pointerRootToken: 0
     };
   }
   var st = this.state.pointerTool;
@@ -1047,6 +1048,7 @@ FloatBallAppWM.prototype.resetPointerToolState = function(st, mode, source) {
   try { if (st.handler && st.drawHealthRunnable) st.handler.removeCallbacks(st.drawHealthRunnable); } catch (eRemoveDrawHealthReset) {}
   st.drawHealthRunnable = null;
   st.drawHealthToken = Number(st.drawHealthToken || 0) + 1;
+  st.pointerRootToken = Number(st.pointerRootToken || 0) + 1;
   st.drawCount = 0;
   st.drawSuccessCount = 0;
   st.drawFailCount = 0;
@@ -1449,6 +1451,7 @@ FloatBallAppWM.prototype.closePointerTool = function(reason, suppressCancel) {
   try { if (st.handler && st.drawHealthRunnable) st.handler.removeCallbacks(st.drawHealthRunnable); } catch (eRemoveDrawHealthClose) {}
   st.drawHealthRunnable = null;
   st.drawHealthToken = Number(st.drawHealthToken || 0) + 1;
+  st.pointerRootToken = Number(st.pointerRootToken || 0) + 1;
   try { this.hidePointerAreaFrame(); } catch (eFrame) { safeLog(this.L, 'e', "closePointerTool frame fail: " + String(eFrame)); }
   try {
     if (st.added && st.root) {
@@ -1802,6 +1805,7 @@ FloatBallAppWM.prototype.rebuildPointerWindowForDraw = function(st, reason) {
   var pointerState = st || this.ensurePointerToolState();
   if (!pointerState || !pointerState.active || pointerState.closed) return false;
   var oldRoot = pointerState.root;
+  pointerState.pointerRootToken = Number(pointerState.pointerRootToken || 0) + 1;
   var removed = !pointerState.added || !oldRoot;
   try {
     if (!removed && pointerState.wm) {
@@ -1896,14 +1900,19 @@ FloatBallAppWM.prototype.schedulePointerDrawHealthCheck = function(st, delayMs) 
 
 FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
   var self = this;
-  st.paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+  st.pointerRootToken = Number(st.pointerRootToken || 0) + 1;
+  var rootToken = Number(st.pointerRootToken || 0);
+  var pointerPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+  st.paint = pointerPaint;
   var PointerView = new JavaAdapter(android.view.View, {
     onDraw: function(canvas) {
+      if (!st.active || st.closed || st.root !== this ||
+          Number(st.pointerRootToken || 0) !== rootToken) return;
       var stage = "prepare";
       var drawn = false;
       st.drawCount = Number(st.drawCount || 0) + 1;
       try {
-        var p = st.paint;
+        var p = pointerPaint;
         var pointerScale = Number(st.pointerScale || 1);
         if (isNaN(pointerScale) || pointerScale <= 0) pointerScale = 1;
         var dp = function(v) { return self.dp(Number(v) * pointerScale); };
