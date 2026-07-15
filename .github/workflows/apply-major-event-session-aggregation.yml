@@ -1,16 +1,20 @@
 name: apply-major-event-session-aggregation
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/major-event-session-aggregation-20260715
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: ${{ !contains(github.event.head_commit.message, '完成故障会话聚合') }}
+    if: ${{ github.event.pull_request.head.ref == 'fix/major-event-session-aggregation-20260715' && !contains(github.event.pull_request.title, '[aggregation-applied]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
