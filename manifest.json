@@ -40,9 +40,9 @@
       "version": "1.0.1"
     },
     "th_08_content.js": {
-      "sha256": "cfa753f9e899bafec5285cbf07f52a735d42f1d1ea5011860d3f7a5df519179e",
-      "size": 27981,
-      "version": "1.0.3"
+      "sha256": "3b080332b71c98227eae784bbe730f6e07b8f9f028de54e1c805517cb40a1d1d",
+      "size": 40186,
+      "version": "1.0.4"
     },
     "th_09_animation.js": {
       "sha256": "b3d521336ef2b44be5c9e2a043cbd6324f9fff8259fd7e9a987f8688b3cec681",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "增加重大事件日志与 WindowManager 检查点"
+      "补齐重大测试事件与运行记录展示"
     ],
-    "title": "增加重大事件日志与 WindowManager 检查点"
+    "title": "补齐重大测试事件与运行记录展示"
   },
   "schema": 3,
-  "version": 20260715034259
+  "version": 20260715040024
 }
