@@ -1,4 +1,4 @@
-// @version 1.2.6
+// @version 1.2.7
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1009,7 +1009,8 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       drawShadowDisabled: false,
       drawHealthRunnable: null,
       drawHealthToken: 0,
-      pointerRootToken: 0
+      pointerRootToken: 0,
+      pointerRootDrawSuccessToken: 0
     };
   }
   var st = this.state.pointerTool;
@@ -1768,17 +1769,41 @@ FloatBallAppWM.prototype.recordPointerDrawFailure = function(st, stage, errorObj
   return true;
 };
 
-FloatBallAppWM.prototype.requestPointerRedraw = function(st) {
+FloatBallAppWM.prototype.isCurrentPointerRoot = function(st, rootRef, rootToken, requireAdded) {
+  var pointerState = st || this.ensurePointerToolState();
+  if (!pointerState || !rootRef) return false;
+  if (!pointerState.active || pointerState.closed) return false;
+  if (requireAdded !== false && pointerState.added !== true) return false;
+  if (pointerState.root !== rootRef) return false;
+  return Number(pointerState.pointerRootToken || 0) === Number(rootToken || 0);
+};
+
+FloatBallAppWM.prototype.requestPointerRedraw = function(st, expectedRoot, expectedRootToken) {
   var pointerState = st || this.ensurePointerToolState();
   if (!pointerState || !pointerState.root) return false;
+  var rootRef = expectedRoot || pointerState.root;
+  var rootToken = expectedRootToken;
+  if (rootToken === undefined || rootToken === null) {
+    rootToken = Number(pointerState.pointerRootToken || 0);
+  }
+  rootToken = Number(rootToken || 0);
+  if (!this.isCurrentPointerRoot(pointerState, rootRef, rootToken, true)) return false;
   try {
-    if (pointerState.root.postInvalidateOnAnimation) pointerState.root.postInvalidateOnAnimation();
-    else pointerState.root.invalidate();
+    if (rootRef.postInvalidateOnAnimation) rootRef.postInvalidateOnAnimation();
+    else rootRef.invalidate();
     return true;
   } catch (eInvalidate) {
-    if (pointerState.drawInvalidateErrorLogged !== true) {
+    if (
+      this.isCurrentPointerRoot(pointerState, rootRef, rootToken, true) &&
+      pointerState.drawInvalidateErrorLogged !== true
+    ) {
       pointerState.drawInvalidateErrorLogged = true;
-      try { safeLog(this.L, 'w', "pointer redraw request fail: " + String(eInvalidate)); } catch (eLog) {}
+      try {
+        safeLog(this.L, 'w',
+          "pointer redraw request fail rootToken=" + String(rootToken) +
+          " error=" + String(eInvalidate)
+        );
+      } catch (eLog) {}
     }
   }
   return false;
@@ -1807,11 +1832,17 @@ FloatBallAppWM.prototype.drawPointerFallback = function(canvas, st, path, rgb, d
   return true;
 };
 
-FloatBallAppWM.prototype.rebuildPointerWindowForDraw = function(st, reason) {
+FloatBallAppWM.prototype.rebuildPointerWindowForDraw = function(st, reason, expectedRoot, expectedRootToken) {
   var pointerState = st || this.ensurePointerToolState();
   if (!pointerState || !pointerState.active || pointerState.closed) return false;
   var oldRoot = pointerState.root;
-  pointerState.pointerRootToken = Number(pointerState.pointerRootToken || 0) + 1;
+  var oldRootToken = Number(pointerState.pointerRootToken || 0);
+  if (expectedRoot) {
+    if (oldRoot !== expectedRoot || oldRootToken !== Number(expectedRootToken || 0)) return false;
+  }
+
+  // 先使旧 root 失效，再执行 remove；迟到 onDraw、health 和 redraw 回调均不能命中新会话。
+  pointerState.pointerRootToken = oldRootToken + 1;
   var removed = !pointerState.added || !oldRoot;
   try {
     if (!removed && pointerState.wm) {
@@ -1837,16 +1868,28 @@ FloatBallAppWM.prototype.rebuildPointerWindowForDraw = function(st, reason) {
   pointerState.drawFallbackMode = true;
   pointerState.drawShadowDisabled = true;
   try {
-    pointerState.root = this.createPointerCanvasView(pointerState);
+    var newRoot = this.createPointerCanvasView(pointerState);
+    var newRootToken = Number(pointerState.pointerRootToken || 0);
+    pointerState.root = newRoot;
     if (!pointerState.lp) pointerState.lp = this.createPointerLayoutParams(pointerState);
-    pointerState.wm.addView(pointerState.root, pointerState.lp);
+    pointerState.wm.addView(newRoot, pointerState.lp);
     pointerState.added = true;
-    pointerState.root.setVisibility(android.view.View.VISIBLE);
-    this.requestPointerRedraw(pointerState);
-    try { safeLog(this.L, 'w', "pointer draw window rebuilt reason=" + String(reason || "health_check")); } catch (eLog) {}
+    newRoot.setVisibility(android.view.View.VISIBLE);
+    this.requestPointerRedraw(pointerState, newRoot, newRootToken);
+    try {
+      safeLog(this.L, 'w',
+        "pointer draw window rebuilt reason=" + String(reason || "health_check") +
+        " oldRootToken=" + String(oldRootToken) +
+        " newRootToken=" + String(newRootToken)
+      );
+    } catch (eLog) {}
     return true;
   } catch (eAdd) {
     pointerState.added = false;
+    pointerState.pointerRootToken = Number(pointerState.pointerRootToken || 0) + 1;
+    pointerState.root = null;
+    pointerState.paint = null;
+    pointerState.fallbackPaint = null;
     this.recordPointerDrawFailure(pointerState, "rebuild_add", eAdd);
   }
   return false;
@@ -1856,6 +1899,9 @@ FloatBallAppWM.prototype.schedulePointerDrawHealthCheck = function(st, delayMs) 
   var pointerState = st || this.ensurePointerToolState();
   if (!pointerState || !pointerState.active || pointerState.closed) return false;
   if (!pointerState.handler) pointerState.handler = this.state.h || new android.os.Handler(android.os.Looper.getMainLooper());
+  var rootRef = pointerState.root;
+  var rootToken = Number(pointerState.pointerRootToken || 0);
+  if (!this.isCurrentPointerRoot(pointerState, rootRef, rootToken, true)) return false;
   try {
     if (pointerState.drawHealthRunnable) pointerState.handler.removeCallbacks(pointerState.drawHealthRunnable);
   } catch (eRemove) {}
@@ -1867,14 +1913,18 @@ FloatBallAppWM.prototype.schedulePointerDrawHealthCheck = function(st, delayMs) 
     try {
       if (Number(pointerState.drawHealthToken || 0) !== token) return;
       pointerState.drawHealthRunnable = null;
-      if (!pointerState.active || pointerState.closed || !pointerState.added || !pointerState.root) return;
-      if (Number(pointerState.drawSuccessCount || 0) > 0) return;
+      if (!self.isCurrentPointerRoot(pointerState, rootRef, rootToken, true)) return;
+      if (Number(pointerState.pointerRootDrawSuccessToken || 0) === rootToken) return;
       if (pointerState.drawRecoveryTried !== true) {
         pointerState.drawRecoveryTried = true;
         pointerState.drawFallbackMode = true;
         pointerState.drawShadowDisabled = true;
-        try { safeLog(self.L, 'w', "pointer draw first frame missing, rebuild fallback window"); } catch (eLog) {}
-        if (self.rebuildPointerWindowForDraw(pointerState, "first_frame_missing")) {
+        try {
+          safeLog(self.L, 'w',
+            "pointer draw first frame missing, rebuild fallback window rootToken=" + String(rootToken)
+          );
+        } catch (eLog) {}
+        if (self.rebuildPointerWindowForDraw(pointerState, "first_frame_missing", rootRef, rootToken)) {
           self.schedulePointerDrawHealthCheck(pointerState, 180);
         }
         return;
@@ -1884,6 +1934,7 @@ FloatBallAppWM.prototype.schedulePointerDrawHealthCheck = function(st, delayMs) 
         try {
           safeLog(self.L, 'e',
             "pointer draw unavailable after recovery" +
+            " rootToken=" + String(rootToken) +
             " count=" + String(pointerState.drawCount || 0) +
             " failures=" + String(pointerState.drawFailCount || 0) +
             " last=" + String(pointerState.lastDrawError || "")
@@ -1891,7 +1942,9 @@ FloatBallAppWM.prototype.schedulePointerDrawHealthCheck = function(st, delayMs) 
         } catch (eHealthLog) {}
       }
     } catch (eRun) {
-      self.recordPointerDrawFailure(pointerState, "health_check", eRun);
+      if (self.isCurrentPointerRoot(pointerState, rootRef, rootToken, true)) {
+        self.recordPointerDrawFailure(pointerState, "health_check", eRun);
+      }
     }
   }});
   try {
@@ -1899,7 +1952,9 @@ FloatBallAppWM.prototype.schedulePointerDrawHealthCheck = function(st, delayMs) 
     return true;
   } catch (ePost) {
     pointerState.drawHealthRunnable = null;
-    this.recordPointerDrawFailure(pointerState, "health_post", ePost);
+    if (this.isCurrentPointerRoot(pointerState, rootRef, rootToken, true)) {
+      this.recordPointerDrawFailure(pointerState, "health_post", ePost);
+    }
   }
   return false;
 };
@@ -2035,6 +2090,7 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
 
       if (drawn) {
         st.drawSuccessCount = Number(st.drawSuccessCount || 0) + 1;
+        st.pointerRootDrawSuccessToken = rootToken;
         st.lastDrawAt = th17Now();
         if (st.drawFirstSuccessLogged !== true) {
           st.drawFirstSuccessLogged = true;
