@@ -29,11 +29,15 @@ jobs:
       - name: Apply settings interaction stress test
         run: python3 scripts/apply_settings_interaction_stress_test.py
 
+      - name: Sync generated verifier contract
+        run: python3 scripts/fix_settings_interaction_generated_verifier.py
+
       - name: Refresh dead code audit
         run: python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
 
       - name: Remove temporary executor
         run: |
+          rm -f scripts/fix_settings_interaction_generated_verifier.py
           rm -f scripts/fix_settings_interaction_migrator_escape.py
           rm -f scripts/apply_settings_interaction_stress_test.py
           rm -f .github/workflows/agent_settings_interaction_stress_test.yml
