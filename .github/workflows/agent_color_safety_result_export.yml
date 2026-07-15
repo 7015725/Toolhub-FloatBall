@@ -4,12 +4,17 @@ on:
   push:
     branches:
       - feat/color-safety-result-export-20260715
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: write
 
 jobs:
   migrate:
+    if: github.event_name == 'push' || github.head_ref == 'feat/color-safety-result-export-20260715'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout target branch
