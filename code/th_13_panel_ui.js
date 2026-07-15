@@ -1,4 +1,4 @@
-// @version 1.0.8
+// @version 1.0.9
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -82,6 +82,258 @@ FloatBallAppWM.prototype.refreshSettingColorPreviewView = function(v, hex, strok
   }
 };
 
+
+
+FloatBallAppWM.prototype.getSettingsInteractionStressResultFile = function() {
+  try {
+    var baseDir = String(shortx.getShortXDir());
+    if (!baseDir) return null;
+    return new java.io.File(baseDir + "/ToolHub/diagnostics/settings-interaction-last.json");
+  } catch(ePath) {
+    safeLog(this.L, "w", "resolve settings interaction result path fail error=" + String(ePath));
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.normalizeSettingsInteractionStressResult = function(value) {
+  if (!value || typeof value !== "object") return null;
+  function numberValue(v, fallback, min, max) {
+    var n = Number(v);
+    if (isNaN(n)) n = fallback;
+    if (min !== null && n < min) n = min;
+    if (max !== null && n > max) n = max;
+    return n;
+  }
+  function textValue(v, maxLen) {
+    var s = "";
+    try { s = String(v === undefined || v === null ? "" : v); } catch(eText) { s = ""; }
+    if (s.length > maxLen) s = s.substring(0, maxLen);
+    return s;
+  }
+  var rawRuntime = value.runtime && typeof value.runtime === "object" ? value.runtime : {};
+  return {
+    schemaVersion: 1,
+    ok: value.ok === true,
+    loops: Math.floor(numberValue(value.loops, 0, 0, 200)),
+    durationMs: Math.floor(numberValue(value.durationMs, 0, 0, 3600000)),
+    completedAt: Math.floor(numberValue(value.completedAt, 0, 0, 4102444800000)),
+    rows: Math.floor(numberValue(value.rows, 0, 0, 10000)),
+    switches: Math.floor(numberValue(value.switches, 0, 0, 10000)),
+    seekBars: Math.floor(numberValue(value.seekBars, 0, 0, 10000)),
+    buttons: Math.floor(numberValue(value.buttons, 0, 0, 10000)),
+    stateTransitions: Math.floor(numberValue(value.stateTransitions, 0, 0, 100000)),
+    switchToggles: Math.floor(numberValue(value.switchToggles, 0, 0, 100000)),
+    seekUpdates: Math.floor(numberValue(value.seekUpdates, 0, 0, 100000)),
+    error: textValue(value.error, 1200),
+    runtime: {
+      manufacturer: textValue(rawRuntime.manufacturer, 120),
+      brand: textValue(rawRuntime.brand, 120),
+      model: textValue(rawRuntime.model, 160),
+      display: textValue(rawRuntime.display, 240),
+      release: textValue(rawRuntime.release, 80),
+      sdk: Math.floor(numberValue(rawRuntime.sdk, 0, 0, 1000)),
+      dark: rawRuntime.dark === true,
+      pressAlpha: numberValue(rawRuntime.pressAlpha, 0, 0, 1),
+      process: textValue(rawRuntime.process, 240)
+    }
+  };
+};
+
+FloatBallAppWM.prototype.saveSettingsInteractionStressResult = function(result) {
+  var file = null;
+  var tmp = null;
+  var writer = null;
+  try {
+    var clean = this.normalizeSettingsInteractionStressResult ? this.normalizeSettingsInteractionStressResult(result) : null;
+    if (!clean) return false;
+    file = this.getSettingsInteractionStressResultFile ? this.getSettingsInteractionStressResultFile() : null;
+    if (!file) return false;
+    var parent = file.getParentFile();
+    if (parent && !parent.exists() && !parent.mkdirs() && !parent.exists()) throw "cannot create diagnostic directory";
+    tmp = new java.io.File(String(file.getAbsolutePath()) + ".tmp");
+    writer = new java.io.OutputStreamWriter(new java.io.FileOutputStream(tmp, false), "UTF-8");
+    writer.write(JSON.stringify(clean));
+    writer.flush();
+    writer.close();
+    writer = null;
+    if (file.exists() && !file.delete()) throw "cannot replace old settings interaction result";
+    if (!tmp.renameTo(file)) throw "cannot publish settings interaction result";
+    return true;
+  } catch(eSave) {
+    safeLog(this.L, "w", "save settings interaction result fail error=" + String(eSave));
+  } finally {
+    try { if (writer) writer.close(); } catch(eClose) {}
+    try { if (tmp && tmp.exists()) tmp.delete(); } catch(eTmp) {}
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.loadSettingsInteractionStressResult = function() {
+  var reader = null;
+  try {
+    var file = this.getSettingsInteractionStressResultFile ? this.getSettingsInteractionStressResultFile() : null;
+    if (!file || !file.exists() || !file.isFile()) return null;
+    var length = Number(file.length());
+    if (!(length > 0) || length > 65536) throw "invalid settings interaction result size=" + String(length);
+    reader = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(file), "UTF-8"));
+    var sb = new java.lang.StringBuilder();
+    var line = null;
+    while ((line = reader.readLine()) !== null) {
+      if (sb.length() > 65536) throw "settings interaction result exceeds limit";
+      sb.append(line);
+    }
+    reader.close();
+    reader = null;
+    var parsed = JSON.parse(String(sb.toString()));
+    return this.normalizeSettingsInteractionStressResult ? this.normalizeSettingsInteractionStressResult(parsed) : null;
+  } catch(eLoad) {
+    safeLog(this.L, "w", "load settings interaction result fail error=" + String(eLoad));
+  } finally {
+    try { if (reader) reader.close(); } catch(eClose) {}
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.getLastSettingsInteractionStressResult = function() {
+  try {
+    if (!this.state) this.state = {};
+    if (this.state.settingsInteractionStressResult) return this.state.settingsInteractionStressResult;
+    if (this.state.settingsInteractionStressLoaded) return null;
+    this.state.settingsInteractionStressLoaded = true;
+    var loaded = this.loadSettingsInteractionStressResult ? this.loadSettingsInteractionStressResult() : null;
+    if (loaded) this.state.settingsInteractionStressResult = loaded;
+    return loaded;
+  } catch(eLast) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.formatSettingsInteractionStressSummary = function(result) {
+  var clean = this.normalizeSettingsInteractionStressResult ? this.normalizeSettingsInteractionStressResult(result) : null;
+  if (!clean) return "";
+  var runtime = clean.runtime || {};
+  var completedText = "未知";
+  try {
+    if (Number(clean.completedAt || 0) > 0) {
+      var fmt = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+      completedText = String(fmt.format(new java.util.Date(Number(clean.completedAt))));
+    }
+  } catch(eTime) {}
+  var lines = [];
+  lines.push("ToolHub 设置页控件压力测试");
+  lines.push("状态：" + (clean.ok ? "通过" : "失败"));
+  lines.push("时间：" + completedText);
+  lines.push("循环：" + String(clean.loops) + " 次");
+  lines.push("耗时：" + String(clean.durationMs) + " ms");
+  lines.push("控件：Row " + String(clean.rows) + " / Switch " + String(clean.switches) + " / SeekBar " + String(clean.seekBars) + " / Button " + String(clean.buttons));
+  lines.push("状态切换：" + String(clean.stateTransitions));
+  lines.push("开关切换：" + String(clean.switchToggles));
+  lines.push("滑杆更新：" + String(clean.seekUpdates));
+  lines.push("设备：" + String(runtime.manufacturer || runtime.brand || "未知") + " " + String(runtime.model || ""));
+  lines.push("系统：Android " + String(runtime.release || "") + " / SDK " + String(runtime.sdk || 0));
+  lines.push("构建：" + String(runtime.display || ""));
+  lines.push("进程：" + String(runtime.process || ""));
+  lines.push("主题：" + (runtime.dark ? "暗色" : "亮色"));
+  lines.push("按压透明度：" + String(runtime.pressAlpha));
+  if (clean.error) lines.push("错误：" + String(clean.error));
+  return lines.join("\n");
+};
+
+FloatBallAppWM.prototype.runSettingsInteractionStressTest = function(iterations) {
+  var loops = parseInt(String(iterations), 10);
+  if (isNaN(loops) || loops <= 0) loops = 120;
+  loops = Math.max(1, Math.min(200, loops));
+  var startedAt = java.lang.System.currentTimeMillis();
+  var runtime = this.getColorSafetyRuntimeContext ? this.getColorSafetyRuntimeContext() : {};
+  var result = {
+    schemaVersion: 1,
+    ok: false,
+    loops: loops,
+    durationMs: 0,
+    completedAt: 0,
+    rows: 0,
+    switches: 0,
+    seekBars: 0,
+    buttons: 0,
+    stateTransitions: 0,
+    switchToggles: 0,
+    seekUpdates: 0,
+    error: "",
+    runtime: runtime
+  };
+  safeLog(this.L, "i", "settings interaction stress start loops=" + String(loops) + " manufacturer=" + String(runtime.manufacturer || "") + " model=" + String(runtime.model || "") + " sdk=" + String(runtime.sdk || 0) + " process=" + String(runtime.process || ""));
+  try {
+    var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
+    var C = this.ui.colors;
+    var isDark = this.isDarkTheme ? !!this.isDarkTheme() : false;
+    var primary = T ? T.primary : C.primary;
+    var onPrimary = T && T.onPrimary ? T.onPrimary : android.graphics.Color.WHITE;
+    var switchOff = T && T.surface2 ? T.surface2 : (isDark ? (0xFF555555 | 0) : (0xFFCCCCCC | 0));
+    var pressedState = toolhubJintArray([android.R.attr.state_pressed]);
+    var defaultState = toolhubJintArray([]);
+    var switchStates = [[android.R.attr.state_checked], [-android.R.attr.state_checked]];
+    for (var i = 0; i < loops; i++) {
+      var row = new android.widget.LinearLayout(context);
+      var rowPressedColor = this.withAlpha(primary, isDark ? 0.16 : 0.10);
+      var rowBg = this.ui.createTransparentPressedStateDrawable(rowPressedColor, this.dp(12));
+      var rowBgClass = toolhubJavaClassName(rowBg);
+      if (!rowBg || rowBgClass.indexOf("StateListDrawable") < 0 || rowBgClass.indexOf("RippleDrawable") >= 0) throw "unsafe setting row background at loop " + String(i) + ": " + rowBgClass;
+      row.setBackground(rowBg);
+      rowBg.setState(pressedState);
+      rowBg.setState(defaultState);
+      result.rows++;
+      result.stateTransitions += 2;
+
+      var sw = new android.widget.Switch(context);
+      var thumbColors = [primary, switchOff];
+      var trackColors = [this.withAlpha(primary, 0.5), this.withAlpha(switchOff, 0.5)];
+      var thumbList = toolhubSafeColorStateListFromStates(switchStates, thumbColors);
+      var trackList = toolhubSafeColorStateListFromStates(switchStates, trackColors);
+      toolhubSafeApplyColorStateList(sw, "setThumbTintList", thumbList);
+      toolhubSafeApplyColorStateList(sw, "setTrackTintList", trackList);
+      var appliedThumb = sw.getThumbTintList();
+      var appliedTrack = sw.getTrackTintList();
+      if (!toolhubIsColorStateList(appliedThumb) || !toolhubIsColorStateList(appliedTrack)) throw "switch tint list missing at loop " + String(i);
+      sw.setChecked(true);
+      sw.setChecked(false);
+      result.switches++;
+      result.switchToggles += 2;
+
+      var seek = new android.widget.SeekBar(context);
+      seek.setMax(100);
+      toolhubSafeSetTintColor(seek.getThumb(), primary);
+      toolhubSafeSetTintColor(seek.getProgressDrawable(), primary);
+      seek.setProgress(i % 101);
+      seek.setProgress(100 - (i % 101));
+      result.seekBars++;
+      result.seekUpdates += 2;
+
+      var button = this.ui.createSolidButton(this, "压力测试", primary, onPrimary, function() {});
+      var buttonBg = button.getBackground();
+      var buttonBgClass = toolhubJavaClassName(buttonBg);
+      if (!buttonBg || buttonBgClass.indexOf("StateListDrawable") < 0 || buttonBgClass.indexOf("RippleDrawable") >= 0) throw "unsafe settings button background at loop " + String(i) + ": " + buttonBgClass;
+      buttonBg.setState(pressedState);
+      buttonBg.setState(defaultState);
+      result.buttons++;
+      result.stateTransitions += 2;
+    }
+    result.ok = true;
+  } catch(eTest) {
+    result.ok = false;
+    result.error = String(eTest);
+  }
+  result.durationMs = Math.max(0, Number(java.lang.System.currentTimeMillis() - startedAt));
+  result.completedAt = Number(java.lang.System.currentTimeMillis());
+  try { if (this.normalizeSettingsInteractionStressResult) result = this.normalizeSettingsInteractionStressResult(result) || result; } catch(eNormalize) {}
+  try { if (this.saveSettingsInteractionStressResult) this.saveSettingsInteractionStressResult(result); } catch(ePersist) {}
+  try {
+    if (!this.state) this.state = {};
+    this.state.settingsInteractionStressLoaded = true;
+    this.state.settingsInteractionStressResult = result;
+  } catch(eState) {}
+  if (result.ok) safeLog(this.L, "i", "settings interaction stress pass loops=" + String(result.loops) + " durationMs=" + String(result.durationMs) + " rows=" + String(result.rows) + " switches=" + String(result.switches) + " seekBars=" + String(result.seekBars) + " buttons=" + String(result.buttons));
+  else safeLog(this.L, "e", "settings interaction stress fail loops=" + String(result.loops) + " durationMs=" + String(result.durationMs) + " error=" + String(result.error));
+  return result;
+};
 
 FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivider) {
   var isDark = this.isDarkTheme();
