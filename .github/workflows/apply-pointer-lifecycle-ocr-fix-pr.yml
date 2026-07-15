@@ -3,7 +3,7 @@ name: apply-pointer-lifecycle-ocr-fix-pr
 on:
   pull_request:
     branches: [main]
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
@@ -31,13 +31,17 @@ jobs:
           rm -f .github/workflows/apply-pointer-lifecycle-ocr-fix.yml
           rm -f .github/workflows/apply-pointer-lifecycle-ocr-fix-pr.yml
 
-      - name: Validate fixes
-        shell: bash
-        run: |
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_pointer_regressions.py
-          git diff --check
+      - name: Verify Rhino ES5
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: Verify JavaScript syntax
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: Verify pointer regressions
+        run: python3 scripts/verify_pointer_regressions.py
+
+      - name: Check whitespace
+        run: git diff --check
 
       - name: Commit fixes
         shell: bash
