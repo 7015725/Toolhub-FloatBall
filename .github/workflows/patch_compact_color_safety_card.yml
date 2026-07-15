@@ -1,0 +1,48 @@
+name: Patch compact ColorOS diagnostic card
+
+on:
+  push:
+    branches:
+      - fix/coloros-runtime-self-test-compact-20260715
+    paths:
+      - scripts/patch_compact_color_safety_card.py
+      - .github/workflows/patch_compact_color_safety_card.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/coloros-runtime-self-test-compact-20260715
+          fetch-depth: 0
+
+      - name: Apply compact layout patch
+        run: python3 scripts/patch_compact_color_safety_card.py
+
+      - name: Remove temporary files
+        run: |
+          rm -f scripts/patch_compact_color_safety_card.py
+          rm -f .github/workflows/patch_compact_color_safety_card.yml
+
+      - name: Verify patch
+        run: |
+          git fetch origin main
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          git diff --check
+
+      - name: Commit and push
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "修复手机运行记录页缺少颜色安全自检"
+          git push origin HEAD:fix/coloros-runtime-self-test-compact-20260715
