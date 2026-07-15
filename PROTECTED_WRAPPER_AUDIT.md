@@ -30,13 +30,13 @@
 |指针布局与生命周期|`createPointerLayoutParams`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|2|6|0|3|继续保留|
 |指针布局与生命周期|`removePointerCallbacks`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|1|5|0|1|继续保留|
 |指针布局与生命周期|`resetPointerToolState`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|1|5|0|1|继续保留|
-|ToolApp 状态保持|`popToolAppPage`|`th_15_extra.js → th_16_entry.js`|`th_16_entry.js`|`wrapper`|8|18|0|1|继续保留|
+|ToolApp 状态保持|`popToolAppPage`|`th_15_extra.js → th_16_entry.js`|`th_16_entry.js`|`wrapper`|6|14|0|1|继续保留|
 |延迟更新包装|`startToolHubModuleUpdateFromSettings`|`th_03_icon.js → th_14_panels.js`|`th_03_icon.js`|`deferred_wrapper`|1|5|0|1|继续保留|
 
 ## 判定说明
 
 - **`createPointerFrameView` / 指针与 OCR 扩展**：OCR 模块提供完整边框视图覆盖，不是无行为的转发包装。 原登记原因：OCR 扩展统一补充文字、框选和处理状态边框绘制
-- **`execPointerAction` / 指针与 OCR 扩展**：增加 area_ocr 动作模式并保留基础指针动作。 原登记原因：增加 area_ocr 动作模式
+- **`execPointerAction` / 指针与 OCR 扩展**：增加 area_ocr 动作模式并保留基础指针动作。 原登记原因：增加 area_ocr 指针动作模式
 - **`finishPointerAreaCapture` / 指针与 OCR 扩展**：框选完成后异步衔接 OCR，属于功能完成链。 原登记原因：框选截图完成后异步衔接 OCR
 - **`scheduleDraggingInspect` / 指针与 OCR 扩展**：限制拖动扫描频率，属于性能和竞态保护。 原登记原因：限制拖动期间无障碍扫描频率
 - **`showPointerAreaFrame` / 指针与 OCR 扩展**：增加边框刷新节流和状态颜色。 原登记原因：增加指针边框刷新节流和状态颜色
