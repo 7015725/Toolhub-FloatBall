@@ -49,6 +49,9 @@ if "StateListDrawable" not in THEME or "updateBallContentBackground" not in THEM
 for token in ("createPressedStateDrawable", "createTransparentPressedStateDrawable", "getBallPressedOverlayAlpha"):
     if token not in THEME:
         errors.append("stable pressed-state helper missing: %s" % token)
+for token in ("createRippleDrawable", "createTransparentRippleDrawable", "createMainPanelRippleBackground"):
+    if token in ALL_JS:
+        errors.append("legacy ripple helper name remains: %s" % token)
 for token in ("CONST_BALL_PRESS_ALPHA_LIGHT", "CONST_BALL_PRESS_ALPHA_DARK"):
     if token not in BASE:
         errors.append("pressed-state constant missing: %s" % token)
@@ -62,7 +65,7 @@ if "createTransparentPressedStateDrawable(pressedColor" not in THEME:
     errors.append("flat button does not use pressed-state helper")
 if "createPressedStateDrawable(bgColor, pressedColor" not in THEME:
     errors.append("solid button does not use pressed-state helper")
-if "StateListDrawable" not in MAIN or "createMainPanelRippleBackground" not in MAIN:
+if "StateListDrawable" not in MAIN or "createMainPanelPressedBackground" not in MAIN:
     errors.append("main panel card background is not protected by StateListDrawable")
 
 argb = re.search(r"function _th_argb\(c\) \{.*?\n\}", THEME, re.S)
@@ -76,10 +79,10 @@ else:
 
 if module_version(BASE, "th_01_base.js") < (1, 1, 11):
     errors.append("th_01_base.js version below pressed feedback baseline 1.1.11")
-if module_version(THEME, "th_04_theme.js") < (1, 0, 6):
-    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.6")
-if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 7):
-    errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.7")
+if module_version(THEME, "th_04_theme.js") < (1, 0, 7):
+    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.7")
+if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 8):
+    errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.8")
 
 if errors:
     for item in errors:

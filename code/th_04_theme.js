@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -463,16 +463,6 @@ FloatBallAppWM.prototype.ui = {
             pressedColor,
             radiusPx
         );
-    },
-
-    // 兼容旧调用名称；实际为按压换色反馈，不创建 framework RippleDrawable。
-    createRippleDrawable: function(normalColor, pressedColor, radiusPx) {
-        return this.createPressedStateDrawable(normalColor, pressedColor, radiusPx);
-    },
-
-    // 兼容旧调用名称。
-    createTransparentRippleDrawable: function(pressedColor, radiusPx) {
-        return this.createTransparentPressedStateDrawable(pressedColor, radiusPx);
     },
 
     // 辅助：把符号按钮转换成可读语义，供 TalkBack 和自动化识别。

@@ -1,4 +1,4 @@
-// @version 1.5.7
+// @version 1.5.8
 // ToolHub - 主按钮面板第十阶段：标题栏操作收纳
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
@@ -243,10 +243,10 @@ FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function(editMode) {
   };
 };
 
-FloatBallAppWM.prototype.createMainPanelRippleBackground = function(fillColor, strokeColor, rippleColor, radiusPx) {
+FloatBallAppWM.prototype.createMainPanelPressedBackground = function(fillColor, strokeColor, pressedOverlayColor, radiusPx) {
   try {
     var normal = this.ui.createStrokeDrawable(fillColor, strokeColor, this.dp(1), radiusPx);
-    var pressedFill = toolhubCompositeColor(rippleColor, fillColor);
+    var pressedFill = toolhubCompositeColor(pressedOverlayColor, fillColor);
     var pressed = this.ui.createStrokeDrawable(pressedFill, strokeColor, this.dp(1), radiusPx);
     var states = new android.graphics.drawable.StateListDrawable();
     states.addState(toolhubJintArray([android.R.attr.state_pressed]), pressed);
@@ -276,7 +276,7 @@ FloatBallAppWM.prototype.createMainPanelToolbarButton = function(text, descripti
   v.setMinimumHeight(this.dp(40));
   try { v.setIncludeFontPadding(false); } catch (ePad) {}
   try { v.setContentDescription(String(description || text || '')); } catch (eDesc) {}
-  try { v.setBackground(this.ui.createTransparentRippleDrawable(pressColor, this.dp(12))); } catch (eBg) {}
+  try { v.setBackground(this.ui.createTransparentPressedStateDrawable(pressColor, this.dp(12))); } catch (eBg) {}
   v.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(anchor) {
     self.touchActivity();
     self.guardClick('main_toolbar_' + String(description || text || ''), 220, function() {
@@ -331,7 +331,7 @@ FloatBallAppWM.prototype.showMainPanelMoreMenu = function(anchorView) {
       row.setClickable(true);
       row.setFocusable(true);
       try { row.setContentDescription(String(label)); } catch (eItemDesc) {}
-      row.setBackground(self.ui.createTransparentRippleDrawable(self.withAlpha(textColor, isDark ? 0.15 : 0.09), self.dp(12)));
+      row.setBackground(self.ui.createTransparentPressedStateDrawable(self.withAlpha(textColor, isDark ? 0.15 : 0.09), self.dp(12)));
       row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
         try { if (popup) popup.dismiss(); } catch (eDismiss) {}
         try { action(); } catch (eAction) { safeLog(self.L, 'e', 'main more action fail: ' + String(eAction)); }
@@ -1373,7 +1373,7 @@ FloatBallAppWM.prototype.createMainPanelFunctionCard = function(item, spec, colo
   frame.setClickable(!item.empty);
   frame.setFocusable(!item.empty);
   var radius = this.dp(14);
-  frame.setBackground(this.createMainPanelRippleBackground(colors.card, colors.stroke, colors.ripple, radius));
+  frame.setBackground(this.createMainPanelPressedBackground(colors.card, colors.stroke, colors.ripple, radius));
   try { frame.setElevation(this.dp(this.isDarkTheme() ? 0 : 1)); frame.setClipToOutline(true); } catch (eElev) {}
 
   var body = new android.widget.LinearLayout(context);
@@ -1687,7 +1687,7 @@ FloatBallAppWM.prototype.buildMainPanelView = function() {
       titleBox.setClickable(true);
       titleBox.setFocusable(true);
       titleBox.setContentDescription('ToolHub 运行状态，点击查看详情');
-      titleBox.setBackground(this.ui.createTransparentRippleDrawable(this.withAlpha(primary, isDark ? 0.16 : 0.10), this.dp(10)));
+      titleBox.setBackground(this.ui.createTransparentPressedStateDrawable(this.withAlpha(primary, isDark ? 0.16 : 0.10), this.dp(10)));
     } catch (eStatusTarget) {}
     titleBox.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
       self.guardClick('main_runtime_status_detail', 260, function() {
