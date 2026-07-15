@@ -1,0 +1,55 @@
+name: Settings interaction stress test migration
+
+on:
+  push:
+    branches:
+      - fix/settings-interaction-stress-test-20260715
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/settings-interaction-stress-test-20260715
+          fetch-depth: 0
+
+      - name: Apply settings interaction stress test
+        run: python3 scripts/apply_settings_interaction_stress_test.py
+
+      - name: Refresh dead code audit
+        run: python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+
+      - name: Remove temporary executor
+        run: |
+          rm -f scripts/apply_settings_interaction_stress_test.py
+          rm -f .github/workflows/agent_settings_interaction_stress_test.yml
+
+      - name: Commit source changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "增加设置页真实控件压力测试"
+
+      - name: Fetch main
+        run: git fetch origin main
+
+      - name: Verify changed module versions
+        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify stress test and syntax
+        run: |
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_toolapp_layout.py
+          python3 scripts/verify_settings_color_scheme.py
+
+      - name: Push source commit
+        run: git push origin HEAD:fix/settings-interaction-stress-test-20260715
