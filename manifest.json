@@ -40,9 +40,9 @@
       "version": "1.0.1"
     },
     "th_08_content.js": {
-      "sha256": "0b26ac5d590c720fd507eb660a3c40032527b39c6d7c2a3e0b9349582e0634bf",
-      "size": 51410,
-      "version": "1.0.6"
+      "sha256": "35a30374659a6171bbe629e2c779d08e08935c5f0dc8da6daced9381f493d61f",
+      "size": 62822,
+      "version": "1.0.7"
     },
     "th_09_animation.js": {
       "sha256": "b3d521336ef2b44be5c9e2a043cbd6324f9fff8259fd7e9a987f8688b3cec681",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修正并完成故障会话聚合"
+      "增加故障会话详情展开"
     ],
-    "title": "修正并完成故障会话聚合"
+    "title": "增加故障会话详情展开"
   },
   "schema": 3,
-  "version": 20260715043206
+  "version": 20260715045121
 }
