@@ -34,7 +34,17 @@ jobs:
         run: python3 scripts/verify_result_preview.py
 
       - name: Verify pointer contracts
-        run: python3 scripts/verify_pointer_regressions.py
+        run: |
+          set -o pipefail
+          python3 scripts/verify_pointer_regressions.py 2>&1 | tee pointer-regression-output.txt
+
+      - name: Upload pointer regression output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-preview-pointer-regression
+          path: pointer-regression-output.txt
+          if-no-files-found: ignore
 
       - name: Verify dead code audit
         run: python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
@@ -44,6 +54,7 @@ jobs:
 
       - name: Commit source changes
         run: |
+          rm -f pointer-regression-output.txt
           rm -f scripts/_apply_result_preview_unified_theme.py
           rm -f .github/workflows/apply-result-preview-unified-theme.yml
           git config user.name "github-actions[bot]"
