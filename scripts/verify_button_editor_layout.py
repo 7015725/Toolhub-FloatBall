@@ -38,7 +38,7 @@ def main():
         ("manager has sort mode", "buttonManagerSortMode" in button_text and "sortMode ? \"完成\" : \"排序\"" in button_text),
         ("manager action sheet keeps deferred save wording", "点保存布置生效" in button_text and "点不改了可撤销" in button_text),
         ("manager list item toggle is deferred", "已暂停，点保存布置生效" in button_text and "已启用，点保存布置生效" in button_text),
-        ("manager list footer keeps deferred save", button_text.count("ConfigManager.saveButtons(buttons)") == 1),
+        ("manager list footer normalizes before deferred save", "var normalizedButtons = self.normalizeButtonEditorButtons(buttons).buttons" in button_text and "ConfigManager.saveButtons(normalizedButtons)" in button_text),
         ("editor has direct save transaction helper", "commitButtonEditorChange" in button_text and "ConfigManager.saveButtons(nextButtons)" in button_text),
         ("editor save wording is direct", 'createSolidButton(self, "保存"' in button_text and "先存起来" not in button_text and "已暂存，请在列表页点击保存布置" not in button_text),
         ("manager no old two-row card marker", "按钮管理列表卡片：上信息、下操作" not in button_text),

@@ -30,7 +30,7 @@
 |指针布局与生命周期|`createPointerLayoutParams`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|2|6|0|3|继续保留|
 |指针布局与生命周期|`removePointerCallbacks`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|1|5|0|1|继续保留|
 |指针布局与生命周期|`resetPointerToolState`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|1|5|0|1|继续保留|
-|ToolApp 状态保持|`popToolAppPage`|`th_15_extra.js → th_16_entry.js`|`th_16_entry.js`|`wrapper`|8|18|0|1|继续保留|
+|ToolApp 状态保持|`popToolAppPage`|`th_15_extra.js → th_16_entry.js`|`th_16_entry.js`|`wrapper`|6|14|0|1|继续保留|
 |延迟更新包装|`startToolHubModuleUpdateFromSettings`|`th_03_icon.js → th_14_panels.js`|`th_03_icon.js`|`deferred_wrapper`|1|5|0|1|继续保留|
 
 ## 判定说明
