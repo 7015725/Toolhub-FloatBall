@@ -1,0 +1,51 @@
+name: ToolHub 应用按钮最终收尾
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.head_ref == 'agent/app-picker-cleanup-20260715'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/app-picker-cleanup-20260715
+          fetch-depth: 0
+
+      - name: 规范化文件尾并清理临时文件
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('code/th_11_action.js')
+          text = path.read_text(encoding='utf-8').rstrip('\r\n') + '\n'
+          path.write_text(text, encoding='utf-8')
+          Path('TOOLHUB_APP_PICKER_VERIFY.txt').unlink(missing_ok=True)
+          Path('.github/workflows/toolhub-app-picker-finalize.yml').unlink(missing_ok=True)
+          PY
+
+      - name: 验证
+        shell: bash
+        run: |
+          node --check code/th_14_button_editor.js
+          node --check code/th_11_action.js
+          python3 scripts/verify_button_editor_direct_save.py
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          git diff --check
+
+      - name: 提交
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m '规范化应用动作模块并完成验证'
+          git push origin HEAD:agent/app-picker-cleanup-20260715
