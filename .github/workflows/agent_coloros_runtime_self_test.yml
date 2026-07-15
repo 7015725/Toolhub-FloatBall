@@ -1,0 +1,81 @@
+name: ColorOS runtime self test migration
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  migrate:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'fix/coloros-runtime-self-test-20260715'
+    runs-on: ubuntu-latest
+    environment: signing
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/coloros-runtime-self-test-20260715
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Apply runtime diagnostic migration
+        run: python3 scripts/apply_coloros_runtime_self_test.py
+
+      - name: Refresh dead code audit
+        run: python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+
+      - name: Remove temporary executor and commit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/agent_coloros_runtime_self_test.yml
+          git rm scripts/apply_coloros_runtime_self_test.py
+          git rm scripts/.tmp_color_safety_theme.js.txt
+          git rm scripts/.tmp_color_safety_panels.js.txt
+          git add code/th_04_theme.js code/th_14_panels.js
+          git add scripts/verify_coloros_rhino_color_safety.py DEAD_CODE_AUDIT.md
+          git commit -m "增加 ColorOS 颜色安全运行时自检"
+
+      - name: Fetch main
+        run: git fetch --no-tags origin main
+
+      - name: Verify module versions
+        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify color safety
+        shell: bash
+        run: |
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+
+      - name: Verify settings and syntax
+        shell: bash
+        run: |
+          python3 scripts/verify_toolapp_layout.py
+          python3 scripts/verify_settings_color_scheme.py
+          python3 scripts/verify_settings_color_roles.py
+          python3 scripts/verify_schema_validator.py
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          git diff --check origin/main...HEAD
+
+      - name: Push source commit
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:fix/coloros-runtime-self-test-20260715"
