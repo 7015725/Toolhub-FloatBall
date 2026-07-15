@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -114,12 +114,16 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
   // 容器
   var row = new android.widget.LinearLayout(context);
   row.setOrientation(android.widget.LinearLayout.VERTICAL);
-  // 增加点击波纹反馈
+  // 使用项目内稳定按压状态背景，避免主题资源间接加载 framework RippleDrawable。
   try {
-      var outValue = new android.util.TypedValue();
-      context.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
-      row.setBackgroundResource(outValue.resourceId);
-   } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
+      var rowPressedColor = this.withAlpha(primary, isDark ? 0.16 : 0.10);
+      row.setBackground(this.ui.createTransparentPressedStateDrawable(rowPressedColor, this.dp(12)));
+  } catch(eRowBg) {
+      try {
+        row.setBackground(this.ui.createRoundDrawable(android.graphics.Color.TRANSPARENT, this.dp(12)));
+      } catch(eRowBgFallback) {}
+      safeLog(null, 'e', "setting row press background fail " + String(eRowBg));
+  }
 
   row.setPadding(padH, padV, padH, padV);
   try { row.setMinimumHeight(this.dp(52)); } catch(eMinRow) {}
@@ -314,8 +318,9 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     btn.setPadding(self.dp(12), self.dp(6), self.dp(12), self.dp(6));
     try { self.ui.applyButtonTouchTarget(self, btn, 48); } catch(eBtnTouch) {}
     try { btn.setContentDescription("打开" + String(item.name || "")); } catch(eBtnDesc) {}
-    // 透明波纹背景
-    btn.setBackground(self.ui.createTransparentRippleDrawable(primary, self.dp(14)));
+    // 使用低透明度按压色，避免文字与背景同色导致按压期间不可见。
+    var actionPressedColor = self.withAlpha(primary, isDark ? 0.18 : 0.10);
+    btn.setBackground(self.ui.createTransparentPressedStateDrawable(actionPressedColor, self.dp(14)));
 
     function runSettingAction() {
       try {

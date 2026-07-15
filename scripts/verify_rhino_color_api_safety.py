@@ -118,6 +118,8 @@ for helper in helpers:
 
 for required in (
     "if (toolhubIsColorStateList(colorValue)) return colorValue;",
+    'java.lang.Class.forName("android.content.res.ColorStateList")',
+    "states.length !== colors.length",
     "paintObj.setARGB(",
     "drawableObj.setTintList(toolhubSafeColorStateList(colorValue));",
     "targetObj.setColor(java.lang.Integer.valueOf(",

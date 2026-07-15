@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -145,6 +145,11 @@ function toolhubJavaClassName(value) {
 }
 
 function toolhubIsColorStateList(value) {
+  if (!value) return false;
+  try {
+    var cls = java.lang.Class.forName("android.content.res.ColorStateList");
+    if (cls && cls.isInstance(value)) return true;
+  } catch (eInstance) {}
   return toolhubJavaClassName(value) === "android.content.res.ColorStateList";
 }
 
@@ -177,21 +182,43 @@ function toolhubSafeColorStateList(colorValue) {
   if (toolhubIsColorStateList(colorValue)) return colorValue;
   var color = toolhubColorInt(colorValue, 0);
   return new android.content.res.ColorStateList(
-    toolhubJint2Array([
-      [android.R.attr.state_pressed],
-      [android.R.attr.state_focused],
-      [android.R.attr.state_selected],
-      []
-    ]),
-    toolhubJintArray([color, color, color, color])
+    toolhubJint2Array([[]]),
+    toolhubJintArray([color])
   );
 }
 
 function toolhubSafeColorStateListFromStates(stateRows, colorValues) {
   if (toolhubIsColorStateList(stateRows)) return stateRows;
+  var states = stateRows || [];
+  var colors = colorValues || [];
+  var safeStates = [];
+  var safeColors = [];
+  var fallbackColor = colors.length > 0
+    ? toolhubColorInt(colors[colors.length - 1], 0)
+    : 0;
+  var i;
+
+  if (!states.length || states.length !== colors.length) {
+    return toolhubSafeColorStateList(fallbackColor);
+  }
+
+  for (i = 0; i < states.length; i++) {
+    var row = states[i];
+    if (row === null || typeof row === "undefined" || typeof row.length === "undefined") {
+      return toolhubSafeColorStateList(fallbackColor);
+    }
+    safeStates.push(row);
+    safeColors.push(toolhubColorInt(colors[i], fallbackColor));
+  }
+
+  if (Number(safeStates[safeStates.length - 1].length || 0) !== 0) {
+    safeStates.push([]);
+    safeColors.push(safeColors[safeColors.length - 1]);
+  }
+
   return new android.content.res.ColorStateList(
-    toolhubJint2Array(stateRows || []),
-    toolhubJintArray(colorValues || [])
+    toolhubJint2Array(safeStates),
+    toolhubJintArray(safeColors)
   );
 }
 
@@ -419,8 +446,8 @@ FloatBallAppWM.prototype.ui = {
         return d;
     },
 
-    // 创建按压反馈背景。名称保留兼容，实际使用 StateListDrawable，避免 framework RippleDrawable。
-    createRippleDrawable: function(normalColor, pressedColor, radiusPx) {
+    // 创建稳定按压状态背景，不进入 framework RippleDrawable 绘制链。
+    createPressedStateDrawable: function(normalColor, pressedColor, radiusPx) {
         var sd = new android.graphics.drawable.StateListDrawable();
         var p = this.createRoundDrawable(pressedColor, radiusPx);
         var n = this.createRoundDrawable(normalColor, radiusPx);
@@ -429,14 +456,23 @@ FloatBallAppWM.prototype.ui = {
         return sd;
     },
 
-    // 创建透明背景按压反馈。默认态也使用安全 GradientDrawable。
+    // 创建透明默认态的稳定按压背景。
+    createTransparentPressedStateDrawable: function(pressedColor, radiusPx) {
+        return this.createPressedStateDrawable(
+            android.graphics.Color.TRANSPARENT,
+            pressedColor,
+            radiusPx
+        );
+    },
+
+    // 兼容旧调用名称；实际为按压换色反馈，不创建 framework RippleDrawable。
+    createRippleDrawable: function(normalColor, pressedColor, radiusPx) {
+        return this.createPressedStateDrawable(normalColor, pressedColor, radiusPx);
+    },
+
+    // 兼容旧调用名称。
     createTransparentRippleDrawable: function(pressedColor, radiusPx) {
-        var sd = new android.graphics.drawable.StateListDrawable();
-        var p = this.createRoundDrawable(pressedColor, radiusPx);
-        var n = this.createRoundDrawable(android.graphics.Color.TRANSPARENT, radiusPx);
-        sd.addState(toolhubJintArray([android.R.attr.state_pressed]), p);
-        sd.addState(toolhubJintArray([]), n);
-        return sd;
+        return this.createTransparentPressedStateDrawable(pressedColor, radiusPx);
     },
 
     // 辅助：把符号按钮转换成可读语义，供 TalkBack 和自动化识别。

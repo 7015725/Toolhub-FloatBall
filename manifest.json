@@ -25,9 +25,9 @@
       "version": "2.0.0"
     },
     "th_04_theme.js": {
-      "sha256": "d1101f96d3f6c5a9160f9373db6b5b895335150d0ac391d78c673c006f97211d",
-      "size": 49461,
-      "version": "1.0.4"
+      "sha256": "0e4d10d5f5ee75b1eb2953b5a2011d64297d8c824f890c6ddd578bae8ce8deda",
+      "size": 50496,
+      "version": "1.0.5"
     },
     "th_05_persistence.js": {
       "sha256": "632361cfa4123574dfa8a21ed5c276b188c1b8bc7d1a4360825cae458ce60da6",
@@ -65,9 +65,9 @@
       "version": "1.2.4"
     },
     "th_13_panel_ui.js": {
-      "sha256": "25490ec703b71311f14cb0ebd973f38c14c3a187b38f8283a746c7eef3ff2c05",
-      "size": 25880,
-      "version": "1.0.7"
+      "sha256": "3ceb5780dbf0ec707634e2b47230c091e2176fb4a5d80abc3e5f205ef3898eee",
+      "size": 26284,
+      "version": "1.0.8"
     },
     "th_14_button_editor.js": {
       "sha256": "be0512af6a49a378b8cd60a16f1eedb8e2041d1df217551d3d9b97d2ee56c1eb",
@@ -153,5 +153,5 @@
     "title": "消除设置页间接水波纹风险"
   },
   "schema": 3,
-  "version": 20260714235306
+  "version": 20260715000149
 }
