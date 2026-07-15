@@ -1,4 +1,4 @@
-// @version 1.1.0
+// @version 1.1.1
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -551,13 +551,11 @@ FloatBallAppWM.prototype.buildButtonAppPickerInline = function(opts) {
   var opt = opts || {};
   var targetBtn = opt.targetBtn || {};
   var appWrap = opt.appWrap;
-  var inputPkg = opt.inputPkg;
-  var inputUserId = opt.inputUserId;
   var inputTitle = opt.inputTitle;
   var C = opt.C || (self.ui && self.ui.colors) || {};
   var textColor = opt.textColor;
   var subTextColor = opt.subTextColor;
-  if (!appWrap || !inputPkg || !inputUserId) return null;
+  if (!appWrap) return null;
 
   function str(v) { try { return String(v == null ? "" : v); } catch(e) { return ""; } }
   function lower(v) { try { return str(v).toLowerCase(); } catch(e) { return ""; } }
@@ -570,6 +568,14 @@ FloatBallAppWM.prototype.buildButtonAppPickerInline = function(opts) {
   }
 
   var primaryUserId = currentUserId();
+  var initialUserId = primaryUserId;
+  try {
+    var initialUserRaw = targetBtn.launchUserId != null ? targetBtn.launchUserId : targetBtn.userId;
+    if (initialUserRaw != null && String(initialUserRaw).length > 0) {
+      var parsedInitialUserId = parseInt(String(initialUserRaw), 10);
+      if (!isNaN(parsedInitialUserId) && parsedInitialUserId >= 0) initialUserId = parsedInitialUserId;
+    }
+  } catch(eInitialUser) { initialUserId = primaryUserId; }
   var state = {
     expanded: false,
     loading: false,
@@ -578,7 +584,10 @@ FloatBallAppWM.prototype.buildButtonAppPickerInline = function(opts) {
     showUserApps: true,
     showSystemApps: true,
     showOtherUsers: true,
-    generation: 0
+    generation: 0,
+    selectedPkg: str(targetBtn.pkg),
+    selectedUserId: initialUserId,
+    selectionError: ""
   };
 
   var header = new android.widget.LinearLayout(context);
@@ -586,8 +595,8 @@ FloatBallAppWM.prototype.buildButtonAppPickerInline = function(opts) {
   header.setGravity(android.view.Gravity.CENTER_VERTICAL);
   header.setPadding(self.dp(10), self.dp(10), self.dp(10), self.dp(10));
 
-  var configuredPkg = str(targetBtn.pkg);
-  var configuredUser = (targetBtn.launchUserId != null) ? str(targetBtn.launchUserId) : "0";
+  var configuredPkg = str(state.selectedPkg);
+  var configuredUser = str(state.selectedUserId);
   var headerText = new android.widget.TextView(context);
   headerText.setText(configuredPkg ? ("已配置：" + configuredPkg + " · 用户 " + configuredUser + "（点击展开）") : "选择已安装应用（点击展开）");
   toolhubSafeSetTextColor(headerText, textColor);
@@ -886,7 +895,9 @@ FloatBallAppWM.prototype.buildButtonAppPickerInline = function(opts) {
     data = out;
     try { adapter.notifyDataSetChanged(); } catch(eNotify) {}
     try {
-      hint.setText("共扫描 " + str(source.length) + " 个，当前显示 " + str(out.length) + " 个");
+      if (!state.selectionError) {
+        hint.setText("共扫描 " + str(source.length) + " 个，当前显示 " + str(out.length) + " 个");
+      }
     } catch(eHint) {}
   }
 
@@ -925,6 +936,17 @@ FloatBallAppWM.prototype.buildButtonAppPickerInline = function(opts) {
   createFilterRow("列出系统应用", true, function(value) { state.showSystemApps = value; });
   createFilterRow("列出分身/其他用户应用", true, function(value) { state.showOtherUsers = value; });
 
+  function setSelectionError(message) {
+    var msg = str(message).replace(/^\s+|\s+$/g, "");
+    state.selectionError = msg;
+    try {
+      toolhubSafeSetTextColor(hint, msg ? (C.error || C.danger || subTextColor) : subTextColor);
+      if (msg) hint.setText(msg);
+      else if (state.loaded) renderNow();
+      else hint.setText("");
+    } catch(eSelectionError) {}
+  }
+
   function applyLoaded(items, generation) {
     if (Number(generation) !== Number(state.generation)) return;
     state.loading = false;
@@ -954,8 +976,9 @@ FloatBallAppWM.prototype.buildButtonAppPickerInline = function(opts) {
   list.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener({ onItemClick: function(parent, view, position, id) {
     var item = data[position];
     if (!item) return;
-    try { inputPkg.input.setText(str(item.pkg)); inputPkg.setError(null); } catch(ePkg) {}
-    try { inputUserId.input.setText(str(item.userId)); } catch(eUser) {}
+    state.selectedPkg = str(item.pkg);
+    state.selectedUserId = Number(item.userId);
+    setSelectionError("");
     try {
       var currentTitle = inputTitle && inputTitle.getValue ? str(inputTitle.getValue()).replace(/^\s+|\s+$/g, "") : "";
       if (!currentTitle && inputTitle && inputTitle.input) inputTitle.input.setText(str(item.label || item.pkg));
@@ -994,7 +1017,20 @@ FloatBallAppWM.prototype.buildButtonAppPickerInline = function(opts) {
 
   appWrap.addView(header);
   appWrap.addView(body);
-  return { wrap: appWrap, reload: function() { load(true); } };
+  return {
+    wrap: appWrap,
+    reload: function() { load(true); },
+    getPkg: function() {
+      return str(state.selectedPkg).replace(/^\s+|\s+$/g, "");
+    },
+    getUserId: function() {
+      var userId = parseInt(str(state.selectedUserId), 10);
+      return (!isNaN(userId) && userId >= 0) ? userId : primaryUserId;
+    },
+    setSelectionError: function(message) {
+      setSelectionError(message);
+    }
+  };
 };
 
 
@@ -1771,15 +1807,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     // --- App ---
     var appWrap = new android.widget.LinearLayout(context);
     appWrap.setOrientation(android.widget.LinearLayout.VERTICAL);
-    var inputPkg = self.ui.createInputGroup(self, "应用包名 (Package)", targetBtn.pkg, false, "可手动填写，也可从下方应用列表选择");
-    appWrap.addView(inputPkg.view);
-    var inputAppLaunchUser = self.ui.createInputGroup(self, "启动用户ID (主=0 / 分身=10/999 等)", (targetBtn.launchUserId != null ? String(targetBtn.launchUserId) : ""), false, "选择应用后自动回填；留空默认 0");
-    appWrap.addView(inputAppLaunchUser.view);
-    self.buildButtonAppPickerInline({
+    var appPickerInline = self.buildButtonAppPickerInline({
         targetBtn: targetBtn,
         appWrap: appWrap,
-        inputPkg: inputPkg,
-        inputUserId: inputAppLaunchUser,
         inputTitle: inputTitle,
         C: C,
         textColor: textColor,
@@ -1913,17 +1943,19 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                 if (!c) { markInvalid(inputShell, "请输入命令"); }
                 else { inputShell.setError(null); newBtn.cmd = c; newBtn.cmd_b64 = encodeBase64Utf8(c); newBtn.root = !!shellRootSwitch.isChecked(); }
             } else if (newBtn.type === "app") {
-                var p = inputPkg.getValue();
-                if (!p) { markInvalid(inputPkg, "请输入包名"); }
-                else { inputPkg.setError(null); newBtn.pkg = p; }// # 保存：启动用户ID（可选）
-try {
-    var au = inputAppLaunchUser.getValue();
-    au = (au != null) ? String(au).trim() : "";
-    if (au && au.length > 0) {
-        var aui = parseInt(au, 10);
-        if (!isNaN(aui)) newBtn.launchUserId = aui;
-    }
- } catch(eAU) { safeLog(null, 'e', "catch " + String(eAU)); }
+                var p = appPickerInline && appPickerInline.getPkg ? String(appPickerInline.getPkg() || "") : "";
+                p = p.replace(/^\s+|\s+$/g, "");
+                if (!p) {
+                    try { if (appPickerInline && appPickerInline.setSelectionError) appPickerInline.setSelectionError("请先选择应用"); } catch(eAppError) {}
+                    markInvalid(null, "请先选择应用");
+                } else {
+                    try { if (appPickerInline && appPickerInline.setSelectionError) appPickerInline.setSelectionError(""); } catch(eAppClear) {}
+                    newBtn.pkg = p;
+                    try {
+                        var appUserId = appPickerInline && appPickerInline.getUserId ? Number(appPickerInline.getUserId()) : 0;
+                        if (!isNaN(appUserId) && appUserId >= 0) newBtn.launchUserId = appUserId;
+                    } catch(eAppUser) { newBtn.launchUserId = 0; }
+                }
 
             } else if (newBtn.type === "broadcast") {
                 var a = inputAction.getValue();
