@@ -55,10 +55,20 @@ for token in ("createRippleDrawable", "createTransparentRippleDrawable", "create
 for token in ("CONST_BALL_PRESS_ALPHA_LIGHT", "CONST_BALL_PRESS_ALPHA_DARK"):
     if token not in BASE:
         errors.append("pressed-state constant missing: %s" % token)
+for token in (
+    "BALL_PRESS_ALPHA_LIGHT: { type: \"float\", min: 0, max: 1, default: 0.22 }",
+    "BALL_PRESS_ALPHA_DARK: { type: \"float\", min: 0, max: 1, default: 0.28 }",
+    "BALL_PRESS_ALPHA_MIGRATION_VERSION: { type: \"int\", min: 0, max: 9999, default: 1 }",
+    "BALL_RIPPLE_ALPHA_LIGHT: true",
+    "BALL_RIPPLE_ALPHA_DARK: true",
+    "ballPressAlphaMigrationDirty",
+):
+    if token not in BASE:
+        errors.append("pressed-state config migration contract missing: %s" % token)
 if "var rippleColor" in THEME:
     errors.append("legacy ripple runtime variable remains in theme")
-if "var alpha01 = dark ? this.config.BALL_RIPPLE_ALPHA_DARK" in THEME:
-    errors.append("ball pressed alpha still reads legacy keys directly")
+if "BALL_RIPPLE_ALPHA_" in THEME:
+    errors.append("ball pressed resolver still references legacy Ripple config keys")
 if "var alpha01 = this.getBallPressedOverlayAlpha(dark);" not in THEME:
     errors.append("ball background does not use pressed alpha resolver")
 if "createTransparentPressedStateDrawable(pressedColor" not in THEME:
@@ -77,10 +87,10 @@ else:
         if token in block:
             errors.append("unsafe overloaded color channel call remains in _th_argb: %s" % token)
 
-if module_version(BASE, "th_01_base.js") < (1, 1, 11):
-    errors.append("th_01_base.js version below pressed feedback baseline 1.1.11")
-if module_version(THEME, "th_04_theme.js") < (1, 0, 7):
-    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.7")
+if module_version(BASE, "th_01_base.js") < (1, 1, 12):
+    errors.append("th_01_base.js version below pressed feedback baseline 1.1.12")
+if module_version(THEME, "th_04_theme.js") < (1, 0, 8):
+    errors.append("th_04_theme.js version below ColorOS safety baseline 1.0.8")
 if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 8):
     errors.append("th_15_main_panel.js version below ColorOS safety baseline 1.5.8")
 

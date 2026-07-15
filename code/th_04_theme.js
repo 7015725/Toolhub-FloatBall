@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -1083,21 +1083,12 @@ FloatBallAppWM.prototype.getMonetAccentForBall = function() {
 };
 
 FloatBallAppWM.prototype.getBallPressedOverlayAlpha = function(isDark) {
-  var alpha01 = NaN;
+  var fallback = isDark ? CONST_BALL_PRESS_ALPHA_DARK : CONST_BALL_PRESS_ALPHA_LIGHT;
+  var alpha01 = fallback;
   try {
     alpha01 = Number(isDark ? this.config.BALL_PRESS_ALPHA_DARK : this.config.BALL_PRESS_ALPHA_LIGHT);
-  } catch (eCurrent) { alpha01 = NaN; }
-
-  // 兼容旧配置键；新代码不再使用 Ripple 语义命名。
-  if (!(alpha01 >= 0 && alpha01 <= 1)) {
-    try {
-      alpha01 = Number(isDark ? this.config.BALL_RIPPLE_ALPHA_DARK : this.config.BALL_RIPPLE_ALPHA_LIGHT);
-    } catch (eLegacy) { alpha01 = NaN; }
-  }
-
-  if (!(alpha01 >= 0 && alpha01 <= 1)) {
-    alpha01 = isDark ? CONST_BALL_PRESS_ALPHA_DARK : CONST_BALL_PRESS_ALPHA_LIGHT;
-  }
+  } catch (eCurrent) { alpha01 = fallback; }
+  if (!(alpha01 >= 0 && alpha01 <= 1)) alpha01 = fallback;
   return Math.max(0, Math.min(1, alpha01));
 };
 
