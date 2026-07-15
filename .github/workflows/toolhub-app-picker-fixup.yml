@@ -26,18 +26,10 @@ jobs:
           from pathlib import Path
           path = Path('code/th_14_button_editor.js')
           text = path.read_text(encoding='utf-8')
-          old = '''      try {
-            self.runOnUiThreadSafe(function() { applyLoaded(items, generation); });
-          } catch(eUi) {
-            try { list.post(new java.lang.Runnable({ run: function() { applyLoaded(items, generation); } })); } catch(ePost) {}
-          }'''
-          new = '''      try {
-            list.post(new java.lang.Runnable({ run: function() { applyLoaded(items, generation); } }));
-          } catch(ePost) {
-            safeLog(self.L, "w", "app picker UI callback post fail: " + str(ePost));
-          }'''
+          old = 'self.runOnUiThreadSafe(function() { applyLoaded(items, generation); });'
+          new = 'list.post(new java.lang.Runnable({ run: function() { applyLoaded(items, generation); } }));'
           if text.count(old) != 1:
-              raise SystemExit('app picker UI callback block mismatch: %d' % text.count(old))
+              raise SystemExit('app picker UI callback call mismatch: %d' % text.count(old))
           path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
           python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
