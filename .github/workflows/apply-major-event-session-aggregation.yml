@@ -1,5 +1,6 @@
 name: apply-major-event-session-aggregation-retry
 
+# retry trigger after draft PR creation
 on:
   pull_request:
     branches:
