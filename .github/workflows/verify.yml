@@ -148,6 +148,7 @@ jobs:
           python3 scripts/verify_shell_log_redaction.py
           python3 scripts/verify_shortcut_security.py
           python3 scripts/verify_content_security.py
+          python3 scripts/verify_major_event_logging.py
           python3 scripts/verify_module_versions.py
           python3 scripts/verify_changed_module_versions.py
           python3 scripts/verify_documentation_consistency.py
