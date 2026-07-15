@@ -1,4 +1,4 @@
-// @version 1.2.5
+// @version 1.2.6
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -889,6 +889,12 @@ FloatBallAppWM.prototype.ensurePointerToolState = function() {
       inspectLastRequestTs: 0,
       inspectLastCostMs: 0,
       inspectLastNodes: 0,
+      inspectLastPrepareMs: 0,
+      inspectLastAutomationMs: 0,
+      inspectLastActiveRootMs: 0,
+      inspectLastWindowsQueryMs: 0,
+      inspectLastWindowsScanMs: 0,
+      inspectLastWindowsScanned: 0,
       inspectMaxDragMs: 90,
       inspectMaxRetryMs: 160,
       inspectMaxFinalMs: 180,
@@ -2489,7 +2495,9 @@ FloatBallAppWM.prototype.ensurePointerUiAutomationReady = function(a, reason) {
     }
   } catch (eInfo) {}
 
-  if (String(reason || "") === "final") {
+  // final scan 的缓存清理只允许在 overlay 隐藏后的 prepare 阶段执行一次。
+  // 扫描阶段复用同一个 UiAutomation，避免重复 clearCache/getServiceInfo Binder 调用。
+  if (String(reason || "") === "final_prepare") {
     try { if (a.clearCache) a.clearCache(); } catch (eClear) {}
   }
 
@@ -2522,8 +2530,8 @@ FloatBallAppWM.prototype.getPointerWindowRoot = function(win) {
   return root;
 };
 
-FloatBallAppWM.prototype.getPointerActiveRoot = function(reason) {
-  var a = this.getPointerUiAutomation(reason);
+FloatBallAppWM.prototype.getPointerActiveRoot = function(reason, automation) {
+  var a = automation || this.getPointerUiAutomation(reason);
   if (!a) return null;
   var root = null;
   var flags = this.getPointerPrefetchFlags();
@@ -2649,7 +2657,7 @@ FloatBallAppWM.prototype.findPointerTextNodeAtBudget = function(root, x, y, star
   return best;
 };
 
-FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reason, seq, session) {
+FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reason, seq, session, preparedAutomation) {
   var start = th17Now();
   var reasonText = String(reason || "");
   var isFinal = force === true;
@@ -2673,14 +2681,26 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
   var count = { n: 0 };
   var result = null;
   var windowsCount = 0;
-  var a = this.getPointerUiAutomation(isFinal ? "final" : "scan");
+  var windowsScanned = 0;
+  var activeWindowId = -1;
+  var automationMs = 0;
+  var activeRootMs = 0;
+  var windowsQueryMs = 0;
+  var windowsScanMs = 0;
+  var fallbackSkippedDueBudget = false;
 
-  // 拖动期间优先扫描活动应用根节点。指针和选框自身也是 overlay window，
-  // 先遍历 getWindows() 容易在 60~90ms 预算内耗尽，尚未到达目标应用。
+  var automationStart = th17Now();
+  var a = preparedAutomation || this.getPointerUiAutomation(isFinal ? "final_scan" : "scan");
+  automationMs = th17Now() - automationStart;
+
+  // 优先扫描活动应用根节点，并复用同一个 UiAutomation。
+  // final scan 已在 prepare 阶段完成 clearCache，不再重复获取和清理。
   var activeRoot = null;
+  var activeRootStart = th17Now();
   try {
-    activeRoot = this.getPointerActiveRoot(isFinal ? "final" : "scan");
+    activeRoot = this.getPointerActiveRoot(isFinal ? "final_scan" : "scan", a);
     if (activeRoot) {
+      try { if (activeRoot.getWindowId) activeWindowId = Number(activeRoot.getWindowId()); } catch (eWindowId) { activeWindowId = -1; }
       result = this.findPointerTextNodeAtBudget(
         activeRoot,
         x,
@@ -2694,47 +2714,78 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
   } catch (eActive) {
     result = null;
   } finally {
+    activeRootMs = th17Now() - activeRootStart;
     try { if (activeRoot) activeRoot.recycle(); } catch (eRecycleActive) {}
   }
 
-  // 活动根节点未命中时，再遍历其他交互窗口作为补充。
+  // 活动根节点未命中时，只在仍有可用时间时补扫其他窗口。
+  // final scan 最多补扫两个非活动窗口，避免 getRoot() Binder 调用把 220ms 预算拖穿。
   if (!result || !result.text || !result.rect) {
-    try {
-      if (a && a.getWindows) {
-        var wins = a.getWindows();
-        if (wins) {
-          try { windowsCount = wins.size(); } catch (eSize) { windowsCount = 0; }
-          for (var wi = 0; wi < windowsCount; wi++) {
-            if (th17Now() - start > limitMs || count.n >= maxNodes) break;
-            var win = null;
-            var rootFromWin = null;
-            try {
-              win = wins.get(wi);
-              if (win) rootFromWin = this.getPointerWindowRoot(win);
-              if (rootFromWin) {
-                result = this.findPointerTextNodeAtBudget(
-                  rootFromWin,
-                  x,
-                  y,
-                  start,
-                  limitMs,
-                  maxNodes,
-                  count
-                );
+    var minFallbackBudgetMs = isFinal ? 35 : 20;
+    var maxExtraWindows = isFinal ? 2 : 1;
+    var remainingBeforeWindows = limitMs - (th17Now() - start);
+    if (remainingBeforeWindows <= minFallbackBudgetMs) {
+      fallbackSkippedDueBudget = true;
+    } else {
+      try {
+        if (a && a.getWindows) {
+          var windowsQueryStart = th17Now();
+          var wins = a.getWindows();
+          windowsQueryMs = th17Now() - windowsQueryStart;
+          if (wins) {
+            try { windowsCount = wins.size(); } catch (eSize) { windowsCount = 0; }
+            var windowsScanStart = th17Now();
+            for (var wi = 0; wi < windowsCount; wi++) {
+              var elapsedBeforeWindow = th17Now() - start;
+              if (elapsedBeforeWindow >= limitMs || count.n >= maxNodes) {
+                fallbackSkippedDueBudget = true;
+                break;
               }
-            } catch (eWin) {
-              result = null;
-            } finally {
-              try { if (rootFromWin) rootFromWin.recycle(); } catch (eRootRecycle) {}
+              if (windowsScanned >= maxExtraWindows) break;
+
+              var win = null;
+              var rootFromWin = null;
+              try {
+                win = wins.get(wi);
+                var winId = -1;
+                try { if (win && win.getId) winId = Number(win.getId()); } catch (eWinId) { winId = -1; }
+                if (activeWindowId >= 0 && winId === activeWindowId) continue;
+
+                var remainingForRoot = limitMs - (th17Now() - start);
+                if (remainingForRoot <= 15) {
+                  fallbackSkippedDueBudget = true;
+                  break;
+                }
+
+                windowsScanned++;
+                if (win) rootFromWin = this.getPointerWindowRoot(win);
+                if (rootFromWin) {
+                  result = this.findPointerTextNodeAtBudget(
+                    rootFromWin,
+                    x,
+                    y,
+                    start,
+                    limitMs,
+                    maxNodes,
+                    count
+                  );
+                }
+              } catch (eWin) {
+                result = null;
+              } finally {
+                try { if (rootFromWin) rootFromWin.recycle(); } catch (eRootRecycle) {}
+              }
+              if (result && result.text && result.rect) break;
             }
-            if (result && result.text && result.rect) break;
+            windowsScanMs = th17Now() - windowsScanStart;
           }
         }
-      }
-    } catch (eWindows) {}
+      } catch (eWindows) {}
+    }
   }
 
   var cost = th17Now() - start;
+  var timedOut = cost >= limitMs || count.n >= maxNodes || fallbackSkippedDueBudget === true;
   return {
     seq: seq,
     session: session,
@@ -2744,9 +2795,15 @@ FloatBallAppWM.prototype.findPointerTextAtSnapshot = function(x, y, force, reaso
     reason: reasonText,
     result: result,
     costMs: cost,
+    budgetMs: limitMs,
     nodes: count.n,
     windows: windowsCount,
-    timedOut: cost >= limitMs || count.n >= maxNodes
+    windowsScanned: windowsScanned,
+    automationMs: automationMs,
+    activeRootMs: activeRootMs,
+    windowsQueryMs: windowsQueryMs,
+    windowsScanMs: windowsScanMs,
+    timedOut: timedOut
   };
 };
 
@@ -2863,6 +2920,12 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
   st.inspectLastCostMs = Number(pack.costMs || 0);
   st.inspectLastNodes = Number(pack.nodes || 0);
   st.inspectLastWindows = Number(pack.windows || 0);
+  st.inspectLastPrepareMs = Number(pack.prepareMs || 0);
+  st.inspectLastAutomationMs = Number(pack.automationMs || 0);
+  st.inspectLastActiveRootMs = Number(pack.activeRootMs || 0);
+  st.inspectLastWindowsQueryMs = Number(pack.windowsQueryMs || 0);
+  st.inspectLastWindowsScanMs = Number(pack.windowsScanMs || 0);
+  st.inspectLastWindowsScanned = Number(pack.windowsScanned || 0);
   st.inspectLastTimedOut = pack.timedOut === true;
   st.inspectLastReason = String(pack.reason || "");
   st.lastQueryX = pack.x;
@@ -3014,7 +3077,7 @@ FloatBallAppWM.prototype.applyPointerInspectResult = function(pack) {
   }
   try {
     if (Number(pack.costMs || 0) > 80 || pack.timedOut === true) {
-      safeLog(this.L, 'i', "pointer inspect cost=" + String(pack.costMs) + " nodes=" + String(pack.nodes) + " windows=" + String(pack.windows) + " reason=" + String(pack.reason) + " timeout=" + String(pack.timedOut === true));
+      safeLog(this.L, 'i', "pointer inspect cost=" + String(pack.costMs) + " budget=" + String(pack.budgetMs || 0) + " nodes=" + String(pack.nodes) + " windows=" + String(pack.windows) + " scanned=" + String(pack.windowsScanned || 0) + " automation=" + String(pack.automationMs || 0) + " active=" + String(pack.activeRootMs || 0) + " windowsQuery=" + String(pack.windowsQueryMs || 0) + " windowsScan=" + String(pack.windowsScanMs || 0) + " reason=" + String(pack.reason) + " timeout=" + String(pack.timedOut === true));
     }
   } catch (eLog) {}
   if (pack.finishAfterResult === true && st.active && !st.closed) {
@@ -3079,8 +3142,9 @@ FloatBallAppWM.prototype.runPointerInspectWorker = function(st) {
 
 FloatBallAppWM.prototype.preparePointerAccessibilityFinalScan = function(reason) {
   var st = this.ensurePointerToolState();
+  var automation = null;
 
-  // 关键：无障碍 final scan 前隐藏自身 overlay。
+  // 无障碍 final scan 前隐藏自身 overlay。
   // 否则部分 ROM / ShortX UiAutomation 在 overlay 可见时会返回 windows=0 / nodes=0。
   try { this.hidePointerAreaFrame(); } catch (eFrame) {}
 
@@ -3096,16 +3160,17 @@ FloatBallAppWM.prototype.preparePointerAccessibilityFinalScan = function(reason)
   try { java.lang.Thread.sleep(90); } catch (eSleep) {}
 
   try {
-    var a = this.getPointerUiAutomation("final");
-    if (a) {
-      try { if (a.clearCache) a.clearCache(); } catch (eClear) {}
-      try { if (a.waitForIdle) a.waitForIdle(50, 350); } catch (eIdle) {}
+    // final_prepare 只清理一次缓存，随后把同一 automation 直接交给扫描阶段复用。
+    automation = this.getPointerUiAutomation("final_prepare");
+    if (automation) {
+      try { if (automation.waitForIdle) automation.waitForIdle(50, 350); } catch (eIdle) {}
     }
   } catch (eUi) {
+    automation = null;
     try { safeLog(this.L, 'w', "pointer accessibility final scan ui prepare fail: " + String(eUi)); } catch (eLogUi) {}
   }
 
-  return true;
+  return automation;
 };
 
 FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, finishAfterResult, allowStationary) {
@@ -3117,7 +3182,9 @@ FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, f
   // release_final / area_small_text_final 必须走当前线程同步扫描。
   // 实测后台 inspect worker 可能拿不到 UiAutomation root，表现为 cost 很低但 nodes=0。
   if (force === true && finishAfterResult === true) {
-    this.preparePointerAccessibilityFinalScan(reasonText);
+    var prepareStartedAt = th17Now();
+    var finalAutomation = this.preparePointerAccessibilityFinalScan(reasonText);
+    var finalPrepareMs = th17Now() - prepareStartedAt;
     st.inspectLatestX = hp.x;
     st.inspectLatestY = hp.y;
     st.inspectLatestSeq = ++st.inspectSeq;
@@ -3126,10 +3193,11 @@ FloatBallAppWM.prototype.schedulePointerInspectAsync = function(force, reason, f
 
     var pack = null;
     try {
-      pack = this.findPointerTextAtSnapshot(hp.x, hp.y, true, reasonText + "_sync", st.inspectLatestSeq, st.inspectSession);
+      pack = this.findPointerTextAtSnapshot(hp.x, hp.y, true, reasonText + "_sync", st.inspectLatestSeq, st.inspectSession, finalAutomation);
+      pack.prepareMs = finalPrepareMs;
       pack.finishAfterResult = true;
       try {
-        safeLog(this.L, 'i', "pointer release sync inspect cost=" + String(pack.costMs) + " nodes=" + String(pack.nodes) + " windows=" + String(pack.windows) + " reason=" + String(pack.reason) + " timeout=" + String(pack.timedOut === true));
+        safeLog(this.L, 'i', "pointer release sync inspect prepare=" + String(pack.prepareMs || 0) + " cost=" + String(pack.costMs) + " budget=" + String(pack.budgetMs || 0) + " nodes=" + String(pack.nodes) + " windows=" + String(pack.windows) + " scanned=" + String(pack.windowsScanned || 0) + " automation=" + String(pack.automationMs || 0) + " active=" + String(pack.activeRootMs || 0) + " windowsQuery=" + String(pack.windowsQueryMs || 0) + " windowsScan=" + String(pack.windowsScanMs || 0) + " reason=" + String(pack.reason) + " timeout=" + String(pack.timedOut === true));
       } catch (eLogSync) {}
       this.applyPointerInspectResult(pack);
       return true;
@@ -3324,8 +3392,14 @@ FloatBallAppWM.prototype.extractCurrentPointerText = function(skipInspect, relea
     successCode = "TEXT_PICK_FINAL_SCAN";
     source = "accessibility_final_scan";
     extra.costMs = Number(st.inspectLastCostMs || 0);
+    extra.prepareMs = Number(st.inspectLastPrepareMs || 0);
     extra.nodes = Number(st.inspectLastNodes || 0);
     extra.windows = Number(st.inspectLastWindows || 0);
+    extra.windowsScanned = Number(st.inspectLastWindowsScanned || 0);
+    extra.automationMs = Number(st.inspectLastAutomationMs || 0);
+    extra.activeRootMs = Number(st.inspectLastActiveRootMs || 0);
+    extra.windowsQueryMs = Number(st.inspectLastWindowsQueryMs || 0);
+    extra.windowsScanMs = Number(st.inspectLastWindowsScanMs || 0);
   }
 
   var textValue = String(st.currentText);
@@ -3363,9 +3437,15 @@ FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
   if (st.inspectLastTimedOut === true) {
     try {
       safeLog(this.L, 'w',
-        "pointer release final scan timeout cost=" + String(st.inspectLastCostMs || 0) +
+        "pointer release final scan timeout prepare=" + String(st.inspectLastPrepareMs || 0) +
+        " cost=" + String(st.inspectLastCostMs || 0) +
         " nodes=" + String(st.inspectLastNodes || 0) +
         " windows=" + String(st.inspectLastWindows || 0) +
+        " scanned=" + String(st.inspectLastWindowsScanned || 0) +
+        " automation=" + String(st.inspectLastAutomationMs || 0) +
+        " active=" + String(st.inspectLastActiveRootMs || 0) +
+        " windowsQuery=" + String(st.inspectLastWindowsQueryMs || 0) +
+        " windowsScan=" + String(st.inspectLastWindowsScanMs || 0) +
         " reason=" + String(st.inspectLastReason || st.inspectLatestReason || "")
       );
     } catch (eTimeoutLog) {}
@@ -3377,9 +3457,15 @@ FloatBallAppWM.prototype.finishPointerTextPickAfterRelease = function() {
       message: "取字扫描超时，未确认是否为空白",
       value: "",
       data: {
+        prepareMs: Number(st.inspectLastPrepareMs || 0),
         costMs: Number(st.inspectLastCostMs || 0),
         nodes: Number(st.inspectLastNodes || 0),
         windows: Number(st.inspectLastWindows || 0),
+        windowsScanned: Number(st.inspectLastWindowsScanned || 0),
+        automationMs: Number(st.inspectLastAutomationMs || 0),
+        activeRootMs: Number(st.inspectLastActiveRootMs || 0),
+        windowsQueryMs: Number(st.inspectLastWindowsQueryMs || 0),
+        windowsScanMs: Number(st.inspectLastWindowsScanMs || 0),
         reason: String(st.inspectLastReason || st.inspectLatestReason || ""),
         hint: "扫描预算耗尽，不等同于无文本"
       }
