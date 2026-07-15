@@ -1,0 +1,89 @@
+name: Remove ripple legacy names
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  migrate:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'fix/remove-ripple-legacy-names-20260715'
+    runs-on: ubuntu-latest
+    environment: signing
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/remove-ripple-legacy-names-20260715
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Apply naming migration
+        run: python3 scripts/apply_remove_ripple_legacy_names.py
+
+      - name: Refresh dead code audit
+        run: python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+
+      - name: Remove temporary executor and commit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/agent_remove_ripple_legacy_names.yml
+          git rm scripts/apply_remove_ripple_legacy_names.py
+          git add code/th_04_theme.js code/th_14_panels.js code/th_15_main_panel.js
+          git add scripts/verify_*.py DEAD_CODE_AUDIT.md
+          git commit -m "收口水波纹旧命名"
+
+      - name: Fetch main
+        run: git fetch --no-tags origin main
+
+      - name: Verify changed module versions
+        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify ColorOS safety
+        run: python3 scripts/verify_coloros_rhino_color_safety.py
+
+      - name: Verify Rhino color safety
+        run: python3 scripts/verify_rhino_color_api_safety.py
+
+      - name: Verify main panel contracts
+        shell: bash
+        run: |
+          python3 scripts/verify_main_panel_runtime_status.py
+          python3 scripts/verify_main_panel_drag_sort.py
+          python3 scripts/verify_main_panel_more_menu.py
+          python3 scripts/verify_main_panel_paging.py
+          python3 scripts/verify_main_panel_adaptive_layout.py
+          python3 scripts/verify_main_panel_grid_sizing.py
+          python3 scripts/verify_main_panel_visual_tuning.py
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_legacy_main_panel_cleanup.py
+          python3 scripts/verify_panel_layout_settings_cleanup.py
+
+      - name: Verify audits and syntax
+        shell: bash
+        run: |
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          git diff --check origin/main...HEAD
+
+      - name: Push source commit
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:fix/remove-ripple-legacy-names-20260715"
