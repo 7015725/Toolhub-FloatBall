@@ -3,7 +3,7 @@ name: apply-pointer-final-scan-budget-fix
 on:
   pull_request:
     branches: [main]
-    types: [opened]
+    types: [opened, synchronize]
 
 permissions:
   contents: write
@@ -18,9 +18,10 @@ jobs:
           ref: fix/pointer-final-scan-budget-20260715
           fetch-depth: 0
           token: ${{ github.token }}
-      - run: python3 scripts/_apply_pointer_final_scan_budget_fix.py
+      - run: python3 scripts/_apply_pointer_final_scan_budget_fix_v2.py
       - run: |
           rm -f scripts/_apply_pointer_final_scan_budget_fix.py
+          rm -f scripts/_apply_pointer_final_scan_budget_fix_v2.py
           rm -f .github/workflows/apply-pointer-final-scan-budget-fix.yml
       - run: python3 .github/scripts/es5_scan.py
       - run: python3 scripts/verify_js_syntax.py
