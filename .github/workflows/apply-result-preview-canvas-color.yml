@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/result-preview-canvas-color-20260715
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
