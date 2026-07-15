@@ -72,5 +72,7 @@ jobs:
           path: |
             verify-output.txt
             patch-error.txt
+            scripts/verify_coloros_rhino_color_safety.py
+            code/th_14_panels.js
           if-no-files-found: warn
           retention-days: 3
