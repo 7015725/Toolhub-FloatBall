@@ -24,6 +24,19 @@ jobs:
       - name: Apply patch
         run: python3 scripts/_apply_result_preview_canvas_color.py
 
+      - name: Fix generated verifier scope
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/verify_result_preview.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'and "android.graphics.PixelFormat.TRANSLUCENT" not in create_lp,'
+          new = 'and "android.graphics.PixelFormat.TRANSLUCENT" not in preview,'
+          if old not in text:
+              raise SystemExit('missing generated verifier scope anchor')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Verify Rhino ES5
         run: python3 .github/scripts/es5_scan.py
 
@@ -73,5 +86,3 @@ jobs:
           git add -A -- code/th_21_result_preview.js scripts/verify_result_preview.py scripts/_apply_result_preview_canvas_color.py .github/workflows/apply-result-preview-canvas-color.yml
           git commit -m "修复预览 Canvas 暗色背景"
           git push origin HEAD:fix/result-preview-canvas-color-20260715
-
-# retrigger: 2026-07-15T14:42Z
