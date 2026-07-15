@@ -922,7 +922,7 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
       },
       updateDrawState: function(ds) {
         try {
-          ds.setColor(color);
+          toolhubSafeSetPaintColor(ds, color);
           ds.setUnderlineText(false);
         } catch (e) {}
       }
@@ -1105,7 +1105,7 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
                   summary.setText(buildMajorFaultClickableSummary(self, groups, fg));
                   try { summary.setMovementMethod(android.text.method.LinkMovementMethod.getInstance()); } catch (eMovement) {}
                   try { summary.setLinksClickable(true); } catch (eLinks) {}
-                  try { summary.setHighlightColor(android.graphics.Color.TRANSPARENT); } catch (eHighlight) {}
+                  try { toolhubSafeSetHighlightColor(summary, android.graphics.Color.TRANSPARENT); } catch (eHighlight) {}
                   try { summary.setContentDescription("最近故障会话，点击任一会话查看详情"); } catch (eDesc) {}
                 } else {
                   try { summary.setMovementMethod(null); } catch (eMovementEmpty) {}
