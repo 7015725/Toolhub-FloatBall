@@ -45,16 +45,51 @@ jobs:
           Path('scripts/verify_result_preview.py').chmod(0o755)
           PY
 
-      - name: Validate
+      - name: Validate and capture output
         shell: bash
         run: |
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_result_preview.py
-          python3 scripts/verify_pointer_regressions.py
-          git diff --check
+          set +e
+          log=.github/result-preview-validation.log
+          : > "$log"
+          status=0
+          run_check() {
+            name="$1"
+            shift
+            printf '\n===== %s =====\n' "$name" | tee -a "$log"
+            "$@" 2>&1 | tee -a "$log"
+            rc=${PIPESTATUS[0]}
+            printf 'exit=%s\n' "$rc" | tee -a "$log"
+            if [ "$rc" -ne 0 ]; then status="$rc"; fi
+          }
+          run_check es5_scan python3 .github/scripts/es5_scan.py
+          run_check js_syntax python3 scripts/verify_js_syntax.py
+          run_check result_preview python3 scripts/verify_result_preview.py
+          run_check pointer_regressions python3 scripts/verify_pointer_regressions.py
+          run_check diff_check git diff --check
+          printf 'VALIDATE_STATUS=%s\n' "$status" >> "$GITHUB_ENV"
+          exit 0
+
+      - name: Commit validation diagnostics
+        if: env.VALIDATE_STATUS != '0'
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/result-preview-validation.log
+          if git diff --cached --quiet; then
+            echo 'Validation diagnostics unchanged'
+            exit 0
+          fi
+          git commit -m '记录顶部预览修复验证结果'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Stop on validation failure
+        if: env.VALIDATE_STATUS != '0'
+        shell: bash
+        run: exit 1
 
       - name: Commit changes
+        if: env.VALIDATE_STATUS == '0'
         shell: bash
         run: |
           if git diff --quiet -- code/th_21_result_preview.js scripts/verify_result_preview.py; then
