@@ -40,8 +40,8 @@
       "version": "1.0.1"
     },
     "th_08_content.js": {
-      "sha256": "3b2ae72579464c13e92aeac483d7ca1e133fc52a8f0df3fab1cef6b4d699d098",
-      "size": 24622,
+      "sha256": "cfa753f9e899bafec5285cbf07f52a735d42f1d1ea5011860d3f7a5df519179e",
+      "size": 27981,
       "version": "1.0.3"
     },
     "th_09_animation.js": {
@@ -153,5 +153,5 @@
     "title": "增加重大事件日志与 WindowManager 检查点"
   },
   "schema": 3,
-  "version": 20260715033908
+  "version": 20260715034259
 }
