@@ -24,7 +24,7 @@ jobs:
           ref: fix/major-event-session-aggregation-20260715
           fetch-depth: 0
 
-      - name: Fix patch replacement escaping
+      - name: Fix patch generator
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -34,7 +34,13 @@ jobs:
           new = 'recent_pattern.subn(lambda match: recent_replacement, text, count=1)'
           if old not in text:
               raise SystemExit('subn replacement anchor missing')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          text = text.replace(old, new, 1)
+          anchor = 'verify = VERIFY.read_text(encoding="utf-8")\n'
+          patch = 'verify = verify.replace(\'    "最近异常事件",\\n\', "")\n'
+          if anchor not in text:
+              raise SystemExit('verify read anchor missing')
+          text = text.replace(anchor, anchor + patch, 1)
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Apply aggregation patch
@@ -72,12 +78,13 @@ jobs:
         run: |
           rm -f scripts/apply_major_event_session_aggregation.py
           rm -f .github/workflows/apply-major-event-session-aggregation.yml
+          rm -f major-event-verify-error.txt
 
       - name: Commit result
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add code/th_08_content.js scripts/verify_major_event_logging.py scripts/verify_content_security.py
-          git add -u scripts/apply_major_event_session_aggregation.py .github/workflows/apply-major-event-session-aggregation.yml
+          git add -u scripts/apply_major_event_session_aggregation.py .github/workflows/apply-major-event-session-aggregation.yml major-event-verify-error.txt
           git commit -m "完成故障会话聚合与重复折叠"
           git push origin HEAD:fix/major-event-session-aggregation-20260715
