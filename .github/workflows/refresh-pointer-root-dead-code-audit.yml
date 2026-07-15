@@ -1,0 +1,33 @@
+name: refresh-pointer-root-dead-code-audit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/pointer-draw-root-health-20260715'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/pointer-draw-root-health-20260715
+          fetch-depth: 0
+          token: ${{ github.token }}
+      - run: python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+      - run: |
+          rm -f .github/workflows/refresh-pointer-root-dead-code-audit.yml
+      - run: python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+      - run: python3 .github/scripts/es5_scan.py
+      - run: python3 scripts/verify_js_syntax.py
+      - run: git diff --check
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "更新指针 root 变更后的死代码审计"
+          git push origin HEAD:fix/pointer-draw-root-health-20260715
