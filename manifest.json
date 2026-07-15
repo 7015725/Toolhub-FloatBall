@@ -50,9 +50,9 @@
       "version": "1.0.8"
     },
     "th_10_shell.js": {
-      "sha256": "d4261f2fbe466b27793f1224f9a38accbd24a1b55d028498a68180866e4f86a7",
-      "size": 11985,
-      "version": "1.0.8"
+      "sha256": "36427d7146a4589cbcf0512804acd90f4210a3d512cde6e03f2cb40c42d86d2d",
+      "size": 18803,
+      "version": "1.0.9"
     },
     "th_11_action.js": {
       "sha256": "6d5e432e56da06cedbe0dabc46fe51b400539a2b8838879273f2b58d3f8eace7",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复预览 Canvas 暗色背景"
+      "修复 Shell 广播桥兼容迁移"
     ],
-    "title": "修复预览 Canvas 暗色背景"
+    "title": "修复 Shell 广播桥兼容迁移"
   },
   "schema": 3,
-  "version": 20260715145357
+  "version": 20260715155859
 }
