@@ -140,18 +140,18 @@
       "version": "1.0.3"
     },
     "th_21_result_preview.js": {
-      "sha256": "d1cfabfac214162816549f740889e1255f1ffb43596b5b303d624f863b891fa5",
-      "size": 41095,
-      "version": "1.1.1"
+      "sha256": "8e0902c95c396e1bb5f746cb069528bc5544cbfbdc4052c997b198df96c58714",
+      "size": 45835,
+      "version": "1.1.2"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "统一取字预览亮暗主题判断"
+      "修复预览 Canvas 暗色背景"
     ],
-    "title": "统一取字预览亮暗主题判断"
+    "title": "修复预览 Canvas 暗色背景"
   },
   "schema": 3,
-  "version": 20260715140318
+  "version": 20260715145357
 }

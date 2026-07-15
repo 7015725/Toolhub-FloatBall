@@ -243,6 +243,26 @@ def main() -> int:
         failures,
     )
     require(
+        "preview / deterministic Canvas color application",
+        "function colorSpec21(a, r, g, b, hex)" in preview
+        and "function packArgb21(color)" in preview
+        and "function argbHex21(value)" in preview
+        and "paint.setARGB(color.a, color.r, color.g, color.b);" in preview
+        and "paint.getColor()" in preview
+        and "result preview background color apply fail" in preview
+        and "bgApplyOk" in preview
+        and '" bgExpected="' in preview
+        and '" bgActual="' in preview
+        and '" textActual="' in preview
+        and '" canvasHardware="' in preview
+        and '" forceDarkDisabled="' in preview
+        and "PreviewView.setForceDarkAllowed(false);" in preview
+        and "android.graphics.PixelFormat.RGBA_8888" in preview
+        and "android.graphics.PixelFormat.TRANSLUCENT" not in preview,
+        "result preview must apply explicit ARGB channels, validate Paint colors, disable Force Dark and use a deterministic RGBA overlay format",
+        failures,
+    )
+    require(
         "preview / paint color avoids ColorLong overload",
         "function setPaintColor21(paint, color)" in preview
         and "paint.setARGB(" in preview
