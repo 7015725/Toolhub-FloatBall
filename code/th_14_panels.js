@@ -1,4 +1,4 @@
-// @version 1.0.22
+// @version 1.0.23
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -1197,13 +1197,33 @@ FloatBallAppWM.prototype.startColorSafetyRuntimeSelfTestFromSettings = function(
   }
 };
 
+FloatBallAppWM.prototype.copyColorSafetyRuntimeSelfTestSummaryFromSettings = function() {
+  try {
+    var last = this.getLastColorSafetyRuntimeSelfTestResult ? this.getLastColorSafetyRuntimeSelfTestResult() : (this.state ? this.state.colorSafetyRuntimeSelfTest : null);
+    if (!last) { try { this.toast("请先运行颜色安全自检"); } catch(eToast0) {} return false; }
+    var text = this.formatColorSafetyRuntimeSelfTestSummary ? this.formatColorSafetyRuntimeSelfTestSummary(last) : "";
+    if (!text) { try { this.toast("诊断摘要生成失败"); } catch(eToast1) {} return false; }
+    var clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+    if (!clipboard) throw "clipboard service unavailable";
+    var clip = android.content.ClipData.newPlainText("ToolHub 颜色安全自检", text);
+    clipboard.setPrimaryClip(clip);
+    safeLog(this.L, "i", "color safety diagnostic summary copied length=" + String(text.length));
+    try { this.toast("诊断摘要已复制"); } catch(eToast2) {}
+    return true;
+  } catch(eCopy) {
+    safeLog(this.L, "e", "copy color safety diagnostic summary fail error=" + String(eCopy));
+    try { this.toast("复制诊断摘要失败"); } catch(eToast3) {}
+  }
+  return false;
+};
+
 FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme();
   var running = !!(this.state && this.state.colorSafetyRuntimeSelfTestRunning);
-  var last = this.state ? this.state.colorSafetyRuntimeSelfTest : null;
+  var last = this.getLastColorSafetyRuntimeSelfTestResult ? this.getLastColorSafetyRuntimeSelfTestResult() : (this.state ? this.state.colorSafetyRuntimeSelfTest : null);
   var runtime = this.getColorSafetyRuntimeContext ? this.getColorSafetyRuntimeContext() : {};
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -1218,7 +1238,7 @@ FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
   card.addView(title, new android.widget.LinearLayout.LayoutParams(-1, -2));
 
   var desc = new android.widget.TextView(context);
-  desc.setText("手动创建并切换 160 组 StateListDrawable 与 ColorStateList；不附着窗口、不使用 framework RippleDrawable，也不会自动运行。");
+  desc.setText("手动创建并切换 160 组 StateListDrawable 与 ColorStateList；不会自动运行。结果保存到 ToolHub/diagnostics/color-safety-last.json，可复制摘要。");
   toolhubSafeSetTextColor(desc, T.onSurface2);
   desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
   desc.setPadding(0, this.dp(5), 0, 0);
@@ -1250,6 +1270,14 @@ FloatBallAppWM.prototype.createColorSafetyRuntimeDiagnosticCard = function() {
   var buttonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(48));
   buttonLp.setMargins(0, this.dp(10), 0, 0);
   card.addView(button, buttonLp);
+
+  var hasResult = !!last;
+  var copyButton = this.ui.createSolidButton(this, hasResult ? "复制诊断摘要" : "暂无可复制结果", T.primaryContainer || T.surface2, T.primary, function() { self.copyColorSafetyRuntimeSelfTestSummaryFromSettings(); });
+  try { copyButton.setEnabled(hasResult && !running); if (!hasResult || running) copyButton.setAlpha(0.62); } catch(eCopyEnabled) {}
+  try { copyButton.setContentDescription("复制 ColorOS 颜色安全诊断摘要"); } catch(eCopyDesc) {}
+  var copyButtonLp = new android.widget.LinearLayout.LayoutParams(-1, this.dp(46));
+  copyButtonLp.setMargins(0, this.dp(8), 0, 0);
+  card.addView(copyButton, copyButtonLp);
   return card;
 };
 

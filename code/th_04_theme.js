@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.0.10
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -1109,13 +1109,160 @@ FloatBallAppWM.prototype.getColorSafetyRuntimeContext = function() {
   return out;
 };
 
+FloatBallAppWM.prototype.getColorSafetyRuntimeResultFile = function() {
+  try {
+    var baseDir = String(shortx.getShortXDir());
+    if (!baseDir) return null;
+    return new java.io.File(baseDir + "/ToolHub/diagnostics/color-safety-last.json");
+  } catch(ePath) {
+    safeLog(this.L, "w", "resolve color safety result path fail error=" + String(ePath));
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.normalizeColorSafetyRuntimeResult = function(value) {
+  if (!value || typeof value !== "object") return null;
+  function numberValue(v, fallback, min, max) {
+    var n = Number(v);
+    if (isNaN(n)) n = fallback;
+    if (min !== null && n < min) n = min;
+    if (max !== null && n > max) n = max;
+    return n;
+  }
+  function textValue(v, maxLen) {
+    var s = "";
+    try { s = String(v === undefined || v === null ? "" : v); } catch(eText) { s = ""; }
+    if (s.length > maxLen) s = s.substring(0, maxLen);
+    return s;
+  }
+  var rawRuntime = value.runtime && typeof value.runtime === "object" ? value.runtime : {};
+  return {
+    schemaVersion: 1,
+    ok: value.ok === true,
+    loops: Math.floor(numberValue(value.loops, 0, 0, 300)),
+    durationMs: Math.floor(numberValue(value.durationMs, 0, 0, 3600000)),
+    completedAt: Math.floor(numberValue(value.completedAt, 0, 0, 4102444800000)),
+    drawableClass: textValue(value.drawableClass, 240),
+    layerClass: textValue(value.layerClass, 240),
+    error: textValue(value.error, 1200),
+    runtime: {
+      manufacturer: textValue(rawRuntime.manufacturer, 120),
+      brand: textValue(rawRuntime.brand, 120),
+      model: textValue(rawRuntime.model, 160),
+      display: textValue(rawRuntime.display, 240),
+      release: textValue(rawRuntime.release, 80),
+      sdk: Math.floor(numberValue(rawRuntime.sdk, 0, 0, 1000)),
+      dark: rawRuntime.dark === true,
+      pressAlpha: numberValue(rawRuntime.pressAlpha, 0, 0, 1),
+      process: textValue(rawRuntime.process, 240)
+    }
+  };
+};
+
+FloatBallAppWM.prototype.saveColorSafetyRuntimeSelfTestResult = function(result) {
+  var file = null;
+  var tmp = null;
+  var writer = null;
+  try {
+    var clean = this.normalizeColorSafetyRuntimeResult ? this.normalizeColorSafetyRuntimeResult(result) : null;
+    if (!clean) return false;
+    file = this.getColorSafetyRuntimeResultFile ? this.getColorSafetyRuntimeResultFile() : null;
+    if (!file) return false;
+    var parent = file.getParentFile();
+    if (parent && !parent.exists() && !parent.mkdirs() && !parent.exists()) throw "cannot create diagnostic directory";
+    tmp = new java.io.File(String(file.getAbsolutePath()) + ".tmp");
+    writer = new java.io.OutputStreamWriter(new java.io.FileOutputStream(tmp, false), "UTF-8");
+    writer.write(JSON.stringify(clean));
+    writer.flush();
+    writer.close();
+    writer = null;
+    if (file.exists() && !file.delete()) throw "cannot replace old diagnostic result";
+    if (!tmp.renameTo(file)) throw "cannot publish diagnostic result";
+    return true;
+  } catch(eSave) {
+    safeLog(this.L, "w", "save color safety result fail error=" + String(eSave));
+  } finally {
+    try { if (writer) writer.close(); } catch(eClose) {}
+    try { if (tmp && tmp.exists()) tmp.delete(); } catch(eTmp) {}
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.loadColorSafetyRuntimeSelfTestResult = function() {
+  var reader = null;
+  try {
+    var file = this.getColorSafetyRuntimeResultFile ? this.getColorSafetyRuntimeResultFile() : null;
+    if (!file || !file.exists() || !file.isFile()) return null;
+    var length = Number(file.length());
+    if (!(length > 0) || length > 65536) throw "invalid diagnostic result size=" + String(length);
+    reader = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(file), "UTF-8"));
+    var sb = new java.lang.StringBuilder();
+    var line = null;
+    while ((line = reader.readLine()) !== null) {
+      if (sb.length() > 65536) throw "diagnostic result exceeds limit";
+      sb.append(line);
+    }
+    reader.close();
+    reader = null;
+    var parsed = JSON.parse(String(sb.toString()));
+    return this.normalizeColorSafetyRuntimeResult ? this.normalizeColorSafetyRuntimeResult(parsed) : null;
+  } catch(eLoad) {
+    safeLog(this.L, "w", "load color safety result fail error=" + String(eLoad));
+  } finally {
+    try { if (reader) reader.close(); } catch(eClose) {}
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.getLastColorSafetyRuntimeSelfTestResult = function() {
+  try {
+    if (!this.state) this.state = {};
+    if (this.state.colorSafetyRuntimeSelfTest) return this.state.colorSafetyRuntimeSelfTest;
+    if (this.state.colorSafetyRuntimeSelfTestLoaded) return null;
+    this.state.colorSafetyRuntimeSelfTestLoaded = true;
+    var loaded = this.loadColorSafetyRuntimeSelfTestResult ? this.loadColorSafetyRuntimeSelfTestResult() : null;
+    if (loaded) this.state.colorSafetyRuntimeSelfTest = loaded;
+    return loaded;
+  } catch(eLast) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.formatColorSafetyRuntimeSelfTestSummary = function(result) {
+  var clean = this.normalizeColorSafetyRuntimeResult ? this.normalizeColorSafetyRuntimeResult(result) : null;
+  if (!clean) return "";
+  var runtime = clean.runtime || {};
+  var completedText = "未知";
+  try {
+    if (Number(clean.completedAt || 0) > 0) {
+      var fmt = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+      completedText = String(fmt.format(new java.util.Date(Number(clean.completedAt))));
+    }
+  } catch(eTime) {}
+  var lines = [];
+  lines.push("ToolHub ColorOS 颜色安全自检");
+  lines.push("状态：" + (clean.ok ? "通过" : "失败"));
+  lines.push("时间：" + completedText);
+  lines.push("循环：" + String(clean.loops) + " 次");
+  lines.push("耗时：" + String(clean.durationMs) + " ms");
+  lines.push("设备：" + String(runtime.manufacturer || runtime.brand || "未知") + " " + String(runtime.model || ""));
+  lines.push("系统：Android " + String(runtime.release || "") + " / SDK " + String(runtime.sdk || 0));
+  lines.push("构建：" + String(runtime.display || ""));
+  lines.push("进程：" + String(runtime.process || ""));
+  lines.push("主题：" + (runtime.dark ? "暗色" : "亮色"));
+  lines.push("按压透明度：" + String(runtime.pressAlpha));
+  lines.push("Drawable：" + String(clean.drawableClass || ""));
+  lines.push("Layer：" + String(clean.layerClass || ""));
+  if (clean.error) lines.push("错误：" + String(clean.error));
+  return lines.join("\n");
+};
+
 FloatBallAppWM.prototype.runColorSafetyRuntimeSelfTest = function(iterations) {
   var loops = parseInt(String(iterations), 10);
   if (isNaN(loops) || loops <= 0) loops = 160;
   loops = Math.max(1, Math.min(300, loops));
   var startedAt = java.lang.System.currentTimeMillis();
   var runtime = this.getColorSafetyRuntimeContext ? this.getColorSafetyRuntimeContext() : {};
-  var result = { ok: false, loops: loops, durationMs: 0, drawableClass: "", layerClass: "", error: "", runtime: runtime };
+  var result = { schemaVersion: 1, ok: false, loops: loops, durationMs: 0, completedAt: 0, drawableClass: "", layerClass: "", error: "", runtime: runtime };
   safeLog(this.L, "i", "color safety self-test start loops=" + String(loops) + " manufacturer=" + String(runtime.manufacturer || "") + " model=" + String(runtime.model || "") + " sdk=" + String(runtime.sdk || 0) + " process=" + String(runtime.process || ""));
   try {
     var palette = [
@@ -1156,7 +1303,10 @@ FloatBallAppWM.prototype.runColorSafetyRuntimeSelfTest = function(iterations) {
     result.error = String(eTest);
   }
   result.durationMs = Math.max(0, Number(java.lang.System.currentTimeMillis() - startedAt));
-  try { if (!this.state) this.state = {}; this.state.colorSafetyRuntimeSelfTest = result; } catch(eState) {}
+  result.completedAt = Number(java.lang.System.currentTimeMillis());
+  try { if (this.normalizeColorSafetyRuntimeResult) result = this.normalizeColorSafetyRuntimeResult(result) || result; } catch(eNormalize) {}
+  try { if (this.saveColorSafetyRuntimeSelfTestResult) this.saveColorSafetyRuntimeSelfTestResult(result); } catch(ePersist) {}
+  try { if (!this.state) this.state = {}; this.state.colorSafetyRuntimeSelfTestLoaded = true; this.state.colorSafetyRuntimeSelfTest = result; } catch(eState) {}
   if (result.ok) safeLog(this.L, "i", "color safety self-test pass loops=" + String(result.loops) + " durationMs=" + String(result.durationMs) + " drawable=" + String(result.drawableClass) + " layer=" + String(result.layerClass));
   else safeLog(this.L, "e", "color safety self-test fail loops=" + String(result.loops) + " durationMs=" + String(result.durationMs) + " error=" + String(result.error));
   return result;
