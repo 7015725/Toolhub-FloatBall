@@ -1,4 +1,4 @@
-// @version 1.1.1
+// @version 1.1.2
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击后把完整文本传给 th_20_pickword.js。
 (function() {
@@ -163,6 +163,16 @@
     return st;
   }
 
+  function colorSpec21(a, r, g, b, hex) {
+    return {
+      a: int21(a, 0) & 255,
+      r: int21(r, 0) & 255,
+      g: int21(g, 0) & 255,
+      b: int21(b, 0) & 255,
+      hex: String(hex || "")
+    };
+  }
+
   function colors21(appObj) {
     var dark = false;
     var themeSource = "toolhub_unavailable";
@@ -176,33 +186,62 @@
       themeSource = "toolhub_error";
     }
     return {
-      bg: android.graphics.Color.parseColor(dark ? "#FF1B1B1F" : "#FFFFFFFF"),
-      stroke: android.graphics.Color.parseColor(dark ? "#3DFFFFFF" : "#22000000"),
-      text: android.graphics.Color.parseColor(dark ? "#FFF8FAFC" : "#FF111827"),
-      secondary: android.graphics.Color.parseColor(dark ? "#FFCBD5E1" : "#FF475569"),
-      pressed: android.graphics.Color.parseColor(dark ? "#2638BDF8" : "#1A0EA5E9"),
+      bg: dark ? colorSpec21(255, 27, 27, 31, "#FF1B1B1F") : colorSpec21(255, 255, 255, 255, "#FFFFFFFF"),
+      stroke: dark ? colorSpec21(61, 255, 255, 255, "#3DFFFFFF") : colorSpec21(34, 0, 0, 0, "#22000000"),
+      text: dark ? colorSpec21(255, 248, 250, 252, "#FFF8FAFC") : colorSpec21(255, 17, 24, 39, "#FF111827"),
+      secondary: dark ? colorSpec21(255, 203, 213, 225, "#FFCBD5E1") : colorSpec21(255, 71, 85, 105, "#FF475569"),
+      pressed: dark ? colorSpec21(38, 56, 189, 248, "#2638BDF8") : colorSpec21(26, 14, 165, 233, "#1A0EA5E9"),
       themeDark: dark,
       themeSource: themeSource
     };
   }
 
-  // Rhino 在 Android 29+ 可能把 Paint.setColor(int) 错配到 setColor(long ColorLong)。
-  // 明确拆分 ARGB 通道并调用无重载歧义的 setARGB(int, int, int, int)。
+  function packArgb21(color) {
+    if (!color) return 0;
+    return (((Number(color.a || 0) & 255) << 24) |
+      ((Number(color.r || 0) & 255) << 16) |
+      ((Number(color.g || 0) & 255) << 8) |
+      (Number(color.b || 0) & 255)) | 0;
+  }
+
+  function argbHex21(value) {
+    var n = Number(value);
+    if (isNaN(n)) n = 0;
+    var hex = (n >>> 0).toString(16).toUpperCase();
+    while (hex.length < 8) hex = "0" + hex;
+    return "0x" + hex;
+  }
+
+  // 明确使用 ARGB 通道，随后读取 Paint 实际颜色校验，避免 Rhino 重载或 OEM 颜色转换静默失效。
   function setPaintColor21(paint, color) {
-    if (!paint) return false;
-    var value = Number(color);
-    if (isNaN(value)) value = 0;
-    value = value | 0;
+    var expected = packArgb21(color);
+    var result = {
+      ok: false,
+      expected: expected,
+      actual: 0,
+      expectedHex: argbHex21(expected),
+      actualHex: "",
+      error: ""
+    };
+    if (!paint || !color) {
+      result.error = "paint_or_color_missing";
+      return result;
+    }
     try {
-      paint.setARGB(
-        (value >>> 24) & 255,
-        (value >>> 16) & 255,
-        (value >>> 8) & 255,
-        value & 255
-      );
-      return true;
-    } catch (eArgb) {}
-    return false;
+      paint.setARGB(color.a, color.r, color.g, color.b);
+    } catch (eArgb) {
+      result.error = "setARGB:" + String(eArgb);
+      return result;
+    }
+    try {
+      result.actual = Number(paint.getColor()) | 0;
+      result.actualHex = argbHex21(result.actual);
+      result.ok = (result.actual | 0) === (expected | 0);
+      if (!result.ok) result.error = "paint_color_mismatch";
+    } catch (eRead) {
+      result.error = "getColor:" + String(eRead);
+    }
+    return result;
   }
 
   function topInset21(root) {
@@ -324,6 +363,16 @@
     render.pressed = false;
     render.themeDark = false;
     render.themeSource = "";
+    render.bgApplyOk = false;
+    render.strokeApplyOk = false;
+    render.textApplyOk = false;
+    render.bgExpectedHex = "";
+    render.bgActualHex = "";
+    render.textExpectedHex = "";
+    render.textActualHex = "";
+    render.canvasHardware = false;
+    render.windowFormat = 0;
+    render.forceDarkDisabled = false;
     render.disposed = false;
     render.attachedAt = now21();
     st.drawCount = 0;
@@ -346,30 +395,61 @@
     if (render) {
       render.themeDark = c.themeDark === true;
       render.themeSource = String(c.themeSource || "");
+      try { render.canvasHardware = canvas && canvas.isHardwareAccelerated ? canvas.isHardwareAccelerated() === true : false; } catch (eHardware) { render.canvasHardware = false; }
+      try { render.windowFormat = st && st.lp ? Number(st.lp.format || 0) : 0; } catch (eFormat) { render.windowFormat = 0; }
     }
     var width = view.getWidth();
     var height = view.getHeight();
     if (width <= 0 || height <= 0) return false;
+
     var bg = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     var rect = new android.graphics.RectF(dp21(appObj, 1), dp21(appObj, 1), width - dp21(appObj, 1), height - dp21(appObj, 1));
     bg.setStyle(android.graphics.Paint.Style.FILL);
-    setPaintColor21(bg, c.bg);
+    var bgApply = setPaintColor21(bg, c.bg);
+    if (render) {
+      render.bgApplyOk = bgApply.ok === true;
+      render.bgExpectedHex = String(bgApply.expectedHex || "");
+      render.bgActualHex = String(bgApply.actualHex || "");
+    }
+    if (!bgApply.ok) {
+      try { safeLog(appObj.L, 'e', "result preview background color apply fail expected=" + String(bgApply.expectedHex || "") + " actual=" + String(bgApply.actualHex || "") + " err=" + String(bgApply.error || "")); } catch (eBgLog) {}
+      return false;
+    }
     canvas.drawRoundRect(rect, dp21(appObj, 12), dp21(appObj, 12), bg);
+
     bg.setStyle(android.graphics.Paint.Style.STROKE);
     bg.setStrokeWidth(dp21(appObj, 1));
-    setPaintColor21(bg, c.stroke);
+    var strokeApply = setPaintColor21(bg, c.stroke);
+    if (render) render.strokeApplyOk = strokeApply.ok === true;
+    if (!strokeApply.ok) {
+      try { safeLog(appObj.L, 'e', "result preview stroke color apply fail expected=" + String(strokeApply.expectedHex || "") + " actual=" + String(strokeApply.actualHex || "") + " err=" + String(strokeApply.error || "")); } catch (eStrokeLog) {}
+      return false;
+    }
     canvas.drawRoundRect(rect, dp21(appObj, 12), dp21(appObj, 12), bg);
 
-
     var textPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-    setPaintColor21(textPaint, c.text);
+    var textApply = setPaintColor21(textPaint, c.text);
+    if (render) {
+      render.textApplyOk = textApply.ok === true;
+      render.textExpectedHex = String(textApply.expectedHex || "");
+      render.textActualHex = String(textApply.actualHex || "");
+    }
+    if (!textApply.ok) {
+      try { safeLog(appObj.L, 'e', "result preview text color apply fail expected=" + String(textApply.expectedHex || "") + " actual=" + String(textApply.actualHex || "") + " err=" + String(textApply.error || "")); } catch (eTextLog) {}
+      return false;
+    }
     textPaint.setTextSize(sp21(14));
     var x = dp21(appObj, 14);
     var line1 = String(render && render.line1 !== undefined ? render.line1 : st.line1 || "");
     var line2 = String(render && render.line2 !== undefined ? render.line2 : st.line2 || "");
     if (line2) {
       canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 25), textPaint);
-      setPaintColor21(textPaint, c.secondary);
+      var secondaryApply = setPaintColor21(textPaint, c.secondary);
+      if (!secondaryApply.ok) {
+        if (render) render.textApplyOk = false;
+        try { safeLog(appObj.L, 'e', "result preview secondary color apply fail expected=" + String(secondaryApply.expectedHex || "") + " actual=" + String(secondaryApply.actualHex || "") + " err=" + String(secondaryApply.error || "")); } catch (eSecondaryLog) {}
+        return false;
+      }
       canvas.drawText(new java.lang.String(line2), x, dp21(appObj, 47), textPaint);
     } else {
       canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 30), textPaint);
@@ -519,7 +599,17 @@
         " lpY=" + String(st.lp ? st.lp.y : -1) +
         " drawCount=" + String(render.drawCount) +
         " theme=" + String(render.themeDark === true ? "dark" : "light") +
-        " themeSource=" + String(render.themeSource || ""));
+        " themeSource=" + String(render.themeSource || "") +
+        " bgApply=" + String(render.bgApplyOk === true) +
+        " bgExpected=" + String(render.bgExpectedHex || "") +
+        " bgActual=" + String(render.bgActualHex || "") +
+        " strokeApply=" + String(render.strokeApplyOk === true) +
+        " textApply=" + String(render.textApplyOk === true) +
+        " textExpected=" + String(render.textExpectedHex || "") +
+        " textActual=" + String(render.textActualHex || "") +
+        " canvasHardware=" + String(render.canvasHardware === true) +
+        " windowFormat=" + String(render.windowFormat || 0) +
+        " forceDarkDisabled=" + String(render.forceDarkDisabled === true));
     } catch (eFirstDrawLog) {}
 
     scheduleDismiss21(appObj, st, rootRef, render);
@@ -549,6 +639,16 @@
       pressed: false,
       themeDark: false,
       themeSource: "",
+      bgApplyOk: false,
+      strokeApplyOk: false,
+      textApplyOk: false,
+      bgExpectedHex: "",
+      bgActualHex: "",
+      textExpectedHex: "",
+      textActualHex: "",
+      canvasHardware: false,
+      windowFormat: 0,
+      forceDarkDisabled: false,
       disposed: false,
       enterStarted: false
     };
@@ -608,6 +708,12 @@
     PreviewView.setFocusable(false);
     try { PreviewView.setWillNotDraw(false); } catch (eWillNotDraw) {}
     try { PreviewView.setVisibility(android.view.View.VISIBLE); } catch (eVisible) {}
+    try {
+      if (android.os.Build.VERSION.SDK_INT >= 29) {
+        PreviewView.setForceDarkAllowed(false);
+        render.forceDarkDisabled = true;
+      }
+    } catch (eForceDark) { render.forceDarkDisabled = false; }
     // 不创建软件离屏图层；保持 Canvas 全自绘，但让 WindowManager 正常驱动首帧 traversal。
     try { PreviewView.setLayerType(android.view.View.LAYER_TYPE_NONE, null); } catch (eLayer) {}
     return { view: PreviewView, render: render };
@@ -622,7 +728,7 @@
       Math.max(1, int21(st.measuredHeight, dp21(appObj, 62))),
       android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
       flags,
-      android.graphics.PixelFormat.TRANSLUCENT
+      android.graphics.PixelFormat.RGBA_8888
     );
     lp.gravity = android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL;
     lp.x = 0;
