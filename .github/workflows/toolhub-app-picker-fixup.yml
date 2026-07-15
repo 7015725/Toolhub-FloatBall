@@ -1,0 +1,63 @@
+name: ToolHub 应用按钮收尾
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  fixup:
+    if: github.head_ref == 'agent/app-picker-cleanup-20260715'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/app-picker-cleanup-20260715
+          fetch-depth: 0
+
+      - name: 修正回调并刷新报告
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('code/th_14_button_editor.js')
+          text = path.read_text(encoding='utf-8')
+          old = '''      try {
+            self.runOnUiThreadSafe(function() { applyLoaded(items, generation); });
+          } catch(eUi) {
+            try { list.post(new java.lang.Runnable({ run: function() { applyLoaded(items, generation); } })); } catch(ePost) {}
+          }'''
+          new = '''      try {
+            list.post(new java.lang.Runnable({ run: function() { applyLoaded(items, generation); } }));
+          } catch(ePost) {
+            safeLog(self.L, "w", "app picker UI callback post fail: " + str(ePost));
+          }'''
+          if text.count(old) != 1:
+              raise SystemExit('app picker UI callback block mismatch: %d' % text.count(old))
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          rm -f .github/workflows/toolhub-app-picker-fixup.yml
+
+      - name: 验证
+        shell: bash
+        run: |
+          node --check code/th_14_button_editor.js
+          node --check code/th_11_action.js
+          python3 scripts/verify_button_editor_direct_save.py
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          git diff --check
+
+      - name: 提交
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m '完善应用选择回调并刷新审查报告'
+          git push origin HEAD:agent/app-picker-cleanup-20260715
