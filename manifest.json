@@ -140,18 +140,18 @@
       "version": "1.0.3"
     },
     "th_21_result_preview.js": {
-      "sha256": "9c7be0ec9fdcb12ad6eb69e46dfb4cb2d13a283595627326a7a08684bf311765",
-      "size": 58106,
-      "version": "1.2.4"
+      "sha256": "4dcd4c1523869e6f2389a1e236239c9edddf077f7004b6251e8cc6c6e18cb42a",
+      "size": 57901,
+      "version": "1.2.5"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理结果预览写入型状态"
+      "完成结果预览剩余状态终审"
     ],
-    "title": "清理结果预览写入型状态"
+    "title": "完成结果预览剩余状态终审"
   },
   "schema": 3,
-  "version": 20260716112855
+  "version": 20260716113825
 }
