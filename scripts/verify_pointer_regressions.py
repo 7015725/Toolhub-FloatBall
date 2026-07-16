@@ -260,20 +260,29 @@ def verify_issue_85(result, pointer, ocr, position, animation):
 
     result.require(
         group,
-        "N10 Android 14 capture uses WMS without raw SurfaceFlinger transact",
-        "ScreenCapture.CaptureArgs.Builder" in pointer
-        and "WindowManagerGlobal.getWindowManagerService()" in pointer
-        and "wmService.captureDisplay(" in pointer
+        "N10 Android 14 capture uses reflected WMS and MediaProjection fallback",
+        "th17PairValue(pair, \"first\")" in pointer
+        and "th17PairValue(pair, \"second\")" in pointer
+        and "th17FindMethod(wm.getClass(), \"captureDisplay\", 3)" in pointer
         and "Binder.clearCallingIdentity()" in pointer
         and "Binder.restoreCallingIdentity(identity)" in pointer
-        and "capturePointerBitmapByUiAutomation" in pointer
-        and 'setCaptureSecureLayers(false)' in pointer
-        and 'setAllowProtected(false)' in pointer
+        and "capturePointerBitmapByMediaProjection" in pointer
+        and 'ServiceManager.getService("media_projection")' in pointer
+        and 'IMediaProjectionManager$Stub' in pointer
+        and 'ImageReader.newInstance' in pointer
+        and 'createVirtualDisplay' in pointer
+        and 'acquireLatestImage' in pointer
+        and 'getPixelStride' in pointer
+        and 'getRowStride' in pointer
+        and 'copyPixelsFromBuffer' in pointer
+        and 'vd.release()' in pointer
+        and 'reader.close()' in pointer
+        and 'mp.stop()' in pointer
+        and 'syncCapture.first' not in pointer
+        and 'syncCapture.second' not in pointer
         and 'SurfaceFlingerAIDL' not in pointer
-        and 'FIRST_CALL_TRANSACTION' not in pointer
-        and 'setCaptureSecureLayers(true)' not in pointer
-        and 'setAllowProtected(true)' not in pointer,
-        "Android 14 capture must use WMS with identity restoration and a UiAutomation fallback",
+        and 'FIRST_CALL_TRANSACTION' not in pointer,
+        "Android 14 capture must reflect WMS Pair fields and provide a released MediaProjection fallback",
     )
 
     area_finish = section(

@@ -12,14 +12,6 @@ ROOT = Path(__file__).resolve().parents[1]
 CODE = ROOT / "code"
 ENTRY = ROOT / "ToolHub.js"
 SIGNER = ROOT / "scripts" / "generate_signed_manifest.py"
-REPAIR_SCRIPT = ROOT / "scripts" / "repair_pointer_media_projection_patch.py"
-if REPAIR_SCRIPT.exists():
-    subprocess.check_call([sys.executable, str(REPAIR_SCRIPT)], cwd=str(ROOT))
-
-PATCH_SCRIPT = ROOT / "scripts" / "apply_pointer_media_projection_fix.py"
-if PATCH_SCRIPT.exists():
-    subprocess.check_call([sys.executable, str(PATCH_SCRIPT)], cwd=str(ROOT))
-
 
 def fail(message):
     raise SystemExit("FAIL changed-module-versions: " + message)

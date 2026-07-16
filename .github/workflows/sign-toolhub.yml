@@ -223,7 +223,8 @@ jobs:
         shell: bash
         run: git diff --check
 
-      - name: Commit complete screenshot fix
+      - name: Commit generated artifacts
+        if: steps.current-generated.outputs.current != 'true'
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
@@ -234,12 +235,11 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout origin/main -- .github/workflows/sign-toolhub.yml
-          git add -A
+          git add manifest.json manifest.sig ToolHub.js.sha256
           if git diff --cached --quiet; then
-            echo "No screenshot fix changes"
+            echo "No generated artifact changes"
             exit 0
           fi
-          git commit -m "修复指针截图的 Rhino 反射与 MediaProjection 回退"
+          git commit -m "统一 Rhino UI 颜色安全调用"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:$TARGET_BRANCH"
