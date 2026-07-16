@@ -1,0 +1,33 @@
+name: agent-refresh-entry-audit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.event.pull_request.head.ref == 'fix/update-version-page'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/update-version-page
+          fetch-depth: 0
+
+      - name: Refresh entry symbol audit
+        run: |
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+
+      - name: Commit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ENTRY_SYMBOL_AUDIT.md
+          git commit -m "同步入口符号审计基线"
+          git push origin HEAD:fix/update-version-page
