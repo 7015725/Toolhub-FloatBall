@@ -30,6 +30,9 @@ jobs:
       - name: Apply repository migration
         run: python3 .agent/apply_update_version_page.py
 
+      - name: Restore workflow files for connector update
+        run: git checkout -- .github/workflows
+
       - name: Verify JavaScript and versions
         run: |
           python3 .github/scripts/es5_scan.py
