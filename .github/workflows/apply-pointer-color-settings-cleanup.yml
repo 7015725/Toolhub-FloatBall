@@ -1,0 +1,430 @@
+name: 应用指针颜色设置清理
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/pointer-color-settings-cleanup-20260716'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出临时分支
+        uses: actions/checkout@v4
+        with:
+          ref: agent/pointer-color-settings-cleanup-20260716
+          fetch-depth: 0
+
+      - name: 清理并重组颜色设置
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import re
+          import time
+
+          ROOT = Path('.')
+
+          def read(path):
+              return (ROOT / path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              (ROOT / path).write_text(text, encoding='utf-8')
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit('%s anchor count=%d' % (label, count))
+              return text.replace(old, new, 1)
+
+          # th_01_base.js：清理旧键，加入独立边框键、名称与说明。
+          path = 'code/th_01_base.js'
+          text = read(path)
+          text = replace_once(text, '// @version 1.1.14', '// @version 1.1.15', 'th01 version')
+          text = replace_once(
+              text,
+              '  BALL_RIPPLE_ALPHA_DARK: true\n};',
+              '  BALL_RIPPLE_ALPHA_DARK: true,\n'
+              '  POINTER_COLOR_HOVER_HEX: true,\n'
+              '  POINTER_COLOR_HIT_HEX: true,\n'
+              '  POINTER_COLOR_CAPTURE_HEX: true\n};',
+              'removed pointer color keys'
+          )
+          old_validator = '''    POINTER_COLOR_NORMAL_HEX: { type: "string", default: "" },
+    POINTER_COLOR_HOVER_HEX: { type: "string", default: "" },
+    POINTER_COLOR_HIT_HEX: { type: "string", default: "" },
+    POINTER_COLOR_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
+    POINTER_FRAME_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
+    POINTER_COLOR_AREA_HEX: { type: "string", default: "" },
+    POINTER_COLOR_AREA_READY_HEX: { type: "string", default: "#F59E0B" },
+    POINTER_COLOR_CAPTURE_HEX: { type: "string", default: "" },'''
+          new_validator = '''    POINTER_COLOR_NORMAL_HEX: { type: "string", default: "" },
+    POINTER_COLOR_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
+    POINTER_COLOR_AREA_READY_HEX: { type: "string", default: "#F59E0B" },
+    POINTER_COLOR_AREA_HEX: { type: "string", default: "" },
+    POINTER_FRAME_TEXT_HOVER_HEX: { type: "string", default: "#0EA5E9" },
+    POINTER_FRAME_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
+    POINTER_FRAME_AREA_HEX: { type: "string", default: "" },'''
+          text = replace_once(text, old_validator, new_validator, 'validator pointer colors')
+          old_defaults = '''        POINTER_COLOR_NORMAL_HEX: "",
+        POINTER_COLOR_HOVER_HEX: "",
+        POINTER_COLOR_HIT_HEX: "",
+        POINTER_COLOR_TEXT_READY_HEX: "#22C55E",
+        POINTER_FRAME_TEXT_READY_HEX: "#22C55E",
+        POINTER_COLOR_AREA_HEX: "",
+        POINTER_COLOR_AREA_READY_HEX: "#F59E0B",
+        POINTER_COLOR_CAPTURE_HEX: "",'''
+          new_defaults = '''        POINTER_COLOR_NORMAL_HEX: "",
+        POINTER_COLOR_TEXT_READY_HEX: "#22C55E",
+        POINTER_COLOR_AREA_READY_HEX: "#F59E0B",
+        POINTER_COLOR_AREA_HEX: "",
+        POINTER_FRAME_TEXT_HOVER_HEX: "#0EA5E9",
+        POINTER_FRAME_TEXT_READY_HEX: "#22C55E",
+        POINTER_FRAME_AREA_HEX: "",'''
+          text = replace_once(text, old_defaults, new_defaults, 'default pointer colors')
+          old_schema = '''        { key: "POINTER_COLOR_NORMAL_HEX", name: "指针普通颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_HOVER_HEX", name: "指针悬停颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_HIT_HEX", name: "指针命中颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_TEXT_READY_HEX", name: "取字就绪指针颜色", type: "ball_color" },
+        { key: "POINTER_FRAME_TEXT_READY_HEX", name: "取字就绪边框颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_AREA_HEX", name: "框选区域颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_AREA_READY_HEX", name: "框选就绪指针颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_CAPTURE_HEX", name: "截图识别颜色", type: "ball_color" },'''
+          new_schema = '''        { key: "POINTER_COLOR_NORMAL_HEX", name: "普通指针颜色", desc: "未进入取字就绪或框选状态时的指针颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_TEXT_READY_HEX", name: "取字就绪指针颜色", desc: "在文字边框内悬停达到取字时间后的指针颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_AREA_READY_HEX", name: "框选就绪指针颜色", desc: "悬停达到框选时间、继续拖动前的指针颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_AREA_HEX", name: "框选中指针颜色", desc: "继续拖动并开始框选区域后的指针颜色", type: "ball_color" },
+        { key: "POINTER_FRAME_TEXT_HOVER_HEX", name: "文字悬停边框颜色", desc: "检测到文字、尚未达到取字时间时的边框颜色", type: "ball_color" },
+        { key: "POINTER_FRAME_TEXT_READY_HEX", name: "取字/框选就绪边框颜色", desc: "达到取字或框选悬停时间后的文字边框颜色", type: "ball_color" },
+        { key: "POINTER_FRAME_AREA_HEX", name: "框选区域边框颜色", desc: "拖动框选区域时的边框和半透明填充颜色", type: "ball_color" },'''
+          text = replace_once(text, old_schema, new_schema, 'schema pointer colors')
+          ready_check = 'sStr.indexOf("POINTER_COLOR_AREA_READY_HEX") < 0 ||'
+          text = replace_once(
+              text,
+              ready_check,
+              ready_check + '\n' +
+              '              sStr.indexOf("POINTER_FRAME_TEXT_HOVER_HEX") < 0 ||\n' +
+              '              sStr.indexOf("POINTER_FRAME_AREA_HEX") < 0 ||',
+              'schema completeness colors'
+          )
+          write(path, text)
+
+          # th_13_panel_ui.js：颜色项显示逐项用途说明。
+          path = 'code/th_13_panel_ui.js'
+          text = read(path)
+          text = replace_once(text, '// @version 1.0.9', '// @version 1.0.10', 'th13 version')
+          marker = '} else if (item.type === "ball_color") {'
+          start = text.index(marker)
+          head = text[:start]
+          tail = text[start:]
+          tail = replace_once(
+              tail,
+              '    row.addView(tv);\n\n    var colorRow',
+              '''    row.addView(tv);
+
+    var colorItemDesc = String(item.desc || "");
+    if (colorItemDesc) {
+      var colorDescTv = new android.widget.TextView(context);
+      colorDescTv.setText(colorItemDesc);
+      toolhubSafeSetTextColor(colorDescTv, secColor);
+      colorDescTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      try { colorDescTv.setIncludeFontPadding(false); } catch(eColorDescPad) {}
+      var colorDescLp = new android.widget.LinearLayout.LayoutParams(
+        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+      );
+      colorDescLp.topMargin = self.dp(3);
+      colorDescTv.setLayoutParams(colorDescLp);
+      row.addView(colorDescTv);
+    }
+
+    var colorRow''',
+              'ball color item description'
+          )
+          write(path, head + tail)
+
+          # th_14_panels.js：按指针本体与边框重新分组。
+          path = 'code/th_14_panels.js'
+          text = read(path)
+          text = replace_once(text, '// @version 1.0.26', '// @version 1.0.27', 'th14 version')
+          old_groups = '''    {
+      key: "pointer_color",
+      title: "指针颜色",
+      desc: "普通、悬停、命中和取字就绪状态颜色",
+      keys: [
+        "POINTER_COLOR_NORMAL_HEX",
+        "POINTER_COLOR_HOVER_HEX",
+        "POINTER_COLOR_HIT_HEX",
+        "POINTER_COLOR_TEXT_READY_HEX",
+        "POINTER_FRAME_TEXT_READY_HEX"
+      ]
+    },
+    {
+      key: "ocr_color",
+      title: "框选 OCR 颜色",
+      desc: "框选区域、框选就绪和识别中状态颜色",
+      keys: [
+        "POINTER_COLOR_AREA_HEX",
+        "POINTER_COLOR_AREA_READY_HEX",
+        "POINTER_COLOR_CAPTURE_HEX"
+      ]
+    }'''
+          new_groups = '''    {
+      key: "pointer_color",
+      title: "指针颜色",
+      desc: "设置指针本体在普通、取字就绪、框选就绪和框选拖动状态下的颜色",
+      keys: [
+        "POINTER_COLOR_NORMAL_HEX",
+        "POINTER_COLOR_TEXT_READY_HEX",
+        "POINTER_COLOR_AREA_READY_HEX",
+        "POINTER_COLOR_AREA_HEX"
+      ]
+    },
+    {
+      key: "pointer_frame_color",
+      title: "边框颜色",
+      desc: "设置文字悬停、取字或框选就绪，以及框选区域的边框颜色",
+      keys: [
+        "POINTER_FRAME_TEXT_HOVER_HEX",
+        "POINTER_FRAME_TEXT_READY_HEX",
+        "POINTER_FRAME_AREA_HEX"
+      ]
+    }'''
+          text = replace_once(text, old_groups, new_groups, 'pointer color groups')
+          write(path, text)
+
+          # th_17_pointer.js：删除命中/悬停/截图专用指针颜色，使用独立边框键。
+          path = 'code/th_17_pointer.js'
+          text = read(path)
+          text = replace_once(text, '// @version 1.2.10', '// @version 1.2.11', 'th17 version')
+          old_pointer_colors = '''        if (processing) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
+        } else if (st.mode === "area_capture" || st.areaSelecting || st.areaReady) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        } else if (areaOcrReady) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_READY_HEX", 245, 158, 11);
+        } else if (textReady) {
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_COLOR_TEXT_READY_HEX", "POINTER_COLOR_HIT_HEX", 34, 197, 94);
+        } else if (st.hot) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HIT_HEX", 245, 158, 11);
+        } else if (hoverCandidate) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
+        } else {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_NORMAL_HEX", 76, 124, 160);
+        }'''
+          new_pointer_colors = '''        if (processing || st.mode === "area_capture" || st.areaSelecting || st.areaReady) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        } else if (areaOcrReady) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_READY_HEX", 245, 158, 11);
+        } else if (textReady) {
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_COLOR_TEXT_READY_HEX", "POINTER_COLOR_NORMAL_HEX", 34, 197, 94);
+        } else {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_NORMAL_HEX", 76, 124, 160);
+        }'''
+          text = replace_once(text, old_pointer_colors, new_pointer_colors, 'pointer canvas colors')
+          old_frame_colors = '''        if (kind === "capture" || st.areaProcessing === true) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
+          fillAlpha = 56;
+          strokeAlpha = 245;
+          strokeWidth = self.dp(2.4);
+        } else if (kind === "text_hit") {
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_COLOR_TEXT_READY_HEX", 34, 197, 94);
+          fillAlpha = 38;
+          strokeAlpha = 248;
+          strokeWidth = self.dp(2.3);
+        } else if (kind === "text_hover") {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
+          fillAlpha = 26;
+          strokeAlpha = 215;
+          strokeWidth = self.dp(1.8);
+        } else if (kind === "area_armed") {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+          fillAlpha = 18;
+          strokeAlpha = 150;
+          strokeWidth = self.dp(1.4);
+        } else {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        }'''
+          new_frame_colors = '''        if (kind === "capture" || st.areaProcessing === true) {
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+          fillAlpha = 56;
+          strokeAlpha = 245;
+          strokeWidth = self.dp(2.4);
+        } else if (kind === "text_hit") {
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_FRAME_TEXT_HOVER_HEX", 34, 197, 94);
+          fillAlpha = 38;
+          strokeAlpha = 248;
+          strokeWidth = self.dp(2.3);
+        } else if (kind === "text_hover") {
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_HOVER_HEX", "POINTER_COLOR_NORMAL_HEX", 14, 165, 233);
+          fillAlpha = 26;
+          strokeAlpha = 215;
+          strokeWidth = self.dp(1.8);
+        } else if (kind === "area_armed") {
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+          fillAlpha = 18;
+          strokeAlpha = 150;
+          strokeWidth = self.dp(1.4);
+        } else {
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        }'''
+          text = replace_once(text, old_frame_colors, new_frame_colors, 'pointer frame colors')
+          write(path, text)
+
+          # th_18_pointer_ocr.js：同步覆盖层边框颜色职责。
+          path = 'code/th_18_pointer_ocr.js'
+          text = read(path)
+          text = replace_once(text, '// @version 1.1.1', '// @version 1.1.2', 'th18 version')
+          old_ocr_frame = '''                  if (typeof th17PointerColorRgbWithFallback === "function" && kind === "text_hit") {
+                    rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_COLOR_TEXT_READY_HEX", 34, 197, 94);
+                    fillAlpha = 38;
+                    strokeAlpha = 248;
+                    strokeWidth = self.dp(2.3);
+                  } else if (typeof th17PointerColorRgb === "function") {
+                    if (processing || kind === "capture") {
+                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
+                      fillAlpha = 56;
+                      strokeAlpha = 245;
+                    } else if (kind === "text_hover") {
+                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
+                      fillAlpha = 26;
+                      strokeAlpha = 215;
+                      strokeWidth = self.dp(1.8);
+                    } else if (kind === "area_armed") {
+                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                      fillAlpha = 18;
+                      strokeAlpha = 150;
+                      strokeWidth = self.dp(1.4);
+                    } else {
+                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                    }
+                  }'''
+          new_ocr_frame = '''                  if (typeof th17PointerColorRgbWithFallback === "function" && kind === "text_hit") {
+                    rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_FRAME_TEXT_HOVER_HEX", 34, 197, 94);
+                    fillAlpha = 38;
+                    strokeAlpha = 248;
+                    strokeWidth = self.dp(2.3);
+                  } else if (typeof th17PointerColorRgbWithFallback === "function") {
+                    if (processing || kind === "capture") {
+                      rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                      fillAlpha = 56;
+                      strokeAlpha = 245;
+                    } else if (kind === "text_hover") {
+                      rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_HOVER_HEX", "POINTER_COLOR_NORMAL_HEX", 14, 165, 233);
+                      fillAlpha = 26;
+                      strokeAlpha = 215;
+                      strokeWidth = self.dp(1.8);
+                    } else if (kind === "area_armed") {
+                      rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                      fillAlpha = 18;
+                      strokeAlpha = 150;
+                      strokeWidth = self.dp(1.4);
+                    } else {
+                      rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                    }
+                  }'''
+          text = replace_once(text, old_ocr_frame, new_ocr_frame, 'ocr frame colors')
+          text = replace_once(
+              text,
+              'if (!rgb) rgb = processing ? { r: 168, g: 85, b: 247 } : { r: 59, g: 130, b: 246 };',
+              'if (!rgb) rgb = { r: 59, g: 130, b: 246 };',
+              'ocr frame fallback'
+          )
+          write(path, text)
+
+          # 同步固定引用基础模块版本的专项校验。
+          for script in (
+              'scripts/verify_legacy_main_panel_cleanup.py',
+              'scripts/verify_main_panel_visual_tuning.py',
+              'scripts/verify_main_panel_adaptive_layout.py',
+              'scripts/verify_panel_layout_settings_cleanup.py',
+          ):
+              value = read(script)
+              if '1.1.14' not in value:
+                  raise SystemExit('missing th01 version anchor: ' + script)
+              write(script, value.replace('1.1.14', '1.1.15'))
+
+          script = 'scripts/verify_coloros_rhino_color_safety.py'
+          value = read(script)
+          lines = value.splitlines(True)
+          changed = 0
+          for i, line in enumerate(lines):
+              if 'th_13_panel_ui.js' in line and '1.0.9' in line:
+                  lines[i] = line.replace('1.0.9', '1.0.10')
+                  changed += 1
+          if changed != 1:
+              raise SystemExit('th13 verifier version anchors=%d' % changed)
+          write(script, ''.join(lines))
+
+          # 静态约束：三个旧设置键只允许存在于旧配置清理表。
+          removed = ('POINTER_COLOR_HOVER_HEX', 'POINTER_COLOR_HIT_HEX', 'POINTER_COLOR_CAPTURE_HEX')
+          code_files = list((ROOT / 'code').glob('*.js'))
+          for key in removed:
+              hits = []
+              for file in code_files:
+                  for no, line in enumerate(file.read_text(encoding='utf-8').splitlines(), 1):
+                      if key in line:
+                          hits.append('%s:%d' % (file.as_posix(), no))
+              if len(hits) != 1 or hits[0].split(':')[0] != 'code/th_01_base.js':
+                  raise SystemExit('%s unexpected references: %s' % (key, ', '.join(hits)))
+
+          required = {
+              'POINTER_FRAME_TEXT_HOVER_HEX': ('code/th_01_base.js', 'code/th_14_panels.js', 'code/th_17_pointer.js', 'code/th_18_pointer_ocr.js'),
+              'POINTER_FRAME_AREA_HEX': ('code/th_01_base.js', 'code/th_14_panels.js', 'code/th_17_pointer.js', 'code/th_18_pointer_ocr.js'),
+          }
+          for key, files in required.items():
+              for file in files:
+                  if key not in read(file):
+                      raise SystemExit('missing %s in %s' % (key, file))
+
+          # 更新模块清单；正式 fix PR 由仓库签名工作流生成 manifest.sig。
+          manifest_path = ROOT / 'manifest.json'
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          for name in ('th_01_base.js', 'th_13_panel_ui.js', 'th_14_panels.js', 'th_17_pointer.js', 'th_18_pointer_ocr.js'):
+              file = ROOT / 'code' / name
+              data = file.read_bytes()
+              head = '\n'.join(file.read_text(encoding='utf-8').splitlines()[:5])
+              match = re.search(r'@version\s+(\d+\.\d+\.\d+)', head)
+              if not match:
+                  raise SystemExit('missing version: ' + name)
+              manifest['files'][name] = {
+                  'sha256': hashlib.sha256(data).hexdigest(),
+                  'size': len(data),
+                  'version': match.group(1),
+              }
+          manifest['version'] = int(time.strftime('%Y%m%d%H%M%S', time.gmtime()))
+          manifest['release'] = {
+              'title': '清理并重组指针颜色设置',
+              'changes': ['移除无效颜色项，按指针和边框重新分组并补充用途说明'],
+          }
+          manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+
+      - name: 执行专项校验
+        shell: bash
+        run: |
+          python3 scripts/verify_pointer_regressions.py
+          python3 scripts/verify_schema_validator.py
+          python3 scripts/verify_settings_color_scheme.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_full_rhino_color_safety.py
+          git diff --check
+
+      - name: 发布干净修复分支
+        shell: bash
+        run: |
+          git diff --binary > /tmp/pointer-color-settings.patch
+          test -s /tmp/pointer-color-settings.patch
+          git fetch origin main
+          git switch -C fix/pointer-color-settings-cleanup-20260716 origin/main
+          git apply --index /tmp/pointer-color-settings.patch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "清理并重组指针颜色设置"
+          git push --force origin HEAD:fix/pointer-color-settings-cleanup-20260716
