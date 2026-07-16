@@ -209,6 +209,31 @@ def main() -> int:
         failures,
     )
 
+    state_init = section(preview, "appObj.state.resultPreview = {", "var st = appObj.state.resultPreview;")
+    require(
+        "preview / no write-only lifecycle mirrors",
+        "visible: false" not in state_init
+        and "entering: false" not in state_init
+        and "exiting: false" not in state_init
+        and "drawCount: 0" not in state_init
+        and "firstDrawLogged: false" not in state_init
+        and "dismissScheduledAt: 0" not in state_init
+        and "downAt: 0" not in state_init
+        and "st.visible =" not in preview
+        and "st.entering =" not in preview
+        and "st.exiting =" not in preview
+        and "current.exiting =" not in preview
+        and "st.drawCount =" not in preview
+        and "firstDrawLogged" not in preview
+        and "dismissScheduledAt" not in preview
+        and "st.downAt =" not in preview
+        and "render.drawCount" in preview
+        and "render.firstDrawAt" in preview
+        and "st.visibleStartedAt" in preview,
+        "preview state must retain only lifecycle values that participate in rendering, timing or stale-callback isolation",
+        failures,
+    )
+
     require(
         "preview / canvas-only custom rendering",
         "new JavaAdapter(android.view.View" in create_view
