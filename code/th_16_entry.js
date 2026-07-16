@@ -1,4 +1,4 @@
-// @version 1.0.13
+// @version 1.0.15
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -434,7 +434,16 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
               if (self.state.ballContent) self.updateBallContentBackground(self.state.ballContent);
               if (self.state.panel) self.updatePanelBackground(self.state.panel);
               if (self.state.settingsPanel) self.updatePanelBackground(self.state.settingsPanel);
-              if (self.state.viewerPanel) self.updatePanelBackground(self.state.viewerPanel);
+              if (self.state.viewerPanel) {
+                var viewerRef = self.state.viewerPanel;
+                if (String(self.state.viewerPanelType || "") === "tool_app" && self.postToAndroidMain) {
+                  self.postToAndroidMain(function() {
+                    try {
+                      if (self.state.viewerPanel === viewerRef) self.updatePanelBackground(viewerRef);
+                    } catch (eViewerTheme) {}
+                  });
+                } else self.updatePanelBackground(viewerRef);
+              }
             } catch (e1) {}
           }
         }));
@@ -639,4 +648,244 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
       viewerTextSp: Number(this.config.CONTENT_VIEWER_TEXT_SP || 12)
     }
   };
+};
+
+// =======================【ToolApp Android 主线程归属】=======================
+FloatBallAppWM.prototype.isAndroidMainThread = function() {
+  try { return android.os.Looper.myLooper() === android.os.Looper.getMainLooper(); }
+  catch (e) { return false; }
+};
+
+FloatBallAppWM.prototype.isToolHubWmThread = function() {
+  try {
+    return !!(this.state && this.state.h &&
+      android.os.Looper.myLooper() === this.state.h.getLooper());
+  } catch (e) { return false; }
+};
+
+FloatBallAppWM.prototype.toolAppThreadInfo = function() {
+  try {
+    return "thread=" + String(java.lang.Thread.currentThread().getName()) +
+      " javaTid=" + String(java.lang.Thread.currentThread().getId()) +
+      " isMain=" + String(this.isAndroidMainThread());
+  } catch (e) { return "thread=unknown"; }
+};
+
+FloatBallAppWM.prototype.makeToolAppRunnable = function(fn) {
+  return new JavaAdapter(java.lang.Runnable, {
+    run: function() {
+      try { if (fn) fn(); }
+      catch (eRun) {
+        try { safeLog(null, 'e', "toolapp runnable fail: " + String(eRun)); } catch (eLog) {}
+      }
+    }
+  });
+};
+
+FloatBallAppWM.prototype.postToAndroidMain = function(fn) {
+  if (!fn) return false;
+  if (this.isAndroidMainThread()) {
+    fn();
+    return true;
+  }
+  try {
+    var h = new android.os.Handler(android.os.Looper.getMainLooper());
+    return !!h.post(this.makeToolAppRunnable(fn));
+  } catch (ePost) {
+    safeLog(this.L, 'e', "post android main fail: " + String(ePost));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.postToToolHubWm = function(fn) {
+  if (!fn) return false;
+  if (this.isToolHubWmThread()) {
+    fn();
+    return true;
+  }
+  try {
+    return !!(this.state && this.state.h &&
+      this.state.h.post(this.makeToolAppRunnable(fn)));
+  } catch (ePost) {
+    safeLog(this.L, 'e', "post toolhub wm fail: " + String(ePost));
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.runOnToolAppMainSync = function(fn, timeoutMs) {
+  if (!fn) return { ok: false, error: "empty-fn" };
+  if (this.isAndroidMainThread()) {
+    try { return { ok: true, value: fn(), direct: true }; }
+    catch (eDirect) { return { ok: false, error: eDirect }; }
+  }
+  try {
+    if (typeof runOnMainSync === "function") {
+      return runOnMainSync(fn, timeoutMs || 3000);
+    }
+  } catch (eMain) {
+    return { ok: false, error: eMain };
+  }
+  return { ok: false, error: "main-helper-missing" };
+};
+
+FloatBallAppWM.prototype.prepareToolAppHostOnWm = function() {
+  if (!this.state || this.state.closing || this.state.closed) return false;
+  if (!this.isToolHubWmThread()) {
+    safeLog(this.L, 'e', "prepare toolapp host blocked wrong thread " + this.toolAppThreadInfo());
+    return false;
+  }
+  try { this.touchActivity(); } catch (eTouch) {}
+  try { if (this.state.addedPanel) this.hideMainPanel(); } catch (eMainPanel) {}
+  try { if (this.state.addedSettings) this.hideSettingsPanel(); } catch (eSettings) {}
+  try { if (!this.state.addedMask) this.showMask(); } catch (eMask) {}
+  return true;
+};
+
+FloatBallAppWM.prototype.showToolAppOnMain = function(route, resetStack, generation) {
+  if (!this.isAndroidMainThread()) {
+    throw "showToolAppOnMain requires android main";
+  }
+  if (!this.state || this.state.closing || this.state.closed) return false;
+  var expectedGeneration = Number(generation || 0);
+  if (expectedGeneration > 0 &&
+      Number(this.state.toolAppUiGeneration || 0) !== expectedGeneration) {
+    safeLog(this.L, 'd', "TOOLAPP_BUILD_DROPPED generation=" + String(expectedGeneration) +
+      " current=" + String(this.state.toolAppUiGeneration || 0));
+    return false;
+  }
+  var r = this.isToolAppRoute(route) ? String(route) : "settings";
+  try {
+    safeLog(this.L, 'i', "TOOLAPP_BUILD_BEGIN route=" + r + " " + this.toolAppThreadInfo());
+    this.state.toolAppActive = true;
+    this.state.toolAppRoute = r;
+    if (r === "settings") this.state.settingsGroupKey = null;
+    if (resetStack && r === "settings") {
+      this.state.pendingUserCfg = null;
+      this.state.pendingDirty = false;
+      this.state.previewMode = false;
+      this.state.toolAppScrollY = 0;
+    }
+    if (resetStack || !this.state.toolAppNavStack || !this.state.toolAppNavStack.length) {
+      this.state.toolAppNavStack = [this.makeToolAppStackEntry(r)];
+      try { this.bumpToolAppStackVersion(); } catch (eStackInit) {}
+    }
+
+    var raw = this.buildPanelView(r);
+    var shell = this.ensureToolAppShell();
+    if (!shell) throw "ToolApp shell missing";
+    this.updateToolAppShellChrome(this.getToolAppTitle(r), this.state.toolAppNavStack.length > 1);
+    this.setToolAppContent(raw);
+
+    var layout = this.calculateToolAppLayout(shell);
+    var lp0 = shell.getLayoutParams();
+    if (!lp0) lp0 = new android.view.ViewGroup.LayoutParams(layout.width, layout.height);
+    lp0.width = layout.width;
+    lp0.height = layout.height;
+    shell.setLayoutParams(lp0);
+
+    if (!this.state.addedViewer || this.state.viewerPanel !== shell) {
+      this.addPanel(shell, layout.x, layout.y, "tool_app");
+    } else if (this.state.viewerPanelLp) {
+      this.state.viewerPanelLp.width = layout.width;
+      this.state.viewerPanelLp.height = layout.height;
+      this.state.viewerPanelLp.x = layout.x;
+      this.state.viewerPanelLp.y = layout.y;
+      this.state.wm.updateViewLayout(shell, this.state.viewerPanelLp);
+      try { shell.requestFocus(); } catch (eFocus) {}
+    }
+    this.state.toolAppUiOwner = "android_main";
+    safeLog(this.L, 'i', "TOOLAPP_BUILD_DONE route=" + r + " " + this.toolAppThreadInfo());
+    return true;
+  } catch (eShow) {
+    this.state.toolAppActive = false;
+    safeLog(this.L, 'e', "showToolAppOnMain fail route=" + r + " err=" + String(eShow));
+    try { this.toast("设置页面显示失败: " + String(eShow)); } catch (eToast) {}
+  }
+  return false;
+};
+
+FloatBallAppWM.prototype.clearToolAppViewState = function() {
+  var s = this.state;
+  if (!s) return;
+  s.viewerPanel = null;
+  s.viewerPanelLp = null;
+  s.viewerPanelType = null;
+  s.addedViewer = false;
+  s.toolAppRoot = null;
+  s.toolAppBody = null;
+  s.toolAppContentHost = null;
+  s.toolAppBackPreviewView = null;
+  s.toolAppBackPreviewRoute = null;
+  s.toolAppBackPreviewReady = false;
+  s.toolAppBackPreviewStackVersion = null;
+  s.toolAppBackPreviewEntryKey = null;
+  s.toolAppTitleView = null;
+  s.toolAppBackButton = null;
+  s.toolAppHelpButton = null;
+  s.toolAppCloseButton = null;
+  s.toolAppRightButton = null;
+  s.settingsNoticeContainerRef = null;
+  s.toolAppUiOwner = "";
+};
+
+FloatBallAppWM.prototype.removeToolAppOnMain = function(reason, immediate) {
+  if (!this.isAndroidMainThread()) {
+    throw "removeToolAppOnMain requires android main";
+  }
+  var s = this.state;
+  if (!s) return true;
+  var root = s.toolAppRoot ||
+    (String(s.viewerPanelType || "") === "tool_app" ? s.viewerPanel : null);
+  var generation = Number(s.toolAppUiGeneration || 0) + 1;
+  if (generation > 1000000000) generation = 1;
+  s.toolAppUiGeneration = generation;
+  safeLog(this.L, 'i', "TOOLAPP_REMOVE_BEGIN reason=" + String(reason || "") +
+    " " + this.toolAppThreadInfo());
+  s.toolAppActive = false;
+  s.toolAppRoute = null;
+  s.toolAppNavStack = [];
+  s.settingsGroupKey = null;
+  s.settingsHomeSelectedItemId = null;
+  try { this.bumpToolAppStackVersion(); } catch (eStack) {}
+
+  if (root) {
+    try {
+      var focus = root.findFocus();
+      var token = focus ? focus.getWindowToken() : root.getWindowToken();
+      var imm = context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+      if (imm && token) imm.hideSoftInputFromWindow(token, 0);
+      if (focus) focus.clearFocus();
+    } catch (eIme) {}
+    try { root.animate().cancel(); } catch (eAnim) {}
+    try { root.clearAnimation(); } catch (eClear) {}
+    try {
+      if (this.unregisterPanelPredictiveBack) this.unregisterPanelPredictiveBack(root, false);
+    } catch (eBack) {}
+    try {
+      if ((immediate === true || s.closing) && s.wm.removeViewImmediate) {
+        s.wm.removeViewImmediate(root);
+      } else {
+        s.wm.removeView(root);
+      }
+    } catch (eRemove) {
+      try { s.wm.removeViewImmediate(root); }
+      catch (eFallback) {
+        safeLog(this.L, 'w', "toolapp remove fail: " + String(eRemove) +
+          "; fallback=" + String(eFallback));
+      }
+    }
+  }
+
+  this.clearToolAppViewState();
+  var self = this;
+  if (!s.closing && !s.closed) {
+    this.postToToolHubWm(function() {
+      try { self.hideMask(); } catch (eMask) {}
+      try { self.touchActivity(); } catch (eTouch) {}
+      try { self._clearHeavyCachesIfAllHidden("toolapp_remove"); } catch (eCache) {}
+    });
+  }
+  safeLog(this.L, 'i', "TOOLAPP_REMOVE_DONE reason=" + String(reason || "") +
+    " " + this.toolAppThreadInfo());
+  return true;
 };

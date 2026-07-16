@@ -1,4 +1,4 @@
-// @version 1.1.17
+// @version 1.1.18
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -143,6 +143,13 @@ FloatBallAppWM.prototype.getBestPanelPosition = function(pw, ph, bx, by, ballSiz
 };
 
 FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
+  var __toolAppPanel = String(which || "") === "tool_app";
+  if (__toolAppPanel && (!this.isAndroidMainThread || !this.isAndroidMainThread())) {
+    safeLog(this.L, 'e', "tool_app addPanel blocked wrong thread " +
+      (this.toolAppThreadInfo ? this.toolAppThreadInfo() : ""));
+    throw "tool_app addPanel requires android main";
+  }
+
   if (this.state.closing) return;
 
   // Determine if this panel should be modal (blocking background touches, better for IME)
@@ -180,7 +187,10 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
   }
 
   // Allow resizing for IME
-  lp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
+  lp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE |
+    (__toolAppPanel
+      ? android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN
+      : android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 
   lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
   lp.x = x;
@@ -188,7 +198,11 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
 
   try { if (this.attachPanelSystemKeyHandler) this.attachPanelSystemKeyHandler(panel, which); } catch (eKeyAttach) { safeLog(this.L, 'e', "attach panel key fail which=" + String(which) + " err=" + String(eKeyAttach)); }
 
+  if (__toolAppPanel) safeLog(this.L, 'i', "TOOLAPP_WM_ADD_BEGIN " +
+    (this.toolAppThreadInfo ? this.toolAppThreadInfo() : ""));
   try { this.state.wm.addView(panel, lp); } catch (eAdd) { safeLog(this.L, 'e',  "addPanel fail which=" + String(which) + " err=" + String(eAdd)); return; }
+  if (__toolAppPanel) safeLog(this.L, 'i', "TOOLAPP_WM_ADD_DONE " +
+    (this.toolAppThreadInfo ? this.toolAppThreadInfo() : ""));
 
   if (which === "main") { this.state.panel = panel; this.state.panelLp = lp; this.state.addedPanel = true; }
   else if (which === "settings") { this.state.settingsPanel = panel; this.state.settingsPanelLp = lp; this.state.addedSettings = true; }
@@ -1399,58 +1413,35 @@ FloatBallAppWM.prototype.calculateToolAppLayout = function(shell) {
 };
 
 FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
-  if (this.state.closing) return;
+  if (!this.state || this.state.closing || this.state.closed) return false;
+  var self = this;
   var r = this.isToolAppRoute(route) ? String(route) : "settings";
-  try {
-    this.touchActivity();
-    this.hideMainPanel();
-    this.hideSettingsPanel();
-    this.showMask();
-    this.state.toolAppActive = true;
-    this.state.toolAppRoute = r;
-    if (r === "settings") this.state.settingsGroupKey = null;
-    if (resetStack && r === "settings") {
-      this.state.pendingUserCfg = null;
-      this.state.pendingDirty = false;
-      this.state.previewMode = false;
-      this.state.toolAppScrollY = 0;
-    }
-    if (resetStack || !this.state.toolAppNavStack || !this.state.toolAppNavStack.length) {
-      this.state.toolAppNavStack = [this.makeToolAppStackEntry(r)];
-      try { this.bumpToolAppStackVersion(); } catch(eStackInit) {}
-    }
+  var reset = !!resetStack;
+  var generation = Number(this.state.toolAppUiGeneration || 0) + 1;
+  if (generation > 1000000000) generation = 1;
+  this.state.toolAppUiGeneration = generation;
 
-    var raw = this.buildPanelView(r);
-    var shell = this.ensureToolAppShell();
-    if (!shell) throw "ToolApp shell missing";
-    this.updateToolAppShellChrome(this.getToolAppTitle(r), this.state.toolAppNavStack.length > 1);
-    this.setToolAppContent(raw);
-
-    var layout = this.calculateToolAppLayout(shell);
-    var lp0 = shell.getLayoutParams();
-    if (!lp0) lp0 = new android.view.ViewGroup.LayoutParams(layout.width, layout.height);
-    lp0.width = layout.width; lp0.height = layout.height;
-    shell.setLayoutParams(lp0);
-
-    if (!this.state.addedViewer || this.state.viewerPanel !== shell) {
-      this.addPanel(shell, layout.x, layout.y, "tool_app");
-    } else {
-      try {
-        if (this.state.viewerPanelLp) {
-          this.state.viewerPanelLp.width = layout.width;
-          this.state.viewerPanelLp.height = layout.height;
-          this.state.viewerPanelLp.x = layout.x;
-          this.state.viewerPanelLp.y = layout.y;
-          this.state.wm.updateViewLayout(shell, this.state.viewerPanelLp);
-        }
-      } catch (eUpd) { safeLog(this.L, 'w', "tool_app update layout fail: " + String(eUpd)); }
-      try { shell.requestFocus(); } catch (eFocus) {}
-    }
-  } catch (e) {
-    this.state.toolAppActive = false;
-    safeLog(this.L, 'e', "showToolApp fail route=" + r + " err=" + String(e));
-    try { this.toast("设置页面显示失败: " + String(e)); } catch(et) {}
+  function postBuild() {
+    return self.postToAndroidMain(function() {
+      self.showToolAppOnMain(r, reset, generation);
+    });
   }
+
+  if (this.isAndroidMainThread && this.isAndroidMainThread()) {
+    if (this.state.toolAppActive) return this.showToolAppOnMain(r, reset, generation);
+    return this.postToToolHubWm(function() {
+      if (self.prepareToolAppHostOnWm()) postBuild();
+    });
+  }
+
+  if (this.isToolHubWmThread && this.isToolHubWmThread()) {
+    if (!this.prepareToolAppHostOnWm()) return false;
+    return postBuild();
+  }
+
+  return this.postToToolHubWm(function() {
+    if (self.prepareToolAppHostOnWm()) postBuild();
+  });
 };
 
 FloatBallAppWM.prototype.pushToolAppPage = function(route) {
@@ -1516,19 +1507,13 @@ FloatBallAppWM.prototype.popToolAppPage = function(reason) {
 };
 
 FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
-  if (this.state.closing) return;
-
-  // 设置入口先走 AppShell + 页面栈；子页面在 AppShell 内刷新，逐步替换旧多浮窗模式。
-  if (this.isToolAppRoute && this.isToolAppRoute(which)) {
-    if (which === "settings" && !this.state.toolAppActive) {
-      this.showToolApp("settings", true);
-      return;
-    }
-    if (this.state.toolAppActive) {
-      this.replaceToolAppPage(which);
-      return;
-    }
+  var __route = String(which || "");
+  if (this.isToolAppRoute && this.isToolAppRoute(__route)) {
+    if (this.state && this.state.toolAppActive) return this.replaceToolAppPage(__route);
+    return this.showToolApp(__route, true);
   }
+
+  if (this.state.closing) return;
 
   // 优化：如果是刷新编辑器面板（btn_editor/schema_editor），且面板已存在，则直接更新内容，避免闪烁
   if ((which === "btn_editor" || which === "schema_editor") && this.state.addedViewer && this.state.viewerPanel) {

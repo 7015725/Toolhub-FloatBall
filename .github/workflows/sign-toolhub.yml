@@ -186,7 +186,9 @@ jobs:
           python3 scripts/verify_ball_position_state.py
 
       - name: Verify toolapp layout
-        run: python3 scripts/verify_toolapp_layout.py
+        run: |
+          python3 scripts/verify_toolapp_layout.py
+          python3 scripts/verify_toolapp_main_thread_affinity.py
 
       - name: Verify settings color scheme
         run: python3 scripts/verify_settings_color_scheme.py

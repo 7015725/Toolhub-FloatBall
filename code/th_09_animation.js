@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.0.10
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -44,6 +44,23 @@ FloatBallAppWM.prototype.playBounce = function(v) {
 };
 
 FloatBallAppWM.prototype.safeRemoveView = function(v, whichName, options) {
+  var __toolAppView = false;
+  try {
+    __toolAppView = v === this.state.toolAppRoot ||
+      (v === this.state.viewerPanel && String(this.state.viewerPanelType || "") === "tool_app");
+  } catch (eToolView) {}
+  if (__toolAppView && this.isAndroidMainThread && !this.isAndroidMainThread()) {
+    var self = this;
+    var mainResult = this.runOnToolAppMainSync(function() {
+      return self.safeRemoveView(v, whichName, options);
+    }, 3000);
+    if (!mainResult.ok) {
+      safeLog(this.L, 'e', "toolapp safeRemoveView dispatch fail: " + String(mainResult.error));
+      return { ok: false, err: String(mainResult.error || "main dispatch failed"), where: whichName || "" };
+    }
+    return mainResult.value;
+  }
+
   var opts = options || {};
   try {
     if (!v) return { ok: true, skipped: true };
@@ -227,6 +244,23 @@ FloatBallAppWM.prototype.hideSettingsPanel = function() {
 };
 
 FloatBallAppWM.prototype.hideViewerPanel = function() {
+  var __toolAppViewer = false;
+  try {
+    __toolAppViewer = String(this.state.viewerPanelType || "") === "tool_app" ||
+      this.state.viewerPanel === this.state.toolAppRoot;
+  } catch (eToolViewer) {}
+  if (__toolAppViewer) {
+    var self = this;
+    if (this.isAndroidMainThread && this.isAndroidMainThread()) {
+      return this.removeToolAppOnMain("hideViewerPanel", !!this.state.closing);
+    }
+    var mainResult = this.runOnToolAppMainSync(function() {
+      return self.removeToolAppOnMain("hideViewerPanel", !!self.state.closing);
+    }, 3000);
+    if (!mainResult.ok) safeLog(this.L, 'e', "hide toolapp dispatch fail: " + String(mainResult.error));
+    return mainResult.ok ? mainResult.value : false;
+  }
+
   if (!this.state.addedViewer) return;
   if (!this.state.viewerPanel) return;
 
@@ -666,6 +700,11 @@ FloatBallAppWM.prototype._clearHeavyCachesIfAllHidden = function(reason) {
 };
 
 FloatBallAppWM.prototype.hideAllPanels = function() {
+  try {
+    var generation = Number(this.state.toolAppUiGeneration || 0) + 1;
+    if (generation > 1000000000) generation = 1;
+    this.state.toolAppUiGeneration = generation;
+  } catch(eGeneration) {}
   try {
     if (this.state && this.state.activePopupDismiss) this.state.activePopupDismiss();
   } catch(ePopupDismiss) { try { safeLog(this.L, 'w', "hide active popup fail: " + String(ePopupDismiss)); } catch(eLogPopupDismiss) {} }

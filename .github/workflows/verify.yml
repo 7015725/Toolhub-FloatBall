@@ -124,6 +124,7 @@ jobs:
             python3 scripts/verify_animation_callback_safety.py
             python3 scripts/verify_ball_rebuild_rollback.py
             python3 scripts/verify_toolapp_layout.py
+            python3 scripts/verify_toolapp_main_thread_affinity.py
             python3 scripts/verify_settings_color_scheme.py
             python3 scripts/verify_legacy_theme_cleanup.py
             python3 scripts/verify_settings_color_roles.py
