@@ -44,12 +44,45 @@ if end < 0:
 cleanup_code = textwrap.dedent(yaml_text[start:end])
 exec(compile(cleanup_code, "pointer-color-settings-cleanup", "exec"), {"__name__": "__main__"})
 
+# 旧 Schema 完整性检查中的无效键也必须清掉；迁移识别表中的三行保留。
+base_path = ROOT / "code" / "th_01_base.js"
+base_lines = base_path.read_text(encoding="utf-8").splitlines(True)
+removed_keys = (
+    "POINTER_COLOR_HOVER_HEX",
+    "POINTER_COLOR_HIT_HEX",
+    "POINTER_COLOR_CAPTURE_HEX",
+)
+clean_lines = []
+for line in base_lines:
+    matched = False
+    for key in removed_keys:
+        if key in line:
+            stripped = line.strip()
+            if stripped == key + ": true," or stripped == key + ": true":
+                break
+            matched = True
+            break
+    if not matched:
+        clean_lines.append(line)
+base_path.write_text("".join(clean_lines), encoding="utf-8")
+
+# 再次确认旧键只存在于迁移识别表。
+for key in removed_keys:
+    hits = []
+    for file in (ROOT / "code").glob("*.js"):
+        for no, line in enumerate(file.read_text(encoding="utf-8").splitlines(), 1):
+            if key in line:
+                hits.append("%s:%d" % (file.as_posix(), no))
+    if len(hits) != 1 or not hits[0].startswith("code/th_01_base.js:"):
+        raise SystemExit("%s unexpected references: %s" % (key, ", ".join(hits)))
+
 for command in (
     [sys.executable, "scripts/verify_pointer_regressions.py"],
     [sys.executable, "scripts/verify_schema_validator.py"],
     [sys.executable, "scripts/verify_settings_color_scheme.py"],
     [sys.executable, "scripts/verify_coloros_rhino_color_safety.py"],
-    [sys.executable, "scripts/verify_full_rhino_color_safety.py"],
+    [sys.executable, "scripts/verify_rhino_color_api_safety.py"],
+    [sys.executable, "scripts/verify_js_syntax.py"],
     ["git", "diff", "--check"],
 ):
     run(command)
