@@ -1,4 +1,4 @@
-// @version 1.1.0
+// @version 1.1.1
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -2881,7 +2881,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     scroll.setFillViewport(true);
     var root = new android.widget.LinearLayout(context);
     root.setOrientation(android.widget.LinearLayout.VERTICAL);
-    scroll.addView(root, new android.widget.ScrollView.LayoutParams(-1, -2));
+    scroll.addView(root, new android.widget.FrameLayout.LayoutParams(-1, -2));
     panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
 
     function addText(parent, value, size, color, bold) {
