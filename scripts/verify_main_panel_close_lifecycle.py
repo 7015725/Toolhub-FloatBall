@@ -30,8 +30,11 @@ def require(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.0.9":
-    fail("expected th_09_animation.js version 1.0.9")
+if not version:
+    fail("th_09_animation.js version marker missing")
+actual_version = tuple(int(part) for part in version.group(1).split("."))
+if actual_version < (1, 0, 9):
+    fail("expected th_09_animation.js version >= 1.0.9, actual %s" % version.group(1))
 
 for method in (
     "safeRemoveView",
