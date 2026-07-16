@@ -28,7 +28,22 @@ jobs:
           fetch-depth: 0
 
       - name: Apply bounded runtime cleanup
-        run: python3 .agent/apply_update_version_runtime_cleanup.py
+        run: |
+          set +e
+          python3 .agent/apply_update_version_runtime_cleanup.py > cleanup.log 2>&1
+          code=$?
+          cat cleanup.log
+          echo "$code" > cleanup.exit
+          exit "$code"
+
+      - name: Upload cleanup log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-version-runtime-cleanup-log
+          path: |
+            cleanup.log
+            cleanup.exit
 
       - name: Refresh deterministic audit reports
         run: |
