@@ -10,8 +10,8 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "635a2c76a3b5420ec15b432872a81d3942afd8965188fa529f99f24aa11e1326",
-      "size": 79936,
+      "sha256": "a54cba88b5d1ae1fc65d996b5c7c17ae1beabe6eb32b6ddcd9322747716db22c",
+      "size": 78054,
       "version": "1.1.15"
     },
     "th_02_core.js": {
@@ -120,14 +120,14 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "aaab913f8ada03f76b3e989a29ddf646ad280b8b2b023fc3d480c6a88e6dfb9e",
-      "size": 173481,
-      "version": "1.2.10"
+      "sha256": "9df1ea2e5655d55b8c46728995ba502fd48ee758dff548111fd5182c003b230e",
+      "size": 173303,
+      "version": "1.2.11"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "3d86a567b30c93b912de35e0e9d622dcdefb805187e25538a1f5ee4f92fb7454",
-      "size": 37314,
-      "version": "1.1.1"
+      "sha256": "29f898b470542bfa9dec8455582f2888cc76de81fef98a35cd506cb10bc669c3",
+      "size": 37441,
+      "version": "1.1.2"
     },
     "th_19_position_state.js": {
       "sha256": "3cfc4b131cb70a1008a0e0e0b6213aded7a36f0ae722a0f309f003231b3c959a",
@@ -153,5 +153,5 @@
     "title": "清理并重组指针颜色设置"
   },
   "schema": 3,
-  "version": 20260716025319
+  "version": 20260716030038
 }

@@ -1,7 +1,9 @@
-Traceback (most recent call last):
-  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_changed_module_versions.py", line 57, in <module>
-    exec(compile(cleanup_code, "pointer-color-settings-cleanup", "exec"), {"__name__": "__main__"})
-    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "pointer-color-settings-cleanup", line 205, in <module>
-  File "pointer-color-settings-cleanup", line 18, in replace_once
-SystemExit: pointer canvas colors anchor count=0
+FAIL: JavaScript syntax invalid: code/th_01_base.js
+/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/code/th_01_base.js:1092
+              sStr.indexOf("POINTER_FRAME_TEXT_HOVER_HEX") < 0 ||
+
+SyntaxError: Invalid left-hand side in assignment
+    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
+    at checkSyntax (node:internal/main/check_syntax:78:3)
+
+Node.js v22.23.1
