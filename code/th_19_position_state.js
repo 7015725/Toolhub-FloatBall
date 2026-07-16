@@ -1,4 +1,4 @@
-// @version 1.0.11
+// @version 1.0.12
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -137,92 +137,168 @@
   };
 
   proto.animateBallLayout = function(toX, toY, toW, durMs, endCb) {
-    var st = this.state;
-    if (!st || !st.addedBall || !st.ballRoot || !st.ballLp) {
-      try { if (endCb) endCb(); } catch (eNoView) {}
-      return false;
-    }
+  var st = this.state;
+  var self = this;
+  var token = 0;
+  var cancelled = false;
+  var callbackCompleted = false;
+  var updateMethodWarningLogged = false;
 
-    this.cancelBallLayoutAnimation("replace");
-    var token = Number(st.ballAnimationToken || 0) + 1;
-    st.ballAnimationToken = token;
-
-    var fromX = Number(st.ballLp.x || 0);
-    var fromY = Number(st.ballLp.y || 0);
-    var fromW = Number(st.ballLp.width || toW);
-    var duration = Math.max(0, numberOr(durMs, 0));
-    var cancelled = false;
-    var self = this;
-
+  function checkpointAnimation(phase, fields, sync) {
     try {
-      var va = android.animation.ValueAnimator.ofFloat(0.0, 1.0);
-      va.setDuration(duration);
-      try { va.setInterpolator(new android.view.animation.DecelerateInterpolator()); } catch (eInterpolator) {}
+      if (self.L && typeof self.L.checkpoint === "function") {
+        self.L.checkpoint(phase, fields || {}, sync === true);
+      }
+    } catch (eCheckpoint) {
+      logPosition(self, "w", "ball animation checkpoint fail phase=" + String(phase || "") + " err=" + String(eCheckpoint));
+    }
+  }
 
-      va.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener({
-        onAnimationUpdate: function(anim) {
-          try {
-            if (cancelled || self.state.closing || !self.state.addedBall) return;
-            if (Number(self.state.ballAnimationToken || 0) !== token) return;
-            if (self.state.ballAnimator !== va) return;
-            var f = Number(anim.getAnimatedValue());
-            var nx = Math.round(fromX + (toX - fromX) * f);
-            var ny = Math.round(fromY + (toY - fromY) * f);
-            var nw = Math.round(fromW + (toW - fromW) * f);
-            if (nx === self.state.ballLp.x && ny === self.state.ballLp.y && nw === self.state.ballLp.width) return;
-            self.state.ballLp.x = nx;
-            self.state.ballLp.y = ny;
-            self.state.ballLp.width = nw;
-            self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);
-          } catch (eUpdate) {
-            logPosition(self, "w", "ball animation update fail: " + String(eUpdate));
-          }
-        }
-      }));
-
-      va.addListener(new android.animation.Animator.AnimatorListener({
-        onAnimationStart: function() {},
-        onAnimationRepeat: function() {},
-        onAnimationCancel: function() {
-          cancelled = true;
-          try { if (self.state.ballAnimator === va) self.state.ballAnimator = null; } catch (eClearCancel) {}
-        },
-        onAnimationEnd: function() {
-          try {
-            if (cancelled) return;
-            if (Number(self.state.ballAnimationToken || 0) !== token) return;
-            if (self.state.ballAnimator !== va) return;
-            self.state.ballAnimator = null;
-            if (self.state.closing || !self.state.addedBall) return;
-            self.state.ballLp.x = toX;
-            self.state.ballLp.y = toY;
-            self.state.ballLp.width = toW;
-            self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);
-            try { if (endCb) endCb(); } catch (eCb) {}
-          } catch (eEnd) {
-            logPosition(self, "w", "ball animation end fail: " + String(eEnd));
-          }
-        }
-      }));
-
-      st.ballAnimator = va;
-      va.start();
-      return true;
-    } catch (eStart) {
-      try {
-        if (Number(st.ballAnimationToken || 0) === token && !st.closing && st.addedBall) {
-          st.ballAnimator = null;
-          st.ballLp.x = toX;
-          st.ballLp.y = toY;
-          st.ballLp.width = toW;
-          st.wm.updateViewLayout(st.ballRoot, st.ballLp);
-        }
-      } catch (eFallback) {}
-      try { if (endCb) endCb(); } catch (eFallbackCb) {}
-      logPosition(this, "w", "ball animation fallback: " + String(eStart));
+  function invokeEndCallback(reason) {
+    if (callbackCompleted) return false;
+    callbackCompleted = true;
+    if (endCb === null || typeof endCb === "undefined") return true;
+    if (typeof endCb !== "function") {
+      logPosition(self, "e", "ball animation callback invalid reason=" + String(reason || "") + " type=" + String(typeof endCb));
+      checkpointAnimation("BALL_ANIM_CALLBACK_FAIL", {
+        reason: String(reason || ""),
+        token: token,
+        error: "invalid_callback_type:" + String(typeof endCb)
+      }, true);
       return false;
     }
-  };
+    checkpointAnimation("BALL_ANIM_CALLBACK_BEGIN", {
+      reason: String(reason || ""),
+      token: token
+    }, false);
+    try {
+      endCb();
+      checkpointAnimation("BALL_ANIM_CALLBACK_DONE", {
+        reason: String(reason || ""),
+        token: token
+      }, false);
+      return true;
+    } catch (eCb) {
+      logPosition(self, "e", "ball animation callback fail reason=" + String(reason || "") + " err=" + String(eCb));
+      checkpointAnimation("BALL_ANIM_CALLBACK_FAIL", {
+        reason: String(reason || ""),
+        token: token,
+        error: String(eCb)
+      }, true);
+    }
+    return false;
+  }
+
+  function canUpdateLayout(stateObj, reason) {
+    var ok = !!(
+      stateObj &&
+      stateObj.wm &&
+      typeof stateObj.wm.updateViewLayout === "function" &&
+      stateObj.ballRoot &&
+      stateObj.ballLp
+    );
+    if (!ok && !updateMethodWarningLogged) {
+      updateMethodWarningLogged = true;
+      logPosition(self, "e", "ball animation updateViewLayout unavailable reason=" + String(reason || "") +
+        " wm=" + String(!!(stateObj && stateObj.wm)) +
+        " method=" + String(stateObj && stateObj.wm ? typeof stateObj.wm.updateViewLayout : "missing") +
+        " root=" + String(!!(stateObj && stateObj.ballRoot)) +
+        " lp=" + String(!!(stateObj && stateObj.ballLp)));
+    }
+    return ok;
+  }
+
+  function commitFinalLayout(reason) {
+    if (!st || st.closing || !st.addedBall || !st.ballRoot || !st.ballLp) return false;
+    st.ballLp.x = toX;
+    st.ballLp.y = toY;
+    st.ballLp.width = toW;
+    if (!canUpdateLayout(st, reason)) return false;
+    try {
+      st.wm.updateViewLayout(st.ballRoot, st.ballLp);
+      return true;
+    } catch (eLayout) {
+      logPosition(self, "e", "ball animation final layout fail reason=" + String(reason || "") + " err=" + String(eLayout));
+    }
+    return false;
+  }
+
+  if (!st || !st.addedBall || !st.ballRoot || !st.ballLp) {
+    invokeEndCallback("no_view");
+    return false;
+  }
+
+  this.cancelBallLayoutAnimation("replace");
+  token = Number(st.ballAnimationToken || 0) + 1;
+  st.ballAnimationToken = token;
+
+  var fromX = Number(st.ballLp.x || 0);
+  var fromY = Number(st.ballLp.y || 0);
+  var fromW = Number(st.ballLp.width || toW);
+  var duration = Math.max(0, numberOr(durMs, 0));
+
+  try {
+    var va = android.animation.ValueAnimator.ofFloat(0.0, 1.0);
+    va.setDuration(duration);
+    try { va.setInterpolator(new android.view.animation.DecelerateInterpolator()); } catch (eInterpolator) {}
+
+    va.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener({
+      onAnimationUpdate: function(anim) {
+        try {
+          if (cancelled || self.state.closing || !self.state.addedBall) return;
+          if (Number(self.state.ballAnimationToken || 0) !== token) return;
+          if (self.state.ballAnimator !== va) return;
+          var f = Number(anim.getAnimatedValue());
+          var nx = Math.round(fromX + (toX - fromX) * f);
+          var ny = Math.round(fromY + (toY - fromY) * f);
+          var nw = Math.round(fromW + (toW - fromW) * f);
+          if (nx === self.state.ballLp.x && ny === self.state.ballLp.y && nw === self.state.ballLp.width) return;
+          self.state.ballLp.x = nx;
+          self.state.ballLp.y = ny;
+          self.state.ballLp.width = nw;
+          if (!canUpdateLayout(self.state, "frame_update")) return;
+          self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);
+        } catch (eUpdate) {
+          logPosition(self, "w", "ball animation update fail: " + String(eUpdate));
+        }
+      }
+    }));
+
+    va.addListener(new android.animation.Animator.AnimatorListener({
+      onAnimationStart: function() {},
+      onAnimationRepeat: function() {},
+      onAnimationCancel: function() {
+        cancelled = true;
+        try { if (self.state.ballAnimator === va) self.state.ballAnimator = null; } catch (eClearCancel) {}
+      },
+      onAnimationEnd: function() {
+        if (cancelled) return;
+        if (Number(self.state.ballAnimationToken || 0) !== token) return;
+        if (self.state.ballAnimator !== va) return;
+        self.state.ballAnimator = null;
+        if (self.state.closing || !self.state.addedBall) return;
+        var layoutOk = commitFinalLayout("animation_end");
+        checkpointAnimation("BALL_ANIM_END", {
+          token: token,
+          layoutOk: layoutOk
+        }, !layoutOk);
+        invokeEndCallback("animation_end");
+      }
+    }));
+
+    st.ballAnimator = va;
+    va.start();
+    return true;
+  } catch (eStart) {
+    if (Number(st.ballAnimationToken || 0) === token && !st.closing && st.addedBall) {
+      st.ballAnimator = null;
+      commitFinalLayout("start_fallback");
+    }
+    invokeEndCallback("start_fallback");
+    logPosition(this, "w", "ball animation fallback: " + String(eStart));
+    return false;
+  }
+};
 
   proto.applyConfiguredBallPosition = function(withAnim, reason) {
     try {

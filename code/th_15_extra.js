@@ -1,4 +1,4 @@
-// @version 1.1.16
+// @version 1.1.17
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -1610,13 +1610,38 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
   var self = this;
 
   var doShow = function() {
+    var maskAddedByCallback = false;
+
+    function panelStage(phase, extra, sync) {
+      var fields = extra || {};
+      fields.which = String(which || "");
+      try {
+        if (self.L && typeof self.L.checkpoint === "function") {
+self.L.checkpoint(phase, fields, sync === true);
+        } else {
+safeLog(self.L, sync === true ? 'e' : 'd', phase + " which=" + String(which || ""));
+        }
+      } catch (eStage) {
+        try { safeLog(self.L, 'w', "panel stage log fail phase=" + String(phase || "") + " err=" + String(eStage)); } catch (eLog) {}
+      }
+    }
+
     try {
       if (self.state.closing) return;
+      panelStage("PANEL_SHOW_CALLBACK_BEGIN", {}, false);
 
+      if (typeof self.showMask !== "function") throw "showMask is not function";
+      panelStage("PANEL_SHOW_MASK_BEGIN", {}, false);
+      var maskWasAdded = self.state.addedMask === true;
       self.showMask();
+      maskAddedByCallback = !maskWasAdded && self.state.addedMask === true;
+      panelStage("PANEL_SHOW_MASK_DONE", { added: self.state.addedMask === true }, false);
 
+      if (typeof self.buildPanelView !== "function") throw "buildPanelView is not function";
       var type = which;
+      panelStage("PANEL_BUILD_CALL_BEGIN", { type: String(type || "") }, false);
       var rawPanel = self.buildPanelView(type);
+      panelStage("PANEL_BUILD_CALL_DONE", { type: String(type || ""), built: !!rawPanel }, false);
 
       // 决定是否启用拖拽/缩放 (排除 main)
       var enableDrag = (which !== "main");
@@ -1726,7 +1751,15 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
           pos.y = savedState.y;
       }
 
+      if (typeof self.addPanel !== "function") throw "addPanel is not function";
+      panelStage("PANEL_ADD_CALL_BEGIN", { x: pos.x, y: pos.y }, false);
       self.addPanel(panelView, pos.x, pos.y, which);
+      panelStage("PANEL_ADD_CALL_DONE", {
+        x: pos.x,
+        y: pos.y,
+        added: which === "main" ? self.state.addedPanel === true :
+(which === "settings" ? self.state.addedSettings === true : self.state.addedViewer === true)
+      }, false);
 
       // 绑定拖拽事件
       if (enableDrag) {
@@ -1735,12 +1768,21 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
 
       self.touchActivity();
     } catch (e) {
-      if (self.L) self.L.e("showPanelAvoidBall callback err=" + String(e));
-      try { self.toast("面板显示失败: " + String(e));  } catch(et) { safeLog(null, 'e', "catch " + String(et)); }
+      panelStage("PANEL_SHOW_CALLBACK_FAIL", { error: String(e) }, true);
+      if (self.L && typeof self.L.e === "function") self.L.e("showPanelAvoidBall callback err=" + String(e));
+      if (maskAddedByCallback && typeof self.hideMaskIfNoPanelVisible === "function") {
+        try { self.hideMaskIfNoPanelVisible(); } catch (eMaskRollback) {
+try { safeLog(self.L, 'w', "panel mask rollback fail: " + String(eMaskRollback)); } catch (eRollbackLog) {}
+        }
+      }
+      try { self.toast("面板显示失败: " + String(e)); } catch(et) { safeLog(null, 'e', "catch " + String(et)); }
     }
   };
 
   if (which === "settings") {
+      doShow();
+  } else if (typeof this.undockToFull !== "function") {
+      safeLog(this.L, 'e', "showPanelAvoidBall undockToFull is not function type=" + String(typeof this.undockToFull));
       doShow();
   } else {
       this.undockToFull(true, doShow);

@@ -1,4 +1,4 @@
-// @version 1.0.8
+// @version 1.0.9
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -740,71 +740,108 @@ FloatBallAppWM.prototype.showMask = function() {
 };
 
 FloatBallAppWM.prototype.undockToFull = function(withAnim, endCb) {
-  if (this.state.closing) { if (endCb) endCb(); return; }
-  if (!this.state.docked) { if (endCb) endCb(); return; }
-  if (!this.state.addedBall) { if (endCb) endCb(); return; }
+  var self = this;
+  var callbackCompleted = false;
+  var undockSide = String(this.state && this.state.dockSide || "right");
+
+  function undockCheckpoint(phase, reason, error, sync) {
+    try {
+      if (self.L && typeof self.L.checkpoint === "function") {
+        self.L.checkpoint(phase, {
+          reason: String(reason || ""),
+          side: undockSide,
+          error: error ? String(error) : ""
+        }, sync === true);
+      }
+    } catch (eCheckpoint) {
+      try { safeLog(self.L, 'w', "undock checkpoint fail phase=" + String(phase || "") + " err=" + String(eCheckpoint)); } catch (eLog) {}
+    }
+  }
+
+  function completeUndock(reason) {
+    if (callbackCompleted) return false;
+    callbackCompleted = true;
+    if (endCb === null || typeof endCb === "undefined") return true;
+    if (typeof endCb !== "function") {
+      safeLog(self.L, 'e', "undock callback invalid reason=" + String(reason || "") + " type=" + String(typeof endCb));
+      undockCheckpoint("BALL_UNDOCK_CALLBACK_FAIL", reason, "invalid_callback_type:" + String(typeof endCb), true);
+      return false;
+    }
+    undockCheckpoint("BALL_UNDOCK_CALLBACK_BEGIN", reason, "", false);
+    try {
+      endCb();
+      undockCheckpoint("BALL_UNDOCK_CALLBACK_DONE", reason, "", false);
+      return true;
+    } catch (eCb) {
+      safeLog(self.L, 'e', "undock callback fail reason=" + String(reason || "") + " err=" + String(eCb));
+      undockCheckpoint("BALL_UNDOCK_CALLBACK_FAIL", reason, eCb, true);
+    }
+    return false;
+  }
+
+  function commitUndockedLayout(x, y, width, reason) {
+    self.state.ballLp.x = x;
+    self.state.ballLp.y = y;
+    self.state.ballLp.width = width;
+    if (!self.state.wm || typeof self.state.wm.updateViewLayout !== "function") {
+      safeLog(self.L, 'e', "undock updateViewLayout unavailable reason=" + String(reason || "") +
+        " method=" + String(self.state.wm ? typeof self.state.wm.updateViewLayout : "missing"));
+      return false;
+    }
+    try {
+      self.state.wm.updateViewLayout(self.state.ballRoot, self.state.ballLp);
+    } catch (eLayout) {
+      safeLog(self.L, 'e', "undock layout commit fail reason=" + String(reason || "") + " err=" + String(eLayout));
+      return false;
+    }
+    try {
+      if (typeof self.savePos === "function") self.savePos(self.state.ballLp.x, self.state.ballLp.y);
+    } catch (eSave) {
+      safeLog(self.L, 'w', "undock save position fail: " + String(eSave));
+    }
+    return true;
+  }
+
+  if (this.state.closing) { completeUndock("closing"); return false; }
+  if (!this.state.docked) { completeUndock("already_full"); return true; }
+  if (!this.state.addedBall || !this.state.ballLp || !this.state.ballRoot) {
+    completeUndock("ball_missing");
+    return false;
+  }
 
   var di = this.getDockInfo();
   var ballSize = di.ballSize;
   var targetW = ballSize;
   var targetY = this.clamp(this.state.ballLp.y, 0, this.state.screen.h - ballSize);
+  var targetX = undockSide === "left" ? 0 : this.state.screen.w - ballSize;
 
-  try { this.state.ballContent.setX(0);  } catch(e0) { safeLog(null, 'e', "catch " + String(e0)); }
-
-  if (this.state.dockSide === "left") {
-    this.state.docked = false;
-    this.state.dockSide = null;
-
-    if (withAnim) this.animateBallLayout(0, targetY, targetW, this.config.UNDOCK_ANIM_MS, endCb);
-    else {
-      this.state.ballLp.x = 0;
-      this.state.ballLp.y = targetY;
-      this.state.ballLp.width = targetW;
-      try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU1) { safeLog(null, 'e', "catch " + String(eU1)); }
-      this.savePos(this.state.ballLp.x, this.state.ballLp.y);
-      if (endCb) endCb();
-    }
-
-    // 恢复不透明度
-    try {
-         if (withAnim && this.config.ENABLE_ANIMATIONS) {
-             this.state.ballContent.animate().alpha(1.0).setDuration(150).start();
-         } else {
-             this.state.ballContent.setAlpha(1.0);
-         }
-     } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
-
-    safeLog(this.L, 'i', "undock from left");
-    return;
-  }
-
-  var x = this.state.screen.w - ballSize;
+  try { this.state.ballContent.setX(0); } catch (e0) { safeLog(null, 'e', "catch " + String(e0)); }
 
   this.state.docked = false;
   this.state.dockSide = null;
 
-  if (withAnim) this.animateBallLayout(x, targetY, targetW, this.config.UNDOCK_ANIM_MS, endCb);
-  else {
-    this.state.ballLp.x = x;
-    this.state.ballLp.y = targetY;
-    this.state.ballLp.width = targetW;
-    try { this.state.wm.updateViewLayout(this.state.ballRoot, this.state.ballLp);  } catch(eU2) { safeLog(null, 'e', "catch " + String(eU2)); }
-    this.savePos(this.state.ballLp.x, this.state.ballLp.y);
-    if (endCb) endCb();
+  if (withAnim === true && typeof this.animateBallLayout === "function") {
+    this.animateBallLayout(targetX, targetY, targetW, this.config.UNDOCK_ANIM_MS, function() {
+      completeUndock("animation_end");
+    });
+  } else {
+    if (withAnim === true && typeof this.animateBallLayout !== "function") {
+      safeLog(this.L, 'e', "undock animateBallLayout is not function type=" + String(typeof this.animateBallLayout));
+    }
+    commitUndockedLayout(targetX, targetY, targetW, withAnim === true ? "animation_unavailable" : "direct");
+    completeUndock(withAnim === true ? "animation_unavailable" : "direct");
   }
 
-  // 恢复不透明度
   try {
-     if (withAnim && this.config.ENABLE_ANIMATIONS) {
-         this.state.ballContent.animate().alpha(1.0).setDuration(150).start();
-     } else {
-         this.state.ballContent.setAlpha(1.0);
-     }
-   } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
+    if (withAnim && this.config.ENABLE_ANIMATIONS) {
+      this.state.ballContent.animate().alpha(1.0).setDuration(150).start();
+    } else {
+      this.state.ballContent.setAlpha(1.0);
+    }
+  } catch (eA) { safeLog(null, 'e', "catch " + String(eA)); }
 
-  // # 日志精简：undock 事件改为 INFO 级别，且记录方向
-  var undockSide = this.state.dockSide || "right";
   safeLog(this.L, 'i', "undock from " + undockSide);
+  return true;
 };
 
 FloatBallAppWM.prototype.cancelDockTimer = function() {
