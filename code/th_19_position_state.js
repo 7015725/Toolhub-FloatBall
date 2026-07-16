@@ -1,4 +1,4 @@
-// @version 1.0.12
+// @version 1.0.13
 // =======================【悬浮球固定位置状态机】=======================
 (function() {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -808,7 +808,7 @@
         self.cancelLongPressTimer();
         self.hideAllPanels();
         self.applyConfiguredBallPosition(false, "pointer_start");
-        var result = self.startPointerTool({ mode: "text_pick", source: "edge_drag" });
+        var result = self.startPointerTool({ mode: "area_ocr", source: "edge_drag" });
         if (!result || result.ok === false) return false;
         preparePointerState();
         pointerStarted = true;

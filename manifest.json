@@ -120,9 +120,9 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "29aa33225cd8c66eefc9a3b8a74da1c9f24e53e25d03c570d90106a35b5855cd",
-      "size": 173407,
-      "version": "1.2.9"
+      "sha256": "aaab913f8ada03f76b3e989a29ddf646ad280b8b2b023fc3d480c6a88e6dfb9e",
+      "size": 173481,
+      "version": "1.2.10"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "3d86a567b30c93b912de35e0e9d622dcdefb805187e25538a1f5ee4f92fb7454",
@@ -130,9 +130,9 @@
       "version": "1.1.1"
     },
     "th_19_position_state.js": {
-      "sha256": "dc3c4b7a4391d1927bbc0599fa9493492b9a1a86ae71b9a8670fc66f8fc03f89",
-      "size": 45065,
-      "version": "1.0.12"
+      "sha256": "3cfc4b131cb70a1008a0e0e0b6213aded7a36f0ae722a0f309f003231b3c959a",
+      "size": 45064,
+      "version": "1.0.13"
     },
     "th_20_pickword.js": {
       "sha256": "5851b513ea1cb6148be440de264e88feaa2342c79c93434adf37abccc513b76a",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "增加框选就绪指针颜色反馈"
+      "修复框选就绪指针颜色未生效"
     ],
-    "title": "增加框选就绪指针颜色反馈"
+    "title": "修复框选就绪指针颜色未生效"
   },
   "schema": 3,
-  "version": 20260716011817
+  "version": 20260716014438
 }

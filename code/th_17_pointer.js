@@ -1,4 +1,4 @@
-// @version 1.2.9
+// @version 1.2.10
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1978,7 +1978,10 @@ FloatBallAppWM.prototype.isPointerAreaOcrReady = function(st) {
     pointerState &&
     pointerState.active === true &&
     pointerState.closed !== true &&
-    pointerState.areaOcrRequested === true &&
+    (
+      pointerState.areaOcrRequested === true ||
+      String(pointerState.source || "") === "edge_drag"
+    ) &&
     pointerState.areaArmReady === true &&
     pointerState.mode === "text_pick" &&
     pointerState.dragging === true

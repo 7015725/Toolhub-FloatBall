@@ -705,7 +705,7 @@ def verify_text_release(result, pointer, position, panels, entry):
     )
 
 
-def verify_pointer_core(result, pointer, ocr):
+def verify_pointer_core(result, pointer, ocr, position):
     group = "pointer-core"
 
     for marker in (
@@ -845,6 +845,26 @@ def verify_pointer_core(result, pointer, ocr):
         "th18 OCR extension remains",
         "pointer area_ocr patch installed" in ocr,
         "th_18 OCR extension missing",
+    )
+    area_ready = section(
+        pointer,
+        "FloatBallAppWM.prototype.isPointerAreaOcrReady = function",
+        "FloatBallAppWM.prototype.createPointerCanvasView = function",
+    )
+    result.require(
+        group,
+        "edge drag keeps frame-ready color intent",
+        'String(pointerState.source || "") === "edge_drag"' in area_ready
+        and 'pointerState.areaArmReady === true' in area_ready
+        and 'pointerState.mode === "text_pick"' in area_ready
+        and 'pointerState.dragging === true' in area_ready,
+        "frame-ready color must accept edge_drag sessions while preserving armed text-pick state",
+    )
+    result.require(
+        group,
+        "edge drag starts through area OCR wrapper",
+        'startPointerTool({ mode: "area_ocr", source: "edge_drag" })' in position,
+        "fixed-ball inward drag must mark the dual text-pick/area-OCR session",
     )
 
 
@@ -998,7 +1018,7 @@ def main():
 
     verify_issue_85(result, pointer, ocr, position, animation)
     verify_text_release(result, pointer, position, panels, entry)
-    verify_pointer_core(result, pointer, ocr)
+    verify_pointer_core(result, pointer, ocr, position)
     verify_pointer_draw_visibility(result, pointer)
     verify_manifest(result)
 
