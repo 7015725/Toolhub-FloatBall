@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "id": "fix-sha256-hex-padding",
+  "type": "fix",
+  "title": "修复更新记录 SHA256 误判",
+  "details": [
+    "修复 Rhino 中 Java String 长度访问导致 SHA256 前导零丢失",
+    "统一更新历史和图标 BLOB 哈希为固定 64 位十六进制编码",
+    "增加历史哈希期望值、实际值和长度诊断日志",
+    "更新记录校验失败时页面显示中文提示，完整技术信息保留在日志"
+  ],
+  "manifestVersion": 0
+}

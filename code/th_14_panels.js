@@ -1,4 +1,4 @@
-// @version 1.1.2
+// @version 1.1.3
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -2442,18 +2442,18 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
 
   function sha256Text(text) {
     var bytes = new java.lang.String(String(text || "")).getBytes("UTF-8");
+    var byteLength = Number(java.lang.reflect.Array.getLength(bytes));
     var md = java.security.MessageDigest.getInstance("SHA-256");
-    md.update(bytes);
+    md.update(bytes, 0, byteLength);
     var digest = md.digest();
-    var out = "";
-    for (var i = 0; i < digest.length; i++) {
-      var v = Number(digest[i]);
-      if (v < 0) v += 256;
-      var h = java.lang.Integer.toHexString(v & 255);
-      if (h.length < 2) h = "0" + h;
-      out += h;
+    var digestLength = Number(java.lang.reflect.Array.getLength(digest));
+    var out = new java.lang.StringBuilder(digestLength * 2);
+    for (var i = 0; i < digestLength; i++) {
+      var hex = java.lang.Integer.toHexString(0xFF & digest[i]);
+      if (hex.length() === 1) out.append("0");
+      out.append(hex);
     }
-    return out.toLowerCase();
+    return String(out.toString()).toLowerCase();
   }
 
   function utf8Size(text) {
@@ -2735,20 +2735,23 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         var error = "";
         var obj = null;
         var actualSize = 0;
+        var expectedHash = textValue(asset.sha256).toLowerCase();
+        var actualHash = "";
         try {
           if (typeof downloadText !== "function") throw "downloadText unavailable";
           text = downloadText(String(GIT_ROOT) + textValue(asset.name));
           actualSize = utf8Size(text);
           if (numberValue(asset.size) > 0 && actualSize !== numberValue(asset.size)) throw "history size mismatch";
-          if (sha256Text(text) !== textValue(asset.sha256).toLowerCase()) throw "history sha256 mismatch";
+          actualHash = sha256Text(text);
+          if (actualHash !== expectedHash) throw "history sha256 mismatch expected=" + expectedHash + " actual=" + actualHash + " expectedLen=" + expectedHash.length + " actualLen=" + actualHash.length;
           obj = JSON.parse(String(text));
           if (!self.validateToolHubUpdateHistory(obj)) throw "history schema invalid";
           if (!self.writeToolHubUpdateHistoryCache(text, asset)) throw "history cache write failed";
         } catch (eLoad) { error = String(eLoad); obj = null; }
         var costMs = Number(java.lang.System.currentTimeMillis()) - startedAt;
         try {
-          if (obj) safeLog(self.L, "i", "update history fetch done assetVersion=" + asset.version + " actualSize=" + actualSize + " generation=" + generation + " costMs=" + costMs);
-          else safeLog(self.L, "w", "update history fetch fail assetVersion=" + asset.version + " expectedSize=" + asset.size + " actualSize=" + actualSize + " generation=" + generation + " costMs=" + costMs + " error=" + error);
+          if (obj) safeLog(self.L, "i", "update history fetch done assetVersion=" + asset.version + " actualSize=" + actualSize + " actualHash=" + actualHash + " hashLen=" + actualHash.length + " generation=" + generation + " costMs=" + costMs);
+          else safeLog(self.L, "w", "update history fetch fail assetVersion=" + asset.version + " expectedSize=" + asset.size + " actualSize=" + actualSize + " expectedHash=" + expectedHash + " actualHash=" + actualHash + " expectedHashLen=" + expectedHash.length + " actualHashLen=" + actualHash.length + " generation=" + generation + " costMs=" + costMs + " error=" + error);
         } catch (eLogResult) {}
         try {
           self.runOnUiThreadSafe(function() {
@@ -2765,7 +2768,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
               self.state.toolHubUpdateHistoryLastFailureError = "";
             } else {
               self.state.toolHubUpdateHistoryState = self.state.toolHubUpdateHistoryData ? "ready" : "error";
-              self.state.toolHubUpdateHistoryError = error;
+              self.state.toolHubUpdateHistoryError = error.indexOf("sha256 mismatch") >= 0 ? "更新记录校验失败，请重新检查" : error;
               self.state.toolHubUpdateHistoryFailedAssetKey = assetKey;
               self.state.toolHubUpdateHistoryLastFailureAt = Number(java.lang.System.currentTimeMillis());
               self.state.toolHubUpdateHistoryLastFailureError = error;
