@@ -39,7 +39,8 @@ marker = '''    require(
 '''
 insert = '''    require(
         "preview copy / no cached slot width state",
-        "copySlotWidth" not in preview
+        "st.copySlotWidth" not in preview
+        and "copySlotWidth: 0" not in preview
         and "var copySlot = st.copyVisible ? metrics.slotWidth : 0;" in preview
         and "var finalCopySlot = st.copyVisible ? finalMetrics.slotWidth : 0;" in preview,
         "copy slot width must remain a local layout value instead of persistent preview state",
