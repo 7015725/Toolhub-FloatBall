@@ -381,7 +381,7 @@ def render_report(data, modules, sources, definitions, records):
     lines.append("## 建议顺序")
     lines.append("")
     lines.append("1. 后续覆盖候选、Shell 诊断和设置类型包装收敛已完成。")
-    lines.append("2. 当前剩余 11 条受保护包装链均承担明确功能或生命周期职责。")
+    lines.append("2. 当前剩余 %d 条受保护包装链均承担明确功能或生命周期职责。" % len(protected))
     lines.append("3. 后续只在新增重复定义、失效包装或明确回归证据时重新开启专项审查。")
     lines.append("")
     lines.append("## 使用方式")

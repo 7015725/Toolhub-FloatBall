@@ -2,10 +2,10 @@
 
 ## 结论
 
-- 已登记受保护覆盖/包装链：`11`。
+- 已登记受保护覆盖/包装链：`10`。
 - 定义链、有效所有者、旧方法捕获变量和调用关系均与 `MODULE_BOUNDARIES.json` 一致。
 - 下一轮专项审查：无。
-- 继续保留：`11` 条；这些链承担指针/OCR、生命周期、页面状态或延迟加载职责。
+- 继续保留：`10` 条；这些链承担指针/OCR、生命周期或页面状态职责。
 - 本报告不自动修改运行时代码；剩余包装均承担明确功能或生命周期职责。
 
 ## 分类摘要
@@ -15,7 +15,6 @@
 |指针与 OCR 扩展|6|继续保留，属于功能完成链|
 |指针布局与生命周期|3|继续保留，属于资源和竞态保护|
 |ToolApp 状态保持|1|继续保留，属于页面状态契约|
-|延迟更新包装|1|继续保留，依赖模块加载顺序|
 
 ## 包装链明细
 
@@ -31,7 +30,6 @@
 |指针布局与生命周期|`removePointerCallbacks`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|1|5|0|1|继续保留|
 |指针布局与生命周期|`resetPointerToolState`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|1|5|0|1|继续保留|
 |ToolApp 状态保持|`popToolAppPage`|`th_15_extra.js → th_16_entry.js`|`th_16_entry.js`|`wrapper`|6|14|0|1|继续保留|
-|延迟更新包装|`startToolHubModuleUpdateFromSettings`|`th_03_icon.js → th_14_panels.js`|`th_03_icon.js`|`deferred_wrapper`|1|5|0|1|继续保留|
 
 ## 判定说明
 
@@ -45,13 +43,12 @@
 - **`removePointerCallbacks` / 指针布局与生命周期**：关闭指针时取消语义调度，防止旧 Runnable 回写。 原登记原因：关闭指针时同步取消语义调度
 - **`resetPointerToolState` / 指针布局与生命周期**：重置时重建语义会话和 token。 原登记原因：重置指针时同步重建语义调度会话
 - **`popToolAppPage` / ToolApp 状态保持**：保存按钮后保留临时编辑状态，属于页面栈状态契约。 原登记原因：保存按钮后保留临时编辑状态
-- **`startToolHubModuleUpdateFromSettings` / 延迟更新包装**：早期模块等待设置模块加载后安装包装，依赖 deferred_retry 生命周期。 原登记原因：th_03 在后台等待设置模块加载后安装自动重启包装
 
 ## 下一轮顺序
 
 1. 设置与类型包装已并回 `th_05_persistence.js`。
-2. 当前剩余 11 条包装链全部继续保留，不进入批量收敛流程。
-3. 指针/OCR、ToolApp 和 deferred wrapper 仅在明确回归证据下重新审查。
+2. 当前剩余 10 条包装链全部继续保留，不进入批量收敛流程。
+3. 指针/OCR 与 ToolApp 包装仅在明确回归证据下重新审查。
 
 ## 使用方式
 

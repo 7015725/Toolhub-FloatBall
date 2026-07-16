@@ -18,7 +18,6 @@ CATEGORY_ORDER = {
     "指针与 OCR 扩展": 2,
     "指针布局与生命周期": 3,
     "ToolApp 状态保持": 4,
-    "延迟更新包装": 5,
 }
 
 CLASSIFICATIONS = {
@@ -71,11 +70,6 @@ CLASSIFICATIONS = {
         "ToolApp 状态保持",
         "继续保留",
         "保存按钮后保留临时编辑状态，属于页面栈状态契约。",
-    ),
-    "startToolHubModuleUpdateFromSettings": (
-        "延迟更新包装",
-        "继续保留",
-        "早期模块等待设置模块加载后安装包装，依赖 deferred_retry 生命周期。",
     ),
 }
 
@@ -279,7 +273,7 @@ def render_report(rows):
     lines.append("- 定义链、有效所有者、旧方法捕获变量和调用关系均与 `MODULE_BOUNDARIES.json` 一致。")
     review_text = "、".join("`%s`" % row["method"] for row in review) if review else "无"
     lines.append("- 下一轮专项审查：%s。" % review_text)
-    lines.append("- 继续保留：`%d` 条；这些链承担指针/OCR、生命周期、页面状态或延迟加载职责。" % len(retained))
+    lines.append("- 继续保留：`%d` 条；这些链承担指针/OCR、生命周期或页面状态职责。" % len(retained))
     lines.append("- 本报告不自动修改运行时代码；剩余包装均承担明确功能或生命周期职责。")
     lines.append("")
     lines.append("## 分类摘要")
@@ -292,7 +286,6 @@ def render_report(rows):
         "指针与 OCR 扩展": "继续保留，属于功能完成链",
         "指针布局与生命周期": "继续保留，属于资源和竞态保护",
         "ToolApp 状态保持": "继续保留，属于页面状态契约",
-        "延迟更新包装": "继续保留，依赖模块加载顺序",
     }
     for category in sorted(category_counts, key=lambda item: CATEGORY_ORDER[item]):
         lines.append("|%s|%d|%s|" % (category, category_counts[category], category_decisions[category]))
@@ -321,8 +314,8 @@ def render_report(rows):
     lines.append("## 下一轮顺序")
     lines.append("")
     lines.append("1. 设置与类型包装已并回 `th_05_persistence.js`。")
-    lines.append("2. 当前剩余 11 条包装链全部继续保留，不进入批量收敛流程。")
-    lines.append("3. 指针/OCR、ToolApp 和 deferred wrapper 仅在明确回归证据下重新审查。")
+    lines.append("2. 当前剩余 %d 条包装链全部继续保留，不进入批量收敛流程。" % len(rows))
+    lines.append("3. 指针/OCR 与 ToolApp 包装仅在明确回归证据下重新审查。")
     lines.append("")
     lines.append("## 使用方式")
     lines.append("")
