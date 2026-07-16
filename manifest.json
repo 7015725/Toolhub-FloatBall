@@ -140,18 +140,18 @@
       "version": "1.0.3"
     },
     "th_21_result_preview.js": {
-      "sha256": "8e0902c95c396e1bb5f746cb069528bc5544cbfbdc4052c997b198df96c58714",
-      "size": 45835,
-      "version": "1.1.2"
+      "sha256": "5ae15f8eabcf25a2acdcc0f5142ddd612d351bf3769ab8d2a741b7dcb6ee8735",
+      "size": 60398,
+      "version": "1.2.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复指针截图的 Rhino 反射与 MediaProjection 回退"
+      "新增顶部结果预览复制按钮"
     ],
-    "title": "修复指针截图的 Rhino 反射与 MediaProjection 回退"
+    "title": "新增顶部结果预览复制按钮"
   },
   "schema": 3,
-  "version": 20260716052446
+  "version": 20260716072832
 }
