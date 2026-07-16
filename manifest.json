@@ -10,9 +10,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "994b6d162fcd8f4ce5dd0fa8061a8121e4bedabeb5b718d97f03aa3cb7b5567d",
-      "size": 79113,
-      "version": "1.1.13"
+      "sha256": "6972cf0b0e0a15bb74ad7f10363fc5df2fd3d1ee531b21f51387a136740ee0af",
+      "size": 79391,
+      "version": "1.1.14"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -95,9 +95,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "bb96c2f40a42e9afc850ea59830d58e00bd1aa12c11d6b06e35beffc940aecbf",
-      "size": 122126,
-      "version": "1.0.25"
+      "sha256": "9017780636bcec3b3c8a21df5f2593d9ae532659a9b6ecf9adb3a604adf7acf2",
+      "size": 122181,
+      "version": "1.0.26"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -120,9 +120,9 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "bc483b324b4870d1a87fb738d65ebf189c57acadaf25cb3051c4713d6531c0dc",
-      "size": 172617,
-      "version": "1.2.8"
+      "sha256": "29aa33225cd8c66eefc9a3b8a74da1c9f24e53e25d03c570d90106a35b5855cd",
+      "size": 173407,
+      "version": "1.2.9"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "3d86a567b30c93b912de35e0e9d622dcdefb805187e25538a1f5ee4f92fb7454",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复动画回调异常与崩溃处理器累积"
+      "框选 OCR 悬停就绪后使用可配置的琥珀色指针反馈"
     ],
-    "title": "修复动画回调异常与崩溃处理器累积"
+    "title": "增加框选就绪指针颜色反馈"
   },
   "schema": 3,
-  "version": 20260716003412
+  "version": 20260716011356
 }
