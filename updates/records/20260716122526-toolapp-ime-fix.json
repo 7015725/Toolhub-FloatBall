@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "id": "20260716122526-toolapp-ime-fix",
+  "type": "fix",
+  "title": "修复 ToolApp 输入法跨线程崩溃",
+  "details": [
+    "修复 ToolApp 输入法跨线程崩溃"
+  ],
+  "manifestVersion": 20260716122526,
+  "date": "2026-07-16",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
+}
