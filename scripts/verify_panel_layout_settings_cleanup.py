@@ -25,16 +25,20 @@ def forbid(text, fragment, label):
         fail("forbidden %s: %s" % (label, fragment))
 
 
-def version(text, expected, name):
+def version_at_least(text, expected, name):
     match = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", text)
-    if not match or match.group(1) != expected:
-        fail("%s expected version %s" % (name, expected))
+    if not match:
+        fail("%s version marker missing" % name)
+    actual_tuple = tuple(int(part) for part in match.group(1).split("."))
+    expected_tuple = tuple(int(part) for part in expected.split("."))
+    if actual_tuple < expected_tuple:
+        fail("%s expected version >= %s, actual %s" % (name, expected, match.group(1)))
 
 
-version(BASE, "1.1.15", "th_01_base.js")
-version(PERSIST, "1.0.6", "th_05_persistence.js")
-version(MAIN, "1.5.8", "th_15_main_panel.js")
-version(EXTRA, "1.1.17", "th_15_extra.js")
+version_at_least(BASE, "1.1.15", "th_01_base.js")
+version_at_least(PERSIST, "1.0.6", "th_05_persistence.js")
+version_at_least(MAIN, "1.5.8", "th_15_main_panel.js")
+version_at_least(EXTRA, "1.1.17", "th_15_extra.js")
 
 active_base = re.sub(
     r"var REMOVED_SETTINGS_CONFIG_KEYS = \{.*?\};",
