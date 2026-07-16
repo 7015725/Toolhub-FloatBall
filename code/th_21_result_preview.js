@@ -1,4 +1,4 @@
-// @version 1.2.1
+// @version 1.2.2
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -154,7 +154,6 @@
         measuredWidth: 0,
         measuredHeight: 0,
         copyVisible: false,
-        copySlotWidth: 0,
         downX: 0,
         downY: 0,
         downRawX: 0,
@@ -172,7 +171,6 @@
     if (st.renderRebuildCount === undefined) st.renderRebuildCount = 0;
     if (st.copyFeedbackRunnable === undefined) st.copyFeedbackRunnable = null;
     if (st.copyVisible === undefined) st.copyVisible = false;
-    if (st.copySlotWidth === undefined) st.copySlotWidth = 0;
     if (st.touchTarget === undefined) st.touchTarget = "";
     return st;
   }
@@ -426,8 +424,6 @@
       copySlot = finalCopySlot;
       applyLineLayout(copySlot);
     }
-    st.copySlotWidth = copySlot;
-
     var w1 = 0;
     var w2 = 0;
     try { w1 = paint.measureText(st.line1); } catch (e1) {}
