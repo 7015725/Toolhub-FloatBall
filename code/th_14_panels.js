@@ -1,4 +1,4 @@
-// @version 1.1.5
+// @version 1.1.6
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -523,461 +523,17 @@ FloatBallAppWM.prototype.getToolHubUpdateState = function() {
   return fallback;
 };
 
-FloatBallAppWM.prototype.getToolHubUpdateVisual = function(updateState, T, isDark) {
-  var C = this.ui.colors || {};
-  var dangerColor = T.danger || C.danger || android.graphics.Color.parseColor("#BA1A1A");
-  var warningColor = T.warning || C.warning || android.graphics.Color.parseColor(isDark ? "#FBBF24" : "#B45309");
-  var successColor = T.success || C.success || android.graphics.Color.parseColor(isDark ? "#4ADE80" : "#15803D");
-  var primaryColor = T.primary;
-  var visual = {
-    icon: "✓",
-    label: "尚未检查更新",
-    sub: "详情",
-    iconColor: primaryColor,
-    labelColor: T.onSurface,
-    detailColor: T.onSurface2,
-    bg: T.primaryContainer,
-    stroke: this.withAlpha(primaryColor, isDark ? 0.24 : 0.16)
-  };
-
-  function applyStatus(app, color, container) {
-    visual.iconColor = color;
-    visual.labelColor = T.onSurface;
-    visual.detailColor = T.onSurface2;
-    visual.bg = container;
-    visual.stroke = app.withAlpha(color, isDark ? 0.30 : 0.20);
-  }
-
-  var s = updateState ? String(updateState.status || "unknown") : "unknown";
-  if (s === "checking") {
-    visual.icon = "…";
-    visual.label = "检查中";
-    visual.sub = "稍候";
-    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
-  } else if (s === "available") {
-    visual.icon = "↓";
-    visual.label = "发现新版本";
-    visual.sub = updateState && Number(updateState.availableCount || 0) > 0 ? (String(updateState.availableCount) + "项") : "更新";
-    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
-  } else if (s === "installing") {
-    visual.icon = "…";
-    visual.label = "正在更新";
-    visual.sub = "稍候";
-    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
-  } else if (s === "restarting") {
-    visual.icon = "↻";
-    visual.label = "正在重启";
-    visual.sub = "稍候";
-    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
-  } else if (s === "updated") {
-    visual.icon = "↻";
-    visual.label = updateState && updateState.needRestart ? "已更新，重启生效" : "模块已更新";
-    visual.sub = updateState && updateState.needRestart ? "重启" : (updateState && Number(updateState.updatedCount || 0) > 0 ? (String(updateState.updatedCount) + "项") : "完成");
-    applyStatus(this, successColor, T.successContainer || this.withAlpha(successColor, isDark ? 0.20 : 0.12));
-  } else if (s === "latest") {
-    visual.icon = "✓";
-    visual.label = "已是最新";
-    applyStatus(this, successColor, T.successContainer || this.withAlpha(successColor, isDark ? 0.20 : 0.12));
-  } else if (s === "plain") {
-    visual.icon = "⚠";
-    visual.label = "普通模式";
-    applyStatus(this, warningColor, T.warningContainer || this.withAlpha(warningColor, isDark ? 0.20 : 0.12));
-  } else if (s === "error") {
-    visual.icon = "!";
-    visual.label = "更新异常";
-    applyStatus(this, dangerColor, this.withAlpha(dangerColor, isDark ? 0.18 : 0.10));
-  }
-
-  if (s !== "available" && s !== "installing" && s !== "updated" &&
-      updateState && Number(updateState.version || 0) > 0) {
-    visual.sub = "v" + String(Math.floor(Number(updateState.version || 0)));
-  }
-  return visual;
-};
-
-FloatBallAppWM.prototype.createToolHubUpdatePill = function(expanded, compact, onToggle) {
-  return null;
-  var self = this;
-  var isDark = this.isDarkTheme();
-  var T = this.getSettingsColorScheme();
-  var C = this.ui.colors;
-  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  var updateState = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
-  var visual = this.getToolHubUpdateVisual ? this.getToolHubUpdateVisual(updateState, T, isDark) : null;
-  var pill = new android.widget.LinearLayout(context);
-  pill.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-  pill.setGravity(android.view.Gravity.CENTER_VERTICAL);
-  pill.setClickable(true);
-  pill.setPadding(this.dp(10), this.dp(5), this.dp(8), this.dp(5));
-  pill.setMinimumHeight(this.dp(48));
-  pill.setBackground(this.ui.createStrokeDrawable(visual.bg, visual.stroke, this.dp(1), this.dp(18)));
-  try { pill.setContentDescription((expanded ? "收起" : "查看") + "ToolHub更新详情"); } catch(eDesc) {}
-
-  var iconTv = new android.widget.TextView(context);
-  iconTv.setText(String(visual.icon || "✓"));
-  toolhubSafeSetTextColor(iconTv, visual.iconColor);
-  iconTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compact ? 12 : 13);
-  iconTv.setGravity(android.view.Gravity.CENTER);
-  iconTv.setTypeface(null, android.graphics.Typeface.BOLD);
-  pill.addView(iconTv, new android.widget.LinearLayout.LayoutParams(this.dp(20), -2));
-
-  var labelTv = new android.widget.TextView(context);
-  labelTv.setText(String(visual.label || "更新状态"));
-  toolhubSafeSetTextColor(labelTv, visual.labelColor);
-  labelTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, compact ? 11 : 12);
-  labelTv.setTypeface(null, android.graphics.Typeface.BOLD);
-  labelTv.setSingleLine(true);
-  try { labelTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eEll) {}
-  var labelLp = new android.widget.LinearLayout.LayoutParams(0, -2, 1);
-  labelLp.setMargins(this.dp(4), 0, this.dp(6), 0);
-  pill.addView(labelTv, labelLp);
-
-  var detailTv = new android.widget.TextView(context);
-  detailTv.setText(expanded ? "收起" : String(visual.sub || "详情"));
-  toolhubSafeSetTextColor(detailTv, visual.detailColor);
-  detailTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-  detailTv.setGravity(android.view.Gravity.CENTER);
-  detailTv.setSingleLine(true);
-  detailTv.setPadding(this.dp(7), this.dp(3), this.dp(7), this.dp(3));
-  detailTv.setBackground(this.ui.createRoundDrawable(this.withAlpha(visual.iconColor, isDark ? 0.12 : 0.08), this.dp(12)));
-  pill.addView(detailTv, new android.widget.LinearLayout.LayoutParams(-2, -2));
-
-  pill.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
-    try { self.touchActivity(); } catch(eTouch) {}
-    try { self.state.settingsUpdateExpanded = !expanded; } catch(eSet) {}
-    try { if (onToggle) onToggle(!!self.state.settingsUpdateExpanded); } catch(eToggle) {}
-  }}));
-  return pill;
-};
-
 
 FloatBallAppWM.prototype.startToolHubUpdateCheckFromSettings = function(anchorView) {
-  var self = this;
-  try {
-    if (typeof checkToolHubModuleUpdatesNow !== "function") {
-      try { this.toast("检查模块未加载，请重启 ToolHub"); } catch(eToast0) {}
-      return;
-    }
-    var cur = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
-    var statusText = cur ? String(cur.status || "") : "";
-    if (statusText === "checking") {
-      try { this.toast("检查正在进行"); } catch(eToast1) {}
-      return;
-    }
-    if (statusText === "installing") {
-      try { this.toast("正在更新模块"); } catch(eToast2) {}
-      return;
-    }
-    try {
-      if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
-        TOOLHUB_UPDATE_STATE.status = "checking";
-        TOOLHUB_UPDATE_STATE.error = "";
-      }
-    } catch(eState0) {}
-    try { this.state.settingsUpdateExpanded = true; } catch(eExpand) {}
-    try { this.toast("正在检查更新"); } catch(eToast3) {}
-    try { if (this.replaceToolAppPage) this.replaceToolAppPage("settings"); } catch(eRefresh0) {}
-    new java.lang.Thread(new java.lang.Runnable({
-      run: function() {
-        var ret = null;
-        try {
-          ret = checkToolHubModuleUpdatesNow();
-        } catch(eRun) {
-          ret = { ok: false, msg: "检查失败：" + String(eRun), error: String(eRun) };
-          try {
-            if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
-              TOOLHUB_UPDATE_STATE.ok = false;
-              TOOLHUB_UPDATE_STATE.status = "error";
-              TOOLHUB_UPDATE_STATE.error = String(eRun);
-            }
-          } catch(eState1) {}
-        }
-        try {
-          self.runOnUiThreadSafe(function() {
-            try { self.state.settingsUpdateExpanded = true; } catch(eExpand2) {}
-            try { if (ret && ret.ok === false) self.toast("检查失败，详情见更新卡片"); else self.toast("检查完成"); } catch(eToast4) {}
-            try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eRefresh1) {}
-          });
-        } catch(eUi) {
-          try { if (anchorView && anchorView.post) anchorView.post(new java.lang.Runnable({ run: function() { try { if (ret && ret.ok === false) self.toast("检查失败，详情见更新卡片"); else self.toast("检查完成"); if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(ePostUi) {} } })); } catch(ePost) {}
-        }
-      }
-    })).start();
-  } catch(eStart) {
-    try { this.toast("启动检查失败"); safeLog(this.L, "e", "start check thread fail err=" + String(eStart)); } catch(eToast5) {}
-  }
-};
-
-FloatBallAppWM.prototype.maybeAutoCheckToolHubUpdatesFromSettings = function() {
-  return false;
-  var self = this;
-  try {
-    if (typeof checkToolHubModuleUpdatesNow !== "function") return;
-    if (!this.state) return;
-    if (this.state.settingsAutoUpdateCheckRunning) return;
-    var cur = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
-    var statusText = cur ? String(cur.status || "") : "";
-    if (statusText === "checking" || statusText === "installing") return;
-    var now = java.lang.System.currentTimeMillis();
-    var last = cur ? Number(cur.lastCheckAt || 0) : 0;
-    if (isNaN(last)) last = 0;
-    if (last > 0 && Number(now) - last < 30 * 60 * 1000) return;
-    this.state.settingsAutoUpdateCheckRunning = true;
-    try {
-      if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
-        TOOLHUB_UPDATE_STATE.status = "checking";
-        TOOLHUB_UPDATE_STATE.error = "";
-      }
-    } catch(eState0) {}
-    new java.lang.Thread(new java.lang.Runnable({
-      run: function() {
-        try { checkToolHubModuleUpdatesNow(); } catch(eRun) {}
-        try { self.state.settingsAutoUpdateCheckRunning = false; } catch(eFlag) {}
-        try {
-          self.runOnUiThreadSafe(function() {
-            try {
-              var route = self.state && self.state.toolAppRoute ? String(self.state.toolAppRoute) : "";
-              if (self.state && self.state.toolAppActive && route === "settings" && self.replaceToolAppPage) self.replaceToolAppPage("settings");
-            } catch(eRefresh) {}
-          });
-        } catch(eUi) {}
-      }
-    })).start();
-  } catch(eAuto) {
-    try { this.state.settingsAutoUpdateCheckRunning = false; } catch(eFlag2) {}
-  }
+  return this.runToolHubUpdateCheck ? this.runToolHubUpdateCheck(true) : false;
 };
 
 FloatBallAppWM.prototype.startToolHubModuleUpdateFromSettings = function(anchorView) {
-  if (this.startToolHubModuleUpdateDeterministic) return this.startToolHubModuleUpdateDeterministic(anchorView);
-  var self = this;
-  try {
-    if (typeof installPendingModuleUpdates !== "function") {
-      try { this.toast("更新模块未加载，请重启 ToolHub"); } catch(eToast0) {}
-      return;
-    }
-    var cur = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
-    var statusText = cur ? String(cur.status || "") : "";
-    if (statusText === "installing") {
-      try { this.toast("更新正在进行"); } catch(eToast1) {}
-      return;
-    }
-    if (statusText === "checking") {
-      try { this.toast("检查正在进行"); } catch(eToastCheck) {}
-      return;
-    }
-    try {
-      if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
-        TOOLHUB_UPDATE_STATE.status = "installing";
-        TOOLHUB_UPDATE_STATE.error = "";
-      }
-    } catch(eState0) {}
-    try { this.state.settingsUpdateExpanded = true; } catch(eExpand) {}
-    try { this.toast("正在更新模块"); } catch(eToast2) {}
-    try { if (this.replaceToolAppPage) this.replaceToolAppPage("settings"); } catch(eRefresh0) {}
-    new java.lang.Thread(new java.lang.Runnable({
-      run: function() {
-        var ret = null;
-        try {
-          ret = installPendingModuleUpdates();
-        } catch(eRun) {
-          ret = { ok: false, msg: "更新失败：" + String(eRun), error: String(eRun) };
-          try {
-            if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
-              TOOLHUB_UPDATE_STATE.ok = false;
-              TOOLHUB_UPDATE_STATE.status = "error";
-              TOOLHUB_UPDATE_STATE.error = String(eRun);
-            }
-          } catch(eState1) {}
-        }
-        try {
-          self.runOnUiThreadSafe(function() {
-            try { self.state.settingsUpdateExpanded = true; } catch(eExpand2) {}
-            try { if (ret && ret.ok === false) self.toast("更新失败，详情见更新卡片"); else self.toast("更新完成"); } catch(eToast3) {}
-            try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eRefresh1) {}
-          });
-        } catch(eUi) {
-          try { if (anchorView && anchorView.post) anchorView.post(new java.lang.Runnable({ run: function() { try { if (ret && ret.ok === false) self.toast("更新失败，详情见更新卡片"); else self.toast("更新完成"); if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(ePostUi) {} } })); } catch(ePost) {}
-        }
-      }
-    })).start();
-  } catch(eStart) {
-    try { this.toast("启动更新失败"); safeLog(this.L, "e", "start update thread fail err=" + String(eStart)); } catch(eToast4) {}
-  }
+  return this.startToolHubModuleUpdateDeterministic ? this.startToolHubModuleUpdateDeterministic(anchorView) : false;
 };
 
 FloatBallAppWM.prototype.startToolHubRestartFromSettings = function(anchorView) {
-  var self = this;
-  try {
-    if (typeof restartToolHubFromSettings !== "function") {
-      try { this.toast("重启模块未加载，请重新运行 ToolHub 入口"); } catch(eToast0) {}
-      return;
-    }
-    var cur = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
-    var statusText = cur ? String(cur.status || "") : "";
-    if (statusText === "checking") {
-      try { this.toast("检查正在进行"); } catch(eToast1) {}
-      return;
-    }
-    if (statusText === "installing") {
-      try { this.toast("更新正在进行"); } catch(eToast2) {}
-      return;
-    }
-    try { this.toast("正在重启 ToolHub"); } catch(eToast3) {}
-    try {
-      if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
-        TOOLHUB_UPDATE_STATE.status = "restarting";
-        TOOLHUB_UPDATE_STATE.error = "";
-      }
-    } catch(eState0) {}
-    try { if (this.replaceToolAppPage) this.replaceToolAppPage("settings"); } catch(eRefresh0) {}
-    new java.lang.Thread(new java.lang.Runnable({
-      run: function() {
-        var ret = null;
-        try {
-          ret = restartToolHubFromSettings();
-        } catch(eRun) {
-          ret = { ok: false, msg: "重启失败：" + String(eRun), error: String(eRun) };
-          try {
-            if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
-              TOOLHUB_UPDATE_STATE.ok = false;
-              TOOLHUB_UPDATE_STATE.status = "error";
-              TOOLHUB_UPDATE_STATE.error = String(eRun);
-            }
-          } catch(eState1) {}
-        }
-        if (ret && ret.ok === false) {
-          try {
-            self.runOnUiThreadSafe(function() {
-              try { self.toast(ret.msg || "重启失败"); } catch(eToast4) {}
-              try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eRefresh1) {}
-            });
-          } catch(eUi) {
-            try { if (anchorView && anchorView.post) anchorView.post(new java.lang.Runnable({ run: function() { try { self.toast(ret.msg || "重启失败"); } catch(ePostToast) {} } })); } catch(ePost) {}
-          }
-        }
-      }
-    })).start();
-  } catch(eStart) {
-    try { this.toast("启动重启失败"); safeLog(this.L, "e", "start restart thread fail err=" + String(eStart)); } catch(eToast5) {}
-  }
-};
-
-FloatBallAppWM.prototype.createToolHubUpdateDetailBox = function() {
-  var self = this;
-  var isDark = this.isDarkTheme();
-  var T = this.getSettingsColorScheme();
-  var C = this.ui.colors;
-  var cfgTpl = this.state.pendingUserCfg ? this.state.pendingUserCfg : this.config;
-  var updateState = this.getToolHubUpdateState ? this.getToolHubUpdateState() : null;
-  var visual = this.getToolHubUpdateVisual ? this.getToolHubUpdateVisual(updateState, T, isDark) : null;
-  var box = new android.widget.LinearLayout(context);
-  box.setOrientation(android.widget.LinearLayout.VERTICAL);
-  box.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
-  box.setBackground(this.ui.createStrokeDrawable(this.withAlpha(T.surface2, isDark ? 0.80 : 0.96), this.withAlpha(visual.stroke, isDark ? 0.46 : 0.28), this.dp(1), this.dp(18)));
-
-  function addLine(app, parent, textValue, colorValue, spValue, bold) {
-    var tv = new android.widget.TextView(context);
-    tv.setText(String(textValue || ""));
-    toolhubSafeSetTextColor(tv, colorValue);
-    tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, spValue);
-    tv.setLineSpacing(app.dp(1), 1.04);
-    if (bold) tv.setTypeface(null, android.graphics.Typeface.BOLD);
-    parent.addView(tv, new android.widget.LinearLayout.LayoutParams(-1, -2));
-    return tv;
-  }
-
-  var headText = updateState && updateState.title ? String(updateState.title) : "更新详情";
-  if (updateState && updateState.date) headText += " · " + String(updateState.date);
-  addLine(this, box, headText, T.onSurface, 13, true);
-
-  if (updateState && updateState.changes && updateState.changes.length > 0) {
-    var changeHead = addLine(this, box, "更新内容", T.onSurface, 12, true);
-    changeHead.setPadding(0, this.dp(8), 0, this.dp(2));
-    var maxChanges = Math.min(3, updateState.changes.length);
-    for (var ci = 0; ci < maxChanges; ci++) {
-      addLine(this, box, "• " + String(updateState.changes[ci]), T.onSurface2, 12, false);
-    }
-    if (updateState.changes.length > maxChanges) addLine(this, box, "+" + String(updateState.changes.length - maxChanges) + " 项", T.onSurface2, 12, false);
-  }
-
-  if (updateState && updateState.availableDetails && updateState.availableDetails.length > 0) {
-    var detailHead = addLine(this, box, "版本差异", T.onSurface, 12, true);
-    detailHead.setPadding(0, this.dp(8), 0, this.dp(2));
-    var maxDetails = Math.min(4, updateState.availableDetails.length);
-    for (var di = 0; di < maxDetails; di++) {
-      var detail = updateState.availableDetails[di] || {};
-      var modName = detail.module ? String(detail.module) : "模块";
-      var localText = detail.localVersion ? String(detail.localVersion) : "0.0.0";
-      var remoteText = detail.remoteVersion ? String(detail.remoteVersion) : "清单版本";
-      var reasonText = detail.reason === "missing" ? "缺失" : (detail.reason === "hash" ? "哈希变更" : "版本升级");
-      addLine(this, box, "• " + modName + "  " + localText + " → " + remoteText + " · " + reasonText, T.onSurface2, 12, false);
-    }
-    if (updateState.availableDetails.length > maxDetails) addLine(this, box, "+" + String(updateState.availableDetails.length - maxDetails) + " 个模块", T.onSurface2, 12, false);
-  } else if (updateState && updateState.availableModules && updateState.availableModules.length > 0) {
-    var availableTv = addLine(this, box, "可更新模块：" + updateState.availableModules.join("、"), T.onSurface2, 12, false);
-    availableTv.setPadding(0, this.dp(8), 0, 0);
-    try { availableTv.setMaxLines(2); availableTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eAvail) {}
-  }
-
-  if (updateState && updateState.updatedModules && updateState.updatedModules.length > 0) {
-    var modsTv = addLine(this, box, "已处理模块：" + updateState.updatedModules.join("、"), T.onSurface2, 12, false);
-    modsTv.setPadding(0, this.dp(8), 0, 0);
-    try { modsTv.setMaxLines(2); modsTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eMods) {}
-  }
-
-  if (updateState && updateState.bootFixedModules && updateState.bootFixedModules.length > 0) {
-    var fixedTv = addLine(this, box, "启动修复：" + updateState.bootFixedModules.join("、"), T.onSurface2, 12, false);
-    fixedTv.setPadding(0, this.dp(6), 0, 0);
-    try { fixedTv.setMaxLines(2); fixedTv.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch(eFixed) {}
-  }
-
-  var metaText = "来源：" + String(updateState && updateState.source ? updateState.source : "未知") + " · " + String(updateState && updateState.modeText ? updateState.modeText : "更新模式待确认");
-  var metaTv = addLine(this, box, metaText, T.onSurface2, 11, false);
-  metaTv.setPadding(0, this.dp(8), 0, 0);
-  if (updateState && updateState.securityText) addLine(this, box, "校验状态：" + String(updateState.securityText), T.onSurface2, 11, false);
-  if (updateState && updateState.error) addLine(this, box, "错误：" + String(updateState.error), T.danger || C.danger, 11, false);
-
-  var statusName = updateState ? String(updateState.status || "") : "";
-  function addActionButton(labelText, bgColor, textColor, descText, onClickFn, topMarginDp) {
-    var actionBtn = self.ui.createSolidButton(self, labelText, bgColor, textColor, onClickFn);
-    try { actionBtn.setContentDescription(descText); } catch(eDescBtn) {}
-    var actionLp = new android.widget.LinearLayout.LayoutParams(-1, self.dp(48));
-    actionLp.setMargins(0, self.dp(topMarginDp), 0, 0);
-    box.addView(actionBtn, actionLp);
-    return actionBtn;
-  }
-  if (statusName === "checking") {
-    var checkingTv = addLine(this, box, "正在后台检查更新，请稍候。", T.primary, 12, true);
-    checkingTv.setPadding(0, this.dp(10), 0, 0);
-  } else if (statusName === "installing") {
-    var runningTv = addLine(this, box, "正在后台下载并校验模块，请稍候。", T.primary, 12, true);
-    runningTv.setPadding(0, this.dp(10), 0, 0);
-  } else if (statusName === "restarting") {
-    var restartingTv = addLine(this, box, "正在关闭旧悬浮球并重新启动 ToolHub。", T.primary, 12, true);
-    restartingTv.setPadding(0, this.dp(10), 0, 0);
-  } else if (updateState && updateState.needRestart) {
-    var restartTv = addLine(this, box, "更新已下载完成，重启 ToolHub 后生效。", T.primary, 12, true);
-    restartTv.setPadding(0, this.dp(10), 0, 0);
-    addActionButton("重启 ToolHub", T.primary, T.onPrimary, "关闭并重新启动 ToolHub", function(v) {
-      try { self.startToolHubRestartFromSettings(v); } catch(eRestartBtn) { try { self.toast("启动重启失败"); safeLog(self.L, "e", "restart button fail err=" + String(eRestartBtn)); } catch(eToastRestartBtn) {} }
-    }, 10);
-  } else {
-    var hasAvailableUpdates = (statusName === "available" || (updateState && Number(updateState.availableCount || 0) > 0));
-    if (hasAvailableUpdates) {
-      addActionButton("立即更新", T.primary, T.onPrimary, "立即更新 ToolHub 模块", function(v) {
-        try { self.startToolHubModuleUpdateFromSettings(v); } catch(eStartBtn) { try { self.toast("启动更新失败"); safeLog(self.L, "e", "start update button fail err=" + String(eStartBtn)); } catch(eToastBtn) {} }
-      }, 10);
-      addActionButton("重新检查", T.primaryContainer || T.primary, T.primary || T.onPrimary, "重新检查 ToolHub 更新", function(v) {
-        try { self.startToolHubUpdateCheckFromSettings(v); } catch(eCheckBtn) { try { self.toast("启动检查失败"); safeLog(self.L, "e", "start check button fail err=" + String(eCheckBtn)); } catch(eToastCheckBtn) {} }
-      }, 8);
-    } else {
-      addActionButton("检查更新", T.primaryContainer || T.primary, T.primary || T.onPrimary, "检查 ToolHub 更新", function(v) {
-        try { self.startToolHubUpdateCheckFromSettings(v); } catch(eCheckBtn2) { try { self.toast("启动检查失败"); safeLog(self.L, "e", "start check button fail err=" + String(eCheckBtn2)); } catch(eToastCheckBtn2) {} }
-      }, 10);
-    }
-  }
-  return box;
+  return this.startToolHubDeterministicRestart ? this.startToolHubDeterministicRestart() : false;
 };
 
 FloatBallAppWM.prototype.createSettingsConfigStatusPill = function(statusLabel, statusValue, statusBg, statusStroke, statusValueColor, compact) {
@@ -1085,21 +641,6 @@ FloatBallAppWM.prototype.createIslandWelcomeCard = function(parent, statusLabel,
     topRow.addView(statusPill, statusLp);
   }
 
-  var updatePill = this.createToolHubUpdatePill ? this.createToolHubUpdatePill(!!this.state.settingsUpdateExpanded, compactWelcome, function() {
-    try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eReplace) {}
-  }) : null;
-  if (updatePill) {
-    var updateLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-    updateLp.setMargins(0, this.dp(8), 0, 0);
-    card.addView(updatePill, updateLp);
-  }
-
-  if (this.state.settingsUpdateExpanded && this.createToolHubUpdateDetailBox) {
-    var detailBox = this.createToolHubUpdateDetailBox();
-    var detailLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-    detailLp.setMargins(0, this.dp(10), 0, 0);
-    card.addView(detailBox, detailLp);
-  }
 
   var lp = new android.widget.LinearLayout.LayoutParams(-1, -2);
   lp.setMargins(0, compactWelcome ? this.dp(4) : this.dp(8), 0, compactWelcome ? this.dp(8) : this.dp(12));
@@ -1525,8 +1066,6 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
     }
   } catch(eStatus) {}
 
-  try { if (this.maybeAutoCheckToolHubUpdatesFromSettings) this.maybeAutoCheckToolHubUpdatesFromSettings(); } catch(eAutoCheckSettings) {}
-
   var settingsNoticeContainer = null;
   function setSettingsInlineNotice(msg, kind) {
     try {
@@ -1606,20 +1145,6 @@ FloatBallAppWM.prototype.buildSettingsHomePanelView = function() {
         var navStatusPillLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
         navStatusPillLp.setMargins(0, 0, 0, this.dp(8));
         navCard.addView(navStatusPill, navStatusPillLp);
-      }
-      var updateNavPill = this.createToolHubUpdatePill ? this.createToolHubUpdatePill(!!this.state.settingsUpdateExpanded, true, function() {
-        try { if (self.replaceToolAppPage) self.replaceToolAppPage("settings"); } catch(eReplaceNav) {}
-      }) : null;
-      if (updateNavPill) {
-        var updateNavPillLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-        updateNavPillLp.setMargins(0, 0, 0, this.dp(8));
-        navCard.addView(updateNavPill, updateNavPillLp);
-      }
-      if (this.state.settingsUpdateExpanded && this.createToolHubUpdateDetailBox) {
-        var updateNavDetail = this.createToolHubUpdateDetailBox();
-        var updateNavDetailLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-        updateNavDetailLp.setMargins(0, 0, 0, this.dp(10));
-        navCard.addView(updateNavDetail, updateNavDetailLp);
       }
     } catch(eUpdateNav) { safeLog(null, 'e', "catch " + String(eUpdateNav)); }
     var navScroll = new android.widget.ScrollView(context);
@@ -2476,8 +2001,6 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     if (!this.state) return;
     if (this.state.toolHubUpdateUiReady === true) return;
     this.state.toolHubUpdateUiReady = true;
-    this.state.toolHubSettingsVisitSeq = 0;
-    this.state.toolHubSettingsCheckedSeq = 0;
     this.state.toolHubSettingsCheckRunning = false;
     this.state.toolHubLastKnownAttention = false;
     this.state.toolHubUpdateConfirmVisible = false;
@@ -2490,7 +2013,6 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     this.state.toolHubUpdateHistoryGeneration = 0;
     this.state.toolHubUpdateHistoryFailedAssetKey = "";
     this.state.toolHubUpdateHistoryLastFailureAt = 0;
-    this.state.toolHubUpdateHistoryLastFailureError = "";
     this.state.toolHubUpdateRefreshPending = false;
   };
 
@@ -2617,8 +2139,6 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
 
   FloatBallAppWM.prototype.onToolHubSettingsEntered = function() {
     this.ensureToolHubUpdateUiState();
-    this.state.toolHubSettingsVisitSeq = numberValue(this.state.toolHubSettingsVisitSeq) + 1;
-    this.state.toolHubSettingsCheckedSeq = this.state.toolHubSettingsVisitSeq;
     this.runToolHubUpdateCheck(false);
   };
 
@@ -2727,7 +2247,6 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     if (this.state.toolHubUpdateHistoryFailedAssetKey && this.state.toolHubUpdateHistoryFailedAssetKey !== assetKey) {
       this.state.toolHubUpdateHistoryFailedAssetKey = "";
       this.state.toolHubUpdateHistoryLastFailureAt = 0;
-      this.state.toolHubUpdateHistoryLastFailureError = "";
     }
     if (!forceRefresh && this.state.toolHubUpdateHistoryAssetKey === asset.sha256 && this.state.toolHubUpdateHistoryData) return true;
     if (!forceRefresh && this.state.toolHubUpdateHistoryFailedAssetKey === assetKey && now - numberValue(this.state.toolHubUpdateHistoryLastFailureAt) < HISTORY_RETRY_COOLDOWN_MS) {
@@ -2776,13 +2295,11 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
               self.state.toolHubUpdateHistoryAssetKey = textValue(asset.sha256).toLowerCase();
               self.state.toolHubUpdateHistoryFailedAssetKey = "";
               self.state.toolHubUpdateHistoryLastFailureAt = 0;
-              self.state.toolHubUpdateHistoryLastFailureError = "";
             } else {
               self.state.toolHubUpdateHistoryState = self.state.toolHubUpdateHistoryData ? "ready" : "error";
               self.state.toolHubUpdateHistoryError = error.indexOf("sha256 mismatch") >= 0 ? "更新记录校验失败，请重新检查" : error;
               self.state.toolHubUpdateHistoryFailedAssetKey = assetKey;
               self.state.toolHubUpdateHistoryLastFailureAt = Number(java.lang.System.currentTimeMillis());
-              self.state.toolHubUpdateHistoryLastFailureError = error;
               if (self.state.toolHubUpdateHistoryData) self.state.toolHubUpdateHistorySource = "cache";
             }
             self.refreshToolHubUpdateSurface(obj ? "history_loaded" : "history_failed");
@@ -2796,7 +2313,6 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
       this.state.toolHubUpdateHistoryError = String(eThread);
       this.state.toolHubUpdateHistoryFailedAssetKey = assetKey;
       this.state.toolHubUpdateHistoryLastFailureAt = Number(java.lang.System.currentTimeMillis());
-      this.state.toolHubUpdateHistoryLastFailureError = String(eThread);
       try { safeLog(this.L, "w", "update history thread start fail assetVersion=" + asset.version + " generation=" + generation + " error=" + String(eThread)); } catch (eLogThread) {}
       this.refreshToolHubUpdateSurface("history_thread_fail");
       return false;
