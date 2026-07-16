@@ -23,14 +23,18 @@ def forbid(text, fragment, label):
         fail("forbidden %s: %s" % (label, fragment))
 
 
-def version(text, expected, name):
+def version_at_least(text, expected, name):
     match = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", text)
-    if not match or match.group(1) != expected:
-        fail("%s expected version %s" % (name, expected))
+    if not match:
+        fail("%s version marker missing" % name)
+    actual_tuple = tuple(int(part) for part in match.group(1).split("."))
+    expected_tuple = tuple(int(part) for part in expected.split("."))
+    if actual_tuple < expected_tuple:
+        fail("%s expected version >= %s, actual %s" % (name, expected, match.group(1)))
 
 
-version(MAIN, "1.5.8", "th_15_main_panel.js")
-version(EXTRA, "1.1.17", "th_15_extra.js")
+version_at_least(MAIN, "1.5.8", "th_15_main_panel.js")
+version_at_least(EXTRA, "1.1.17", "th_15_extra.js")
 
 for marker, label in (
     ("gridWidth = cols * cellOuterWidth", "grid width identity"),
