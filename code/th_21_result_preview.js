@@ -1,4 +1,4 @@
-// @version 1.2.3
+// @version 1.2.4
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -136,18 +136,12 @@
         lp: null,
         wm: null,
         added: false,
-        visible: false,
-        entering: false,
-        exiting: false,
         clickLocked: false,
         dismissRunnable: null,
         visibilityFallbackRunnable: null,
         copyFeedbackRunnable: null,
         handler: null,
-        drawCount: 0,
-        firstDrawLogged: false,
         visibleStartedAt: 0,
-        dismissScheduledAt: 0,
         renderRebuildCount: 0,
         line1: "",
         line2: "",
@@ -158,7 +152,6 @@
         downY: 0,
         downRawX: 0,
         downRawY: 0,
-        downAt: 0,
         touchMoved: false,
         touchTarget: "",
         lastReason: ""
@@ -444,7 +437,6 @@
     render.copyHitRect = null;
     render.drawCount = 0;
     render.firstDrawAt = 0;
-    render.firstDrawLogged = false;
     render.visibleStartedAt = 0;
     render.pressed = false;
     render.themeDark = false;
@@ -463,10 +455,7 @@
     render.windowFormat = 0;
     render.disposed = false;
     render.attachedAt = now21();
-    st.drawCount = 0;
-    st.firstDrawLogged = false;
     st.visibleStartedAt = 0;
-    st.dismissScheduledAt = 0;
     st.touchTarget = "";
     st.touchMoved = false;
   }
@@ -655,7 +644,6 @@
       if (st.handler && st.dismissRunnable) st.handler.removeCallbacks(st.dismissRunnable);
     } catch (e0) {}
     st.dismissRunnable = null;
-    st.dismissScheduledAt = 0;
   }
 
   function cancelVisibilityFallback21(st) {
@@ -689,7 +677,6 @@
     var token = Number(st.generation || 0);
     var rootToken = Number(render.rootToken || 0);
     var timeoutMs = timeoutMs21(appObj);
-    st.dismissScheduledAt = now21();
     st.dismissRunnable = new java.lang.Runnable({ run: function() {
       try {
         if (Number(st.generation || 0) !== token) return;
@@ -722,7 +709,6 @@
       return posted;
     } catch (ePost) {
       st.dismissRunnable = null;
-      st.dismissScheduledAt = 0;
     }
     return false;
   }
@@ -855,14 +841,10 @@
       } catch (eStaleLog) {}
       return false;
     }
-    st.drawCount = Number(render.drawCount || 0);
     if (Number(render.firstDrawAt || 0) > 0) return true;
 
     render.firstDrawAt = now21();
     render.visibleStartedAt = render.firstDrawAt;
-    render.firstDrawLogged = true;
-    st.firstDrawLogged = true;
-    st.visible = true;
     st.visibleStartedAt = render.firstDrawAt;
     cancelVisibilityFallback21(st);
 
@@ -940,7 +922,6 @@
             st.downY = event.getY();
             st.downRawX = event.getRawX();
             st.downRawY = event.getRawY();
-            st.downAt = now21();
             st.touchMoved = false;
             if (render.copyVisible === true && pointInRect21(st.downX, st.downY, render.copyHitRect)) {
               cancelCopyFeedback21(st);
@@ -1050,9 +1031,6 @@
       st.root = null;
       st.rootRender = null;
       st.added = false;
-      st.visible = false;
-      st.entering = false;
-      st.exiting = false;
     }
     return true;
   }
@@ -1069,10 +1047,7 @@
     st.clickLocked = false;
     st.touchTarget = "";
     st.touchMoved = false;
-    st.drawCount = 0;
-    st.firstDrawLogged = false;
     st.visibleStartedAt = 0;
-    st.dismissScheduledAt = 0;
     return true;
   }
 
@@ -1123,14 +1098,11 @@
     st.root.setTranslationY(-dp21(appObj, 6));
     st.wm.addView(st.root, st.lp);
     st.added = true;
-    st.visible = false;
-    st.entering = true;
     st.rootRender.attachedAt = now21();
     try { st.root.requestLayout(); } catch (eLayout) {}
     try { st.root.invalidate(); } catch (eInvalidate) {}
     try { if (st.root.postInvalidateOnAnimation) st.root.postInvalidateOnAnimation(); } catch (ePostInvalidate) {}
     scheduleVisibilityFallback21(appObj, st, st.root, st.rootRender, 1);
-    st.entering = false;
     return true;
   }
 
@@ -1270,7 +1242,6 @@
       try { rootRef.requestLayout(); rootRef.invalidate(); } catch (eInvalidate) {}
     }
     scheduleVisibilityFallback21(appObj, st, rootRef, render, 1);
-    st.visible = false;
     return true;
   }
 
@@ -1368,7 +1339,6 @@
           var rootToken = Number(current.rootToken || 0);
           if (render) render.disposed = true;
           if (animate !== false) {
-            current.exiting = true;
             try {
               rootRef.animate().cancel();
               rootRef.setAlpha(1);
