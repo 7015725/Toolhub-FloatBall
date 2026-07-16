@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "989fe2d36ae2922b02c638067dcffd8a9975cbc4df7da2eda6cee56bf8cca615",
-      "size": 3480,
-      "version": 20260716160456
+      "sha256": "97e2bc4edd42ae69d5c58d69fdb42590ec30b9c4f5e05e29d7af6411cc621797",
+      "size": 4473,
+      "version": 20260716162113
     }
   },
   "entry": {
@@ -29,9 +29,9 @@
       "version": "2.0.2"
     },
     "th_03_icon.js": {
-      "sha256": "b5ef7ad2f467d5f3f444281b7fb0b2cb3f775bf2ea0ce002553dec120201030e",
-      "size": 27222,
-      "version": "2.0.1"
+      "sha256": "0e30f9484a6eb1db16c87a7a2629b8ca6cb6b55d1c9b52b39ccb1d74b96c6c8f",
+      "size": 27231,
+      "version": "2.0.2"
     },
     "th_04_theme.js": {
       "sha256": "c8cb18b27d456c13132b6a1409b65ff696795238124c5d34128b18f366a80be8",
@@ -104,9 +104,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "816ee4a782d2f5a91e88ebe71f33b46e3aba21815c782f89a99e1b30aea7ad11",
-      "size": 160278,
-      "version": "1.1.2"
+      "sha256": "7ad3effadcbe0943c8bde484ab885971662ec60ca5ba8ab807697c81e98a088a",
+      "size": 160998,
+      "version": "1.1.3"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -157,14 +157,14 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "同一历史资产加载失败后自动熔断 30 秒，避免页面构建触发紧密重试",
-      "合并短时间内的更新页面刷新，减少重复 View 树重建",
-      "自动更新检查不再强制重复下载相同历史资产",
-      "补充历史加载开始、成功、失败、大小和耗时诊断日志"
+      "修复 Rhino 中 Java String 长度访问导致 SHA256 前导零丢失",
+      "统一更新历史和图标 BLOB 哈希为固定 64 位十六进制编码",
+      "增加历史哈希期望值、实际值和长度诊断日志",
+      "更新记录校验失败时页面显示中文提示，完整技术信息保留在日志"
     ],
     "date": "2026-07-17",
-    "title": "修复更新页历史加载刷新风暴"
+    "title": "修复更新记录 SHA256 误判"
   },
   "schema": 4,
-  "version": 20260716160456
+  "version": 20260716162113
 }

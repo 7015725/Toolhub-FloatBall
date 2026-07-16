@@ -1,4 +1,4 @@
-// @version 2.0.1
+// @version 2.0.2
 
 // =======================【按钮图标：SQLite BLOB 存储】=======================
 // 本地图片只在导入阶段读取文件，运行时按钮配置只保存内容哈希引用。
@@ -62,16 +62,14 @@
     };
 
     store.bytesToHex = function(bytes) {
-      var out = "";
       var len = this.byteArrayLength(bytes);
+      var out = new java.lang.StringBuilder(len * 2);
       for (var i = 0; i < len; i++) {
-        var v = Number(bytes[i]);
-        if (v < 0) v += 256;
-        var h = java.lang.Integer.toHexString(v & 255);
-        if (h.length < 2) h = "0" + h;
-        out += String(h);
+        var hex = java.lang.Integer.toHexString(0xFF & bytes[i]);
+        if (hex.length() === 1) out.append("0");
+        out.append(hex);
       }
-      return out.toLowerCase();
+      return String(out.toString()).toLowerCase();
     };
 
     store.sha256Bytes = function(bytes) {
