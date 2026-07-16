@@ -1,9 +1,7 @@
-FAIL: JavaScript syntax invalid: code/th_01_base.js
-/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/code/th_01_base.js:1174
-            if (schemaItemDiffers("BALL_ICON_TINT_HEX", ["name", "type"]) ||
-
-SyntaxError: Invalid left-hand side in assignment
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at checkSyntax (node:internal/main/check_syntax:78:3)
-
-Node.js v22.23.1
+Traceback (most recent call last):
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_changed_module_versions.py", line 270, in <module>
+    apply_cleanup()
+    ~~~~~~~~~~~~~^^
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_changed_module_versions.py", line 228, in apply_cleanup
+    raise RuntimeError("%s references=%s" % (key, ",".join(hits)))
+RuntimeError: POINTER_COLOR_HOVER_HEX references=/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/code/th_01_base.js:95

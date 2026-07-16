@@ -10,8 +10,8 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "8f2e6f123b4f8f2c29bd26f3e5efc8e9f1a68e49ec653b553cbe89c85d6344e2",
-      "size": 79915,
+      "sha256": "7158ee12ec1ef12bac26d2d7d4a9705dae8146b1426b0b998350d079bc543d55",
+      "size": 80226,
       "version": "1.1.15"
     },
     "th_02_core.js": {
@@ -153,5 +153,5 @@
     "title": "执行指针颜色设置清理临时提交"
   },
   "schema": 3,
-  "version": 20260716031633
+  "version": 20260716031920
 }
