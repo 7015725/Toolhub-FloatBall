@@ -187,11 +187,27 @@ def main() -> int:
         failures,
     )
 
+    sync_render = section(preview, "function syncRender21(render, st)", "function isCurrentRoot21(st, rootRef, render)")
     create_view = section(preview, "function createView21(appObj, st)", "function createLp21(appObj, st)")
+    attach_new_root = section(preview, "function attachNewRoot21(appObj, st)", "function rebuildRoot21(appObj, st, rootRef, render)")
     draw_preview = section(preview, "function drawPreview21(appObj, st, canvas, view, render)", "function cancelDismiss21(st)")
     draw_copy = section(preview, "function drawCopyAction21(appObj, canvas, view, render, colors)", "function drawPreview21(appObj, st, canvas, view, render)")
     copy_action = section(preview, "function performResultPreviewCopy21(appObj, st, rootRef, render)", "function startEnterAnimation21")
     copy_feedback = section(preview, "function scheduleCopyFeedbackReset21(appObj, st, rootRef, render, delayMs)", "function performResultPreviewCopy21")
+
+    require(
+        "preview / single render initialization source",
+        "syncRender21(render, st);" in create_view
+        and create_view.find("syncRender21(render, st);") < create_view.find("new JavaAdapter")
+        and "generation: Number(st.generation || 0)" not in create_view
+        and "payloadId: String(st.payload" not in create_view
+        and "render.forceDarkDisabled = false;" not in sync_render
+        and "syncRender21(st.rootRender, st);" not in attach_new_root
+        and "st.rootRender.rootToken =" not in attach_new_root
+        and "st.rootRender.enterStarted =" not in attach_new_root,
+        "new roots must initialize dynamic render state once before view creation and preserve per-view Force Dark status",
+        failures,
+    )
 
     require(
         "preview / canvas-only custom rendering",
