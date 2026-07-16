@@ -1,0 +1,47 @@
+name: apply-result-preview-terminal-state-cleanup
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/result-preview-terminal-state-cleanup-20260716'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout head branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+
+      - name: Apply cleanup
+        run: python3 scripts/apply_result_preview_terminal_state_cleanup.py
+
+      - name: Remove temporary executor
+        run: |
+          rm scripts/apply_result_preview_terminal_state_cleanup.py
+          rm .github/workflows/apply-result-preview-terminal-state-cleanup.yml
+
+      - name: Verify focused invariants
+        run: |
+          git fetch --no-tags origin main
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+          git diff --check
+
+      - name: Commit verified cleanup
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add code/th_21_result_preview.js scripts/verify_result_preview.py scripts/apply_result_preview_terminal_state_cleanup.py .github/workflows/apply-result-preview-terminal-state-cleanup.yml
+          git commit -m "完成结果预览剩余状态终审"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
