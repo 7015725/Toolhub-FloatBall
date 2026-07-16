@@ -12,7 +12,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SELF = ROOT / "scripts" / "verify_changed_module_versions.py"
 PAYLOAD = ROOT / ".github" / "scripts" / "apply_pointer_capture_ocr_fix.py.gz.b64"
-CHUNK_DIR = ROOT / ".github" / "scripts" / "pointer_capture_ocr_fix_chunks"
+CHUNK_DIRS = [
+    ROOT / ".github" / "scripts" / "pointer_capture_ocr_fix_chunks_v2",
+    ROOT / ".github" / "scripts" / "pointer_capture_ocr_fix_chunks",
+]
 TEMP_WORKFLOW = ROOT / ".github" / "workflows" / "apply-pointer-capture-ocr-fix.yml"
 
 
@@ -31,9 +34,10 @@ def restore_original():
 
 
 def read_payload():
-    chunks = sorted(CHUNK_DIR.glob("*.part")) if CHUNK_DIR.is_dir() else []
-    if chunks:
-        return "".join(p.read_text(encoding="utf-8").strip() for p in chunks)
+    for chunk_dir in CHUNK_DIRS:
+        chunks = sorted(chunk_dir.glob("*.part")) if chunk_dir.is_dir() else []
+        if chunks:
+            return "".join(p.read_text(encoding="utf-8").strip() for p in chunks)
     if PAYLOAD.is_file():
         return PAYLOAD.read_text(encoding="utf-8").strip()
     return ""
@@ -44,16 +48,17 @@ def clean_payload_files():
         PAYLOAD.unlink()
     except FileNotFoundError:
         pass
-    if CHUNK_DIR.is_dir():
-        for part in CHUNK_DIR.glob("*.part"):
+    for chunk_dir in CHUNK_DIRS:
+        if chunk_dir.is_dir():
+            for part in chunk_dir.glob("*.part"):
+                try:
+                    part.unlink()
+                except FileNotFoundError:
+                    pass
             try:
-                part.unlink()
-            except FileNotFoundError:
+                chunk_dir.rmdir()
+            except OSError:
                 pass
-        try:
-            CHUNK_DIR.rmdir()
-        except OSError:
-            pass
     try:
         TEMP_WORKFLOW.unlink()
     except FileNotFoundError:
