@@ -22,14 +22,32 @@ jobs:
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
 
       - name: Apply cleanup
-        run: python3 scripts/apply_result_preview_write_only_state_cleanup.py
+        id: apply
+        continue-on-error: true
+        run: python3 scripts/apply_result_preview_write_only_state_cleanup.py > apply-cleanup.log 2>&1
+
+      - name: Upload apply failure diagnostic
+        if: steps.apply.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-preview-write-only-state-diagnostic
+          path: apply-cleanup.log
+          retention-days: 2
+
+      - name: Stop on apply failure
+        if: steps.apply.outcome == 'failure'
+        run: |
+          cat apply-cleanup.log
+          exit 1
 
       - name: Remove temporary executor
+        if: steps.apply.outcome == 'success'
         run: |
           rm scripts/apply_result_preview_write_only_state_cleanup.py
           rm .github/workflows/apply-result-preview-write-only-state-cleanup.yml
 
       - name: Verify focused invariants
+        if: steps.apply.outcome == 'success'
         run: |
           git fetch --no-tags origin main
           python3 .github/scripts/es5_scan.py
@@ -39,6 +57,7 @@ jobs:
           git diff --check
 
       - name: Commit verified cleanup
+        if: steps.apply.outcome == 'success'
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
