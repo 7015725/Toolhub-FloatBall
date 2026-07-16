@@ -49,6 +49,18 @@ text = replace_once(
 write(position, text)
 
 text = read(regressions)
+text = replace_once(
+    text,
+    "def verify_pointer_core(result, pointer, ocr):",
+    "def verify_pointer_core(result, pointer, ocr, position):",
+    "pointer core position parameter",
+)
+text = replace_once(
+    text,
+    "    verify_pointer_core(result, pointer, ocr)",
+    "    verify_pointer_core(result, pointer, ocr, position)",
+    "pointer core position call",
+)
 anchor = '''    result.require(
         group,
         "th18 OCR extension remains",
