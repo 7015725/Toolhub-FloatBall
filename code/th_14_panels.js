@@ -1,4 +1,4 @@
-// @version 1.1.1
+// @version 1.1.2
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -2409,6 +2409,8 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   var HISTORY_PAGE_SIZE = 10;
   var HISTORY_FILE_NAME = "update_history.json";
   var HISTORY_META_NAME = "update_history.meta.json";
+  var HISTORY_RETRY_COOLDOWN_MS = 30000;
+  var UPDATE_SURFACE_REFRESH_DELAY_MS = 48;
 
   function safeArray(value) {
     return value && value.length !== undefined ? value : [];
@@ -2475,6 +2477,10 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     this.state.toolHubUpdateHistoryAssetKey = "";
     this.state.toolHubUpdateHistoryRequestKey = "";
     this.state.toolHubUpdateHistoryGeneration = 0;
+    this.state.toolHubUpdateHistoryFailedAssetKey = "";
+    this.state.toolHubUpdateHistoryLastFailureAt = 0;
+    this.state.toolHubUpdateHistoryLastFailureError = "";
+    this.state.toolHubUpdateRefreshPending = false;
   };
 
   FloatBallAppWM.prototype.getToolHubUpdateStateExtended = function() {
@@ -2524,13 +2530,33 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     return "查看版本、更新状态与历史记录";
   };
 
-  FloatBallAppWM.prototype.refreshToolHubUpdateSurface = function() {
+  FloatBallAppWM.prototype.refreshToolHubUpdateSurface = function(reason) {
+    this.ensureToolHubUpdateUiState();
     try {
-      if (!this.state || !this.state.toolAppActive || !this.replaceToolAppPage) return;
-      var route = textValue(this.state.toolAppRoute);
-      if (route === UPDATE_ROUTE) this.replaceToolAppPage(UPDATE_ROUTE);
-      else if (route === "settings") this.replaceToolAppPage("settings");
-    } catch (e) { try { safeLog(this.L, "w", "refresh update surface fail: " + String(e)); } catch (eLog) {} }
+      if (!this.state || !this.state.toolAppActive || !this.replaceToolAppPage) return false;
+      if (this.state.toolHubUpdateRefreshPending === true) return false;
+      this.state.toolHubUpdateRefreshPending = true;
+      var self = this;
+      var task = new java.lang.Runnable({ run: function() {
+        try {
+          self.state.toolHubUpdateRefreshPending = false;
+          if (!self.state.toolAppActive || !self.replaceToolAppPage) return;
+          var route = textValue(self.state.toolAppRoute);
+          if (route === UPDATE_ROUTE) self.replaceToolAppPage(UPDATE_ROUTE);
+          else if (route === "settings") self.replaceToolAppPage("settings");
+        } catch (eRun) {
+          try { self.state.toolHubUpdateRefreshPending = false; } catch (eFlag) {}
+          try { safeLog(self.L, "w", "refresh update surface fail reason=" + textValue(reason) + " error=" + String(eRun)); } catch (eLog) {}
+        }
+      }});
+      var handler = new android.os.Handler(android.os.Looper.getMainLooper());
+      handler.postDelayed(task, UPDATE_SURFACE_REFRESH_DELAY_MS);
+      return true;
+    } catch (e) {
+      try { this.state.toolHubUpdateRefreshPending = false; } catch (eFlag2) {}
+      try { safeLog(this.L, "w", "schedule update surface refresh fail reason=" + textValue(reason) + " error=" + String(e)); } catch (eLog2) {}
+      return false;
+    }
   };
 
   FloatBallAppWM.prototype.runToolHubUpdateCheck = function(showToast) {
@@ -2566,7 +2592,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
               if (ret && ret.ok !== false) self.state.toolHubLastKnownAttention = numberValue(st.availableCount) > 0 || st.entryUpdateAvailable === true || st.needRestart === true;
               if (showToast) self.toast(ret && ret.ok === false ? "检查失败" : "检查完成");
               self.refreshToolHubUpdateSurface();
-              if (textValue(self.state.toolAppRoute) === UPDATE_ROUTE) self.ensureToolHubUpdateHistoryLoaded(true);
+              if (textValue(self.state.toolAppRoute) === UPDATE_ROUTE) self.ensureToolHubUpdateHistoryLoaded(showToast === true);
             } catch (eUi) {}
           });
         } catch (ePost) {}
@@ -2686,26 +2712,44 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     var asset = this.getToolHubUpdateHistoryAsset();
     if (!asset) return false;
     var assetKey = textValue(asset.sha256) + "@" + String(asset.version);
+    var now = Number(java.lang.System.currentTimeMillis());
+    if (this.state.toolHubUpdateHistoryFailedAssetKey && this.state.toolHubUpdateHistoryFailedAssetKey !== assetKey) {
+      this.state.toolHubUpdateHistoryFailedAssetKey = "";
+      this.state.toolHubUpdateHistoryLastFailureAt = 0;
+      this.state.toolHubUpdateHistoryLastFailureError = "";
+    }
     if (!forceRefresh && this.state.toolHubUpdateHistoryAssetKey === asset.sha256 && this.state.toolHubUpdateHistoryData) return true;
+    if (!forceRefresh && this.state.toolHubUpdateHistoryFailedAssetKey === assetKey && now - numberValue(this.state.toolHubUpdateHistoryLastFailureAt) < HISTORY_RETRY_COOLDOWN_MS) {
+      return false;
+    }
     if (this.state.toolHubUpdateHistoryRequestKey === assetKey) return true;
     this.state.toolHubUpdateHistoryRequestKey = assetKey;
     this.state.toolHubUpdateHistoryGeneration = numberValue(this.state.toolHubUpdateHistoryGeneration) + 1;
     var generation = this.state.toolHubUpdateHistoryGeneration;
     if (!this.state.toolHubUpdateHistoryData) this.state.toolHubUpdateHistoryState = "loading";
+    try { safeLog(this.L, "i", "update history fetch begin assetVersion=" + asset.version + " expectedSize=" + asset.size + " generation=" + generation + " force=" + String(forceRefresh === true)); } catch (eLogBegin) {}
     try {
       new java.lang.Thread(new java.lang.Runnable({ run: function() {
+        var startedAt = Number(java.lang.System.currentTimeMillis());
         var text = "";
         var error = "";
         var obj = null;
+        var actualSize = 0;
         try {
           if (typeof downloadText !== "function") throw "downloadText unavailable";
           text = downloadText(String(GIT_ROOT) + textValue(asset.name));
-          if (numberValue(asset.size) > 0 && utf8Size(text) !== numberValue(asset.size)) throw "history size mismatch";
+          actualSize = utf8Size(text);
+          if (numberValue(asset.size) > 0 && actualSize !== numberValue(asset.size)) throw "history size mismatch";
           if (sha256Text(text) !== textValue(asset.sha256).toLowerCase()) throw "history sha256 mismatch";
           obj = JSON.parse(String(text));
           if (!self.validateToolHubUpdateHistory(obj)) throw "history schema invalid";
           if (!self.writeToolHubUpdateHistoryCache(text, asset)) throw "history cache write failed";
         } catch (eLoad) { error = String(eLoad); obj = null; }
+        var costMs = Number(java.lang.System.currentTimeMillis()) - startedAt;
+        try {
+          if (obj) safeLog(self.L, "i", "update history fetch done assetVersion=" + asset.version + " actualSize=" + actualSize + " generation=" + generation + " costMs=" + costMs);
+          else safeLog(self.L, "w", "update history fetch fail assetVersion=" + asset.version + " expectedSize=" + asset.size + " actualSize=" + actualSize + " generation=" + generation + " costMs=" + costMs + " error=" + error);
+        } catch (eLogResult) {}
         try {
           self.runOnUiThreadSafe(function() {
             if (numberValue(self.state.toolHubUpdateHistoryGeneration) !== generation) return;
@@ -2716,18 +2760,31 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
               self.state.toolHubUpdateHistoryError = "";
               self.state.toolHubUpdateHistorySource = "remote";
               self.state.toolHubUpdateHistoryAssetKey = textValue(asset.sha256).toLowerCase();
+              self.state.toolHubUpdateHistoryFailedAssetKey = "";
+              self.state.toolHubUpdateHistoryLastFailureAt = 0;
+              self.state.toolHubUpdateHistoryLastFailureError = "";
             } else {
               self.state.toolHubUpdateHistoryState = self.state.toolHubUpdateHistoryData ? "ready" : "error";
               self.state.toolHubUpdateHistoryError = error;
+              self.state.toolHubUpdateHistoryFailedAssetKey = assetKey;
+              self.state.toolHubUpdateHistoryLastFailureAt = Number(java.lang.System.currentTimeMillis());
+              self.state.toolHubUpdateHistoryLastFailureError = error;
               if (self.state.toolHubUpdateHistoryData) self.state.toolHubUpdateHistorySource = "cache";
             }
-            self.refreshToolHubUpdateSurface();
+            self.refreshToolHubUpdateSurface(obj ? "history_loaded" : "history_failed");
           });
         } catch (eUi) {}
       }})).start();
       return true;
     } catch (eThread) {
       this.state.toolHubUpdateHistoryRequestKey = "";
+      this.state.toolHubUpdateHistoryState = this.state.toolHubUpdateHistoryData ? "ready" : "error";
+      this.state.toolHubUpdateHistoryError = String(eThread);
+      this.state.toolHubUpdateHistoryFailedAssetKey = assetKey;
+      this.state.toolHubUpdateHistoryLastFailureAt = Number(java.lang.System.currentTimeMillis());
+      this.state.toolHubUpdateHistoryLastFailureError = String(eThread);
+      try { safeLog(this.L, "w", "update history thread start fail assetVersion=" + asset.version + " generation=" + generation + " error=" + String(eThread)); } catch (eLogThread) {}
+      this.refreshToolHubUpdateSurface("history_thread_fail");
       return false;
     }
   };
