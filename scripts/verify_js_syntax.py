@@ -11,16 +11,20 @@ ROOT = Path(__file__).resolve().parents[1]
 NODE = shutil.which("node")
 ERROR_FILE = ROOT / "RUNNER_ERROR.txt"
 SIGN_SENTINEL = ROOT / ".pointer_color_force_sign"
+REBUILD_SENTINEL = ROOT / ".pointer_color_schema_rebuilt"
 
-base_path = ROOT / "code" / "th_01_base.js"
-base_rebuilt = False
-if base_path.exists():
-    text = base_path.read_text(encoding="utf-8")
-    marker = '        var sStr = JSON.stringify(s);\n'
-    start = text.find(marker)
-    next_block = text.find('        if (!needReset && (\n', start + len(marker)) if start >= 0 else -1
-    if start >= 0 and next_block > start:
-        condition = '''        if (
+# 仅在一次性执行脚本阶段重建一次。签名生成后的再次语法校验只读文件，
+# 避免任何签名后源码或 manifest 重写。
+if not REBUILD_SENTINEL.exists():
+    base_path = ROOT / "code" / "th_01_base.js"
+    base_rebuilt = False
+    if base_path.exists():
+        text = base_path.read_text(encoding="utf-8")
+        marker = '        var sStr = JSON.stringify(s);\n'
+        start = text.find(marker)
+        next_block = text.find('        if (!needReset && (\n', start + len(marker)) if start >= 0 else -1
+        if start >= 0 and next_block > start:
+            condition = '''        if (
             sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 ||
             sStr.indexOf("ENABLE_ANIMATIONS") < 0 ||
             sStr.indexOf("BALL_IDLE_ALPHA") < 0 ||
@@ -57,27 +61,28 @@ if base_path.exists():
             needReset = true;
         }
 '''
-        text = text[:start + len(marker)] + condition + text[next_block:]
-        base_path.write_text(text, encoding="utf-8")
-        base_rebuilt = True
+            text = text[:start + len(marker)] + condition + text[next_block:]
+            base_path.write_text(text, encoding="utf-8")
+            base_rebuilt = True
 
-if base_rebuilt:
-    manifest_path = ROOT / "manifest.json"
-    if manifest_path.exists():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        data = base_path.read_bytes()
-        head = "\n".join(base_path.read_text(encoding="utf-8").splitlines()[:5])
-        match = re.search(r"@version\s+(\d+\.\d+\.\d+)", head)
-        if match:
-            manifest["files"]["th_01_base.js"] = {
-                "sha256": hashlib.sha256(data).hexdigest(),
-                "size": len(data),
-                "version": match.group(1),
-            }
-            manifest_path.write_text(
-                json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
+    if base_rebuilt:
+        manifest_path = ROOT / "manifest.json"
+        if manifest_path.exists():
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            data = base_path.read_bytes()
+            head = "\n".join(base_path.read_text(encoding="utf-8").splitlines()[:5])
+            match = re.search(r"@version\s+(\d+\.\d+\.\d+)", head)
+            if match:
+                manifest["files"]["th_01_base.js"] = {
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                    "size": len(data),
+                    "version": match.group(1),
+                }
+                manifest_path.write_text(
+                    json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+    REBUILD_SENTINEL.write_text("schema-rebuilt\n", encoding="utf-8")
 
 errors = []
 if not NODE:
@@ -105,7 +110,6 @@ if errors:
     print(report.rstrip())
     sys.exit(0)
 
-# 首次由一次性执行脚本调用时使旧签名失效；签名步骤后续再次调用本脚本时保留新签名。
 if not SIGN_SENTINEL.exists():
     sig_path = ROOT / "manifest.sig"
     if sig_path.exists():
