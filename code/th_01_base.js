@@ -1,4 +1,4 @@
-// @version 1.1.14
+// @version 1.1.15
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -91,7 +91,10 @@ var REMOVED_SETTINGS_CONFIG_KEYS = {
   PANEL_COLS: true,
   PANEL_ITEM_SIZE_DP: true,
   BALL_RIPPLE_ALPHA_LIGHT: true,
-  BALL_RIPPLE_ALPHA_DARK: true
+  BALL_RIPPLE_ALPHA_DARK: true,
+  POINTER_COLOR_HOVER_HEX: true,
+  POINTER_COLOR_HIT_HEX: true,
+  POINTER_COLOR_CAPTURE_HEX: true
 };
 
 function isRemovedSettingsConfigKey(key) {
@@ -181,13 +184,12 @@ var ConfigValidator = {
     POINTER_AREA_HOVER_MS: { type: "int", min: 500, max: 10000, default: 2000 },
     POINTER_RESULT_PREVIEW_TIMEOUT_SEC: { type: "int", min: 1, max: 10, default: 3 },
     POINTER_COLOR_NORMAL_HEX: { type: "string", default: "" },
-    POINTER_COLOR_HOVER_HEX: { type: "string", default: "" },
-    POINTER_COLOR_HIT_HEX: { type: "string", default: "" },
     POINTER_COLOR_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
-    POINTER_FRAME_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
-    POINTER_COLOR_AREA_HEX: { type: "string", default: "" },
     POINTER_COLOR_AREA_READY_HEX: { type: "string", default: "#F59E0B" },
-    POINTER_COLOR_CAPTURE_HEX: { type: "string", default: "" },
+    POINTER_COLOR_AREA_HEX: { type: "string", default: "" },
+    POINTER_FRAME_TEXT_HOVER_HEX: { type: "string", default: "#0EA5E9" },
+    POINTER_FRAME_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
+    POINTER_FRAME_AREA_HEX: { type: "string", default: "" },
     POINTER_AREA_SMALL_FALLBACK_TEXT: { type: "bool", default: true },
     POINTER_AREA_MIN_WIDTH_DP: { type: "int", min: 20, max: 240, default: 56 },
     POINTER_AREA_MIN_HEIGHT_DP: { type: "int", min: 8, max: 160, default: 20 },
@@ -896,13 +898,12 @@ var ConfigManager = {
         POINTER_AREA_HOVER_MS: 2000,
         POINTER_RESULT_PREVIEW_TIMEOUT_SEC: 3,
         POINTER_COLOR_NORMAL_HEX: "",
-        POINTER_COLOR_HOVER_HEX: "",
-        POINTER_COLOR_HIT_HEX: "",
         POINTER_COLOR_TEXT_READY_HEX: "#22C55E",
-        POINTER_FRAME_TEXT_READY_HEX: "#22C55E",
-        POINTER_COLOR_AREA_HEX: "",
         POINTER_COLOR_AREA_READY_HEX: "#F59E0B",
-        POINTER_COLOR_CAPTURE_HEX: "",
+        POINTER_COLOR_AREA_HEX: "",
+        POINTER_FRAME_TEXT_HOVER_HEX: "#0EA5E9",
+        POINTER_FRAME_TEXT_READY_HEX: "#22C55E",
+        POINTER_FRAME_AREA_HEX: "",
         POINTER_AREA_SMALL_FALLBACK_TEXT: true,
         POINTER_AREA_MIN_WIDTH_DP: 56,
         POINTER_AREA_MIN_HEIGHT_DP: 20,
@@ -971,14 +972,13 @@ var ConfigManager = {
         { key: "POINTER_AREA_MIN_HEIGHT_DP", name: "OCR最小高度(dp)", type: "int", min: 8, max: 160, step: 2 },
         { key: "POINTER_AREA_MIN_AREA_DP2", name: "OCR最小面积(dp²)", type: "int", min: 200, max: 30000, step: 100 },
         { key: "POINTER_AREA_MIN_MOVE_DP", name: "OCR最小拖动距离(dp)", type: "int", min: 0, max: 160, step: 2 },
-        { key: "POINTER_COLOR_NORMAL_HEX", name: "指针普通颜色", type: "ball_color" },
-        { key: "POINTER_COLOR_HOVER_HEX", name: "指针悬停颜色", type: "ball_color" },
-        { key: "POINTER_COLOR_HIT_HEX", name: "指针命中颜色", type: "ball_color" },
-        { key: "POINTER_COLOR_TEXT_READY_HEX", name: "取字就绪指针颜色", type: "ball_color" },
-        { key: "POINTER_FRAME_TEXT_READY_HEX", name: "取字就绪边框颜色", type: "ball_color" },
-        { key: "POINTER_COLOR_AREA_HEX", name: "框选区域颜色", type: "ball_color" },
-        { key: "POINTER_COLOR_AREA_READY_HEX", name: "框选就绪指针颜色", type: "ball_color" },
-        { key: "POINTER_COLOR_CAPTURE_HEX", name: "截图识别颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_NORMAL_HEX", name: "普通指针颜色", desc: "未进入取字就绪或框选状态时的指针颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_TEXT_READY_HEX", name: "取字就绪指针颜色", desc: "在文字边框内悬停达到取字时间后的指针颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_AREA_READY_HEX", name: "框选就绪指针颜色", desc: "悬停达到框选时间、继续拖动前的指针颜色", type: "ball_color" },
+        { key: "POINTER_COLOR_AREA_HEX", name: "框选中指针颜色", desc: "继续拖动并开始框选区域后的指针颜色", type: "ball_color" },
+        { key: "POINTER_FRAME_TEXT_HOVER_HEX", name: "文字悬停边框颜色", desc: "检测到文字、尚未达到取字时间时的边框颜色", type: "ball_color" },
+        { key: "POINTER_FRAME_TEXT_READY_HEX", name: "取字/框选就绪边框颜色", desc: "达到取字或框选悬停时间后的文字边框颜色", type: "ball_color" },
+        { key: "POINTER_FRAME_AREA_HEX", name: "框选区域边框颜色", desc: "拖动框选区域时的边框和半透明填充颜色", type: "ball_color" },
 
         { type: "section", name: "面板布局" },
         {
@@ -1089,7 +1089,40 @@ var ConfigManager = {
             } catch (eDeprecatedSchemaWrite) {}
         }
         var sStr = JSON.stringify(s);
-        if (sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 || sStr.indexOf("ENABLE_ANIMATIONS") < 0 || sStr.indexOf("BALL_IDLE_ALPHA") < 0 || sStr.indexOf("single_choice") < 0 || sStr.indexOf("ball_shortx_icon") < 0 || sStr.indexOf("ball_color") < 0 || sStr.indexOf("BALL_BG_COLOR_HEX") < 0 || sStr.indexOf("BALL_ICON_SIZE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 || sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 || sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 || sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 || sStr.indexOf("POINTER_SCALE_PERCENT") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_X_DP") < 0 || sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 || sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 || sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 || sStr.indexOf("POINTER_RESULT_PREVIEW_TIMEOUT_SEC") < 0 || sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HOVER_HEX") < 0 || sStr.indexOf("POINTER_COLOR_HIT_HEX") < 0 || sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 || sStr.indexOf("POINTER_COLOR_AREA_HEX") < 0 || sStr.indexOf("POINTER_COLOR_AREA_READY_HEX") < 0 || sStr.indexOf("POINTER_COLOR_CAPTURE_HEX") < 0 || sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 || sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 || sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 || sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0) {
+        if (
+            sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 ||
+            sStr.indexOf("ENABLE_ANIMATIONS") < 0 ||
+            sStr.indexOf("BALL_IDLE_ALPHA") < 0 ||
+            sStr.indexOf("single_choice") < 0 ||
+            sStr.indexOf("ball_shortx_icon") < 0 ||
+            sStr.indexOf("ball_color") < 0 ||
+            sStr.indexOf("BALL_BG_COLOR_HEX") < 0 ||
+            sStr.indexOf("BALL_ICON_SIZE_DP") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 ||
+            sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 ||
+            sStr.indexOf("POINTER_SCALE_PERCENT") < 0 ||
+            sStr.indexOf("POINTER_EDGE_ZONE_X_DP") < 0 ||
+            sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 ||
+            sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 ||
+            sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 ||
+            sStr.indexOf("POINTER_RESULT_PREVIEW_TIMEOUT_SEC") < 0 ||
+            sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 ||
+            sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 ||
+            sStr.indexOf("POINTER_COLOR_AREA_READY_HEX") < 0 ||
+            sStr.indexOf("POINTER_COLOR_AREA_HEX") < 0 ||
+            sStr.indexOf("POINTER_FRAME_TEXT_HOVER_HEX") < 0 ||
+            sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 ||
+            sStr.indexOf("POINTER_FRAME_AREA_HEX") < 0 ||
+            sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 ||
+            sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 ||
+            sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 ||
+            sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 ||
+            sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0
+        ) {
             needReset = true;
         }
         if (!needReset && (
@@ -1166,13 +1199,13 @@ var ConfigManager = {
                 schemaItemDiffers("POINTER_AREA_MIN_HEIGHT_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("POINTER_AREA_MIN_AREA_DP2", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("POINTER_AREA_MIN_MOVE_DP", ["name", "type", "min", "max", "step"]) ||
-                schemaItemDiffers("POINTER_COLOR_NORMAL_HEX", ["name", "type"]) ||
-                schemaItemDiffers("POINTER_COLOR_HOVER_HEX", ["name", "type"]) ||
-                schemaItemDiffers("POINTER_COLOR_HIT_HEX", ["name", "type"]) ||
-                schemaItemDiffers("POINTER_COLOR_TEXT_READY_HEX", ["name", "type"]) ||
-                schemaItemDiffers("POINTER_FRAME_TEXT_READY_HEX", ["name", "type"]) ||
-                schemaItemDiffers("POINTER_COLOR_AREA_HEX", ["name", "type"]) ||
-                schemaItemDiffers("POINTER_COLOR_CAPTURE_HEX", ["name", "type"])) {
+                schemaItemDiffers("POINTER_COLOR_NORMAL_HEX", ["name", "desc", "type"]) ||
+                schemaItemDiffers("POINTER_COLOR_TEXT_READY_HEX", ["name", "desc", "type"]) ||
+                schemaItemDiffers("POINTER_COLOR_AREA_READY_HEX", ["name", "desc", "type"]) ||
+                schemaItemDiffers("POINTER_COLOR_AREA_HEX", ["name", "desc", "type"]) ||
+                schemaItemDiffers("POINTER_FRAME_TEXT_HOVER_HEX", ["name", "desc", "type"]) ||
+                schemaItemDiffers("POINTER_FRAME_TEXT_READY_HEX", ["name", "desc", "type"]) ||
+                schemaItemDiffers("POINTER_FRAME_AREA_HEX", ["name", "desc", "type"])) {
                 needReset = true;
             }
         }

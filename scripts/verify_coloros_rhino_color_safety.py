@@ -180,7 +180,7 @@ if module_version(BASE, "th_01_base.js") < (1, 1, 12):
 if module_version(THEME, "th_04_theme.js") < (1, 0, 10):
     errors.append("th_04_theme.js version below ColorOS result persistence baseline 1.0.10")
 if module_version(PANEL_UI, "th_13_panel_ui.js") < (1, 0, 9):
-    errors.append("th_13_panel_ui.js version below settings interaction stress baseline 1.0.9")
+    errors.append("th_13_panel_ui.js version below settings interaction stress baseline 1.0.10")
 if module_version(PANELS, "th_14_panels.js") < (1, 0, 25):
     errors.append("th_14_panels.js version below runtime records scroll baseline 1.0.25")
 if module_version(MAIN, "th_15_main_panel.js") < (1, 5, 8):

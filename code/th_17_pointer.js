@@ -1,4 +1,4 @@
-// @version 1.2.10
+// @version 1.2.11
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -2017,18 +2017,12 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         var active = !!(st.hot || hoverCandidate || areaOcrReady || st.areaSelecting || st.areaReady || processing);
         var dragging = !!st.dragging;
         var rgb = null;
-        if (processing) {
-          rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
-        } else if (st.mode === "area_capture" || st.areaSelecting || st.areaReady) {
+        if (processing || st.mode === "area_capture" || st.areaSelecting || st.areaReady) {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
         } else if (areaOcrReady) {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_READY_HEX", 245, 158, 11);
         } else if (textReady) {
-          rgb = th17PointerColorRgbWithFallback(self, "POINTER_COLOR_TEXT_READY_HEX", "POINTER_COLOR_HIT_HEX", 34, 197, 94);
-        } else if (st.hot) {
-          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HIT_HEX", 245, 158, 11);
-        } else if (hoverCandidate) {
-          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_COLOR_TEXT_READY_HEX", "POINTER_COLOR_NORMAL_HEX", 34, 197, 94);
         } else {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_NORMAL_HEX", 76, 124, 160);
         }
@@ -3774,27 +3768,27 @@ FloatBallAppWM.prototype.createPointerFrameView = function(st) {
         var strokeAlpha = 235;
         var strokeWidth = self.dp(2);
         if (kind === "capture" || st.areaProcessing === true) {
-          rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
           fillAlpha = 56;
           strokeAlpha = 245;
           strokeWidth = self.dp(2.4);
         } else if (kind === "text_hit") {
-          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_COLOR_TEXT_READY_HEX", 34, 197, 94);
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_FRAME_TEXT_HOVER_HEX", 34, 197, 94);
           fillAlpha = 38;
           strokeAlpha = 248;
           strokeWidth = self.dp(2.3);
         } else if (kind === "text_hover") {
-          rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_HOVER_HEX", "POINTER_COLOR_NORMAL_HEX", 14, 165, 233);
           fillAlpha = 26;
           strokeAlpha = 215;
           strokeWidth = self.dp(1.8);
         } else if (kind === "area_armed") {
-          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
           fillAlpha = 18;
           strokeAlpha = 150;
           strokeWidth = self.dp(1.4);
         } else {
-          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+          rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
         }
         p.setStyle(android.graphics.Paint.Style.FILL);
         p.setARGB(fillAlpha, rgb.r, rgb.g, rgb.b);

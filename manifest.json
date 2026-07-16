@@ -10,9 +10,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "6972cf0b0e0a15bb74ad7f10363fc5df2fd3d1ee531b21f51387a136740ee0af",
-      "size": 79391,
-      "version": "1.1.14"
+      "sha256": "7158ee12ec1ef12bac26d2d7d4a9705dae8146b1426b0b998350d079bc543d55",
+      "size": 80226,
+      "version": "1.1.15"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -65,9 +65,9 @@
       "version": "1.2.4"
     },
     "th_13_panel_ui.js": {
-      "sha256": "57ea5d66e59ba0d139dfcfd01826ef6b664db6c3a8d959acf7c2b15b6bd4e600",
-      "size": 38753,
-      "version": "1.0.9"
+      "sha256": "b15a76e4b57811aa5e3f5d626ce64d848f1a68e1ccc7086c0de3395935eb791c",
+      "size": 39475,
+      "version": "1.0.10"
     },
     "th_14_button_editor.js": {
       "sha256": "3df91a233ef9d6c7f21f19e39f123e711136f4af568c25c20739ae8a2e6e32d6",
@@ -95,9 +95,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "9017780636bcec3b3c8a21df5f2593d9ae532659a9b6ecf9adb3a604adf7acf2",
-      "size": 122181,
-      "version": "1.0.26"
+      "sha256": "929515786ee7cbc4cdc3a4f2bf02dec07768fcf176ebd6ee27dcbee8b74398b0",
+      "size": 122221,
+      "version": "1.0.27"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -120,14 +120,14 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "aaab913f8ada03f76b3e989a29ddf646ad280b8b2b023fc3d480c6a88e6dfb9e",
-      "size": 173481,
-      "version": "1.2.10"
+      "sha256": "9df1ea2e5655d55b8c46728995ba502fd48ee758dff548111fd5182c003b230e",
+      "size": 173303,
+      "version": "1.2.11"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "3d86a567b30c93b912de35e0e9d622dcdefb805187e25538a1f5ee4f92fb7454",
-      "size": 37314,
-      "version": "1.1.1"
+      "sha256": "29f898b470542bfa9dec8455582f2888cc76de81fef98a35cd506cb10bc669c3",
+      "size": 37441,
+      "version": "1.1.2"
     },
     "th_19_position_state.js": {
       "sha256": "3cfc4b131cb70a1008a0e0e0b6213aded7a36f0ae722a0f309f003231b3c959a",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复框选就绪指针颜色未生效"
+      "清理并重组指针颜色设置"
     ],
-    "title": "修复框选就绪指针颜色未生效"
+    "title": "清理并重组指针颜色设置"
   },
   "schema": 3,
-  "version": 20260716014438
+  "version": 20260716032941
 }
