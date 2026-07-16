@@ -64,9 +64,9 @@ def main() -> int:
     if "forceReload" in source:
         fail("legacy forceReload state must be removed")
 
-    version_match = re.search(r"^// @version\s+([0-9.]+)", source, re.M)
-    if not version_match or version_match.group(1) != "1.0.2":
-        fail("module version must be 1.0.2")
+    version_match = re.search(r"^// @version\s+(\d+)\.(\d+)\.(\d+)", source, re.M)
+    if not version_match or tuple(map(int, version_match.groups())) < (1, 0, 2):
+        fail("module version must be at least 1.0.2")
 
     print("OK shortcut_picker_thread_affinity owner_view_post=1 generation=1 lifecycle=1 logging=1")
     return 0

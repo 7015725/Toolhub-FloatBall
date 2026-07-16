@@ -55,9 +55,9 @@
       "version": "1.0.9"
     },
     "th_11_action.js": {
-      "sha256": "6d5e432e56da06cedbe0dabc46fe51b400539a2b8838879273f2b58d3f8eace7",
-      "size": 27874,
-      "version": "1.1.0"
+      "sha256": "0d7b2ca9fa775a3b2b2041206834283af7435fc9dc9dd1d26c7b38b2c1145ff1",
+      "size": 28839,
+      "version": "1.1.1"
     },
     "th_12_rebuild.js": {
       "sha256": "a54ba99b8e75c429ba29f40ccc80e85f96de651a4cfaac088f51b103437e9bcf",
@@ -70,9 +70,9 @@
       "version": "1.0.10"
     },
     "th_14_button_editor.js": {
-      "sha256": "3df91a233ef9d6c7f21f19e39f123e711136f4af568c25c20739ae8a2e6e32d6",
-      "size": 97706,
-      "version": "1.1.1"
+      "sha256": "05036ad21ef1bfbc05d4f3371a084c8ebca17ce36ef06868d59a284c95120ae1",
+      "size": 98261,
+      "version": "1.1.2"
     },
     "th_14_button_icon_editor.js": {
       "sha256": "a568f94170b4707d5a0fddc6b48b6b49bfcd630be4fc0ac1a6864c9dddbb4cc2",
@@ -80,9 +80,9 @@
       "version": "1.0.2"
     },
     "th_14_button_shortcut.js": {
-      "sha256": "42bcfcc25ec5e28551864106f143aa9e80e0090e019969fb536206615a1daafc",
-      "size": 43758,
-      "version": "1.0.2"
+      "sha256": "8a4c1ef209f8f65a7b0bb0889abb3135bb99ef2546c129e4989017d94f75a61e",
+      "size": 44325,
+      "version": "1.0.3"
     },
     "th_14_color_picker.js": {
       "sha256": "d2c906aecb2f911312d2fc496c5584b885bdcf18a569b5ad560d1467a02f1c51",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复快捷方式保存与 Launcher 启动"
+      "修复快捷方式保存与 Launcher 结构化启动"
     ],
-    "title": "修复快捷方式保存与 Launcher 启动"
+    "title": "修复快捷方式保存与 Launcher 结构化启动"
   },
   "schema": 3,
-  "version": 20260716091439
+  "version": 20260716092431
 }

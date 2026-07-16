@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify Shortcut intent-only defaults, legacy migration and eval isolation."""
+"""Verify structured Shortcut defaults, Launcher execution and eval isolation."""
 
 from pathlib import Path
 import re
@@ -40,7 +40,10 @@ def main():
     eval_pos = action.find("eval(jsCode)")
     guard_pos = action.find('if (shortcutMode !== "legacy_js")')
     legacy_pos = action.find('var jsCode = (btn.shortcutJsCode')
+    launcher_pos = action.find("launcherApps.startShortcut(spkg, sid, null, null, shortcutUser)")
+    intent_pos = action.find("android.content.Intent.parseUri(iu, 0)")
     shortcut_version = re.search(r"^// @version\s+(\d+)\.(\d+)\.(\d+)", shortcut)
+    action_version = re.search(r"^// @version\s+(\d+)\.(\d+)\.(\d+)", action)
 
     checks = [
         ("shortcut schema defaults to intent", 'putSchema("SHORTCUT_EXEC_MODE", { type: "enum", values: ["intent", "legacy_js"], default: "intent" })' in rebuild),
@@ -49,8 +52,10 @@ def main():
         ("runtime defaults to intent", 'var shortcutMode = "intent";' in action),
         ("unknown and compat modes collapse to intent", 'return "intent";' in action and 'shortcutMode === "compat"' not in action),
         ("eval exists only once", action.count("eval(jsCode)") == 1),
+        ("launcher start exists once", action.count("launcherApps.startShortcut(spkg, sid, null, null, shortcutUser)") == 1),
+        ("launcher runs before intent fallback", launcher_pos >= 0 and intent_pos > launcher_pos),
         ("eval is behind explicit legacy guard", guard_pos >= 0 and legacy_pos > guard_pos and eval_pos > legacy_pos),
-        ("intent failure returns before legacy code", 'shortcutMode !== "legacy_js"' in action and 'shortcut intent-only fail' in action),
+        ("structured failure returns before legacy code", 'shortcutMode !== "legacy_js"' in action and 'shortcut structured fail' in action),
         ("button migration writes explicit mode", 'b.shortcutExecMode = normalizedShortcutMode' in base),
         ("button migration preserves only js-only legacy", '!shortcutIntent && shortcutJs' in base),
         ("obsolete shortcutRunMode is removed", 'delete b.shortcutRunMode' in base),
@@ -58,11 +63,13 @@ def main():
         ("editor saves intent mode", 'newBtn.shortcutExecMode = "intent"' in editor),
         ("editor saves legacy only explicitly", 'newBtn.shortcutExecMode = "legacy_js"' in editor and 'isLegacyJsEnabled' in editor),
         ("editor no longer forces js mode", 'newBtn.shortcutRunMode = "js"' not in editor),
-        ("editor requires intent uri outside legacy", '请选择包含 intentUri 的快捷方式' in editor),
+        ("editor allows launcher-only shortcuts", '请选择包含 intentUri 的快捷方式' not in editor and 'if (_scIntentUri) newBtn.intentUri = _scIntentUri;' in editor),
+        ("editor clears stale optional intent", 'else delete newBtn.intentUri;' in editor),
         ("new shortcut UI does not generate js", '__scBuildDefaultJsCode' not in shortcut and '__scUpdateJsCodeSafe' not in shortcut),
         ("legacy editor only appears for migrated buttons", 'if (legacyJsEnabled)' in shortcut and 'inputScJsCode = self.ui.createInputGroup' in shortcut),
         ("selecting a shortcut disables legacy", '__scSetLegacyJsEnabled(false)' in shortcut),
-        ("shortcut submodule has a real version", bool(shortcut_version) and tuple(map(int, shortcut_version.groups())) >= (1, 0, 2)),
+        ("shortcut submodule has a real version", bool(shortcut_version) and tuple(map(int, shortcut_version.groups())) >= (1, 0, 3)),
+        ("action module version advanced", bool(action_version) and tuple(map(int, action_version.groups())) >= (1, 1, 1)),
     ]
 
     model_checks = [

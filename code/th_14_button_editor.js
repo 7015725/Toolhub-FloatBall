@@ -1,4 +1,4 @@
-// @version 1.1.1
+// @version 1.1.2
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -1104,6 +1104,7 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
   var subTextColor = T.onSurface2;
   var dividerColor = T.outlineVariant;
   var inputBgColor = T.surface2;
+  var dangerColor = T.danger || C.danger || android.graphics.Color.parseColor("#BA1A1A");
 
   var panel = this.ui.createStyledPanel(this, 16);
   try { panel.setBackground(this.ui.createRoundDrawable(bgColor, this.dp(18))); } catch(ePanelBg) {}
@@ -1136,9 +1137,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
       var n = self.state.buttonEditorNotice;
       if (!n || !n.msg) return null;
       var kind = String(n.kind || "info");
-      var color = (kind === "error") ? C.error : (kind === "ok" ? T.primary : T.primary);
-      var bg = (kind === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
-      var stroke = (kind === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
+      var color = (kind === "error") ? dangerColor : (kind === "ok" ? T.primary : T.primary);
+      var bg = (kind === "error") ? self.withAlpha(dangerColor, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
+      var stroke = (kind === "error") ? self.withAlpha(dangerColor, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
       var box = new android.widget.TextView(context);
       box.setText(String(n.msg));
       toolhubSafeSetTextColor(box, color);
@@ -1160,9 +1161,9 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     try {
       if (!tv) { setButtonEditorNotice(msg, kind); return; }
       var k = String(kind || "info");
-      var color2 = (k === "error") ? C.error : (k === "ok" ? T.primary : T.primary);
-      var bg2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
-      var stroke2 = (k === "error") ? self.withAlpha(C.error, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
+      var color2 = (k === "error") ? dangerColor : (k === "ok" ? T.primary : T.primary);
+      var bg2 = (k === "error") ? self.withAlpha(dangerColor, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
+      var stroke2 = (k === "error") ? self.withAlpha(dangerColor, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
       tv.setText(String(msg || ""));
       toolhubSafeSetTextColor(tv, color2);
       tv.setBackground(self.ui.createStrokeDrawable(bg2, stroke2, self.dp(1), self.dp(14)));
@@ -1992,12 +1993,17 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
                         if (_scIntentUri) newBtn.intentUri = _scIntentUri;
                     }
                 } else {
-                    if (!_scIntentUri) markInvalid(null, "请选择包含 intentUri 的快捷方式");
-                    else newBtn.intentUri = _scIntentUri;
                     newBtn.shortcutExecMode = "intent";
+                    if (_scIntentUri) newBtn.intentUri = _scIntentUri;
+                    else delete newBtn.intentUri;
                 }
             }
             if (!isValid) {
+                var validationMeta = "";
+                if (newBtn.type === "shortcut") {
+                    validationMeta = " hasPkg=" + String(!!sp) + " hasShortcutId=" + String(!!sid) + " hasIntentUri=" + String(!!_scIntentUri) + " legacy=" + String(!!keepLegacyJs);
+                }
+                safeLog(self.L, "w", "button editor validation blocked type=" + String(newBtn.type || "") + validationMeta + " reason=" + String(validationMessage || "请补全必填项"));
                 finishButtonEditorSaveBusy();
                 updateInlineNotice(editInlineNotice, validationMessage || "请补全必填项", "error");
                 try { scroll.post(new java.lang.Runnable({ run: function() { try { scroll.fullScroll(android.view.View.FOCUS_DOWN); } catch(eScrollNotice) {} } })); } catch(ePostNotice) {}
