@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+from pathlib import Path
+
+
+def replace_once(path, old, new, label):
+    p = Path(path)
+    text = p.read_text(encoding="utf-8")
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit("%s: expected one match, got %d" % (label, count))
+    p.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+replace_once("code/th_14_button_shortcut.js", "// @version 1.0.3", "// @version 1.0.4", "shortcut version")
+replace_once(
+    "code/th_14_button_shortcut.js",
+    '''    function __scBuildLaunchCmd() {
+        try {
+            if (!scSelectedIntentUri) return "（未选择快捷方式）";
+            return "am start --user " + String(scSelectedUserId) + " '" + String(scSelectedIntentUri) + "'";
+        } catch(e) { return "（命令生成失败）"; }
+    }
+
+    var inputScCmd = self.ui.createInputGroup(self, "快捷方式启动命令 (am start)", __scBuildLaunchCmd(), false, "选择快捷方式后自动生成");
+    shortcutWrap.addView(inputScCmd.view);
+    try { inputScCmd.view.setVisibility(android.view.View.GONE); } catch(eHideCommand) {}
+
+''',
+    "",
+    "hidden shortcut command field",
+)
+replace_once(
+    "code/th_14_button_shortcut.js",
+    '                launchMethod: intentUri ? "launcher_intent" : "launcher",\n',
+    "",
+    "derived launch method field",
+)
+replace_once(
+    "code/th_14_button_shortcut.js",
+    '''                safeLog(self.L, "i", "shortcut picker selected pkg=" + __scStr(item.pkg) + " id=" + __scStr(item.shortcutId) + " user=" + String(scSelectedUserId) + " intentUriLen=" + String(scSelectedIntentUri.length) + " launchMethod=" + __scStr(item.launchMethod || (scSelectedIntentUri ? "launcher_intent" : "launcher")));
+                try { inputScCmd.input.setText(__scBuildLaunchCmd()); } catch(eUpdateCommand) {}
+''',
+    '''                safeLog(self.L, "i", "shortcut picker selected pkg=" + __scStr(item.pkg) + " id=" + __scStr(item.shortcutId) + " user=" + String(scSelectedUserId) + " intentUriLen=" + String(scSelectedIntentUri.length) + " launchMethod=" + (scSelectedIntentUri ? "launcher_intent" : "launcher"));
+''',
+    "shortcut selection log",
+)
+
+replace_once("code/th_21_result_preview.js", "// @version 1.2.0", "// @version 1.2.1", "preview version")
+replace_once("code/th_21_result_preview.js", "      textGap: dp21(appObj, 7),\n", "", "unused preview text gap")
+replace_once(
+    "code/th_21_result_preview.js",
+    '''    var provisionalHeight = text.length > 18 ? dp21(appObj, 62) : dp21(appObj, 48);
+    var metrics = copyMetrics21(appObj, provisionalHeight);
+    var leftPadding = dp21(appObj, 14);
+    var rightPadding = dp21(appObj, 14);
+    var copySlot = st.copyVisible ? metrics.slotWidth : 0;
+    st.copySlotWidth = copySlot;
+
+    var maxTextWidth = Math.max(dp21(appObj, 88), maxViewWidth - leftPadding - rightPadding - copySlot);
+    var first = fitLine21(paint, text, maxTextWidth, false);
+    var second = fitLine21(paint, first.remaining, maxTextWidth, first.remaining.length > 0);
+    if (second.remaining) second = fitLine21(paint, first.remaining, maxTextWidth, true);
+    st.line1 = first.line || "";
+    st.line2 = second.line || "";
+    st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
+
+    metrics = copyMetrics21(appObj, st.measuredHeight);
+    copySlot = st.copyVisible ? metrics.slotWidth : 0;
+    st.copySlotWidth = copySlot;
+    maxTextWidth = Math.max(dp21(appObj, 88), maxViewWidth - leftPadding - rightPadding - copySlot);
+    first = fitLine21(paint, text, maxTextWidth, false);
+    second = fitLine21(paint, first.remaining, maxTextWidth, first.remaining.length > 0);
+    if (second.remaining) second = fitLine21(paint, first.remaining, maxTextWidth, true);
+    st.line1 = first.line || "";
+    st.line2 = second.line || "";
+    st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
+''',
+    '''    var provisionalHeight = text.length > 18 ? dp21(appObj, 62) : dp21(appObj, 48);
+    var metrics = copyMetrics21(appObj, provisionalHeight);
+    var leftPadding = dp21(appObj, 14);
+    var rightPadding = dp21(appObj, 14);
+    var copySlot = st.copyVisible ? metrics.slotWidth : 0;
+
+    function applyLineLayout(copySlotWidth) {
+      var maxTextWidth = Math.max(dp21(appObj, 88), maxViewWidth - leftPadding - rightPadding - copySlotWidth);
+      var first = fitLine21(paint, text, maxTextWidth, false);
+      var second = fitLine21(paint, first.remaining, maxTextWidth, first.remaining.length > 0);
+      if (second.remaining) second = fitLine21(paint, first.remaining, maxTextWidth, true);
+      st.line1 = first.line || "";
+      st.line2 = second.line || "";
+      st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
+    }
+
+    applyLineLayout(copySlot);
+    var finalMetrics = copyMetrics21(appObj, st.measuredHeight);
+    var finalCopySlot = st.copyVisible ? finalMetrics.slotWidth : 0;
+    if (finalCopySlot !== copySlot) {
+      copySlot = finalCopySlot;
+      applyLineLayout(copySlot);
+    }
+    st.copySlotWidth = copySlot;
+''',
+    "conditional preview reflow",
+)
+replace_once(
+    "code/th_21_result_preview.js",
+    "  function drawCopyAction21(appObj, st, canvas, view, render, colors) {",
+    "  function drawCopyAction21(appObj, canvas, view, render, colors) {",
+    "unused draw copy state parameter",
+)
+replace_once(
+    "code/th_21_result_preview.js",
+    "    if (!drawCopyAction21(appObj, st, canvas, view, render, c)) return false;",
+    "    if (!drawCopyAction21(appObj, canvas, view, render, c)) return false;",
+    "draw copy call",
+)
+
+replace_once("code/th_14_button_editor.js", "// @version 1.1.2", "// @version 1.1.3", "button editor version")
+replace_once(
+    "code/th_14_button_editor.js",
+    '''  function clearButtonEditorNotice() {
+    try { self.state.buttonEditorNotice = null; } catch(eNotice1) {}
+  }
+
+''',
+    '''  function clearButtonEditorNotice() {
+    try { self.state.buttonEditorNotice = null; } catch(eNotice1) {}
+  }
+
+  function getButtonEditorNoticeStyle(kind) {
+    var isError = String(kind || "info") === "error";
+    var color = isError ? dangerColor : T.primary;
+    return {
+      color: color,
+      bg: self.withAlpha(color, isDark ? (isError ? 0.20 : 0.18) : 0.10),
+      stroke: self.withAlpha(color, isDark ? (isError ? 0.44 : 0.34) : (isError ? 0.30 : 0.22))
+    };
+  }
+
+''',
+    "notice style helper",
+)
+replace_once(
+    "code/th_14_button_editor.js",
+    '''      var kind = String(n.kind || "info");
+      var color = (kind === "error") ? dangerColor : (kind === "ok" ? T.primary : T.primary);
+      var bg = (kind === "error") ? self.withAlpha(dangerColor, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
+      var stroke = (kind === "error") ? self.withAlpha(dangerColor, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
+''',
+    '''      var kind = String(n.kind || "info");
+      var style = getButtonEditorNoticeStyle(kind);
+''',
+    "stored notice style",
+)
+replace_once("code/th_14_button_editor.js", "      toolhubSafeSetTextColor(box, color);", "      toolhubSafeSetTextColor(box, style.color);", "stored notice text color")
+replace_once(
+    "code/th_14_button_editor.js",
+    "      box.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));",
+    "      box.setBackground(self.ui.createStrokeDrawable(style.bg, style.stroke, self.dp(1), self.dp(14)));",
+    "stored notice background",
+)
+replace_once(
+    "code/th_14_button_editor.js",
+    '''      var k = String(kind || "info");
+      var color2 = (k === "error") ? dangerColor : (k === "ok" ? T.primary : T.primary);
+      var bg2 = (k === "error") ? self.withAlpha(dangerColor, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
+      var stroke2 = (k === "error") ? self.withAlpha(dangerColor, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
+''',
+    '''      var k = String(kind || "info");
+      var style2 = getButtonEditorNoticeStyle(k);
+''',
+    "inline notice style",
+)
+replace_once("code/th_14_button_editor.js", "      toolhubSafeSetTextColor(tv, color2);", "      toolhubSafeSetTextColor(tv, style2.color);", "inline notice text color")
+replace_once(
+    "code/th_14_button_editor.js",
+    "      tv.setBackground(self.ui.createStrokeDrawable(bg2, stroke2, self.dp(1), self.dp(14)));",
+    "      tv.setBackground(self.ui.createStrokeDrawable(style2.bg, style2.stroke, self.dp(1), self.dp(14)));",
+    "inline notice background",
+)
+
+replace_once(
+    "scripts/verify_button_editor_direct_save.py",
+    '''if not version or version.group(1) != "1.1.2":
+    fail("expected th_14_button_editor.js version 1.1.2")
+''',
+    '''if not version or version.group(1) != "1.1.3":
+    fail("expected th_14_button_editor.js version 1.1.3")
+''',
+    "button editor verifier version",
+)
+replace_once(
+    "scripts/verify_shortcut_launcher_path.py",
+    '''        ("picker records launch method", 'launchMethod: intentUri ? "launcher_intent" : "launcher"' in picker),
+''',
+    '''        ("picker derives launch method for logs", 'launchMethod=" + (scSelectedIntentUri ? "launcher_intent" : "launcher")' in picker),
+        ("picker does not store derived launch method", "launchMethod:" not in picker),
+''',
+    "launcher path verifier",
+)
+replace_once(
+    "scripts/verify_result_preview.py",
+    '''    draw_copy = section(preview, "function drawCopyAction21(appObj, st, canvas, view, render, colors)", "function drawPreview21(appObj, st, canvas, view, render)")
+''',
+    '''    draw_copy = section(preview, "function drawCopyAction21(appObj, canvas, view, render, colors)", "function drawPreview21(appObj, st, canvas, view, render)")
+''',
+    "result preview verifier signature",
+)
+
+print("runtime cleanup patch applied")
