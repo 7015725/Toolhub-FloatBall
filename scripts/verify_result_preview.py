@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""校验取字/OCR 顶部结果预览与拾字模块集成契约。"""
+"""校验取字/OCR 顶部结果预览、复制按钮与拾字模块集成契约。"""
 
 from __future__ import annotations
 
@@ -151,7 +151,6 @@ def main() -> int:
         "420dp must remain a maximum height while the first visible frame uses the final adaptive height",
         failures,
     )
-
     require(
         "pickword / full text metadata retained",
         "ps.fullText = raw" in pickword
@@ -182,13 +181,18 @@ def main() -> int:
         and "payload: null" in preview
         and "root: null" in preview
         and "rootRender: null" in preview
-        and "added: false" in preview,
-        "preview state must be a single instance on app.state",
+        and "added: false" in preview
+        and "copyFeedbackRunnable: null" in preview,
+        "preview state must be a single instance on app.state and own copy feedback cleanup",
         failures,
     )
 
     create_view = section(preview, "function createView21(appObj, st)", "function createLp21(appObj, st)")
     draw_preview = section(preview, "function drawPreview21(appObj, st, canvas, view, render)", "function cancelDismiss21(st)")
+    draw_copy = section(preview, "function drawCopyAction21(appObj, st, canvas, view, render, colors)", "function drawPreview21(appObj, st, canvas, view, render)")
+    copy_action = section(preview, "function performResultPreviewCopy21(appObj, st, rootRef, render)", "function startEnterAnimation21")
+    copy_feedback = section(preview, "function scheduleCopyFeedbackReset21(appObj, st, rootRef, render, delayMs)", "function performResultPreviewCopy21")
+
     require(
         "preview / canvas-only custom rendering",
         "new JavaAdapter(android.view.View" in create_view
@@ -219,55 +223,63 @@ def main() -> int:
         failures,
     )
     require(
-        "preview / opaque background",
-        '"#FF1B1B1F"' in preview
+        "preview / opaque semantic background",
+        'bg: colorIntToSpec21(scheme.surface' in preview
+        and '"#FF1B1B1F"' in preview
         and '"#FFFFFFFF"' in preview
         and '"#F21B1B1F"' not in preview
         and '"#F7FFFFFF"' not in preview,
-        "preview card background must remain fully opaque in light and dark mode",
+        "preview background must use ToolHub surface with fully opaque fallbacks",
         failures,
     )
     require(
-        "preview / unified ToolHub theme source",
+        "preview / unified ToolHub semantic theme",
         "function isDark21()" not in preview
         and "UI_MODE_NIGHT_MASK" not in preview
         and "function colors21(appObj)" in preview
-        and 'typeof appObj.isDarkTheme === "function"' in preview
-        and "appObj.isDarkTheme() === true" in preview
-        and "var c = colors21(appObj);" in draw_preview
-        and "themeDark: dark" in preview
-        and "themeSource: themeSource" in preview
+        and 'typeof appObj.getSettingsColorScheme === "function"' in preview
+        and "appObj.getSettingsColorScheme()" in preview
+        and "scheme.surface" in preview
+        and "scheme.onSurface" in preview
+        and "scheme.onSurface2" in preview
+        and "scheme.primary" in preview
+        and "scheme.success" in preview
+        and "scheme.danger" in preview
+        and 'themeSource: "getSettingsColorScheme"' in preview
         and '" theme=" + String(render.themeDark === true ? "dark" : "light")' in preview
         and '" themeSource=" + String(render.themeSource || "")' in preview,
-        "result preview must use the shared ToolHub theme decision and expose the chosen source in first-draw diagnostics",
+        "result preview must use the shared ToolHub semantic color scheme and log the selected source",
         failures,
     )
     require(
         "preview / deterministic Canvas color application",
         "function colorSpec21(a, r, g, b, hex)" in preview
+        and "function colorIntToSpec21(value, fallback)" in preview
         and "function packArgb21(color)" in preview
         and "function argbHex21(value)" in preview
         and "paint.setARGB(color.a, color.r, color.g, color.b);" in preview
         and "paint.getColor()" in preview
         and "result preview background color apply fail" in preview
+        and "result preview copy icon color apply fail" in preview
         and "bgApplyOk" in preview
+        and "copyApplyOk" in preview
         and '" bgExpected="' in preview
         and '" bgActual="' in preview
-        and '" textActual="' in preview
+        and '" copyActual="' in preview
         and '" canvasHardware="' in preview
         and '" forceDarkDisabled="' in preview
         and "PreviewView.setForceDarkAllowed(false);" in preview
         and "android.graphics.PixelFormat.RGBA_8888" in preview
         and "android.graphics.PixelFormat.TRANSLUCENT" not in preview,
-        "result preview must apply explicit ARGB channels, validate Paint colors, disable Force Dark and use a deterministic RGBA overlay format",
+        "result preview must use explicit ARGB channels, validate Paint colors, disable Force Dark and use RGBA_8888",
         failures,
     )
     require(
         "preview / paint color avoids ColorLong overload",
         "function setPaintColor21(paint, color)" in preview
-        and "paint.setARGB(" in preview
-        and draw_preview.count("setPaintColor21(") == 4
-        and ".setColor(" not in draw_preview,
+        and preview.count("setPaintColor21(") >= 7
+        and ".setColor(" not in draw_preview
+        and ".setColor(" not in draw_copy,
         "custom drawing must use explicit ARGB channels instead of overloaded Paint.setColor",
         failures,
     )
@@ -279,9 +291,91 @@ def main() -> int:
         failures,
     )
 
+    require(
+        "preview copy / canvas icon and success check",
+        "function drawCopyIcon21(canvas, paint, cx, cy, size)" in preview
+        and "function drawCheckIcon21(canvas, paint, cx, cy, size)" in preview
+        and "canvas.drawRoundRect(rear" in preview
+        and "canvas.drawRoundRect(front" in preview
+        and "canvas.drawPath(path, paint)" in preview
+        and 'feedback === "success"' in draw_copy,
+        "copy action must use deterministic Canvas paths instead of Unicode glyphs or native child views",
+        failures,
+    )
+    require(
+        "preview copy / full original text only",
+        "st.payload.text" in copy_action
+        and "copyPointerTextToClipboard(rawText)" in copy_action
+        and "payload.previewText" not in copy_action
+        and "render.line1" not in copy_action
+        and "render.line2" not in copy_action,
+        "copy must write the complete payload.text rather than the cleaned or truncated preview",
+        failures,
+    )
+    require(
+        "preview copy / empty text hides action",
+        "function hasCopyText21(text)" in preview
+        and "st.copyVisible = hasCopyText21(st.payload && st.payload.text);" in preview
+        and "render.copyVisible = false;" in copy_action
+        and 'reason=empty_text' in copy_action,
+        "whitespace-only text must not expose an active copy button",
+        failures,
+    )
+    require(
+        "preview copy / minimum touch target",
+        "function copyMetrics21(appObj, heightPx)" in preview
+        and "Math.max(dp21(appObj, 40)" in preview
+        and "function buildCopyHitRect21(appObj, width, height)" in preview
+        and "pointInRect21" in create_view,
+        "copy icon must retain at least a 40dp hit target and explicit hit testing",
+        failures,
+    )
+    require(
+        "preview copy / touch isolation from pickword",
+        'st.touchTarget = "copy"' in create_view
+        and 'st.touchTarget = "primary"' in create_view
+        and 'target === "copy"' in create_view
+        and "performResultPreviewCopy21(self, st, this, render)" in create_view
+        and "self.openResultPreviewPrimaryAction()" in create_view
+        and create_view.find("performResultPreviewCopy21(self, st, this, render)") < create_view.find("self.openResultPreviewPrimaryAction()"),
+        "copy taps must be consumed separately and never fall through to the pickword primary action",
+        failures,
+    )
+    require(
+        "preview copy / success feedback and timeout reset",
+        'render.copyFeedbackKind = copied ? "success" : "failure";' in copy_action
+        and "scheduleCopyFeedbackReset21(appObj, st, rootRef, render, 1000);" in copy_action
+        and "scheduleDismiss21(appObj, st, rootRef, render);" in copy_action
+        and '"result preview copy success"' in copy_action,
+        "successful copy must show a temporary check, log the result and restart the preview timeout",
+        failures,
+    )
+    require(
+        "preview copy / failure remains visible and logged",
+        'new java.lang.String("复制失败")' in draw_copy
+        and 'appObj.toast("复制失败")' in copy_action
+        and '"result preview copy failed"' in copy_action
+        and "scheduleCopyFeedbackReset21(appObj, st, rootRef, render, 1400);" in copy_action
+        and 'render.copyFeedbackKind = "";' in copy_feedback,
+        "clipboard failure must retain the icon, visibly report 复制失败 and record diagnostics",
+        failures,
+    )
+    require(
+        "preview copy / stale callback isolation",
+        "copyFeedbackRunnable" in preview
+        and "cancelCopyFeedback21(st)" in preview
+        and "var token = Number(st.generation || 0);" in copy_feedback
+        and "var rootToken = Number(render.rootToken || 0);" in copy_feedback
+        and "Number(st.generation || 0) !== token" in copy_feedback
+        and "Number(st.rootToken || 0) !== rootToken" in copy_feedback
+        and "isCurrentRoot21(st, rootRef, render)" in copy_feedback,
+        "late copy feedback callbacks must not mutate a replacement preview root",
+        failures,
+    )
+
     show_state = section(preview, "function showState21(appObj, st)", "function normalizePayload21")
     first_draw = section(preview, "function markFirstDraw21(appObj, st, rootRef, render)", "function createView21(appObj, st)")
-    schedule_dismiss = section(preview, "function scheduleDismiss21(appObj, st, rootRef, render)", "function startEnterAnimation21")
+    schedule_dismiss = section(preview, "function scheduleDismiss21(appObj, st, rootRef, render)", "function scheduleCopyFeedbackReset21")
     watchdog = section(preview, "function scheduleVisibilityFallback21(appObj, st, rootRef, render, attempt)", "function showState21")
     require(
         "preview / timeout begins after first draw",
@@ -324,7 +418,7 @@ def main() -> int:
         and ".translationY(-dp21(self, 6))" in preview
         and ".setDuration(120)" in preview
         and "st.clickLocked" in preview,
-        "preview enter, update, touch and exit feedback must not animate whole-window alpha",
+        "preview entry, primary touch and exit feedback must not animate whole-window alpha",
         failures,
     )
 
@@ -356,6 +450,14 @@ def main() -> int:
         and "clipboard: false" in complete
         and "copyPointerTextToClipboard(text)" not in complete,
         "text success must preview without automatic clipboard write",
+        failures,
+    )
+    require(
+        "pointer / reusable clipboard helper",
+        "FloatBallAppWM.prototype.copyPointerTextToClipboard = function(textValue)" in pointer
+        and "cm.setPrimaryClip(clip);" in pointer
+        and 'copyPointerTextToClipboard fail:' in pointer,
+        "preview copy depends on the existing logged pointer clipboard helper",
         failures,
     )
     fallback = section(pointer, "FloatBallAppWM.prototype.finishPointerFallbackText = function", "FloatBallAppWM.prototype.updatePointerAreaSelection = function")

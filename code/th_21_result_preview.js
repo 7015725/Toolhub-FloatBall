@@ -1,6 +1,6 @@
-// @version 1.1.2
+// @version 1.2.0
 // =======================【取字 / OCR 顶部结果预览】=======================
-// Canvas 全自绘单实例悬浮预览；点击后把完整文本传给 th_20_pickword.js。
+// Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
   function now21() {
     try { return java.lang.System.currentTimeMillis(); } catch (e0) {}
@@ -45,6 +45,12 @@
       .replace(/\t/g, " ")
       .replace(/\s+/g, " ")
       .replace(/^\s+|\s+$/g, "");
+  }
+
+  function hasCopyText21(text) {
+    var value = "";
+    try { value = String(text === null || text === undefined ? "" : text); } catch (e0) { value = ""; }
+    return value.replace(/^\s+|\s+$/g, "").length > 0;
   }
 
   function cloneRect21(rect) {
@@ -136,6 +142,7 @@
         clickLocked: false,
         dismissRunnable: null,
         visibilityFallbackRunnable: null,
+        copyFeedbackRunnable: null,
         handler: null,
         drawCount: 0,
         firstDrawLogged: false,
@@ -146,12 +153,15 @@
         line2: "",
         measuredWidth: 0,
         measuredHeight: 0,
+        copyVisible: false,
+        copySlotWidth: 0,
         downX: 0,
         downY: 0,
         downRawX: 0,
         downRawY: 0,
         downAt: 0,
         touchMoved: false,
+        touchTarget: "",
         lastReason: ""
       };
     }
@@ -160,6 +170,10 @@
     if (st.rootSequence === undefined) st.rootSequence = 0;
     if (st.rootToken === undefined) st.rootToken = 0;
     if (st.renderRebuildCount === undefined) st.renderRebuildCount = 0;
+    if (st.copyFeedbackRunnable === undefined) st.copyFeedbackRunnable = null;
+    if (st.copyVisible === undefined) st.copyVisible = false;
+    if (st.copySlotWidth === undefined) st.copySlotWidth = 0;
+    if (st.touchTarget === undefined) st.touchTarget = "";
     return st;
   }
 
@@ -173,27 +187,77 @@
     };
   }
 
-  function colors21(appObj) {
-    var dark = false;
-    var themeSource = "toolhub_unavailable";
-    try {
-      if (appObj && typeof appObj.isDarkTheme === "function") {
-        dark = appObj.isDarkTheme() === true;
-        themeSource = "toolhub";
-      }
-    } catch (eTheme) {
-      dark = false;
-      themeSource = "toolhub_error";
+  function argbHex21(value) {
+    var n = Number(value);
+    if (isNaN(n)) n = 0;
+    var hex = (n >>> 0).toString(16).toUpperCase();
+    while (hex.length < 8) hex = "0" + hex;
+    return "0x" + hex;
+  }
+
+  function colorIntToSpec21(value, fallback) {
+    var n = Number(value);
+    if (isNaN(n)) {
+      if (fallback) return fallback;
+      n = 0;
     }
-    return {
-      bg: dark ? colorSpec21(255, 27, 27, 31, "#FF1B1B1F") : colorSpec21(255, 255, 255, 255, "#FFFFFFFF"),
-      stroke: dark ? colorSpec21(61, 255, 255, 255, "#3DFFFFFF") : colorSpec21(34, 0, 0, 0, "#22000000"),
-      text: dark ? colorSpec21(255, 248, 250, 252, "#FFF8FAFC") : colorSpec21(255, 17, 24, 39, "#FF111827"),
-      secondary: dark ? colorSpec21(255, 203, 213, 225, "#FFCBD5E1") : colorSpec21(255, 71, 85, 105, "#FF475569"),
-      pressed: dark ? colorSpec21(38, 56, 189, 248, "#2638BDF8") : colorSpec21(26, 14, 165, 233, "#1A0EA5E9"),
-      themeDark: dark,
-      themeSource: themeSource
+    n = n | 0;
+    return colorSpec21(
+      (n >>> 24) & 255,
+      (n >>> 16) & 255,
+      (n >>> 8) & 255,
+      n & 255,
+      argbHex21(n)
+    );
+  }
+
+  function withAlphaColor21(value, alphaByte, fallback) {
+    var n = Number(value);
+    if (isNaN(n)) return fallback || colorSpec21(alphaByte, 0, 0, 0, "");
+    n = ((n | 0) & 0x00FFFFFF) | ((int21(alphaByte, 255) & 255) << 24);
+    return colorIntToSpec21(n, fallback);
+  }
+
+  function colors21(appObj) {
+    var darkFallback = false;
+    try { darkFallback = !!(appObj && appObj.isDarkTheme && appObj.isDarkTheme()); } catch (eDark) { darkFallback = false; }
+
+    var fallback = {
+      bg: darkFallback ? colorSpec21(255, 27, 27, 31, "#FF1B1B1F") : colorSpec21(255, 255, 255, 255, "#FFFFFFFF"),
+      stroke: darkFallback ? colorSpec21(88, 255, 255, 255, "#58FFFFFF") : colorSpec21(54, 0, 0, 0, "#36000000"),
+      text: darkFallback ? colorSpec21(255, 248, 250, 252, "#FFF8FAFC") : colorSpec21(255, 17, 24, 39, "#FF111827"),
+      secondary: darkFallback ? colorSpec21(255, 203, 213, 225, "#FFCBD5E1") : colorSpec21(255, 71, 85, 105, "#FF475569"),
+      primary: darkFallback ? colorSpec21(255, 168, 199, 250, "#FFA8C7FA") : colorSpec21(255, 0, 91, 192, "#FF005BC0"),
+      success: darkFallback ? colorSpec21(255, 74, 222, 128, "#FF4ADE80") : colorSpec21(255, 21, 128, 61, "#FF15803D"),
+      danger: darkFallback ? colorSpec21(255, 242, 184, 181, "#FFF2B8B5") : colorSpec21(255, 186, 26, 26, "#FFBA1A1A"),
+      themeDark: darkFallback,
+      themeSource: "fallback"
     };
+
+    try {
+      if (appObj && typeof appObj.getSettingsColorScheme === "function") {
+        var scheme = appObj.getSettingsColorScheme();
+        if (scheme) {
+          var dark = scheme.dark === true;
+          var surfaceFallback = dark ? colorSpec21(255, 27, 27, 31, "#FF1B1B1F") : colorSpec21(255, 255, 255, 255, "#FFFFFFFF");
+          var outlineFallback = dark ? colorSpec21(88, 255, 255, 255, "#58FFFFFF") : colorSpec21(54, 0, 0, 0, "#36000000");
+          return {
+            bg: colorIntToSpec21(scheme.surface, surfaceFallback),
+            stroke: withAlphaColor21(scheme.outlineVariant, dark ? 112 : 76, outlineFallback),
+            text: colorIntToSpec21(scheme.onSurface, fallback.text),
+            secondary: colorIntToSpec21(scheme.onSurface2, fallback.secondary),
+            primary: colorIntToSpec21(scheme.primary, fallback.primary),
+            success: colorIntToSpec21(scheme.success, fallback.success),
+            danger: colorIntToSpec21(scheme.danger, fallback.danger),
+            themeDark: dark,
+            themeSource: "getSettingsColorScheme"
+          };
+        }
+      }
+    } catch (eScheme) {
+      fallback.themeSource = "getSettingsColorScheme_error";
+    }
+    return fallback;
   }
 
   function packArgb21(color) {
@@ -202,14 +266,6 @@
       ((Number(color.r || 0) & 255) << 16) |
       ((Number(color.g || 0) & 255) << 8) |
       (Number(color.b || 0) & 255)) | 0;
-  }
-
-  function argbHex21(value) {
-    var n = Number(value);
-    if (isNaN(n)) n = 0;
-    var hex = (n >>> 0).toString(16).toUpperCase();
-    while (hex.length < 8) hex = "0" + hex;
-    return "0x" + hex;
   }
 
   // 明确使用 ARGB 通道，随后读取 Paint 实际颜色校验，避免 Rhino 重载或 OEM 颜色转换静默失效。
@@ -326,28 +382,60 @@
     return { line: line, used: count, remaining: remaining };
   }
 
+  function copyMetrics21(appObj, heightPx) {
+    var height = Math.max(dp21(appObj, 40), Number(heightPx || 0));
+    var touchSize = Math.max(dp21(appObj, 40), Math.min(dp21(appObj, 44), height - dp21(appObj, 4)));
+    var iconSize = Math.round(clamp21(height * 0.34, dp21(appObj, 18), dp21(appObj, 22)));
+    return {
+      touchSize: touchSize,
+      iconSize: iconSize,
+      rightPadding: dp21(appObj, 5),
+      textGap: dp21(appObj, 7),
+      slotWidth: touchSize + dp21(appObj, 9)
+    };
+  }
+
   function prepareLines21(appObj, st) {
     var text = cleanPreviewText21(st.payload && st.payload.previewText ? st.payload.previewText : (st.payload && st.payload.text));
     var paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     paint.setTextSize(sp21(14));
+    st.copyVisible = hasCopyText21(st.payload && st.payload.text);
+
     var sw = Math.max(dp21(appObj, 200), screenWidth21(appObj));
     var maxViewWidth = Math.round(sw * 0.88);
     var minViewWidth = dp21(appObj, 160);
-    var horizontalPadding = dp21(appObj, 14) * 2;
-    var maxTextWidth = Math.max(dp21(appObj, 100), maxViewWidth - horizontalPadding);
+    var provisionalHeight = text.length > 18 ? dp21(appObj, 62) : dp21(appObj, 48);
+    var metrics = copyMetrics21(appObj, provisionalHeight);
+    var leftPadding = dp21(appObj, 14);
+    var rightPadding = dp21(appObj, 14);
+    var copySlot = st.copyVisible ? metrics.slotWidth : 0;
+    st.copySlotWidth = copySlot;
+
+    var maxTextWidth = Math.max(dp21(appObj, 88), maxViewWidth - leftPadding - rightPadding - copySlot);
     var first = fitLine21(paint, text, maxTextWidth, false);
     var second = fitLine21(paint, first.remaining, maxTextWidth, first.remaining.length > 0);
     if (second.remaining) second = fitLine21(paint, first.remaining, maxTextWidth, true);
     st.line1 = first.line || "";
     st.line2 = second.line || "";
+    st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
+
+    metrics = copyMetrics21(appObj, st.measuredHeight);
+    copySlot = st.copyVisible ? metrics.slotWidth : 0;
+    st.copySlotWidth = copySlot;
+    maxTextWidth = Math.max(dp21(appObj, 88), maxViewWidth - leftPadding - rightPadding - copySlot);
+    first = fitLine21(paint, text, maxTextWidth, false);
+    second = fitLine21(paint, first.remaining, maxTextWidth, first.remaining.length > 0);
+    if (second.remaining) second = fitLine21(paint, first.remaining, maxTextWidth, true);
+    st.line1 = first.line || "";
+    st.line2 = second.line || "";
+    st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
 
     var w1 = 0;
     var w2 = 0;
     try { w1 = paint.measureText(st.line1); } catch (e1) {}
     try { w2 = paint.measureText(st.line2); } catch (e2) {}
-    var natural = Math.ceil(Math.max(w1, w2)) + horizontalPadding;
+    var natural = Math.ceil(Math.max(w1, w2)) + leftPadding + rightPadding + copySlot;
     st.measuredWidth = int21(clamp21(natural, minViewWidth, maxViewWidth), maxViewWidth);
-    st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
   }
 
   function syncRender21(render, st) {
@@ -356,6 +444,10 @@
     render.payloadId = String(st.payload && st.payload.id ? st.payload.id : "");
     render.line1 = String(st.line1 || "");
     render.line2 = String(st.line2 || "");
+    render.copyVisible = st.copyVisible === true;
+    render.copyPressed = false;
+    render.copyFeedbackKind = "";
+    render.copyHitRect = null;
     render.drawCount = 0;
     render.firstDrawAt = 0;
     render.firstDrawLogged = false;
@@ -366,10 +458,13 @@
     render.bgApplyOk = false;
     render.strokeApplyOk = false;
     render.textApplyOk = false;
+    render.copyApplyOk = false;
     render.bgExpectedHex = "";
     render.bgActualHex = "";
     render.textExpectedHex = "";
     render.textActualHex = "";
+    render.copyExpectedHex = "";
+    render.copyActualHex = "";
     render.canvasHardware = false;
     render.windowFormat = 0;
     render.forceDarkDisabled = false;
@@ -379,6 +474,8 @@
     st.firstDrawLogged = false;
     st.visibleStartedAt = 0;
     st.dismissScheduledAt = 0;
+    st.touchTarget = "";
+    st.touchMoved = false;
   }
 
   function isCurrentRoot21(st, rootRef, render) {
@@ -387,6 +484,106 @@
     if (st.root !== rootRef || st.rootRender !== render) return false;
     if (Number(st.rootToken || 0) !== Number(render.rootToken || 0)) return false;
     if (Number(st.generation || 0) !== Number(render.generation || 0)) return false;
+    return true;
+  }
+
+  function pointInRect21(x, y, rect) {
+    if (!rect) return false;
+    return Number(x) >= Number(rect.left) && Number(x) <= Number(rect.right) &&
+      Number(y) >= Number(rect.top) && Number(y) <= Number(rect.bottom);
+  }
+
+  function buildCopyHitRect21(appObj, width, height) {
+    var metrics = copyMetrics21(appObj, height);
+    var right = Math.max(1, width - metrics.rightPadding);
+    var left = Math.max(0, right - metrics.touchSize);
+    var top = Math.max(0, Math.round((height - metrics.touchSize) / 2));
+    return {
+      left: left,
+      top: top,
+      right: right,
+      bottom: Math.min(height, top + metrics.touchSize),
+      cx: (left + right) / 2,
+      cy: (top + Math.min(height, top + metrics.touchSize)) / 2,
+      iconSize: metrics.iconSize
+    };
+  }
+
+  function drawCopyIcon21(canvas, paint, cx, cy, size) {
+    var s = Math.max(1, Number(size || 1));
+    var radius = Math.max(1, s * 0.12);
+    var rear = new android.graphics.RectF(
+      cx - s * 0.43,
+      cy - s * 0.43,
+      cx + s * 0.19,
+      cy + s * 0.19
+    );
+    var front = new android.graphics.RectF(
+      cx - s * 0.19,
+      cy - s * 0.19,
+      cx + s * 0.43,
+      cy + s * 0.43
+    );
+    canvas.drawRoundRect(rear, radius, radius, paint);
+    canvas.drawRoundRect(front, radius, radius, paint);
+  }
+
+  function drawCheckIcon21(canvas, paint, cx, cy, size) {
+    var s = Math.max(1, Number(size || 1));
+    var path = new android.graphics.Path();
+    path.moveTo(cx - s * 0.42, cy + s * 0.02);
+    path.lineTo(cx - s * 0.10, cy + s * 0.34);
+    path.lineTo(cx + s * 0.46, cy - s * 0.34);
+    canvas.drawPath(path, paint);
+  }
+
+  function drawCopyAction21(appObj, st, canvas, view, render, colors) {
+    if (!render || render.copyVisible !== true) {
+      if (render) render.copyHitRect = null;
+      return true;
+    }
+    var hit = buildCopyHitRect21(appObj, view.getWidth(), view.getHeight());
+    render.copyHitRect = hit;
+    var feedback = String(render.copyFeedbackKind || "");
+    var color = colors.secondary;
+    if (feedback === "success") color = colors.success;
+    else if (feedback === "failure") color = colors.danger;
+    else if (render.copyPressed === true) color = colors.primary;
+
+    var paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    paint.setStyle(android.graphics.Paint.Style.STROKE);
+    paint.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+    paint.setStrokeJoin(android.graphics.Paint.Join.ROUND);
+    paint.setStrokeWidth(dp21(appObj, feedback === "success" ? 2.3 : 1.8));
+    var apply = setPaintColor21(paint, color);
+    render.copyApplyOk = apply.ok === true;
+    render.copyExpectedHex = String(apply.expectedHex || "");
+    render.copyActualHex = String(apply.actualHex || "");
+    if (!apply.ok) {
+      try { safeLog(appObj.L, 'e', "result preview copy icon color apply fail expected=" + String(apply.expectedHex || "") + " actual=" + String(apply.actualHex || "") + " err=" + String(apply.error || "")); } catch (eColorLog) {}
+      return false;
+    }
+
+    if (feedback === "success") {
+      drawCheckIcon21(canvas, paint, hit.cx, hit.cy, hit.iconSize);
+      return true;
+    }
+
+    var iconCy = hit.cy;
+    var iconSize = hit.iconSize;
+    if (feedback === "failure") {
+      iconCy = hit.cy + dp21(appObj, 6);
+      iconSize = Math.max(dp21(appObj, 15), hit.iconSize - dp21(appObj, 3));
+      var labelPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+      labelPaint.setStyle(android.graphics.Paint.Style.FILL);
+      labelPaint.setTextAlign(android.graphics.Paint.Align.CENTER);
+      labelPaint.setTextSize(sp21(9));
+      var labelApply = setPaintColor21(labelPaint, colors.danger);
+      if (labelApply.ok) {
+        canvas.drawText(new java.lang.String("复制失败"), hit.cx, hit.cy - dp21(appObj, 7), labelPaint);
+      }
+    }
+    drawCopyIcon21(canvas, paint, hit.cx, iconCy, render.copyPressed === true ? iconSize * 0.92 : iconSize);
     return true;
   }
 
@@ -454,6 +651,8 @@
     } else {
       canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 30), textPaint);
     }
+
+    if (!drawCopyAction21(appObj, st, canvas, view, render, c)) return false;
     return true;
   }
 
@@ -472,6 +671,14 @@
       if (st.handler && st.visibilityFallbackRunnable) st.handler.removeCallbacks(st.visibilityFallbackRunnable);
     } catch (e0) {}
     st.visibilityFallbackRunnable = null;
+  }
+
+  function cancelCopyFeedback21(st) {
+    if (!st) return;
+    try {
+      if (st.handler && st.copyFeedbackRunnable) st.handler.removeCallbacks(st.copyFeedbackRunnable);
+    } catch (e0) {}
+    st.copyFeedbackRunnable = null;
   }
 
   function timeoutMs21(appObj) {
@@ -524,6 +731,92 @@
       st.dismissRunnable = null;
       st.dismissScheduledAt = 0;
     }
+    return false;
+  }
+
+  function scheduleCopyFeedbackReset21(appObj, st, rootRef, render, delayMs) {
+    cancelCopyFeedback21(st);
+    if (!isCurrentRoot21(st, rootRef, render)) return false;
+    var token = Number(st.generation || 0);
+    var rootToken = Number(render.rootToken || 0);
+    st.copyFeedbackRunnable = new java.lang.Runnable({ run: function() {
+      try {
+        st.copyFeedbackRunnable = null;
+        if (Number(st.generation || 0) !== token) return;
+        if (Number(st.rootToken || 0) !== rootToken) return;
+        if (!isCurrentRoot21(st, rootRef, render)) return;
+        render.copyFeedbackKind = "";
+        render.copyPressed = false;
+        try { rootRef.invalidate(); } catch (eInvalidate) {}
+      } catch (eRun) {}
+    }});
+    try {
+      return st.handler.postDelayed(st.copyFeedbackRunnable, Math.max(500, Number(delayMs || 1000))) === true;
+    } catch (ePost) {
+      st.copyFeedbackRunnable = null;
+    }
+    return false;
+  }
+
+  function performResultPreviewCopy21(appObj, st, rootRef, render) {
+    if (!isCurrentRoot21(st, rootRef, render)) return false;
+    var rawText = "";
+    try { rawText = String(st.payload && st.payload.text !== undefined && st.payload.text !== null ? st.payload.text : ""); } catch (eText) { rawText = ""; }
+    if (!hasCopyText21(rawText)) {
+      render.copyVisible = false;
+      render.copyPressed = false;
+      render.copyHitRect = null;
+      st.copyVisible = false;
+      try { rootRef.invalidate(); } catch (eInvalidateEmpty) {}
+      try { safeLog(appObj.L, 'w', "result preview copy skipped reason=empty_text id=" + String(render.payloadId || "")); } catch (eEmptyLog) {}
+      return false;
+    }
+
+    var copied = false;
+    var errorText = "";
+    try {
+      if (typeof appObj.copyPointerTextToClipboard === "function") {
+        copied = appObj.copyPointerTextToClipboard(rawText) === true;
+      } else {
+        errorText = "copyPointerTextToClipboard unavailable";
+      }
+    } catch (eCopy) {
+      copied = false;
+      errorText = String(eCopy);
+    }
+
+    render.copyPressed = false;
+    render.copyFeedbackKind = copied ? "success" : "failure";
+    try { rootRef.invalidate(); } catch (eInvalidate) {}
+
+    if (copied) {
+      try {
+        safeLog(appObj.L, 'i',
+          "result preview copy success" +
+          " id=" + String(render.payloadId || "") +
+          " source=" + String(st.payload && st.payload.source || "") +
+          " textLen=" + String(rawText.length) +
+          " generation=" + String(st.generation || 0) +
+          " rootToken=" + String(render.rootToken || 0));
+      } catch (eSuccessLog) {}
+      scheduleCopyFeedbackReset21(appObj, st, rootRef, render, 1000);
+      scheduleDismiss21(appObj, st, rootRef, render);
+      return true;
+    }
+
+    try {
+      safeLog(appObj.L, 'e',
+        "result preview copy failed" +
+        " id=" + String(render.payloadId || "") +
+        " source=" + String(st.payload && st.payload.source || "") +
+        " textLen=" + String(rawText.length) +
+        " generation=" + String(st.generation || 0) +
+        " rootToken=" + String(render.rootToken || 0) +
+        " error=" + String(errorText || "clipboard_write_rejected"));
+    } catch (eFailLog) {}
+    try { if (typeof appObj.toast === "function") appObj.toast("复制失败"); } catch (eToast) {}
+    scheduleCopyFeedbackReset21(appObj, st, rootRef, render, 1400);
+    scheduleDismiss21(appObj, st, rootRef, render);
     return false;
   }
 
@@ -607,6 +900,10 @@
         " textApply=" + String(render.textApplyOk === true) +
         " textExpected=" + String(render.textExpectedHex || "") +
         " textActual=" + String(render.textActualHex || "") +
+        " copyVisible=" + String(render.copyVisible === true) +
+        " copyApply=" + String(render.copyApplyOk === true) +
+        " copyExpected=" + String(render.copyExpectedHex || "") +
+        " copyActual=" + String(render.copyActualHex || "") +
         " canvasHardware=" + String(render.canvasHardware === true) +
         " windowFormat=" + String(render.windowFormat || 0) +
         " forceDarkDisabled=" + String(render.forceDarkDisabled === true));
@@ -631,6 +928,10 @@
       payloadId: String(st.payload && st.payload.id ? st.payload.id : ""),
       line1: String(st.line1 || ""),
       line2: String(st.line2 || ""),
+      copyVisible: st.copyVisible === true,
+      copyPressed: false,
+      copyFeedbackKind: "",
+      copyHitRect: null,
       drawCount: 0,
       firstDrawAt: 0,
       firstDrawLogged: false,
@@ -642,10 +943,13 @@
       bgApplyOk: false,
       strokeApplyOk: false,
       textApplyOk: false,
+      copyApplyOk: false,
       bgExpectedHex: "",
       bgActualHex: "",
       textExpectedHex: "",
       textActualHex: "",
+      copyExpectedHex: "",
+      copyActualHex: "",
       canvasHardware: false,
       windowFormat: 0,
       forceDarkDisabled: false,
@@ -673,6 +977,17 @@
             st.downRawY = event.getRawY();
             st.downAt = now21();
             st.touchMoved = false;
+            if (render.copyVisible === true && pointInRect21(st.downX, st.downY, render.copyHitRect)) {
+              cancelCopyFeedback21(st);
+              st.touchTarget = "copy";
+              render.copyFeedbackKind = "";
+              render.copyPressed = true;
+              render.pressed = false;
+              try { this.invalidate(); } catch (eInvalidateCopyDown) {}
+              return true;
+            }
+            st.touchTarget = "primary";
+            render.copyPressed = false;
             render.pressed = true;
             try { this.invalidate(); } catch (eInvalidateDown) {}
             try { this.animate().cancel(); } catch (eCancel) {}
@@ -684,9 +999,25 @@
             var dy = event.getRawY() - st.downRawY;
             var slop = dp21(self, 8);
             if (dx * dx + dy * dy > slop * slop) st.touchMoved = true;
+            if (String(st.touchTarget || "") === "copy") {
+              var insideCopy = pointInRect21(event.getX(), event.getY(), render.copyHitRect);
+              if (render.copyPressed !== insideCopy) {
+                render.copyPressed = insideCopy;
+                try { this.invalidate(); } catch (eInvalidateCopyMove) {}
+              }
+            }
             return true;
           }
           if (action === android.view.MotionEvent.ACTION_UP) {
+            var target = String(st.touchTarget || "");
+            st.touchTarget = "";
+            if (target === "copy") {
+              var shouldCopy = render.copyPressed === true && pointInRect21(event.getX(), event.getY(), render.copyHitRect);
+              render.copyPressed = false;
+              try { this.invalidate(); } catch (eInvalidateCopyUp) {}
+              if (shouldCopy) performResultPreviewCopy21(self, st, this, render);
+              return true;
+            }
             render.pressed = false;
             try { this.invalidate(); } catch (eInvalidateUp) {}
             try { this.animate().scaleX(1).scaleY(1).setDuration(80).start(); } catch (eUpScale) {}
@@ -694,13 +1025,17 @@
             return true;
           }
           if (action === android.view.MotionEvent.ACTION_CANCEL) {
+            st.touchTarget = "";
+            render.copyPressed = false;
             render.pressed = false;
             try { this.invalidate(); } catch (eInvalidateCancel) {}
             try { this.animate().scaleX(1).scaleY(1).setDuration(80).start(); } catch (eCancelScale) {}
             st.touchMoved = false;
             return true;
           }
-        } catch (eTouch) {}
+        } catch (eTouch) {
+          try { safeLog(self.L, 'w', "result preview touch fail: " + String(eTouch)); } catch (eTouchLog) {}
+        }
         return true;
       }
     }, context);
@@ -761,11 +1096,14 @@
     if (!st) return false;
     cancelDismiss21(st);
     cancelVisibilityFallback21(st);
+    cancelCopyFeedback21(st);
     var rootRef = st.root;
     var render = st.rootRender;
     detachRoot21(appObj, st, rootRef, render);
     st.lp = null;
     st.clickLocked = false;
+    st.touchTarget = "";
+    st.touchMoved = false;
     st.drawCount = 0;
     st.firstDrawLogged = false;
     st.visibleStartedAt = 0;
@@ -837,6 +1175,7 @@
   function rebuildRoot21(appObj, st, rootRef, render) {
     if (!isCurrentRoot21(st, rootRef, render)) return false;
     cancelVisibilityFallback21(st);
+    cancelCopyFeedback21(st);
     st.renderRebuildCount = Number(st.renderRebuildCount || 0) + 1;
     try {
       safeLog(appObj.L, 'w',
@@ -861,6 +1200,7 @@
         " rebuilds=" + String(st.renderRebuildCount || 0));
     } catch (eLog) {}
     cancelVisibilityFallback21(st);
+    cancelCopyFeedback21(st);
     detachRoot21(appObj, st, rootRef, render);
     st.lp = null;
     return false;
@@ -926,6 +1266,7 @@
     prepareLines21(appObj, st);
     cancelDismiss21(st);
     cancelVisibilityFallback21(st);
+    cancelCopyFeedback21(st);
     try { st.wm = st.wm || (appObj.state && appObj.state.wm) || context.getSystemService(android.content.Context.WINDOW_SERVICE); } catch (eWm) {}
     if (!st.wm) return false;
 
@@ -1007,9 +1348,11 @@
         st.generation = Number(st.generation || 0) + 1;
         st.payload = normalized;
         st.clickLocked = false;
+        st.touchTarget = "";
         st.renderRebuildCount = 0;
         cancelDismiss21(st);
         cancelVisibilityFallback21(st);
+        cancelCopyFeedback21(st);
         var self = this;
         runOnMain21(function() {
           try {
@@ -1022,6 +1365,7 @@
                 "result preview publish id=" + normalized.id +
                 " source=" + normalized.source +
                 " textLen=" + String(normalized.text.length) +
+                " copyVisible=" + String(hasCopyText21(normalized.text)) +
                 " generation=" + String(current.generation || 0) +
                 " shown=" + String(shown === true));
             } catch (eLog) {}
@@ -1040,6 +1384,8 @@
         st.generation = Number(st.generation || 0) + 1;
         cancelDismiss21(st);
         cancelVisibilityFallback21(st);
+        cancelCopyFeedback21(st);
+        st.touchTarget = "";
         st.lastReason = String(reason || "");
         try {
           safeLog(this.L, 'i',
@@ -1095,6 +1441,8 @@
         st.clickLocked = true;
         cancelDismiss21(st);
         cancelVisibilityFallback21(st);
+        cancelCopyFeedback21(st);
+        st.touchTarget = "";
         st.generation = Number(st.generation || 0) + 1;
         var payload = st.payload;
         var ret = null;
@@ -1133,6 +1481,7 @@
         st.generation = Number(st.generation || 0) + 1;
         st.payload = null;
         st.lastReason = String(reason || "dispose");
+        cancelCopyFeedback21(st);
         var result = runOnMainSync21(function() { return removeView21(self, st); }, 2000);
         if (!result.ok) {
           try { safeLog(this.L, 'w', "dispose result preview incomplete: " + String(result.error)); } catch (eLog) {}
@@ -1145,6 +1494,7 @@
         var self = this;
         var st = ensureState21(this);
         if (!st || !st.payload) return false;
+        cancelCopyFeedback21(st);
         runOnMain21(function() {
           try {
             var current = ensureState21(self);
