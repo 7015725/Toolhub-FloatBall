@@ -1,4 +1,4 @@
-// @version 1.2.2
+// @version 1.2.3
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -461,7 +461,6 @@
     render.copyActualHex = "";
     render.canvasHardware = false;
     render.windowFormat = 0;
-    render.forceDarkDisabled = false;
     render.disposed = false;
     render.attachedAt = now21();
     st.drawCount = 0;
@@ -918,38 +917,10 @@
     var self = appObj;
     var render = {
       rootToken: Number(st.rootToken || 0),
-      generation: Number(st.generation || 0),
-      payloadId: String(st.payload && st.payload.id ? st.payload.id : ""),
-      line1: String(st.line1 || ""),
-      line2: String(st.line2 || ""),
-      copyVisible: st.copyVisible === true,
-      copyPressed: false,
-      copyFeedbackKind: "",
-      copyHitRect: null,
-      drawCount: 0,
-      firstDrawAt: 0,
-      firstDrawLogged: false,
-      visibleStartedAt: 0,
-      attachedAt: now21(),
-      pressed: false,
-      themeDark: false,
-      themeSource: "",
-      bgApplyOk: false,
-      strokeApplyOk: false,
-      textApplyOk: false,
-      copyApplyOk: false,
-      bgExpectedHex: "",
-      bgActualHex: "",
-      textExpectedHex: "",
-      textActualHex: "",
-      copyExpectedHex: "",
-      copyActualHex: "",
-      canvasHardware: false,
-      windowFormat: 0,
-      forceDarkDisabled: false,
-      disposed: false,
-      enterStarted: false
+      enterStarted: false,
+      forceDarkDisabled: false
     };
+    syncRender21(render, st);
     var PreviewView = new JavaAdapter(android.view.View, {
       onDraw: function(canvas) {
         var current = isCurrentRoot21(st, this, render);
@@ -1140,9 +1111,6 @@
     var built = createView21(appObj, st);
     st.root = built.view;
     st.rootRender = built.render;
-    syncRender21(st.rootRender, st);
-    st.rootRender.rootToken = Number(st.rootToken || 0);
-    st.rootRender.enterStarted = false;
     if (!st.lp) st.lp = createLp21(appObj, st);
     st.lp.width = st.measuredWidth;
     st.lp.height = st.measuredHeight;

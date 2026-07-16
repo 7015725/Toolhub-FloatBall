@@ -140,18 +140,18 @@
       "version": "1.0.3"
     },
     "th_21_result_preview.js": {
-      "sha256": "f50009b72644129cb4247001ca481ec2a55d9162f07aea294be32c399495d509",
-      "size": 59960,
-      "version": "1.2.2"
+      "sha256": "8594ab321883de28fd09a52f468876864d80e7457e0ddd7a8c3ffa27959e14cb",
+      "size": 58974,
+      "version": "1.2.3"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理结果预览槽位宽度状态"
+      "统一结果预览渲染状态初始化"
     ],
-    "title": "清理结果预览槽位宽度状态"
+    "title": "统一结果预览渲染状态初始化"
   },
   "schema": 3,
-  "version": 20260716110239
+  "version": 20260716111753
 }
