@@ -31,7 +31,7 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(BASE, "1.1.13", "th_01_base.js")
+version(BASE, "1.1.14", "th_01_base.js")
 version(PERSIST, "1.0.6", "th_05_persistence.js")
 version(MAIN, "1.5.8", "th_15_main_panel.js")
 

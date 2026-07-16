@@ -1,4 +1,4 @@
-// @version 1.0.25
+// @version 1.0.26
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -147,9 +147,10 @@ FloatBallAppWM.prototype.getPointerSettingsBlocks = function() {
     {
       key: "ocr_color",
       title: "框选 OCR 颜色",
-      desc: "框选区域和识别中状态颜色",
+      desc: "框选区域、框选就绪和识别中状态颜色",
       keys: [
         "POINTER_COLOR_AREA_HEX",
+        "POINTER_COLOR_AREA_READY_HEX",
         "POINTER_COLOR_CAPTURE_HEX"
       ]
     }

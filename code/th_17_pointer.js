@@ -1,4 +1,4 @@
-// @version 1.2.8
+// @version 1.2.9
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1969,6 +1969,22 @@ FloatBallAppWM.prototype.schedulePointerDrawHealthCheck = function(st, delayMs) 
   return false;
 };
 
+FloatBallAppWM.prototype.isPointerAreaOcrReady = function(st) {
+  var pointerState = st || null;
+  try {
+    if (!pointerState) pointerState = this.ensurePointerToolState();
+  } catch (eState) { pointerState = null; }
+  return !!(
+    pointerState &&
+    pointerState.active === true &&
+    pointerState.closed !== true &&
+    pointerState.areaOcrRequested === true &&
+    pointerState.areaArmReady === true &&
+    pointerState.mode === "text_pick" &&
+    pointerState.dragging === true
+  );
+};
+
 FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
   var self = this;
   st.pointerRootToken = Number(st.pointerRootToken || 0) + 1;
@@ -1991,15 +2007,19 @@ FloatBallAppWM.prototype.createPointerCanvasView = function(st) {
         var tipY = st.anchorLocalY;
         var textReady = false;
         try { textReady = self.isPointerTextHoverReady(th17Now()) === true; } catch(eReadyDraw) { textReady = false; }
+        var areaOcrReady = false;
+        try { areaOcrReady = self.isPointerAreaOcrReady(st) === true; } catch(eAreaReadyDraw) { areaOcrReady = false; }
         var hoverCandidate = !!(st.currentText && st.currentRect && st.hoverSince && !textReady);
         var processing = !!st.areaProcessing;
-        var active = !!(st.hot || hoverCandidate || st.areaSelecting || st.areaReady || processing);
+        var active = !!(st.hot || hoverCandidate || areaOcrReady || st.areaSelecting || st.areaReady || processing);
         var dragging = !!st.dragging;
         var rgb = null;
         if (processing) {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
         } else if (st.mode === "area_capture" || st.areaSelecting || st.areaReady) {
           rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+        } else if (areaOcrReady) {
+          rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_READY_HEX", 245, 158, 11);
         } else if (textReady) {
           rgb = th17PointerColorRgbWithFallback(self, "POINTER_COLOR_TEXT_READY_HEX", "POINTER_COLOR_HIT_HEX", 34, 197, 94);
         } else if (st.hot) {
