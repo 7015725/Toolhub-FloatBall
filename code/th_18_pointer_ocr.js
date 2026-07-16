@@ -1,4 +1,4 @@
-// @version 1.1.2
+// @version 1.1.3
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -142,15 +142,14 @@
     return isUsableScreenshotPath18(path) ? path : "";
   }
 
-  function canDispatchAreaOcr18(st, obj, ret) {
+    function canDispatchAreaOcr18(st, obj, ret) {
     if (!st || !obj) return false;
     if (ret && ret.fallback === true) return false;
     if (String(obj.type || "") !== "area_capture") return false;
-    if (String(obj.code || "") !== "AREA_CAPTURE_SUCCESS") return false;
-    return true;
+    return !!pickOcrRect18(obj, ret);
   }
 
-  function applyPerfDefaults18(appObj) {
+function applyPerfDefaults18(appObj) {
     try {
       if (!appObj || !appObj.ensurePointerToolState) return null;
       var st = appObj.ensurePointerToolState();
@@ -346,15 +345,20 @@
       if (!obj) obj = {};
       if (!obj.data) obj.data = {};
 
+      var screenshotPath = String(path || obj.screenshotFilePath || "").replace(/^\s+|\s+$/g, "");
+      var screenshotOk = isUsableScreenshotPath18(screenshotPath);
+      if (!screenshotOk) screenshotPath = "";
+      var screenshotError = "";
+      try { screenshotError = String(obj.screenshotError || obj.data.error || ""); } catch(eScreenshotError) { screenshotError = ""; }
+
       var normalizedText = String(textValue || "").replace(/^\s+|\s+$/g, "");
       var hasText = textOk === true && normalizedText.length > 0;
       var resultCode = String(code || "");
       var resultMessage = String(message || "");
 
-      // OCR 正常执行但没有文字，不得返回成功码。
       if (textOk === true && !hasText) {
         resultCode = "AREA_OCR_EMPTY";
-        resultMessage = "框选完成，未识别到文字";
+        resultMessage = screenshotOk ? "框选完成，未识别到文字" : "未识别到文字，截图保存失败";
       } else {
         if (!resultCode) resultCode = hasText ? "AREA_OCR_SUCCESS" : "AREA_OCR_FAILED";
         if (!resultMessage) resultMessage = hasText ? "框选识别完成" : "框选识别失败";
@@ -365,7 +369,10 @@
       obj.code = resultCode;
       obj.value = normalizedText;
       obj.captureRect = cloneRect18(rect || obj.captureRect || obj.data.captureRect);
-      obj.screenshotFilePath = String(path || obj.screenshotFilePath || "");
+      obj.screenshotFilePath = screenshotPath;
+      obj.screenshotOk = screenshotOk;
+      obj.screenshotError = screenshotError;
+      obj.partial = hasText && !screenshotOk;
       obj.ocrText = normalizedText;
       obj.ocrError = textOk === true ? "" : String(textError || "");
       obj.ocrEmpty = textOk === true && !hasText;
@@ -397,13 +404,20 @@
       obj.preview = !!(previewRet && previewRet.ok === true);
       obj.previewId = previewRet && previewRet.previewId ? String(previewRet.previewId) : "";
       if (hasText) {
-        resultMessage = obj.preview ? "框选识别完成，已显示预览" : "框选识别完成";
+        if (screenshotOk) resultMessage = obj.preview ? "框选识别完成，已显示预览" : "框选识别完成";
+        else resultMessage = obj.preview ? "识别完成，截图保存失败，已显示预览" : "识别完成，截图保存失败";
+      } else if (!screenshotOk && resultCode === "AREA_OCR_TIMEOUT") {
+        resultMessage = "OCR 超时，截图保存失败";
+      } else if (!screenshotOk && resultCode === "AREA_OCR_FAILED") {
+        resultMessage = "识别失败，截图保存失败";
       }
       obj.message = resultMessage;
 
       obj.data.path = obj.screenshotFilePath;
       obj.data.captureRect = obj.captureRect || null;
       obj.data.visualRect = obj.visualRect || obj.data.visualRect || null;
+      obj.data.screenshotOk = obj.screenshotOk;
+      obj.data.screenshotError = obj.screenshotError;
       obj.data.ocrText = obj.ocrText;
       obj.data.ocrError = obj.ocrError;
       obj.data.ocrEmpty = obj.ocrEmpty;
@@ -422,19 +436,21 @@
           "pointer area_ocr async result token=" + String(token) +
           " ok=" + String(hasText === true) +
           " empty=" + String(obj.ocrEmpty === true) +
+          " screenshotOk=" + String(obj.screenshotOk === true) +
           " preview=" + String(obj.preview === true) +
           " rect=" + rectKey18(obj.captureRect) +
           " path=" + String(obj.screenshotFilePath || "") +
           " code=" + String(obj.code || "") +
+          " screenshotErr=" + String(obj.screenshotError || "") +
           " err=" + String(obj.ocrError || "")
         );
       } catch(eLog) {}
 
       try {
-        if (hasText && !obj.preview) appObj.toast("识别完成");
-        else if (resultCode === "AREA_OCR_EMPTY") appObj.toast("未识别到文字，已保留截图");
-        else if (resultCode === "AREA_OCR_TIMEOUT") appObj.toast("OCR 超时，已保留截图");
-        else if (!hasText) appObj.toast("截图完成，识别失败");
+        if (hasText && !obj.preview) appObj.toast(screenshotOk ? "识别完成" : "识别完成，截图保存失败");
+        else if (resultCode === "AREA_OCR_EMPTY") appObj.toast(screenshotOk ? "未识别到文字，已保留截图" : "未识别到文字，截图保存失败");
+        else if (resultCode === "AREA_OCR_TIMEOUT") appObj.toast(screenshotOk ? "OCR 超时，已保留截图" : "OCR 超时，截图保存失败");
+        else if (!hasText) appObj.toast(screenshotOk ? "截图完成，识别失败" : "识别失败，截图保存失败");
       } catch(eToast) {}
 
       return true;
@@ -517,12 +533,12 @@
       if (!appObj || !st) return false;
 
       var rr = cloneRect18(rect);
-      var screenshotPath = String(path || "").replace(/^\s+|\s+$/g, "");
-      if (!rr || !isUsableScreenshotPath18(screenshotPath)) {
+      var rawScreenshotPath = String(path || "").replace(/^\s+|\s+$/g, "");
+      var screenshotPath = isUsableScreenshotPath18(rawScreenshotPath) ? rawScreenshotPath : "";
+      if (!rr) {
         try {
           safeLog(appObj.L, 'w',
-            "pointer area_ocr dispatch skipped reason=" +
-            (!rr ? "invalid_rect" : "invalid_path") +
+            "pointer area_ocr dispatch skipped reason=invalid_rect" +
             " rect=" + rectKey18(rr) +
             " path=" + screenshotPath);
         } catch(eSkipLog) {}
@@ -542,14 +558,18 @@
 
       if (!obj) obj = {};
       if (!obj.data) obj.data = {};
+      var screenshotError = "";
+      try { screenshotError = String(obj.screenshotError || obj.data.error || ""); } catch(eScreenshotError) { screenshotError = ""; }
 
       obj.ok = false;
       obj.type = "area_ocr";
       obj.code = "AREA_OCR_PENDING";
-      obj.message = screenshotPath ? "框选截图完成，正在识别" : "框选完成，截图失败";
+      obj.message = screenshotPath ? "框选截图完成，正在识别" : "截图保存失败，正在识别";
       obj.value = screenshotPath;
       obj.captureRect = rr || obj.captureRect || null;
       obj.screenshotFilePath = screenshotPath;
+      obj.screenshotOk = !!screenshotPath;
+      obj.screenshotError = screenshotError;
       obj.ocrText = "";
       obj.ocrError = "";
       obj.ocrSource = "rect_async";
@@ -558,6 +578,8 @@
       obj.clipboardError = "";
 
       obj.data.path = screenshotPath;
+      obj.data.screenshotOk = obj.screenshotOk;
+      obj.data.screenshotError = obj.screenshotError;
       obj.data.captureRect = obj.captureRect || null;
       obj.data.visualRect = obj.visualRect || obj.data.visualRect || null;
       obj.data.ocrText = "";
@@ -580,25 +602,7 @@
         ret.clipboardError = "";
       }
 
-      if (!screenshotPath || !rr) {
-        applyAreaOcrResult18(
-          appObj,
-          st,
-          token,
-          obj,
-          screenshotPath,
-          rr,
-          false,
-          "",
-          rr ? "截图路径为空" : "OCR区域为空",
-          screenshotPath ? "AREA_OCR_FAILED" : "AREA_SCREENSHOT_FAILED",
-          screenshotPath ? "框选截图完成，识别失败" : "框选完成，截图失败",
-          "rect_async"
-        );
-        return false;
-      }
-
-      try { appObj.toast("截图完成，正在识别"); } catch(eToastStart) {}
+      try { appObj.toast(screenshotPath ? "截图完成，正在识别" : "截图保存失败，正在识别"); } catch(eToastStart) {}
 
       var timeoutMs = getOcrTimeoutMs18(appObj);
       var workerName = "toolhub_area_ocr_" + String(token);
@@ -625,7 +629,7 @@
             "",
             "OCR超时 " + String(timeoutMs) + "ms",
             "AREA_OCR_TIMEOUT",
-            "OCR 超时，已保留截图",
+            screenshotPath ? "OCR 超时，已保留截图" : "OCR 超时，截图保存失败",
             "rect_async_timeout"
           );
         } catch(eTimeout) {
@@ -688,8 +692,10 @@
                 ? "AREA_OCR_FAILED"
                 : (hasText ? "AREA_OCR_SUCCESS" : "AREA_OCR_EMPTY");
               var msg = !textOk
-                ? "框选截图完成，识别失败"
-                : (hasText ? "框选识别完成" : "框选完成，未识别到文字");
+                ? (screenshotPath ? "框选截图完成，识别失败" : "识别失败，截图保存失败")
+                : (hasText
+                  ? (screenshotPath ? "框选识别完成" : "识别完成，截图保存失败")
+                  : (screenshotPath ? "框选完成，未识别到文字" : "未识别到文字，截图保存失败"));
 
               if (!isAreaOcrTokenCurrent18(st, token)) return;
 
@@ -752,6 +758,7 @@
           "pointer area_ocr async scheduled token=" + String(token) +
           " timeoutMs=" + String(timeoutMs) +
           " rect=" + rectKey18(rr) +
+          " screenshotOk=" + String(!!screenshotPath) +
           " path=" + screenshotPath
         );
       } catch(eLogSchedule) {}
@@ -884,11 +891,10 @@
 
           var path = pickScreenshotPath18(obj, ret);
           var rect = pickOcrRect18(obj, ret);
-          if (!path || !rect) {
+          if (!rect) {
             try {
               safeLog(this.L, 'w',
-                "pointer area_ocr completion skipped reason=" +
-                (!rect ? "invalid_rect" : "invalid_path") +
+                "pointer area_ocr completion skipped reason=invalid_rect" +
                 " token=" + String(token) +
                 " rect=" + rectKey18(rect) +
                 " path=" + path);
@@ -967,11 +973,10 @@
           if (!canDispatchAreaOcr18(st, obj, ret)) return ret;
           var path = pickScreenshotPath18(obj, ret);
           var rect = pickOcrRect18(obj, ret);
-          if (!path || !rect) {
+          if (!rect) {
             try {
               safeLog(this.L, 'w',
-                "pointer area_ocr sync dispatch skipped reason=" +
-                (!rect ? "invalid_rect" : "invalid_path") +
+                "pointer area_ocr sync dispatch skipped reason=invalid_rect" +
                 " rect=" + rectKey18(rect) +
                 " path=" + path);
             } catch(eSkipSyncLog) {}
