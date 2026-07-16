@@ -322,6 +322,15 @@ def main() -> int:
         failures,
     )
     require(
+        "preview copy / no cached slot width state",
+        "st.copySlotWidth" not in preview
+        and "copySlotWidth: 0" not in preview
+        and "var copySlot = st.copyVisible ? metrics.slotWidth : 0;" in preview
+        and "var finalCopySlot = st.copyVisible ? finalMetrics.slotWidth : 0;" in preview,
+        "copy slot width must remain a local layout value instead of persistent preview state",
+        failures,
+    )
+    require(
         "preview copy / minimum touch target",
         "function copyMetrics21(appObj, heightPx)" in preview
         and "Math.max(dp21(appObj, 40)" in preview
