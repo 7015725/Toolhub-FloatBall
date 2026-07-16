@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  trigger:
+  repair:
     if: >
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'fix/animation-callback-crash-20260716'
@@ -28,7 +28,66 @@ jobs:
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
           persist-credentials: false
 
-      - name: Trigger or clean bootstrap workflow
+      - name: Extract and apply source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          bootstrap = Path('.github/workflows/agent-fix-animation-callback-crash.yml')
+          text = bootstrap.read_text(encoding='utf-8')
+          marker = "          python3 - <<'PY'\n"
+          start = text.index(marker) + len(marker)
+          end = text.index("\n          PY\n", start)
+          block = text[start:end]
+          lines = []
+          for line in block.splitlines():
+              if line.startswith('          '):
+                  line = line[10:]
+              lines.append(line)
+          script = '\n'.join(lines) + '\n'
+
+          # 工作流文件由 GitHub 连接器单独更新，避免自动化令牌缺少 workflow scope。
+          for target in ('.github/workflows/verify.yml', '.github/workflows/sign-toolhub.yml'):
+              call = "replace_once(\n    '%s'," % target
+              pos = script.find(call)
+              if pos < 0:
+                  raise SystemExit('workflow replacement block missing: ' + target)
+              end_pos = script.find('\n)\n', pos)
+              if end_pos < 0:
+                  raise SystemExit('workflow replacement block end missing: ' + target)
+              script = script[:pos] + script[end_pos + 3:]
+
+          Path('/tmp/apply_animation_callback_fix.py').write_text(script, encoding='utf-8')
+          PY
+          python3 /tmp/apply_animation_callback_fix.py
+
+      - name: Regenerate deterministic audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
+
+      - name: Validate source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_ball_position_state.py
+          python3 scripts/verify_animation_callback_safety.py
+          python3 scripts/verify_major_event_logging.py
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+          git diff --check
+
+      - name: Commit source patch
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
@@ -40,27 +99,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code scripts DEAD_CODE_AUDIT.md PROTECTED_WRAPPER_AUDIT.md TH15_EXTRA_AUDIT.md TH09_ANIMATION_AUDIT.md ENTRY_SYMBOL_AUDIT.md
+          git commit -m "修复动画回调异常与崩溃处理器累积"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-
-          bootstrap=".github/workflows/agent-fix-animation-callback-crash.yml"
-          trigger_file=".github/agent-animation-callback-fix-trigger"
-          self_file=".github/workflows/agent-trigger-animation-callback-fix.yml"
-
-          if [ -f "$bootstrap" ]; then
-            if [ -f "$trigger_file" ]; then
-              echo "bootstrap already triggered"
-              exit 0
-            fi
-            printf 'triggered_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$trigger_file"
-            git add "$trigger_file"
-            git commit -m "触发动画回调修复工作流"
-            git push origin HEAD:fix/animation-callback-crash-20260716
-            exit 0
-          fi
-
-          git rm -f "$self_file"
-          if [ -f "$trigger_file" ]; then
-            git rm -f "$trigger_file"
-          fi
-          git commit -m "清理动画回调修复引导文件"
           git push origin HEAD:fix/animation-callback-crash-20260716
