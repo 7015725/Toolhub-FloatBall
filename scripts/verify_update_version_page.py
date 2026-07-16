@@ -29,6 +29,17 @@ checks = {
     "更新入口不再维护独立列表布局": "new android.widget.LinearLayout" not in UPDATE_ENTRY_SECTION and "row.setBackground" not in UPDATE_ENTRY_SECTION,
     "统一设置项构建器支持红点": "entryOptions.showRedDot === true" in TH14 and "badgeBox.addView(dot, dotLp)" in TH14,
     "统一设置项保留卡片阴影": "row.setElevation(this.dp(1))" in TH14,
+    "设置首页使用显式合理顺序": all(marker in TH14 for marker in [
+        'addChild(all, "tools"',
+        'addGroupChild.call(this, all, "ball")',
+        'addGroupChild.call(this, all, "pointer")',
+        'addGroupChild.call(this, all, "panel")',
+        'addGroupChild.call(this, all, "motion")',
+        'addGroupChild.call(this, all, "theme")',
+        'addChild(all, "schema"',
+        'addChild(all, "update"',
+        'addGroupChild.call(this, all, "debug")',
+    ]) and TH14.index('addChild(all, "tools"') < TH14.index('addGroupChild.call(this, all, "ball")') < TH14.index('addGroupChild.call(this, all, "pointer")') < TH14.index('addGroupChild.call(this, all, "panel")') < TH14.index('addGroupChild.call(this, all, "motion")') < TH14.index('addGroupChild.call(this, all, "theme")') < TH14.index('addChild(all, "schema"') < TH14.index('addChild(all, "update"') < TH14.index('addGroupChild.call(this, all, "debug")'),
     "旧延期包装边界已删除": '"method": "startToolHubModuleUpdateFromSettings"' not in BOUNDARIES,
 }
 failed = [name for name, ok in checks.items() if not ok]
