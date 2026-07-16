@@ -37,12 +37,12 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.1.1":
-    fail("expected th_14_button_editor.js version 1.1.1")
+if not version or version.group(1) != "1.1.2":
+    fail("expected th_14_button_editor.js version 1.1.2")
 
 action_version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", ACTION)
-if not action_version or action_version.group(1) != "1.1.0":
-    fail("expected th_11_action.js version 1.1.0")
+if not action_version or action_version.group(1) != "1.1.1":
+    fail("expected th_11_action.js version 1.1.1")
 
 method = "FloatBallAppWM.prototype.commitButtonEditorChange = function"
 if SOURCE.count(method) != 1:
@@ -109,15 +109,21 @@ for fragment, label in (
 ):
     forbid(SOURCE, fragment, label)
 
-# 快捷方式的结构化 intentUri 仍是安全启动数据，不属于被移除的独立 Intent 按钮类型。
-require(SOURCE, 'newBtn.shortcutExecMode = "intent"', "shortcut intent mode retained")
-require(SOURCE, "newBtn.intentUri = _scIntentUri", "shortcut intentUri retained")
+# 快捷方式保存以 pkg + shortcutId + userId 为结构化标识；intentUri 仅作为可选后备。
+require(SOURCE, 'newBtn.shortcutExecMode = "intent"', "shortcut structured mode retained")
+require(SOURCE, "if (_scIntentUri) newBtn.intentUri = _scIntentUri", "optional shortcut intentUri save")
+require(SOURCE, "else delete newBtn.intentUri", "missing shortcut intentUri accepted")
+forbid(SOURCE, "请选择包含 intentUri 的快捷方式", "obsolete mandatory intentUri validation")
+require(SOURCE, "button editor validation blocked type=", "validation diagnostics")
+require(SOURCE, "var dangerColor = T.danger || C.danger", "visible danger notice color")
 
 for marker, label in (
     ("launcherApps.getActivityList(pkg, userHandle)", "profile launch activity resolution"),
     ("context.startActivityAsUser(it, userHandle)", "profile startActivityAsUser"),
     ("launcherApps.startMainActivity", "profile launcher fallback"),
     ("分身启动失败时不能回退到主用户", "no wrong-user fallback contract"),
+    ("launcherApps.startShortcut(spkg, sid, null, null, shortcutUser)", "shortcut launcher primary path"),
+    ("shortcut(intentUri fallback)", "shortcut intentUri fallback path"),
 ):
     require(ACTION, marker, label)
 
@@ -190,5 +196,5 @@ print(
     "OK button_editor_direct_save "
     "add=transactional edit=transactional list_batch=normalized "
     "app_picker=users_system_profiles app_fields=picker_only "
-    "intent_type=removed settings_type=removed"
+    "shortcut=launcher_primary_intent_optional intent_type=removed settings_type=removed"
 )
