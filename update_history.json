@@ -1,8 +1,34 @@
 {
   "schema": 1,
-  "historyVersion": 20260716152048,
-  "generatedAt": "2026-07-16T23:20:48+08:00",
+  "historyVersion": 20260716154315,
+  "generatedAt": "2026-07-16T23:43:15+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "fix-update-page-scrollview-layoutparams",
+      "type": "fix",
+      "title": "修复更新与版本页面无法打开",
+      "details": [
+        "修复 Rhino 无法解析 ScrollView.LayoutParams 导致页面构建失败",
+        "改用 FrameLayout.LayoutParams 作为 ScrollView 子布局参数",
+        "补充更新页 Rhino 布局参数兼容校验"
+      ],
+      "manifestVersion": 20260716154315,
+      "date": "2026-07-16",
+      "modules": [
+        {
+          "name": "th_14_panels.js",
+          "from": "1.1.0",
+          "to": "1.1.1",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260714081104,
+        "to": 20260714081104
+      }
+    },
     {
       "schema": 1,
       "id": "update-version-page",

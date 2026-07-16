@@ -8,5 +8,19 @@
     "改用 FrameLayout.LayoutParams 作为 ScrollView 子布局参数",
     "补充更新页 Rhino 布局参数兼容校验"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260716154315,
+  "date": "2026-07-16",
+  "modules": [
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.0",
+      "to": "1.1.1",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
 }
