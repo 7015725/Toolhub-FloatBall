@@ -1,4 +1,4 @@
-// @version 1.2.4
+// @version 1.2.5
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -154,7 +154,6 @@
         downRawY: 0,
         touchMoved: false,
         touchTarget: "",
-        lastReason: ""
       };
     }
     var st = appObj.state.resultPreview;
@@ -437,7 +436,6 @@
     render.copyHitRect = null;
     render.drawCount = 0;
     render.firstDrawAt = 0;
-    render.visibleStartedAt = 0;
     render.pressed = false;
     render.themeDark = false;
     render.themeSource = "";
@@ -844,7 +842,6 @@
     if (Number(render.firstDrawAt || 0) > 0) return true;
 
     render.firstDrawAt = now21();
-    render.visibleStartedAt = render.firstDrawAt;
     st.visibleStartedAt = render.firstDrawAt;
     cancelVisibilityFallback21(st);
 
@@ -1319,7 +1316,6 @@
         cancelVisibilityFallback21(st);
         cancelCopyFeedback21(st);
         st.touchTarget = "";
-        st.lastReason = String(reason || "");
         try {
           safeLog(this.L, 'i',
             "result preview dismiss" +
@@ -1412,7 +1408,6 @@
         if (!st) return true;
         st.generation = Number(st.generation || 0) + 1;
         st.payload = null;
-        st.lastReason = String(reason || "dispose");
         cancelCopyFeedback21(st);
         var result = runOnMainSync21(function() { return removeView21(self, st); }, 2000);
         if (!result.ok) {
