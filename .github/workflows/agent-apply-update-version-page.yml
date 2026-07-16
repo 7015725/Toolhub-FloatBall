@@ -28,7 +28,22 @@ jobs:
           fetch-depth: 0
 
       - name: Apply repository migration
-        run: python3 .agent/apply_update_version_page.py
+        run: |
+          set +e
+          python3 .agent/apply_update_version_page.py > migration.log 2>&1
+          code=$?
+          cat migration.log
+          echo "$code" > migration.exit
+          exit "$code"
+
+      - name: Upload migration log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-version-page-migration-log
+          path: |
+            migration.log
+            migration.exit
 
       - name: Restore workflow files for connector update
         run: git checkout -- .github/workflows
