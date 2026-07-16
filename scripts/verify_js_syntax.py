@@ -7,6 +7,56 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 NODE = shutil.which("node")
 ERROR_FILE = ROOT / "RUNNER_ERROR.txt"
+
+# 一次性执行分支：旧颜色键位于一条很长的 Schema 完整性判断中，
+# 不能按整行删除。基于关键边界重建为可维护的多行条件。
+base_path = ROOT / "code" / "th_01_base.js"
+if base_path.exists():
+    text = base_path.read_text(encoding="utf-8")
+    marker = '        var sStr = JSON.stringify(s);\n'
+    start = text.find(marker)
+    next_block = text.find('        if (!needReset && (\n', start + len(marker)) if start >= 0 else -1
+    if start >= 0 and next_block > start:
+        condition = '''        if (
+            sStr.indexOf("ENABLE_SNAP_TO_EDGE") < 0 ||
+            sStr.indexOf("ENABLE_ANIMATIONS") < 0 ||
+            sStr.indexOf("BALL_IDLE_ALPHA") < 0 ||
+            sStr.indexOf("single_choice") < 0 ||
+            sStr.indexOf("ball_shortx_icon") < 0 ||
+            sStr.indexOf("ball_color") < 0 ||
+            sStr.indexOf("BALL_BG_COLOR_HEX") < 0 ||
+            sStr.indexOf("BALL_ICON_SIZE_DP") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_GESTURE_MODE") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_EDGE_WIDTH_DP") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_COMMIT_DISTANCE_DP") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_SURFACE_SLOP_DP") < 0 ||
+            sStr.indexOf("TOOLAPP_BACK_PROGRESS_DISTANCE_DP") < 0 ||
+            sStr.indexOf("LONG_PRESS_TRIGGERED_MOVE_SLOP_DP") < 0 ||
+            sStr.indexOf("POINTER_SCALE_PERCENT") < 0 ||
+            sStr.indexOf("POINTER_EDGE_ZONE_X_DP") < 0 ||
+            sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 ||
+            sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 ||
+            sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 ||
+            sStr.indexOf("POINTER_RESULT_PREVIEW_TIMEOUT_SEC") < 0 ||
+            sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 ||
+            sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 ||
+            sStr.indexOf("POINTER_COLOR_AREA_READY_HEX") < 0 ||
+            sStr.indexOf("POINTER_COLOR_AREA_HEX") < 0 ||
+            sStr.indexOf("POINTER_FRAME_TEXT_HOVER_HEX") < 0 ||
+            sStr.indexOf("POINTER_FRAME_TEXT_READY_HEX") < 0 ||
+            sStr.indexOf("POINTER_FRAME_AREA_HEX") < 0 ||
+            sStr.indexOf("POINTER_AREA_SMALL_FALLBACK_TEXT") < 0 ||
+            sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 ||
+            sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 ||
+            sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 ||
+            sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0
+        ) {
+            needReset = true;
+        }
+'''
+        text = text[:start + len(marker)] + condition + text[next_block:]
+        base_path.write_text(text, encoding="utf-8")
+
 errors = []
 if not NODE:
     errors.append("FAIL: node executable not found; cannot parse JavaScript modules")
