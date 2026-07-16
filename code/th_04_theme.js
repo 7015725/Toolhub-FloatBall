@@ -1,4 +1,4 @@
-// @version 1.0.10
+// @version 1.0.11
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -116,7 +116,12 @@ FloatBallAppWM.prototype.renderInlineNoticeNow = function() {
         box.setVisibility(android.view.View.VISIBLE);
       } catch(eRun) { safeLog(null, "e", "renderInlineNoticeNow run catch " + String(eRun)); }
     };
-    if (this.runOnUiThreadSafe) this.runOnUiThreadSafe(fn);
+    var ownerView = this.state.settingsNoticeContainerRef;
+    if (ownerView && ownerView.post) {
+      ownerView.post(new JavaAdapter(java.lang.Runnable, { run: fn }));
+    } else if (this.state.toolAppActive && this.postToAndroidMain) {
+      this.postToAndroidMain(fn);
+    } else if (this.runOnUiThreadSafe) this.runOnUiThreadSafe(fn);
     else fn();
   } catch(e) {
     safeLog(null, "e", "renderInlineNoticeNow catch " + String(e));
