@@ -31,10 +31,10 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(BASE, "1.1.12", "th_01_base.js")
+version(BASE, "1.1.13", "th_01_base.js")
 version(PERSIST, "1.0.6", "th_05_persistence.js")
 version(MAIN, "1.5.8", "th_15_main_panel.js")
-version(EXTRA, "1.1.16", "th_15_extra.js")
+version(EXTRA, "1.1.17", "th_15_extra.js")
 
 active_base = re.sub(
     r"var REMOVED_SETTINGS_CONFIG_KEYS = \{.*?\};",
