@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "fix-update-page-scrollview-layoutparams",
+  "type": "fix",
+  "title": "修复更新与版本页面无法打开",
+  "details": [
+    "修复 Rhino 无法解析 ScrollView.LayoutParams 导致页面构建失败",
+    "改用 FrameLayout.LayoutParams 作为 ScrollView 子布局参数",
+    "补充更新页 Rhino 布局参数兼容校验"
+  ],
+  "manifestVersion": 0
+}
