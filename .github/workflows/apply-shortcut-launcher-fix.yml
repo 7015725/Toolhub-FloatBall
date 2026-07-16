@@ -3,13 +3,16 @@ name: apply-shortcut-launcher-fix
 on:
   push:
     branches: [fix/shortcut-launcher-save-20260716]
+  pull_request:
+    branches: [main]
+    types: [opened]
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: ${{ !contains(github.event.head_commit.message, '[shortcut-patch-applied]') }}
+    if: ${{ (github.event_name == 'push' && !contains(github.event.head_commit.message, '[shortcut-patch-applied]')) || (github.event_name == 'pull_request' && github.head_ref == 'fix/shortcut-launcher-save-20260716') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
