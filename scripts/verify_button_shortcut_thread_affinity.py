@@ -33,6 +33,9 @@ def main() -> int:
     require(source, "shortcut picker callback dropped reason=stale_generation", "stale callback log")
     require(source, "shortcut picker callback dropped reason=detached", "detached callback log")
     require(source, "addOnAttachStateChangeListener", "lifecycle listener")
+    require(source, "__scScheduleRender(__scStr(s), 180)", "single search debounce")
+    if "searchRunnable" in source:
+        fail("shortcut search must use renderRunnable only")
     require(source, "shortcut picker load begin", "load begin log")
     require(source, "shortcut picker scan done", "scan completion log")
     require(source, "shortcut picker apply done", "UI apply log")
@@ -65,10 +68,10 @@ def main() -> int:
         fail("legacy forceReload state must be removed")
 
     version_match = re.search(r"^// @version\s+(\d+)\.(\d+)\.(\d+)", source, re.M)
-    if not version_match or tuple(map(int, version_match.groups())) < (1, 0, 2):
+    if not version_match or tuple(map(int, version_match.groups())) < (1, 0, 5):
         fail("module version must be at least 1.0.2")
 
-    print("OK shortcut_picker_thread_affinity owner_view_post=1 generation=1 lifecycle=1 logging=1")
+    print("OK shortcut_picker_thread_affinity owner_view_post=1 generation=1 lifecycle=1 search_debounce=1 logging=1")
     return 0
 
 
