@@ -10,9 +10,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 NODE = shutil.which("node")
 ERROR_FILE = ROOT / "RUNNER_ERROR.txt"
+SIGN_SENTINEL = ROOT / ".pointer_color_force_sign"
 
-# 一次性执行分支：旧颜色键位于一条很长的 Schema 完整性判断中，
-# 不能按整行删除。基于关键边界重建为可维护的多行条件。
 base_path = ROOT / "code" / "th_01_base.js"
 base_rebuilt = False
 if base_path.exists():
@@ -62,7 +61,6 @@ if base_path.exists():
         base_path.write_text(text, encoding="utf-8")
         base_rebuilt = True
 
-# 重建发生在一次性执行脚本最初生成 manifest 之后，必须同步最终哈希。
 if base_rebuilt:
     manifest_path = ROOT / "manifest.json"
     if manifest_path.exists():
@@ -106,4 +104,12 @@ if errors:
     subprocess.run(["git", "add", "RUNNER_ERROR.txt"], cwd=str(ROOT))
     print(report.rstrip())
     sys.exit(0)
+
+# 首次由一次性执行脚本调用时使旧签名失效；签名步骤后续再次调用本脚本时保留新签名。
+if not SIGN_SENTINEL.exists():
+    sig_path = ROOT / "manifest.sig"
+    if sig_path.exists():
+        sig_path.write_text("", encoding="utf-8")
+    SIGN_SENTINEL.write_text("force-sign\n", encoding="utf-8")
+
 print("OK: JavaScript syntax valid for %d modules" % len(files))
