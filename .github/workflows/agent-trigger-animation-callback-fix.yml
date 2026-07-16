@@ -80,8 +80,25 @@ jobs:
           python3 scripts/verify_js_syntax.py
 
       - name: Verify ball position state
+        id: ball_position
+        continue-on-error: true
         shell: bash
-        run: python3 scripts/verify_ball_position_state.py
+        run: |
+          set -o pipefail
+          python3 scripts/verify_ball_position_state.py 2>&1 | tee ball-position-verifier-output.txt
+
+      - name: Upload ball position verifier output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ball-position-verifier-output
+          path: ball-position-verifier-output.txt
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Stop on ball position failure
+        if: steps.ball_position.outcome != 'success'
+        run: exit 1
 
       - name: Verify animation callback safety
         shell: bash
