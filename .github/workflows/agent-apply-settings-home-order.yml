@@ -1,0 +1,55 @@
+name: agent-apply-settings-home-order
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/settings-home-order'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/settings-home-order
+          fetch-depth: 0
+
+      - name: Apply order patch
+        run: python3 .agent/apply_settings_home_order.py
+
+      - name: Remove temporary patch script
+        run: rm -f .agent/apply_settings_home_order.py && rmdir .agent 2>/dev/null || true
+
+      - name: Verify JavaScript and module version
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify settings home order
+        run: |
+          python3 scripts/verify_update_version_page.py
+          python3 scripts/verify_settings_color_scheme.py
+          python3 scripts/verify_settings_color_roles.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+
+      - name: Verify diff
+        run: git diff --check
+
+      - name: Commit optimization
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 1
+          fi
+          git commit -m "优化设置首页入口顺序"
+          git push origin HEAD:fix/settings-home-order
