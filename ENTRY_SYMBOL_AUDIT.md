@@ -13,7 +13,7 @@
 - 子模块文件：`27`
 - 普通函数定义：`94`
 - 顶层变量：`30`
-- 跨模块引用函数：`8`
+- 跨模块引用函数：`10`
 - 动态引用待确认函数：`0`
 - 高置信度零引用函数候选：`0`
 - 高置信度零引用变量候选：`0`
@@ -54,7 +54,7 @@
 |`syncFileOutput`|69|7|入口内使用|2|2|0|0|0|
 |`canWriteDirPath`|79|8|入口内使用|1|1|0|0|0|
 |`assertWritableDirPath`|88|23|入口内使用|2|2|0|0|0|
-|`getToolHubRootDir`|112|18|跨模块引用|3|3|1|2|0|
+|`getToolHubRootDir`|112|18|跨模块引用|3|3|2|4|0|
 |`getLogPath`|136|1|入口内使用|1|1|0|0|0|
 |`getCodeDirPath`|137|1|入口内使用|8|8|0|0|0|
 |`getTrustedShaPath`|138|1|入口内使用|3|3|0|0|0|
@@ -72,14 +72,14 @@
 |`sha256File`|249|23|入口内使用|17|17|0|0|0|
 |`saveTrustedSha`|273|1|入口内使用|7|7|0|0|0|
 |`getTrustedSha`|274|1|入口内使用|4|4|0|0|0|
-|`getTrustedVersion`|275|5|入口内使用|3|3|0|0|0|
+|`getTrustedVersion`|275|5|跨模块引用|3|3|1|2|0|
 |`saveTrustedVersion`|280|1|入口内使用|1|1|0|0|0|
 |`getEmptyInstalledManifest`|282|3|入口内使用|3|3|0|0|0|
 |`readInstalledManifest`|286|21|入口内使用|1|1|0|0|0|
 |`getInstalledFileInfo`|308|7|入口内使用|1|1|0|0|0|
 |`getInstalledSha`|316|5|入口内使用|3|3|0|0|0|
 |`saveInstalledManifestFromLocal`|322|29|入口内使用|2|2|0|0|0|
-|`downloadText`|352|32|入口内使用|2|2|0|0|0|
+|`downloadText`|352|32|跨模块引用|2|2|1|3|0|
 |`downloadFile`|385|53|入口内使用|4|4|0|0|0|
 |`base64Decode`|439|3|入口内使用|2|2|0|0|0|
 |`getTrustedPublicKeyB64`|443|5|入口内使用|2|2|0|0|0|
@@ -124,8 +124,8 @@
 |`recoverOrphanTransactionFiles`|1069|22|入口内使用|2|2|0|0|0|
 |`recoverPendingModuleTransaction`|1092|33|入口内使用|2|2|0|0|0|
 |`executeStagedModuleTransaction`|1126|50|入口内使用|1|1|0|0|0|
-|`installPendingModuleUpdates`|1178|90|跨模块引用|0|0|1|2|0|
-|`checkToolHubModuleUpdatesNow`|1270|78|跨模块引用|0|0|2|8|0|
+|`installPendingModuleUpdates`|1178|90|跨模块引用|0|0|2|4|0|
+|`checkToolHubModuleUpdatesNow`|1270|78|跨模块引用|0|0|3|10|0|
 |`checkModuleManifestConsistency`|1350|51|入口内使用|2|2|0|0|0|
 |`verifyLocalModuleBeforeEval`|1402|21|入口内使用|1|1|0|0|0|
 |`loadScript`|1424|29|入口内使用|2|2|0|0|0|
