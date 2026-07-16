@@ -70,7 +70,7 @@ jobs:
           title="$(cat .release_title)"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release edit "$tag" --title "$title" --notes-file .release_notes --target main
-            gh release upload "$tag" ToolHub.js ToolHub.js.sha256 manifest.json manifest.sig --clobber
+            gh release upload "$tag" ToolHub.js ToolHub.js.sha256 manifest.json manifest.sig update_history.json --clobber
           else
-            gh release create "$tag" ToolHub.js ToolHub.js.sha256 manifest.json manifest.sig --target main --title "$title" --notes-file .release_notes
+            gh release create "$tag" ToolHub.js ToolHub.js.sha256 manifest.json manifest.sig update_history.json --target main --title "$title" --notes-file .release_notes
           fi
