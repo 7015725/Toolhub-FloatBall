@@ -1,18 +1,16 @@
 name: apply-shortcut-launcher-fix
 
 on:
-  push:
-    branches: [fix/shortcut-launcher-save-20260716]
   pull_request:
     branches: [main]
-    types: [opened]
+    types: [opened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: ${{ (github.event_name == 'push' && !contains(github.event.head_commit.message, '[shortcut-patch-applied]')) || (github.event_name == 'pull_request' && github.head_ref == 'fix/shortcut-launcher-save-20260716') }}
+    if: ${{ github.head_ref == 'fix/shortcut-launcher-save-20260716' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
@@ -21,24 +19,39 @@ jobs:
           ref: fix/shortcut-launcher-save-20260716
           fetch-depth: 0
 
-      - name: Apply focused patch
-        run: python3 scripts/apply_shortcut_launcher_fix.py
-
-      - name: Verify focused changes
+      - name: Check patch marker
+        id: guard
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile scripts/verify_shortcut_security.py scripts/verify_shortcut_launcher_path.py
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_button_editor_layout.py
-          python3 scripts/verify_button_editor_direct_save.py
-          python3 scripts/verify_button_shortcut_thread_affinity.py
-          python3 scripts/verify_shortcut_security.py
-          python3 scripts/verify_shortcut_launcher_path.py
-          git diff --check
+          if git log -1 --pretty=%B | grep -Fq '[shortcut-patch-applied]'; then
+            echo 'apply=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'apply=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply focused patch
+        if: steps.guard.outputs.apply == 'true'
+        run: python3 scripts/apply_shortcut_launcher_fix.py
+
+      - name: Compile Python checks
+        if: steps.guard.outputs.apply == 'true'
+        run: python3 -m py_compile scripts/verify_shortcut_security.py scripts/verify_shortcut_launcher_path.py
+
+      - name: ES5 scan
+        if: steps.guard.outputs.apply == 'true'
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: JavaScript syntax
+        if: steps.guard.outputs.apply == 'true'
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: Diff whitespace
+        if: steps.guard.outputs.apply == 'true'
+        run: git diff --check
 
       - name: Commit patch
+        if: steps.guard.outputs.apply == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -47,3 +60,23 @@ jobs:
           git add code/th_11_action.js code/th_14_button_editor.js code/th_14_button_shortcut.js scripts/verify_shortcut_security.py scripts/verify_shortcut_launcher_path.py .github/workflows/verify.yml
           git commit -m "修复快捷方式保存与结构化启动 [shortcut-patch-applied]"
           git push origin HEAD:fix/shortcut-launcher-save-20260716
+
+      - name: Button editor layout
+        if: steps.guard.outputs.apply == 'true'
+        run: python3 scripts/verify_button_editor_layout.py
+
+      - name: Button editor direct save
+        if: steps.guard.outputs.apply == 'true'
+        run: python3 scripts/verify_button_editor_direct_save.py
+
+      - name: Shortcut picker thread affinity
+        if: steps.guard.outputs.apply == 'true'
+        run: python3 scripts/verify_button_shortcut_thread_affinity.py
+
+      - name: Shortcut security
+        if: steps.guard.outputs.apply == 'true'
+        run: python3 scripts/verify_shortcut_security.py
+
+      - name: Shortcut launcher path
+        if: steps.guard.outputs.apply == 'true'
+        run: python3 scripts/verify_shortcut_launcher_path.py
