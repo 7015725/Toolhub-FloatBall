@@ -189,7 +189,7 @@ def main() -> int:
 
     create_view = section(preview, "function createView21(appObj, st)", "function createLp21(appObj, st)")
     draw_preview = section(preview, "function drawPreview21(appObj, st, canvas, view, render)", "function cancelDismiss21(st)")
-    draw_copy = section(preview, "function drawCopyAction21(appObj, st, canvas, view, render, colors)", "function drawPreview21(appObj, st, canvas, view, render)")
+    draw_copy = section(preview, "function drawCopyAction21(appObj, canvas, view, render, colors)", "function drawPreview21(appObj, st, canvas, view, render)")
     copy_action = section(preview, "function performResultPreviewCopy21(appObj, st, rootRef, render)", "function startEnterAnimation21")
     copy_feedback = section(preview, "function scheduleCopyFeedbackReset21(appObj, st, rootRef, render, delayMs)", "function performResultPreviewCopy21")
 

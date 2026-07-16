@@ -70,9 +70,9 @@
       "version": "1.0.10"
     },
     "th_14_button_editor.js": {
-      "sha256": "05036ad21ef1bfbc05d4f3371a084c8ebca17ce36ef06868d59a284c95120ae1",
-      "size": 98261,
-      "version": "1.1.2"
+      "sha256": "6c1bd1a22d2e7acfab4623d340176bf80241a45fcc455b7526ab92197ca6996e",
+      "size": 98030,
+      "version": "1.1.3"
     },
     "th_14_button_icon_editor.js": {
       "sha256": "a568f94170b4707d5a0fddc6b48b6b49bfcd630be4fc0ac1a6864c9dddbb4cc2",
@@ -80,9 +80,9 @@
       "version": "1.0.2"
     },
     "th_14_button_shortcut.js": {
-      "sha256": "8a4c1ef209f8f65a7b0bb0889abb3135bb99ef2546c129e4989017d94f75a61e",
-      "size": 44325,
-      "version": "1.0.3"
+      "sha256": "4e6f4e839adc361a7564201b7ec00bd44f24d7f136c157671fa263dc496a7eb2",
+      "size": 43532,
+      "version": "1.0.4"
     },
     "th_14_color_picker.js": {
       "sha256": "d2c906aecb2f911312d2fc496c5584b885bdcf18a569b5ad560d1467a02f1c51",
@@ -140,18 +140,18 @@
       "version": "1.0.3"
     },
     "th_21_result_preview.js": {
-      "sha256": "5ae15f8eabcf25a2acdcc0f5142ddd612d351bf3769ab8d2a741b7dcb6ee8735",
-      "size": 60398,
-      "version": "1.2.0"
+      "sha256": "15514e6de439652291bc670ddb0f9b84863dcbc6f9c3d4a0a631a68fc9a3350c",
+      "size": 60082,
+      "version": "1.2.1"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复快捷方式保存与 Launcher 结构化启动"
+      "清理运行时冗余代码"
     ],
-    "title": "修复快捷方式保存与 Launcher 结构化启动"
+    "title": "清理运行时冗余代码"
   },
   "schema": 3,
-  "version": 20260716092431
+  "version": 20260716101250
 }

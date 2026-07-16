@@ -1,4 +1,4 @@
-// @version 1.1.2
+// @version 1.1.3
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -1132,21 +1132,29 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     try { self.state.buttonEditorNotice = null; } catch(eNotice1) {}
   }
 
+  function getButtonEditorNoticeStyle(kind) {
+    var isError = String(kind || "info") === "error";
+    var color = isError ? dangerColor : T.primary;
+    return {
+      color: color,
+      bg: self.withAlpha(color, isDark ? (isError ? 0.20 : 0.18) : 0.10),
+      stroke: self.withAlpha(color, isDark ? (isError ? 0.44 : 0.34) : (isError ? 0.30 : 0.22))
+    };
+  }
+
   function addButtonEditorNotice(parent) {
     try {
       var n = self.state.buttonEditorNotice;
       if (!n || !n.msg) return null;
       var kind = String(n.kind || "info");
-      var color = (kind === "error") ? dangerColor : (kind === "ok" ? T.primary : T.primary);
-      var bg = (kind === "error") ? self.withAlpha(dangerColor, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
-      var stroke = (kind === "error") ? self.withAlpha(dangerColor, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
+      var style = getButtonEditorNoticeStyle(kind);
       var box = new android.widget.TextView(context);
       box.setText(String(n.msg));
-      toolhubSafeSetTextColor(box, color);
+      toolhubSafeSetTextColor(box, style.color);
       box.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
       box.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
       box.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      box.setBackground(self.ui.createStrokeDrawable(bg, stroke, self.dp(1), self.dp(14)));
+      box.setBackground(self.ui.createStrokeDrawable(style.bg, style.stroke, self.dp(1), self.dp(14)));
       var lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
       lp.setMargins(self.dp(2), self.dp(2), self.dp(2), self.dp(8));
       parent.addView(box, lp);
@@ -1161,12 +1169,10 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
     try {
       if (!tv) { setButtonEditorNotice(msg, kind); return; }
       var k = String(kind || "info");
-      var color2 = (k === "error") ? dangerColor : (k === "ok" ? T.primary : T.primary);
-      var bg2 = (k === "error") ? self.withAlpha(dangerColor, isDark ? 0.20 : 0.10) : self.withAlpha(T.primary, isDark ? 0.18 : 0.10);
-      var stroke2 = (k === "error") ? self.withAlpha(dangerColor, isDark ? 0.44 : 0.30) : self.withAlpha(T.primary, isDark ? 0.34 : 0.22);
+      var style2 = getButtonEditorNoticeStyle(k);
       tv.setText(String(msg || ""));
-      toolhubSafeSetTextColor(tv, color2);
-      tv.setBackground(self.ui.createStrokeDrawable(bg2, stroke2, self.dp(1), self.dp(14)));
+      toolhubSafeSetTextColor(tv, style2.color);
+      tv.setBackground(self.ui.createStrokeDrawable(style2.bg, style2.stroke, self.dp(1), self.dp(14)));
       tv.setVisibility(android.view.View.VISIBLE);
       setButtonEditorNotice(msg, kind);
     } catch(eNotice3) { safeLog(null, 'e', "catch " + String(eNotice3)); }
