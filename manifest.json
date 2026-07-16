@@ -120,9 +120,9 @@
       "version": "1.0.13"
     },
     "th_17_pointer.js": {
-      "sha256": "5d949c059cf8c38b83df72c3427f1d1b9905cf39f617d5d4d285a861ab19f40e",
-      "size": 178495,
-      "version": "1.2.12"
+      "sha256": "44752f1f2a856e82260728724cea49ba85df939e6d0e5c9a349e9420063ab0a1",
+      "size": 186424,
+      "version": "1.2.13"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "6f9a03ea584d2e5bd1c0fdb951657af6bb88a275cf4297e7007e382d6b9ccf18",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复 Android 14 指针框选截图与 OCR 降级"
+      "修复指针截图的 Rhino 反射与 MediaProjection 回退"
     ],
-    "title": "修复 Android 14 指针框选截图与 OCR 降级"
+    "title": "修复指针截图的 Rhino 反射与 MediaProjection 回退"
   },
   "schema": 3,
-  "version": 20260716042018
+  "version": 20260716052446
 }
