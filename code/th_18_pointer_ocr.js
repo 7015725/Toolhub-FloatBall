@@ -1,4 +1,4 @@
-// @version 1.1.1
+// @version 1.1.2
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -217,31 +217,31 @@
 
                 try {
                   if (typeof th17PointerColorRgbWithFallback === "function" && kind === "text_hit") {
-                    rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_COLOR_TEXT_READY_HEX", 34, 197, 94);
+                    rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_READY_HEX", "POINTER_FRAME_TEXT_HOVER_HEX", 34, 197, 94);
                     fillAlpha = 38;
                     strokeAlpha = 248;
                     strokeWidth = self.dp(2.3);
-                  } else if (typeof th17PointerColorRgb === "function") {
+                  } else if (typeof th17PointerColorRgbWithFallback === "function") {
                     if (processing || kind === "capture") {
-                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_CAPTURE_HEX", 168, 85, 247);
+                      rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
                       fillAlpha = 56;
                       strokeAlpha = 245;
                     } else if (kind === "text_hover") {
-                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_HOVER_HEX", 14, 165, 233);
+                      rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_TEXT_HOVER_HEX", "POINTER_COLOR_NORMAL_HEX", 14, 165, 233);
                       fillAlpha = 26;
                       strokeAlpha = 215;
                       strokeWidth = self.dp(1.8);
                     } else if (kind === "area_armed") {
-                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                      rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
                       fillAlpha = 18;
                       strokeAlpha = 150;
                       strokeWidth = self.dp(1.4);
                     } else {
-                      rgb = th17PointerColorRgb(self, "POINTER_COLOR_AREA_HEX", 59, 130, 246);
+                      rgb = th17PointerColorRgbWithFallback(self, "POINTER_FRAME_AREA_HEX", "POINTER_COLOR_AREA_HEX", 59, 130, 246);
                     }
                   }
                 } catch(eColor18) {}
-                if (!rgb) rgb = processing ? { r: 168, g: 85, b: 247 } : { r: 59, g: 130, b: 246 };
+                if (!rgb) rgb = { r: 59, g: 130, b: 246 };
                 p.setAntiAlias(true);
                 p.setStyle(android.graphics.Paint.Style.FILL);
                 p.setARGB(fillAlpha, rgb.r, rgb.g, rgb.b);

@@ -1,7 +1,0 @@
-Traceback (most recent call last):
-  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_changed_module_versions.py", line 270, in <module>
-    apply_cleanup()
-    ~~~~~~~~~~~~~^^
-  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/verify_changed_module_versions.py", line 228, in apply_cleanup
-    raise RuntimeError("%s references=%s" % (key, ",".join(hits)))
-RuntimeError: POINTER_COLOR_HOVER_HEX references=/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/code/th_01_base.js:95

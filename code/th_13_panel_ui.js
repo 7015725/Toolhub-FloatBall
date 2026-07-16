@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.0.10
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -825,6 +825,22 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
     toolhubSafeSetTextColor(tv, textColor);
     tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
     row.addView(tv);
+
+    var colorItemDesc = String(item.desc || "");
+    if (colorItemDesc) {
+      var colorDescTv = new android.widget.TextView(context);
+      colorDescTv.setText(colorItemDesc);
+      toolhubSafeSetTextColor(colorDescTv, secColor);
+      colorDescTv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      try { colorDescTv.setIncludeFontPadding(false); } catch(eColorDescPad) {}
+      var colorDescLp = new android.widget.LinearLayout.LayoutParams(
+        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+      );
+      colorDescLp.topMargin = self.dp(3);
+      colorDescTv.setLayoutParams(colorDescLp);
+      row.addView(colorDescTv);
+    }
 
     var colorRow = new android.widget.LinearLayout(context);
     colorRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);

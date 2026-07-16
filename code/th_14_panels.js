@@ -1,4 +1,4 @@
-// @version 1.0.26
+// @version 1.0.27
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -135,23 +135,22 @@ FloatBallAppWM.prototype.getPointerSettingsBlocks = function() {
     {
       key: "pointer_color",
       title: "指针颜色",
-      desc: "普通、悬停、命中和取字就绪状态颜色",
+      desc: "设置指针本体在普通、取字就绪、框选就绪和框选拖动状态下的颜色",
       keys: [
         "POINTER_COLOR_NORMAL_HEX",
-        "POINTER_COLOR_HOVER_HEX",
-        "POINTER_COLOR_HIT_HEX",
         "POINTER_COLOR_TEXT_READY_HEX",
-        "POINTER_FRAME_TEXT_READY_HEX"
+        "POINTER_COLOR_AREA_READY_HEX",
+        "POINTER_COLOR_AREA_HEX"
       ]
     },
     {
-      key: "ocr_color",
-      title: "框选 OCR 颜色",
-      desc: "框选区域、框选就绪和识别中状态颜色",
+      key: "pointer_frame_color",
+      title: "边框颜色",
+      desc: "设置文字悬停、取字或框选就绪，以及框选区域的边框颜色",
       keys: [
-        "POINTER_COLOR_AREA_HEX",
-        "POINTER_COLOR_AREA_READY_HEX",
-        "POINTER_COLOR_CAPTURE_HEX"
+        "POINTER_FRAME_TEXT_HOVER_HEX",
+        "POINTER_FRAME_TEXT_READY_HEX",
+        "POINTER_FRAME_AREA_HEX"
       ]
     }
   ];

@@ -27,7 +27,7 @@ def version(text, expected, name):
     if not match or match.group(1) != expected:
         fail("%s expected version %s" % (name, expected))
 
-version(BASE, "1.1.14", "th_01_base.js")
+version(BASE, "1.1.15", "th_01_base.js")
 version(PERSIST, "1.0.6", "th_05_persistence.js")
 version(EXTRA, "1.1.17", "th_15_extra.js")
 version(MAIN, "1.5.8", "th_15_main_panel.js")
