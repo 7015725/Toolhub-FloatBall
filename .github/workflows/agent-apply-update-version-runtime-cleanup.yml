@@ -60,12 +60,28 @@ jobs:
 
       - name: Verify update page compatibility boundary
         run: |
-          python3 scripts/verify_update_version_page.py
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/verify_toolapp_layout.py
-          python3 scripts/verify_toolapp_main_thread_affinity.py
-          python3 scripts/verify_settings_color_scheme.py
-          python3 scripts/verify_settings_color_roles.py
+          set +e
+          {
+            python3 scripts/verify_update_version_page.py
+            python3 scripts/verify_module_boundaries.py
+            python3 scripts/verify_toolapp_layout.py
+            python3 scripts/verify_toolapp_main_thread_affinity.py
+            python3 scripts/verify_settings_color_scheme.py
+            python3 scripts/verify_settings_color_roles.py
+          } > verify-cleanup.log 2>&1
+          code=$?
+          cat verify-cleanup.log
+          echo "$code" > verify-cleanup.exit
+          exit "$code"
+
+      - name: Upload cleanup verification log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-version-runtime-cleanup-verification-log
+          path: |
+            verify-cleanup.log
+            verify-cleanup.exit
 
       - name: Verify diff
         run: git diff --check
