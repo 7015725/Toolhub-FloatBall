@@ -1,0 +1,46 @@
+name: apply-shortcut-launcher-fix
+
+on:
+  push:
+    branches: [fix/shortcut-launcher-save-20260716]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[shortcut-patch-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/shortcut-launcher-save-20260716
+          fetch-depth: 0
+
+      - name: Apply focused patch
+        run: python3 scripts/apply_shortcut_launcher_fix.py
+
+      - name: Verify focused changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/verify_shortcut_security.py scripts/verify_shortcut_launcher_path.py
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_button_editor_layout.py
+          python3 scripts/verify_button_editor_direct_save.py
+          python3 scripts/verify_button_shortcut_thread_affinity.py
+          python3 scripts/verify_shortcut_security.py
+          python3 scripts/verify_shortcut_launcher_path.py
+          git diff --check
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_11_action.js code/th_14_button_editor.js code/th_14_button_shortcut.js scripts/verify_shortcut_security.py scripts/verify_shortcut_launcher_path.py .github/workflows/verify.yml
+          git commit -m "修复快捷方式保存与结构化启动 [shortcut-patch-applied]"
+          git push origin HEAD:fix/shortcut-launcher-save-20260716
