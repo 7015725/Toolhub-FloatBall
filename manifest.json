@@ -80,9 +80,9 @@
       "version": "1.0.2"
     },
     "th_14_button_shortcut.js": {
-      "sha256": "baef195b1471558a7fd04abab1eb470678605f909e295ae22d97824ffcbaace9",
-      "size": 57301,
-      "version": "1.0.1"
+      "sha256": "42bcfcc25ec5e28551864106f143aa9e80e0090e019969fb536206615a1daafc",
+      "size": 43758,
+      "version": "1.0.2"
     },
     "th_14_color_picker.js": {
       "sha256": "d2c906aecb2f911312d2fc496c5584b885bdcf18a569b5ad560d1467a02f1c51",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "新增顶部结果预览复制按钮"
+      "修复快捷方式选择器线程归属"
     ],
-    "title": "新增顶部结果预览复制按钮"
+    "title": "修复快捷方式选择器线程归属"
   },
   "schema": 3,
-  "version": 20260716072832
+  "version": 20260716075825
 }
