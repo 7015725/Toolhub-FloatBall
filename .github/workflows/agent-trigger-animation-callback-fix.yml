@@ -71,14 +71,16 @@ jobs:
           end_token = '\n\n    reflow = section('
           start = text.index(start_token)
           end = text.index(end_token, start)
-          replacement = '''    if animation.count("ballAnimationToken") < 4:
-              fail("animation generation guard is incomplete")
-          for forbidden in (
-              "try { if (endCb) endCb(); } catch",
-              "catch (eCb) {}",
-          ):
-              if forbidden in animation:
-                  fail("unsafe animation callback pattern remains: " + forbidden)'''
+          replacement = (
+              '    if animation.count("ballAnimationToken") < 4:\n'
+              '        fail("animation generation guard is incomplete")\n'
+              '    for forbidden in (\n'
+              '        "try { if (endCb) endCb(); } catch",\n'
+              '        "catch (eCb) {}",\n'
+              '    ):\n'
+              '        if forbidden in animation:\n'
+              '            fail("unsafe animation callback pattern remains: " + forbidden)'
+          )
           path.write_text(text[:start] + replacement + text[end:], encoding='utf-8', newline='\n')
           PY
 
