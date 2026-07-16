@@ -1,0 +1,60 @@
+name: 应用框选就绪指针颜色修复
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/pointer-area-ready-edge-drag-20260716'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出修复分支
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: 应用修复
+        run: python3 scripts/apply_pointer_area_ready_edge_fix.py
+
+      - name: 验证修复
+        shell: bash
+        run: |
+          git diff --check
+          node --check code/th_17_pointer.js
+          node --check code/th_19_position_state.js
+          python3 scripts/verify_module_versions.py
+          python3 scripts/verify_pointer_regressions.py
+          python3 - <<'PY'
+          from pathlib import Path
+          pointer = Path('code/th_17_pointer.js').read_text(encoding='utf-8')
+          position = Path('code/th_19_position_state.js').read_text(encoding='utf-8')
+          checks = {
+              'edge start area_ocr': 'startPointerTool({ mode: "area_ocr", source: "edge_drag" })' in position,
+              'edge source fallback': 'String(pointerState.source || "") === "edge_drag"' in pointer,
+              'armed state required': 'pointerState.areaArmReady === true' in pointer,
+              'ready color key': 'POINTER_COLOR_AREA_READY_HEX' in pointer,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit('pointer area-ready edge checks failed: ' + ', '.join(failed))
+          print('OK pointer_area_ready_edge checks=%d' % len(checks))
+          PY
+
+      - name: 提交修复并清理临时文件
+        shell: bash
+        run: |
+          rm -f \
+            .github/workflows/apply-pointer-area-ready-edge-fix.yml \
+            scripts/apply_pointer_area_ready_edge_fix.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "修复框选就绪指针颜色未生效"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
