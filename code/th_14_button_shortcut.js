@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // ToolHub - button shortcut inline selector module
 // Stage 2 split: shortcut inline picker logic moved out of th_14_panels.js.
 
@@ -135,17 +135,6 @@ FloatBallAppWM.prototype.buildButtonShortcutPickerInline = function(opts) {
         scSelectedUserId = targetBtn.userId != null ? parseInt(String(targetBtn.userId), 10) : 0;
         if (isNaN(scSelectedUserId) || scSelectedUserId < 0) scSelectedUserId = 0;
     } catch(eSelectedUser) { scSelectedUserId = 0; }
-
-    function __scBuildLaunchCmd() {
-        try {
-            if (!scSelectedIntentUri) return "（未选择快捷方式）";
-            return "am start --user " + String(scSelectedUserId) + " '" + String(scSelectedIntentUri) + "'";
-        } catch(e) { return "（命令生成失败）"; }
-    }
-
-    var inputScCmd = self.ui.createInputGroup(self, "快捷方式启动命令 (am start)", __scBuildLaunchCmd(), false, "选择快捷方式后自动生成");
-    shortcutWrap.addView(inputScCmd.view);
-    try { inputScCmd.view.setVisibility(android.view.View.GONE); } catch(eHideCommand) {}
 
     var legacyJsEnabled = false;
     try {
@@ -583,7 +572,6 @@ FloatBallAppWM.prototype.buildButtonShortcutPickerInline = function(opts) {
                 shortcutId: shortcutId,
                 label: label,
                 intentUri: intentUri,
-                launchMethod: intentUri ? "launcher_intent" : "launcher",
                 shortcutInfo: info
             });
         } catch(ePush) {}
@@ -789,8 +777,7 @@ FloatBallAppWM.prototype.buildButtonShortcutPickerInline = function(opts) {
                 scSelectedIntentUri = __scStr(item.intentUri);
                 scSelectedUserId = parseInt(__scStr(item.userId), 10);
                 if (isNaN(scSelectedUserId) || scSelectedUserId < 0) scSelectedUserId = 0;
-                safeLog(self.L, "i", "shortcut picker selected pkg=" + __scStr(item.pkg) + " id=" + __scStr(item.shortcutId) + " user=" + String(scSelectedUserId) + " intentUriLen=" + String(scSelectedIntentUri.length) + " launchMethod=" + __scStr(item.launchMethod || (scSelectedIntentUri ? "launcher_intent" : "launcher")));
-                try { inputScCmd.input.setText(__scBuildLaunchCmd()); } catch(eUpdateCommand) {}
+                safeLog(self.L, "i", "shortcut picker selected pkg=" + __scStr(item.pkg) + " id=" + __scStr(item.shortcutId) + " user=" + String(scSelectedUserId) + " intentUriLen=" + String(scSelectedIntentUri.length) + " launchMethod=" + (scSelectedIntentUri ? "launcher_intent" : "launcher"));
                 __scSetLegacyJsEnabled(false);
 
                 var iconPath = __scEnsureShortcutIconFile(item);

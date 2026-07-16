@@ -37,8 +37,8 @@ def forbid(text, fragment, label):
 
 
 version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", SOURCE)
-if not version or version.group(1) != "1.1.2":
-    fail("expected th_14_button_editor.js version 1.1.2")
+if not version or version.group(1) != "1.1.3":
+    fail("expected th_14_button_editor.js version 1.1.3")
 
 action_version = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", ACTION)
 if not action_version or action_version.group(1) != "1.1.1":

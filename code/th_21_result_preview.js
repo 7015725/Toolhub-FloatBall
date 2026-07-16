@@ -1,4 +1,4 @@
-// @version 1.2.0
+// @version 1.2.1
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -390,7 +390,6 @@
       touchSize: touchSize,
       iconSize: iconSize,
       rightPadding: dp21(appObj, 5),
-      textGap: dp21(appObj, 7),
       slotWidth: touchSize + dp21(appObj, 9)
     };
   }
@@ -409,26 +408,25 @@
     var leftPadding = dp21(appObj, 14);
     var rightPadding = dp21(appObj, 14);
     var copySlot = st.copyVisible ? metrics.slotWidth : 0;
-    st.copySlotWidth = copySlot;
 
-    var maxTextWidth = Math.max(dp21(appObj, 88), maxViewWidth - leftPadding - rightPadding - copySlot);
-    var first = fitLine21(paint, text, maxTextWidth, false);
-    var second = fitLine21(paint, first.remaining, maxTextWidth, first.remaining.length > 0);
-    if (second.remaining) second = fitLine21(paint, first.remaining, maxTextWidth, true);
-    st.line1 = first.line || "";
-    st.line2 = second.line || "";
-    st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
+    function applyLineLayout(copySlotWidth) {
+      var maxTextWidth = Math.max(dp21(appObj, 88), maxViewWidth - leftPadding - rightPadding - copySlotWidth);
+      var first = fitLine21(paint, text, maxTextWidth, false);
+      var second = fitLine21(paint, first.remaining, maxTextWidth, first.remaining.length > 0);
+      if (second.remaining) second = fitLine21(paint, first.remaining, maxTextWidth, true);
+      st.line1 = first.line || "";
+      st.line2 = second.line || "";
+      st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
+    }
 
-    metrics = copyMetrics21(appObj, st.measuredHeight);
-    copySlot = st.copyVisible ? metrics.slotWidth : 0;
+    applyLineLayout(copySlot);
+    var finalMetrics = copyMetrics21(appObj, st.measuredHeight);
+    var finalCopySlot = st.copyVisible ? finalMetrics.slotWidth : 0;
+    if (finalCopySlot !== copySlot) {
+      copySlot = finalCopySlot;
+      applyLineLayout(copySlot);
+    }
     st.copySlotWidth = copySlot;
-    maxTextWidth = Math.max(dp21(appObj, 88), maxViewWidth - leftPadding - rightPadding - copySlot);
-    first = fitLine21(paint, text, maxTextWidth, false);
-    second = fitLine21(paint, first.remaining, maxTextWidth, first.remaining.length > 0);
-    if (second.remaining) second = fitLine21(paint, first.remaining, maxTextWidth, true);
-    st.line1 = first.line || "";
-    st.line2 = second.line || "";
-    st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
 
     var w1 = 0;
     var w2 = 0;
@@ -537,7 +535,7 @@
     canvas.drawPath(path, paint);
   }
 
-  function drawCopyAction21(appObj, st, canvas, view, render, colors) {
+  function drawCopyAction21(appObj, canvas, view, render, colors) {
     if (!render || render.copyVisible !== true) {
       if (render) render.copyHitRect = null;
       return true;
@@ -652,7 +650,7 @@
       canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 30), textPaint);
     }
 
-    if (!drawCopyAction21(appObj, st, canvas, view, render, c)) return false;
+    if (!drawCopyAction21(appObj, canvas, view, render, c)) return false;
     return true;
   }
 
