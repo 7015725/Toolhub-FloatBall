@@ -2,6 +2,7 @@
 """Verify Shortcut intent-only defaults, legacy migration and eval isolation."""
 
 from pathlib import Path
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +40,7 @@ def main():
     eval_pos = action.find("eval(jsCode)")
     guard_pos = action.find('if (shortcutMode !== "legacy_js")')
     legacy_pos = action.find('var jsCode = (btn.shortcutJsCode')
+    shortcut_version = re.search(r"^// @version\s+(\d+)\.(\d+)\.(\d+)", shortcut)
 
     checks = [
         ("shortcut schema defaults to intent", 'putSchema("SHORTCUT_EXEC_MODE", { type: "enum", values: ["intent", "legacy_js"], default: "intent" })' in rebuild),
@@ -58,9 +60,9 @@ def main():
         ("editor no longer forces js mode", 'newBtn.shortcutRunMode = "js"' not in editor),
         ("editor requires intent uri outside legacy", '请选择包含 intentUri 的快捷方式' in editor),
         ("new shortcut UI does not generate js", '__scBuildDefaultJsCode' not in shortcut and '__scUpdateJsCodeSafe' not in shortcut),
-        ("legacy editor only appears for migrated buttons", 'if (legacyJsEnabled)' in shortcut and '新建快捷方式不提供任意 JS 编辑入口' in shortcut),
+        ("legacy editor only appears for migrated buttons", 'if (legacyJsEnabled)' in shortcut and 'inputScJsCode = self.ui.createInputGroup' in shortcut),
         ("selecting a shortcut disables legacy", '__scSetLegacyJsEnabled(false)' in shortcut),
-        ("shortcut submodule has a real version", shortcut.startswith("// @version 1.0.1\n")),
+        ("shortcut submodule has a real version", bool(shortcut_version) and tuple(map(int, shortcut_version.groups())) >= (1, 0, 2)),
     ]
 
     model_checks = [
