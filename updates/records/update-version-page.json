@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "update-version-page",
+  "type": "feature",
+  "title": "新增更新与版本页面",
+  "details": [
+    "设置首页新增更新与版本入口和更新红点",
+    "支持查看待更新模块并在确认后事务更新",
+    "入口文件有更新时停止自动重启并提示手动替换",
+    "支持缓存、分页和单项展开查看历史更新记录",
+    "新增 Python 脚本和 GitHub Actions 自动维护更新历史"
+  ],
+  "manifestVersion": 0
+}
