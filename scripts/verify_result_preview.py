@@ -229,8 +229,12 @@ def main() -> int:
         and "st.downAt =" not in preview
         and "render.drawCount" in preview
         and "render.firstDrawAt" in preview
+        and "render.visibleStartedAt" not in preview
+        and "lastReason:" not in state_init
+        and "st.lastReason" not in preview
+        and "render.firstDrawAt" in preview
         and "st.visibleStartedAt" in preview,
-        "preview state must retain only lifecycle values that participate in rendering, timing or stale-callback isolation",
+        "preview state must retain only values that participate in rendering, timing or stale-callback isolation",
         failures,
     )
 
