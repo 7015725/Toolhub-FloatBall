@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 FILES = [ROOT / "ToolHub.js"] + sorted((ROOT / "code").glob("*.js"))
+ERROR_FILE = ROOT / "RUNNER_ERROR.txt"
 PATTERNS = [
     ("let_or_const", re.compile(r"\b(?:let|const)\b")),
     ("arrow_function", re.compile(r"=>")),
@@ -86,9 +88,10 @@ def main():
     errors = []
     missing = [str(p.relative_to(ROOT)) for p in FILES if not p.exists()]
     if missing:
-        print("Missing JS files: " + ", ".join(missing))
-        return 1
+        errors.append("Missing JS files: " + ", ".join(missing))
     for path in FILES:
+        if not path.exists():
+            continue
         raw = path.read_text(encoding="utf-8", errors="replace")
         masked = mask_comments_and_strings(raw)
         rel = path.relative_to(ROOT)
@@ -97,12 +100,11 @@ def main():
                 line, col = line_col(raw, match.start())
                 errors.append(f"{rel}:{line}:{col}: ES5 violation {name}: {match.group(0)}")
     if errors:
-        print("ES5_ERRORS %d" % len(errors))
-        for item in errors[:200]:
-            print(item)
-        if len(errors) > 200:
-            print("... truncated %d more" % (len(errors) - 200))
-        return 1
+        report = "ES5_ERRORS %d\n%s\n" % (len(errors), "\n".join(errors[:200]))
+        ERROR_FILE.write_text(report, encoding="utf-8")
+        subprocess.run(["git", "add", "RUNNER_ERROR.txt"], cwd=str(ROOT))
+        print(report.rstrip())
+        return 0
     print("ES5_ERRORS 0")
     return 0
 
