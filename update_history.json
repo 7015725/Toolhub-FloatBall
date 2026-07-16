@@ -1,8 +1,35 @@
 {
   "schema": 1,
-  "historyVersion": 20260716230802,
-  "generatedAt": "2026-07-17T07:08:02+08:00",
+  "historyVersion": 20260716231818,
+  "generatedAt": "2026-07-17T07:18:18+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "reorder-settings-home",
+      "type": "optimize",
+      "title": "优化设置首页入口顺序",
+      "details": [
+        "按常用功能、核心组件、行为与外观、高级维护和诊断重新排序",
+        "工具、悬浮球、指针和面板保持在前部",
+        "高级设置、更新与版本和运行记录移动到列表后部",
+        "显式固定排序，避免后续受分组定义自然顺序影响"
+      ],
+      "manifestVersion": 20260716231818,
+      "date": "2026-07-17",
+      "modules": [
+        {
+          "name": "th_14_panels.js",
+          "from": "1.1.4",
+          "to": "1.1.5",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260714081104,
+        "to": 20260714081104
+      }
+    },
     {
       "schema": 1,
       "id": "fix-update-entry-style-consistency",
