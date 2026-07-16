@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // ToolHub - button shortcut inline selector module
 // Stage 2 split: shortcut inline picker logic moved out of th_14_panels.js.
 
@@ -485,7 +485,8 @@ FloatBallAppWM.prototype.buildButtonShortcutPickerInline = function(opts) {
                 var appName = __scGetAppLabel(item.pkg);
                 var shortcutName = __scStr(item.label || item.shortcutId || "(无名称)");
                 holder.title.setText(appName ? appName + "/" + shortcutName : shortcutName);
-                holder.detail.setText("pkg=" + __scStr(item.pkg) + "  id=" + __scStr(item.shortcutId) + "  u=" + __scStr(item.userId));
+                var launchLabel = item.intentUri ? "Launcher + Intent 后备" : "Launcher 启动";
+                holder.detail.setText("用户 " + __scStr(item.userId) + " · " + launchLabel + "\npkg=" + __scStr(item.pkg) + "  id=" + __scStr(item.shortcutId));
                 try { holder.icon.setImageResource(android.R.drawable.sym_def_app_icon); } catch(eDefaultIcon) {}
                 __scRequestIcon(item, holder.icon);
             }
@@ -575,12 +576,14 @@ FloatBallAppWM.prototype.buildButtonShortcutPickerInline = function(opts) {
             dedupe[key] = true;
             var label = "";
             try { label = __scStr(info.getShortLabel()); } catch(eLabel) { label = ""; }
+            var intentUri = __scIntentUriFromInfo(info);
             items.push({
                 userId: Number(userId),
                 pkg: __scStr(pkg),
                 shortcutId: shortcutId,
                 label: label,
-                intentUri: __scIntentUriFromInfo(info),
+                intentUri: intentUri,
+                launchMethod: intentUri ? "launcher_intent" : "launcher",
                 shortcutInfo: info
             });
         } catch(ePush) {}
@@ -786,6 +789,7 @@ FloatBallAppWM.prototype.buildButtonShortcutPickerInline = function(opts) {
                 scSelectedIntentUri = __scStr(item.intentUri);
                 scSelectedUserId = parseInt(__scStr(item.userId), 10);
                 if (isNaN(scSelectedUserId) || scSelectedUserId < 0) scSelectedUserId = 0;
+                safeLog(self.L, "i", "shortcut picker selected pkg=" + __scStr(item.pkg) + " id=" + __scStr(item.shortcutId) + " user=" + String(scSelectedUserId) + " intentUriLen=" + String(scSelectedIntentUri.length) + " launchMethod=" + __scStr(item.launchMethod || (scSelectedIntentUri ? "launcher_intent" : "launcher")));
                 try { inputScCmd.input.setText(__scBuildLaunchCmd()); } catch(eUpdateCommand) {}
                 __scSetLegacyJsEnabled(false);
 
