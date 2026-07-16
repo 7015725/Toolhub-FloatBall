@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "update-version-page",
+  "type": "feature",
+  "title": "新增更新与版本页面",
+  "details": [
+    "设置首页新增更新与版本入口和更新红点",
+    "支持查看待更新模块并在确认后事务更新",
+    "入口文件有更新时停止自动重启并提示手动替换",
+    "支持缓存、分页和单项展开查看历史更新记录",
+    "新增 Python 脚本和 GitHub Actions 自动维护更新历史"
+  ],
+  "manifestVersion": 20260716152048,
+  "date": "2026-07-16",
+  "modules": [
+    {
+      "name": "th_03_icon.js",
+      "from": "2.0.0",
+      "to": "2.0.1",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_panels.js",
+      "from": "1.0.27",
+      "to": "1.1.0",
+      "change": "updated"
+    },
+    {
+      "name": "th_15_extra.js",
+      "from": "1.1.18",
+      "to": "1.1.19",
+      "change": "updated"
+    },
+    {
+      "name": "th_16_entry.js",
+      "from": "1.0.15",
+      "to": "1.0.16",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
+}

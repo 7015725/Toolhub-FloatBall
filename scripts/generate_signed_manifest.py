@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
-"""Generate ToolHub signed manifest and entry checksum.
-
-Security notes:
-- Private key stays outside the repo by default: ~/.hermes/toolhub_signing/private_key.pem
-- The signed manifest records ToolHub.js metadata for manual replacement notices only.
-- The script prints git status/diff summary before signing. Use --yes in automation.
-"""
+"""Generate ToolHub signed manifest, update history asset, and entry checksum."""
 import argparse
 import base64
 import hashlib
 import json
+import os
 import re
 import subprocess
-import sys
 import time
 from pathlib import Path
 
@@ -23,6 +17,7 @@ MANIFEST = ROOT / "manifest.json"
 SIG = ROOT / "manifest.sig"
 ENTRY = ROOT / "ToolHub.js"
 ENTRY_SHA = ROOT / "ToolHub.js.sha256"
+HISTORY = ROOT / "update_history.json"
 DEFAULT_KEY_ID = "toolhub-targets-20260703-rsa3072"
 
 MODULES = [
@@ -39,96 +34,94 @@ MODULES = [
 ]
 
 
-def sha256_file(path: Path) -> str:
+def sha256_file(path):
     h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
 
 
-def read_module_version(path: Path) -> str:
-    try:
-        for line in path.read_text(encoding="utf-8", errors="replace").splitlines()[:5]:
-            line = line.strip()
-            if "@version" not in line:
-                continue
-            version_text = line.split("@version", 1)[1].strip().split()[0].strip()
-            parts = version_text.split(".")
-            if len(parts) == 3 and all(part.isdigit() for part in parts):
-                return version_text
-    except Exception:
-        pass
+def read_module_version(path):
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines()[:5]:
+        if "@version" not in line:
+            continue
+        value = line.split("@version", 1)[1].strip().split()[0].strip()
+        parts = value.split(".")
+        if len(parts) == 3 and all(part.isdigit() for part in parts):
+            return value
     return "0.0.0"
 
 
-def read_entry_version(path: Path):
+def read_entry_version(path):
     text = path.read_text(encoding="utf-8", errors="replace")
     for symbol in ("TOOLHUB_ENTRY_VERSION", "MIN_TRUSTED_MANIFEST_VERSION"):
         match = re.search(r"\bvar\s+%s\s*=\s*(\d+)\s*;" % re.escape(symbol), text)
-        if not match:
-            continue
-        version = int(match.group(1))
-        if version <= 0:
-            raise SystemExit(f"Invalid {symbol} in {path}: {version}")
-        return version, symbol
-    raise SystemExit(
-        "Entry version marker missing: define TOOLHUB_ENTRY_VERSION or "
-        "MIN_TRUSTED_MANIFEST_VERSION in ToolHub.js"
-    )
+        if match:
+            value = int(match.group(1))
+            if value <= 0:
+                raise SystemExit("Invalid %s in %s: %s" % (symbol, path, value))
+            return value, symbol
+    raise SystemExit("Entry version marker missing in ToolHub.js")
 
 
 def git_output(args):
     try:
-        return subprocess.check_output(["git", *args], cwd=ROOT, text=True, stderr=subprocess.STDOUT)
-    except Exception as e:
-        return f"<git {' '.join(args)} failed: {e}>\n"
+        return subprocess.check_output(["git"] + list(args), cwd=str(ROOT), text=True, stderr=subprocess.STDOUT)
+    except Exception as exc:
+        return "<git %s failed: %s>\n" % (" ".join(args), exc)
 
 
-def print_review_summary() -> None:
+def print_review_summary():
     print("== ToolHub signing review ==")
-    print("-- git status --")
-    status = git_output(["status", "--short"])
-    print(status.rstrip() or "clean")
-    print("-- git diff --stat --")
-    diff_stat = git_output(["diff", "--stat"])
-    print(diff_stat.rstrip() or "no unstaged diff")
-    print("-- staged diff --stat --")
-    staged = git_output(["diff", "--cached", "--stat"])
-    print(staged.rstrip() or "no staged diff")
+    for title, args in (
+        ("git status", ["status", "--short"]),
+        ("git diff --stat", ["diff", "--stat"]),
+        ("staged diff --stat", ["diff", "--cached", "--stat"]),
+    ):
+        print("-- %s --" % title)
+        value = git_output(args)
+        print(value.rstrip() or "clean")
 
 
-def main() -> None:
+def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--yes", action="store_true", help="skip interactive confirmation after review summary")
+    ap.add_argument("--yes", action="store_true")
     ap.add_argument("--key-id", default=DEFAULT_KEY_ID)
-    ap.add_argument("--version", type=int, default=0, help="manifest version; default UTC yyyyMMddHHmmss")
-    ap.add_argument("--title", default="", help="optional release title written to manifest.release.title")
-    ap.add_argument("--date", default="", help="optional release date written to manifest.release.date")
-    ap.add_argument("--change", action="append", default=[], help="optional release note item; repeat for multiple changes")
+    ap.add_argument("--version", type=int, default=0)
+    ap.add_argument("--title", default="")
+    ap.add_argument("--date", default="")
+    ap.add_argument("--change", action="append", default=[])
+    ap.add_argument("--base-ref", default="")
     args = ap.parse_args()
 
     if not PRIVATE_KEY.exists():
-        raise SystemExit(f"Private key not found: {PRIVATE_KEY}")
+        raise SystemExit("Private key not found: %s" % PRIVATE_KEY)
     if not ENTRY.exists():
-        raise SystemExit(f"Entry file not found: {ENTRY}")
+        raise SystemExit("Entry file not found: %s" % ENTRY)
 
     print_review_summary()
-    if not args.yes:
-        ans = input("Sign this manifest? Type YES to continue: ").strip()
-        if ans != "YES":
-            raise SystemExit("aborted")
+    if not args.yes and input("Sign this manifest? Type YES to continue: ").strip() != "YES":
+        raise SystemExit("aborted")
+
+    version = args.version or int(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
+    changes = [str(item).strip() for item in args.change if str(item).strip()]
+    fallback_title = str(args.title or "ToolHub 自动签名更新").strip()
+    if not changes:
+        changes = [fallback_title]
+    base_ref = str(args.base_ref or os.environ.get("GITHUB_BASE_REF", "")).strip()
+
+    from build_update_history import finalize_history
+    record, history = finalize_history(version, base_ref, args.date, fallback_title, changes)
 
     files = {}
     for name in MODULES:
         path = CODE_DIR / name
         if not path.exists():
-            raise SystemExit(f"Missing module: {path}")
+            raise SystemExit("Missing module: %s" % path)
         module_version = read_module_version(path)
         if module_version == "0.0.0":
-            raise SystemExit(
-                "Module version missing, invalid, or reserved as 0.0.0: %s" % path
-            )
+            raise SystemExit("Module version missing or invalid: %s" % path)
         files[name] = {
             "version": module_version,
             "sha256": sha256_file(path),
@@ -137,9 +130,15 @@ def main() -> None:
 
     entry_hash = sha256_file(ENTRY)
     entry_version, entry_version_source = read_entry_version(ENTRY)
-    version = args.version or int(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
+    history_hash = sha256_file(HISTORY)
+    history_size = HISTORY.stat().st_size
+    release = {
+        "title": str(record.get("title") or fallback_title),
+        "date": str(record.get("date") or args.date or ""),
+        "changes": [str(item).strip() for item in (record.get("details") or changes) if str(item).strip()],
+    }
     manifest = {
-        "schema": 3,
+        "schema": 4,
         "version": version,
         "keyId": args.key_id,
         "alg": "SHA256withRSA",
@@ -152,40 +151,29 @@ def main() -> None:
             "manualUpdate": True,
         },
         "files": files,
+        "assets": {
+            "updateHistory": {
+                "name": "update_history.json",
+                "schema": 1,
+                "version": int(history.get("historyVersion", version)),
+                "sha256": history_hash,
+                "size": history_size,
+            }
+        },
+        "release": release,
     }
-    release = {}
-    title = str(args.title or "").strip()
-    date = str(args.date or "").strip()
-    changes = [str(item).strip() for item in (args.change or []) if str(item).strip()]
-    if title:
-        release["title"] = title
-    if date:
-        release["date"] = date
-    if changes:
-        release["changes"] = changes
-    if release:
-        manifest["release"] = release
     data = (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     MANIFEST.write_bytes(data)
-
-    sig_bin = subprocess.check_output([
-        "openssl", "dgst", "-sha256", "-sign", str(PRIVATE_KEY), str(MANIFEST)
-    ])
-    SIG.write_text(base64.b64encode(sig_bin).decode("ascii") + "\n", encoding="utf-8")
-
-    ENTRY_SHA.write_text(f"{entry_hash}  ToolHub.js\n", encoding="utf-8")
+    signature = subprocess.check_output(["openssl", "dgst", "-sha256", "-sign", str(PRIVATE_KEY), str(MANIFEST)])
+    SIG.write_text(base64.b64encode(signature).decode("ascii") + "\n", encoding="utf-8")
+    ENTRY_SHA.write_text("%s  ToolHub.js\n" % entry_hash, encoding="utf-8")
 
     print("== signed manifest ==")
-    print(f"manifest_version={manifest['version']}")
-    print(f"key_id={manifest['keyId']}")
-    print(f"signed_files={len(files)}")
-    print(f"entry_version={entry_version}")
-    print(f"entry_version_source={entry_version_source}")
-    if manifest.get("release"):
-        rel = manifest["release"]
-        print(f"release_title={rel.get('title', '')}")
-        print(f"release_changes={len(rel.get('changes', []))}")
-    print(f"ToolHub.js_sha256={entry_hash}")
+    print("manifest_version=%s" % manifest["version"])
+    print("signed_files=%s" % len(files))
+    print("history_records=%s" % len(history.get("records") or []))
+    print("release_title=%s" % release["title"])
+    print("ToolHub.js_sha256=%s" % entry_hash)
 
 
 if __name__ == "__main__":

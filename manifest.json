@@ -1,5 +1,14 @@
 {
   "alg": "SHA256withRSA",
+  "assets": {
+    "updateHistory": {
+      "name": "update_history.json",
+      "schema": 1,
+      "sha256": "b32d8d94f579ea0ba2ebb7298d3005f9f77f92334a3610470680595fd67aa3cb",
+      "size": 1844,
+      "version": 20260716152048
+    }
+  },
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
@@ -20,9 +29,9 @@
       "version": "2.0.2"
     },
     "th_03_icon.js": {
-      "sha256": "09453a49cca7c4e1ddeed0347524b504e81d07d8f614fc39ffdb57276a456dce",
-      "size": 30772,
-      "version": "2.0.0"
+      "sha256": "b5ef7ad2f467d5f3f444281b7fb0b2cb3f775bf2ea0ce002553dec120201030e",
+      "size": 27222,
+      "version": "2.0.1"
     },
     "th_04_theme.js": {
       "sha256": "c8cb18b27d456c13132b6a1409b65ff696795238124c5d34128b18f366a80be8",
@@ -95,9 +104,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "929515786ee7cbc4cdc3a4f2bf02dec07768fcf176ebd6ee27dcbee8b74398b0",
-      "size": 122221,
-      "version": "1.0.27"
+      "sha256": "ca8797687ac5196919c667082877e35c4ea6ed34656be48b4f17939cfe88674e",
+      "size": 156350,
+      "version": "1.1.0"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -105,9 +114,9 @@
       "version": "1.0.4"
     },
     "th_15_extra.js": {
-      "sha256": "9f0cd0327ee709adfe2e42fa1d2b59e971d916c531437b2b666f2f2fc9daa12b",
-      "size": 115223,
-      "version": "1.1.18"
+      "sha256": "106fd3cc36199d6a94afd513b2b9f1cec411c42f1f98faff0f38594beae59a1f",
+      "size": 115762,
+      "version": "1.1.19"
     },
     "th_15_main_panel.js": {
       "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
@@ -115,9 +124,9 @@
       "version": "1.5.8"
     },
     "th_16_entry.js": {
-      "sha256": "4cbcf57c8980e5cd45ae4dd458c2db5ba529b412c0a2c43ad4ae5496087aea6e",
-      "size": 33933,
-      "version": "1.0.15"
+      "sha256": "881bbf9a892163ae09c8cea932d6dd1f6e578bf1cfe74458e838a38d4c351c39",
+      "size": 34187,
+      "version": "1.0.16"
     },
     "th_17_pointer.js": {
       "sha256": "44752f1f2a856e82260728724cea49ba85df939e6d0e5c9a349e9420063ab0a1",
@@ -148,10 +157,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复 ToolApp 输入法跨线程崩溃"
+      "设置首页新增更新与版本入口和更新红点",
+      "支持查看待更新模块并在确认后事务更新",
+      "入口文件有更新时停止自动重启并提示手动替换",
+      "支持缓存、分页和单项展开查看历史更新记录",
+      "新增 Python 脚本和 GitHub Actions 自动维护更新历史"
     ],
-    "title": "修复 ToolApp 输入法跨线程崩溃"
+    "date": "2026-07-16",
+    "title": "新增更新与版本页面"
   },
-  "schema": 3,
-  "version": 20260716122526
+  "schema": 4,
+  "version": 20260716152048
 }

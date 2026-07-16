@@ -1,4 +1,4 @@
-// @version 1.1.18
+// @version 1.1.19
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -85,6 +85,7 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
     return this.buildMainPanelView();
   }
   if (type === "settings" || type === "settings_group") return this.buildSettingsPanelView();
+  if (type === "update") return this.buildToolHubUpdateVersionPanelView();
   if (type === "btn_editor") return this.buildButtonEditorPanelView();
   if (type === "schema_editor") return this.buildSchemaEditorPanelView();
   throw new Error("不支持的面板类型：" + type);
@@ -250,12 +251,13 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
 // =======================【设置类 UI：App 页面栈实验框架】======================
 FloatBallAppWM.prototype.isToolAppRoute = function(route) {
   var r = String(route || "");
-  return r === "settings" || r === "settings_group" || r === "btn_editor" || r === "schema_editor";
+  return r === "settings" || r === "settings_group" || r === "btn_editor" || r === "schema_editor" || r === "update";
 };
 
 FloatBallAppWM.prototype.getToolAppTitle = function(route) {
   var r = String(route || "settings");
   if (r === "settings") return "设置";
+  if (r === "update") return "更新与版本";
   if (r === "settings_group") return this.getSettingsGroupTitle ? this.getSettingsGroupTitle(this.state.settingsGroupKey) : "设置分组";
   if (r === "btn_editor") {
     if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {
@@ -1446,6 +1448,13 @@ FloatBallAppWM.prototype.showToolApp = function(route, resetStack) {
 
 FloatBallAppWM.prototype.pushToolAppPage = function(route) {
   if (!this.isToolAppRoute(route)) return;
+  if (String(route || "") === "update") {
+    try { if (this.ensureToolHubUpdateUiState) this.ensureToolHubUpdateUiState(); } catch(eUpdateInit) {}
+    this.state.toolAppSubPage = 1;
+    this.state.toolAppSubKey = "";
+    this.state.toolHubUpdateConfirmVisible = false;
+    try { if (this.ensureToolHubUpdateHistoryLoaded) this.ensureToolHubUpdateHistoryLoaded(false); } catch(eHistoryInit) {}
+  }
   try { if (this.saveToolAppCurrentStackScroll) this.saveToolAppCurrentStackScroll(); } catch(eSaveScrollPush) {}
   if (!this.state.toolAppNavStack) this.state.toolAppNavStack = [];
   if (this.state.toolAppNavStack.length <= 0) {

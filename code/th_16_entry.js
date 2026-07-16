@@ -1,4 +1,4 @@
-// @version 1.0.15
+// @version 1.0.16
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -795,6 +795,9 @@ FloatBallAppWM.prototype.showToolAppOnMain = function(route, resetStack, generat
     }
     this.state.toolAppUiOwner = "android_main";
     safeLog(this.L, 'i', "TOOLAPP_BUILD_DONE route=" + r + " " + this.toolAppThreadInfo());
+    if (r === "settings" && resetStack === true && this.onToolHubSettingsEntered) {
+      try { this.onToolHubSettingsEntered(); } catch(eSettingsEntered) { safeLog(this.L, 'w', "settings entered update check fail: " + String(eSettingsEntered)); }
+    }
     return true;
   } catch (eShow) {
     this.state.toolAppActive = false;

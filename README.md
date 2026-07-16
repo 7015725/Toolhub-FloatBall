@@ -565,3 +565,23 @@ python3 .github/scripts/verify_manifest_signature.py
 - 入口顶层不要使用 `return`。
 - 不提交签名私钥。
 - root 和 Shell 能力必须由配置或用户明确操作触发。
+
+## 更新与版本
+
+设置首页提供“更新与版本”入口。进入设置页时会从 GitHub 检查已签名清单；发现子模块或入口文件更新时显示红点。更新页支持查看完整待更新模块、确认后事务更新、入口文件手动替换提示，以及每页 10 条的历史记录。
+
+历史记录缓存目录：
+
+```text
+shortx.getShortXDir()/ToolHub/cache/
+├── update_history.json
+└── update_history.meta.json
+```
+
+维护更新记录可运行：
+
+```bash
+python3 scripts/create_update_record.py
+```
+
+GitHub Actions 会补全日期、manifest 版本、模块版本差异和入口版本差异，并生成受签名清单保护的 `update_history.json`。
