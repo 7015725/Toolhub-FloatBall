@@ -48,7 +48,6 @@ jobs:
               lines.append(line)
           script = '\n'.join(lines) + '\n'
 
-          # 工作流文件由 GitHub 连接器单独更新，避免自动化令牌缺少 workflow scope。
           for target in ('.github/workflows/verify.yml', '.github/workflows/sign-toolhub.yml'):
               call = "replace_once(\n    '%s'," % target
               pos = script.find(call)
@@ -73,19 +72,37 @@ jobs:
           python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
           python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
 
-      - name: Validate source patch
+      - name: Verify Rhino ES5 and JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
+
+      - name: Verify animation state and callback safety
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 scripts/verify_ball_position_state.py
           python3 scripts/verify_animation_callback_safety.py
+
+      - name: Verify crash logging and panel lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 scripts/verify_major_event_logging.py
           python3 scripts/verify_main_panel_close_lifecycle.py
+
+      - name: Verify module boundaries and versions
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 scripts/verify_module_boundaries.py
           python3 scripts/verify_changed_module_versions.py --base-ref origin/main
-          git diff --check
+
+      - name: Verify whitespace
+        shell: bash
+        run: git diff --check
 
       - name: Commit source patch
         shell: bash
