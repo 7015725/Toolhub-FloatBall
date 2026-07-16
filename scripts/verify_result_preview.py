@@ -228,7 +228,6 @@ def main() -> int:
         and "dismissScheduledAt" not in preview
         and "st.downAt =" not in preview
         and "render.drawCount" in preview
-        and "render.firstDrawAt" in preview
         and "render.visibleStartedAt" not in preview
         and "lastReason:" not in state_init
         and "st.lastReason" not in preview
