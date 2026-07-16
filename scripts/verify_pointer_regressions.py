@@ -242,7 +242,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
 
     capture = section(
         pointer,
-        "FloatBallAppWM.prototype.capturePointerRectToPng = function(rect)",
+        "FloatBallAppWM.prototype.getPointerCaptureDisplayId = function()",
         "FloatBallAppWM.prototype.isPointerToolActive = function()",
     )
     cleanup_finally = capture.rfind("finally")
@@ -256,6 +256,24 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and "FloatBallAppWM.prototype.releasePointerCaptureBuffer" in pointer
         and "FloatBallAppWM.prototype.recyclePointerBitmap" in pointer,
         "capture finally must release buffer and recycle bitmap",
+    )
+
+    result.require(
+        group,
+        "N10 Android 14 capture uses WMS without raw SurfaceFlinger transact",
+        "ScreenCapture.CaptureArgs.Builder" in pointer
+        and "WindowManagerGlobal.getWindowManagerService()" in pointer
+        and "wmService.captureDisplay(" in pointer
+        and "Binder.clearCallingIdentity()" in pointer
+        and "Binder.restoreCallingIdentity(identity)" in pointer
+        and "capturePointerBitmapByUiAutomation" in pointer
+        and 'setCaptureSecureLayers(false)' in pointer
+        and 'setAllowProtected(false)' in pointer
+        and 'SurfaceFlingerAIDL' not in pointer
+        and 'FIRST_CALL_TRANSACTION' not in pointer
+        and 'setCaptureSecureLayers(true)' not in pointer
+        and 'setAllowProtected(true)' not in pointer,
+        "Android 14 capture must use WMS with identity restoration and a UiAutomation fallback",
     )
 
     area_finish = section(
@@ -310,6 +328,24 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         and '"AREA_OCR_EMPTY"' in async_ocr
         and "copyPointerAreaTextToClipboard" not in ocr,
         "empty OCR must use AREA_OCR_EMPTY, skip preview publication, and avoid automatic clipboard writes",
+    )
+
+    can_dispatch_ocr = section(
+        ocr,
+        "function canDispatchAreaOcr18(st, obj, ret)",
+        "function applyPerfDefaults18(appObj)",
+    )
+    result.require(
+        group,
+        "N11 OCR continues when screenshot save fails",
+        "pickOcrRect18(obj, ret)" in ocr
+        and 'AREA_CAPTURE_SUCCESS' not in can_dispatch_ocr
+        and 'if (!screenshotPath || !rr)' not in ocr
+        and 'if (!rr)' in ocr
+        and 'screenshotOk' in ocr
+        and 'screenshotError' in ocr
+        and 'if (!path || !rect)' not in ocr,
+        "valid capture rectangles must reach ShortX OCR even when PNG persistence fails",
     )
 
     worker = section(
@@ -810,15 +846,17 @@ def verify_pointer_core(result, pointer, ocr, position):
     )
     result.require(
         group,
-        "OCR dispatch requires successful screenshot artifacts",
+        "OCR dispatch requires a valid capture rectangle",
         "canDispatchAreaOcr18" in ocr
         and 'String(obj.type || "") !== "area_capture"' in ocr
-        and 'String(obj.code || "") !== "AREA_CAPTURE_SUCCESS"' in ocr
+        and 'String(obj.code || "") !== "AREA_CAPTURE_SUCCESS"' not in ocr
+        and "pickOcrRect18(obj, ret)" in ocr
         and "pickScreenshotPath18" in ocr
-        and "obj.value ||" not in ocr
         and "ret.fallback === true" in ocr
+        and 'if (!screenshotPath || !rr)' not in ocr
+        and "screenshotOk" in ocr
         and "pointer area_ocr dispatch skipped reason=" in ocr,
-        "OCR must reject fallback text and invalid screenshot parameters before mutating result state",
+        "OCR must reject fallback text and invalid rectangles while allowing screenshot-save degradation",
     )
 
     for forbidden in (

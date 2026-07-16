@@ -1,4 +1,4 @@
-// @version 1.2.11
+// @version 1.2.12
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1289,6 +1289,176 @@ FloatBallAppWM.prototype.recyclePointerBitmap = function(bitmap) {
   } catch (eRecycleBitmap) {}
 };
 
+FloatBallAppWM.prototype.getPointerCaptureDisplayId = function() {
+  var displayId = 0;
+  try {
+    var display = null;
+    try { if (typeof context !== "undefined" && context && context.getDisplay) display = context.getDisplay(); } catch (eContextDisplay) { display = null; }
+    if (display && display.getDisplayId) displayId = Number(display.getDisplayId());
+  } catch (e0) { displayId = 0; }
+  if (isNaN(displayId) || displayId < 0) displayId = 0;
+  return Math.floor(displayId);
+};
+
+FloatBallAppWM.prototype.capturePointerBitmapByWindowManager = function(cropRect) {
+  var identity = 0;
+  var identityCleared = false;
+  var captureBuffer = null;
+  try {
+    safeLog(this.L, 'd', "pointer capture attempt method=wm_capture_display rect=" + th17RectKey(cropRect));
+
+    var argsBuilder = new android.window.ScreenCapture.CaptureArgs.Builder();
+    argsBuilder.setSourceCrop(cropRect);
+    try { argsBuilder.setPixelFormat(android.graphics.PixelFormat.RGBA_8888); } catch (ePixelFormat) {}
+    try { argsBuilder.setCaptureSecureLayers(false); } catch (eSecure) {}
+    try { argsBuilder.setAllowProtected(false); } catch (eProtected) {}
+    try { argsBuilder.setGrayscale(false); } catch (eGray) {}
+    try { argsBuilder.setExcludeLayers(null); } catch (eExclude) {}
+    try { argsBuilder.setHintForSeamlessTransition(false); } catch (eHint) {}
+
+    var syncCapture = android.window.ScreenCapture.createSyncCaptureListener();
+    if (!syncCapture) throw new Error("无法创建同步截图监听器");
+    var wmService = android.view.WindowManagerGlobal.getWindowManagerService();
+    if (!wmService) throw new Error("无法获取 WindowManagerService");
+
+    identity = android.os.Binder.clearCallingIdentity();
+    identityCleared = true;
+    wmService.captureDisplay(
+      this.getPointerCaptureDisplayId(),
+      argsBuilder.build(),
+      syncCapture.first
+    );
+
+    captureBuffer = syncCapture.second.get();
+    var bitmap = this.pointerBitmapFromCaptureBuffer(captureBuffer);
+    if (!bitmap) throw new Error("WindowManager 截图返回空 Bitmap");
+
+    safeLog(this.L, 'i', "pointer capture success method=wm_capture_display rect=" + th17RectKey(cropRect));
+    return {
+      bitmap: bitmap,
+      buffer: captureBuffer,
+      method: "wm_capture_display"
+    };
+  } catch (e0) {
+    try { this.releasePointerCaptureBuffer(captureBuffer); } catch (eRelease) {}
+    safeLog(this.L, 'w', "pointer capture failed method=wm_capture_display err=" + th17LogSingleLine(e0, 300));
+    throw new Error("wm_capture_display: " + String(e0));
+  } finally {
+    if (identityCleared) {
+      try { android.os.Binder.restoreCallingIdentity(identity); } catch (eRestoreIdentity) {}
+    }
+  }
+};
+
+FloatBallAppWM.prototype.capturePointerBitmapByUiAutomation = function(cropRect) {
+  var bitmap = null;
+  var fullBitmap = null;
+  try {
+    safeLog(this.L, 'd', "pointer capture attempt method=ui_automation rect=" + th17RectKey(cropRect));
+    var automation = this.getPointerUiAutomation ? this.getPointerUiAutomation("pointer_capture") : null;
+    if (!automation || !automation.takeScreenshot) throw new Error("UiAutomation 截图接口不可用");
+
+    try {
+      bitmap = automation.takeScreenshot(cropRect);
+    } catch (eRectShot) {
+      fullBitmap = automation.takeScreenshot();
+      if (!fullBitmap) throw eRectShot;
+
+      var left = Math.max(0, Math.min(th17Int(cropRect.left), Math.max(0, fullBitmap.getWidth() - 1)));
+      var top = Math.max(0, Math.min(th17Int(cropRect.top), Math.max(0, fullBitmap.getHeight() - 1)));
+      var right = Math.max(left + 1, Math.min(th17Int(cropRect.right), fullBitmap.getWidth()));
+      var bottom = Math.max(top + 1, Math.min(th17Int(cropRect.bottom), fullBitmap.getHeight()));
+      bitmap = android.graphics.Bitmap.createBitmap(fullBitmap, left, top, right - left, bottom - top);
+    }
+
+    if (!bitmap) throw new Error("UiAutomation 截图返回空 Bitmap");
+    if (fullBitmap && bitmap !== fullBitmap) {
+      try { this.recyclePointerBitmap(fullBitmap); } catch (eRecycleFull) {}
+      fullBitmap = null;
+    }
+
+    safeLog(this.L, 'i', "pointer capture success method=ui_automation rect=" + th17RectKey(cropRect));
+    return {
+      bitmap: bitmap,
+      buffer: null,
+      method: "ui_automation"
+    };
+  } catch (e0) {
+    if (fullBitmap && fullBitmap !== bitmap) {
+      try { this.recyclePointerBitmap(fullBitmap); } catch (eRecycleFailFull) {}
+    }
+    if (bitmap) {
+      try { this.recyclePointerBitmap(bitmap); } catch (eRecycleFailBitmap) {}
+    }
+    safeLog(this.L, 'w', "pointer capture failed method=ui_automation err=" + th17LogSingleLine(e0, 300));
+    throw new Error("ui_automation: " + String(e0));
+  }
+};
+
+FloatBallAppWM.prototype.capturePointerBitmapByLegacySurfaceControl = function(cropRect) {
+  var captureBuffer = null;
+  var api = this.getPointerSdkInt ? this.getPointerSdkInt() : 0;
+  try {
+    if (api >= 33) throw new Error("Android 13 及以上不使用旧 SurfaceControl 截图接口");
+    safeLog(this.L, 'd', "pointer capture attempt method=legacy_surface_control rect=" + th17RectKey(cropRect));
+
+    if (api >= 29) {
+      var displayToken = android.view.SurfaceControl.getInternalDisplayToken();
+      if (displayToken == null) throw new Error("无法获取旧版 displayToken");
+      var builder = new android.window.ScreenCapture.DisplayCaptureArgs.Builder(displayToken);
+      builder.setSourceCrop(cropRect);
+      try { builder.setSize(cropRect.width(), cropRect.height()); } catch (eSize) {}
+      try { builder.setPixelFormat(android.graphics.PixelFormat.RGBA_8888); } catch (ePixel) {}
+      try { builder.setCaptureSecureLayers(false); } catch (eSecure) {}
+      try { builder.setAllowProtected(false); } catch (eProtected) {}
+      captureBuffer = android.window.ScreenCapture.captureDisplay(builder.build());
+    } else {
+      captureBuffer = android.view.SurfaceControl.screenshotToBuffer(
+        cropRect,
+        cropRect.width(),
+        cropRect.height(),
+        0,
+        java.lang.Integer.MAX_VALUE,
+        false,
+        0
+      );
+    }
+
+    var bitmap = this.pointerBitmapFromCaptureBuffer(captureBuffer);
+    if (!bitmap) throw new Error("旧版 SurfaceControl 截图返回空 Bitmap");
+    safeLog(this.L, 'i', "pointer capture success method=legacy_surface_control rect=" + th17RectKey(cropRect));
+    return {
+      bitmap: bitmap,
+      buffer: captureBuffer,
+      method: "legacy_surface_control"
+    };
+  } catch (e0) {
+    try { this.releasePointerCaptureBuffer(captureBuffer); } catch (eRelease) {}
+    safeLog(this.L, 'w', "pointer capture failed method=legacy_surface_control err=" + th17LogSingleLine(e0, 300));
+    throw new Error("legacy_surface_control: " + String(e0));
+  }
+};
+
+FloatBallAppWM.prototype.capturePointerBitmap = function(cropRect) {
+  var errors = [];
+  var api = this.getPointerSdkInt ? this.getPointerSdkInt() : 0;
+
+  if (api >= 33) {
+    try { return this.capturePointerBitmapByWindowManager(cropRect); }
+    catch (eWindowManager) { errors.push(String(eWindowManager)); }
+  }
+
+  try { return this.capturePointerBitmapByUiAutomation(cropRect); }
+  catch (eUiAutomation) { errors.push(String(eUiAutomation)); }
+
+  if (api < 33) {
+    try { return this.capturePointerBitmapByLegacySurfaceControl(cropRect); }
+    catch (eLegacy) { errors.push(String(eLegacy)); }
+  }
+
+  throw new Error("所有截图方式均失败: " + errors.join(" | "));
+};
+
 FloatBallAppWM.prototype.capturePointerRectToPng = function(rect) {
   if (!rect) throw new Error("截图区域为空");
   var left = th17Int(rect.left);
@@ -1299,88 +1469,48 @@ FloatBallAppWM.prototype.capturePointerRectToPng = function(rect) {
   if (right < left) { var tx = left; left = right; right = tx; }
   if (bottom < top) { var ty = top; top = bottom; bottom = ty; }
   if (right - left < minSize || bottom - top < minSize) throw new Error("框选区域太小");
+
   var cropRect = new android.graphics.Rect(left, top, right, bottom);
-  var api = 0;
-  try { api = android.os.Build.VERSION.SDK_INT; } catch (eApi) { api = 0; }
+  var capture = null;
   var bitmap = null;
+  var saveBitmap = null;
   var captureBuffer = null;
-  var lastError = null;
+  var file = null;
+  var saved = false;
 
-  if (!bitmap && api >= 34) {
-    try {
-      var surfaceFlingerService = android.os.ServiceManager.getService("SurfaceFlingerAIDL");
-      var displayInfo = android.hardware.display.DisplayManagerGlobal.getInstance().getDisplayInfo(0);
-      var displayId = displayInfo.address.getPhysicalDisplayId();
-      var parcelData = android.os.Parcel.obtain();
-      var parcelReply = android.os.Parcel.obtain();
-      try {
-        parcelData.writeInterfaceToken("android.gui.ISurfaceComposer");
-        parcelData.writeLong(displayId);
-        surfaceFlingerService.transact(android.os.IBinder.FIRST_CALL_TRANSACTION + 6, parcelData, parcelReply, 0);
-        parcelReply.readException();
-        var displayToken = parcelReply.readStrongBinder();
-        try {
-          var builder = new android.window.ScreenCapture.DisplayCaptureArgs.Builder(displayToken);
-          builder.setPixelFormat(android.graphics.PixelFormat.RGBA_8888).setSourceCrop(cropRect).setSize(cropRect.width(), cropRect.height()).setFrameScale(1.0).setCaptureSecureLayers(true).setAllowProtected(true).setGrayscale(false).setExcludeLayers(null).setHintForSeamlessTransition(false);
-          var cap14 = android.window.ScreenCapture.captureDisplay(builder.build());
-          bitmap = this.pointerBitmapFromCaptureBuffer(cap14);
-          if (bitmap) captureBuffer = cap14;
-          else this.releasePointerCaptureBuffer(cap14);
-        } catch (e14a) {
-          var builder2 = new android.window.ScreenCaptureInternal.DisplayCaptureArgs.Builder(displayToken);
-          builder2.setPixelFormat(android.graphics.PixelFormat.RGBA_8888).setSourceCrop(cropRect).setSize(cropRect.width(), cropRect.height()).setFrameScale(1.0).setSecureContentPolicy(0).setProtectedContentPolicy(0).setGrayscale(false).setExcludeLayers(null);
-          var cap14b = android.window.ScreenCaptureInternal.captureDisplay(builder2.build());
-          bitmap = this.pointerBitmapFromCaptureBuffer(cap14b);
-          if (bitmap) captureBuffer = cap14b;
-          else this.releasePointerCaptureBuffer(cap14b);
-        }
-      } finally {
-        try { parcelData.recycle(); } catch (ePd) {}
-        try { parcelReply.recycle(); } catch (ePr) {}
-      }
-    } catch (e14) { lastError = e14; bitmap = null; }
-  }
-
-  if (!bitmap && api >= 32) {
-    try {
-      var displayToken32 = android.view.SurfaceControl.getInternalDisplayToken();
-      if (displayToken32 == null) throw new Error("无法获取 displayToken");
-      var builder32 = new android.view.SurfaceControl.DisplayCaptureArgs.Builder(displayToken32);
-      builder32.setPixelFormat(android.graphics.PixelFormat.RGBA_8888).setSourceCrop(cropRect).setSize(cropRect.width(), cropRect.height()).setFrameScale(1.0).setCaptureSecureLayers(true).setAllowProtected(true).setGrayscale(false);
-      var cap32 = android.view.SurfaceControl.captureDisplay(builder32.build());
-      bitmap = this.pointerBitmapFromCaptureBuffer(cap32);
-      if (bitmap) captureBuffer = cap32;
-      else this.releasePointerCaptureBuffer(cap32);
-    } catch (e32) { lastError = e32; bitmap = null; }
-  }
-
-  if (!bitmap && api >= 29) {
-    try {
-      var displayToken29 = android.view.SurfaceControl.getInternalDisplayToken();
-      if (displayToken29 == null) throw new Error("无法获取 displayToken");
-      var cap29 = android.view.SurfaceControl.screenshotToBufferWithSecureLayersUnsafe(displayToken29, cropRect, cropRect.width(), cropRect.height(), false, 0);
-      bitmap = this.pointerBitmapFromCaptureBuffer(cap29);
-      if (bitmap) captureBuffer = cap29;
-      else this.releasePointerCaptureBuffer(cap29);
-    } catch (e29) { lastError = e29; bitmap = null; }
-  }
-
-  if (!bitmap) {
-    try {
-      var capOld = android.view.SurfaceControl.screenshotToBuffer(cropRect, cropRect.width(), cropRect.height(), 0, java.lang.Integer.MAX_VALUE, false, 0);
-      bitmap = this.pointerBitmapFromCaptureBuffer(capOld);
-      if (bitmap) captureBuffer = capOld;
-      else this.releasePointerCaptureBuffer(capOld);
-    } catch (eOld) { lastError = eOld; bitmap = null; }
-  }
-
-  if (!bitmap) throw new Error("截图失败" + (lastError ? ": " + String(lastError) : ""));
-  var file = this.createPointerScreenshotFile();
   try {
-    this.savePointerBitmapToFile(bitmap, file);
+    capture = this.capturePointerBitmap(cropRect);
+    bitmap = capture && capture.bitmap ? capture.bitmap : null;
+    captureBuffer = capture && capture.buffer ? capture.buffer : null;
+    if (!bitmap) throw new Error("截图结果 Bitmap 为空");
+
+    saveBitmap = bitmap;
+    try {
+      if (bitmap.getConfig && bitmap.getConfig() === android.graphics.Bitmap.Config.HARDWARE) {
+        var softwareBitmap = bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, false);
+        if (softwareBitmap) saveBitmap = softwareBitmap;
+      }
+    } catch (eSoftwareCopy) {
+      saveBitmap = bitmap;
+      safeLog(this.L, 'w', "pointer capture hardware bitmap copy fail: " + th17LogSingleLine(eSoftwareCopy, 220));
+    }
+
+    file = this.createPointerScreenshotFile();
+    this.savePointerBitmapToFile(saveBitmap, file);
+    saved = true;
+    safeLog(this.L, 'i',
+      "pointer screenshot saved method=" + String(capture && capture.method || "") +
+      " rect=" + th17RectKey(cropRect) +
+      " path=" + String(file.getAbsolutePath()));
     return String(file.getAbsolutePath());
   } finally {
+    if (!saved && file) {
+      try { if (file.exists()) file.delete(); } catch (eDeletePartial) {}
+    }
     try { this.releasePointerCaptureBuffer(captureBuffer); } catch (eReleaseCap) {}
+    if (saveBitmap && saveBitmap !== bitmap) {
+      try { this.recyclePointerBitmap(saveBitmap); } catch (eRecycleSaveBitmap) {}
+    }
     try { this.recyclePointerBitmap(bitmap); } catch (eRecycleCapBitmap) {}
   }
 };
@@ -4047,6 +4177,7 @@ FloatBallAppWM.prototype.applyPointerAreaCaptureResult = function(
 
   try {
     if (screenshotPath) this.toast("框选截图完成: " + screenshotPath);
+    else if (st && st.areaOcrRequested === true) this.toast("截图保存失败，继续识别");
     else this.toast("框选完成，截图失败");
   } catch (eToast) {}
 
@@ -4151,7 +4282,7 @@ FloatBallAppWM.prototype.schedulePointerAreaCaptureAsync = function(
         if (threadRef && threadRef.interrupt) threadRef.interrupt();
       } catch (eInterruptTimeout) {}
 
-      self.setPointerToolResult({
+      var timeoutObj = {
         ok: false,
         pending: false,
         type: "area_capture",
@@ -4167,7 +4298,25 @@ FloatBallAppWM.prototype.schedulePointerAreaCaptureAsync = function(
           async: true,
           token: Number(token)
         }
-      });
+      };
+      self.setPointerToolResult(timeoutObj);
+
+      try {
+        if (typeof self.onPointerAreaCaptureCompleted === "function") {
+          self.onPointerAreaCaptureCompleted(st, token, timeoutObj, {
+            ok: false,
+            pending: false,
+            type: "area_capture",
+            code: "AREA_CAPTURE_TIMEOUT",
+            captureRect: captureRect,
+            visualRect: visualRect,
+            screenshotFilePath: "",
+            err: timeoutObj.data.error
+          });
+        }
+      } catch (eTimeoutCompleted) {
+        try { safeLog(self.L, 'e', "pointer area capture timeout completion hook fail: " + String(eTimeoutCompleted)); } catch (eTimeoutCompletedLog) {}
+      }
 
       try { self.toast("框选截图超时"); } catch (eToastTimeout) {}
       try {
