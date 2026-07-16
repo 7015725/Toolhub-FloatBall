@@ -1,0 +1,68 @@
+name: apply-pointer-capture-ocr-fix
+
+on:
+  push:
+    branches:
+      - fix/pointer-capture-ocr-20260716
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-pointer-capture-ocr-fix
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.event.head_commit.message != '修复 Android 14 指针截图与 OCR 降级'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/pointer-capture-ocr-20260716
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Decode and apply patch
+        shell: bash
+        run: |
+          base64 -d .github/scripts/apply_pointer_capture_ocr_fix.py.gz.b64 | gzip -d > /tmp/apply_pointer_capture_ocr_fix.py
+          python3 /tmp/apply_pointer_capture_ocr_fix.py
+
+      - name: Verify module versions
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify pointer regressions
+        shell: bash
+        run: |
+          python3 scripts/verify_pointer_regressions.py
+          python3 scripts/verify_result_preview.py
+
+      - name: Verify Rhino ES5 JavaScript
+        shell: bash
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+
+      - name: Verify diff
+        shell: bash
+        run: git diff --check
+
+      - name: Commit repaired implementation
+        shell: bash
+        env:
+          PUSH_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+        run: |
+          rm -f .github/scripts/apply_pointer_capture_ocr_fix.py.gz.b64
+          rm -f .github/workflows/apply-pointer-capture-ocr-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "修复 Android 14 指针截图与 OCR 降级"
+          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:fix/pointer-capture-ocr-20260716
