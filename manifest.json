@@ -140,18 +140,18 @@
       "version": "1.0.3"
     },
     "th_21_result_preview.js": {
-      "sha256": "15514e6de439652291bc670ddb0f9b84863dcbc6f9c3d4a0a631a68fc9a3350c",
-      "size": 60082,
-      "version": "1.2.1"
+      "sha256": "f50009b72644129cb4247001ca481ec2a55d9162f07aea294be32c399495d509",
+      "size": 59960,
+      "version": "1.2.2"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "简化快捷方式搜索防抖链路"
+      "清理结果预览槽位宽度状态"
     ],
-    "title": "简化快捷方式搜索防抖链路"
+    "title": "清理结果预览槽位宽度状态"
   },
   "schema": 3,
-  "version": 20260716104618
+  "version": 20260716110239
 }
