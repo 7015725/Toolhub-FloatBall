@@ -201,25 +201,6 @@
           "oldVariable": "oldStartPointerTool"
         }
       ]
-    },
-    {
-      "method": "startToolHubModuleUpdateFromSettings",
-      "definitions": [
-        "th_03_icon.js",
-        "th_14_panels.js"
-      ],
-      "effectiveOwner": "th_03_icon.js",
-      "type": "deferred_wrapper",
-      "runtimeMode": "deferred_retry",
-      "reason": "th_03 在后台等待设置模块加载后安装自动重启包装",
-      "wrappers": [
-        {
-          "module": "th_03_icon.js",
-          "owner": "th_14_panels.js",
-          "oldVariable": "oldStart",
-          "installMode": "deferred_retry"
-        }
-      ]
     }
   ],
   "cleanupCandidates": [],
