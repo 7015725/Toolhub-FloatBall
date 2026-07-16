@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TH03 = (ROOT / "code" / "th_03_icon.js").read_text(encoding="utf-8")
 TH14 = (ROOT / "code" / "th_14_panels.js").read_text(encoding="utf-8")
 BOUNDARIES = (ROOT / "MODULE_BOUNDARIES.json").read_text(encoding="utf-8")
+UPDATE_ENTRY_SECTION = TH14.split("FloatBallAppWM.prototype.createToolHubUpdateHomeEntry", 1)[1].split("FloatBallAppWM.prototype.buildToolHubUpdateVersionPanelView", 1)[0]
 
 checks = {
     "旧轮询自动重启已删除": "__toolHubWatchRestartAfterUpdate" not in TH03,
@@ -24,6 +25,10 @@ checks = {
     "历史哈希失败保留完整诊断": "expectedHashLen=" in TH14 and "actualHashLen=" in TH14,
     "禁止 Rhino 不兼容 ScrollView.LayoutParams": "android.widget.ScrollView.LayoutParams" not in TH14,
     "ScrollView 子布局使用 FrameLayout.LayoutParams": "scroll.addView(root, new android.widget.FrameLayout.LayoutParams(-1, -2));" in TH14,
+    "更新入口复用统一设置项构建器": "normalizedUpdateEntry: true" in UPDATE_ENTRY_SECTION and "return this.createSettingsHomeEntry(parent" in UPDATE_ENTRY_SECTION,
+    "更新入口不再维护独立列表布局": "new android.widget.LinearLayout" not in UPDATE_ENTRY_SECTION and "row.setBackground" not in UPDATE_ENTRY_SECTION,
+    "统一设置项构建器支持红点": "entryOptions.showRedDot === true" in TH14 and "badgeBox.addView(dot, dotLp)" in TH14,
+    "统一设置项保留卡片阴影": "row.setElevation(this.dp(1))" in TH14,
     "旧延期包装边界已删除": '"method": "startToolHubModuleUpdateFromSettings"' not in BOUNDARIES,
 }
 failed = [name for name, ok in checks.items() if not ok]
