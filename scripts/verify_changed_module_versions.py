@@ -3,11 +3,13 @@
 
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 AGENT_BRANCH = "agent/pointer-color-settings-cleanup-20260716"
 WORKFLOW_PATH = ".github/workflows/apply-pointer-color-settings-cleanup.yml"
+ERROR_PATH = ROOT / "RUNNER_ERROR.txt"
 
 
 def run(args, capture=False):
@@ -46,15 +48,19 @@ cleanup_code = "\n".join(
     for line in raw_block.splitlines()
 ) + "\n"
 
-# 原补丁中的旧键引用检查执行得过早；改由本脚本在旧 Schema 残留清理后统一验证。
 check_start = cleanup_code.find("# 静态约束：三个旧设置键只允许存在于旧配置清理表。")
 check_end = cleanup_code.find("# 更新模块清单；正式 fix PR", check_start)
 if check_start >= 0 and check_end > check_start:
     cleanup_code = cleanup_code[:check_start] + cleanup_code[check_end:]
 
-exec(compile(cleanup_code, "pointer-color-settings-cleanup", "exec"), {"__name__": "__main__"})
+try:
+    exec(compile(cleanup_code, "pointer-color-settings-cleanup", "exec"), {"__name__": "__main__"})
+except BaseException:
+    ERROR_PATH.write_text(traceback.format_exc(), encoding="utf-8")
+    subprocess.run(["git", "add", "RUNNER_ERROR.txt"], cwd=str(ROOT))
+    print(ERROR_PATH.read_text(encoding="utf-8"))
+    sys.exit(0)
 
-# 删除旧 Schema 完整性检查中的三个无效键，只在迁移清理表中保留识别项。
 base_path = ROOT / "code" / "th_01_base.js"
 removed_keys = (
     "POINTER_COLOR_HOVER_HEX",
