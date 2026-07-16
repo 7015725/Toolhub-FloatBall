@@ -62,33 +62,141 @@ for old, label in (
     ("        dismissScheduledAt: 0,\n", "dismiss scheduled state"),
     ("        downAt: 0,\n", "touch down timestamp state"),
     ("    render.firstDrawLogged = false;\n", "render first draw reset"),
-    ("    st.drawCount = 0;\n", "state draw count sync reset"),
-    ("    st.firstDrawLogged = false;\n", "state first draw sync reset"),
-    ("    st.dismissScheduledAt = 0;\n", "state dismiss sync reset"),
     ("    st.dismissScheduledAt = now21();\n", "dismiss schedule timestamp"),
-    ("    st.drawCount = Number(render.drawCount || 0);\n", "state draw count mirror"),
-    ("    render.firstDrawLogged = true;\n", "render first draw marker"),
-    ("    st.firstDrawLogged = true;\n", "state first draw marker"),
-    ("    st.visible = true;\n", "state visible marker"),
     ("            st.downAt = now21();\n", "touch down timestamp assignment"),
-    ("      st.visible = false;\n", "detach visible reset"),
-    ("      st.entering = false;\n", "detach entering reset"),
-    ("      st.exiting = false;\n", "detach exiting reset"),
-    ("    st.firstDrawLogged = false;\n", "remove first draw reset"),
-    ("    st.dismissScheduledAt = 0;\n", "remove dismiss timestamp reset"),
-    ("    st.visible = false;\n", "attach visible reset"),
-    ("    st.entering = true;\n", "attach entering marker"),
-    ("    st.entering = false;\n", "attach entering clear"),
-    ("    st.visible = false;\n", "update visible reset"),
     ("            current.exiting = true;\n", "dismiss exiting marker"),
 ):
     preview = replace_once(preview, old, "", label)
 
-# cancelDismiss21() and scheduleDismiss21() each contain an additional timestamp reset.
-preview = replace_once(preview, "    st.dismissScheduledAt = 0;\n", "", "cancel dismiss timestamp reset")
-preview = replace_once(preview, "      st.dismissScheduledAt = 0;\n", "", "dismiss post failure timestamp reset")
-# removeView21() contains one additional state draw-count reset.
-preview = replace_once(preview, "    st.drawCount = 0;\n", "", "remove state draw count reset")
+preview = replace_once(
+    preview,
+    '''    render.attachedAt = now21();
+    st.drawCount = 0;
+    st.firstDrawLogged = false;
+    st.visibleStartedAt = 0;
+    st.dismissScheduledAt = 0;
+    st.touchTarget = "";
+''',
+    '''    render.attachedAt = now21();
+    st.visibleStartedAt = 0;
+    st.touchTarget = "";
+''',
+    "sync render state mirrors",
+)
+preview = replace_once(
+    preview,
+    '''    st.dismissRunnable = null;
+    st.dismissScheduledAt = 0;
+''',
+    '''    st.dismissRunnable = null;
+''',
+    "cancel dismiss timestamp reset",
+)
+preview = replace_once(
+    preview,
+    '''    } catch (ePost) {
+      st.dismissRunnable = null;
+      st.dismissScheduledAt = 0;
+    }
+''',
+    '''    } catch (ePost) {
+      st.dismissRunnable = null;
+    }
+''',
+    "dismiss post failure timestamp reset",
+)
+preview = replace_once(
+    preview,
+    '''    st.drawCount = Number(render.drawCount || 0);
+    if (Number(render.firstDrawAt || 0) > 0) return true;
+
+    render.firstDrawAt = now21();
+    render.visibleStartedAt = render.firstDrawAt;
+    render.firstDrawLogged = true;
+    st.firstDrawLogged = true;
+    st.visible = true;
+    st.visibleStartedAt = render.firstDrawAt;
+''',
+    '''    if (Number(render.firstDrawAt || 0) > 0) return true;
+
+    render.firstDrawAt = now21();
+    render.visibleStartedAt = render.firstDrawAt;
+    st.visibleStartedAt = render.firstDrawAt;
+''',
+    "first draw state mirrors",
+)
+preview = replace_once(
+    preview,
+    '''    if (st.root === rootRef) {
+      st.root = null;
+      st.rootRender = null;
+      st.added = false;
+      st.visible = false;
+      st.entering = false;
+      st.exiting = false;
+    }
+''',
+    '''    if (st.root === rootRef) {
+      st.root = null;
+      st.rootRender = null;
+      st.added = false;
+    }
+''',
+    "detach lifecycle mirrors",
+)
+preview = replace_once(
+    preview,
+    '''    st.touchTarget = "";
+    st.touchMoved = false;
+    st.drawCount = 0;
+    st.firstDrawLogged = false;
+    st.visibleStartedAt = 0;
+    st.dismissScheduledAt = 0;
+    return true;
+''',
+    '''    st.touchTarget = "";
+    st.touchMoved = false;
+    st.visibleStartedAt = 0;
+    return true;
+''',
+    "remove view state mirrors",
+)
+preview = replace_once(
+    preview,
+    '''    st.wm.addView(st.root, st.lp);
+    st.added = true;
+    st.visible = false;
+    st.entering = true;
+    st.rootRender.attachedAt = now21();
+''',
+    '''    st.wm.addView(st.root, st.lp);
+    st.added = true;
+    st.rootRender.attachedAt = now21();
+''',
+    "attach lifecycle mirrors",
+)
+preview = replace_once(
+    preview,
+    '''    scheduleVisibilityFallback21(appObj, st, st.root, st.rootRender, 1);
+    st.entering = false;
+    return true;
+''',
+    '''    scheduleVisibilityFallback21(appObj, st, st.root, st.rootRender, 1);
+    return true;
+''',
+    "attach entering clear",
+)
+preview = replace_once(
+    preview,
+    '''    scheduleVisibilityFallback21(appObj, st, rootRef, render, 1);
+    st.visible = false;
+    return true;
+''',
+    '''    scheduleVisibilityFallback21(appObj, st, rootRef, render, 1);
+    return true;
+''',
+    "update visible reset",
+)
 
 for forbidden in (
     "st.visible =",
