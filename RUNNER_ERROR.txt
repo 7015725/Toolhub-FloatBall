@@ -1,6 +1,6 @@
 FAIL: JavaScript syntax invalid: code/th_01_base.js
-/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/code/th_01_base.js:1092
-              sStr.indexOf("POINTER_FRAME_TEXT_HOVER_HEX") < 0 ||
+/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/code/th_01_base.js:1174
+            if (schemaItemDiffers("BALL_ICON_TINT_HEX", ["name", "type"]) ||
 
 SyntaxError: Invalid left-hand side in assignment
     at wrapSafe (node:internal/modules/cjs/loader:1713:18)

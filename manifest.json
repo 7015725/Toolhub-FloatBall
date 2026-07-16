@@ -10,8 +10,8 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "a54cba88b5d1ae1fc65d996b5c7c17ae1beabe6eb32b6ddcd9322747716db22c",
-      "size": 78054,
+      "sha256": "8f2e6f123b4f8f2c29bd26f3e5efc8e9f1a68e49ec653b553cbe89c85d6344e2",
+      "size": 79915,
       "version": "1.1.15"
     },
     "th_02_core.js": {
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理并重组指针颜色设置"
+      "执行指针颜色设置清理临时提交"
     ],
-    "title": "清理并重组指针颜色设置"
+    "title": "执行指针颜色设置清理临时提交"
   },
   "schema": 3,
-  "version": 20260716030038
+  "version": 20260716031633
 }
