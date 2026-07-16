@@ -217,12 +217,11 @@ def verify_icon_storage():
         if marker not in loader:
             fail(group, "database icon loader is missing " + marker)
 
-    file_loader = section(
-        group,
-        text,
-        "FloatBallAppWM.prototype.loadBallIconDrawableFromFile",
-        "// =======================【更新完成后自动重启生效】",
-    )
+    file_loader_start = "FloatBallAppWM.prototype.loadBallIconDrawableFromFile"
+    try:
+        file_loader = text[text.index(file_loader_start):]
+    except ValueError as exc:
+        fail(group, "cannot locate section %r -> EOF: %s" % (file_loader_start, exc))
     if 'p.indexOf("sqlite-icon:") === 0' not in file_loader:
         fail(group, "existing icon resolver cannot route SQLite icon URIs")
     if file_loader.index('p.indexOf("sqlite-icon:")') > file_loader.index("new java.io.File(p)"):
