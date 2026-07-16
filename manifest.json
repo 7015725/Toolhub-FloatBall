@@ -80,9 +80,9 @@
       "version": "1.0.2"
     },
     "th_14_button_shortcut.js": {
-      "sha256": "4e6f4e839adc361a7564201b7ec00bd44f24d7f136c157671fa263dc496a7eb2",
-      "size": 43532,
-      "version": "1.0.4"
+      "sha256": "65bab46dccc988531b84f4d306139e26e815d680497781bb8f93beb63b309f60",
+      "size": 43022,
+      "version": "1.0.5"
     },
     "th_14_color_picker.js": {
       "sha256": "d2c906aecb2f911312d2fc496c5584b885bdcf18a569b5ad560d1467a02f1c51",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "清理运行时冗余代码"
+      "简化快捷方式搜索防抖链路"
     ],
-    "title": "清理运行时冗余代码"
+    "title": "简化快捷方式搜索防抖链路"
   },
   "schema": 3,
-  "version": 20260716101250
+  "version": 20260716104618
 }

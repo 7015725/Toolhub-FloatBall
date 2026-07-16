@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // ToolHub - button shortcut inline selector module
 // Stage 2 split: shortcut inline picker logic moved out of th_14_panels.js.
 
@@ -205,7 +205,6 @@ FloatBallAppWM.prototype.buildButtonShortcutPickerInline = function(opts) {
         reloadPending: false,
         ownerThreadId: __scThreadId(),
         renderRunnable: null,
-        searchRunnable: null,
         pendingQuery: "",
         lastQuery: null,
         lastSourceSize: -1,
@@ -842,12 +841,7 @@ FloatBallAppWM.prototype.buildButtonShortcutPickerInline = function(opts) {
             afterTextChanged: function(s) {
                 if (!scInlineState.loaded || scInlineState.disposed) return;
                 try {
-                    if (scInlineState.searchRunnable) scList.removeCallbacks(scInlineState.searchRunnable);
-                    var query = __scStr(s);
-                    scInlineState.searchRunnable = new java.lang.Runnable({
-                        run: function() { __scScheduleRender(query, 0); }
-                    });
-                    scList.postDelayed(scInlineState.searchRunnable, 180);
+                    __scScheduleRender(__scStr(s), 180);
                 } catch(eSearch) {
                     safeLog(self.L, "w", "shortcut picker search schedule fail: " + String(eSearch));
                 }
@@ -868,7 +862,6 @@ FloatBallAppWM.prototype.buildButtonShortcutPickerInline = function(opts) {
                 scInlineState.reloadPending = false;
                 scInlineState.generation = Number(scInlineState.generation || 0) + 1;
                 try { if (scInlineState.renderRunnable) scList.removeCallbacks(scInlineState.renderRunnable); } catch(eRemoveRender) {}
-                try { if (scInlineState.searchRunnable) scList.removeCallbacks(scInlineState.searchRunnable); } catch(eRemoveSearch) {}
                 safeLog(self.L, "d", "shortcut picker disposed generation=" + String(scInlineState.generation));
             }
         }));
