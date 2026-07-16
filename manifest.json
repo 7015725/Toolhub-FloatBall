@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复快捷方式选择器线程归属"
+      "修复快捷方式保存与 Launcher 启动"
     ],
-    "title": "修复快捷方式选择器线程归属"
+    "title": "修复快捷方式保存与 Launcher 启动"
   },
   "schema": 3,
-  "version": 20260716075825
+  "version": 20260716091439
 }
