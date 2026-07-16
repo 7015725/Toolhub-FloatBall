@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""一次性执行指针颜色设置清理，并发布不含临时脚本的正式修复分支。"""
+"""一次性执行指针颜色设置清理，并把业务改动交给签名工作流提交。"""
 
 import subprocess
 import sys
@@ -8,7 +8,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 AGENT_BRANCH = "agent/pointer-color-settings-cleanup-20260716"
-CLEAN_BRANCH = "fix/pointer-color-settings-cleanup-20260716"
 WORKFLOW_PATH = ".github/workflows/apply-pointer-color-settings-cleanup.yml"
 
 
@@ -28,7 +27,7 @@ def run(args, check=True, capture=False):
     return proc
 
 
-run(["git", "fetch", "origin", "main", AGENT_BRANCH])
+run(["git", "fetch", "origin", AGENT_BRANCH])
 yaml_text = run(
     ["git", "show", "origin/%s:%s" % (AGENT_BRANCH, WORKFLOW_PATH)],
     capture=True,
@@ -55,22 +54,18 @@ for command in (
 ):
     run(command)
 
-patch_path = Path("/tmp/pointer-color-settings-cleanup.patch")
-with patch_path.open("w", encoding="utf-8") as handle:
-    proc = subprocess.run(
-        ["git", "diff", "--binary"],
-        cwd=str(ROOT),
-        stdout=handle,
-        text=True,
-    )
-if proc.returncode != 0 or patch_path.stat().st_size <= 0:
-    raise SystemExit("business patch is empty or failed")
-
-run(["git", "fetch", "origin", "main"])
-run(["git", "switch", "-C", CLEAN_BRANCH, "origin/main"])
-run(["git", "apply", "--index", str(patch_path)])
-run(["git", "config", "user.name", "github-actions[bot]"])
-run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
-run(["git", "commit", "-m", "清理并重组指针颜色设置"])
-run(["git", "push", "--force", "origin", "HEAD:%s" % CLEAN_BRANCH])
-print("Published clean branch: " + CLEAN_BRANCH)
+business_paths = [
+    "code/th_01_base.js",
+    "code/th_13_panel_ui.js",
+    "code/th_14_panels.js",
+    "code/th_17_pointer.js",
+    "code/th_18_pointer_ocr.js",
+    "scripts/verify_legacy_main_panel_cleanup.py",
+    "scripts/verify_main_panel_visual_tuning.py",
+    "scripts/verify_main_panel_adaptive_layout.py",
+    "scripts/verify_panel_layout_settings_cleanup.py",
+    "scripts/verify_coloros_rhino_color_safety.py",
+    "manifest.json",
+]
+run(["git", "add"] + business_paths)
+print("Pointer color settings cleanup applied and staged for signing workflow commit")
