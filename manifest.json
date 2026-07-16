@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "b32d8d94f579ea0ba2ebb7298d3005f9f77f92334a3610470680595fd67aa3cb",
-      "size": 1844,
-      "version": 20260716152048
+      "sha256": "56e42a2a81b4c16186e1997a07d7859a00053132725d0aa25f1ca6a621696ddd",
+      "size": 2606,
+      "version": 20260716154315
     }
   },
   "entry": {
@@ -104,9 +104,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "ca8797687ac5196919c667082877e35c4ea6ed34656be48b4f17939cfe88674e",
-      "size": 156350,
-      "version": "1.1.0"
+      "sha256": "889d3d14ba1be8566676110e4b0f30164765e7f36261ac7b2685a0f8bce80d1b",
+      "size": 156351,
+      "version": "1.1.1"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -157,15 +157,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "设置首页新增更新与版本入口和更新红点",
-      "支持查看待更新模块并在确认后事务更新",
-      "入口文件有更新时停止自动重启并提示手动替换",
-      "支持缓存、分页和单项展开查看历史更新记录",
-      "新增 Python 脚本和 GitHub Actions 自动维护更新历史"
+      "修复 Rhino 无法解析 ScrollView.LayoutParams 导致页面构建失败",
+      "改用 FrameLayout.LayoutParams 作为 ScrollView 子布局参数",
+      "补充更新页 Rhino 布局参数兼容校验"
     ],
     "date": "2026-07-16",
-    "title": "新增更新与版本页面"
+    "title": "修复更新与版本页面无法打开"
   },
   "schema": 4,
-  "version": 20260716152048
+  "version": 20260716154315
 }

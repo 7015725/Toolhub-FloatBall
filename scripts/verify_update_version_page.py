@@ -14,6 +14,8 @@ checks = {
     "入口更新阻止自动重启": "after.entryUpdateAvailable === true" in TH14,
     "确定性事务返回值判断": "numberValue(ret.count) <= 0" in TH14,
     "分页固定十条": "var HISTORY_PAGE_SIZE = 10" in TH14,
+    "禁止 Rhino 不兼容 ScrollView.LayoutParams": "android.widget.ScrollView.LayoutParams" not in TH14,
+    "ScrollView 子布局使用 FrameLayout.LayoutParams": "scroll.addView(root, new android.widget.FrameLayout.LayoutParams(-1, -2));" in TH14,
     "旧延期包装边界已删除": '"method": "startToolHubModuleUpdateFromSettings"' not in BOUNDARIES,
 }
 failed = [name for name, ok in checks.items() if not ok]
