@@ -79,12 +79,13 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
 
-      - name: Verify animation state and callback safety
+      - name: Verify ball position state
         shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/verify_ball_position_state.py
-          python3 scripts/verify_animation_callback_safety.py
+        run: python3 scripts/verify_ball_position_state.py
+
+      - name: Verify animation callback safety
+        shell: bash
+        run: python3 scripts/verify_animation_callback_safety.py
 
       - name: Verify crash logging and panel lifecycle
         shell: bash
