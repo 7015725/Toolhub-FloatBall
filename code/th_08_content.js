@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // =======================【Content：解析 settings URI】=======================
 // 这段代码的主要内容/用途：识别 content://settings/(system|secure|global)/KEY 并用 Settings.* get/put 更稳
 FloatBallAppWM.prototype.parseSettingsUri = function(uriStr) {
@@ -1388,58 +1388,87 @@ FloatBallAppWM.prototype.execContentAction = function(btn) {
   ToolHubLogger.__toolHubMajorLoggerWrapper = true;
 
   installCrashHandler = function(logger) {
+  try {
+    if (!logger) return false;
+    TOOLHUB_ACTIVE_LOGGER = logger;
+    TOOLHUB_CRASH_BRIDGE.logger = logger;
+
+    var systemServer = false;
     try {
-      if (!logger) return false;
-      TOOLHUB_ACTIVE_LOGGER = logger;
-      TOOLHUB_CRASH_BRIDGE.logger = logger;
-      if (TOOLHUB_CRASH_BRIDGE.installed && TOOLHUB_CRASH_BRIDGE.handler) return true;
-      TOOLHUB_CRASH_BRIDGE.original = java.lang.Thread.getDefaultUncaughtExceptionHandler();
-      TOOLHUB_CRASH_BRIDGE.handler = new JavaAdapter(java.lang.Thread.UncaughtExceptionHandler, {
-        uncaughtException: function(t, e) {
-          if (TOOLHUB_CRASH_BRIDGE.handling) {
-            try {
-              if (TOOLHUB_CRASH_BRIDGE.original) TOOLHUB_CRASH_BRIDGE.original.uncaughtException(t, e);
-            } catch (e0) {}
-            return;
-          }
-          TOOLHUB_CRASH_BRIDGE.handling = true;
-          try {
-            var L = TOOLHUB_CRASH_BRIDGE.logger || TOOLHUB_ACTIVE_LOGGER;
-            var tn = "", cn = "", msg = "";
-            try { tn = t ? t.getName() : ""; } catch (e1) {}
-            try { cn = e && e.getClass ? e.getClass().getName() : ""; } catch (e2) {}
-            try { msg = String(e || ""); } catch (e3) {}
-            if (L) {
-              L.incident("UNCAUGHT", {
-                thread: tn,
-                exception: cn,
-                message: M.clean(msg, 2048),
-                phase: L.currentPhase || ""
-              });
-            }
-            if (L && String(cn).indexOf("OutOfMemoryError") < 0) {
-              try {
-                var sw = new java.io.StringWriter();
-                var pw = new java.io.PrintWriter(sw);
-                e.printStackTrace(pw);
-                pw.flush();
-                L.fatal("STACKTRACE " + M.clean(sw.toString(), 8192));
-              } catch (e4) {}
-            }
-          } catch (e5) {}
-          try {
-            if (TOOLHUB_CRASH_BRIDGE.original) TOOLHUB_CRASH_BRIDGE.original.uncaughtException(t, e);
-          } catch (e6) {}
-          TOOLHUB_CRASH_BRIDGE.handling = false;
+      if (typeof isToolHubSystemServerProcess === "function") {
+        systemServer = isToolHubSystemServerProcess(logger) === true;
+      } else {
+        systemServer = String(logger && logger.proc && logger.proc.processName || "") === "system_server";
+      }
+    } catch (eProcess) { systemServer = false; }
+
+    if (systemServer) {
+      TOOLHUB_CRASH_BRIDGE.original = null;
+      TOOLHUB_CRASH_BRIDGE.handler = null;
+      TOOLHUB_CRASH_BRIDGE.installed = false;
+      TOOLHUB_CRASH_BRIDGE.handling = false;
+      try {
+        if (typeof logger.i === "function") {
+          logger.i("global crash handler skipped in system_server; restart once to clear legacy chain");
         }
-      });
-      java.lang.Thread.setDefaultUncaughtExceptionHandler(TOOLHUB_CRASH_BRIDGE.handler);
-      TOOLHUB_CRASH_BRIDGE.installed = true;
+      } catch (eSkipLog) {}
       return true;
-    } catch (e) {
-      return false;
     }
-  };
+
+    if (TOOLHUB_CRASH_BRIDGE.installed && TOOLHUB_CRASH_BRIDGE.handler) return true;
+    TOOLHUB_CRASH_BRIDGE.original = java.lang.Thread.getDefaultUncaughtExceptionHandler();
+    TOOLHUB_CRASH_BRIDGE.handler = new JavaAdapter(java.lang.Thread.UncaughtExceptionHandler, {
+      uncaughtException: function(t, e) {
+        if (TOOLHUB_CRASH_BRIDGE.handling) {
+          try {
+            if (TOOLHUB_CRASH_BRIDGE.original &&
+                typeof TOOLHUB_CRASH_BRIDGE.original.uncaughtException === "function") {
+              TOOLHUB_CRASH_BRIDGE.original.uncaughtException(t, e);
+            }
+          } catch (e0) {}
+          return;
+        }
+        TOOLHUB_CRASH_BRIDGE.handling = true;
+        try {
+          var L = TOOLHUB_CRASH_BRIDGE.logger || TOOLHUB_ACTIVE_LOGGER;
+          var tn = "", cn = "", msg = "";
+          try { tn = t ? t.getName() : ""; } catch (e1) {}
+          try { cn = e && e.getClass ? e.getClass().getName() : ""; } catch (e2) {}
+          try { msg = String(e || ""); } catch (e3) {}
+          if (L && typeof L.incident === "function") {
+            L.incident("UNCAUGHT", {
+              thread: tn,
+              exception: cn,
+              message: M.clean(msg, 2048),
+              phase: L.currentPhase || ""
+            });
+          }
+          if (L && typeof L.fatal === "function" && String(cn).indexOf("OutOfMemoryError") < 0) {
+            try {
+              var sw = new java.io.StringWriter();
+              var pw = new java.io.PrintWriter(sw);
+              e.printStackTrace(pw);
+              pw.flush();
+              L.fatal("STACKTRACE " + M.clean(sw.toString(), 8192));
+            } catch (e4) {}
+          }
+        } catch (e5) {}
+        try {
+          if (TOOLHUB_CRASH_BRIDGE.original &&
+              typeof TOOLHUB_CRASH_BRIDGE.original.uncaughtException === "function") {
+            TOOLHUB_CRASH_BRIDGE.original.uncaughtException(t, e);
+          }
+        } catch (e6) {}
+        TOOLHUB_CRASH_BRIDGE.handling = false;
+      }
+    });
+    java.lang.Thread.setDefaultUncaughtExceptionHandler(TOOLHUB_CRASH_BRIDGE.handler);
+    TOOLHUB_CRASH_BRIDGE.installed = true;
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
 })();
 
 /* =======================

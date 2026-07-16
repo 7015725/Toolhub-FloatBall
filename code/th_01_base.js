@@ -1,4 +1,4 @@
-// @version 1.1.12
+// @version 1.1.13
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -1772,9 +1772,31 @@ ToolHubLogger.prototype.cleanupOldFiles = function() {
 };
 
 // =======================【崩溃兜底：线程 UncaughtExceptionHandler】=======================
+function isToolHubSystemServerProcess(logger) {
+  var processName = "";
+  try {
+    processName = String(logger && logger.proc && logger.proc.processName || "");
+  } catch (eLoggerProc) { processName = ""; }
+  if (processName === "system_server") return true;
+  try {
+    if (android.app.ActivityThread && typeof android.app.ActivityThread.currentProcessName === "function") {
+      processName = String(android.app.ActivityThread.currentProcessName() || "");
+    }
+  } catch (eActivityThread) {}
+  return processName === "system_server";
+}
+
 function installCrashHandler(logger) {
   try {
     if (!logger) return false;
+    if (isToolHubSystemServerProcess(logger)) {
+      try {
+        if (typeof logger.i === "function") {
+          logger.i("global crash handler skipped in system_server; restart once to clear legacy chain");
+        }
+      } catch (eSkipLog) {}
+      return true;
+    }
     var old = java.lang.Thread.getDefaultUncaughtExceptionHandler();
     var h = new JavaAdapter(java.lang.Thread.UncaughtExceptionHandler, {
       uncaughtException: function(t, e) {
@@ -1783,16 +1805,20 @@ function installCrashHandler(logger) {
           try { tn = (t ? String(t.getName()) : ""); } catch (eT) {}
           var es = "";
           try { es = (e ? String(e) : ""); } catch (eE) {}
-          logger.fatal("UNCAUGHT thread=" + tn + " err=" + es);
-          try {
-            var sw = new java.io.StringWriter();
-            var pw = new java.io.PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            logger.fatal("STACKTRACE " + String(sw.toString()));
-          } catch (eST) {}
+          if (typeof logger.fatal === "function") {
+            logger.fatal("UNCAUGHT thread=" + tn + " err=" + es);
+            try {
+              var sw = new java.io.StringWriter();
+              var pw = new java.io.PrintWriter(sw);
+              e.printStackTrace(pw);
+              pw.flush();
+              logger.fatal("STACKTRACE " + String(sw.toString()));
+            } catch (eST) {}
+          }
         } catch (e0) {}
-        try { if (old) old.uncaughtException(t, e); } catch (e1) {}
+        try {
+          if (old && typeof old.uncaughtException === "function") old.uncaughtException(t, e);
+        } catch (e1) {}
       }
     });
     java.lang.Thread.setDefaultUncaughtExceptionHandler(h);

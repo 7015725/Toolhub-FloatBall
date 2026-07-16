@@ -19,6 +19,11 @@ REQUIRED = [
     "ballAnimationToken",
     "if (cancelled) return",
     "self.state.ballAnimator !== va",
+    "callbackCompleted",
+    'typeof endCb !== "function"',
+    '"BALL_ANIM_CALLBACK_BEGIN"',
+    'typeof stateObj.wm.updateViewLayout === "function"',
+    'invokeEndCallback("animation_end")',
     "proto.movePointerFromRaw = function(rawX, rawY, immediate, skipSemantic)",
     "proto.finishPointerGestureFromRaw = function",
     "movePointerFromRaw(rawX, rawY, true, true)",
@@ -158,6 +163,12 @@ def verify_animation_and_reflow(text):
         fail("animation still persists temporary pixel coordinates")
     if animation.count("ballAnimationToken") < 4:
         fail("animation generation guard is incomplete")
+    for forbidden in (
+        "try { if (endCb) endCb(); } catch",
+        "catch (eCb) {}",
+    ):
+        if forbidden in animation:
+            fail("unsafe animation callback pattern remains: " + forbidden)
 
     reflow = section(
         text,

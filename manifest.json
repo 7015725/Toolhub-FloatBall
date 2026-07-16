@@ -10,9 +10,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "96bd3efa012c035a09dffe7cf87d50d7acb20b0adb937c1d81a897d13b2f2c89",
-      "size": 78152,
-      "version": "1.1.12"
+      "sha256": "994b6d162fcd8f4ce5dd0fa8061a8121e4bedabeb5b718d97f03aa3cb7b5567d",
+      "size": 79113,
+      "version": "1.1.13"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -40,14 +40,14 @@
       "version": "1.0.1"
     },
     "th_08_content.js": {
-      "sha256": "35a30374659a6171bbe629e2c779d08e08935c5f0dc8da6daced9381f493d61f",
-      "size": 62822,
-      "version": "1.0.7"
+      "sha256": "e80d83019d16e789d2642f3ab255e7229637b9dca65e3927804a914f11c1f27d",
+      "size": 63803,
+      "version": "1.0.8"
     },
     "th_09_animation.js": {
-      "sha256": "b3d521336ef2b44be5c9e2a043cbd6324f9fff8259fd7e9a987f8688b3cec681",
-      "size": 34989,
-      "version": "1.0.8"
+      "sha256": "36e19ec59e443a3c067b95628b3ba2aaccecb99c2943112afe6095a65110627d",
+      "size": 36668,
+      "version": "1.0.9"
     },
     "th_10_shell.js": {
       "sha256": "36427d7146a4589cbcf0512804acd90f4210a3d512cde6e03f2cb40c42d86d2d",
@@ -105,9 +105,9 @@
       "version": "1.0.4"
     },
     "th_15_extra.js": {
-      "sha256": "206989affde012391bb61026eb3deaf0ae0666b57f3fd86204422fc8307ffb64",
-      "size": 113603,
-      "version": "1.1.16"
+      "sha256": "ac66431b8c44e8f95913afe1f111a6f6f900eb6c1513ef0218cf88c6b95fb7eb",
+      "size": 115857,
+      "version": "1.1.17"
     },
     "th_15_main_panel.js": {
       "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
@@ -130,9 +130,9 @@
       "version": "1.1.1"
     },
     "th_19_position_state.js": {
-      "sha256": "e66f007cf35702cdef47b007e95b42e6f077dc6033353853763ceb0439ca6c03",
-      "size": 42616,
-      "version": "1.0.11"
+      "sha256": "dc3c4b7a4391d1927bbc0599fa9493492b9a1a86ae71b9a8670fc66f8fc03f89",
+      "size": 45065,
+      "version": "1.0.12"
     },
     "th_20_pickword.js": {
       "sha256": "5851b513ea1cb6148be440de264e88feaa2342c79c93434adf37abccc513b76a",
@@ -148,10 +148,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复 Shell 广播桥兼容迁移"
+      "修复动画回调异常与崩溃处理器累积"
     ],
-    "title": "修复 Shell 广播桥兼容迁移"
+    "title": "修复动画回调异常与崩溃处理器累积"
   },
   "schema": 3,
-  "version": 20260715155859
+  "version": 20260716003412
 }
