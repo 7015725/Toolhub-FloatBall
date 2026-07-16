@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify structured Shortcut defaults, Launcher execution and eval isolation."""
+"""Verify structured Shortcut defaults, Launcher execution, save invariants and eval isolation."""
 
 from pathlib import Path
 import re
@@ -10,6 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def read(path):
     return (ROOT / path).read_text(encoding="utf-8")
+
+
+def version_at_least(text, expected):
+    match = re.search(r"^// @version\s+(\d+)\.(\d+)\.(\d+)", text)
+    return bool(match) and tuple(map(int, match.groups())) >= expected
 
 
 def normalize_mode(value):
@@ -37,13 +42,11 @@ def main():
     editor = read("code/th_14_button_editor.js")
     shortcut = read("code/th_14_button_shortcut.js")
 
-    eval_pos = action.find("eval(jsCode)")
-    guard_pos = action.find('if (shortcutMode !== "legacy_js")')
-    legacy_pos = action.find('var jsCode = (btn.shortcutJsCode')
     launcher_pos = action.find("launcherApps.startShortcut(spkg, sid, null, null, shortcutUser)")
     intent_pos = action.find("android.content.Intent.parseUri(iu, 0)")
-    shortcut_version = re.search(r"^// @version\s+(\d+)\.(\d+)\.(\d+)", shortcut)
-    action_version = re.search(r"^// @version\s+(\d+)\.(\d+)\.(\d+)", action)
+    guard_pos = action.find('if (shortcutMode !== "legacy_js")')
+    legacy_pos = action.find('var jsCode = (btn.shortcutJsCode')
+    eval_pos = action.find("eval(jsCode)")
 
     checks = [
         ("shortcut schema defaults to intent", 'putSchema("SHORTCUT_EXEC_MODE", { type: "enum", values: ["intent", "legacy_js"], default: "intent" })' in rebuild),
@@ -54,8 +57,11 @@ def main():
         ("eval exists only once", action.count("eval(jsCode)") == 1),
         ("launcher start exists once", action.count("launcherApps.startShortcut(spkg, sid, null, null, shortcutUser)") == 1),
         ("launcher runs before intent fallback", launcher_pos >= 0 and intent_pos > launcher_pos),
-        ("eval is behind explicit legacy guard", guard_pos >= 0 and legacy_pos > guard_pos and eval_pos > legacy_pos),
+        ("legacy eval remains behind structured paths", guard_pos > intent_pos and legacy_pos > guard_pos and eval_pos > legacy_pos),
         ("structured failure returns before legacy code", 'shortcutMode !== "legacy_js"' in action and 'shortcut structured fail' in action),
+        ("runtime requires package", 'shortcut missing pkg idx=' in action),
+        ("runtime requires shortcut id", 'shortcut missing id pkg=' in action),
+        ("runtime preserves intent fallback", 'shortcut(intentUri fallback) ok' in action),
         ("button migration writes explicit mode", 'b.shortcutExecMode = normalizedShortcutMode' in base),
         ("button migration preserves only js-only legacy", '!shortcutIntent && shortcutJs' in base),
         ("obsolete shortcutRunMode is removed", 'delete b.shortcutRunMode' in base),
@@ -65,11 +71,20 @@ def main():
         ("editor no longer forces js mode", 'newBtn.shortcutRunMode = "js"' not in editor),
         ("editor allows launcher-only shortcuts", '请选择包含 intentUri 的快捷方式' not in editor and 'if (_scIntentUri) newBtn.intentUri = _scIntentUri;' in editor),
         ("editor clears stale optional intent", 'else delete newBtn.intentUri;' in editor),
+        ("editor saves package and id", 'newBtn.pkg = sp' in editor and 'newBtn.shortcutId = sid' in editor),
+        ("editor saves both user fields", 'newBtn.userId = _scUserId' in editor and 'newBtn.launchUserId = _scUserId' in editor),
+        ("validation logging is redacted", 'hasIntentUri=' in editor and 'button editor validation blocked' in editor),
+        ("notice uses danger role", 'var dangerColor = T.danger || C.danger' in editor),
         ("new shortcut UI does not generate js", '__scBuildDefaultJsCode' not in shortcut and '__scUpdateJsCodeSafe' not in shortcut),
         ("legacy editor only appears for migrated buttons", 'if (legacyJsEnabled)' in shortcut and 'inputScJsCode = self.ui.createInputGroup' in shortcut),
         ("selecting a shortcut disables legacy", '__scSetLegacyJsEnabled(false)' in shortcut),
-        ("shortcut submodule has a real version", bool(shortcut_version) and tuple(map(int, shortcut_version.groups())) >= (1, 0, 3)),
-        ("action module version advanced", bool(action_version) and tuple(map(int, action_version.groups())) >= (1, 1, 1)),
+        ("picker derives launch method for logs", 'launchMethod=" + (scSelectedIntentUri ? "launcher_intent" : "launcher")' in shortcut),
+        ("picker does not store derived launch method", "launchMethod:" not in shortcut),
+        ("picker logs uri length only", 'intentUriLen=' in shortcut and 'shortcut picker selected pkg=' in shortcut),
+        ("picker labels launcher-only entries", 'Launcher + Intent 后备' in shortcut and 'Launcher 启动' in shortcut),
+        ("action module version advanced", version_at_least(action, (1, 1, 1))),
+        ("editor module version advanced", version_at_least(editor, (1, 1, 3))),
+        ("shortcut module version advanced", version_at_least(shortcut, (1, 0, 5))),
     ]
 
     model_checks = [
@@ -90,7 +105,7 @@ def main():
             print(" - " + name)
         return 1
 
-    print("Shortcut security verification OK")
+    print("Shortcut security verification OK checks=%d model_checks=%d" % (len(checks), len(model_checks)))
     return 0
 
 
