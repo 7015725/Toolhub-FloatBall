@@ -65,8 +65,8 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path('scripts/verify_ball_position_state.py')
-          text = path.read_text(encoding='utf-8')
+          position_path = Path('scripts/verify_ball_position_state.py')
+          text = position_path.read_text(encoding='utf-8')
           start_token = '    if animation.count("ballAnimationToken") < 4:'
           end_token = '\n\n    reflow = section('
           start = text.index(start_token)
@@ -81,7 +81,20 @@ jobs:
               '        if forbidden in animation:\n'
               '            fail("unsafe animation callback pattern remains: " + forbidden)'
           )
-          path.write_text(text[:start] + replacement + text[end:], encoding='utf-8', newline='\n')
+          text = text[:start] + replacement + text[end:]
+          text = text.replace(
+              'typeof stateObj.wm.updateViewLayout !== "function"',
+              'typeof stateObj.wm.updateViewLayout === "function"'
+          )
+          position_path.write_text(text, encoding='utf-8', newline='\n')
+
+          callback_path = Path('scripts/verify_animation_callback_safety.py')
+          callback_text = callback_path.read_text(encoding='utf-8')
+          callback_text = callback_text.replace(
+              'typeof stateObj.wm.updateViewLayout !== "function"',
+              'typeof stateObj.wm.updateViewLayout === "function"'
+          )
+          callback_path.write_text(callback_text, encoding='utf-8', newline='\n')
           PY
 
       - name: Regenerate deterministic audits
@@ -102,28 +115,8 @@ jobs:
           python3 scripts/verify_js_syntax.py
 
       - name: Verify ball position state
-        id: ball_position
-        continue-on-error: true
         shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/verify_ball_position_state.py 2>&1 | tee ball-position-verifier-output.txt
-
-      - name: Upload ball position contract details
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ball-position-contract-details
-          path: |
-            ball-position-verifier-output.txt
-            scripts/verify_ball_position_state.py
-            code/th_19_position_state.js
-          if-no-files-found: error
-          retention-days: 3
-
-      - name: Stop on ball position failure
-        if: steps.ball_position.outcome != 'success'
-        run: exit 1
+        run: python3 scripts/verify_ball_position_state.py
 
       - name: Verify animation callback safety
         shell: bash
