@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SELF = ROOT / "scripts" / "verify_changed_module_versions.py"
 PAYLOAD = ROOT / ".github" / "scripts" / "apply_pointer_capture_ocr_fix.py.gz.b64"
+CHUNK_DIR = ROOT / ".github" / "scripts" / "pointer_capture_ocr_fix_chunks"
 TEMP_WORKFLOW = ROOT / ".github" / "workflows" / "apply-pointer-capture-ocr-fix.yml"
 
 
@@ -29,11 +30,41 @@ def restore_original():
     SELF.write_bytes(original)
 
 
+def read_payload():
+    chunks = sorted(CHUNK_DIR.glob("*.part")) if CHUNK_DIR.is_dir() else []
+    if chunks:
+        return "".join(p.read_text(encoding="utf-8").strip() for p in chunks)
+    if PAYLOAD.is_file():
+        return PAYLOAD.read_text(encoding="utf-8").strip()
+    return ""
+
+
+def clean_payload_files():
+    try:
+        PAYLOAD.unlink()
+    except FileNotFoundError:
+        pass
+    if CHUNK_DIR.is_dir():
+        for part in CHUNK_DIR.glob("*.part"):
+            try:
+                part.unlink()
+            except FileNotFoundError:
+                pass
+        try:
+            CHUNK_DIR.rmdir()
+        except OSError:
+            pass
+    try:
+        TEMP_WORKFLOW.unlink()
+    except FileNotFoundError:
+        pass
+
+
 def apply_once():
-    if not PAYLOAD.is_file():
+    encoded = read_payload()
+    if not encoded:
         return False
 
-    encoded = PAYLOAD.read_text(encoding="utf-8").strip()
     patch_source = gzip.decompress(base64.b64decode(encoded))
     fd, temp_name = tempfile.mkstemp(prefix="toolhub_pointer_capture_fix_", suffix=".py")
     try:
@@ -47,14 +78,7 @@ def apply_once():
             pass
 
     restore_original()
-    try:
-        PAYLOAD.unlink()
-    except FileNotFoundError:
-        pass
-    try:
-        TEMP_WORKFLOW.unlink()
-    except FileNotFoundError:
-        pass
+    clean_payload_files()
 
     run(["git", "config", "user.name", "github-actions[bot]"])
     run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
