@@ -83,7 +83,7 @@ FloatBallAppWM.prototype.createSettingsConfigStatusPill = function'''
         "settings entered counters",
     )
 
-    text = re.sub(r"^\s*this\.state\.toolHubUpdateHistoryLastFailureError = .*?;\n", "", text, flags=re.M)
+    text = re.sub(r"^\s*(?:this|self)\.state\.toolHubUpdateHistoryLastFailureError = .*?;\n", "", text, flags=re.M)
 
     forbidden = [
         "createToolHubUpdatePill",
