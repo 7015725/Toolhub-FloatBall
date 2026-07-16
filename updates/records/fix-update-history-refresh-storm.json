@@ -9,5 +9,19 @@
     "自动更新检查不再强制重复下载相同历史资产",
     "补充历史加载开始、成功、失败、大小和耗时诊断日志"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260716160456,
+  "date": "2026-07-17",
+  "modules": [
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.1",
+      "to": "1.1.2",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
 }
