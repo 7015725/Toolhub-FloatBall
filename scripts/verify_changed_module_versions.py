@@ -13,6 +13,7 @@ CODE = ROOT / "code"
 ENTRY = ROOT / "ToolHub.js"
 SIGNER = ROOT / "scripts" / "generate_signed_manifest.py"
 
+
 def fail(message):
     raise SystemExit("FAIL changed-module-versions: " + message)
 
