@@ -1,4 +1,4 @@
-// @version 1.1.3
+// @version 1.1.4
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -363,8 +363,9 @@ FloatBallAppWM.prototype.getIslandPickerTheme = function() {
   };
 };
 
-FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc, actionText, onClick) {
-  if (String(title || "") === "更新与版本" && this.createToolHubUpdateHomeEntry) return this.createToolHubUpdateHomeEntry(parent, title, this.getToolHubUpdateHomeSummary ? this.getToolHubUpdateHomeSummary() : desc, onClick);
+FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc, actionText, onClick, options) {
+  var entryOptions = options || {};
+  if (String(title || "") === "更新与版本" && entryOptions.normalizedUpdateEntry !== true && this.createToolHubUpdateHomeEntry) return this.createToolHubUpdateHomeEntry(parent, title, this.getToolHubUpdateHomeSummary ? this.getToolHubUpdateHomeSummary() : desc, onClick);
   var self = this;
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
@@ -381,16 +382,29 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   row.setBackground(this.ui.createPressedStateDrawable(T.surface, this.withAlpha(T.primary, isDark ? 0.14 : 0.08), itemRadius));
   try { row.setElevation(this.dp(1)); } catch(eElev) { safeLog(null, 'e', "catch " + String(eElev)); }
   var badge = new android.widget.TextView(context);
-  badge.setText(this.getSettingsHomeIcon ? this.getSettingsHomeIcon(title) : "✦");
+  badge.setText(entryOptions.iconText !== undefined && entryOptions.iconText !== null ? String(entryOptions.iconText) : (this.getSettingsHomeIcon ? this.getSettingsHomeIcon(title) : "✦"));
   toolhubSafeSetTextColor(badge, T.primary);
   badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
   badge.setGravity(android.view.Gravity.CENTER);
   badge.setTypeface(null, android.graphics.Typeface.BOLD);
   badge.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.22 : 0.16), this.dp(1), this.dp(13)));
   var iconSize = spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(38) : this.dp(40);
-  var badgeLp = new android.widget.LinearLayout.LayoutParams(iconSize, iconSize);
-  badgeLp.setMargins(0, 0, this.dp(10), 0);
-  row.addView(badge, badgeLp);
+  if (entryOptions.showRedDot === true) {
+    var badgeBox = new android.widget.FrameLayout(context);
+    badgeBox.addView(badge, new android.widget.FrameLayout.LayoutParams(iconSize, iconSize, android.view.Gravity.CENTER));
+    var dot = new android.view.View(context);
+    var danger = T.danger || android.graphics.Color.parseColor("#BA1A1A");
+    dot.setBackground(this.ui.createRoundDrawable(danger, this.dp(5)));
+    var dotLp = new android.widget.FrameLayout.LayoutParams(this.dp(10), this.dp(10), android.view.Gravity.TOP | android.view.Gravity.RIGHT);
+    badgeBox.addView(dot, dotLp);
+    var badgeBoxLp = new android.widget.LinearLayout.LayoutParams(iconSize, iconSize);
+    badgeBoxLp.setMargins(0, 0, this.dp(10), 0);
+    row.addView(badgeBox, badgeBoxLp);
+  } else {
+    var badgeLp = new android.widget.LinearLayout.LayoutParams(iconSize, iconSize);
+    badgeLp.setMargins(0, 0, this.dp(10), 0);
+    row.addView(badge, badgeLp);
+  }
   var texts = new android.widget.LinearLayout(context);
   texts.setOrientation(android.widget.LinearLayout.VERTICAL);
   var tvTitle = new android.widget.TextView(context);
@@ -2867,65 +2881,12 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   };
 
   FloatBallAppWM.prototype.createToolHubUpdateHomeEntry = function(parent, title, desc, onClick) {
-    var self = this;
-    var isDark = this.isDarkTheme();
-    var T = this.getSettingsColorScheme();
-    var row = new android.widget.LinearLayout(context);
-    row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-    row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    var spec = this.getSettingsResponsiveSpec ? this.getSettingsResponsiveSpec() : null;
-    var itemRadius = spec ? spec.itemRadius : this.dp(18);
-    row.setPadding(this.dp(12), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(8) : this.dp(10), this.dp(10), spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(8) : this.dp(10));
-    row.setMinimumHeight(spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(72) : this.dp(76));
-    row.setBackground(this.ui.createPressedStateDrawable(T.surface, this.withAlpha(T.primary, isDark ? 0.14 : 0.08), itemRadius));
-    var badgeBox = new android.widget.FrameLayout(context);
-    var badge = new android.widget.TextView(context);
-    badge.setText("↻");
-    toolhubSafeSetTextColor(badge, T.primary);
-    badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
-    badge.setGravity(android.view.Gravity.CENTER);
-    badge.setTypeface(null, android.graphics.Typeface.BOLD);
-    badge.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.22 : 0.16), this.dp(1), this.dp(13)));
-    var iconSize = spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(38) : this.dp(40);
-    badgeBox.addView(badge, new android.widget.FrameLayout.LayoutParams(iconSize, iconSize, android.view.Gravity.CENTER));
-    if (this.hasToolHubUpdateAttention()) {
-      var dot = new android.view.View(context);
-      var danger = T.danger || android.graphics.Color.parseColor("#BA1A1A");
-      dot.setBackground(this.ui.createRoundDrawable(danger, this.dp(5)));
-      var dotLp = new android.widget.FrameLayout.LayoutParams(this.dp(10), this.dp(10), android.view.Gravity.TOP | android.view.Gravity.RIGHT);
-      badgeBox.addView(dot, dotLp);
-    }
-    var badgeBoxLp = new android.widget.LinearLayout.LayoutParams(iconSize, iconSize);
-    badgeBoxLp.setMargins(0, 0, this.dp(10), 0);
-    row.addView(badgeBox, badgeBoxLp);
-    var texts = new android.widget.LinearLayout(context);
-    texts.setOrientation(android.widget.LinearLayout.VERTICAL);
-    var tvTitle = new android.widget.TextView(context);
-    tvTitle.setText(String(title || "更新与版本"));
-    toolhubSafeSetTextColor(tvTitle, T.onSurface);
-    tvTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
-    tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-    texts.addView(tvTitle);
-    var tvDesc = new android.widget.TextView(context);
-    tvDesc.setText(String(desc || ""));
-    toolhubSafeSetTextColor(tvDesc, T.onSurface2);
-    tvDesc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
-    tvDesc.setPadding(0, this.dp(2), this.dp(6), 0);
-    texts.addView(tvDesc);
-    row.addView(texts, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
-    var go = new android.widget.TextView(context);
-    go.setText("›");
-    toolhubSafeSetTextColor(go, T.primary);
-    go.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
-    go.setTypeface(null, android.graphics.Typeface.BOLD);
-    go.setGravity(android.view.Gravity.CENTER);
-    row.addView(go, new android.widget.LinearLayout.LayoutParams(this.dp(24), -1));
-    row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
-      try { self.touchActivity(); } catch (eTouch) {}
-      try { if (onClick) onClick(); } catch (eOpen) { try { self.toast("打开失败: " + String(eOpen)); } catch (eToast) {} }
-    }}));
-    if (this.addSettingsGridChild) this.addSettingsGridChild(parent, row, spec ? spec.gridColumnCount : 1);
-    else parent.addView(row, new android.widget.LinearLayout.LayoutParams(-1, -2));
+    var summary = this.getToolHubUpdateHomeSummary ? this.getToolHubUpdateHomeSummary() : desc;
+    return this.createSettingsHomeEntry(parent, title || "更新与版本", summary, "", onClick, {
+      normalizedUpdateEntry: true,
+      iconText: "↻",
+      showRedDot: this.hasToolHubUpdateAttention ? this.hasToolHubUpdateAttention() : false
+    });
   };
 
   FloatBallAppWM.prototype.buildToolHubUpdateVersionPanelView = function() {
