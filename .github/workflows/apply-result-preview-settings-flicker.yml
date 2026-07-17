@@ -44,13 +44,20 @@ jobs:
           git fetch --no-tags origin main
           python3 scripts/verify_changed_module_versions.py --base-ref origin/main
 
-      - name: Verify repository audits
-        run: |
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
-          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
-          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
-          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+      - name: Verify module boundaries
+        run: python3 scripts/verify_module_boundaries.py
+
+      - name: Verify dead code audit
+        run: python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+
+      - name: Verify protected wrapper audit
+        run: python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
+
+      - name: Verify th09 audit
+        run: python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
+
+      - name: Verify entry audit
+        run: python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
 
       - name: Verify result preview stability
         run: python3 scripts/verify_result_preview.py
@@ -78,7 +85,7 @@ jobs:
           git rm .github/workflows/apply-result-preview-settings-flicker.yml
           git rm scripts/apply_result_preview_settings_flicker.py
           git config user.name "github-actions[bot]"
-          git config user.email "4189827+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add code scripts TH15_EXTRA_AUDIT.md updates/records
           git commit -m "修复结果预览与设置页闪烁"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
