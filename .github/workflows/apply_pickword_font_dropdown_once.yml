@@ -1,0 +1,100 @@
+name: apply-pickword-font-dropdown-once
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  apply:
+    if: github.head_ref == 'fix/pickword-font-dropdown-height-20260717'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/pickword-font-dropdown-height-20260717
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply font dropdown and height patch
+        run: python3 scripts/apply_pickword_font_dropdown_once.py
+
+      - name: Verify changed module versions
+        run: |
+          git fetch --no-tags origin main
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify Rhino ES5 and JavaScript syntax
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+
+      - name: Verify repository boundaries
+        run: |
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_settings_color_scheme.py
+          python3 scripts/verify_settings_color_roles.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/verify_update_history.py --require-one-pending
+
+      - name: Verify font dropdown markers
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('code/th_20_pickword.js').read_text(encoding='utf-8')
+          checks = {
+              'version': '// @version 1.0.7' in p,
+              'dropdown method': 'createFontSizeDropdown: function()' in p,
+              'dropdown toggle': 'toggleFontSizeDropdown: function()' in p,
+              'selector routed': 'self.toggleFontSizeDropdown();' in p,
+              'old entry blocked': '旧滑杆式字号入口暂时屏蔽' in p and 'toggleFontSizePanel: function()' in p,
+              'small preset': '{ label: "小", size: 16 }' in p,
+              'medium preset': '{ label: "中", size: 20 }' in p,
+              'large preset': '{ label: "大", size: 24 }' in p,
+              'extra preset': '{ label: "超大", size: 28 }' in p,
+              'compact min height': 'uiDp(92, 118)' in p and 'screenHeight * 0.105' in p,
+              'legacy click removed': 'self.toggleFontSizePanel();' not in p,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          for name, ok in checks.items():
+              print(('PASS ' if ok else 'FAIL ') + name)
+          if failed:
+              raise SystemExit('failed markers: ' + ', '.join(failed))
+          PY
+
+      - name: Remove one-time automation files
+        run: |
+          rm -f scripts/apply_pickword_font_dropdown_once.py
+          rm -f .github/workflows/apply_pickword_font_dropdown_once.yml
+
+      - name: Check final diff
+        run: |
+          git diff --check
+          git status --short
+          test -n "$(git status --porcelain)"
+
+      - name: Commit implementation
+        env:
+          TARGET_BRANCH: fix/pickword-font-dropdown-height-20260717
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "优化拾字字号下拉与文本区高度"
+          if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          git push origin "HEAD:${TARGET_BRANCH}"
