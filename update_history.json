@@ -1,8 +1,42 @@
 {
   "schema": 1,
-  "historyVersion": 20260717040123,
-  "generatedAt": "2026-07-17T12:01:23+08:00",
+  "historyVersion": 20260717045512,
+  "generatedAt": "2026-07-17T12:55:12+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "fix-main-panel-mask-flicker",
+      "type": "fix",
+      "title": "修复主面板打开时全屏闪烁",
+      "details": [
+        "主面板完成构建、测量和定位后再以不可见状态准备全屏遮罩，避免遮罩单独参与一帧合成",
+        "主面板成功加入 WindowManager 后再稳定显示遮罩，保留原有遮罩深度与点击外部关闭行为",
+        "主面板根窗口在 addView 前固定为完全不透明和原始尺寸，不再执行整窗进入属性动画",
+        "遮罩增加 View 与 generation 身份校验，关闭前先设为不可见并优先立即移除",
+        "修正空 viewerPanel 与空 toolAppRoot 被误判为 ToolApp 的生命周期问题，并补充专项校验"
+      ],
+      "manifestVersion": 20260717045512,
+      "date": "2026-07-17",
+      "modules": [
+        {
+          "name": "th_09_animation.js",
+          "from": "1.0.11",
+          "to": "1.0.12",
+          "change": "updated"
+        },
+        {
+          "name": "th_15_extra.js",
+          "from": "1.1.20",
+          "to": "1.1.21",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260714081104,
+        "to": 20260714081104
+      }
+    },
     {
       "schema": 1,
       "id": "fix-result-preview-settings-flicker",
