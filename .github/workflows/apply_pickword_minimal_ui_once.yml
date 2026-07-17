@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/pickword-minimal-ui-20260717
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +14,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.ref_name == 'fix/pickword-minimal-ui-20260717'
+    if: github.ref_name == 'fix/pickword-minimal-ui-20260717' || github.head_ref == 'fix/pickword-minimal-ui-20260717'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout feature branch
