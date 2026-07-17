@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "historyVersion": 20260717105455,
-  "generatedAt": "2026-07-17T18:54:55+08:00",
+  "historyVersion": 20260717111418,
+  "generatedAt": "2026-07-17T19:14:18+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "fix-pickword-text-area-height-sync",
+      "type": "fix",
+      "title": "修复拾字短文本区域底部空条",
+      "details": [
+        "统一拾字主文字区 ScrollView 与 CanvasView 的最小高度，消除短文本下方露出的白色背景空条",
+        "移除 contentHeight 之外重复增加的8至10dp高度补偿，内容高度直接包含原有上下内边距",
+        "取消按屏幕高度百分比放大短文本最小高度，手机和平板分别沿用80dp与96dp触控空间",
+        "同步更新结果预览集成校验，使其验证父子同高和长文本最大高度契约",
+        "不修改选字索引、点击长按拖选、放大镜、字号下拉、指针、OCR与顶部结果预览"
+      ],
+      "manifestVersion": 20260717111418,
+      "date": "2026-07-17",
+      "modules": [
+        {
+          "name": "th_20_pickword.js",
+          "from": "1.0.7",
+          "to": "1.0.8",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260714081104,
+        "to": 20260714081104
+      }
+    },
     {
       "schema": 1,
       "id": "fix-pickword-font-dropdown-height",
