@@ -4,14 +4,14 @@ on:
   push:
     branches:
       - fix/pickword-minimal-ui-20260717
-    paths:
-      - .github/workflows/apply_pickword_minimal_ui_once.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.ref_name == 'fix/pickword-minimal-ui-20260717'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout feature branch
@@ -92,5 +92,3 @@ jobs:
             git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           fi
           git push origin "HEAD:${TARGET_BRANCH}"
-
-# retrigger 20260717
