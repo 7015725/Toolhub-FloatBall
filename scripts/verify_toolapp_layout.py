@@ -56,7 +56,6 @@ def main():
     check("adaptive-size", "layout applies margins", "marginX" in extra and "marginTop" in extra and "marginBottom" in extra)
 
     dispatch_match, dispatch_body = method_body(extra, "showToolApp")
-    add_match, add_body = method_body(extra, "addPanel")
     build_match, build_body = method_body(entry, "showToolAppOnMain")
     check("shared", "showToolApp dispatcher exists", bool(dispatch_match))
     check("main-owner", "showToolAppOnMain builder exists", bool(build_match))
