@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - fix/release-pipeline-final-audit
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
@@ -180,5 +184,9 @@ GitHub Release 固定附带 `ToolHub.js`、入口哈希、manifest、RSA 签名�
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add README.md STRUCTURE.md
           git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "Documentation already current"
+            exit 0
+          fi
           git commit -m "同步发布记录与 Release 维护文档"
           git push origin HEAD:fix/release-pipeline-final-audit
