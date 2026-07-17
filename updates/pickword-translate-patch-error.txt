@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/apply_pickword_translate_settings_once.py", line 469, in <module>
+    pickword = sub_once(pickword, translate_config_block, translate_config_replacement, "runtime translate config", re.S)
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/apply_pickword_translate_settings_once.py", line 26, in sub_once
+    out, count = re.subn(pattern, replacement, text, count=1, flags=flags)
+                 ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.14.6/x64/lib/python3.14/re/__init__.py", line 238, in subn
+    return _compile(pattern, flags).subn(repl, string, count)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.14.6/x64/lib/python3.14/re/__init__.py", line 377, in _compile_template
+    return _sre.template(pattern, _parser.parse_template(repl, pattern))
+                                  ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.14.6/x64/lib/python3.14/re/_parser.py", line 1061, in parse_template
+    raise s.error('bad escape %s' % this, len(this)) from None
+re.PatternError: bad escape \s at position 438 (line 10, column 67)
