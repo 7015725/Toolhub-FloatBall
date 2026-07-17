@@ -11,5 +11,37 @@
     "拾字运行时每次翻译读取已保存配置快照，停止读取ShortX旧翻译引擎、应用ID和应用秘钥局部变量",
     "保存后无需重启ToolHub即可生效，日志和提醒不输出完整ID、密钥、签名或请求参数"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260717121857,
+  "date": "2026-07-17",
+  "modules": [
+    {
+      "name": "th_01_base.js",
+      "from": "1.1.16",
+      "to": "1.1.17",
+      "change": "updated"
+    },
+    {
+      "name": "th_13_panel_ui.js",
+      "from": "1.0.11",
+      "to": "1.0.12",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.8",
+      "to": "1.1.9",
+      "change": "updated"
+    },
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.9",
+      "to": "1.0.10",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
 }
