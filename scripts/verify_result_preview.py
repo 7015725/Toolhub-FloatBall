@@ -192,7 +192,7 @@ def main() -> int:
     attach_new_root = section(preview, "function attachNewRoot21(appObj, st)", "function rebuildRoot21(appObj, st, rootRef, render)")
     draw_preview = section(preview, "function drawPreview21(appObj, st, canvas, view, render)", "function cancelDismiss21(st)")
     draw_copy = section(preview, "function drawCopyAction21(appObj, canvas, view, render, colors)", "function drawPreview21(appObj, st, canvas, view, render)")
-    copy_action = section(preview, "function performResultPreviewCopy21(appObj, st, rootRef, render)", "function startEnterAnimation21")
+    copy_action = section(preview, "function performResultPreviewCopy21(appObj, st, rootRef, render)", "function markFirstDraw21")
     copy_feedback = section(preview, "function scheduleCopyFeedbackReset21(appObj, st, rootRef, render, delayMs)", "function performResultPreviewCopy21")
 
     require(
@@ -473,15 +473,19 @@ def main() -> int:
         failures,
     )
     require(
-        "preview / fade and scale only motion",
-        ".alpha(1)" in preview
-        and ".alpha(0)" in preview
-        and ".scaleX(0.97).scaleY(0.97)" in preview
-        and "translationY(-dp21" not in preview
+        "preview / stable opaque overlay without property animation",
+        "canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR);" in draw_preview
+        and "function startEnterAnimation21" not in preview
+        and ".alpha(" not in preview
+        and ".scaleX(" not in preview
+        and ".scaleY(" not in preview
+        and "setAlpha(0.76)" not in preview
+        and "setAlpha(0.82)" not in preview
+        and "rootRef.setAlpha(1)" in preview
+        and "st.root.setAlpha(1)" in preview
         and "setTranslationY(0)" in preview
-        and ".setDuration(120)" in preview
         and "st.clickLocked" in preview,
-        "preview motion must use alpha and scale without vertical translation",
+        "transparent WindowManager overlays must stay at alpha/scale 1 and clear each Canvas frame to avoid ColorOS ghosting",
         failures,
     )
 

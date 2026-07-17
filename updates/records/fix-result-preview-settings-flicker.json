@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "fix-result-preview-settings-flicker",
+  "type": "fix",
+  "title": "修复结果预览与设置页闪烁",
+  "details": [
+    "结果预览窗口取消整窗透明度和缩放动画，每次 Canvas 绘制前清空透明缓冲区",
+    "新结果替换、超时关闭和点击反馈不再对透明 Overlay Surface 执行属性变换",
+    "设置首页后台更新检查仅局部刷新更新摘要与红点，不再重复重建设置内容树",
+    "ToolApp 首次显示保持完全不透明和原始尺寸，避免进入动画与内容刷新发生竞争",
+    "补充结果预览、更新入口和 ToolApp 视觉稳定性专项校验"
+  ],
+  "manifestVersion": 0
+}

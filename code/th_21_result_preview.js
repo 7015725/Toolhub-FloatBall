@@ -1,4 +1,4 @@
-// @version 1.3.0
+// @version 1.3.1
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -788,6 +788,9 @@
   }
 
   function drawPreview21(appObj, st, canvas, view, render) {
+    try {
+      canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR);
+    } catch (eClearFrame) {}
     var c = colors21(appObj);
     if (render) {
       render.themeDark = c.themeDark === true;
@@ -1017,36 +1020,6 @@
     return false;
   }
 
-  function startEnterAnimation21(appObj, st, rootRef, render) {
-    if (!isCurrentRoot21(st, rootRef, render)) return false;
-    if (render.enterStarted === true) return true;
-    render.enterStarted = true;
-    try {
-      rootRef.animate().cancel();
-      rootRef.setVisibility(android.view.View.VISIBLE);
-      rootRef.setAlpha(0.76);
-      rootRef.setScaleX(0.985);
-      rootRef.setScaleY(0.985);
-      rootRef.setTranslationY(0);
-      rootRef.animate()
-        .alpha(1)
-        .scaleX(1)
-        .scaleY(1)
-        .setDuration(140)
-        .setInterpolator(new android.view.animation.DecelerateInterpolator())
-        .start();
-      return true;
-    } catch (eEnter) {
-      try {
-        rootRef.setVisibility(android.view.View.VISIBLE);
-        rootRef.setAlpha(1);
-        rootRef.setScaleX(1);
-        rootRef.setScaleY(1);
-        rootRef.setTranslationY(0);
-      } catch (eFallback) {}
-    }
-    return false;
-  }
 
   function markFirstDraw21(appObj, st, rootRef, render) {
     if (!isCurrentRoot21(st, rootRef, render)) {
@@ -1103,12 +1076,12 @@
 
     scheduleDismiss21(appObj, st, rootRef, render);
     try {
-      st.handler.post(new java.lang.Runnable({ run: function() {
-        try { startEnterAnimation21(appObj, st, rootRef, render); } catch (eEnter) {}
-      }}));
-    } catch (ePostEnter) {
-      startEnterAnimation21(appObj, st, rootRef, render);
-    }
+      rootRef.setVisibility(android.view.View.VISIBLE);
+      rootRef.setAlpha(1);
+      rootRef.setScaleX(1);
+      rootRef.setScaleY(1);
+      rootRef.setTranslationY(0);
+    } catch (eStableFrame) {}
     return true;
   }
 
@@ -1116,7 +1089,6 @@
     var self = appObj;
     var render = {
       rootToken: Number(st.rootToken || 0),
-      enterStarted: false,
       forceDarkDisabled: false
     };
     syncRender21(render, st);
@@ -1153,8 +1125,6 @@
             render.copyPressed = false;
             render.pressed = true;
             try { this.invalidate(); } catch (eInvalidateDown) {}
-            try { this.animate().cancel(); } catch (eCancel) {}
-            try { this.animate().scaleX(0.97).scaleY(0.97).setDuration(70).start(); } catch (eScale) {}
             return true;
           }
           if (action === android.view.MotionEvent.ACTION_MOVE) {
@@ -1183,7 +1153,6 @@
             }
             render.pressed = false;
             try { this.invalidate(); } catch (eInvalidateUp) {}
-            try { this.animate().scaleX(1).scaleY(1).setDuration(80).start(); } catch (eUpScale) {}
             if (!st.touchMoved && st.clickLocked !== true) self.openResultPreviewPrimaryAction();
             return true;
           }
@@ -1192,7 +1161,6 @@
             render.copyPressed = false;
             render.pressed = false;
             try { this.invalidate(); } catch (eInvalidateCancel) {}
-            try { this.animate().scaleX(1).scaleY(1).setDuration(80).start(); } catch (eCancelScale) {}
             st.touchMoved = false;
             return true;
           }
@@ -1274,8 +1242,8 @@
     try { rootRef.animate().cancel(); } catch (eCancel) {}
     try { rootRef.setVisibility(android.view.View.VISIBLE); } catch (eVisible) {}
     try { rootRef.setAlpha(1); } catch (eAlpha) {}
-    try { rootRef.setScaleX(0.985); } catch (eScaleX) {}
-    try { rootRef.setScaleY(0.985); } catch (eScaleY) {}
+    try { rootRef.setScaleX(1); } catch (eScaleX) {}
+    try { rootRef.setScaleY(1); } catch (eScaleY) {}
     try { rootRef.setTranslationY(0); } catch (eTranslation) {}
     try { rootRef.setLayerType(android.view.View.LAYER_TYPE_NONE, null); } catch (eLayer) {}
     try { rootRef.requestLayout(); } catch (eLayout) {}
@@ -1310,9 +1278,9 @@
     applyPreviewPosition21(appObj, st, { reason: "attach", updateLayout: false });
 
     st.root.setVisibility(android.view.View.VISIBLE);
-    st.root.setAlpha(0.76);
-    st.root.setScaleX(0.985);
-    st.root.setScaleY(0.985);
+    st.root.setAlpha(1);
+    st.root.setScaleX(1);
+    st.root.setScaleY(1);
     st.root.setTranslationY(0);
     st.wm.addView(st.root, st.lp);
     st.added = true;
@@ -1431,7 +1399,6 @@
     var render = st.rootRender;
     syncRender21(render, st);
     render.rootToken = Number(st.rootToken || 0);
-    render.enterStarted = true;
     st.renderRebuildCount = 0;
     st.lp.width = st.measuredWidth;
     st.lp.height = st.measuredHeight;
@@ -1448,16 +1415,6 @@
       rootRef.requestLayout();
       rootRef.invalidate();
       if (rootRef.postInvalidateOnAnimation) rootRef.postInvalidateOnAnimation();
-      rootRef.setAlpha(0.82);
-      rootRef.setScaleX(0.985);
-      rootRef.setScaleY(0.985);
-      rootRef.animate()
-        .alpha(1)
-        .scaleX(1)
-        .scaleY(1)
-        .setDuration(120)
-        .setInterpolator(new android.view.animation.DecelerateInterpolator())
-        .start();
     } catch (eUpdate) {
       try { rootRef.requestLayout(); rootRef.invalidate(); } catch (eInvalidate) {}
     }
@@ -1553,34 +1510,9 @@
             return;
           }
           var rootRef = current.root;
-          var render = current.rootRender;
-          var generation = Number(current.generation || 0);
           var rootToken = Number(current.rootToken || 0);
-          if (render) render.disposed = true;
-          if (animate !== false) {
-            try {
-              rootRef.animate().cancel();
-              rootRef.setAlpha(1);
-              rootRef.setScaleX(1);
-              rootRef.setScaleY(1);
-              rootRef.setTranslationY(0);
-              rootRef.animate()
-                .scaleX(0.985)
-                .scaleY(0.985)
-                .alpha(0)
-                .setDuration(120)
-                .setInterpolator(new android.view.animation.AccelerateInterpolator())
-                .withEndAction(new java.lang.Runnable({ run: function() {
-                  try {
-                    if (Number(current.generation || 0) !== generation) return;
-                    if (current.root !== rootRef || Number(current.rootToken || 0) !== rootToken) return;
-                    removeView21(self, current);
-                  } catch (eEnd) {}
-                }}))
-                .start();
-              return;
-            } catch (eAnim) {}
-          }
+          try { rootRef.animate().cancel(); } catch (eCancelStable) {}
+          try { rootRef.clearAnimation(); } catch (eClearStable) {}
           if (current.root === rootRef && Number(current.rootToken || 0) === rootToken) removeView21(self, current);
         });
         return true;

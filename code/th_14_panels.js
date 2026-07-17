@@ -1,4 +1,4 @@
-// @version 1.1.7
+// @version 1.1.8
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -390,17 +390,22 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   badge.setTypeface(null, android.graphics.Typeface.BOLD);
   badge.setBackground(this.ui.createStrokeDrawable(T.primaryContainer, this.withAlpha(T.primary, isDark ? 0.22 : 0.16), this.dp(1), this.dp(13)));
   var iconSize = spec && (spec.isExpandedWidth || spec.isWideWidth) ? this.dp(38) : this.dp(40);
-  if (entryOptions.showRedDot === true) {
+  var useRedDotSlot = entryOptions.showRedDot === true || entryOptions.normalizedUpdateEntry === true;
+  if (useRedDotSlot) {
     var badgeBox = new android.widget.FrameLayout(context);
     badgeBox.addView(badge, new android.widget.FrameLayout.LayoutParams(iconSize, iconSize, android.view.Gravity.CENTER));
     var dot = new android.view.View(context);
     var danger = T.danger || android.graphics.Color.parseColor("#BA1A1A");
     dot.setBackground(this.ui.createRoundDrawable(danger, this.dp(5)));
+    dot.setVisibility(entryOptions.showRedDot === true ? android.view.View.VISIBLE : android.view.View.GONE);
     var dotLp = new android.widget.FrameLayout.LayoutParams(this.dp(10), this.dp(10), android.view.Gravity.TOP | android.view.Gravity.RIGHT);
     badgeBox.addView(dot, dotLp);
     var badgeBoxLp = new android.widget.LinearLayout.LayoutParams(iconSize, iconSize);
     badgeBoxLp.setMargins(0, 0, this.dp(10), 0);
     row.addView(badgeBox, badgeBoxLp);
+    if (entryOptions.normalizedUpdateEntry === true) {
+      try { this.state.toolHubUpdateHomeRedDotView = dot; } catch (eDotRef) {}
+    }
   } else {
     var badgeLp = new android.widget.LinearLayout.LayoutParams(iconSize, iconSize);
     badgeLp.setMargins(0, 0, this.dp(10), 0);
@@ -421,6 +426,9 @@ FloatBallAppWM.prototype.createSettingsHomeEntry = function(parent, title, desc,
   tvDesc.setPadding(0, this.dp(2), this.dp(6), 0);
   try { tvDesc.setSingleLine(false); } catch(eSL) { safeLog(null, 'e', "catch " + String(eSL)); }
   texts.addView(tvDesc);
+  if (entryOptions.normalizedUpdateEntry === true) {
+    try { this.state.toolHubUpdateHomeSummaryView = tvDesc; } catch (eSummaryRef) {}
+  }
   row.addView(texts, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
   var tvGo = new android.widget.TextView(context);
   tvGo.setText("›");
@@ -2000,7 +2008,11 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
 
   FloatBallAppWM.prototype.ensureToolHubUpdateUiState = function() {
     if (!this.state) return;
-    if (this.state.toolHubUpdateUiReady === true) return;
+    if (this.state.toolHubUpdateUiReady === true) {
+      if (this.state.toolHubUpdateHomeSummaryView === undefined) this.state.toolHubUpdateHomeSummaryView = null;
+      if (this.state.toolHubUpdateHomeRedDotView === undefined) this.state.toolHubUpdateHomeRedDotView = null;
+      return;
+    }
     this.state.toolHubUpdateUiReady = true;
     this.state.toolHubSettingsCheckRunning = false;
     this.state.toolHubLastKnownAttention = false;
@@ -2015,6 +2027,8 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     this.state.toolHubUpdateHistoryFailedAssetKey = "";
     this.state.toolHubUpdateHistoryLastFailureAt = 0;
     this.state.toolHubUpdateRefreshPending = false;
+    this.state.toolHubUpdateHomeSummaryView = null;
+    this.state.toolHubUpdateHomeRedDotView = null;
   };
 
   FloatBallAppWM.prototype.getToolHubUpdateStateExtended = function() {
@@ -2064,6 +2078,31 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     return "查看版本、更新状态与历史记录";
   };
 
+  FloatBallAppWM.prototype.refreshToolHubUpdateHomeEntry = function(reason) {
+    this.ensureToolHubUpdateUiState();
+    if (!this.state || !this.state.toolAppActive || String(this.state.toolAppRoute || "") !== "settings") return false;
+    var summary = this.state.toolHubUpdateHomeSummaryView;
+    var dot = this.state.toolHubUpdateHomeRedDotView;
+    var updated = false;
+    try {
+      if (summary) {
+        summary.setText(String(this.getToolHubUpdateHomeSummary ? this.getToolHubUpdateHomeSummary() : "查看版本、更新状态与历史记录"));
+        updated = true;
+      }
+      if (dot) {
+        dot.setVisibility(this.hasToolHubUpdateAttention && this.hasToolHubUpdateAttention() ? android.view.View.VISIBLE : android.view.View.GONE);
+        updated = true;
+      }
+      if (updated) {
+        try { safeLog(this.L, "d", "update home entry refreshed reason=" + String(reason || "")); } catch (eLog) {}
+      }
+    } catch (eRefreshEntry) {
+      try { safeLog(this.L, "w", "update home entry refresh fail reason=" + String(reason || "") + " error=" + String(eRefreshEntry)); } catch (eLogFail) {}
+      return false;
+    }
+    return updated;
+  };
+
   FloatBallAppWM.prototype.refreshToolHubUpdateSurface = function(reason) {
     this.ensureToolHubUpdateUiState();
     try {
@@ -2077,7 +2116,11 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
           if (!self.state.toolAppActive || !self.replaceToolAppPage) return;
           var route = textValue(self.state.toolAppRoute);
           if (route === UPDATE_ROUTE) self.replaceToolAppPage(UPDATE_ROUTE);
-          else if (route === "settings") self.replaceToolAppPage("settings");
+          else if (route === "settings") {
+            if (!self.refreshToolHubUpdateHomeEntry || !self.refreshToolHubUpdateHomeEntry(reason)) {
+              try { safeLog(self.L, "d", "update home entry refresh deferred reason=" + textValue(reason)); } catch (eDeferredLog) {}
+            }
+          }
         } catch (eRun) {
           try { self.state.toolHubUpdateRefreshPending = false; } catch (eFlag) {}
           try { safeLog(self.L, "w", "refresh update surface fail reason=" + textValue(reason) + " error=" + String(eRun)); } catch (eLog) {}
