@@ -20,6 +20,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: fix/pickword-long-click-api34-20260717
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -27,18 +28,37 @@ jobs:
           python-version: '3.x'
 
       # BEGIN ONE-TIME PICKWORD LONG-CLICK API34 PATCH
-      - name: Apply and publish guarded pickword long-click fix
+      - name: Apply guarded pickword long-click fix
         if: github.event_name == 'pull_request' && github.head_ref == 'fix/pickword-long-click-api34-20260717'
         shell: bash
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           python3 scripts/apply_pickword_long_click_api34_fix.py
+
+      - name: Verify guarded pickword long-click fix
+        if: github.event_name == 'pull_request' && github.head_ref == 'fix/pickword-long-click-api34-20260717'
+        shell: bash
+        run: |
+          set -euxo pipefail
           python3 scripts/verify_pickword_long_click_api34.py
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
           git fetch --no-tags origin main
           python3 scripts/verify_changed_module_versions.py --base-ref origin/main
           python3 scripts/verify_update_history.py --require-one-pending
+          git diff --check
+
+      - name: Publish guarded pickword long-click fix
+        if: github.event_name == 'pull_request' && github.head_ref == 'fix/pickword-long-click-api34-20260717'
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          set -euxo pipefail
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
           git rm -- scripts/apply_pickword_long_click_api34_fix.py
           git rm -- .github/workflows/apply-pickword-long-click-api34-fix.yml
           git config user.name "github-actions[bot]"
@@ -49,6 +69,7 @@ jobs:
           git add updates/records/fix-pickword-long-click-api34.json
           git diff --cached --check
           git commit -m "修复拾字长按监听 API 34 兼容"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin HEAD:${{ github.head_ref }}
       # END ONE-TIME PICKWORD LONG-CLICK API34 PATCH
 
