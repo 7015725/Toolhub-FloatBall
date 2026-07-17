@@ -29,10 +29,12 @@ jobs:
       - name: Apply precise fix
         run: python3 scripts/apply_result_preview_settings_flicker.py
 
-      - name: Regenerate th15 audit
+      - name: Regenerate deterministic audits
         run: |
           python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
           python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
 
       - name: Verify ES5 and JavaScript syntax
         run: |
@@ -46,9 +48,6 @@ jobs:
 
       - name: Verify module boundaries
         run: python3 scripts/verify_module_boundaries.py
-
-      - name: Verify dead code audit
-        run: python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
 
       - name: Verify protected wrapper audit
         run: python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
@@ -86,6 +85,6 @@ jobs:
           git rm scripts/apply_result_preview_settings_flicker.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add code scripts TH15_EXTRA_AUDIT.md updates/records
+          git add code scripts TH15_EXTRA_AUDIT.md DEAD_CODE_AUDIT.md updates/records
           git commit -m "修复结果预览与设置页闪烁"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
