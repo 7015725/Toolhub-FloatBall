@@ -43,15 +43,26 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
 
-      - name: Verify module and UI boundaries
-        run: |
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/verify_result_preview.py
-          python3 scripts/verify_settings_color_scheme.py
-          python3 scripts/verify_settings_color_roles.py
-          python3 scripts/verify_coloros_rhino_color_safety.py
-          python3 scripts/verify_rhino_color_api_safety.py
-          python3 scripts/verify_update_history.py --require-one-pending
+      - name: Verify module boundaries
+        run: python3 scripts/verify_module_boundaries.py
+
+      - name: Verify result preview integration
+        run: python3 scripts/verify_result_preview.py
+
+      - name: Verify settings color scheme
+        run: python3 scripts/verify_settings_color_scheme.py
+
+      - name: Verify settings color roles
+        run: python3 scripts/verify_settings_color_roles.py
+
+      - name: Verify ColorOS Rhino color safety
+        run: python3 scripts/verify_coloros_rhino_color_safety.py
+
+      - name: Verify full Rhino color API safety
+        run: python3 scripts/verify_rhino_color_api_safety.py
+
+      - name: Verify pending update record
+        run: python3 scripts/verify_update_history.py --require-one-pending
 
       - name: Verify reference replica markers
         run: |
@@ -68,7 +79,6 @@ jobs:
               'canvas_icons': 'function createReplicaIcon20' in text and all(('kind === "' + x + '"') in text for x in ['copy', 'cleanup', 'share', 'pin', 'globe', 'select', 'trash']),
               'existing_logic': all(x in text for x in ['setupTextViewTouch', 'doTranslate: function()', 'pinSelectedText', 'editPreviewText', 'removeSelectedSpaces']),
               'new_actions': 'copyAllText: function()' in text and 'sharePickwordText: function()' in text,
-              'no_other_modules': True,
           }
           failed = [name for name, ok in checks.items() if not ok]
           if failed:
