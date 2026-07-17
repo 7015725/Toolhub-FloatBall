@@ -1,4 +1,4 @@
-// @version 1.0.10
+// @version 1.0.11
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -539,7 +539,19 @@ FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivi
          } catch(e1) { safeLog(null, 'e', "catch " + String(e1)); }
       },
       onStartTrackingTouch: function() { try { self.touchActivity();  } catch(e2) { safeLog(null, 'e', "catch " + String(e2)); } },
-      onStopTrackingTouch: function() { try { self.touchActivity();  } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); } }
+      onStopTrackingTouch: function(seek) {
+        try {
+          self.touchActivity();
+          if (String(item.key || "") === "POINTER_RESULT_PREVIEW_POSITION_PERCENT" &&
+              typeof self.onResultPreviewConfigurationChanged === "function") {
+            self.onResultPreviewConfigurationChanged({
+              positionOnly: true,
+              positionPreviewPercent: computeValByProgress(seek.getProgress()),
+              reason: "settings_seek_stop"
+            });
+          }
+        } catch(e3) { safeLog(null, 'e', "catch " + String(e3)); }
+      }
     }));
 
     row.addView(sb);

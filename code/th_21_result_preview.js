@@ -1,4 +1,4 @@
-// @version 1.2.5
+// @version 1.3.0
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -140,6 +140,8 @@
         dismissRunnable: null,
         visibilityFallbackRunnable: null,
         copyFeedbackRunnable: null,
+        configurationPositionRunnable: null,
+        positionPreviewPercent: null,
         handler: null,
         visibleStartedAt: 0,
         renderRebuildCount: 0,
@@ -162,6 +164,8 @@
     if (st.rootToken === undefined) st.rootToken = 0;
     if (st.renderRebuildCount === undefined) st.renderRebuildCount = 0;
     if (st.copyFeedbackRunnable === undefined) st.copyFeedbackRunnable = null;
+    if (st.configurationPositionRunnable === undefined) st.configurationPositionRunnable = null;
+    if (st.positionPreviewPercent === undefined) st.positionPreviewPercent = null;
     if (st.copyVisible === undefined) st.copyVisible = false;
     if (st.touchTarget === undefined) st.touchTarget = "";
     return st;
@@ -290,44 +294,260 @@
     return result;
   }
 
-  function topInset21(root) {
+  function screenFrame21(appObj) {
+    var left = 0;
     var top = 0;
+    var width = 0;
+    var height = 0;
+    var source = "";
     try {
-      if (root && root.getRootWindowInsets) {
-        var insets = root.getRootWindowInsets();
-        if (insets) {
-          if (android.os.Build.VERSION.SDK_INT >= 30) {
-            var types = android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.displayCutout();
-            var v = insets.getInsets(types);
-            if (v) top = Math.max(top, int21(v.top, 0));
-          } else {
-            top = Math.max(top, int21(insets.getSystemWindowInsetTop(), 0));
-          }
-          try {
-            var cutout = insets.getDisplayCutout();
-            if (cutout) top = Math.max(top, int21(cutout.getSafeInsetTop(), 0));
-          } catch (eCutout) {}
+      if (android.os.Build.VERSION.SDK_INT >= 30) {
+        var wm = (appObj && appObj.state && appObj.state.wm) || context.getSystemService(android.content.Context.WINDOW_SERVICE);
+        var metrics = wm.getCurrentWindowMetrics();
+        var bounds = metrics.getBounds();
+        if (bounds) {
+          left = int21(bounds.left, 0);
+          top = int21(bounds.top, 0);
+          width = Math.max(0, int21(bounds.right, 0) - left);
+          height = Math.max(0, int21(bounds.bottom, 0) - top);
+          source = "window_metrics";
         }
       }
-    } catch (eRootInsets) {}
+    } catch (eMetrics) {}
+    if (width <= 0 || height <= 0) {
+      try {
+        var size = appObj && typeof appObj.getScreenSizePx === "function" ? appObj.getScreenSizePx() : null;
+        if (size) {
+          left = 0;
+          top = 0;
+          width = Math.max(0, int21(size.w, 0));
+          height = Math.max(0, int21(size.h, 0));
+          source = "real_metrics";
+        }
+      } catch (eSize) {}
+    }
+    if (width <= 0 || height <= 0) {
+      try {
+        var dm = context.getResources().getDisplayMetrics();
+        left = 0;
+        top = 0;
+        width = Math.max(1, int21(dm.widthPixels, 1));
+        height = Math.max(1, int21(dm.heightPixels, 1));
+        source = "resource_metrics";
+      } catch (eResource) {
+        width = dp21(appObj, 360);
+        height = dp21(appObj, 720);
+        source = "fallback";
+      }
+    }
+    return {
+      left: left,
+      top: top,
+      right: left + Math.max(1, width),
+      bottom: top + Math.max(1, height),
+      width: Math.max(1, width),
+      height: Math.max(1, height),
+      source: source
+    };
+  }
 
+  function readSafeInsets21(windowInsets) {
+    var out = { top: 0, bottom: 0, left: 0, right: 0 };
+    if (!windowInsets) return out;
+    try {
+      if (android.os.Build.VERSION.SDK_INT >= 30) {
+        var types = android.view.WindowInsets.Type.statusBars() |
+          android.view.WindowInsets.Type.navigationBars() |
+          android.view.WindowInsets.Type.displayCutout();
+        var value = null;
+        try { value = windowInsets.getInsetsIgnoringVisibility(types); } catch (eIgnoring) {}
+        if (!value) value = windowInsets.getInsets(types);
+        if (value) {
+          out.top = Math.max(out.top, int21(value.top, 0));
+          out.bottom = Math.max(out.bottom, int21(value.bottom, 0));
+          out.left = Math.max(out.left, int21(value.left, 0));
+          out.right = Math.max(out.right, int21(value.right, 0));
+        }
+      } else {
+        out.top = Math.max(out.top, int21(windowInsets.getSystemWindowInsetTop(), 0));
+        out.bottom = Math.max(out.bottom, int21(windowInsets.getSystemWindowInsetBottom(), 0));
+        out.left = Math.max(out.left, int21(windowInsets.getSystemWindowInsetLeft(), 0));
+        out.right = Math.max(out.right, int21(windowInsets.getSystemWindowInsetRight(), 0));
+      }
+    } catch (eSystemInsets) {}
+    try {
+      var cutout = windowInsets.getDisplayCutout();
+      if (cutout) {
+        out.top = Math.max(out.top, int21(cutout.getSafeInsetTop(), 0));
+        out.bottom = Math.max(out.bottom, int21(cutout.getSafeInsetBottom(), 0));
+        out.left = Math.max(out.left, int21(cutout.getSafeInsetLeft(), 0));
+        out.right = Math.max(out.right, int21(cutout.getSafeInsetRight(), 0));
+      }
+    } catch (eCutout) {}
+    return out;
+  }
+
+  function systemSafeInsets21(root) {
+    var result = { top: 0, bottom: 0, left: 0, right: 0, source: "none" };
+    try {
+      if (root && root.getRootWindowInsets) {
+        var rootInsets = readSafeInsets21(root.getRootWindowInsets());
+        result.top = Math.max(result.top, rootInsets.top);
+        result.bottom = Math.max(result.bottom, rootInsets.bottom);
+        result.left = Math.max(result.left, rootInsets.left);
+        result.right = Math.max(result.right, rootInsets.right);
+        if (result.top > 0 || result.bottom > 0 || result.left > 0 || result.right > 0) result.source = "root_insets";
+      }
+    } catch (eRootInsets) {}
     try {
       if (android.os.Build.VERSION.SDK_INT >= 30) {
         var wm = context.getSystemService(android.content.Context.WINDOW_SERVICE);
-        var metrics = wm.getCurrentWindowMetrics();
-        var wi = metrics.getWindowInsets();
-        var mv = wi.getInsets(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.displayCutout());
-        if (mv) top = Math.max(top, int21(mv.top, 0));
+        var metricsInsets = readSafeInsets21(wm.getCurrentWindowMetrics().getWindowInsets());
+        result.top = Math.max(result.top, metricsInsets.top);
+        result.bottom = Math.max(result.bottom, metricsInsets.bottom);
+        result.left = Math.max(result.left, metricsInsets.left);
+        result.right = Math.max(result.right, metricsInsets.right);
+        if (metricsInsets.top > 0 || metricsInsets.bottom > 0 || metricsInsets.left > 0 || metricsInsets.right > 0) result.source = "window_metrics_insets";
       }
-    } catch (eMetrics) {}
-
-    if (top <= 0) {
+    } catch (eMetricsInsets) {}
+    if (result.top <= 0) {
       try {
-        var id = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (id > 0) top = context.getResources().getDimensionPixelSize(id);
-      } catch (eResource) {}
+        var statusId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (statusId > 0) result.top = context.getResources().getDimensionPixelSize(statusId);
+      } catch (eStatusResource) {}
     }
-    return Math.max(0, top);
+    if (result.bottom <= 0 && result.left <= 0 && result.right <= 0) {
+      try {
+        var navigationId = context.getResources().getIdentifier("navigation_bar_height", "dimen", "android");
+        if (navigationId > 0) result.bottom = context.getResources().getDimensionPixelSize(navigationId);
+      } catch (eNavigationResource) {}
+    }
+    result.top = Math.max(0, int21(result.top, 0));
+    result.bottom = Math.max(0, int21(result.bottom, 0));
+    result.left = Math.max(0, int21(result.left, 0));
+    result.right = Math.max(0, int21(result.right, 0));
+    return result;
+  }
+
+  function resolvePreviewPositionPercent21(appObj, st, overrideValue) {
+    var raw = null;
+    if (overrideValue !== undefined && overrideValue !== null) raw = overrideValue;
+    else if (st && st.positionPreviewPercent !== undefined && st.positionPreviewPercent !== null) raw = st.positionPreviewPercent;
+    else {
+      try { raw = appObj && appObj.config ? appObj.config.POINTER_RESULT_PREVIEW_POSITION_PERCENT : null; } catch (eConfig) { raw = null; }
+    }
+    var value = Number(raw);
+    if (isNaN(value)) value = 5;
+    return Math.round(clamp21(value, 0, 100));
+  }
+
+  function calculatePreviewTopY21(appObj, st, overrideValue) {
+    var frame = screenFrame21(appObj);
+    var insets = systemSafeInsets21(st && st.root ? st.root : null);
+    var previewHeight = 0;
+    try { previewHeight = int21(st && st.measuredHeight, 0); } catch (eMeasured) { previewHeight = 0; }
+    if (previewHeight <= 0) {
+      try { previewHeight = int21(st && st.lp ? st.lp.height : 0, 0); } catch (eLpHeight) { previewHeight = 0; }
+    }
+    if (previewHeight <= 0) {
+      try { previewHeight = int21(st && st.root ? st.root.getHeight() : 0, 0); } catch (eRootHeight) { previewHeight = 0; }
+    }
+    previewHeight = Math.max(1, previewHeight);
+    var percent = resolvePreviewPositionPercent21(appObj, st, overrideValue);
+    var targetCenterY = frame.top + Math.round(frame.height * percent / 100);
+    var candidateTopY = Math.round(targetCenterY - previewHeight / 2);
+    var minTopY = frame.top + insets.top;
+    var maxTopY = frame.bottom - insets.bottom - previewHeight;
+    var finalTopY = candidateTopY;
+    var degraded = false;
+    if (maxTopY >= minTopY) {
+      finalTopY = Math.round(clamp21(candidateTopY, minTopY, maxTopY));
+    } else {
+      degraded = true;
+      finalTopY = Math.round(clamp21(candidateTopY, frame.top, Math.max(frame.top, frame.bottom - previewHeight)));
+    }
+    return {
+      percent: percent,
+      screenHeight: frame.height,
+      screenSource: frame.source,
+      previewHeight: previewHeight,
+      safeTop: insets.top,
+      safeBottom: insets.bottom,
+      insetSource: insets.source,
+      targetCenterY: targetCenterY,
+      candidateTopY: candidateTopY,
+      finalTopY: finalTopY,
+      clamped: finalTopY !== candidateTopY,
+      degraded: degraded
+    };
+  }
+
+  function applyPreviewPosition21(appObj, st, options) {
+    if (!st) return false;
+    var opts = options || {};
+    if (opts.clearPositionPreview === true) st.positionPreviewPercent = null;
+    if (opts.positionPreviewPercent !== undefined && opts.positionPreviewPercent !== null) {
+      st.positionPreviewPercent = resolvePreviewPositionPercent21(appObj, st, opts.positionPreviewPercent);
+    }
+    if (!st.lp) return false;
+    var info = calculatePreviewTopY21(appObj, st, null);
+    var oldY = int21(st.lp.y, 0);
+    st.lp.y = info.finalTopY;
+    var changed = oldY !== info.finalTopY;
+    if (opts.updateLayout !== false && changed && st.added && st.root && st.wm) {
+      try { st.wm.updateViewLayout(st.root, st.lp); } catch (eUpdate) {
+        try { safeLog(appObj.L, "w", "result preview position update fail reason=" + String(opts.reason || "") + " err=" + String(eUpdate)); } catch (eLogUpdate) {}
+        return false;
+      }
+    }
+    if (changed || info.clamped || info.degraded || opts.forceLog === true) {
+      try {
+        safeLog(appObj.L, info.degraded ? "w" : "i",
+          "result preview position" +
+          " reason=" + String(opts.reason || "") +
+          " percent=" + String(info.percent) +
+          " screenH=" + String(info.screenHeight) +
+          " screenSource=" + String(info.screenSource || "") +
+          " previewH=" + String(info.previewHeight) +
+          " safeTop=" + String(info.safeTop) +
+          " safeBottom=" + String(info.safeBottom) +
+          " insetSource=" + String(info.insetSource || "") +
+          " targetCenterY=" + String(info.targetCenterY) +
+          " candidateY=" + String(info.candidateTopY) +
+          " finalY=" + String(info.finalTopY) +
+          " clamped=" + String(info.clamped === true) +
+          " degraded=" + String(info.degraded === true));
+      } catch (eLog) {}
+    }
+    return true;
+  }
+
+  function cancelConfigurationPosition21(st) {
+    if (!st) return;
+    try {
+      if (st.handler && st.configurationPositionRunnable) st.handler.removeCallbacks(st.configurationPositionRunnable);
+    } catch (eRemove) {}
+    st.configurationPositionRunnable = null;
+  }
+
+  function scheduleStablePosition21(appObj, st, reason) {
+    if (!st || !st.handler || !st.root || !st.added) return false;
+    cancelConfigurationPosition21(st);
+    var rootRef = st.root;
+    var rootToken = Number(st.rootToken || 0);
+    st.configurationPositionRunnable = new java.lang.Runnable({ run: function() {
+      try {
+        st.configurationPositionRunnable = null;
+        if (!appObj.state || appObj.state.closing === true || appObj.state.closed === true) return;
+        if (st.root !== rootRef || Number(st.rootToken || 0) !== rootToken || st.added !== true) return;
+        applyPreviewPosition21(appObj, st, { reason: String(reason || "configuration") + ":stable" });
+      } catch (eStable) {
+        try { safeLog(appObj.L, "w", "result preview stable position fail: " + String(eStable)); } catch (eLog) {}
+      }
+    }});
+    try { return st.handler.postDelayed(st.configurationPositionRunnable, 280) === true; } catch (ePost) {}
+    st.configurationPositionRunnable = null;
+    return false;
   }
 
   function screenWidth21(appObj) {
@@ -804,14 +1024,14 @@
     try {
       rootRef.animate().cancel();
       rootRef.setVisibility(android.view.View.VISIBLE);
-      rootRef.setAlpha(1);
+      rootRef.setAlpha(0.76);
       rootRef.setScaleX(0.985);
       rootRef.setScaleY(0.985);
-      rootRef.setTranslationY(-dp21(appObj, 6));
+      rootRef.setTranslationY(0);
       rootRef.animate()
+        .alpha(1)
         .scaleX(1)
         .scaleY(1)
-        .translationY(0)
         .setDuration(140)
         .setInterpolator(new android.view.animation.DecelerateInterpolator())
         .start();
@@ -1010,7 +1230,7 @@
     );
     lp.gravity = android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL;
     lp.x = 0;
-    lp.y = topInset21(st.root) + dp21(appObj, 8);
+    lp.y = 0;
     try { lp.setTitle("ToolHub result preview"); } catch (eTitle) {}
     return lp;
   }
@@ -1037,6 +1257,7 @@
     cancelDismiss21(st);
     cancelVisibilityFallback21(st);
     cancelCopyFeedback21(st);
+    cancelConfigurationPosition21(st);
     var rootRef = st.root;
     var render = st.rootRender;
     detachRoot21(appObj, st, rootRef, render);
@@ -1055,7 +1276,7 @@
     try { rootRef.setAlpha(1); } catch (eAlpha) {}
     try { rootRef.setScaleX(0.985); } catch (eScaleX) {}
     try { rootRef.setScaleY(0.985); } catch (eScaleY) {}
-    try { rootRef.setTranslationY(-dp21(appObj, 6)); } catch (eTranslation) {}
+    try { rootRef.setTranslationY(0); } catch (eTranslation) {}
     try { rootRef.setLayerType(android.view.View.LAYER_TYPE_NONE, null); } catch (eLayer) {}
     try { rootRef.requestLayout(); } catch (eLayout) {}
     try { rootRef.invalidate(); } catch (eInvalidate) {}
@@ -1086,13 +1307,13 @@
     if (!st.lp) st.lp = createLp21(appObj, st);
     st.lp.width = st.measuredWidth;
     st.lp.height = st.measuredHeight;
-    st.lp.y = topInset21(st.root) + dp21(appObj, 8);
+    applyPreviewPosition21(appObj, st, { reason: "attach", updateLayout: false });
 
     st.root.setVisibility(android.view.View.VISIBLE);
-    st.root.setAlpha(1);
+    st.root.setAlpha(0.76);
     st.root.setScaleX(0.985);
     st.root.setScaleY(0.985);
-    st.root.setTranslationY(-dp21(appObj, 6));
+    st.root.setTranslationY(0);
     st.wm.addView(st.root, st.lp);
     st.added = true;
     st.rootRender.attachedAt = now21();
@@ -1214,7 +1435,7 @@
     st.renderRebuildCount = 0;
     st.lp.width = st.measuredWidth;
     st.lp.height = st.measuredHeight;
-    st.lp.y = topInset21(rootRef) + dp21(appObj, 8);
+    applyPreviewPosition21(appObj, st, { reason: "content_update", updateLayout: false });
 
     try {
       rootRef.animate().cancel();
@@ -1227,9 +1448,11 @@
       rootRef.requestLayout();
       rootRef.invalidate();
       if (rootRef.postInvalidateOnAnimation) rootRef.postInvalidateOnAnimation();
+      rootRef.setAlpha(0.82);
       rootRef.setScaleX(0.985);
       rootRef.setScaleY(0.985);
       rootRef.animate()
+        .alpha(1)
         .scaleX(1)
         .scaleY(1)
         .setDuration(120)
@@ -1344,7 +1567,7 @@
               rootRef.animate()
                 .scaleX(0.985)
                 .scaleY(0.985)
-                .translationY(-dp21(self, 6))
+                .alpha(0)
                 .setDuration(120)
                 .setInterpolator(new android.view.animation.AccelerateInterpolator())
                 .withEndAction(new java.lang.Runnable({ run: function() {
@@ -1417,10 +1640,32 @@
         return true;
       };
 
-      proto.onResultPreviewConfigurationChanged = function() {
+      proto.onResultPreviewConfigurationChanged = function(options) {
+        var opts = options || {};
         var self = this;
         var st = ensureState21(this);
-        if (!st || !st.payload) return false;
+        if (!st) return false;
+        if (opts.clearPositionPreview === true) st.positionPreviewPercent = null;
+        if (opts.positionPreviewPercent !== undefined && opts.positionPreviewPercent !== null) {
+          st.positionPreviewPercent = resolvePreviewPositionPercent21(this, st, opts.positionPreviewPercent);
+        }
+        if (opts.positionOnly === true) {
+          runOnMain21(function() {
+            try {
+              var currentPosition = ensureState21(self);
+              if (!currentPosition) return;
+              applyPreviewPosition21(self, currentPosition, {
+                reason: String(opts.reason || "position_only"),
+                clearPositionPreview: opts.clearPositionPreview === true,
+                positionPreviewPercent: opts.positionPreviewPercent
+              });
+            } catch (ePositionOnly) {
+              try { safeLog(self.L, "w", "result preview position-only update fail: " + String(ePositionOnly)); } catch (eLogPositionOnly) {}
+            }
+          });
+          return true;
+        }
+        if (!st.payload) return false;
         cancelCopyFeedback21(st);
         runOnMain21(function() {
           try {
@@ -1433,12 +1678,16 @@
             current.rootRender.enterStarted = true;
             current.lp.width = current.measuredWidth;
             current.lp.height = current.measuredHeight;
-            current.lp.y = topInset21(current.root) + dp21(self, 8);
+            applyPreviewPosition21(self, current, {
+              reason: String(opts.reason || "configuration_changed"),
+              updateLayout: false
+            });
             current.wm.updateViewLayout(current.root, current.lp);
             current.root.requestLayout();
             current.root.invalidate();
             if (current.root.postInvalidateOnAnimation) current.root.postInvalidateOnAnimation();
             scheduleVisibilityFallback21(self, current, current.root, current.rootRender, 1);
+            scheduleStablePosition21(self, current, String(opts.reason || "configuration_changed"));
           } catch (eReflow) {
             try { safeLog(self.L, 'w', "result preview reflow fail: " + String(eReflow)); } catch (eLog) {}
           }

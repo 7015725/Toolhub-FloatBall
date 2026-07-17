@@ -33,6 +33,7 @@ EXPECTED = {
     "CLICK_SLOP_DP": {"type": "int", "name": "点击位移阈值(dp)", "min": 2, "max": 20},
     "BALL_POSITION_SIDE": {"type": "single_choice", "validator_type": "enum", "name": "停靠边缘", "labels": ["左侧", "右侧"]},
     "BALL_POSITION_PERCENT": {"type": "int", "name": "高度位置(%)", "min": 0, "max": 100},
+    "POINTER_RESULT_PREVIEW_POSITION_PERCENT": {"type": "int", "name": "预览垂直位置(%)", "min": 0, "max": 100},
 }
 
 REMOVED_SETTINGS_KEYS = [
