@@ -1,0 +1,61 @@
+name: Run result preview finalizer
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/result-preview-position-percent-clean'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply final formatting and reports
+        shell: bash
+        run: |
+          python3 scripts/_finalize_result_preview_position.py
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
+
+      - name: Validate final tree
+        shell: bash
+        run: |
+          node --check code/th_01_base.js
+          node --check code/th_05_persistence.js
+          node --check code/th_09_animation.js
+          node --check code/th_13_panel_ui.js
+          node --check code/th_14_panels.js
+          node --check code/th_16_entry.js
+          node --check code/th_21_result_preview.js
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
+          python3 scripts/report_entry_symbols.py --check ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_schema_validator.py
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+
+      - name: Squash to clean main-based commit
+        shell: bash
+        run: |
+          git fetch origin main
+          rm -f .github/workflows/finalize-result-preview-position.yml
+          rm -f .github/workflows/run-finalize-result-preview-position.yml
+          rm -f scripts/_finalize_result_preview_position.py
+          git reset --soft origin/main
+          git reset
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "新增结果预览垂直位置百分比"
+          git push --force origin HEAD:${{ github.event.pull_request.head.ref }}
