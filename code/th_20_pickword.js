@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -2215,8 +2215,8 @@
             if (windowWidth > maxReplicaWidth) windowWidth = maxReplicaWidth;
             if (windowWidth < Math.round(uiDp(300, 520))) windowWidth = Math.round(screenWidth * 0.96);
             textAreaHeight = Math.min(Math.round(screenHeight * (isTablet ? 0.34 : 0.30)), Math.round(uiDp(250, 330)));
-            // 短文本按内容收缩，只保留点击、长按与拖选所需的基础高度，避免单行文字下方出现大块留白。
-            textAreaMinHeight = Math.min(textAreaHeight, Math.max(Math.round(uiDp(92, 118)), Math.round(screenHeight * 0.105)));
+            // 与 CanvasView.onMeasure() 使用同一最小高度，避免 ScrollView 高于子 View 后露出底部背景空条。
+            textAreaMinHeight = Math.min(textAreaHeight, Math.round(uiDp(80, 96)));
 
             layoutParams = new LayoutParams(
                 windowWidth, LayoutParams.WRAP_CONTENT,
@@ -2526,8 +2526,9 @@
             if (!scrollView || !textCanvasControl) return 0;
             try {
                 var contentHeight = textCanvasControl.getContentHeight();
-                var adaptiveHeight = Math.min(contentHeight + uiDp(8, 10), textAreaHeight);
-                var newHeight = Math.max(textAreaMinHeight, adaptiveHeight);
+                // contentHeight 已包含 Canvas 上下内边距，不再额外补高，确保父子高度一致。
+                var adaptiveHeight = Math.min(contentHeight, textAreaHeight);
+                var newHeight = Math.min(Math.max(adaptiveHeight, textAreaMinHeight), textAreaHeight);
                 var params = scrollView.getLayoutParams();
                 if (params.height !== newHeight) {
                     params.height = newHeight;
