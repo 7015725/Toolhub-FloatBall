@@ -25,7 +25,25 @@ jobs:
           python-version: '3.x'
 
       - name: Apply focused repair
-        run: python3 scripts/_apply_main_panel_mask_flicker_fix.py
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/_apply_main_panel_mask_flicker_fix.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/verify_main_panel_close_lifecycle.py')
+          text = path.read_text(encoding='utf-8')
+          fixes = {
+              '("self.hideMaskIfNoPanelVisible("main_panel_exit")", "conditional mask invocation"),': '(\'self.hideMaskIfNoPanelVisible("main_panel_exit")\', "conditional mask invocation"),',
+              '("var __stableOverlayRoot = __toolAppPanel || String(which || "") === "main"", "stable main overlay root"),': '(\'var __stableOverlayRoot = __toolAppPanel || String(which || "") === "main"\', "stable main overlay root"),',
+              '("reason: "main_panel_prepare"", "main mask preparation reason"),': '(\'reason: "main_panel_prepare"\', "main mask preparation reason"),',
+          }
+          for old, new in fixes.items():
+              if old not in text:
+                  raise SystemExit('missing verifier template fragment: ' + old)
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
 
       - name: Regenerate deterministic audits
         shell: bash
