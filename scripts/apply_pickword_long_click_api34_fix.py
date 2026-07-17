@@ -9,6 +9,9 @@ PICKWORD = ROOT / "code" / "th_20_pickword.js"
 VERIFY_WORKFLOW = ROOT / ".github" / "workflows" / "verify.yml"
 VERIFY_SCRIPT = ROOT / "scripts" / "verify_pickword_long_click_api34.py"
 RECORD = ROOT / "updates" / "records" / "fix-pickword-long-click-api34.json"
+BOOTSTRAP_BEGIN = "      # BEGIN ONE-TIME PICKWORD LONG-CLICK API34 PATCH\n"
+BOOTSTRAP_END = "      # END ONE-TIME PICKWORD LONG-CLICK API34 PATCH\n"
+BOOTSTRAP_REF = "          ref: fix/pickword-long-click-api34-20260717\n"
 
 
 def fail(message):
@@ -150,13 +153,32 @@ if __name__ == "__main__":
     VERIFY_SCRIPT.write_text(verify_source, encoding="utf-8")
 
     workflow = VERIFY_WORKFLOW.read_text(encoding="utf-8")
+    begin_count = workflow.count(BOOTSTRAP_BEGIN)
+    end_count = workflow.count(BOOTSTRAP_END)
+    if begin_count == 1 and end_count == 1:
+        begin_at = workflow.index(BOOTSTRAP_BEGIN)
+        end_at = workflow.index(BOOTSTRAP_END, begin_at) + len(BOOTSTRAP_END)
+        workflow = workflow[:begin_at] + workflow[end_at:]
+    elif begin_count != 0 or end_count != 0:
+        fail("verify.yml bootstrap markers are unbalanced")
+
+    if BOOTSTRAP_REF in workflow:
+        workflow = workflow.replace(BOOTSTRAP_REF, "", 1)
+
+    workflow = replace_once(
+        workflow,
+        "permissions:\n  contents: write\n",
+        "permissions:\n  contents: read\n",
+        "verify workflow permission cleanup",
+    )
+
     anchor = "            python3 scripts/verify_pickword_translate_settings.py\n"
     inserted = anchor + "            python3 scripts/verify_pickword_long_click_api34.py\n"
     if "python3 scripts/verify_pickword_long_click_api34.py" not in workflow:
         if workflow.count(anchor) != 1:
             fail("verify.yml insertion anchor mismatch")
         workflow = workflow.replace(anchor, inserted, 1)
-        VERIFY_WORKFLOW.write_text(workflow, encoding="utf-8")
+    VERIFY_WORKFLOW.write_text(workflow, encoding="utf-8")
 
     record = {
         "schema": 1,
