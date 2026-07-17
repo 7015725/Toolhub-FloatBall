@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -229,6 +229,14 @@
     var titleBarRefs = { normalMode: null, settingMode: null };
     var toolhubAppRef = null;
     var previewBoxView = null;
+    var copyAllActionBtn = null;
+    var cleanupActionBtn = null;
+    var shareActionBtn = null;
+    var fontSizeSelectorView = null;
+    var titleAccentView = null;
+    var resultDividerView = null;
+    var closeActionView = null;
+    var textAreaMinHeight = 0;
 
     var fullText = "";
     var selectedIndices = [];
@@ -1020,40 +1028,289 @@
         return drawable;
     }
 
+    function alphaColor20(colorValue, alphaValue) {
+        var c = toColorInt(colorValue);
+        var a = Math.max(0, Math.min(255, Math.round(Number(alphaValue || 0))));
+        return ((a << 24) | (c & 0x00FFFFFF));
+    }
+
+    function replicaAccent20() {
+        return isDark ? Color.parseColor("#70C9C6") : Color.parseColor("#3DA6A4");
+    }
+
+    function replicaAccentEnd20() {
+        return isDark ? Color.parseColor("#4BAEAB") : Color.parseColor("#79C6C3");
+    }
+
+    function replicaAccentPressed20() {
+        return isDark ? Color.parseColor("#3C918F") : Color.parseColor("#2E8E8C");
+    }
+
+    function replicaOutline20() {
+        return alphaColor20(Colors.outline, isDark ? 150 : 92);
+    }
+
+    function replicaSoftSurface20() {
+        return isDark ? Color.parseColor("#202124") : Color.parseColor("#FFFFFF");
+    }
+
+    function createReplicaGradient20(startColor, endColor, radiusDp) {
+        try {
+            var gd = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, jintArray([startColor, endColor]));
+            gd.setCornerRadius(dp(radiusDp));
+            return gd;
+        } catch (eGradient) {
+            return createRoundRectDrawable(startColor, radiusDp);
+        }
+    }
+
+    function createReplicaPrimaryBackground20(radiusDp) {
+        try {
+            var states = new android.graphics.drawable.StateListDrawable();
+            states.addState(jintArray([android.R.attr.state_pressed]), createRoundRectDrawable(replicaAccentPressed20(), radiusDp));
+            states.addState(jintArray([]), createReplicaGradient20(replicaAccent20(), replicaAccentEnd20(), radiusDp));
+            return states;
+        } catch (eState) {
+            return createPressableDrawable(replicaAccent20(), replicaAccentPressed20(), radiusDp);
+        }
+    }
+
+    function resolveReplicaIconColor20(styleKind) {
+        if (styleKind === "primary") return Colors.onPrimary;
+        if (styleKind === "pin") return replicaAccent20();
+        return Colors.text;
+    }
+
+    function createReplicaIcon20(kind, styleKind, sizeDp) {
+        var paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        var rect = new RectF();
+        var iconView = new JavaAdapter(View, {
+            onDraw: function(canvas) {
+                try {
+                    var w = this.getWidth();
+                    var h = this.getHeight();
+                    var s = Math.min(w, h) * 0.76;
+                    var cx = w / 2;
+                    var cy = h / 2;
+                    var left = cx - s / 2;
+                    var top = cy - s / 2;
+                    var right = cx + s / 2;
+                    var bottom = cy + s / 2;
+                    var stroke = Math.max(dp(1.45), s * 0.075);
+                    paint.setStrokeWidth(stroke);
+                    paint.setStrokeCap(Paint.Cap.ROUND);
+                    paint.setStrokeJoin(Paint.Join.ROUND);
+                    paint.setStyle(Paint.Style.STROKE);
+                    setPaintColor(paint, resolveReplicaIconColor20(styleKind), 255);
+
+                    if (kind === "copy") {
+                        rect.set(left + s * 0.08, top + s * 0.02, right - s * 0.20, bottom - s * 0.18);
+                        canvas.drawRoundRect(rect, s * 0.10, s * 0.10, paint);
+                        rect.set(left + s * 0.22, top + s * 0.18, right - s * 0.04, bottom - s * 0.02);
+                        canvas.drawRoundRect(rect, s * 0.10, s * 0.10, paint);
+                    } else if (kind === "cleanup") {
+                        canvas.drawLine(left + s * 0.04, top + s * 0.20, left + s * 0.58, top + s * 0.20, paint);
+                        canvas.drawLine(left + s * 0.04, cy, left + s * 0.50, cy, paint);
+                        canvas.drawLine(left + s * 0.04, bottom - s * 0.20, left + s * 0.58, bottom - s * 0.20, paint);
+                        var pClean = new android.graphics.Path();
+                        pClean.moveTo(left + s * 0.58, top + s * 0.34);
+                        pClean.lineTo(right - s * 0.05, top + s * 0.34);
+                        pClean.quadTo(right - s * 0.01, top + s * 0.34, right - s * 0.01, top + s * 0.48);
+                        pClean.lineTo(right - s * 0.01, bottom - s * 0.18);
+                        pClean.moveTo(right - s * 0.01, bottom - s * 0.18);
+                        pClean.lineTo(right - s * 0.18, bottom - s * 0.34);
+                        pClean.moveTo(right - s * 0.01, bottom - s * 0.18);
+                        pClean.lineTo(right - s * 0.18, bottom - s * 0.02);
+                        canvas.drawPath(pClean, paint);
+                    } else if (kind === "share") {
+                        var r = s * 0.10;
+                        canvas.drawLine(left + s * 0.25, cy, right - s * 0.24, top + s * 0.24, paint);
+                        canvas.drawLine(left + s * 0.25, cy, right - s * 0.24, bottom - s * 0.24, paint);
+                        paint.setStyle(Paint.Style.FILL);
+                        canvas.drawCircle(left + s * 0.18, cy, r, paint);
+                        canvas.drawCircle(right - s * 0.16, top + s * 0.18, r, paint);
+                        canvas.drawCircle(right - s * 0.16, bottom - s * 0.18, r, paint);
+                    } else if (kind === "pin") {
+                        paint.setStyle(Paint.Style.FILL);
+                        var pPin = new android.graphics.Path();
+                        pPin.moveTo(cx - s * 0.20, top + s * 0.06);
+                        pPin.lineTo(cx + s * 0.20, top + s * 0.06);
+                        pPin.lineTo(cx + s * 0.14, top + s * 0.34);
+                        pPin.lineTo(cx + s * 0.30, cy + s * 0.05);
+                        pPin.lineTo(cx - s * 0.30, cy + s * 0.05);
+                        pPin.lineTo(cx - s * 0.14, top + s * 0.34);
+                        pPin.close();
+                        canvas.drawPath(pPin, paint);
+                        paint.setStyle(Paint.Style.STROKE);
+                        canvas.drawLine(cx, cy + s * 0.05, cx, bottom - s * 0.04, paint);
+                    } else if (kind === "globe") {
+                        canvas.drawCircle(cx, cy, s * 0.43, paint);
+                        rect.set(cx - s * 0.18, top + s * 0.07, cx + s * 0.18, bottom - s * 0.07);
+                        canvas.drawOval(rect, paint);
+                        canvas.drawLine(left + s * 0.10, cy, right - s * 0.10, cy, paint);
+                    } else if (kind === "select") {
+                        var d = s * 0.27;
+                        canvas.drawLine(left, top + d, left, top, paint);
+                        canvas.drawLine(left, top, left + d, top, paint);
+                        canvas.drawLine(right - d, top, right, top, paint);
+                        canvas.drawLine(right, top, right, top + d, paint);
+                        canvas.drawLine(left, bottom - d, left, bottom, paint);
+                        canvas.drawLine(left, bottom, left + d, bottom, paint);
+                        canvas.drawLine(right - d, bottom, right, bottom, paint);
+                        canvas.drawLine(right, bottom - d, right, bottom, paint);
+                    } else if (kind === "trash") {
+                        rect.set(left + s * 0.20, top + s * 0.28, right - s * 0.20, bottom - s * 0.04);
+                        canvas.drawRoundRect(rect, s * 0.06, s * 0.06, paint);
+                        canvas.drawLine(left + s * 0.12, top + s * 0.22, right - s * 0.12, top + s * 0.22, paint);
+                        canvas.drawLine(cx - s * 0.14, top + s * 0.10, cx + s * 0.14, top + s * 0.10, paint);
+                        canvas.drawLine(cx - s * 0.12, top + s * 0.10, cx - s * 0.08, top + s * 0.22, paint);
+                        canvas.drawLine(cx + s * 0.12, top + s * 0.10, cx + s * 0.08, top + s * 0.22, paint);
+                        canvas.drawLine(cx - s * 0.10, top + s * 0.40, cx - s * 0.10, bottom - s * 0.16, paint);
+                        canvas.drawLine(cx + s * 0.10, top + s * 0.40, cx + s * 0.10, bottom - s * 0.16, paint);
+                    }
+                } catch (eDrawIcon) {}
+            }
+        }, appContext);
+        iconView.setMinimumWidth(uiDp(sizeDp, sizeDp + 2));
+        iconView.setMinimumHeight(uiDp(sizeDp, sizeDp + 2));
+        iconView.setClickable(false);
+        return iconView;
+    }
+
+    function styleReplicaButton20(viewObj, styleKind) {
+        if (!viewObj) return;
+        try {
+            var label = viewObj.getTag();
+            if (styleKind === "primary") {
+                viewObj.setBackground(createReplicaPrimaryBackground20(isTablet ? 16 : 14));
+                if (label) safeTextColor(label, Colors.onPrimary);
+            } else if (styleKind === "outline") {
+                viewObj.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 16 : 14, 1));
+                if (label) safeTextColor(label, Colors.text);
+            } else if (styleKind === "pin") {
+                viewObj.setBackground(createStrokeRoundRectDrawable(Color.TRANSPARENT, replicaAccent20(), isTablet ? 13 : 11, 1));
+                if (label) safeTextColor(label, replicaAccent20());
+            } else if (styleKind === "selector") {
+                viewObj.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 15 : 13, 1));
+                if (label) safeTextColor(label, Colors.text);
+            } else {
+                viewObj.setBackground(createPressableDrawable(Color.TRANSPARENT, alphaColor20(Colors.outline, isDark ? 46 : 28), isTablet ? 10 : 8));
+                if (label) safeTextColor(label, Colors.text);
+            }
+            try {
+                var childCount = viewObj.getChildCount ? viewObj.getChildCount() : 0;
+                for (var iStyle = 0; iStyle < childCount; iStyle++) {
+                    var childStyle = viewObj.getChildAt(iStyle);
+                    if (childStyle) childStyle.invalidate();
+                }
+            } catch (eChildren) {}
+        } catch (eStyle) {}
+    }
+
+    function createReplicaButton20(textValue, iconKind, styleKind, callback, longCallback) {
+        var row = new LinearLayout(appContext);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER);
+        row.setClickable(true);
+        row.setFocusable(true);
+        var compactInline = styleKind === "inline";
+        var compactPin = styleKind === "pin";
+        var iconSize = compactInline ? (isTablet ? 18 : 14) : (compactPin ? (isTablet ? 18 : 15) : (isTablet ? 24 : 17));
+        var icon = createReplicaIcon20(iconKind, styleKind, iconSize);
+        var iconLp = new LinearLayout.LayoutParams(uiDp(iconSize, iconSize + 2), uiDp(iconSize, iconSize + 2));
+        row.addView(icon, iconLp);
+        var label = new TextView(appContext);
+        label.setText(String(textValue));
+        label.setTextSize(compactInline ? uiTextSize(9, 12) : (compactPin ? uiTextSize(10, 12) : uiTextSize(12, 15)));
+        label.setSingleLine(true);
+        label.setGravity(Gravity.CENTER_VERTICAL);
+        label.setPadding(compactInline ? uiDp(3, 7) : (compactPin ? uiDp(4, 7) : uiDp(4, 9)), 0, 0, 0);
+        row.addView(label);
+        row.setTag(label);
+        row.setContentDescription(String(textValue));
+        var horizontalPad = compactInline ? uiDp(3, 7) : (compactPin ? uiDp(4, 7) : uiDp(4, 16));
+        row.setPadding(horizontalPad, 0, horizontalPad, 0);
+        styleReplicaButton20(row, styleKind);
+        row.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
+            hapticFeedback(v);
+            try { callback(); } catch (eCallback) { showToast("操作失败"); }
+        } }));
+        if (longCallback) {
+            row.setOnLongClickListener(new View.OnLongClickListener({ onLongClick: function(v) {
+                hapticFeedback(v);
+                try { longCallback(); } catch (eLong) { showToast("操作失败"); }
+                return true;
+            } }));
+        }
+        applyButtonAnimation(row);
+        return row;
+    }
+
+    function setReplicaButtonText20(viewObj, textValue) {
+        if (!viewObj) return;
+        try {
+            var label = viewObj.getTag();
+            if (label) label.setText(String(textValue));
+            viewObj.setContentDescription(String(textValue));
+        } catch (eLabel) {}
+    }
+
+    function createReplicaSeparator20(vertical) {
+        var divider = new View(appContext);
+        divider.setBackground(createRoundRectDrawable(alphaColor20(Colors.outline, isDark ? 92 : 52), 0));
+        var lp = vertical
+            ? new LinearLayout.LayoutParams(Math.max(1, Math.round(dp(1))), uiDp(28, 32))
+            : new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, Math.max(1, Math.round(dp(1))));
+        if (vertical) lp.setMargins(uiDp(2, 6), 0, uiDp(2, 6), 0);
+        divider.setLayoutParams(lp);
+        return divider;
+    }
+
+    function setCountLabel20(countValue) {
+        if (!countLabelView) return;
+        var countText = String(Math.max(0, Number(countValue || 0)));
+        var full = countText + " 字";
+        try {
+            var styled = new android.text.SpannableString(new java.lang.String(full));
+            styled.setSpan(new android.text.style.RelativeSizeSpan(2.15), 0, countText.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            styled.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, countText.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            countLabelView.setText(styled);
+        } catch (eSpan) {
+            countLabelView.setText(full);
+        }
+    }
+
+    function getFontSizeLevel20() {
+        if (currentFontSize <= 16) return "小";
+        if (currentFontSize >= 26) return "大";
+        return "中";
+    }
+
+    function updateFontSizeSelector20() {
+        if (!fontSizeSelectorView) return;
+        try { fontSizeSelectorView.setText("字号    " + getFontSizeLevel20() + " ⌄"); } catch (eSizeLabel) {}
+    }
+
     function applyVisiblePickwordTheme20() {
         try {
-            if (mainLayout) mainLayout.setBackground(createRoundRectDrawable(Colors.surface, isTablet ? 18 : 14));
+            if (mainLayout) mainLayout.setBackground(createRoundRectDrawable(replicaSoftSurface20(), isTablet ? 28 : 24));
+            if (scrollView) scrollView.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 18 : 15, 1));
             if (previewBoxView) previewBoxView.setBackground(createRoundRectDrawable(Color.TRANSPARENT, 0));
-            if (countLabelView) safeTextColor(countLabelView, Colors.textSecondary);
+            if (titleAccentView) titleAccentView.setBackground(createRoundRectDrawable(replicaAccent20(), isTablet ? 5 : 4));
+            if (fontSizeSelectorView) fontSizeSelectorView.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 15 : 13, 1));
+            if (closeActionView) safeTextColor(closeActionView, Colors.text);
+            if (countLabelView) safeTextColor(countLabelView, Colors.text);
             if (previewTextView) safeTextColor(previewTextView, selectedIndices.length > 0 ? Colors.text : Colors.textSecondary);
-            if (fontSizeLabel) {
-                safeTextColor(fontSizeLabel, Colors.textSecondary);
-                fontSizeLabel.setBackground(createRoundRectDrawable(Color.TRANSPARENT, 0));
-            }
-
-            if (copyActionBtn) {
-                safeTextColor(copyActionBtn, Colors.onPrimary);
-                copyActionBtn.setBackground(createPressableDrawable(Colors.btnPrimaryBg, Colors.btnPrimaryPressed, isTablet ? 12 : 10));
-            }
-            var secondaryButtons = [translateActionBtn, selectAllActionBtn, clearActionBtn];
-            var i;
-            for (i = 0; i < secondaryButtons.length; i++) {
-                if (!secondaryButtons[i]) continue;
-                safeTextColor(secondaryButtons[i], Colors.textSecondary);
-                secondaryButtons[i].setBackground(createPressableDrawable(Color.TRANSPARENT, Colors.btnSecondaryPressed, isTablet ? 10 : 8));
-            }
-            var compactButtons = [previewRemoveSpaceBtn, previewRemoveNewlineBtn, previewEditBtn, pinActionBtn];
-            for (i = 0; i < compactButtons.length; i++) {
-                if (!compactButtons[i]) continue;
-                safeTextColor(compactButtons[i], Colors.textSecondary);
-                compactButtons[i].setBackground(createPressableDrawable(Color.TRANSPARENT, Colors.primaryLight, isTablet ? 9 : 7));
-            }
-            var settingButtons = [loadedRemoveSpaceBtn, loadedRemoveNewlineBtn];
-            for (i = 0; i < settingButtons.length; i++) {
-                if (!settingButtons[i]) continue;
-                safeTextColor(settingButtons[i], Colors.textSecondary);
-                settingButtons[i].setBackground(createPressableDrawable(Color.TRANSPARENT, Colors.btnSecondaryPressed, isTablet ? 9 : 7));
-            }
+            if (resultDividerView) resultDividerView.setBackground(createRoundRectDrawable(alphaColor20(Colors.outline, isDark ? 92 : 52), 0));
+            styleReplicaButton20(copyAllActionBtn, "inline");
+            styleReplicaButton20(cleanupActionBtn, "inline");
+            styleReplicaButton20(shareActionBtn, "inline");
+            styleReplicaButton20(pinActionBtn, "pin");
+            styleReplicaButton20(copyActionBtn, "primary");
+            styleReplicaButton20(translateActionBtn, "outline");
+            styleReplicaButton20(selectAllActionBtn, "outline");
+            styleReplicaButton20(clearActionBtn, "outline");
+            if (fontSizeLabel) safeTextColor(fontSizeLabel, replicaAccent20());
             if (pinLayout) pinLayout.setBackground(createRoundRectDrawable(Colors.surface, isTablet ? 16 : 14));
             if (pinTextView) safeTextColor(pinTextView, Colors.text);
             if (pinProgressView) safeTextColor(pinProgressView, Colors.textTertiary);
@@ -1592,6 +1849,7 @@
                     try {
                         if (seekBar) seekBar.setProgress(currentFontSize - MIN_FONT_SIZE);
                         if (fontSizeLabel) fontSizeLabel.setText(currentFontSize + "sp");
+                        updateFontSizeSelector20();
                         if (textCanvasControl) textCanvasControl.setTextSize(currentFontSize);
                         self.scheduleInitialTextLoad();
                         mainLayout.setVisibility(View.VISIBLE);
@@ -1690,6 +1948,13 @@
                         windowManager.removeView(mainLayout);
                         mainLayout = null;
                         previewBoxView = null;
+                        copyAllActionBtn = null;
+                        cleanupActionBtn = null;
+                        shareActionBtn = null;
+                        fontSizeSelectorView = null;
+                        titleAccentView = null;
+                        resultDividerView = null;
+                        closeActionView = null;
                         titleBarRefs = { normalMode: null, settingMode: null };
                         textView = null;
                         textCanvasControl = null;
@@ -1909,37 +2174,48 @@
             applyPickwordColorScheme20(toolhubAppRef);
             windowManager = appContext.getSystemService(appContext.WINDOW_SERVICE);
 
+            windowWidth = Math.round(screenWidth * (isTablet ? 0.92 : 0.94));
+            var maxReplicaWidth = Math.round(uiDp(620, 980));
+            if (windowWidth > maxReplicaWidth) windowWidth = maxReplicaWidth;
+            if (windowWidth < Math.round(uiDp(300, 520))) windowWidth = Math.round(screenWidth * 0.96);
+            textAreaHeight = Math.min(Math.round(screenHeight * (isTablet ? 0.34 : 0.30)), Math.round(uiDp(250, 330)));
+            textAreaMinHeight = Math.min(textAreaHeight, Math.max(Math.round(uiDp(170, 230)), Math.round(screenHeight * 0.22)));
+
             layoutParams = new LayoutParams(
                 windowWidth, LayoutParams.WRAP_CONTENT,
                 LayoutParams.TYPE_APPLICATION_OVERLAY,
                 LayoutParams.FLAG_NOT_FOCUSABLE | LayoutParams.FLAG_DIM_BEHIND,
                 android.graphics.PixelFormat.TRANSLUCENT
             );
-            layoutParams.gravity = Gravity.CENTER | Gravity.TOP;
+            layoutParams.gravity = Gravity.CENTER;
             layoutParams.x = 0;
-            layoutParams.y = uiDp(56, 52);
-            layoutParams.dimAmount = 0.24;
+            layoutParams.y = 0;
+            layoutParams.dimAmount = 0.18;
 
             mainLayout = new LinearLayout(appContext);
             mainLayout.setOrientation(LinearLayout.VERTICAL);
-            mainLayout.setBackground(createRoundRectDrawable(Colors.surface, isTablet ? 18 : 14));
-            mainLayout.setElevation(uiDp(3, 4));
-            mainLayout.setPadding(uiDp(12, 16), uiDp(10, 14), uiDp(12, 16), uiDp(10, 14));
+            mainLayout.setBackground(createRoundRectDrawable(replicaSoftSurface20(), isTablet ? 28 : 24));
+            mainLayout.setElevation(uiDp(8, 12));
+            mainLayout.setPadding(uiDp(18, 28), uiDp(18, 24), uiDp(18, 28), uiDp(18, 24));
 
             var titleBar = this.createTitleBar();
             mainLayout.addView(titleBar);
 
             scrollView = new ScrollView(appContext);
             var scrollParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(60, 72));
-            scrollParams.setMargins(0, uiDp(8, 10), 0, uiDp(4, 6));
+            scrollParams.height = textAreaMinHeight;
+            scrollParams.setMargins(0, uiDp(18, 22), 0, uiDp(12, 16));
             scrollView.setLayoutParams(scrollParams);
+            scrollView.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 18 : 15, 1));
             try { scrollView.setFillViewport(false); } catch (eFill) {}
+            try { scrollView.setClipToPadding(false); } catch (eClip) {}
             this.installCanvasScrollRefreshHooks();
 
             textCanvasControl = createCanvasTextControl();
             textView = textCanvasControl.view;
             textCanvasControl.setTextSize(currentFontSize);
-
+            textView.setPadding(uiDp(16, 22), uiDp(16, 20), uiDp(16, 22), uiDp(16, 20));
+            textView.setContentDescription("点击或长按文字进行选择");
             this.setupTextViewTouch();
 
             scrollView.addView(textView);
@@ -1952,23 +2228,25 @@
             var actionBar = new LinearLayout(appContext);
             actionBar.setOrientation(LinearLayout.HORIZONTAL);
             actionBar.setGravity(Gravity.CENTER_VERTICAL);
-            actionBar.setPadding(0, uiDp(8, 10), 0, 0);
+            actionBar.setPadding(0, uiDp(14, 18), 0, 0);
 
             copyActionBtn = this.createPrimaryBtn("复制", function() { self.doCopy(); });
-            translateActionBtn = this.createIconBtn("翻译", function() {
+            translateActionBtn = this.createIconBtn("翻译", "globe", function() {
                 if (lastTranslationState) { self.undoLastTranslation(); } else { self.doTranslate(); }
             });
-            selectAllActionBtn = this.createIconBtn("全选", function() { self.selectAll(); });
-            clearActionBtn = this.createIconBtn("清空", function() { self.clear(); });
+            selectAllActionBtn = this.createIconBtn("全选", "select", function() { self.selectAll(); });
+            clearActionBtn = this.createIconBtn("清空", "trash", function() { self.clear(); });
 
-            actionBar.addView(copyActionBtn);
-            actionBar.addView(translateActionBtn);
-            actionBar.addView(selectAllActionBtn);
-            actionBar.addView(clearActionBtn);
+            var bottomButtons = [copyActionBtn, translateActionBtn, selectAllActionBtn, clearActionBtn];
+            for (var iBottom = 0; iBottom < bottomButtons.length; iBottom++) {
+                var bottomLp = new LinearLayout.LayoutParams(0, uiDp(52, 60), 1);
+                if (iBottom > 0) bottomLp.setMargins(uiDp(7, 10), 0, 0, 0);
+                bottomButtons[iBottom].setLayoutParams(bottomLp);
+                actionBar.addView(bottomButtons[iBottom]);
+            }
             mainLayout.addView(actionBar);
             this.updateActionButtons();
 
-            // 在 addView 前同步排版首屏文本并确定最终文本区高度，避免首帧先按最大高度显示。
             this.scheduleInitialTextLoad();
             windowManager.addView(mainLayout, layoutParams);
         },
@@ -1984,50 +2262,51 @@
             normalMode.setGravity(Gravity.CENTER_VERTICAL);
             normalMode.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
-            var titleContainer = new LinearLayout(appContext);
-            titleContainer.setOrientation(LinearLayout.HORIZONTAL);
-            titleContainer.setGravity(Gravity.CENTER_VERTICAL);
-            var iconText = new TextView(appContext);
-            iconText.setText(""); iconText.setVisibility(View.GONE); safeTextColor(iconText, Colors.primary); iconText.setTextSize(uiTextSize(18, 20));
-            iconText.setPadding(0, 0, uiDp(6, 8), 0);
+            titleAccentView = new View(appContext);
+            titleAccentView.setBackground(createRoundRectDrawable(replicaAccent20(), isTablet ? 5 : 4));
+            var accentLp = new LinearLayout.LayoutParams(uiDp(6, 8), uiDp(28, 36));
+            accentLp.setMargins(0, 0, uiDp(12, 16), 0);
+            normalMode.addView(titleAccentView, accentLp);
+
             var titleText = new TextView(appContext);
-            titleText.setText("拾字"); safeTextColor(titleText, Colors.text); titleText.setTextSize(uiTextSize(17, 18)); titleText.setTypeface(null, android.graphics.Typeface.BOLD);
-            var blogText = new TextView(appContext);
-            blogText.setText(""); blogText.setVisibility(View.GONE); safeTextColor(blogText, Colors.textTertiary); blogText.setTextSize(uiTextSize(9, 10));
-            blogText.setOnClickListener(new View.OnClickListener({
-                onClick: function(v) {
-                    try { setClipboard("https://xin-blog.com"); showToast("链接已复制"); } catch (e) {}
-                }
-            }));
-            titleContainer.setContentDescription("拾字；点击复制博客链接");
-            titleContainer.setOnClickListener(new View.OnClickListener({
-                onClick: function(v) {
-                    try { setClipboard("https://xin-blog.com"); showToast("链接已复制"); } catch (e) {}
-                }
-            }));
-            var titleSubContainer = new LinearLayout(appContext);
-            titleSubContainer.setOrientation(LinearLayout.VERTICAL);
-            titleSubContainer.setGravity(Gravity.CENTER_VERTICAL);
-            titleSubContainer.addView(titleText); titleSubContainer.addView(blogText);
-            titleContainer.addView(iconText); titleContainer.addView(titleSubContainer);
+            titleText.setText("拾字");
+            safeTextColor(titleText, Colors.text);
+            titleText.setTextSize(uiTextSize(22, 27));
+            titleText.setTypeface(null, android.graphics.Typeface.BOLD);
+            titleText.setGravity(Gravity.CENTER_VERTICAL);
+            titleText.setContentDescription("拾字；点击复制博客链接");
+            titleText.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
+                try { setClipboard("https://xin-blog.com"); showToast("链接已复制"); } catch (eLink) {}
+            } }));
+            titleText.setLayoutParams(new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+            normalMode.addView(titleText);
 
-            titleContainer.setLayoutParams(new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+            fontSizeSelectorView = new TextView(appContext);
+            updateFontSizeSelector20();
+            safeTextColor(fontSizeSelectorView, Colors.text);
+            fontSizeSelectorView.setTextSize(uiTextSize(12, 14));
+            fontSizeSelectorView.setGravity(Gravity.CENTER);
+            fontSizeSelectorView.setSingleLine(true);
+            fontSizeSelectorView.setPadding(uiDp(14, 18), 0, uiDp(14, 18), 0);
+            fontSizeSelectorView.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 15 : 13, 1));
+            fontSizeSelectorView.setContentDescription("字号设置，当前" + getFontSizeLevel20());
+            var selectorLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(42, 50));
+            selectorLp.setMargins(uiDp(8, 12), 0, uiDp(10, 14), 0);
+            normalMode.addView(fontSizeSelectorView, selectorLp);
+            fontSizeSelectorView.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.toggleFontSizePanel(); } }));
+            applyButtonAnimation(fontSizeSelectorView);
 
-            var settingsBtn = new TextView(appContext);
-            settingsBtn.setText("字号"); safeTextColor(settingsBtn, Colors.textSecondary); settingsBtn.setTextSize(uiTextSize(11, 12)); settingsBtn.setGravity(Gravity.CENTER);
-            settingsBtn.setPadding(uiDp(10, 12), uiDp(5, 6), uiDp(10, 12), uiDp(5, 6));
-            settingsBtn.setContentDescription("调整字号");
-            settingsBtn.setBackground(createPressableDrawable(Color.TRANSPARENT, Colors.btnSecondaryPressed, isTablet ? 10 : 8));
-            var closeBtn = new TextView(appContext);
-            closeBtn.setText("×"); safeTextColor(closeBtn, Colors.textSecondary); closeBtn.setTextSize(uiTextSize(19, 20)); closeBtn.setGravity(Gravity.CENTER);
-            closeBtn.setPadding(uiDp(10, 12), uiDp(3, 4), uiDp(8, 10), uiDp(3, 4));
-            closeBtn.setContentDescription("关闭拾字");
-            closeBtn.setBackground(createPressableDrawable(Color.TRANSPARENT, Colors.btnSecondaryPressed, isTablet ? 10 : 8));
-            settingsBtn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.toggleFontSizePanel(); } }));
-            applyButtonAnimation(settingsBtn);
-            closeBtn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.hide(); } }));
-            applyButtonAnimation(closeBtn);
-            normalMode.addView(titleContainer); normalMode.addView(settingsBtn); normalMode.addView(closeBtn);
+            closeActionView = new TextView(appContext);
+            closeActionView.setText("×");
+            safeTextColor(closeActionView, Colors.text);
+            closeActionView.setTextSize(uiTextSize(28, 34));
+            closeActionView.setGravity(Gravity.CENTER);
+            closeActionView.setContentDescription("关闭拾字");
+            closeActionView.setBackground(createPressableDrawable(Color.TRANSPARENT, alphaColor20(Colors.outline, isDark ? 60 : 34), isTablet ? 14 : 12));
+            var closeLp = new LinearLayout.LayoutParams(uiDp(42, 50), uiDp(42, 50));
+            normalMode.addView(closeActionView, closeLp);
+            closeActionView.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.hide(); } }));
+            applyButtonAnimation(closeActionView);
 
             var settingMode = new LinearLayout(appContext);
             settingMode.setOrientation(LinearLayout.HORIZONTAL);
@@ -2035,52 +2314,74 @@
             settingMode.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
             settingMode.setVisibility(View.GONE);
 
-            var smallA = new TextView(appContext); smallA.setText("A");
-            smallA.setTextSize(uiTextSize(12, 13)); safeTextColor(smallA, Colors.textSecondary); smallA.setPadding(0, 0, uiDp(8, 10), 0);
+            var settingTitle = new TextView(appContext);
+            settingTitle.setText("字号");
+            settingTitle.setTextSize(uiTextSize(13, 15));
+            settingTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+            safeTextColor(settingTitle, Colors.text);
+            settingTitle.setPadding(0, 0, uiDp(10, 14), 0);
+            settingMode.addView(settingTitle);
 
             seekBar = createFontSizeCanvasSlider(self);
             seekBar.setProgress(currentFontSize - MIN_FONT_SIZE);
-            var sliderLp = new LinearLayout.LayoutParams(0, uiDp(32, 36), 1);
+            var sliderLp = new LinearLayout.LayoutParams(0, uiDp(36, 42), 1);
             seekBar.view.setLayoutParams(sliderLp);
-            seekBar.view.setPadding(0, 0, 0, 0);
+            settingMode.addView(seekBar.view);
 
-            var largeA = new TextView(appContext); largeA.setText("A"); largeA.setTextSize(uiTextSize(18, 20)); safeTextColor(largeA, Colors.textSecondary); largeA.setPadding(uiDp(8, 10), 0, 0, 0);
-            fontSizeLabel = new TextView(appContext); fontSizeLabel.setText(currentFontSize + "sp"); safeTextColor(fontSizeLabel, Colors.primary); fontSizeLabel.setTextSize(uiTextSize(12, 13)); fontSizeLabel.setTypeface(null, android.graphics.Typeface.BOLD); fontSizeLabel.setGravity(Gravity.CENTER);
-            fontSizeLabel.setPadding(uiDp(10, 12), uiDp(4, 5), uiDp(10, 12), uiDp(4, 5));
-            fontSizeLabel.setBackground(createRoundRectDrawable(Color.TRANSPARENT, 0));
-            var labelLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            labelLp.setMargins(uiDp(10, 12), 0, uiDp(4, 6), 0);
-            fontSizeLabel.setLayoutParams(labelLp);
+            fontSizeLabel = new TextView(appContext);
+            fontSizeLabel.setText(currentFontSize + "sp");
+            safeTextColor(fontSizeLabel, replicaAccent20());
+            fontSizeLabel.setTextSize(uiTextSize(11, 12));
+            fontSizeLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+            fontSizeLabel.setGravity(Gravity.CENTER);
+            fontSizeLabel.setPadding(uiDp(8, 10), 0, uiDp(8, 10), 0);
+            var labelLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40));
+            labelLp.setMargins(uiDp(8, 10), 0, uiDp(4, 6), 0);
+            settingMode.addView(fontSizeLabel, labelLp);
 
             loadedRemoveSpaceBtn = self.createSettingChipBtn("去空格", function() { self.removeLoadedSpaces(); });
             loadedRemoveNewlineBtn = self.createSettingChipBtn("去换行", function() { self.removeLoadedNewlines(); });
+            settingMode.addView(loadedRemoveSpaceBtn);
+            settingMode.addView(loadedRemoveNewlineBtn);
 
-            var confirmBtn = new TextView(appContext); confirmBtn.setText("完成"); safeTextColor(confirmBtn, Colors.primary); confirmBtn.setTextSize(uiTextSize(11, 12)); confirmBtn.setGravity(Gravity.CENTER);
-            confirmBtn.setPadding(uiDp(8, 10), uiDp(4, 5), uiDp(4, 6), uiDp(4, 5));
-            confirmBtn.setBackground(createPressableDrawable(Color.TRANSPARENT, Colors.primaryLight, isTablet ? 10 : 8));
-            confirmBtn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); if (seekBar) saveFontSize(MIN_FONT_SIZE + seekBar.getProgress()); self.toggleFontSizePanel(); } }));
+            var confirmBtn = new TextView(appContext);
+            confirmBtn.setText("完成");
+            safeTextColor(confirmBtn, replicaAccent20());
+            confirmBtn.setTextSize(uiTextSize(11, 12));
+            confirmBtn.setGravity(Gravity.CENTER);
+            confirmBtn.setPadding(uiDp(9, 12), 0, uiDp(6, 8), 0);
+            confirmBtn.setBackground(createPressableDrawable(Color.TRANSPARENT, alphaColor20(replicaAccent20(), 32), isTablet ? 10 : 8));
+            var confirmLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40));
+            settingMode.addView(confirmBtn, confirmLp);
+            confirmBtn.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
+                hapticFeedback(v);
+                if (seekBar) saveFontSize(MIN_FONT_SIZE + seekBar.getProgress());
+                updateFontSizeSelector20();
+                self.toggleFontSizePanel();
+            } }));
             applyButtonAnimation(confirmBtn);
 
-            settingMode.addView(smallA); settingMode.addView(seekBar.view); settingMode.addView(largeA); settingMode.addView(fontSizeLabel); settingMode.addView(loadedRemoveSpaceBtn); settingMode.addView(loadedRemoveNewlineBtn); settingMode.addView(confirmBtn);
+            titleBar.addView(normalMode);
+            titleBar.addView(settingMode);
+            titleBarRefs.normalMode = normalMode;
+            titleBarRefs.settingMode = settingMode;
 
-            titleBar.addView(normalMode); titleBar.addView(settingMode);
-            titleBarRefs.normalMode = normalMode; titleBarRefs.settingMode = settingMode;
             var touchStartX = 0, touchStartY = 0, layoutStartX = 0, layoutStartY = 0, isDraggingWindow = false;
-            titleBar.setOnTouchListener(new View.OnTouchListener({
-                onTouch: function(v, event) {
-                    var action = event.getAction();
-                    if (action === MotionEvent.ACTION_DOWN) {
-                        touchStartX = event.getRawX(); touchStartY = event.getRawY(); layoutStartX = layoutParams.x;
-                        layoutStartY = layoutParams.y; isDraggingWindow = true; return true;
-                    } else if (action === MotionEvent.ACTION_MOVE && isDraggingWindow) {
-                        layoutParams.x = layoutStartX + (event.getRawX() - touchStartX); layoutParams.y = layoutStartY + (event.getRawY() - touchStartY);
-                        windowManager.updateViewLayout(mainLayout, layoutParams); return true;
-                    } else if (action === MotionEvent.ACTION_UP || action === MotionEvent.ACTION_CANCEL) {
-                        isDraggingWindow = false; return true;
-                    }
-                    return false;
+            titleBar.setOnTouchListener(new View.OnTouchListener({ onTouch: function(v, event) {
+                var action = event.getAction();
+                if (action === MotionEvent.ACTION_DOWN) {
+                    touchStartX = event.getRawX(); touchStartY = event.getRawY();
+                    layoutStartX = layoutParams.x; layoutStartY = layoutParams.y;
+                    isDraggingWindow = true; return true;
+                } else if (action === MotionEvent.ACTION_MOVE && isDraggingWindow) {
+                    layoutParams.x = layoutStartX + (event.getRawX() - touchStartX);
+                    layoutParams.y = layoutStartY + (event.getRawY() - touchStartY);
+                    windowManager.updateViewLayout(mainLayout, layoutParams); return true;
+                } else if (action === MotionEvent.ACTION_UP || action === MotionEvent.ACTION_CANCEL) {
+                    isDraggingWindow = false; return true;
                 }
-            }));
+                return false;
+            } }));
             return titleBar;
         },
 
@@ -2100,6 +2401,7 @@
         updateFontSize: function(size, skipAdjust) {
             currentFontSize = size;
             if (fontSizeLabel) fontSizeLabel.setText(size + "sp");
+            updateFontSizeSelector20();
             if (textCanvasControl) {
                 textCanvasControl.setTextSize(size);
                 if (!skipAdjust) this.adjustScrollViewHeight();
@@ -2110,7 +2412,8 @@
             if (!scrollView || !textCanvasControl) return 0;
             try {
                 var contentHeight = textCanvasControl.getContentHeight();
-                var newHeight = Math.max(uiDp(60, 72), Math.min(contentHeight + uiDp(8, 10), textAreaHeight));
+                var adaptiveHeight = Math.min(contentHeight + uiDp(8, 10), textAreaHeight);
+                var newHeight = Math.max(textAreaMinHeight, adaptiveHeight);
                 var params = scrollView.getLayoutParams();
                 if (params.height !== newHeight) {
                     params.height = newHeight;
@@ -2140,108 +2443,85 @@
             previewBoxView = previewBox;
             previewBox.setOrientation(LinearLayout.VERTICAL);
             previewBox.setBackground(createRoundRectDrawable(Color.TRANSPARENT, 0));
-            previewBox.setPadding(0, uiDp(6, 8), 0, 0);
-            var params = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-            params.setMargins(0, uiDp(4, 6), 0, 0);
-            previewBox.setLayoutParams(params);
+            previewBox.setPadding(0, 0, 0, 0);
+            previewBox.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
-            var header = new LinearLayout(appContext);
-            header.setOrientation(LinearLayout.HORIZONTAL);
-            header.setGravity(Gravity.CENTER_VERTICAL);
+            var metaRow = new LinearLayout(appContext);
+            metaRow.setOrientation(LinearLayout.HORIZONTAL);
+            metaRow.setGravity(Gravity.CENTER_VERTICAL);
+
             countLabelView = new TextView(appContext);
-            countLabelView.setText("0 字");
-            safeTextColor(countLabelView, Colors.textSecondary);
-            countLabelView.setTextSize(uiTextSize(11, 12));
-            countLabelView.setLayoutParams(new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
-            previewRemoveSpaceBtn = this.createMiniHeaderBtn("去空格", function() { self.removeSelectedSpaces(); });
-            previewRemoveNewlineBtn = this.createMiniHeaderBtn("去换行", function() { self.removeSelectedNewlines(); });
-            previewEditBtn = this.createMiniHeaderBtn("编辑", function() { self.editPreviewText(); });
-            pinActionBtn = this.createMiniHeaderBtn("钉屏", function() { self.pinSelectedText(); });
-            header.addView(countLabelView);
-            header.addView(previewRemoveSpaceBtn);
-            header.addView(previewRemoveNewlineBtn);
-            header.addView(previewEditBtn);
-            header.addView(pinActionBtn);
-            previewBox.addView(header);
+            countLabelView.setTextSize(uiTextSize(12, 13));
+            safeTextColor(countLabelView, Colors.text);
+            countLabelView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+            setCountLabel20(0);
+            var countLp = new LinearLayout.LayoutParams(0, uiDp(44, 50), 1);
+            metaRow.addView(countLabelView, countLp);
 
-            var previewScroll = new ScrollView(appContext);
-            var previewScrollLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(48, 56));
-            previewScrollLp.setMargins(0, uiDp(4, 5), 0, 0);
-            previewScroll.setLayoutParams(previewScrollLp);
+            var inlineActions = new LinearLayout(appContext);
+            inlineActions.setOrientation(LinearLayout.HORIZONTAL);
+            inlineActions.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+
+            copyAllActionBtn = createReplicaButton20("复制全部", "copy", "inline", function() { self.copyAllText(); }, null);
+            cleanupActionBtn = createReplicaButton20("去重换行", "cleanup", "inline", function() { self.cleanReplicaNewlines(); }, function() { self.cleanReplicaSpaces(); });
+            shareActionBtn = createReplicaButton20("分享", "share", "inline", function() { self.sharePickwordText(); }, null);
+            pinActionBtn = createReplicaButton20("钉屏", "pin", "pin", function() { self.pinSelectedText(); }, null);
+
+            inlineActions.addView(copyAllActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(38, 44)));
+            inlineActions.addView(createReplicaSeparator20(true));
+            inlineActions.addView(cleanupActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(38, 44)));
+            inlineActions.addView(createReplicaSeparator20(true));
+            inlineActions.addView(shareActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(38, 44)));
+            inlineActions.addView(createReplicaSeparator20(true));
+            inlineActions.addView(pinActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(40, 46)));
+            metaRow.addView(inlineActions);
+            previewBox.addView(metaRow);
+
             previewTextView = new TextView(appContext);
             previewTextView.setText("点击文字选择");
             safeTextColor(previewTextView, Colors.textSecondary);
-            previewTextView.setTextSize(uiTextSize(13, 14));
+            previewTextView.setTextSize(uiTextSize(12, 13));
             previewTextView.setLineSpacing(uiDp(1, 2), 1);
-            previewTextView.setPadding(0, uiDp(2, 3), 0, 0);
-            previewScroll.addView(previewTextView);
-            previewBox.addView(previewScroll);
+            previewTextView.setPadding(0, uiDp(8, 10), 0, uiDp(12, 14));
+            previewTextView.setMaxLines(2);
+            try { previewTextView.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch (eEllipsize) {}
+            previewTextView.setContentDescription("选中文字预览；点击编辑，长按去空格");
+            previewTextView.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
+                if (selectedIndices.length > 0) { hapticFeedback(v); self.editPreviewText(); }
+            } }));
+            previewTextView.setOnLongClickListener(new View.OnLongClickListener({ onLongClick: function(v) {
+                if (selectedIndices.length > 0) { hapticFeedback(v); self.removeSelectedSpaces(); return true; }
+                return false;
+            } }));
+            previewBox.addView(previewTextView, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+            resultDividerView = createReplicaSeparator20(false);
+            previewBox.addView(resultDividerView);
             return previewBox;
         },
 
-        createPrimaryBtn: function(text, callback) {
-            var btn = new TextView(appContext);
-            btn.setText(text);
-            safeTextColor(btn, Colors.onPrimary);
-            btn.setTextSize(uiTextSize(13, 14));
-            btn.setGravity(Gravity.CENTER);
-            btn.setSingleLine(true);
-            btn.setPadding(uiDp(10, 12), 0, uiDp(10, 12), 0);
-            btn.setBackground(createPressableDrawable(Colors.btnPrimaryBg, Colors.btnPrimaryPressed, isTablet ? 12 : 10));
-            try { btn.setMinHeight(0); btn.setMinimumHeight(0); btn.setMinWidth(0); btn.setMinimumWidth(0); } catch (eMin) {}
-            var params = new LinearLayout.LayoutParams(0, uiDp(38, 42), 2);
-            params.setMargins(uiDp(2, 3), 0, uiDp(2, 3), 0);
-            btn.setLayoutParams(params);
-            btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
-            applyButtonAnimation(btn);
-            return btn;
+        createPrimaryBtn: function(textValue, callback) {
+            return createReplicaButton20(textValue, "copy", "primary", callback, null);
         },
 
-        createIconBtn: function(text, callback) {
-            var btn = new TextView(appContext);
-            btn.setText(text);
-            safeTextColor(btn, Colors.textSecondary);
-            btn.setTextSize(uiTextSize(12, 13));
-            btn.setGravity(Gravity.CENTER);
-            btn.setSingleLine(true);
-            btn.setPadding(uiDp(8, 10), 0, uiDp(8, 10), 0);
-            btn.setBackground(createPressableDrawable(Color.TRANSPARENT, Colors.btnSecondaryPressed, isTablet ? 10 : 8));
-            try { btn.setMinHeight(0); btn.setMinimumHeight(0); btn.setMinWidth(0); btn.setMinimumWidth(0); } catch (eMin) {}
-            var params = new LinearLayout.LayoutParams(0, uiDp(38, 42), 1);
-            params.setMargins(uiDp(2, 3), 0, uiDp(2, 3), 0);
-            btn.setLayoutParams(params);
-            btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
-            applyButtonAnimation(btn);
-            return btn;
+        createIconBtn: function(textValue, iconKind, callback) {
+            return createReplicaButton20(textValue, iconKind, "outline", callback, null);
         },
 
-        createMiniHeaderBtn: function(text, callback) {
+        createMiniHeaderBtn: function(textValue, callback) {
+            return createReplicaButton20(textValue, "cleanup", "inline", callback, null);
+        },
+
+        createSettingChipBtn: function(textValue, callback) {
             var btn = new TextView(appContext);
-            btn.setText(text);
+            btn.setText(textValue);
             safeTextColor(btn, Colors.textSecondary);
             btn.setTextSize(uiTextSize(10, 11));
             btn.setGravity(Gravity.CENTER);
             btn.setSingleLine(true);
-            btn.setPadding(uiDp(6, 8), uiDp(2, 3), uiDp(6, 8), uiDp(2, 3));
-            btn.setBackground(createPressableDrawable(Color.TRANSPARENT, Colors.primaryLight, isTablet ? 9 : 7));
-            var params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            params.setMargins(uiDp(4, 6), 0, 0, 0);
-            btn.setLayoutParams(params);
-            btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
-            applyButtonAnimation(btn);
-            return btn;
-        },
-
-        createSettingChipBtn: function(text, callback) {
-            var btn = new TextView(appContext);
-            btn.setText(text);
-            safeTextColor(btn, Colors.textSecondary);
-            btn.setTextSize(uiTextSize(10, 11));
-            btn.setGravity(Gravity.CENTER);
-            btn.setSingleLine(true);
-            btn.setPadding(uiDp(6, 8), uiDp(2, 3), uiDp(6, 8), uiDp(2, 3));
-            btn.setBackground(createPressableDrawable(Color.TRANSPARENT, Colors.btnSecondaryPressed, isTablet ? 9 : 7));
-            var params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            btn.setPadding(uiDp(7, 9), 0, uiDp(7, 9), 0);
+            btn.setBackground(createPressableDrawable(Color.TRANSPARENT, alphaColor20(Colors.outline, isDark ? 46 : 28), isTablet ? 9 : 7));
+            var params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40));
             params.setMargins(uiDp(3, 4), 0, 0, 0);
             btn.setLayoutParams(params);
             btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
@@ -3032,11 +3312,17 @@
 
         updateActionButtons: function() {
             var hasSelection = (isDragging ? dragSelectionCount : selectedIndices.length) > 0;
+            var hasText = !!(fullText && fullText.length > 0);
             var hasUndo = !!lastTranslationState;
-            if (translateActionBtn) translateActionBtn.setText(hasUndo ? "撤销翻译" : "翻译");
-            this.setActionEnabled(copyActionBtn, hasSelection); this.setActionEnabled(translateActionBtn, hasSelection || hasUndo);
+            setReplicaButtonText20(translateActionBtn, hasUndo ? "撤销翻译" : "翻译");
+            this.setActionEnabled(copyActionBtn, hasSelection);
+            this.setActionEnabled(translateActionBtn, hasSelection || hasUndo);
+            this.setActionEnabled(selectAllActionBtn, hasText);
+            this.setActionEnabled(clearActionBtn, hasSelection);
+            this.setActionEnabled(copyAllActionBtn, hasText);
+            this.setActionEnabled(cleanupActionBtn, hasText);
+            this.setActionEnabled(shareActionBtn, hasSelection || hasText);
             this.setActionEnabled(pinActionBtn, hasSelection);
-            this.setActionEnabled(selectAllActionBtn, fullText && fullText.length > 0); this.setActionEnabled(clearActionBtn, hasSelection);
             this.updateCleanButtons();
         },
 
@@ -3150,7 +3436,7 @@
 
         updatePreviewDuringDrag: function() {
             var count = isDragging ? dragSelectionCount : selectedIndices.length;
-            if (countLabelView) countLabelView.setText(count + " 字");
+            setCountLabel20(count);
             this.updateActionButtons();
             try {
                 if (previewTextView) {
@@ -3167,16 +3453,17 @@
 
         updatePreview: function() {
             var count = selectedIndices.length;
-            if (countLabelView) countLabelView.setText(count + " 字");
+            setCountLabel20(count);
             this.updateActionButtons();
             if (count === 0) {
                 previewTextOverride = null;
                 previewSelectionSignature = "";
                 this.clearCleanUndoStack("preview");
                 this.updateCleanButtons();
-                if (isPartialTextLoaded) previewTextView.setText("长文本自动加载中，先显示前" + fullText.length + "字...");
+                if (isPartialTextLoaded) previewTextView.setText("长文本自动加载中，先显示前" + fullText.length + "字…");
                 else previewTextView.setText("点击文字选择");
-                safeTextColor(previewTextView, Colors.textSecondary); return;
+                safeTextColor(previewTextView, Colors.textSecondary);
+                return;
             }
 
             var sig = this.getPreviewSelectionSignature();
@@ -3188,7 +3475,8 @@
             previewTextOverride = null;
             previewSelectionSignature = sig;
             this.clearCleanUndoStack("preview");
-            previewTextView.setText(this.getSelectedTextRaw()); safeTextColor(previewTextView, Colors.text);
+            previewTextView.setText(this.getSelectedTextRaw());
+            safeTextColor(previewTextView, Colors.text);
         },
 
         editPreviewText: function() {
@@ -4052,6 +4340,37 @@
             this.releaseKeepAliveIfIdle();
         },
 
+        copyAllText: function() {
+            var textValue = String(originalFullText || fullText || "");
+            if (!textValue) { showToast("没有可复制的文字"); return; }
+            if (setClipboard(textValue)) showToast("已复制全部文字");
+        },
+
+        cleanReplicaNewlines: function() {
+            if (selectedIndices.length > 0) this.removeSelectedNewlines();
+            else this.removeLoadedNewlines();
+        },
+
+        cleanReplicaSpaces: function() {
+            if (selectedIndices.length > 0) this.removeSelectedSpaces();
+            else this.removeLoadedSpaces();
+        },
+
+        sharePickwordText: function() {
+            var textValue = selectedIndices.length > 0 ? this.getSelectedText() : String(originalFullText || fullText || "");
+            if (!textValue) { showToast("没有可分享的文字"); return; }
+            try {
+                var sendIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+                sendIntent.setType("text/plain");
+                sendIntent.putExtra(android.content.Intent.EXTRA_TEXT, String(textValue));
+                var chooser = android.content.Intent.createChooser(sendIntent, "分享文字");
+                chooser.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                appContext.startActivity(chooser);
+            } catch (eShare) {
+                showToast("分享失败: " + eShare.message);
+            }
+        },
+
         doTranslate: function() {
             try {
                 if (selectedIndices.length === 0) { showToast("请先选择文字");
@@ -4288,6 +4607,13 @@
                     } catch (ePinRemove) {}
                     mainLayout = null;
                     previewBoxView = null;
+                    copyAllActionBtn = null;
+                    cleanupActionBtn = null;
+                    shareActionBtn = null;
+                    fontSizeSelectorView = null;
+                    titleAccentView = null;
+                    resultDividerView = null;
+                    closeActionView = null;
                     titleBarRefs = { normalMode: null, settingMode: null };
                     textView = null;
                     textCanvasControl = null;
