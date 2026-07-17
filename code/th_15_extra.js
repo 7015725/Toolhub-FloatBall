@@ -1,4 +1,4 @@
-// @version 1.1.20
+// @version 1.1.21
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -151,7 +151,7 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
     throw "tool_app addPanel requires android main";
   }
 
-  if (this.state.closing) return;
+  if (this.state.closing) return false;
 
   // Determine if this panel should be modal (blocking background touches, better for IME)
   var isModal = (which === "settings" || which === "btn_editor" || which === "schema_editor" || which === "tool_app");
@@ -197,11 +197,26 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
   lp.x = x;
   lp.y = y;
 
+  var __stableOverlayRoot = __toolAppPanel || String(which || "") === "main";
+  if (__stableOverlayRoot) {
+    try { panel.animate().cancel(); } catch (eStableCancel) {}
+    try { panel.clearAnimation(); } catch (eStableClear) {}
+    try { panel.setTranslationX(0); } catch (eStableTx) {}
+    try { panel.setTranslationY(0); } catch (eStableTy) {}
+    try { panel.setScaleX(1); } catch (eStableSx) {}
+    try { panel.setScaleY(1); } catch (eStableSy) {}
+    try { panel.setAlpha(1); } catch (eStableAlpha) {}
+    try { panel.setVisibility(android.view.View.VISIBLE); } catch (eStableVisibility) {}
+    if (String(which || "") === "main") {
+      safeLog(this.L, 'd', "main panel visual prepared alpha=1 scale=1 beforeAdd=true");
+    }
+  }
+
   try { if (this.attachPanelSystemKeyHandler) this.attachPanelSystemKeyHandler(panel, which); } catch (eKeyAttach) { safeLog(this.L, 'e', "attach panel key fail which=" + String(which) + " err=" + String(eKeyAttach)); }
 
   if (__toolAppPanel) safeLog(this.L, 'i', "TOOLAPP_WM_ADD_BEGIN " +
     (this.toolAppThreadInfo ? this.toolAppThreadInfo() : ""));
-  try { this.state.wm.addView(panel, lp); } catch (eAdd) { safeLog(this.L, 'e',  "addPanel fail which=" + String(which) + " err=" + String(eAdd)); return; }
+  try { this.state.wm.addView(panel, lp); } catch (eAdd) { safeLog(this.L, 'e',  "addPanel fail which=" + String(which) + " err=" + String(eAdd)); return false; }
   if (__toolAppPanel) safeLog(this.L, 'i', "TOOLAPP_WM_ADD_DONE " +
     (this.toolAppThreadInfo ? this.toolAppThreadInfo() : ""));
 
@@ -212,31 +227,23 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
   try { panel.requestFocus(); } catch (eReqFocus) {}
 
   try {
-    if (__toolAppPanel) {
-      try { panel.animate().cancel(); } catch (eToolAppCancel) {}
-      try { panel.clearAnimation(); } catch (eToolAppClear) {}
+    if (__stableOverlayRoot) {
       panel.setTranslationX(0);
       panel.setTranslationY(0);
       panel.setScaleX(1);
       panel.setScaleY(1);
       panel.setAlpha(1);
     } else if (this.config.ENABLE_ANIMATIONS) {
-      var handledMainEnter = false;
-      if (which === "main" && this.animateMainPanelEnter) {
-        handledMainEnter = this.animateMainPanelEnter(panel, x, y) === true;
-      }
-      if (!handledMainEnter) {
-        panel.setScaleX(0.96);
-        panel.setScaleY(0.96);
-        panel.setAlpha(0);
-        panel.animate()
-          .scaleX(1)
-          .scaleY(1)
-          .alpha(1)
-          .setDuration(180)
-          .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
-          .start();
-      }
+      panel.setScaleX(0.96);
+      panel.setScaleY(0.96);
+      panel.setAlpha(0);
+      panel.animate()
+        .scaleX(1)
+        .scaleY(1)
+        .alpha(1)
+        .setDuration(180)
+        .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+        .start();
     } else {
       panel.setTranslationX(0);
       panel.setTranslationY(0);
@@ -255,6 +262,7 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
     lastPanelShow[which] = now;
     this.state._lastPanelShow = lastPanelShow;
   }
+  return true;
 };
 
 // =======================【设置类 UI：App 页面栈实验框架】======================
@@ -1614,6 +1622,7 @@ FloatBallAppWM.prototype.showPanelAvoidBall = function(which) {
 
   var doShow = function() {
     var maskAddedByCallback = false;
+    var preparedMask = null;
 
     function panelStage(phase, extra, sync) {
       var fields = extra || {};
@@ -1633,12 +1642,21 @@ safeLog(self.L, sync === true ? 'e' : 'd', phase + " which=" + String(which || "
       if (self.state.closing) return;
       panelStage("PANEL_SHOW_CALLBACK_BEGIN", {}, false);
 
-      if (typeof self.showMask !== "function") throw "showMask is not function";
-      panelStage("PANEL_SHOW_MASK_BEGIN", {}, false);
       var maskWasAdded = self.state.addedMask === true;
-      self.showMask();
-      maskAddedByCallback = !maskWasAdded && self.state.addedMask === true;
-      panelStage("PANEL_SHOW_MASK_DONE", { added: self.state.addedMask === true }, false);
+      if (which !== "main") {
+        if (typeof self.showMask !== "function") throw "showMask is not function";
+        panelStage("PANEL_SHOW_MASK_BEGIN", { stage: "before_build" }, false);
+        preparedMask = self.showMask({
+          reason: "panel_prepare:" + String(which || ""),
+          owner: String(which || "panel")
+        });
+        maskAddedByCallback = !!(preparedMask && preparedMask.created === true);
+        panelStage("PANEL_SHOW_MASK_DONE", {
+          added: self.state.addedMask === true,
+          generation: preparedMask ? preparedMask.generation : 0,
+          hidden: preparedMask ? preparedMask.hidden === true : false
+        }, false);
+      }
 
       if (typeof self.buildPanelView !== "function") throw "buildPanelView is not function";
       var type = which;
@@ -1754,15 +1772,51 @@ safeLog(self.L, sync === true ? 'e' : 'd', phase + " which=" + String(which || "
           pos.y = savedState.y;
       }
 
+      if (which === "main") {
+        if (typeof self.showMask !== "function") throw "showMask is not function";
+        panelStage("PANEL_SHOW_MASK_BEGIN", { stage: "after_layout" }, false);
+        preparedMask = self.showMask({
+          hidden: true,
+          animate: false,
+          reason: "main_panel_prepare",
+          owner: "main"
+        });
+        maskAddedByCallback = !!(preparedMask && preparedMask.created === true);
+        panelStage("PANEL_SHOW_MASK_DONE", {
+          added: self.state.addedMask === true,
+          generation: preparedMask ? preparedMask.generation : 0,
+          hidden: preparedMask ? preparedMask.hidden === true : false
+        }, false);
+      }
+
       if (typeof self.addPanel !== "function") throw "addPanel is not function";
       panelStage("PANEL_ADD_CALL_BEGIN", { x: pos.x, y: pos.y }, false);
-      self.addPanel(panelView, pos.x, pos.y, which);
+      var addOk = self.addPanel(panelView, pos.x, pos.y, which) === true;
+      var panelAdded = which === "main" ?
+        (self.state.addedPanel === true && self.state.panel === panelView) :
+        (which === "settings" ? self.state.addedSettings === true : self.state.addedViewer === true);
       panelStage("PANEL_ADD_CALL_DONE", {
         x: pos.x,
         y: pos.y,
-        added: which === "main" ? self.state.addedPanel === true :
-(which === "settings" ? self.state.addedSettings === true : self.state.addedViewer === true)
+        added: panelAdded,
+        addOk: addOk
       }, false);
+
+      if (which === "main") {
+        var preparedIdentity = !!(preparedMask && preparedMask.mask &&
+          self.state.mask === preparedMask.mask &&
+          Number(self.state.maskGeneration || 0) === Number(preparedMask.generation || 0));
+        if (addOk && panelAdded && preparedIdentity) {
+          try { preparedMask.mask.animate().cancel(); } catch (eMaskAnim) {}
+          try { preparedMask.mask.clearAnimation(); } catch (eMaskClear) {}
+          try { preparedMask.mask.setAlpha(1); } catch (eMaskAlpha) {}
+          try { preparedMask.mask.setVisibility(android.view.View.VISIBLE); } catch (eMaskVisibility) {}
+          safeLog(self.L, 'd', "mask reveal reason=main_panel_added generation=" +
+            String(preparedMask.generation || 0) + " panelAdded=true");
+        } else if (preparedMask && typeof self.hideMask === "function") {
+          self.hideMask("main_panel_add_failed", preparedMask.mask, preparedMask.generation);
+        }
+      }
 
       // 绑定拖拽事件
       if (enableDrag) {
@@ -1773,9 +1827,16 @@ safeLog(self.L, sync === true ? 'e' : 'd', phase + " which=" + String(which || "
     } catch (e) {
       panelStage("PANEL_SHOW_CALLBACK_FAIL", { error: String(e) }, true);
       if (self.L && typeof self.L.e === "function") self.L.e("showPanelAvoidBall callback err=" + String(e));
-      if (maskAddedByCallback && typeof self.hideMaskIfNoPanelVisible === "function") {
-        try { self.hideMaskIfNoPanelVisible(); } catch (eMaskRollback) {
-try { safeLog(self.L, 'w', "panel mask rollback fail: " + String(eMaskRollback)); } catch (eRollbackLog) {}
+      var shouldRollbackMask = maskAddedByCallback || (which === "main" && !!preparedMask);
+      if (shouldRollbackMask && typeof self.hideMaskIfNoPanelVisible === "function") {
+        try {
+          self.hideMaskIfNoPanelVisible(
+            "panel_show_failed:" + String(which || ""),
+            preparedMask ? preparedMask.mask : null,
+            preparedMask ? preparedMask.generation : null
+          );
+        } catch (eMaskRollback) {
+          try { safeLog(self.L, 'w', "panel mask rollback fail: " + String(eMaskRollback)); } catch (eRollbackLog) {}
         }
       }
       try { self.toast("面板显示失败: " + String(e)); } catch(et) { safeLog(null, 'e', "catch " + String(et)); }

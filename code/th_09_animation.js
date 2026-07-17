@@ -1,4 +1,4 @@
-// @version 1.0.11
+// @version 1.0.12
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -123,24 +123,60 @@ FloatBallAppWM.prototype.safeRemoveView = function(v, whichName, options) {
   }
 };
 
-FloatBallAppWM.prototype.hideMask = function() {
-  if (!this.state.addedMask) return;
-  if (!this.state.mask) return;
+FloatBallAppWM.prototype.hideMask = function(reason, expectedMask, expectedGeneration) {
+  if (!this.state) return false;
 
-  this.safeRemoveView(this.state.mask, "mask");
-  this.state.mask = null;
-  this.state.maskLp = null;
-  this.state.addedMask = false;
+  var mask = this.state.mask;
+  var generation = Number(this.state.maskGeneration || 0);
+  if (!this.state.addedMask || !mask) return false;
+
+  if (expectedMask && expectedMask !== mask) {
+    safeLog(this.L, 'd', "mask hide skipped identity mismatch reason=" + String(reason || "") +
+      " generation=" + String(generation));
+    return false;
+  }
+  if (expectedGeneration !== undefined && expectedGeneration !== null &&
+      Number(expectedGeneration) !== generation) {
+    safeLog(this.L, 'd', "mask hide skipped generation mismatch reason=" + String(reason || "") +
+      " expected=" + String(expectedGeneration) + " actual=" + String(generation));
+    return false;
+  }
+
+  try { mask.animate().cancel(); } catch (eAnim) {}
+  try { mask.clearAnimation(); } catch (eClear) {}
+  try { mask.setAlpha(0); } catch (eAlpha) {}
+  try { mask.setVisibility(android.view.View.INVISIBLE); } catch (eVisibility) {}
+
+  var removeResult = this.safeRemoveView(mask, "mask", {
+    immediate: true,
+    keepInvisible: true,
+    resetVisual: false
+  });
+  var removed = !removeResult || removeResult.ok !== false;
+
+  if (removed && this.state.mask === mask &&
+      Number(this.state.maskGeneration || 0) === generation) {
+    this.state.mask = null;
+    this.state.maskLp = null;
+    this.state.addedMask = false;
+    this.state.maskOwner = null;
+  }
+
+  safeLog(this.L, removed ? 'd' : 'w',
+    "mask hide reason=" + String(reason || "unspecified") +
+    " generation=" + String(generation) +
+    " removed=" + String(removed) +
+    " immediate=" + String(!!(removeResult && removeResult.immediate)));
+  return removed;
 };
 
-FloatBallAppWM.prototype.hideMaskIfNoPanelVisible = function() {
+FloatBallAppWM.prototype.hideMaskIfNoPanelVisible = function(reason, expectedMask, expectedGeneration) {
   try {
     if (!this.state) return false;
     if (this.state.addedPanel) return false;
     if (this.state.addedSettings) return false;
     if (this.state.addedViewer) return false;
-    this.hideMask();
-    return true;
+    return this.hideMask(reason || "no_panel_visible", expectedMask, expectedGeneration);
   } catch (e) {
     safeLog(this.L, 'w', "conditional mask hide fail: " + String(e));
   }
@@ -196,7 +232,7 @@ FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
 
     if (isLatest) {
       self.state.mainPanelExitAnimating = false;
-      if (self.hideMaskIfNoPanelVisible) self.hideMaskIfNoPanelVisible();
+      if (self.hideMaskIfNoPanelVisible) self.hideMaskIfNoPanelVisible("main_panel_exit");
       else if (!self.state.addedPanel &&
                !self.state.addedSettings &&
                !self.state.addedViewer) self.hideMask();
@@ -258,8 +294,14 @@ FloatBallAppWM.prototype.hideSettingsPanel = function() {
 FloatBallAppWM.prototype.hideViewerPanel = function() {
   var __toolAppViewer = false;
   try {
-    __toolAppViewer = String(this.state.viewerPanelType || "") === "tool_app" ||
-      this.state.viewerPanel === this.state.toolAppRoot;
+    var __viewer = this.state ? this.state.viewerPanel : null;
+    var __toolRoot = this.state ? this.state.toolAppRoot : null;
+    __toolAppViewer = !!(this.state && this.state.addedViewer === true && (
+      String(this.state.viewerPanelType || "") === "tool_app" ||
+      (__viewer !== null && __viewer !== undefined &&
+       __toolRoot !== null && __toolRoot !== undefined &&
+       __viewer === __toolRoot)
+    ));
   } catch (eToolViewer) {}
   if (__toolAppViewer) {
     var self = this;
@@ -732,17 +774,51 @@ FloatBallAppWM.prototype.hideAllPanels = function() {
   this._clearHeavyCachesIfAllHidden("hideAllPanels");
 };
 
-FloatBallAppWM.prototype.showMask = function() {
-  if (this.state.addedMask) return;
-  if (this.state.closing) return;
+FloatBallAppWM.prototype.showMask = function(options) {
+  if (!this.state || this.state.closing) return null;
+
+  var opts = options || {};
+  var hidden = opts.hidden === true;
+  var animate = hidden !== true && opts.animate !== false &&
+    !!(this.config && this.config.ENABLE_ANIMATIONS);
+  var reason = String(opts.reason || "unspecified");
+  var owner = String(opts.owner || "panel");
+
+  if (this.state.addedMask && this.state.mask) {
+    var existing = this.state.mask;
+    var existingGeneration = Number(this.state.maskGeneration || 0);
+    var canPrepareHidden = hidden && !this.state.addedPanel &&
+      !this.state.addedSettings && !this.state.addedViewer;
+    if (canPrepareHidden) {
+      try { existing.animate().cancel(); } catch (eExistingAnim) {}
+      try { existing.clearAnimation(); } catch (eExistingClear) {}
+      try { existing.setAlpha(0); } catch (eExistingAlpha) {}
+      try { existing.setVisibility(android.view.View.INVISIBLE); } catch (eExistingVisibility) {}
+      this.state.maskOwner = owner;
+    }
+    safeLog(this.L, 'd', "mask reuse reason=" + reason +
+      " generation=" + String(existingGeneration) +
+      " hidden=" + String(canPrepareHidden));
+    return {
+      mask: existing,
+      generation: existingGeneration,
+      created: false,
+      hidden: canPrepareHidden
+    };
+  }
+
+  if (this.state.addedMask && !this.state.mask) {
+    this.state.addedMask = false;
+    this.state.maskLp = null;
+  }
 
   var self = this;
+  var generation = Number(this.state.maskGeneration || 0) + 1;
+  if (generation > 1000000000) generation = 1;
   var mask = new android.widget.FrameLayout(context);
 
-  // 遮罩层背景：轻微的黑色半透明，提升层次感
-  try { toolhubSafeSetBackgroundColor(mask, android.graphics.Color.parseColor("#33000000")); } catch (e0) {
-      toolhubSafeSetBackgroundColor(mask, 0x33000000);
-  }
+  try { toolhubSafeSetBackgroundColor(mask, android.graphics.Color.parseColor("#33000000")); }
+  catch (e0) { toolhubSafeSetBackgroundColor(mask, 0x33000000); }
 
   mask.setOnTouchListener(new JavaAdapter(android.view.View.OnTouchListener, {
     onTouch: function(v, e) {
@@ -763,30 +839,55 @@ FloatBallAppWM.prototype.showMask = function() {
     android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
     android.graphics.PixelFormat.TRANSLUCENT
   );
-
   lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
   lp.x = 0;
   lp.y = 0;
+
+  try { mask.animate().cancel(); } catch (ePrepareAnim) {}
+  try { mask.clearAnimation(); } catch (ePrepareClear) {}
+  if (hidden) {
+    try { mask.setAlpha(0); } catch (eHiddenAlpha) {}
+    try { mask.setVisibility(android.view.View.INVISIBLE); } catch (eHiddenVisibility) {}
+  } else if (animate) {
+    try { mask.setAlpha(0); } catch (eAnimatedAlpha) {}
+    try { mask.setVisibility(android.view.View.VISIBLE); } catch (eAnimatedVisibility) {}
+  } else {
+    try { mask.setAlpha(1); } catch (eStableAlpha) {}
+    try { mask.setVisibility(android.view.View.VISIBLE); } catch (eStableVisibility) {}
+  }
 
   try {
     this.state.wm.addView(mask, lp);
     this.state.mask = mask;
     this.state.maskLp = lp;
     this.state.addedMask = true;
+    this.state.maskGeneration = generation;
+    this.state.maskOwner = owner;
 
-    // 简单的淡入动画
-    try {
-        if (this.config.ENABLE_ANIMATIONS) {
-            mask.setAlpha(0);
-            mask.animate().alpha(1).setDuration(200).start();
-        } else {
-            mask.setAlpha(1);
-        }
-     } catch(eAnim) { safeLog(null, 'e', "catch " + String(eAnim)); }
+    if (animate) {
+      try {
+        mask.animate().cancel();
+        mask.animate().alpha(1).setDuration(200).start();
+      } catch (eAnim) {
+        try { mask.setAlpha(1); } catch (eAnimFallback) {}
+      }
+    }
 
+    safeLog(this.L, 'd', "mask prepare reason=" + reason +
+      " generation=" + String(generation) +
+      " hidden=" + String(hidden) +
+      " animate=" + String(animate) +
+      " owner=" + owner);
+    return {
+      mask: mask,
+      generation: generation,
+      created: true,
+      hidden: hidden
+    };
   } catch (e1) {
-    safeLog(this.L, 'e',  "add mask fail err=" + String(e1));
+    safeLog(this.L, 'e', "add mask fail err=" + String(e1));
     this.state.addedMask = false;
+    return null;
   }
 };
 
