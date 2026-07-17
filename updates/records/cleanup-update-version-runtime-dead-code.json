@@ -9,5 +9,19 @@
     "移除设置构建期空自动检查调用和无效状态字段",
     "补充专项校验防止不可达旧实现重新引入"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260717000037,
+  "date": "2026-07-17",
+  "modules": [
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.5",
+      "to": "1.1.6",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
 }
