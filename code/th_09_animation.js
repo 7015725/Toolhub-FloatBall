@@ -1,4 +1,4 @@
-// @version 1.0.10
+// @version 1.0.11
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -228,6 +228,18 @@ FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
 FloatBallAppWM.prototype.hideSettingsPanel = function() {
   if (!this.state.addedSettings) return;
   if (!this.state.settingsPanel) return;
+
+  try {
+    if (typeof this.onResultPreviewConfigurationChanged === "function") {
+      this.onResultPreviewConfigurationChanged({
+        positionOnly: true,
+        clearPositionPreview: true,
+        reason: "settings_cancel"
+      });
+    }
+  } catch(ePreviewPosition) {
+    safeLog(this.L, "w", "restore result preview position on settings close fail: " + String(ePreviewPosition));
+  }
 
   this.safeRemoveView(this.state.settingsPanel, "settingsPanel");
   this.state.settingsPanel = null;

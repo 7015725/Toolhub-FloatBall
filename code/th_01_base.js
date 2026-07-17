@@ -1,4 +1,4 @@
-// @version 1.1.15
+// @version 1.1.16
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -182,6 +182,7 @@ var ConfigValidator = {
     POINTER_EDGE_ZONE_Y_DP: { type: "int", min: 24, max: 128, default: 72 },
     POINTER_TEXT_HOVER_MS: { type: "int", min: 300, max: 10000, default: 800 },
     POINTER_AREA_HOVER_MS: { type: "int", min: 500, max: 10000, default: 2000 },
+    POINTER_RESULT_PREVIEW_POSITION_PERCENT: { type: "int", min: 0, max: 100, default: 5 },
     POINTER_RESULT_PREVIEW_TIMEOUT_SEC: { type: "int", min: 1, max: 10, default: 3 },
     POINTER_COLOR_NORMAL_HEX: { type: "string", default: "" },
     POINTER_COLOR_TEXT_READY_HEX: { type: "string", default: "#22C55E" },
@@ -896,6 +897,7 @@ var ConfigManager = {
         POINTER_EDGE_ZONE_Y_DP: 72,
         POINTER_TEXT_HOVER_MS: 800,
         POINTER_AREA_HOVER_MS: 2000,
+        POINTER_RESULT_PREVIEW_POSITION_PERCENT: 5,
         POINTER_RESULT_PREVIEW_TIMEOUT_SEC: 3,
         POINTER_COLOR_NORMAL_HEX: "",
         POINTER_COLOR_TEXT_READY_HEX: "#22C55E",
@@ -966,6 +968,7 @@ var ConfigManager = {
         { key: "POINTER_EDGE_ZONE_Y_DP", name: "纵向贴边范围(dp)", type: "int", min: 24, max: 128, step: 1 },
         { key: "POINTER_TEXT_HOVER_MS", name: "悬停取字时间(ms)", type: "int", min: 300, max: 10000, step: 100 },
         { key: "POINTER_AREA_HOVER_MS", name: "悬停框选时间(ms)", type: "int", min: 500, max: 10000, step: 100 },
+        { key: "POINTER_RESULT_PREVIEW_POSITION_PERCENT", name: "预览垂直位置(%)", desc: "按完整屏幕高度设置预览中心位置，实际显示会避开顶部和底部系统栏", type: "int", min: 0, max: 100, step: 1 },
         { key: "POINTER_RESULT_PREVIEW_TIMEOUT_SEC", name: "结果预览停留时间(秒)", type: "int", min: 1, max: 10, step: 1 },
         { key: "POINTER_AREA_SMALL_FALLBACK_TEXT", name: "小框回退取字", type: "bool" },
         { key: "POINTER_AREA_MIN_WIDTH_DP", name: "OCR最小宽度(dp)", type: "int", min: 20, max: 240, step: 2 },
@@ -1109,6 +1112,7 @@ var ConfigManager = {
             sStr.indexOf("POINTER_EDGE_ZONE_Y_DP") < 0 ||
             sStr.indexOf("POINTER_TEXT_HOVER_MS") < 0 ||
             sStr.indexOf("POINTER_AREA_HOVER_MS") < 0 ||
+            sStr.indexOf("POINTER_RESULT_PREVIEW_POSITION_PERCENT") < 0 ||
             sStr.indexOf("POINTER_RESULT_PREVIEW_TIMEOUT_SEC") < 0 ||
             sStr.indexOf("POINTER_COLOR_NORMAL_HEX") < 0 ||
             sStr.indexOf("POINTER_COLOR_TEXT_READY_HEX") < 0 ||
@@ -1193,6 +1197,7 @@ var ConfigManager = {
                 schemaItemDiffers("POINTER_EDGE_ZONE_Y_DP", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("POINTER_TEXT_HOVER_MS", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("POINTER_AREA_HOVER_MS", ["name", "type", "min", "max", "step"]) ||
+                schemaItemDiffers("POINTER_RESULT_PREVIEW_POSITION_PERCENT", ["name", "desc", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("POINTER_RESULT_PREVIEW_TIMEOUT_SEC", ["name", "type", "min", "max", "step"]) ||
                 schemaItemDiffers("POINTER_AREA_SMALL_FALLBACK_TEXT", ["name", "type"]) ||
                 schemaItemDiffers("POINTER_AREA_MIN_WIDTH_DP", ["name", "type", "min", "max", "step"]) ||

@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // =======================【工具：面板位置持久化】======================
 FloatBallAppWM.prototype.savePanelState = function(key, state) {
   if (!key || !state) return;
@@ -396,6 +396,17 @@ FloatBallAppWM.prototype.applyImmediateEffectsForKey = function(k) {
       if (this.state.addedBall && this.state.docked) {
         this.state.docked = false;
         this.snapToEdgeDocked(false);
+      }
+      return;
+    }
+
+    if (key === "POINTER_RESULT_PREVIEW_POSITION_PERCENT") {
+      if (typeof this.onResultPreviewConfigurationChanged === "function") {
+        this.onResultPreviewConfigurationChanged({
+positionOnly: true,
+clearPositionPreview: true,
+reason: "settings_commit"
+        });
       }
       return;
     }
