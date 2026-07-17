@@ -1,4 +1,4 @@
-// @version 1.3.1
+// @version 1.3.2
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -218,6 +218,7 @@
 
     var fallback = {
       bg: darkFallback ? colorSpec21(255, 27, 27, 31, "#FF1B1B1F") : colorSpec21(255, 255, 255, 255, "#FFFFFFFF"),
+      pressedBg: darkFallback ? colorSpec21(255, 38, 53, 77, "#FF26354D") : colorSpec21(255, 220, 232, 248, "#FFDCE8F8"),
       stroke: darkFallback ? colorSpec21(88, 255, 255, 255, "#58FFFFFF") : colorSpec21(54, 0, 0, 0, "#36000000"),
       text: darkFallback ? colorSpec21(255, 248, 250, 252, "#FFF8FAFC") : colorSpec21(255, 17, 24, 39, "#FF111827"),
       secondary: darkFallback ? colorSpec21(255, 203, 213, 225, "#FFCBD5E1") : colorSpec21(255, 71, 85, 105, "#FF475569"),
@@ -237,6 +238,7 @@
           var outlineFallback = dark ? colorSpec21(88, 255, 255, 255, "#58FFFFFF") : colorSpec21(54, 0, 0, 0, "#36000000");
           return {
             bg: colorIntToSpec21(scheme.surface, surfaceFallback),
+            pressedBg: colorIntToSpec21(scheme.primaryContainer, fallback.pressedBg),
             stroke: withAlphaColor21(scheme.outlineVariant, dark ? 112 : 76, outlineFallback),
             text: colorIntToSpec21(scheme.onSurface, fallback.text),
             secondary: colorIntToSpec21(scheme.onSurface2, fallback.secondary),
@@ -594,13 +596,13 @@
 
   function copyMetrics21(appObj, heightPx) {
     var height = Math.max(dp21(appObj, 40), Number(heightPx || 0));
-    var touchSize = Math.max(dp21(appObj, 40), Math.min(dp21(appObj, 44), height - dp21(appObj, 4)));
-    var iconSize = Math.round(clamp21(height * 0.34, dp21(appObj, 18), dp21(appObj, 22)));
+    var touchSize = Math.max(dp21(appObj, 40), Math.min(dp21(appObj, 42), height - dp21(appObj, 4)));
+    var iconSize = Math.round(clamp21(height * 0.32, dp21(appObj, 17), dp21(appObj, 20)));
     return {
       touchSize: touchSize,
       iconSize: iconSize,
       rightPadding: dp21(appObj, 5),
-      slotWidth: touchSize + dp21(appObj, 9)
+      slotWidth: touchSize + dp21(appObj, 7)
     };
   }
 
@@ -611,12 +613,12 @@
     st.copyVisible = hasCopyText21(st.payload && st.payload.text);
 
     var sw = Math.max(dp21(appObj, 200), screenWidth21(appObj));
-    var maxViewWidth = Math.round(sw * 0.88);
-    var minViewWidth = dp21(appObj, 160);
-    var provisionalHeight = text.length > 18 ? dp21(appObj, 62) : dp21(appObj, 48);
+    var maxViewWidth = Math.round(sw * 0.86);
+    var minViewWidth = dp21(appObj, 156);
+    var provisionalHeight = text.length > 18 ? dp21(appObj, 60) : dp21(appObj, 46);
     var metrics = copyMetrics21(appObj, provisionalHeight);
-    var leftPadding = dp21(appObj, 14);
-    var rightPadding = dp21(appObj, 14);
+    var leftPadding = dp21(appObj, 16);
+    var rightPadding = dp21(appObj, 16);
     var copySlot = st.copyVisible ? metrics.slotWidth : 0;
 
     function applyLineLayout(copySlotWidth) {
@@ -626,7 +628,7 @@
       if (second.remaining) second = fitLine21(paint, first.remaining, maxTextWidth, true);
       st.line1 = first.line || "";
       st.line2 = second.line || "";
-      st.measuredHeight = st.line2 ? dp21(appObj, 62) : dp21(appObj, 48);
+      st.measuredHeight = st.line2 ? dp21(appObj, 60) : dp21(appObj, 46);
     }
 
     applyLineLayout(copySlot);
@@ -805,7 +807,8 @@
     var bg = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     var rect = new android.graphics.RectF(dp21(appObj, 1), dp21(appObj, 1), width - dp21(appObj, 1), height - dp21(appObj, 1));
     bg.setStyle(android.graphics.Paint.Style.FILL);
-    var bgApply = setPaintColor21(bg, c.bg);
+    var backgroundColor = render && render.pressed === true ? c.pressedBg : c.bg;
+    var bgApply = setPaintColor21(bg, backgroundColor);
     if (render) {
       render.bgApplyOk = bgApply.ok === true;
       render.bgExpectedHex = String(bgApply.expectedHex || "");
@@ -815,7 +818,7 @@
       try { safeLog(appObj.L, 'e', "result preview background color apply fail expected=" + String(bgApply.expectedHex || "") + " actual=" + String(bgApply.actualHex || "") + " err=" + String(bgApply.error || "")); } catch (eBgLog) {}
       return false;
     }
-    canvas.drawRoundRect(rect, dp21(appObj, 12), dp21(appObj, 12), bg);
+    canvas.drawRoundRect(rect, dp21(appObj, 14), dp21(appObj, 14), bg);
 
     bg.setStyle(android.graphics.Paint.Style.STROKE);
     bg.setStrokeWidth(dp21(appObj, 1));
@@ -825,7 +828,7 @@
       try { safeLog(appObj.L, 'e', "result preview stroke color apply fail expected=" + String(strokeApply.expectedHex || "") + " actual=" + String(strokeApply.actualHex || "") + " err=" + String(strokeApply.error || "")); } catch (eStrokeLog) {}
       return false;
     }
-    canvas.drawRoundRect(rect, dp21(appObj, 12), dp21(appObj, 12), bg);
+    canvas.drawRoundRect(rect, dp21(appObj, 14), dp21(appObj, 14), bg);
 
     var textPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     var textApply = setPaintColor21(textPaint, c.text);
@@ -839,20 +842,20 @@
       return false;
     }
     textPaint.setTextSize(sp21(14));
-    var x = dp21(appObj, 14);
+    var x = dp21(appObj, 16);
     var line1 = String(render && render.line1 !== undefined ? render.line1 : st.line1 || "");
     var line2 = String(render && render.line2 !== undefined ? render.line2 : st.line2 || "");
     if (line2) {
-      canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 25), textPaint);
+      canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 24), textPaint);
       var secondaryApply = setPaintColor21(textPaint, c.secondary);
       if (!secondaryApply.ok) {
         if (render) render.textApplyOk = false;
         try { safeLog(appObj.L, 'e', "result preview secondary color apply fail expected=" + String(secondaryApply.expectedHex || "") + " actual=" + String(secondaryApply.actualHex || "") + " err=" + String(secondaryApply.error || "")); } catch (eSecondaryLog) {}
         return false;
       }
-      canvas.drawText(new java.lang.String(line2), x, dp21(appObj, 47), textPaint);
+      canvas.drawText(new java.lang.String(line2), x, dp21(appObj, 45), textPaint);
     } else {
-      canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 30), textPaint);
+      canvas.drawText(new java.lang.String(line1), x, dp21(appObj, 28), textPaint);
     }
 
     if (!drawCopyAction21(appObj, canvas, view, render, c)) return false;
