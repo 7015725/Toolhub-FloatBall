@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "cc6014baf2879076d3f2509ef655551018a24ecc55064f28b156e6bcc306e46b",
-      "size": 12023,
-      "version": 20260717040123
+      "sha256": "bd86b3fd74dcc7a232c5acf694d5c0a8812d81f93a6d6a8485eb37f1f9b3d2f8",
+      "size": 13303,
+      "version": 20260717045512
     }
   },
   "entry": {
@@ -54,9 +54,9 @@
       "version": "1.0.8"
     },
     "th_09_animation.js": {
-      "sha256": "6f4a344d358fdc4b89241190aa72e8743408707d7dc8b9d88a8dcd5ab0e499ab",
-      "size": 38700,
-      "version": "1.0.11"
+      "sha256": "c60bed71cf00e8fe52c193ff51ca59a93c462c4745f7d5e3d885e0d1eb072520",
+      "size": 42862,
+      "version": "1.0.12"
     },
     "th_10_shell.js": {
       "sha256": "36427d7146a4589cbcf0512804acd90f4210a3d512cde6e03f2cb40c42d86d2d",
@@ -114,9 +114,9 @@
       "version": "1.0.4"
     },
     "th_15_extra.js": {
-      "sha256": "e79c5673fbe30394d53709d63f3c53952159a35807d17e42391fad039150cd47",
-      "size": 116056,
-      "version": "1.1.20"
+      "sha256": "85e9cf6ed1a3638e0f0b58670e526c048b65773147e8220f4bba61df9890116c",
+      "size": 118935,
+      "version": "1.1.21"
     },
     "th_15_main_panel.js": {
       "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
@@ -157,15 +157,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "结果预览窗口取消整窗透明度和缩放动画，每次 Canvas 绘制前清空透明缓冲区",
-      "新结果替换、超时关闭和点击反馈不再对透明 Overlay Surface 执行属性变换",
-      "设置首页后台更新检查仅局部刷新更新摘要与红点，不再重复重建设置内容树",
-      "ToolApp 首次显示保持完全不透明和原始尺寸，避免进入动画与内容刷新发生竞争",
-      "补充结果预览、更新入口和 ToolApp 视觉稳定性专项校验"
+      "主面板完成构建、测量和定位后再以不可见状态准备全屏遮罩，避免遮罩单独参与一帧合成",
+      "主面板成功加入 WindowManager 后再稳定显示遮罩，保留原有遮罩深度与点击外部关闭行为",
+      "主面板根窗口在 addView 前固定为完全不透明和原始尺寸，不再执行整窗进入属性动画",
+      "遮罩增加 View 与 generation 身份校验，关闭前先设为不可见并优先立即移除",
+      "修正空 viewerPanel 与空 toolAppRoot 被误判为 ToolApp 的生命周期问题，并补充专项校验"
     ],
     "date": "2026-07-17",
-    "title": "修复结果预览与设置页闪烁"
+    "title": "修复主面板打开时全屏闪烁"
   },
   "schema": 4,
-  "version": 20260717040123
+  "version": 20260717045512
 }
