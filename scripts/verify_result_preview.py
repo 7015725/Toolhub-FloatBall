@@ -259,11 +259,20 @@ def main() -> int:
         failures,
     )
     require(
-        "preview / status bar and cutout inset",
-        "WindowInsets.Type.statusBars()" in preview
+        "preview / full-screen percentage and system-bar safety",
+        "POINTER_RESULT_PREVIEW_POSITION_PERCENT" in base
+        and "function screenFrame21(appObj)" in preview
+        and "function calculatePreviewTopY21(appObj, st, overrideValue)" in preview
+        and "frame.height * percent / 100" in preview
+        and "WindowInsets.Type.statusBars()" in preview
+        and "WindowInsets.Type.navigationBars()" in preview
         and "WindowInsets.Type.displayCutout()" in preview
-        and 'getIdentifier("status_bar_height"' in preview,
-        "top position must respect status bar and cutout safe insets",
+        and "getInsetsIgnoringVisibility" in preview
+        and 'getIdentifier("status_bar_height"' in preview
+        and 'getIdentifier("navigation_bar_height"' in preview
+        and "result.bottom <= 0 && result.left <= 0 && result.right <= 0" in preview
+        and "previewHeight = int21(st && st.measuredHeight, 0)" in preview,
+        "preview position must use complete screen height, prefer the current measured height, then clamp against real top and bottom system insets",
         failures,
     )
     require(
@@ -464,14 +473,15 @@ def main() -> int:
         failures,
     )
     require(
-        "preview / opaque motion animation",
-        "rootRef.setAlpha(1)" in preview
-        and ".alpha(0)" not in preview
+        "preview / fade and scale only motion",
+        ".alpha(1)" in preview
+        and ".alpha(0)" in preview
         and ".scaleX(0.97).scaleY(0.97)" in preview
-        and ".translationY(-dp21(self, 6))" in preview
+        and "translationY(-dp21" not in preview
+        and "setTranslationY(0)" in preview
         and ".setDuration(120)" in preview
         and "st.clickLocked" in preview,
-        "preview entry, primary touch and exit feedback must not animate whole-window alpha",
+        "preview motion must use alpha and scale without vertical translation",
         failures,
     )
 
