@@ -1213,21 +1213,23 @@
         row.setGravity(Gravity.CENTER);
         row.setClickable(true);
         row.setFocusable(true);
-        var iconSize = styleKind === "inline" || styleKind === "pin" ? 18 : 22;
+        var compactInline = styleKind === "inline";
+        var compactPin = styleKind === "pin";
+        var iconSize = compactInline ? (isTablet ? 18 : 14) : (compactPin ? (isTablet ? 18 : 15) : (isTablet ? 24 : 17));
         var icon = createReplicaIcon20(iconKind, styleKind, iconSize);
         var iconLp = new LinearLayout.LayoutParams(uiDp(iconSize, iconSize + 2), uiDp(iconSize, iconSize + 2));
         row.addView(icon, iconLp);
         var label = new TextView(appContext);
         label.setText(String(textValue));
-        label.setTextSize(styleKind === "inline" || styleKind === "pin" ? uiTextSize(11, 12) : uiTextSize(14, 15));
+        label.setTextSize(compactInline ? uiTextSize(9, 12) : (compactPin ? uiTextSize(10, 12) : uiTextSize(12, 15)));
         label.setSingleLine(true);
         label.setGravity(Gravity.CENTER_VERTICAL);
-        label.setPadding(uiDp(7, 9), 0, 0, 0);
+        label.setPadding(compactInline ? uiDp(3, 7) : (compactPin ? uiDp(4, 7) : uiDp(4, 9)), 0, 0, 0);
         row.addView(label);
         row.setTag(label);
         row.setContentDescription(String(textValue));
-        row.setPadding(styleKind === "inline" || styleKind === "pin" ? uiDp(7, 9) : uiDp(12, 16), 0,
-            styleKind === "inline" || styleKind === "pin" ? uiDp(7, 9) : uiDp(12, 16), 0);
+        var horizontalPad = compactInline ? uiDp(3, 7) : (compactPin ? uiDp(4, 7) : uiDp(4, 16));
+        row.setPadding(horizontalPad, 0, horizontalPad, 0);
         styleReplicaButton20(row, styleKind);
         row.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
             hapticFeedback(v);
@@ -1259,7 +1261,7 @@
         var lp = vertical
             ? new LinearLayout.LayoutParams(Math.max(1, Math.round(dp(1))), uiDp(28, 32))
             : new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, Math.max(1, Math.round(dp(1))));
-        if (vertical) lp.setMargins(uiDp(4, 6), 0, uiDp(4, 6), 0);
+        if (vertical) lp.setMargins(uiDp(2, 6), 0, uiDp(2, 6), 0);
         divider.setLayoutParams(lp);
         return divider;
     }
