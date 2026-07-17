@@ -31,7 +31,9 @@ jobs:
           python-version: '3.x'
 
       - name: Apply reference replica patch
-        run: python3 scripts/apply_pickword_reference_replica_once.py
+        run: |
+          python3 scripts/apply_pickword_reference_replica_once.py
+          python3 scripts/fix_pickword_reference_height_contract_once.py
 
       - name: Verify changed module versions
         run: |
@@ -74,6 +76,7 @@ jobs:
               'title_accent': 'titleAccentView' in text and 'replicaAccent20()' in text,
               'size_selector': '字号    " + getFontSizeLevel20() + " ⌄' in text,
               'large_text_box': 'textAreaMinHeight' in text and 'createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20()' in text,
+              'stable_height': 'new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(60, 72))' in text and 'Math.min(contentHeight + uiDp(8, 10), textAreaHeight)' in text,
               'middle_actions': all(x in text for x in ['复制全部', '去重换行', '分享', '钉屏']),
               'bottom_actions': all(x in text for x in ['"复制"', '"翻译"', '"全选"', '"清空"']),
               'canvas_icons': 'function createReplicaIcon20' in text and all(('kind === "' + x + '"') in text for x in ['copy', 'cleanup', 'share', 'pin', 'globe', 'select', 'trash']),
@@ -89,6 +92,7 @@ jobs:
       - name: Remove one-time automation files
         run: |
           rm -f scripts/apply_pickword_reference_replica_once.py
+          rm -f scripts/fix_pickword_reference_height_contract_once.py
           rm -f .github/workflows/apply_pickword_reference_replica_once.yml
 
       - name: Check final diff
