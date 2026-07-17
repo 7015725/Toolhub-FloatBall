@@ -3,7 +3,7 @@ name: apply-main-panel-mask-flicker
 on:
   pull_request:
     branches: [main]
-    types: [opened]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -36,25 +36,44 @@ jobs:
           python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
           python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
 
-      - name: Verify focused behavior and repository boundaries
-        shell: bash
+      - name: Verify ES5 and JavaScript syntax
         run: |
-          set -euo pipefail
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_module_boundaries.py
+
+      - name: Verify module boundaries
+        run: python3 scripts/verify_module_boundaries.py
+
+      - name: Verify deterministic audits
+        run: |
           python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
           python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
           python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
           python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
-          python3 scripts/verify_main_panel_close_lifecycle.py
-          python3 scripts/verify_animation_callback_safety.py
-          python3 scripts/verify_toolapp_main_thread_affinity.py
-          python3 scripts/verify_main_panel_adaptive_layout.py
-          python3 scripts/verify_main_panel_grid_sizing.py
-          python3 scripts/verify_main_panel_visual_tuning.py
-          python3 scripts/verify_changed_module_versions.py
-          git diff --check
+
+      - name: Verify main panel mask lifecycle
+        run: python3 scripts/verify_main_panel_close_lifecycle.py
+
+      - name: Verify animation callback safety
+        run: python3 scripts/verify_animation_callback_safety.py
+
+      - name: Verify ToolApp thread affinity
+        run: python3 scripts/verify_toolapp_main_thread_affinity.py
+
+      - name: Verify main panel adaptive layout
+        run: python3 scripts/verify_main_panel_adaptive_layout.py
+
+      - name: Verify main panel grid sizing
+        run: python3 scripts/verify_main_panel_grid_sizing.py
+
+      - name: Verify main panel visual tuning
+        run: python3 scripts/verify_main_panel_visual_tuning.py
+
+      - name: Verify changed module versions
+        run: python3 scripts/verify_changed_module_versions.py
+
+      - name: Check whitespace
+        run: git diff --check
 
       - name: Commit repair and remove temporary executor
         shell: bash
