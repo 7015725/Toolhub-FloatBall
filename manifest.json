@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "bd86b3fd74dcc7a232c5acf694d5c0a8812d81f93a6d6a8485eb37f1f9b3d2f8",
-      "size": 13303,
-      "version": 20260717045512
+      "sha256": "ad5938652dc37885e7e850c8d7995adc3594a5dd09b5a3d6b5ddff0a218b3c00",
+      "size": 14563,
+      "version": 20260717090351
     }
   },
   "entry": {
@@ -144,28 +144,28 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "5851b513ea1cb6148be440de264e88feaa2342c79c93434adf37abccc513b76a",
-      "size": 211793,
-      "version": "1.0.3"
+      "sha256": "393f4847fef6ea06d8b7e9806b7c71e3df459421f22125f7a2e522409184167a",
+      "size": 216682,
+      "version": "1.0.4"
     },
     "th_21_result_preview.js": {
-      "sha256": "9cfc8a20b5c1a3687081c059352ade7f569b40278284909276ac8e1e8833fd79",
-      "size": 66628,
-      "version": "1.3.1"
+      "sha256": "9abfcf56d340a92c031b91e35e83ae1e384287774801ad886df28c01476563e2",
+      "size": 66929,
+      "version": "1.3.2"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "主面板完成构建、测量和定位后再以不可见状态准备全屏遮罩，避免遮罩单独参与一帧合成",
-      "主面板成功加入 WindowManager 后再稳定显示遮罩，保留原有遮罩深度与点击外部关闭行为",
-      "主面板根窗口在 addView 前固定为完全不透明和原始尺寸，不再执行整窗进入属性动画",
-      "遮罩增加 View 与 generation 身份校验，关闭前先设为不可见并优先立即移除",
-      "修正空 viewerPanel 与空 toolAppRoot 被误判为 ToolApp 的生命周期问题，并补充专项校验"
+      "拾字窗口改为读取 ToolHub 统一语义配色，亮色、暗色与系统动态配色保持一致",
+      "精简标题栏、文本预览区和操作按钮，移除装饰性 Emoji 与按钮缩放动画",
+      "编辑弹窗和钉屏卡片统一使用 surface、outline 与状态色角色，不改动选择、翻译和钉屏行为",
+      "顶部结果预览保持 Canvas 单实例与无整窗属性动画，优化间距、圆角和按压背景反馈",
+      "保留指针、框选 OCR、预览位置、停留时间、两行截断和完整原文复制链路"
     ],
     "date": "2026-07-17",
-    "title": "修复主面板打开时全屏闪烁"
+    "title": "统一拾字与结果预览视觉"
   },
   "schema": 4,
-  "version": 20260717045512
+  "version": 20260717090351
 }

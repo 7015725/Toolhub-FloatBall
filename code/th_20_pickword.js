@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -227,6 +227,8 @@
     var pinLoadToken = 0;
     var pinnedText = "";
     var titleBarRefs = { normalMode: null, settingMode: null };
+    var toolhubAppRef = null;
+    var previewBoxView = null;
 
     var fullText = "";
     var selectedIndices = [];
@@ -436,24 +438,85 @@
     }
 
     var Colors = {
-        bg: isDark ? Color.parseColor("#0f172a") : Color.parseColor("#ffffff"),
-        surface: isDark ? Color.parseColor("#1e293b") : Color.parseColor("#f8fafc"),
-        surfaceVariant: isDark ? Color.parseColor("#334155") : Color.parseColor("#f1f5f9"),
-        text: isDark ? Color.parseColor("#f8fafc") : Color.parseColor("#0f172a"),
-        textSecondary: isDark ? Color.parseColor("#94a3b8") : Color.parseColor("#64748b"),
-        textTertiary: isDark ? Color.parseColor("#64748b") : Color.parseColor("#94a3b8"),
-        primary: Color.parseColor("#6366f1"),
-        primaryLight: isDark ? Color.parseColor("#312e81") : Color.parseColor("#e0e7ff"),
-        onPrimary: Color.WHITE,
-        selectionBg: Color.parseColor("#6366f1"),
-        selectionText: Color.WHITE,
-        success: Color.parseColor("#22c55e"),
-        warning: Color.parseColor("#f59e0b"),
-        btnPrimaryBg: Color.parseColor("#6366f1"),
-        btnPrimaryPressed: Color.parseColor("#4f46e5"),
-        btnSecondaryBg: isDark ? Color.parseColor("#334155") : Color.parseColor("#f1f5f9"),
-        btnSecondaryPressed: isDark ? Color.parseColor("#475569") : Color.parseColor("#e2e8f0")
+        bg: isDark ? Color.parseColor("#131314") : Color.parseColor("#f8f9fa"),
+        surface: isDark ? Color.parseColor("#1b1b1f") : Color.parseColor("#f1f3f4"),
+        surfaceVariant: isDark ? Color.parseColor("#2b2c30") : Color.parseColor("#e6e8ea"),
+        text: isDark ? Color.parseColor("#e7e9ec") : Color.parseColor("#25272a"),
+        textSecondary: isDark ? Color.parseColor("#adb3ba") : Color.parseColor("#666b70"),
+        textTertiary: isDark ? Color.parseColor("#8e949b") : Color.parseColor("#7b8086"),
+        primary: isDark ? Color.parseColor("#a8c7fa") : Color.parseColor("#005bc0"),
+        primaryLight: isDark ? Color.parseColor("#26354d") : Color.parseColor("#dce8f8"),
+        onPrimary: isDark ? Color.parseColor("#062e6f") : Color.WHITE,
+        selectionBg: isDark ? Color.parseColor("#a8c7fa") : Color.parseColor("#005bc0"),
+        selectionText: isDark ? Color.parseColor("#062e6f") : Color.WHITE,
+        success: isDark ? Color.parseColor("#4ade80") : Color.parseColor("#15803d"),
+        warning: isDark ? Color.parseColor("#fbbf24") : Color.parseColor("#b45309"),
+        outline: isDark ? Color.parseColor("#49454f") : Color.parseColor("#c4c7c5"),
+        btnPrimaryBg: isDark ? Color.parseColor("#a8c7fa") : Color.parseColor("#005bc0"),
+        btnPrimaryPressed: isDark ? Color.parseColor("#7fcfff") : Color.parseColor("#00639b"),
+        btnSecondaryBg: isDark ? Color.parseColor("#2b2c30") : Color.parseColor("#e6e8ea"),
+        btnSecondaryPressed: isDark ? Color.parseColor("#26354d") : Color.parseColor("#dce8f8")
     };
+
+    function applyPickwordColorScheme20(appObj) {
+        var scheme = null;
+        try {
+            if (appObj && typeof appObj.getSettingsColorScheme === "function") {
+                scheme = appObj.getSettingsColorScheme();
+            }
+        } catch (eScheme) {
+            scheme = null;
+        }
+
+        if (scheme) {
+            isDark = scheme.dark === true;
+            Colors.bg = scheme.background || scheme.surface;
+            Colors.surface = scheme.surface || scheme.background;
+            Colors.surfaceVariant = scheme.surface2 || scheme.primaryContainer || Colors.surface;
+            Colors.text = scheme.onSurface;
+            Colors.textSecondary = scheme.onSurface2 || scheme.onSurface;
+            Colors.textTertiary = scheme.onSurface2 || scheme.onSurface;
+            Colors.primary = scheme.primary;
+            Colors.primaryLight = scheme.primaryContainer || scheme.surface2 || Colors.surface;
+            Colors.onPrimary = scheme.onPrimary;
+            Colors.selectionBg = scheme.primary;
+            Colors.selectionText = scheme.onPrimary;
+            Colors.success = scheme.success;
+            Colors.warning = scheme.warning;
+            Colors.outline = scheme.outlineVariant || scheme.outline;
+            Colors.btnPrimaryBg = scheme.primary;
+            Colors.btnPrimaryPressed = scheme.secondary || scheme.primary;
+            Colors.btnSecondaryBg = scheme.surface2 || scheme.surface;
+            Colors.btnSecondaryPressed = scheme.primaryContainer || scheme.surface2 || scheme.surface;
+            return true;
+        }
+
+        try {
+            var uiMode = appContext.getResources().getConfiguration().uiMode;
+            isDark = (uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) === android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        } catch (eMode) {
+            isDark = false;
+        }
+        Colors.bg = isDark ? Color.parseColor("#131314") : Color.parseColor("#f8f9fa");
+        Colors.surface = isDark ? Color.parseColor("#1b1b1f") : Color.parseColor("#f1f3f4");
+        Colors.surfaceVariant = isDark ? Color.parseColor("#2b2c30") : Color.parseColor("#e6e8ea");
+        Colors.text = isDark ? Color.parseColor("#e7e9ec") : Color.parseColor("#25272a");
+        Colors.textSecondary = isDark ? Color.parseColor("#adb3ba") : Color.parseColor("#666b70");
+        Colors.textTertiary = isDark ? Color.parseColor("#8e949b") : Color.parseColor("#7b8086");
+        Colors.primary = isDark ? Color.parseColor("#a8c7fa") : Color.parseColor("#005bc0");
+        Colors.primaryLight = isDark ? Color.parseColor("#26354d") : Color.parseColor("#dce8f8");
+        Colors.onPrimary = isDark ? Color.parseColor("#062e6f") : Color.WHITE;
+        Colors.selectionBg = Colors.primary;
+        Colors.selectionText = Colors.onPrimary;
+        Colors.success = isDark ? Color.parseColor("#4ade80") : Color.parseColor("#15803d");
+        Colors.warning = isDark ? Color.parseColor("#fbbf24") : Color.parseColor("#b45309");
+        Colors.outline = isDark ? Color.parseColor("#49454f") : Color.parseColor("#c4c7c5");
+        Colors.btnPrimaryBg = Colors.primary;
+        Colors.btnPrimaryPressed = isDark ? Color.parseColor("#7fcfff") : Color.parseColor("#00639b");
+        Colors.btnSecondaryBg = Colors.surfaceVariant;
+        Colors.btnSecondaryPressed = Colors.primaryLight;
+        return false;
+    }
 
     function dp(value) {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, appContext.getResources().getDisplayMetrics());
@@ -957,55 +1020,71 @@
         return drawable;
     }
 
+    function applyVisiblePickwordTheme20() {
+        try {
+            if (mainLayout) mainLayout.setBackground(createStrokeRoundRectDrawable(Colors.surface, Colors.outline, isTablet ? 20 : 16, 1));
+            if (previewBoxView) previewBoxView.setBackground(createStrokeRoundRectDrawable(Colors.surfaceVariant, Colors.outline, isTablet ? 16 : 12, 1));
+            if (countLabelView) safeTextColor(countLabelView, Colors.primary);
+            if (previewTextView) safeTextColor(previewTextView, selectedIndices.length > 0 ? Colors.text : Colors.textSecondary);
+            if (fontSizeLabel) {
+                safeTextColor(fontSizeLabel, Colors.primary);
+                fontSizeLabel.setBackground(createRoundRectDrawable(Colors.primaryLight, isTablet ? 16 : 14));
+            }
+
+            if (copyActionBtn) {
+                safeTextColor(copyActionBtn, Colors.onPrimary);
+                copyActionBtn.setBackground(createPressableDrawable(Colors.btnPrimaryBg, Colors.btnPrimaryPressed, isTablet ? 14 : 12));
+            }
+            var secondaryButtons = [translateActionBtn, selectAllActionBtn, clearActionBtn];
+            var i;
+            for (i = 0; i < secondaryButtons.length; i++) {
+                if (!secondaryButtons[i]) continue;
+                safeTextColor(secondaryButtons[i], Colors.textSecondary);
+                secondaryButtons[i].setBackground(createPressableDrawable(Colors.btnSecondaryBg, Colors.btnSecondaryPressed, isTablet ? 14 : 12));
+            }
+            var compactButtons = [previewRemoveSpaceBtn, previewRemoveNewlineBtn, previewEditBtn, pinActionBtn];
+            for (i = 0; i < compactButtons.length; i++) {
+                if (!compactButtons[i]) continue;
+                safeTextColor(compactButtons[i], Colors.primary);
+                compactButtons[i].setBackground(createPressableDrawable(Colors.primaryLight, Colors.btnSecondaryPressed, isTablet ? 12 : 10));
+            }
+            var settingButtons = [loadedRemoveSpaceBtn, loadedRemoveNewlineBtn];
+            for (i = 0; i < settingButtons.length; i++) {
+                if (!settingButtons[i]) continue;
+                safeTextColor(settingButtons[i], Colors.textSecondary);
+                settingButtons[i].setBackground(createPressableDrawable(Colors.btnSecondaryBg, Colors.btnSecondaryPressed, isTablet ? 12 : 10));
+            }
+            if (pinLayout) pinLayout.setBackground(createStrokeRoundRectDrawable(Colors.surface, Colors.outline, isTablet ? 18 : 16, 1));
+            if (pinTextView) safeTextColor(pinTextView, Colors.text);
+            if (pinProgressView) safeTextColor(pinProgressView, Colors.textTertiary);
+            if (textCanvasControl && textCanvasControl.view) textCanvasControl.view.invalidate();
+        } catch (eThemeApply) {}
+    }
+
     function animateWindowEnter(view) {
         view.setScaleX(0.9); view.setScaleY(0.9); view.setAlpha(0);
         view.animate().scaleX(1).scaleY(1).alpha(1).setDuration(200)
             .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
     }
 
-    // 主拾字窗口保持全不透明，只做轻微缩放和位移，避免 DIM 遮罩与淡入叠加闪烁。
+    // 主拾字窗口保持静态、完全不透明，避免 WindowManager 根 Surface 属性动画闪烁。
     function animatePickwordMainEnter(view) {
         if (!view) return;
         try { view.animate().cancel(); } catch (eCancel) {}
+        try { view.clearAnimation(); } catch (eClear) {}
         try {
             view.setVisibility(View.VISIBLE);
             view.setAlpha(1);
-            view.setScaleX(0.985);
-            view.setScaleY(0.985);
-            view.setTranslationY(uiDp(6, 7));
-            view.animate()
-                .scaleX(1)
-                .scaleY(1)
-                .translationY(0)
-                .setDuration(140)
-                .setInterpolator(new android.view.animation.DecelerateInterpolator())
-                .start();
-        } catch (eEnter) {
-            try {
-                view.setVisibility(View.VISIBLE);
-                view.setAlpha(1);
-                view.setScaleX(1);
-                view.setScaleY(1);
-                view.setTranslationY(0);
-            } catch (eFallback) {}
-        }
+            view.setScaleX(1);
+            view.setScaleY(1);
+            view.setTranslationY(0);
+        } catch (eStable) {}
     }
 
+    // 按压反馈交给 StateListDrawable；不再缩放子 View，避免浮窗合成抖动。
     function applyButtonAnimation(btn) {
-        btn.setOnTouchListener(new View.OnTouchListener({
-            onTouch: function(v, event) {
-                switch(event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        v.animate().scaleX(0.95).scaleY(0.95).setDuration(80).start();
-                        break;
-                    case MotionEvent.ACTION_UP:
-                    case MotionEvent.ACTION_CANCEL:
-                        v.animate().scaleX(1).scaleY(1).setDuration(80).start();
-                        break;
-                }
-                return false;
-            }
-        }));
+        if (!btn) return;
+        try { btn.setClickable(true); } catch (eClickable) {}
     }
 
     function hapticFeedback(view) {
@@ -1602,6 +1681,8 @@
 
                         windowManager.removeView(mainLayout);
                         mainLayout = null;
+                        previewBoxView = null;
+                        titleBarRefs = { normalMode: null, settingMode: null };
                         textView = null;
                         textCanvasControl = null;
                         scrollView = null;
@@ -1817,6 +1898,7 @@
 
         createWindow: function() {
             detectScreenSize();
+            applyPickwordColorScheme20(toolhubAppRef);
             windowManager = appContext.getSystemService(appContext.WINDOW_SERVICE);
 
             layoutParams = new LayoutParams(
@@ -1828,13 +1910,13 @@
             layoutParams.gravity = Gravity.CENTER | Gravity.TOP;
             layoutParams.x = 0;
             layoutParams.y = uiDp(56, 52);
-            layoutParams.dimAmount = 0.4;
+            layoutParams.dimAmount = 0.32;
 
             mainLayout = new LinearLayout(appContext);
             mainLayout.setOrientation(LinearLayout.VERTICAL);
-            mainLayout.setBackground(createRoundRectDrawable(Colors.bg, isTablet ? 20 : 16));
-            mainLayout.setElevation(uiDp(6, 7));
-            mainLayout.setPadding(uiDp(16, 24), uiDp(16, 20), uiDp(16, 24), uiDp(16, 20));
+            mainLayout.setBackground(createStrokeRoundRectDrawable(Colors.surface, Colors.outline, isTablet ? 20 : 16, 1));
+            mainLayout.setElevation(uiDp(5, 6));
+            mainLayout.setPadding(uiDp(14, 20), uiDp(14, 18), uiDp(14, 20), uiDp(14, 18));
 
             var titleBar = this.createTitleBar();
             mainLayout.addView(titleBar);
@@ -1863,8 +1945,8 @@
             actionBar.setOrientation(LinearLayout.HORIZONTAL);
             actionBar.setPadding(0, uiDp(16, 20), 0, 0);
 
-            copyActionBtn = this.createPrimaryBtn("📋 复制", function() { self.doCopy(); });
-            translateActionBtn = this.createIconBtn("🌐 翻译", function() {
+            copyActionBtn = this.createPrimaryBtn("复制", function() { self.doCopy(); });
+            translateActionBtn = this.createIconBtn("翻译", function() {
                 if (lastTranslationState) { self.undoLastTranslation(); } else { self.doTranslate(); }
             });
             selectAllActionBtn = this.createIconBtn("全选", function() { self.selectAll(); });
@@ -1897,12 +1979,12 @@
             titleContainer.setOrientation(LinearLayout.HORIZONTAL);
             titleContainer.setGravity(Gravity.CENTER_VERTICAL);
             var iconText = new TextView(appContext);
-            iconText.setText("✦"); safeTextColor(iconText, Colors.primary); iconText.setTextSize(uiTextSize(18, 20));
+            iconText.setText(""); iconText.setVisibility(View.GONE); safeTextColor(iconText, Colors.primary); iconText.setTextSize(uiTextSize(18, 20));
             iconText.setPadding(0, 0, uiDp(6, 8), 0);
             var titleText = new TextView(appContext);
             titleText.setText("拾字"); safeTextColor(titleText, Colors.text); titleText.setTextSize(uiTextSize(18, 20)); titleText.setTypeface(null, android.graphics.Typeface.BOLD);
             var blogText = new TextView(appContext);
-            blogText.setText("阿然博客 xin-blog.com"); safeTextColor(blogText, Colors.textTertiary); blogText.setTextSize(uiTextSize(9, 10));
+            blogText.setText("xin-blog.com"); safeTextColor(blogText, Colors.textTertiary); blogText.setTextSize(uiTextSize(9, 10));
             blogText.setOnClickListener(new View.OnClickListener({
                 onClick: function(v) {
                     try { setClipboard("https://xin-blog.com"); showToast("链接已复制"); } catch (e) {}
@@ -1917,12 +1999,12 @@
             titleContainer.setLayoutParams(new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
 
             var settingsBtn = new TextView(appContext);
-            settingsBtn.setText("⚙"); safeTextColor(settingsBtn, Colors.textSecondary); settingsBtn.setTextSize(uiTextSize(18, 20)); settingsBtn.setPadding(uiDp(12, 14), uiDp(8, 10), uiDp(12, 14), uiDp(8, 10));
-            settingsBtn.setBackground(createPressableDrawable(Color.TRANSPARENT, isDark ? Color.parseColor("#334155") : Color.parseColor("#e2e8f0"), isTablet ? 16 : 12));
+            settingsBtn.setText("字号"); safeTextColor(settingsBtn, Colors.textSecondary); settingsBtn.setTextSize(uiTextSize(12, 13)); settingsBtn.setPadding(uiDp(12, 14), uiDp(7, 9), uiDp(12, 14), uiDp(7, 9));
+            settingsBtn.setBackground(createPressableDrawable(Colors.btnSecondaryBg, Colors.btnSecondaryPressed, isTablet ? 16 : 12));
             var closeBtn = new TextView(appContext);
-            closeBtn.setText("✕"); safeTextColor(closeBtn, Colors.textSecondary); closeBtn.setTextSize(uiTextSize(16, 18));
-            closeBtn.setPadding(uiDp(12, 14), uiDp(8, 10), uiDp(4, 8), uiDp(8, 10));
-            closeBtn.setBackground(createPressableDrawable(Color.TRANSPARENT, isDark ? Color.parseColor("#334155") : Color.parseColor("#e2e8f0"), isTablet ? 16 : 12));
+            closeBtn.setText("关闭"); safeTextColor(closeBtn, Colors.textSecondary); closeBtn.setTextSize(uiTextSize(12, 13));
+            closeBtn.setPadding(uiDp(12, 14), uiDp(7, 9), uiDp(8, 10), uiDp(7, 9));
+            closeBtn.setBackground(createPressableDrawable(Colors.btnSecondaryBg, Colors.btnSecondaryPressed, isTablet ? 16 : 12));
             settingsBtn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.toggleFontSizePanel(); } }));
             applyButtonAnimation(settingsBtn);
             closeBtn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.hide(); } }));
@@ -2036,7 +2118,8 @@
         createPreviewBox: function() {
             var self = this;
             var previewBox = new LinearLayout(appContext);
-            previewBox.setOrientation(LinearLayout.VERTICAL); previewBox.setBackground(createRoundRectDrawable(Colors.primaryLight, isTablet ? 16 : 12));
+            previewBoxView = previewBox;
+            previewBox.setOrientation(LinearLayout.VERTICAL); previewBox.setBackground(createStrokeRoundRectDrawable(Colors.surfaceVariant, Colors.outline, isTablet ? 16 : 12, 1));
             previewBox.setPadding(uiDp(12, 14), uiDp(10, 12), uiDp(12, 14), uiDp(10, 12));
             var params = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT); params.setMargins(0, uiDp(12, 14), 0, 0); previewBox.setLayoutParams(params);
 
@@ -2046,7 +2129,7 @@
             previewRemoveSpaceBtn = this.createMiniHeaderBtn("去空格", function() { self.removeSelectedSpaces(); });
             previewRemoveNewlineBtn = this.createMiniHeaderBtn("去换行", function() { self.removeSelectedNewlines(); });
             previewEditBtn = this.createMiniHeaderBtn("编辑", function() { self.editPreviewText(); });
-            pinActionBtn = this.createMiniHeaderBtn("📌 钉屏", function() { self.pinSelectedText(); });
+            pinActionBtn = this.createMiniHeaderBtn("钉屏", function() { self.pinSelectedText(); });
             header.addView(countLabelView); header.addView(previewRemoveSpaceBtn); header.addView(previewRemoveNewlineBtn); header.addView(previewEditBtn); header.addView(pinActionBtn); previewBox.addView(header);
             var previewScroll = new ScrollView(appContext); previewScroll.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(60, 80)));
             previewTextView = new TextView(appContext); previewTextView.setText("点击选择文字..."); safeTextColor(previewTextView, Colors.textSecondary); previewTextView.setTextSize(uiTextSize(14, 16)); previewTextView.setLineSpacing(uiDp(2, 4), 1);
@@ -2056,8 +2139,8 @@
 
         createPrimaryBtn: function(text, callback) {
             var btn = new Button(appContext);
-            btn.setText(text); safeTextColor(btn, Colors.onPrimary); btn.setTextSize(uiTextSize(14, 16)); btn.setBackground(createPressableDrawable(Colors.btnPrimaryBg, Colors.btnPrimaryPressed, isTablet ? 12 : 8)); btn.setAllCaps(false);
-            var params = new LinearLayout.LayoutParams(0, uiDp(40, 48), 2);
+            btn.setText(text); safeTextColor(btn, Colors.onPrimary); btn.setTextSize(uiTextSize(14, 16)); btn.setBackground(createPressableDrawable(Colors.btnPrimaryBg, Colors.btnPrimaryPressed, isTablet ? 14 : 12)); btn.setAllCaps(false);
+            var params = new LinearLayout.LayoutParams(0, uiDp(42, 48), 2);
             params.setMargins(uiDp(4, 6), 0, uiDp(4, 6), 0); btn.setLayoutParams(params);
             btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
             applyButtonAnimation(btn); return btn;
@@ -2065,8 +2148,8 @@
 
         createIconBtn: function(text, callback) {
             var btn = new Button(appContext);
-            btn.setText(text); safeTextColor(btn, Colors.textSecondary); btn.setTextSize(uiTextSize(12, 14)); btn.setBackground(createPressableDrawable(Colors.btnSecondaryBg, Colors.btnSecondaryPressed, isTablet ? 12 : 8)); btn.setAllCaps(false);
-            var params = new LinearLayout.LayoutParams(0, uiDp(40, 48), 1);
+            btn.setText(text); safeTextColor(btn, Colors.textSecondary); btn.setTextSize(uiTextSize(12, 14)); btn.setBackground(createPressableDrawable(Colors.btnSecondaryBg, Colors.btnSecondaryPressed, isTablet ? 14 : 12)); btn.setAllCaps(false);
+            var params = new LinearLayout.LayoutParams(0, uiDp(42, 48), 1);
             params.setMargins(uiDp(4, 6), 0, uiDp(4, 6), 0); btn.setLayoutParams(params);
             btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
             applyButtonAnimation(btn); return btn;
@@ -2075,12 +2158,12 @@
         createMiniHeaderBtn: function(text, callback) {
             var btn = new TextView(appContext);
             btn.setText(text);
-            safeTextColor(btn, Colors.onPrimary);
+            safeTextColor(btn, Colors.primary);
             btn.setTextSize(uiTextSize(10, 11));
             btn.setGravity(Gravity.CENTER);
             btn.setSingleLine(true);
             btn.setPadding(uiDp(8, 10), uiDp(4, 5), uiDp(8, 10), uiDp(4, 5));
-            btn.setBackground(createPressableDrawable(Colors.btnPrimaryBg, Colors.btnPrimaryPressed, isTablet ? 12 : 10));
+            btn.setBackground(createPressableDrawable(Colors.primaryLight, Colors.btnSecondaryPressed, isTablet ? 12 : 10));
             var params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
             params.setMargins(uiDp(8, 10), 0, 0, 0);
             btn.setLayoutParams(params);
@@ -2890,7 +2973,7 @@
         updateActionButtons: function() {
             var hasSelection = (isDragging ? dragSelectionCount : selectedIndices.length) > 0;
             var hasUndo = !!lastTranslationState;
-            if (translateActionBtn) translateActionBtn.setText(hasUndo ? "↶ 撤销" : "🌐 翻译");
+            if (translateActionBtn) translateActionBtn.setText(hasUndo ? "撤销翻译" : "翻译");
             this.setActionEnabled(copyActionBtn, hasSelection); this.setActionEnabled(translateActionBtn, hasSelection || hasUndo);
             this.setActionEnabled(pinActionBtn, hasSelection);
             this.setActionEnabled(selectAllActionBtn, fullText && fullText.length > 0); this.setActionEnabled(clearActionBtn, hasSelection);
@@ -3064,7 +3147,7 @@
                         var root = new LinearLayout(appContext);
                         root.setOrientation(LinearLayout.VERTICAL);
                         root.setPadding(uiDp(14, 18), uiDp(12, 16), uiDp(14, 18), uiDp(12, 16));
-                        root.setBackground(createStrokeRoundRectDrawable(Colors.surface, Colors.primaryLight, isTablet ? 20 : 16, 1));
+                        root.setBackground(createStrokeRoundRectDrawable(Colors.surface, Colors.outline, isTablet ? 20 : 16, 1));
                         try { root.setElevation(uiDp(6, 8)); } catch (eElev) {}
 
                         var header = new LinearLayout(appContext);
@@ -3080,7 +3163,7 @@
                         icon.setBackground(createRoundRectDrawable(Colors.btnPrimaryBg, isTablet ? 13 : 11));
                         var iconLp = new LinearLayout.LayoutParams(uiDp(32, 38), uiDp(32, 38));
                         iconLp.setMargins(0, 0, uiDp(10, 12), 0);
-                        header.addView(icon, iconLp);
+                        icon.setVisibility(View.GONE);
 
                         var titleWrap = new LinearLayout(appContext);
                         titleWrap.setOrientation(LinearLayout.VERTICAL);
@@ -3106,7 +3189,7 @@
                         var inputCard = new LinearLayout(appContext);
                         inputCard.setOrientation(LinearLayout.VERTICAL);
                         inputCard.setPadding(uiDp(10, 12), uiDp(8, 10), uiDp(10, 12), uiDp(8, 10));
-                        inputCard.setBackground(createStrokeRoundRectDrawable(Colors.bg, Colors.btnSecondaryPressed, isTablet ? 14 : 12, 1));
+                        inputCard.setBackground(createStrokeRoundRectDrawable(Colors.surfaceVariant, Colors.outline, isTablet ? 14 : 12, 1));
 
                         var edit = new android.widget.EditText(appContext);
                         edit.setText(String(oldText == null ? "" : oldText));
@@ -3736,7 +3819,7 @@
                     pinLayout.setOrientation(LinearLayout.VERTICAL);
                     // 钉屏窗口不使用固定宽高；卡片尺寸由文本实际测量 + TextView 自适应，最大宽高由 DIY 限制。
                     pinLayout.setGravity(Gravity.TOP);
-                    pinLayout.setBackground(createRoundRectDrawable(isDark ? Color.parseColor("#1e293b") : Color.parseColor("#ffffff"), isTablet ? 18 : 16));
+                    pinLayout.setBackground(createStrokeRoundRectDrawable(Colors.surface, Colors.outline, isTablet ? 18 : 16, 1));
                     pinLayout.setElevation(uiDp(6, 7));
                     pinLayout.setPadding(0, 0, 0, 0);
 
@@ -4015,24 +4098,8 @@
     };
 
     function refreshPickwordTheme20() {
-        try {
-            var cfg = appContext.getResources().getConfiguration();
-            var mode = cfg.uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
-            isDark = mode === android.content.res.Configuration.UI_MODE_NIGHT_YES;
-        } catch (eTheme) {
-            isDark = false;
-        }
-        try {
-            Colors.bg = isDark ? Color.parseColor("#0f172a") : Color.parseColor("#ffffff");
-            Colors.surface = isDark ? Color.parseColor("#1e293b") : Color.parseColor("#f8fafc");
-            Colors.surfaceVariant = isDark ? Color.parseColor("#334155") : Color.parseColor("#f1f5f9");
-            Colors.text = isDark ? Color.parseColor("#f8fafc") : Color.parseColor("#0f172a");
-            Colors.textSecondary = isDark ? Color.parseColor("#94a3b8") : Color.parseColor("#64748b");
-            Colors.textTertiary = isDark ? Color.parseColor("#64748b") : Color.parseColor("#94a3b8");
-            Colors.primaryLight = isDark ? Color.parseColor("#312e81") : Color.parseColor("#e0e7ff");
-            Colors.btnSecondaryBg = isDark ? Color.parseColor("#334155") : Color.parseColor("#f1f5f9");
-            Colors.btnSecondaryPressed = isDark ? Color.parseColor("#475569") : Color.parseColor("#e2e8f0");
-        } catch (eColors) {}
+        applyPickwordColorScheme20(toolhubAppRef);
+        applyVisiblePickwordTheme20();
     }
 
     function normalizePickwordInput20(text) {
@@ -4098,6 +4165,7 @@
             if (proto.__toolHubPickwordInstalled === true) return true;
 
             proto.showPickwordText = function(text, meta) {
+                toolhubAppRef = this;
                 var raw = normalizePickwordInput20(text);
                 if (!raw) return { ok: false, code: "EMPTY_TEXT", message: "文本为空" };
                 if (!this.state) return { ok: false, code: "APP_STATE_UNAVAILABLE", message: "ToolHub 状态不可用" };
@@ -4159,6 +4227,8 @@
                         if (pinLayout !== null) (pinWindowManager || windowManager).removeView(pinLayout);
                     } catch (ePinRemove) {}
                     mainLayout = null;
+                    previewBoxView = null;
+                    titleBarRefs = { normalMode: null, settingMode: null };
                     textView = null;
                     textCanvasControl = null;
                     scrollView = null;
