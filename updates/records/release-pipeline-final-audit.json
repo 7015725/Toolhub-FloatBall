@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "release-pipeline-final-audit",
+  "type": "optimize",
+  "title": "完成发布链最终收尾审计",
+  "details": [
+    "GitHub Release 固定使用 v<manifest.version> 并锁定通过校验的提交",
+    "Release 标题、日期和更新内容全部读取已签名 manifest，不再使用默认文案或自定义标签",
+    "Release 附件统一包含入口、校验文件、签名清单和 update_history.json",
+    "普通签名、回滚和完整 CI 统一通过 verify_manifest.py 校验发布记录链",
+    "清理重复发布校验调用并补充 README、STRUCTURE 和专项审计"
+  ],
+  "manifestVersion": 0
+}
