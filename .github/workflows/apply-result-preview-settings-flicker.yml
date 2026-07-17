@@ -65,7 +65,27 @@ jobs:
         run: python3 scripts/verify_update_version_page.py
 
       - name: Verify ToolApp stable layout
-        run: python3 scripts/verify_toolapp_layout.py
+        id: toolapp-layout
+        shell: bash
+        run: |
+          set +e
+          python3 scripts/verify_toolapp_layout.py > toolapp-layout.log 2>&1
+          status=$?
+          cat toolapp-layout.log
+          cp code/th_15_extra.js th15-extra-patched.js
+          exit $status
+
+      - name: Upload ToolApp layout diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolapp-layout-diagnostic
+          path: |
+            toolapp-layout.log
+            th15-extra-patched.js
+            scripts/verify_toolapp_layout.py
+          if-no-files-found: error
+          retention-days: 2
 
       - name: Verify ToolApp main-thread affinity
         run: python3 scripts/verify_toolapp_main_thread_affinity.py
