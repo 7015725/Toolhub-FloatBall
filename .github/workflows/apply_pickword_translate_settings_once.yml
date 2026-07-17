@@ -32,17 +32,23 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Normalize one-time patch literal replacements
+      - name: Normalize one-time patch source matching
         run: |
           python3 - <<'PY'
           from pathlib import Path
           path = Path('scripts/apply_pickword_translate_settings_once.py')
           text = path.read_text(encoding='utf-8')
-          old = 'out, count = re.subn(pattern, replacement, text, count=1, flags=flags)'
-          new = 'out, count = re.subn(pattern, lambda match: replacement, text, count=1, flags=flags)'
-          if old not in text:
+          old_sub = 'out, count = re.subn(pattern, replacement, text, count=1, flags=flags)'
+          new_sub = 'out, count = re.subn(pattern, lambda match: replacement, text, count=1, flags=flags)'
+          if old_sub not in text:
               raise SystemExit('sub_once replacement marker missing')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          text = text.replace(old_sub, new_sub, 1)
+          old_check = "old_config_check = re.compile(r'''\\n            if \\(!API_APP_ID \\|\\| !API_APP_SECRET\\) \\{\\n.*?\\n            \\}''', re.S)"
+          new_check = "old_config_check = re.compile(r'''\\n                if \\(!API_APP_ID \\|\\| !API_APP_SECRET\\) \\{.*?\\n                return; \\}''', re.S)"
+          if old_check not in text:
+              raise SystemExit('doTranslate config regex marker missing')
+          text = text.replace(old_check, new_check, 1)
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Apply translation settings patch
