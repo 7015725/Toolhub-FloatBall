@@ -10,5 +10,25 @@
     "顶部结果预览保持 Canvas 单实例与无整窗属性动画，优化间距、圆角和按压背景反馈",
     "保留指针、框选 OCR、预览位置、停留时间、两行截断和完整原文复制链路"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260717090351,
+  "date": "2026-07-17",
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.3",
+      "to": "1.0.4",
+      "change": "updated"
+    },
+    {
+      "name": "th_21_result_preview.js",
+      "from": "1.3.1",
+      "to": "1.3.2",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
 }
