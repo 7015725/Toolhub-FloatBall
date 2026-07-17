@@ -1,1 +1,0 @@
-OK main_panel_close_lifecycle open=stable mask=identity_guarded reveal=after_panel immediate_remove=1 exit_generation=guarded
