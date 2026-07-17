@@ -93,17 +93,18 @@ master = section(PANELS, "FloatBallAppWM.prototype.createSettingsMasterMenuItem 
 if "toolhubSafeSetTextColor(title, T.onSurface);" not in master:
     errors.append("双栏分类标题未通过安全桥使用常规文字色")
 
-visual = section(PANELS, "FloatBallAppWM.prototype.getToolHubUpdateVisual = function")
-for marker in ("iconColor:", "labelColor:", "detailColor:", "T.successContainer", "T.warningContainer"):
-    if marker not in visual:
-        errors.append("更新状态颜色角色缺失：" + marker)
-if "textColor:" in visual:
-    errors.append("更新状态仍使用单一 textColor 覆盖全部文字")
-
-pill = section(PANELS, "FloatBallAppWM.prototype.createToolHubUpdatePill = function")
-for marker in ("visual.iconColor", "visual.labelColor", "visual.detailColor"):
-    if marker not in pill:
-        errors.append("更新状态控件未使用拆分颜色：" + marker)
+update_page = section(PANELS, "FloatBallAppWM.prototype.buildToolHubUpdateVersionPanelView = function")
+for marker, label in (
+    ("toolhubSafeSetTextColor(tv, color || T.onSurface);", "正文使用常规文字色"),
+    ("T.onSurface2", "说明文字使用次级文字色"),
+    ("T.outlineVariant", "卡片使用弱边框角色"),
+    ("T.primary", "操作按钮保留交互强调色"),
+    ("T.surface", "卡片使用表面色"),
+):
+    if marker not in update_page:
+        errors.append("更新与版本页面颜色角色缺失：" + label)
+if "visual.iconColor" in PANELS or "visual.labelColor" in PANELS or "visual.detailColor" in PANELS:
+    errors.append("已删除的更新胶囊拆分颜色引用仍有残留")
 
 if 'createFlatButton(this, "×", T.onSurface2' not in EXTRA:
     errors.append("顶部关闭按钮未使用中性文字色")
@@ -121,5 +122,5 @@ if errors:
 
 print(
     "OK settings_color_roles text=neutral accent=interactive "
-    "container=derived status=split topbar=balanced"
+    "container=derived update_page=balanced topbar=balanced"
 )

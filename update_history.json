@@ -1,8 +1,35 @@
 {
   "schema": 1,
-  "historyVersion": 20260716231818,
-  "generatedAt": "2026-07-17T07:18:18+08:00",
+  "historyVersion": 20260717000037,
+  "generatedAt": "2026-07-17T08:00:37+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "cleanup-update-version-runtime-dead-code",
+      "type": "optimize",
+      "title": "清理更新与版本旧运行时链路",
+      "details": [
+        "删除已被独立更新页替代的旧设置更新胶囊和详情框",
+        "保留旧检查、更新和重启方法名并改为委托当前正式链路",
+        "移除设置构建期空自动检查调用和无效状态字段",
+        "补充专项校验防止不可达旧实现重新引入"
+      ],
+      "manifestVersion": 20260717000037,
+      "date": "2026-07-17",
+      "modules": [
+        {
+          "name": "th_14_panels.js",
+          "from": "1.1.5",
+          "to": "1.1.6",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260714081104,
+        "to": 20260714081104
+      }
+    },
     {
       "schema": 1,
       "id": "reorder-settings-home",

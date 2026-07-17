@@ -124,8 +124,8 @@
 |`recoverOrphanTransactionFiles`|1069|22|入口内使用|2|2|0|0|0|
 |`recoverPendingModuleTransaction`|1092|33|入口内使用|2|2|0|0|0|
 |`executeStagedModuleTransaction`|1126|50|入口内使用|1|1|0|0|0|
-|`installPendingModuleUpdates`|1178|90|跨模块引用|0|0|2|4|0|
-|`checkToolHubModuleUpdatesNow`|1270|78|跨模块引用|0|0|3|10|0|
+|`installPendingModuleUpdates`|1178|90|跨模块引用|0|0|1|2|0|
+|`checkToolHubModuleUpdatesNow`|1270|78|跨模块引用|0|0|1|6|0|
 |`checkModuleManifestConsistency`|1350|51|入口内使用|2|2|0|0|0|
 |`verifyLocalModuleBeforeEval`|1402|21|入口内使用|1|1|0|0|0|
 |`loadScript`|1424|29|入口内使用|2|2|0|0|0|
@@ -137,7 +137,7 @@
 |`closeToolHubAppForRestart`|1575|58|入口内使用|1|1|0|0|0|
 |`closeToolHubAppsForRestart`|1634|29|入口内使用|2|2|0|0|0|
 |`reloadLocalToolHubModulesForRestart`|1664|29|入口内使用|1|1|0|0|0|
-|`restartToolHubFromSettings`|1694|44|跨模块引用|0|0|2|4|0|
+|`restartToolHubFromSettings`|1694|44|跨模块引用|0|0|1|2|0|
 |`summarizeModuleUpdates`|1749|14|入口内使用|1|1|0|0|0|
 |`summarizePendingModuleUpdates`|1763|10|入口内使用|1|1|0|0|0|
 |`summarizeLoadErrors`|1773|10|入口内使用|1|1|0|0|0|

@@ -40,6 +40,14 @@ checks = {
         'addChild(all, "update"',
         'addGroupChild.call(this, all, "debug")',
     ]) and TH14.index('addChild(all, "tools"') < TH14.index('addGroupChild.call(this, all, "ball")') < TH14.index('addGroupChild.call(this, all, "pointer")') < TH14.index('addGroupChild.call(this, all, "panel")') < TH14.index('addGroupChild.call(this, all, "motion")') < TH14.index('addGroupChild.call(this, all, "theme")') < TH14.index('addChild(all, "schema"') < TH14.index('addChild(all, "update"') < TH14.index('addGroupChild.call(this, all, "debug")'),
+    "旧设置更新胶囊已删除": "createToolHubUpdatePill" not in TH14 and "getToolHubUpdateVisual" not in TH14,
+    "旧设置更新详情已删除": "createToolHubUpdateDetailBox" not in TH14 and "settingsUpdateExpanded" not in TH14,
+    "旧设置构建期自动检查已删除": "maybeAutoCheckToolHubUpdatesFromSettings" not in TH14 and "settingsAutoUpdateCheckRunning" not in TH14,
+    "旧检查入口委托新链路": "return this.runToolHubUpdateCheck ? this.runToolHubUpdateCheck(true) : false;" in TH14,
+    "旧更新入口委托确定性事务": "return this.startToolHubModuleUpdateDeterministic ? this.startToolHubModuleUpdateDeterministic(anchorView) : false;" in TH14,
+    "旧重启入口委托确定性重启": "return this.startToolHubDeterministicRestart ? this.startToolHubDeterministicRestart() : false;" in TH14,
+    "无效设置访问计数已删除": "toolHubSettingsVisitSeq" not in TH14 and "toolHubSettingsCheckedSeq" not in TH14,
+    "重复历史失败错误字段已删除": "toolHubUpdateHistoryLastFailureError" not in TH14,
     "旧延期包装边界已删除": '"method": "startToolHubModuleUpdateFromSettings"' not in BOUNDARIES,
 }
 failed = [name for name, ok in checks.items() if not ok]
