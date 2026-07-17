@@ -1,0 +1,71 @@
+name: apply-main-panel-mask-flicker
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'fix/main-panel-mask-flicker-20260717'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply focused repair
+        run: python3 scripts/_apply_main_panel_mask_flicker_fix.py
+
+      - name: Regenerate deterministic audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --write TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --write TH09_ANIMATION_AUDIT.md
+
+      - name: Verify focused behavior and repository boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/report_dead_module_symbols.py --check DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --check PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md
+          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_animation_callback_safety.py
+          python3 scripts/verify_toolapp_main_thread_affinity.py
+          python3 scripts/verify_main_panel_adaptive_layout.py
+          python3 scripts/verify_main_panel_grid_sizing.py
+          python3 scripts/verify_main_panel_visual_tuning.py
+          python3 scripts/verify_changed_module_versions.py
+          git diff --check
+
+      - name: Commit repair and remove temporary executor
+        shell: bash
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/apply-main-panel-mask-flicker.yml
+          rm -f scripts/_apply_main_panel_mask_flicker_fix.py
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m '修复主面板打开时全屏闪烁'
+          git push origin "HEAD:${BRANCH}"
