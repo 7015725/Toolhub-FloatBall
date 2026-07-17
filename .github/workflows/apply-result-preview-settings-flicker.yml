@@ -83,15 +83,15 @@ jobs:
 
       - name: Remove temporary executor files
         run: |
-          git rm .github/workflows/apply-result-preview-settings-flicker.yml
-          git rm scripts/apply_result_preview_settings_flicker.py
-          git rm scripts/prepare_result_preview_settings_flicker.py
+          rm -f .github/workflows/apply-result-preview-settings-flicker.yml
+          rm -f scripts/apply_result_preview_settings_flicker.py
+          rm -f scripts/prepare_result_preview_settings_flicker.py
 
       - name: Stage and commit final fix
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add code scripts TH15_EXTRA_AUDIT.md DEAD_CODE_AUDIT.md updates/records
+          git add -A
           git status --short
           git commit -m "修复结果预览与设置页闪烁"
 
