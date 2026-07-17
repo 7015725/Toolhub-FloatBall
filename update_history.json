@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "historyVersion": 20260717130840,
-  "generatedAt": "2026-07-17T21:08:40+08:00",
+  "historyVersion": 20260717141751,
+  "generatedAt": "2026-07-17T22:17:52+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "fix-pickword-share-close-cleanup",
+      "type": "fix",
+      "title": "优化拾字分享关闭并清理旧字号代码",
+      "details": [
+        "拾字分享按钮继续优先分享当前选区、无选区时分享完整原文，并保留Android ACTION_SEND纯文本选择器",
+        "系统分享选择器成功启动后调用拾字现有hide关闭流程，自动关闭拾字面板；分享启动失败时保留面板并提示错误",
+        "清理四档字号下拉启用后已不可达的旧Canvas滑杆、隐藏settingMode、字号标签、完成按钮和旧切换方法",
+        "清理仅服务于隐藏字号面板的去空格与去换行按钮状态和控件工厂，现有去重换行按钮点击与长按功能保持不变",
+        "保留小中大超大四档字号、SharedPreferences持久化、文字选择、复制、翻译、钉屏、放大镜和WindowManager关闭边界"
+      ],
+      "manifestVersion": 20260717141751,
+      "date": "2026-07-17",
+      "modules": [
+        {
+          "name": "th_20_pickword.js",
+          "from": "1.0.11",
+          "to": "1.0.12",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260714081104,
+        "to": 20260714081104
+      }
+    },
     {
       "schema": 1,
       "id": "fix-pickword-long-click-api34",
