@@ -1,0 +1,87 @@
+name: fix-pickword-replica-phone-fit-once
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: fix-pickword-replica-phone-fit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/pickword-reference-replica-20260717'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/pickword-reference-replica-20260717
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply phone width fit
+        run: python3 scripts/fix_pickword_replica_phone_fit_once.py
+
+      - name: Verify changed module versions and syntax
+        run: |
+          git fetch --no-tags origin main
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+
+      - name: Verify integration and color safety
+        run: |
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/verify_update_history.py --require-one-pending
+
+      - name: Verify responsive replica markers
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('code/th_20_pickword.js').read_text(encoding='utf-8')
+          checks = {
+              'phone_inline_icon': 'compactInline ? (isTablet ? 18 : 14)' in text,
+              'phone_main_icon': '(isTablet ? 24 : 17)' in text,
+              'phone_inline_text': 'compactInline ? uiTextSize(9, 12)' in text,
+              'phone_padding': 'var horizontalPad = compactInline ? uiDp(3, 7)' in text,
+              'reference_structure': all(x in text for x in ['复制全部', '去重换行', '分享', '钉屏', '字号    " + getFontSizeLevel20() + " ⌄']),
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit('FAIL responsive markers: ' + ', '.join(failed))
+          print('OK pickword_replica_phone_fit ' + ' '.join(name + '=1' for name in checks))
+          PY
+
+      - name: Remove one-time files
+        run: |
+          rm -f scripts/fix_pickword_replica_phone_fit_once.py
+          rm -f .github/workflows/fix_pickword_replica_phone_fit_once.yml
+
+      - name: Check and commit
+        env:
+          TARGET_BRANCH: fix/pickword-reference-replica-20260717
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "优化拾字复刻手机宽度适配"
+          if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          git push origin "HEAD:${TARGET_BRANCH}"
