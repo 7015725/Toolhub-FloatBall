@@ -29,6 +29,18 @@ jobs:
       - name: Apply font dropdown and height patch
         run: python3 scripts/apply_pickword_font_dropdown_once.py
 
+      - name: Normalize pending update record
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('updates/records/fix-pickword-font-dropdown-height.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          for field in ('date', 'modules', 'entry', 'manifestVersion'):
+              data.pop(field, None)
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
       - name: Verify changed module versions
         run: |
           git fetch --no-tags origin main
