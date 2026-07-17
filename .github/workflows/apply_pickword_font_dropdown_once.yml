@@ -39,15 +39,26 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
 
-      - name: Verify repository boundaries
-        run: |
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/verify_result_preview.py
-          python3 scripts/verify_settings_color_scheme.py
-          python3 scripts/verify_settings_color_roles.py
-          python3 scripts/verify_coloros_rhino_color_safety.py
-          python3 scripts/verify_rhino_color_api_safety.py
-          python3 scripts/verify_update_history.py --require-one-pending
+      - name: Verify module boundaries
+        run: python3 scripts/verify_module_boundaries.py
+
+      - name: Verify result preview integration
+        run: python3 scripts/verify_result_preview.py
+
+      - name: Verify settings color scheme
+        run: python3 scripts/verify_settings_color_scheme.py
+
+      - name: Verify settings color roles
+        run: python3 scripts/verify_settings_color_roles.py
+
+      - name: Verify ColorOS Rhino color safety
+        run: python3 scripts/verify_coloros_rhino_color_safety.py
+
+      - name: Verify full Rhino color API safety
+        run: python3 scripts/verify_rhino_color_api_safety.py
+
+      - name: Verify pending update record
+        run: python3 scripts/verify_update_history.py --require-one-pending
 
       - name: Verify font dropdown markers
         run: |
@@ -59,7 +70,7 @@ jobs:
               'dropdown method': 'createFontSizeDropdown: function()' in p,
               'dropdown toggle': 'toggleFontSizeDropdown: function()' in p,
               'selector routed': 'self.toggleFontSizeDropdown();' in p,
-              'old entry blocked': '旧滑杆式字号入口暂时屏蔽' in p and 'toggleFontSizePanel: function()' in p,
+              'old entry retained': '旧滑杆式字号入口暂时屏蔽' in p and 'toggleFontSizePanel: function()' in p,
               'small preset': '{ label: "小", size: 16 }' in p,
               'medium preset': '{ label: "中", size: 20 }' in p,
               'large preset': '{ label: "大", size: 24 }' in p,
