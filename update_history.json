@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "historyVersion": 20260717103210,
-  "generatedAt": "2026-07-17T18:32:10+08:00",
+  "historyVersion": 20260717105455,
+  "generatedAt": "2026-07-17T18:54:55+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "fix-pickword-font-dropdown-height",
+      "type": "fix",
+      "title": "优化拾字字号菜单与短文本高度",
+      "details": [
+        "右上角字号入口改为小、中、大、超大四档下拉菜单，分别对应16sp、20sp、24sp、28sp",
+        "旧滑杆式字号入口暂时屏蔽但保留实现，后续可单独清理无效控件与方法",
+        "降低主文字区最小高度，短文本按实际内容收缩，减少文字下方大块留白",
+        "保留字号持久化、Canvas选字、长按拖选、放大镜、滚动和长文本最大高度限制",
+        "不修改指针、框选OCR、截图、顶部结果预览和公共主题"
+      ],
+      "manifestVersion": 20260717105455,
+      "date": "2026-07-17",
+      "modules": [
+        {
+          "name": "th_20_pickword.js",
+          "from": "1.0.6",
+          "to": "1.0.7",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260714081104,
+        "to": 20260714081104
+      }
+    },
     {
       "schema": 1,
       "id": "optimize-pickword-reference-replica",

@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -233,6 +233,9 @@
     var cleanupActionBtn = null;
     var shareActionBtn = null;
     var fontSizeSelectorView = null;
+    var fontSizeDropdownView = null;
+    var fontSizeDropdownCardView = null;
+    var fontSizeOptionViews = [];
     var titleAccentView = null;
     var resultDividerView = null;
     var closeActionView = null;
@@ -1281,14 +1284,43 @@
     }
 
     function getFontSizeLevel20() {
-        if (currentFontSize <= 16) return "小";
-        if (currentFontSize >= 26) return "大";
-        return "中";
+        if (currentFontSize <= 18) return "小";
+        if (currentFontSize <= 22) return "中";
+        if (currentFontSize <= 26) return "大";
+        return "超大";
     }
 
     function updateFontSizeSelector20() {
         if (!fontSizeSelectorView) return;
-        try { fontSizeSelectorView.setText("字号    " + getFontSizeLevel20() + " ⌄"); } catch (eSizeLabel) {}
+        try {
+            var level = getFontSizeLevel20();
+            fontSizeSelectorView.setText("字号   " + level + "  ▾");
+            fontSizeSelectorView.setContentDescription("字号下拉菜单，当前" + level);
+        } catch (eSizeLabel) {}
+    }
+
+    function refreshFontSizeDropdown20() {
+        try {
+            if (fontSizeDropdownCardView) {
+                fontSizeDropdownCardView.setBackground(createStrokeRoundRectDrawable(
+                    replicaSoftSurface20(), replicaOutline20(), isTablet ? 15 : 13, 1));
+            }
+            for (var iPreset = 0; iPreset < fontSizeOptionViews.length; iPreset++) {
+                var option = fontSizeOptionViews[iPreset];
+                if (!option) continue;
+                var meta = String(option.getTag() || "").split("|");
+                var label = meta.length > 0 ? meta[0] : "";
+                var size = meta.length > 1 ? parseInt(meta[1], 10) : 0;
+                var selected = size === currentFontSize;
+                option.setText((selected ? "✓  " : "    ") + label + "   " + size + "sp");
+                safeTextColor(option, selected ? replicaAccent20() : Colors.text);
+                option.setTypeface(null, selected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+                option.setBackground(createPressableDrawable(
+                    selected ? alphaColor20(replicaAccent20(), isDark ? 38 : 22) : Color.TRANSPARENT,
+                    alphaColor20(replicaAccent20(), isDark ? 58 : 34),
+                    isTablet ? 11 : 9));
+            }
+        } catch (eDropdownTheme) {}
     }
 
     function applyVisiblePickwordTheme20() {
@@ -1298,6 +1330,7 @@
             if (previewBoxView) previewBoxView.setBackground(createRoundRectDrawable(Color.TRANSPARENT, 0));
             if (titleAccentView) titleAccentView.setBackground(createRoundRectDrawable(replicaAccent20(), isTablet ? 5 : 4));
             if (fontSizeSelectorView) fontSizeSelectorView.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 15 : 13, 1));
+            refreshFontSizeDropdown20();
             if (closeActionView) safeTextColor(closeActionView, Colors.text);
             if (countLabelView) safeTextColor(countLabelView, Colors.text);
             if (previewTextView) safeTextColor(previewTextView, selectedIndices.length > 0 ? Colors.text : Colors.textSecondary);
@@ -1956,6 +1989,9 @@
                         resultDividerView = null;
                         closeActionView = null;
                         titleBarRefs = { normalMode: null, settingMode: null };
+                    fontSizeDropdownView = null;
+                    fontSizeDropdownCardView = null;
+                    fontSizeOptionViews = [];
                         textView = null;
                         textCanvasControl = null;
                         scrollView = null;
@@ -2179,7 +2215,8 @@
             if (windowWidth > maxReplicaWidth) windowWidth = maxReplicaWidth;
             if (windowWidth < Math.round(uiDp(300, 520))) windowWidth = Math.round(screenWidth * 0.96);
             textAreaHeight = Math.min(Math.round(screenHeight * (isTablet ? 0.34 : 0.30)), Math.round(uiDp(250, 330)));
-            textAreaMinHeight = Math.min(textAreaHeight, Math.max(Math.round(uiDp(170, 230)), Math.round(screenHeight * 0.22)));
+            // 短文本按内容收缩，只保留点击、长按与拖选所需的基础高度，避免单行文字下方出现大块留白。
+            textAreaMinHeight = Math.min(textAreaHeight, Math.max(Math.round(uiDp(92, 118)), Math.round(screenHeight * 0.105)));
 
             layoutParams = new LayoutParams(
                 windowWidth, LayoutParams.WRAP_CONTENT,
@@ -2200,6 +2237,9 @@
 
             var titleBar = this.createTitleBar();
             mainLayout.addView(titleBar);
+
+            var fontDropdown = this.createFontSizeDropdown();
+            mainLayout.addView(fontDropdown);
 
             scrollView = new ScrollView(appContext);
             var scrollParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(60, 72));
@@ -2293,7 +2333,8 @@
             var selectorLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(42, 50));
             selectorLp.setMargins(uiDp(8, 12), 0, uiDp(10, 14), 0);
             normalMode.addView(fontSizeSelectorView, selectorLp);
-            fontSizeSelectorView.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.toggleFontSizePanel(); } }));
+            // 原字号滑杆按钮入口暂时屏蔽；当前入口只打开四档字号下拉菜单。
+            fontSizeSelectorView.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.toggleFontSizeDropdown(); } }));
             applyButtonAnimation(fontSizeSelectorView);
 
             closeActionView = new TextView(appContext);
@@ -2385,7 +2426,80 @@
             return titleBar;
         },
 
+        createFontSizeDropdown: function() {
+            var self = this;
+            var host = new LinearLayout(appContext);
+            fontSizeDropdownView = host;
+            host.setOrientation(LinearLayout.HORIZONTAL);
+            host.setGravity(Gravity.RIGHT | Gravity.TOP);
+            host.setVisibility(View.GONE);
+            host.setPadding(0, uiDp(5, 7), 0, uiDp(2, 3));
+            host.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+            var spacer = new View(appContext);
+            host.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1));
+
+            var card = new LinearLayout(appContext);
+            fontSizeDropdownCardView = card;
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setPadding(uiDp(4, 5), uiDp(4, 5), uiDp(4, 5), uiDp(4, 5));
+            card.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 15 : 13, 1));
+            try { card.setElevation(uiDp(5, 7)); } catch (eElevation) {}
+
+            fontSizeOptionViews = [];
+            var presets = [
+                { label: "小", size: 16 },
+                { label: "中", size: 20 },
+                { label: "大", size: 24 },
+                { label: "超大", size: 28 }
+            ];
+            for (var iPreset = 0; iPreset < presets.length; iPreset++) {
+                (function(preset) {
+                    var option = new TextView(appContext);
+                    option.setTag(preset.label + "|" + preset.size);
+                    option.setTextSize(uiTextSize(12, 14));
+                    option.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+                    option.setSingleLine(true);
+                    option.setPadding(uiDp(12, 16), 0, uiDp(12, 16), 0);
+                    option.setContentDescription("字号" + preset.label + "，" + preset.size + "sp");
+                    option.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
+                        hapticFeedback(v);
+                        self.updateFontSize(preset.size, false);
+                        saveFontSize(preset.size);
+                        updateFontSizeSelector20();
+                        refreshFontSizeDropdown20();
+                        if (fontSizeDropdownView) fontSizeDropdownView.setVisibility(View.GONE);
+                        showToast("字号已切换为" + preset.label);
+                    } }));
+                    applyButtonAnimation(option);
+                    fontSizeOptionViews.push(option);
+                    card.addView(option, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(38, 44)));
+                })(presets[iPreset]);
+            }
+
+            var cardLp = new LinearLayout.LayoutParams(uiDp(136, 164), LayoutParams.WRAP_CONTENT);
+            cardLp.setMargins(0, 0, uiDp(42, 52), 0);
+            host.addView(card, cardLp);
+            refreshFontSizeDropdown20();
+            return host;
+        },
+
+        toggleFontSizeDropdown: function() {
+            if (!fontSizeDropdownView) return false;
+            try {
+                if (titleBarRefs.settingMode) titleBarRefs.settingMode.setVisibility(View.GONE);
+                if (titleBarRefs.normalMode) titleBarRefs.normalMode.setVisibility(View.VISIBLE);
+                var opening = fontSizeDropdownView.getVisibility() !== View.VISIBLE;
+                refreshFontSizeDropdown20();
+                fontSizeDropdownView.setVisibility(opening ? View.VISIBLE : View.GONE);
+                return opening;
+            } catch (eDropdown) {}
+            return false;
+        },
+
         toggleFontSizePanel: function() {
+            // 旧滑杆式字号入口暂时屏蔽，代码保留供后续独立清理。
+            return false;
             if (!titleBarRefs.normalMode) return;
             var isSetting = titleBarRefs.settingMode.getVisibility() === View.VISIBLE;
             if (isSetting) {
@@ -4615,6 +4729,9 @@
                     resultDividerView = null;
                     closeActionView = null;
                     titleBarRefs = { normalMode: null, settingMode: null };
+                    fontSizeDropdownView = null;
+                    fontSizeDropdownCardView = null;
+                    fontSizeOptionViews = [];
                     textView = null;
                     textCanvasControl = null;
                     scrollView = null;
