@@ -10,5 +10,19 @@
     "保留预览文字点击编辑、长按去空格以及去重换行按钮点击清理换行、长按清理空格的原有行为",
     "不修改翻译请求、翻译替换、选区状态、Canvas拖选、放大镜、WindowManager和设置页逻辑"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260717130840,
+  "date": "2026-07-17",
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.10",
+      "to": "1.0.11",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
 }

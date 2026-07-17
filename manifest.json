@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "73e391146e64e4cc9f53eed0e05f1339385363b9f77acbf8fdc2a46b296eaacc",
-      "size": 21916,
-      "version": 20260717121857
+      "sha256": "658a86cd00aae028c94f254ae550d6c2a16bd5c746d5051c915e787550a96f5d",
+      "size": 23133,
+      "version": 20260717130840
     }
   },
   "entry": {
@@ -144,9 +144,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "663387de7da49b0ca870117635cf8786272a561b3a463c810dfb2fd393e8fb1e",
-      "size": 247315,
-      "version": "1.0.10"
+      "sha256": "fa33a404954a78e6289a8c89b053e476ab948f2b33a94064dd5030321fc44636",
+      "size": 248083,
+      "version": "1.0.11"
     },
     "th_21_result_preview.js": {
       "sha256": "9abfcf56d340a92c031b91e35e83ae1e384287774801ad886df28c01476563e2",
@@ -157,16 +157,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "设置页新增拾字分类，使用单选框切换百度翻译与有道翻译，并只显示当前引擎对应的配置字段",
-      "百度APPID/密钥与有道AppKey/应用密钥分别作为独立配置键写入ToolHub结构化SQLite",
-      "密钥输入默认遮罩并提供显示/隐藏按钮，切换引擎不会清空另一平台已输入或已保存的凭据",
-      "测试翻译配置使用当前未保存输入，固定测试文本为ToolHub翻译测试，并通过ToolHub自动提醒返回结果",
-      "拾字运行时每次翻译读取已保存配置快照，停止读取ShortX旧翻译引擎、应用ID和应用秘钥局部变量",
-      "保存后无需重启ToolHub即可生效，日志和提醒不输出完整ID、密钥、签名或请求参数"
+      "为拾字预览文字和去重换行按钮的Rhino长按代理补齐Android 14新增的onLongClickUseDefaultHapticFeedback布尔回调",
+      "兼容回调固定返回false，保留现有VIRTUAL_KEY触觉反馈并避免系统追加默认LONG_PRESS造成双重震动",
+      "修复缺失接口方法返回null后无法转换为Java boolean、异常逃逸至system_server主线程并触发软重启的问题",
+      "保留预览文字点击编辑、长按去空格以及去重换行按钮点击清理换行、长按清理空格的原有行为",
+      "不修改翻译请求、翻译替换、选区状态、Canvas拖选、放大镜、WindowManager和设置页逻辑"
     ],
     "date": "2026-07-17",
-    "title": "新增拾字翻译引擎与凭据设置"
+    "title": "修复拾字长按导致系统重启"
   },
   "schema": 4,
-  "version": 20260717121857
+  "version": 20260717130840
 }
