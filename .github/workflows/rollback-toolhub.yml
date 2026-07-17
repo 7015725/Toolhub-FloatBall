@@ -70,7 +70,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ToolHub.js code updates/records
           git commit -m "$title"
-          python3 scripts/generate_signed_manifest.py --yes --title "$title" --change "$CHANGE"
+          python3 scripts/verify_update_history.py --require-one-pending
+          python3 scripts/generate_signed_manifest.py --yes
           echo "$branch" > .rollback_branch
           echo "$title" > .rollback_title
 
@@ -80,6 +81,7 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_manifest.py
           python3 scripts/verify_update_history.py
+          python3 scripts/verify_release_record_flow.py
           python3 scripts/verify_update_version_page.py
           python3 scripts/verify_toolapp_single_root.py
           python3 scripts/verify_toolapp_adaptive_size.py

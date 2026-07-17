@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate ToolHub signed manifest, update history asset, and entry checksum."""
+"""Generate ToolHub signed manifest from one structured update record."""
 import argparse
 import base64
 import hashlib
@@ -67,7 +67,9 @@ def read_entry_version(path):
 
 def git_output(args):
     try:
-        return subprocess.check_output(["git"] + list(args), cwd=str(ROOT), text=True, stderr=subprocess.STDOUT)
+        return subprocess.check_output(
+            ["git"] + list(args), cwd=str(ROOT), text=True, stderr=subprocess.STDOUT
+        )
     except Exception as exc:
         return "<git %s failed: %s>\n" % (" ".join(args), exc)
 
@@ -89,9 +91,7 @@ def main():
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--key-id", default=DEFAULT_KEY_ID)
     ap.add_argument("--version", type=int, default=0)
-    ap.add_argument("--title", default="")
     ap.add_argument("--date", default="")
-    ap.add_argument("--change", action="append", default=[])
     ap.add_argument("--base-ref", default="")
     args = ap.parse_args()
 
@@ -105,14 +105,18 @@ def main():
         raise SystemExit("aborted")
 
     version = args.version or int(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
-    changes = [str(item).strip() for item in args.change if str(item).strip()]
-    fallback_title = str(args.title or "ToolHub 自动签名更新").strip()
-    if not changes:
-        changes = [fallback_title]
     base_ref = str(args.base_ref or os.environ.get("GITHUB_BASE_REF", "")).strip()
 
     from build_update_history import finalize_history
-    record, history = finalize_history(version, base_ref, args.date, fallback_title, changes)
+
+    record, history = finalize_history(version, base_ref, args.date)
+    release_title = str(record.get("title", "")).strip()
+    release_date = str(record.get("date", "")).strip()
+    release_changes = [
+        str(item).strip() for item in (record.get("details") or []) if str(item).strip()
+    ]
+    if not release_title or not release_date or not release_changes:
+        raise SystemExit("finalized update record is missing title, date, or details")
 
     files = {}
     for name in MODULES:
@@ -133,9 +137,9 @@ def main():
     history_hash = sha256_file(HISTORY)
     history_size = HISTORY.stat().st_size
     release = {
-        "title": str(record.get("title") or fallback_title),
-        "date": str(record.get("date") or args.date or ""),
-        "changes": [str(item).strip() for item in (record.get("details") or changes) if str(item).strip()],
+        "title": release_title,
+        "date": release_date,
+        "changes": release_changes,
     }
     manifest = {
         "schema": 4,
@@ -162,14 +166,21 @@ def main():
         },
         "release": release,
     }
-    data = (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    data = (
+        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
     MANIFEST.write_bytes(data)
-    signature = subprocess.check_output(["openssl", "dgst", "-sha256", "-sign", str(PRIVATE_KEY), str(MANIFEST)])
-    SIG.write_text(base64.b64encode(signature).decode("ascii") + "\n", encoding="utf-8")
+    signature = subprocess.check_output(
+        ["openssl", "dgst", "-sha256", "-sign", str(PRIVATE_KEY), str(MANIFEST)]
+    )
+    SIG.write_text(
+        base64.b64encode(signature).decode("ascii") + "\n", encoding="utf-8"
+    )
     ENTRY_SHA.write_text("%s  ToolHub.js\n" % entry_hash, encoding="utf-8")
 
     print("== signed manifest ==")
     print("manifest_version=%s" % manifest["version"])
+    print("record_id=%s" % record.get("id"))
     print("signed_files=%s" % len(files))
     print("history_records=%s" % len(history.get("records") or []))
     print("release_title=%s" % release["title"])

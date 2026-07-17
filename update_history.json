@@ -1,8 +1,29 @@
 {
   "schema": 1,
-  "historyVersion": 20260717000037,
-  "generatedAt": "2026-07-17T08:00:37+08:00",
+  "historyVersion": 20260717003553,
+  "generatedAt": "2026-07-17T08:35:53+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "release-record-source-of-truth",
+      "type": "optimize",
+      "title": "统一发布记录与签名信息来源",
+      "details": [
+        "取消缺少正式记录时自动生成 auto-* 更新记录的兜底",
+        "manifest 发布标题、日期和更新内容统一读取结构化更新记录",
+        "签名工作流不再从 PR 标题或手动输入生成发布信息",
+        "回滚流程先创建正式 fix 记录，再由同一签名链生成产物",
+        "补充待签名记录、发布信息一致性和自动化流程专项校验"
+      ],
+      "manifestVersion": 20260717003553,
+      "date": "2026-07-17",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260714081104,
+        "to": 20260714081104
+      }
+    },
     {
       "schema": 1,
       "id": "cleanup-update-version-runtime-dead-code",

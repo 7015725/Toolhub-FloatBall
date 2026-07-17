@@ -62,7 +62,12 @@ def parse_entry_version():
 
 def collect_python_files():
     roots = [ROOT / "scripts", ROOT / ".github" / "scripts"]
-    return sorted(str(path) for scan_root in roots if scan_root.exists() for path in scan_root.rglob("*.py"))
+    return sorted(
+        str(path)
+        for scan_root in roots
+        if scan_root.exists()
+        for path in scan_root.rglob("*.py")
+    )
 
 
 def main():
@@ -93,9 +98,13 @@ def main():
     entry_meta = manifest.get("entry") or {}
     if str(entry_meta.get("name", "")) != "ToolHub.js":
         fail("manifest entry.name must be ToolHub.js")
-    if int(entry_meta.get("version", 0) or 0) != entry_version or str(entry_meta.get("versionSource", "")) != entry_source:
+    if int(entry_meta.get("version", 0) or 0) != entry_version or str(
+        entry_meta.get("versionSource", "")
+    ) != entry_source:
         fail("manifest entry version mismatch")
-    if str(entry_meta.get("sha256", "")).lower() != entry_hash or int(entry_meta.get("size", -1)) != ENTRY.stat().st_size:
+    if str(entry_meta.get("sha256", "")).lower() != entry_hash or int(
+        entry_meta.get("size", -1)
+    ) != ENTRY.stat().st_size:
         fail("manifest entry hash/size mismatch")
     if entry_meta.get("manualUpdate") is not True:
         fail("manifest entry.manualUpdate must be true")
@@ -104,33 +113,52 @@ def main():
 
     history = json.loads(HISTORY.read_text(encoding="utf-8"))
     asset = ((manifest.get("assets") or {}).get("updateHistory") or {})
-    if str(asset.get("name", "")) != "update_history.json" or int(asset.get("schema", 0) or 0) != 1:
+    if str(asset.get("name", "")) != "update_history.json" or int(
+        asset.get("schema", 0) or 0
+    ) != 1:
         fail("manifest updateHistory asset missing or invalid")
     if str(asset.get("sha256", "")).lower() != sha256_file(HISTORY):
         fail("update_history sha256 mismatch")
     if int(asset.get("size", -1)) != HISTORY.stat().st_size:
         fail("update_history size mismatch")
-    if int(asset.get("version", 0) or 0) != int(history.get("historyVersion", 0) or 0):
+    if int(asset.get("version", 0) or 0) != int(
+        history.get("historyVersion", 0) or 0
+    ):
         fail("update_history version mismatch")
-    current = None
-    for record in history.get("records") or []:
-        if int(record.get("manifestVersion", 0) or 0) == int(manifest.get("version", 0) or 0):
-            current = record
-            break
-    if not current:
-        fail("current manifest version missing from update history")
+
+    records = history.get("records") or []
+    if not records:
+        fail("update history records missing")
+    if int(records[0].get("manifestVersion", 0) or 0) != int(
+        manifest.get("version", 0) or 0
+    ):
+        fail("latest update history record must match manifest version")
+    current = records[0]
     release = manifest.get("release") or {}
     if str(release.get("title", "")) != str(current.get("title", "")):
         fail("manifest release title differs from current history record")
-    if [str(x) for x in (release.get("changes") or [])] != [str(x) for x in (current.get("details") or [])]:
+    if str(release.get("date", "")) != str(current.get("date", "")):
+        fail("manifest release date differs from current history record")
+    if [str(x) for x in (release.get("changes") or [])] != [
+        str(x) for x in (current.get("details") or [])
+    ]:
         fail("manifest release changes differ from current history record")
 
-    subprocess.check_call([sys.executable, "scripts/verify_update_history.py"], cwd=str(ROOT))
+    subprocess.check_call(
+        [sys.executable, "scripts/verify_update_history.py"], cwd=str(ROOT)
+    )
+    subprocess.check_call(
+        [sys.executable, "scripts/verify_release_record_flow.py"], cwd=str(ROOT)
+    )
     py_files = collect_python_files()
     if py_files:
-        subprocess.check_call([sys.executable, "-m", "py_compile"] + py_files, cwd=str(ROOT))
-    print("OK manifest_version=%s files=%s history=%s entry_version=%s" % (
-        manifest.get("version"), len(py_modules), len(history.get("records") or []), entry_version))
+        subprocess.check_call(
+            [sys.executable, "-m", "py_compile"] + py_files, cwd=str(ROOT)
+        )
+    print(
+        "OK manifest_version=%s files=%s history=%s entry_version=%s"
+        % (manifest.get("version"), len(py_modules), len(records), entry_version)
+    )
 
 
 if __name__ == "__main__":
