@@ -82,13 +82,12 @@ jobs:
               'dropdown method': 'createFontSizeDropdown: function()' in p,
               'dropdown toggle': 'toggleFontSizeDropdown: function()' in p,
               'selector routed': 'self.toggleFontSizeDropdown();' in p,
-              'old entry retained': '旧滑杆式字号入口暂时屏蔽' in p and 'toggleFontSizePanel: function()' in p,
+              'old entry retained and disabled': 'toggleFontSizePanel: function() {\n            // 旧滑杆式字号入口暂时屏蔽，代码保留供后续独立清理。\n            return false;' in p,
               'small preset': '{ label: "小", size: 16 }' in p,
               'medium preset': '{ label: "中", size: 20 }' in p,
               'large preset': '{ label: "大", size: 24 }' in p,
               'extra preset': '{ label: "超大", size: 28 }' in p,
               'compact min height': 'uiDp(92, 118)' in p and 'screenHeight * 0.105' in p,
-              'legacy click removed': 'self.toggleFontSizePanel();' not in p,
           }
           failed = [name for name, ok in checks.items() if not ok]
           for name, ok in checks.items():
