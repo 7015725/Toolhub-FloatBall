@@ -32,6 +32,19 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Normalize one-time patch literal replacements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply_pickword_translate_settings_once.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'out, count = re.subn(pattern, replacement, text, count=1, flags=flags)'
+          new = 'out, count = re.subn(pattern, lambda match: replacement, text, count=1, flags=flags)'
+          if old not in text:
+              raise SystemExit('sub_once replacement marker missing')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Apply translation settings patch
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
@@ -45,11 +58,13 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add updates/pickword-translate-patch-error.txt
-            git commit -m "记录拾字翻译补丁失败原因"
-            if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
-              git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            if ! git diff --cached --quiet; then
+              git commit -m "记录拾字翻译补丁失败原因"
+              if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+                git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+              fi
+              git push origin HEAD:fix/pickword-translate-settings-20260717
             fi
-            git push origin HEAD:fix/pickword-translate-settings-20260717
             exit "$status"
           fi
 
