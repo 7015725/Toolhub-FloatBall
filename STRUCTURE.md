@@ -544,7 +544,9 @@ ToolHub.js 内置 RSA 公钥
    │
    ├─ alg / keyId / SHA256withRSA
    ├─ manifest version 防回滚
-   └─ modules[] / manifest.files 一致性
+   ├─ ToolHub.js 模块列表 / manifest.files 一致性
+   ├─ assets.updateHistory 哈希、大小和版本一致性
+   └─ release 标题、日期和 changes 与最新结构化记录一致
    │
    ▼
 整批模块下载到 .txn.tmp 并校验 size / sha256
@@ -563,30 +565,41 @@ ToolHub.js 内置 RSA 公钥
 当前清单结构：
 
 ```text
-schema: 3
+schema: 4
 version: 以当前 manifest.json 为准
 alg: SHA256withRSA
 keyId: toolhub-targets-20260703-rsa3072
+entry: ToolHub.js 入口版本、哈希、大小和手动更新标记
 files: 27 个模块
+assets.updateHistory: 更新历史名称、schema、版本、哈希和大小
+release: 结构化记录生成的标题、日期和 changes
 ```
 
 ---
 
 ## 17. 维护注意事项
 
-修改 `code/*.js` 或 `ToolHub.js` 后，需要重新生成签名清单：
+修改 `code/*.js` 或 `ToolHub.js` 后，必须先创建一条待签名更新记录，再生成签名产物：
 
 ```bash
+python3 scripts/create_update_record.py
+python3 scripts/verify_update_history.py --require-one-pending
 python3 scripts/generate_signed_manifest.py --yes
+python3 scripts/verify_manifest.py
+python3 .github/scripts/verify_manifest_signature.py
 ```
 
 会更新：
 
 ```text
+updates/records/<id>.json
+update_history.json
 manifest.json
 manifest.sig
 ToolHub.js.sha256
 ```
+
+签名不读取 PR 标题或默认更新文案。`publish-release` 只发布 `v<manifest.version>`，并将 Release 锁定到通过 `main` 校验的提交。
 
 模块加载顺序不建议随意调整。当前顺序大致是：
 
@@ -660,4 +673,6 @@ th_09_animation.js
 
 ## 更新记录与缓存
 
-仓库中的 `updates/records/*.json` 是更新记录源数据，`update_history.json` 是自动聚合产物。运行设备将已校验历史缓存到 `ToolHub/cache/`；缓存损坏或网络失败不会影响子模块启动和事务更新。
+仓库中的 `updates/records/*.json` 是更新记录唯一源数据，`update_history.json` 是自动聚合产物。每次正式签名要求且仅允许一条 `manifestVersion=0` 的记录；签名完成后自动补充日期、模块差异和入口差异。运行设备将已校验历史缓存到 `ToolHub/cache/`；缓存损坏或网络失败不会影响子模块启动和事务更新。
+
+GitHub Release 固定附带 `ToolHub.js`、入口哈希、manifest、RSA 签名和 `update_history.json`。已存在但指向其他提交的同版本 tag 会使发布失败，不会被静默覆盖。

@@ -125,6 +125,9 @@ shortx.getShortXDir()/
     ├── logs/
     │   ├── init.log
     │   └── ShortX_ToolHub_yyyyMMdd.log
+    ├── cache/
+    │   ├── update_history.json
+    │   └── update_history.meta.json
     └── toolhub.db
 ```
 
@@ -494,15 +497,17 @@ WindowManager 使用同一精确尺寸
 
 ## 维护与发布
 
-修改 `code/*.js` 或 `ToolHub.js` 时：
+正式更新流程：
 
-1. 保持 Rhino ES5 语法。
-2. 提升修改模块顶部 `@version`。
-3. 使用 `fix/*` 分支。
-4. 创建中文标题和描述的非草稿 PR。
-5. 由 `sign-toolhub` 自动更新 `manifest.json`、`manifest.sig` 和 `ToolHub.js.sha256`。
-6. 等待 `verify` 与 `sign-toolhub` 通过。
-7. 合并到 `main` 并确认手机端能正常检测更新。
+1. 运行 `python3 scripts/create_update_record.py` 创建且仅创建一条待签名记录。
+2. 修改 `code/*.js` 或 `ToolHub.js`；保持 Rhino ES5，并提升发生变化的模块或入口版本。
+3. 使用 `fix/*` 分支创建中文标题和描述的非草稿 PR。
+4. `sign-toolhub` 校验唯一待签名记录，补全发布日期、manifest 版本、模块差异和入口差异。
+5. 签名流程生成 `manifest.json`、`manifest.sig`、`ToolHub.js.sha256`、`update_history.json` 并完成 RSA 校验。
+6. 等待 `verify` 与 `sign-toolhub` 全部通过后合并到 `main`。
+7. `main` 的 `verify` 通过后，`publish-release` 固定发布 `v<manifest.version>`，目标锁定该次已验证提交。
+
+PR 标题、手动工作流输入和默认文案都不会参与正式发布信息生成；标题、日期和更新内容只来自结构化更新记录。
 
 关键校验：
 
@@ -584,4 +589,14 @@ shortx.getShortXDir()/ToolHub/cache/
 python3 scripts/create_update_record.py
 ```
 
-GitHub Actions 会补全日期、manifest 版本、模块版本差异和入口版本差异，并生成受签名清单保护的 `update_history.json`。
+GitHub Actions 会补全日期、manifest 版本、模块版本差异和入口版本差异，并生成受签名清单保护的 `update_history.json`。缺少记录或存在多条待签名记录时，签名会直接失败，不会生成 `auto-*` 记录。
+
+每个正式版本发布为 `v<manifest.version>`，Release 标题、发布日期和正文与最新历史记录一致。Release 附件固定包含：
+
+```text
+ToolHub.js
+ToolHub.js.sha256
+manifest.json
+manifest.sig
+update_history.json
+```

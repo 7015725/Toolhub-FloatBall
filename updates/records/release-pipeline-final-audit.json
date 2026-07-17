@@ -10,5 +10,12 @@
     "普通签名、回滚和完整 CI 统一通过 verify_manifest.py 校验发布记录链",
     "清理重复发布校验调用并补充 README、STRUCTURE 和专项审计"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260717005319,
+  "date": "2026-07-17",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
 }

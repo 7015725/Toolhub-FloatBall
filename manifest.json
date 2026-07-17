@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "35536a19a23789b55094e487d476483759f4513ad30b0ba00649293a36a45ca0",
-      "size": 7791,
-      "version": 20260717003553
+      "sha256": "223a9926152bb19b39fcf457ea56489532f375078f9a413951f0321d02118d5c",
+      "size": 8671,
+      "version": 20260717005319
     }
   },
   "entry": {
@@ -157,15 +157,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "取消缺少正式记录时自动生成 auto-* 更新记录的兜底",
-      "manifest 发布标题、日期和更新内容统一读取结构化更新记录",
-      "签名工作流不再从 PR 标题或手动输入生成发布信息",
-      "回滚流程先创建正式 fix 记录，再由同一签名链生成产物",
-      "补充待签名记录、发布信息一致性和自动化流程专项校验"
+      "GitHub Release 固定使用 v<manifest.version> 并锁定通过校验的提交",
+      "Release 标题、日期和更新内容全部读取已签名 manifest，不再使用默认文案或自定义标签",
+      "Release 附件统一包含入口、校验文件、签名清单和 update_history.json",
+      "普通签名、回滚和完整 CI 统一通过 verify_manifest.py 校验发布记录链",
+      "清理重复发布校验调用并补充 README、STRUCTURE 和专项审计"
     ],
     "date": "2026-07-17",
-    "title": "统一发布记录与签名信息来源"
+    "title": "完成发布链最终收尾审计"
   },
   "schema": 4,
-  "version": 20260717003553
+  "version": 20260717005319
 }
