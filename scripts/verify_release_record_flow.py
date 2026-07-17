@@ -10,6 +10,7 @@ VERIFY_MANIFEST = (ROOT / "scripts" / "verify_manifest.py").read_text(encoding="
 SIGN = (ROOT / ".github" / "workflows" / "sign-toolhub.yml").read_text(encoding="utf-8")
 ROLLBACK = (ROOT / ".github" / "workflows" / "rollback-toolhub.yml").read_text(encoding="utf-8")
 VERIFY_WORKFLOW = (ROOT / ".github" / "workflows" / "verify.yml").read_text(encoding="utf-8")
+PUBLISH = (ROOT / ".github" / "workflows" / "publish-release.yml").read_text(encoding="utf-8")
 
 checks = {
     "生成器不再自动创建更新记录": "create_auto_record" not in BUILD and "auto-%s" not in BUILD,
@@ -25,11 +26,21 @@ checks = {
     "签名工作流不接受更新内容输入": "INPUT_CHANGE" not in SIGN and "更新记录，写入" not in SIGN,
     "签名前要求一条待签名记录": "verify_update_history.py --require-one-pending" in SIGN,
     "签名命令只读取结构化记录": "python3 scripts/generate_signed_manifest.py --yes" in SIGN,
+    "签名完成统一验证 manifest": "python3 scripts/verify_manifest.py" in SIGN and "python3 scripts/verify_release_record_flow.py" not in SIGN,
     "回滚先创建结构化记录": "scripts/create_update_record.py" in ROLLBACK,
     "回滚签名不传标题和变更": "generate_signed_manifest.py --yes" in ROLLBACK and "generate_signed_manifest.py --yes --title" not in ROLLBACK,
+    "回滚统一验证 manifest": "python3 scripts/verify_manifest.py" in ROLLBACK and "python3 scripts/verify_release_record_flow.py" not in ROLLBACK,
     "历史校验支持待签名记录模式": "--require-one-pending" in VERIFY_HISTORY,
     "manifest 校验发布日期": "manifest release date differs from current history record" in VERIFY_MANIFEST,
-    "完整 CI 校验发布记录流程": "verify_release_record_flow.py" in VERIFY_WORKFLOW,
+    "完整 CI 统一调用 manifest 校验": "python3 scripts/verify_manifest.py" in VERIFY_WORKFLOW and "python3 scripts/verify_release_record_flow.py" not in VERIFY_WORKFLOW,
+    "Release 固定使用 manifest 版本标签": "tag = 'v%s' % version" in PUBLISH and "INPUT_TAG" not in PUBLISH,
+    "Release 检出已验证提交": "github.event.workflow_run.head_sha || 'main'" in PUBLISH,
+    "Release 发布前校验 manifest 和签名": "python3 scripts/verify_manifest.py" in PUBLISH and "verify_manifest_signature.py" in PUBLISH,
+    "Release 不使用默认发布文案": "ToolHub 更新。" not in PUBLISH and "ToolHub ' + tag" not in PUBLISH,
+    "Release 要求标题日期和内容": "manifest.release title, date, and changes are required" in PUBLISH,
+    "Release 记录正式发布日期": "发布日期：" in PUBLISH,
+    "Release 附带完整更新产物": "ToolHub.js ToolHub.js.sha256 manifest.json manifest.sig update_history.json" in PUBLISH,
+    "Release 拒绝复用错误目标标签": "points to $tagged, expected $target" in PUBLISH,
 }
 
 failed = [name for name, ok in checks.items() if not ok]
