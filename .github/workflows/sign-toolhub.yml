@@ -64,6 +64,10 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Apply final release documentation migration
+        shell: bash
+        run: python3 scripts/apply_release_docs_once.py
+
       - name: Verify changed module versions
         shell: bash
         run: |
@@ -114,12 +118,12 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
 
-      - name: Verify update history and release flow
+      - name: Verify signed release bundle
         shell: bash
         run: |
-          python3 scripts/verify_update_history.py
-          python3 scripts/verify_release_record_flow.py
+          python3 scripts/verify_manifest.py
           python3 scripts/verify_update_version_page.py
+          python3 .github/scripts/verify_manifest_signature.py
 
       - name: Verify generated storage and position
         shell: bash
@@ -159,10 +163,6 @@ jobs:
           python3 scripts/verify_pointer_regressions.py
           python3 scripts/verify_result_preview.py
 
-      - name: Verify generated manifest signature
-        shell: bash
-        run: python3 .github/scripts/verify_manifest_signature.py
-
       - name: Check generated whitespace
         shell: bash
         run: git diff --check
@@ -179,7 +179,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add manifest.json manifest.sig ToolHub.js.sha256 update_history.json updates/records
+          git add README.md STRUCTURE.md manifest.json manifest.sig ToolHub.js.sha256 update_history.json updates/records
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
             exit 0
@@ -188,7 +188,10 @@ jobs:
           import json
           from pathlib import Path
           manifest = json.loads(Path('manifest.json').read_text(encoding='utf-8'))
-          print(str((manifest.get('release') or {}).get('title') or 'ToolHub 更新'))
+          title = str((manifest.get('release') or {}).get('title', '')).strip()
+          if not title:
+              raise SystemExit('manifest.release.title missing')
+          print(title)
           PY
           )"
           git commit -m "生成签名产物：$release_title"

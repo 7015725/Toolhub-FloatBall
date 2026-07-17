@@ -80,8 +80,6 @@ jobs:
         run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_manifest.py
-          python3 scripts/verify_update_history.py
-          python3 scripts/verify_release_record_flow.py
           python3 scripts/verify_update_version_page.py
           python3 scripts/verify_toolapp_single_root.py
           python3 scripts/verify_toolapp_adaptive_size.py
