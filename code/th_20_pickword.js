@@ -1,4 +1,4 @@
-// @version 1.0.8
+// @version 1.0.9
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -235,6 +235,7 @@
     var fontSizeSelectorView = null;
     var fontSizeDropdownView = null;
     var fontSizeDropdownCardView = null;
+    var fontSizePopupWindow = null;
     var fontSizeOptionViews = [];
     var titleAccentView = null;
     var resultDividerView = null;
@@ -1977,6 +1978,10 @@
                         拾字Floaty.stopCanvasScrollRefresh();
 
                         拾字Floaty.removeFingerPreview();
+                        try {
+                            if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) fontSizePopupWindow.dismiss();
+                        } catch (eFontPopup) {}
+                        fontSizePopupWindow = null;
 
                         windowManager.removeView(mainLayout);
                         mainLayout = null;
@@ -1991,6 +1996,7 @@
                         titleBarRefs = { normalMode: null, settingMode: null };
                     fontSizeDropdownView = null;
                     fontSizeDropdownCardView = null;
+                    fontSizePopupWindow = null;
                     fontSizeOptionViews = [];
                         textView = null;
                         textCanvasControl = null;
@@ -2238,8 +2244,7 @@
             var titleBar = this.createTitleBar();
             mainLayout.addView(titleBar);
 
-            var fontDropdown = this.createFontSizeDropdown();
-            mainLayout.addView(fontDropdown);
+            // 字号菜单使用锚定 PopupWindow，不能加入主 LinearLayout 参与窗口测量。
 
             scrollView = new ScrollView(appContext);
             var scrollParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(60, 72));
@@ -2428,23 +2433,13 @@
 
         createFontSizeDropdown: function() {
             var self = this;
-            var host = new LinearLayout(appContext);
-            fontSizeDropdownView = host;
-            host.setOrientation(LinearLayout.HORIZONTAL);
-            host.setGravity(Gravity.RIGHT | Gravity.TOP);
-            host.setVisibility(View.GONE);
-            host.setPadding(0, uiDp(5, 7), 0, uiDp(2, 3));
-            host.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-
-            var spacer = new View(appContext);
-            host.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1));
-
             var card = new LinearLayout(appContext);
+            fontSizeDropdownView = card;
             fontSizeDropdownCardView = card;
             card.setOrientation(LinearLayout.VERTICAL);
             card.setPadding(uiDp(4, 5), uiDp(4, 5), uiDp(4, 5), uiDp(4, 5));
             card.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 15 : 13, 1));
-            try { card.setElevation(uiDp(5, 7)); } catch (eElevation) {}
+            try { card.setElevation(uiDp(8, 10)); } catch (eElevation) {}
 
             fontSizeOptionViews = [];
             var presets = [
@@ -2468,7 +2463,9 @@
                         saveFontSize(preset.size);
                         updateFontSizeSelector20();
                         refreshFontSizeDropdown20();
-                        if (fontSizeDropdownView) fontSizeDropdownView.setVisibility(View.GONE);
+                        try {
+                            if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) fontSizePopupWindow.dismiss();
+                        } catch (eDismissOption) {}
                         showToast("字号已切换为" + preset.label);
                     } }));
                     applyButtonAnimation(option);
@@ -2477,23 +2474,58 @@
                 })(presets[iPreset]);
             }
 
-            var cardLp = new LinearLayout.LayoutParams(uiDp(136, 164), LayoutParams.WRAP_CONTENT);
-            cardLp.setMargins(0, 0, uiDp(42, 52), 0);
-            host.addView(card, cardLp);
             refreshFontSizeDropdown20();
-            return host;
+            return card;
         },
 
         toggleFontSizeDropdown: function() {
-            if (!fontSizeDropdownView) return false;
+            if (!fontSizeSelectorView) return false;
             try {
+                if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) {
+                    fontSizePopupWindow.dismiss();
+                    return false;
+                }
                 if (titleBarRefs.settingMode) titleBarRefs.settingMode.setVisibility(View.GONE);
                 if (titleBarRefs.normalMode) titleBarRefs.normalMode.setVisibility(View.VISIBLE);
-                var opening = fontSizeDropdownView.getVisibility() !== View.VISIBLE;
+
+                var popupWidth = uiDp(136, 164);
+                var content = this.createFontSizeDropdown();
                 refreshFontSizeDropdown20();
-                fontSizeDropdownView.setVisibility(opening ? View.VISIBLE : View.GONE);
-                return opening;
-            } catch (eDropdown) {}
+                var popup = new android.widget.PopupWindow(
+                    content,
+                    popupWidth,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                    true
+                );
+                popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+                popup.setOutsideTouchable(true);
+                popup.setFocusable(true);
+                try { popup.setElevation(uiDp(8, 10)); } catch (ePopupElevation) {}
+                try { popup.setClippingEnabled(true); } catch (ePopupClip) {}
+                popup.setOnDismissListener(new android.widget.PopupWindow.OnDismissListener({ onDismiss: function() {
+                    if (fontSizePopupWindow === popup) fontSizePopupWindow = null;
+                    fontSizeDropdownView = null;
+                    fontSizeDropdownCardView = null;
+                    fontSizePopupWindow = null;
+                    fontSizeOptionViews = [];
+                } }));
+                fontSizePopupWindow = popup;
+
+                var anchorWidth = 0;
+                try { anchorWidth = fontSizeSelectorView.getWidth(); } catch (eAnchorWidth) { anchorWidth = 0; }
+                var xOffset = Math.min(0, anchorWidth - popupWidth);
+                popup.showAsDropDown(fontSizeSelectorView, xOffset, uiDp(6, 8));
+                return true;
+            } catch (eDropdown) {
+                try {
+                    if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) fontSizePopupWindow.dismiss();
+                } catch (eDismissFail) {}
+                fontSizePopupWindow = null;
+                fontSizeDropdownView = null;
+                fontSizeDropdownCardView = null;
+                fontSizeOptionViews = [];
+                showToast("字号菜单打开失败");
+            }
             return false;
         },
 
@@ -4715,6 +4747,10 @@
                     try { 拾字Floaty.hide(); } catch (eHide) {}
                     try { 拾字Floaty.removePinnedTextWindow(); } catch (ePin) {}
                     try {
+                        if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) fontSizePopupWindow.dismiss();
+                    } catch (eFontPopup) {}
+                    fontSizePopupWindow = null;
+                    try {
                         if (windowManager !== null && mainLayout !== null) windowManager.removeView(mainLayout);
                     } catch (eMainRemove) {}
                     try {
@@ -4732,6 +4768,7 @@
                     titleBarRefs = { normalMode: null, settingMode: null };
                     fontSizeDropdownView = null;
                     fontSizeDropdownCardView = null;
+                    fontSizePopupWindow = null;
                     fontSizeOptionViews = [];
                     textView = null;
                     textCanvasControl = null;
@@ -4774,6 +4811,10 @@
             };
 
             proto.onPickwordConfigurationChanged = function() {
+                try {
+                    if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) fontSizePopupWindow.dismiss();
+                } catch (eFontPopup) {}
+                fontSizePopupWindow = null;
                 refreshPickwordTheme20();
                 try { if (textCanvasControl && textCanvasControl.view) textCanvasControl.view.invalidate(); } catch (eCanvas) {}
                 try { if (mainLayout) mainLayout.invalidate(); } catch (eMain) {}
