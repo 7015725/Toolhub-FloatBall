@@ -1,0 +1,80 @@
+name: apply-pickword-translate-settings-once
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'fix/pickword-translate-settings-20260717' || github.ref_name == 'fix/pickword-translate-settings-20260717'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/pickword-translate-settings-20260717
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply translation settings patch
+        run: python3 scripts/apply_pickword_translate_settings_once.py
+
+      - name: Verify changed module versions
+        run: |
+          git fetch --no-tags origin main
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify Rhino ES5 and JavaScript syntax
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+
+      - name: Verify translation settings boundaries
+        run: |
+          python3 scripts/verify_schema_validator.py
+          python3 scripts/verify_sqlite_storage.py
+          python3 scripts/verify_pickword_translate_settings.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/verify_update_history.py --require-one-pending
+
+      - name: Remove one-time automation files
+        run: |
+          rm -f scripts/apply_pickword_translate_settings_once.py
+          rm -f .github/workflows/apply_pickword_translate_settings_once.yml
+
+      - name: Check final diff
+        run: |
+          git diff --check
+          git status --short
+          test -n "$(git status --porcelain)"
+
+      - name: Commit implementation
+        env:
+          TARGET_BRANCH: fix/pickword-translate-settings-20260717
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "新增拾字翻译引擎与凭据设置"
+          if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          git push origin "HEAD:${TARGET_BRANCH}"
