@@ -9,20 +9,5 @@
     "清理四档字号下拉启用后已不可达的旧Canvas滑杆、隐藏settingMode、字号标签、完成按钮和旧切换方法",
     "清理仅服务于隐藏字号面板的去空格与去换行按钮状态和控件工厂，现有去重换行按钮点击与长按功能保持不变",
     "保留小中大超大四档字号、SharedPreferences持久化、文字选择、复制、翻译、钉屏、放大镜和WindowManager关闭边界"
-  ],
-  "manifestVersion": 20260717230100,
-  "date": "2026-07-17",
-  "modules": [
-    {
-      "name": "th_20_pickword.js",
-      "from": "1.0.11",
-      "to": "1.0.12",
-      "change": "updated"
-    }
-  ],
-  "entry": {
-    "changed": false,
-    "from": 20260714081104,
-    "to": 20260714081104
-  }
+  ]
 }
