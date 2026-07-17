@@ -416,7 +416,7 @@ out.right = Math.max(out.right, int21(value.right, 0));
         if (statusId > 0) result.top = context.getResources().getDimensionPixelSize(statusId);
       } catch (eStatusResource) {}
     }
-    if (result.bottom <= 0) {
+    if (result.bottom <= 0 && result.left <= 0 && result.right <= 0) {
       try {
         var navigationId = context.getResources().getIdentifier("navigation_bar_height", "dimen", "android");
         if (navigationId > 0) result.bottom = context.getResources().getDimensionPixelSize(navigationId);
@@ -445,9 +445,13 @@ out.right = Math.max(out.right, int21(value.right, 0));
     var frame = screenFrame21(appObj);
     var insets = systemSafeInsets21(st && st.root ? st.root : null);
     var previewHeight = 0;
-    try { previewHeight = Math.max(previewHeight, int21(st && st.measuredHeight, 0)); } catch (eMeasured) {}
-    try { previewHeight = Math.max(previewHeight, int21(st && st.lp ? st.lp.height : 0, 0)); } catch (eLpHeight) {}
-    try { previewHeight = Math.max(previewHeight, int21(st && st.root ? st.root.getHeight() : 0, 0)); } catch (eRootHeight) {}
+    try { previewHeight = int21(st && st.measuredHeight, 0); } catch (eMeasured) { previewHeight = 0; }
+    if (previewHeight <= 0) {
+      try { previewHeight = int21(st && st.lp ? st.lp.height : 0, 0); } catch (eLpHeight) { previewHeight = 0; }
+    }
+    if (previewHeight <= 0) {
+      try { previewHeight = int21(st && st.root ? st.root.getHeight() : 0, 0); } catch (eRootHeight) { previewHeight = 0; }
+    }
     previewHeight = Math.max(1, previewHeight);
     var percent = resolvePreviewPositionPercent21(appObj, st, overrideValue);
     var targetCenterY = frame.top + Math.round(frame.height * percent / 100);
@@ -1306,7 +1310,7 @@ out.right = Math.max(out.right, int21(value.right, 0));
     applyPreviewPosition21(appObj, st, { reason: "attach", updateLayout: false });
 
     st.root.setVisibility(android.view.View.VISIBLE);
-    st.root.setAlpha(1);
+    st.root.setAlpha(0.76);
     st.root.setScaleX(0.985);
     st.root.setScaleY(0.985);
     st.root.setTranslationY(0);

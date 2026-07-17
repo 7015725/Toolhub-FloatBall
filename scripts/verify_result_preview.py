@@ -269,8 +269,10 @@ def main() -> int:
         and "WindowInsets.Type.displayCutout()" in preview
         and "getInsetsIgnoringVisibility" in preview
         and 'getIdentifier("status_bar_height"' in preview
-        and 'getIdentifier("navigation_bar_height"' in preview,
-        "preview position must use complete screen height, then clamp against top and bottom system insets",
+        and 'getIdentifier("navigation_bar_height"' in preview
+        and "result.bottom <= 0 && result.left <= 0 && result.right <= 0" in preview
+        and "previewHeight = int21(st && st.measuredHeight, 0)" in preview,
+        "preview position must use complete screen height, prefer the current measured height, then clamp against real top and bottom system insets",
         failures,
     )
     require(
