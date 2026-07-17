@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Finalize one pending ToolHub update record and build update_history.json."""
+"""Finalize exactly one pending ToolHub update record and build update_history.json."""
 import argparse
 import json
 import re
@@ -13,13 +13,23 @@ ENTRY = ROOT / "ToolHub.js"
 RECORDS_DIR = ROOT / "updates" / "records"
 HISTORY = ROOT / "update_history.json"
 ALLOWED_TYPES = {"feature", "fix", "optimize", "security"}
+GENERATED_FIELDS = ("date", "modules", "entry")
 TZ = timezone(timedelta(hours=8))
 
 
 def run_git(args, check=True):
-    proc = subprocess.run(["git"] + list(args), cwd=str(ROOT), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.run(
+        ["git"] + list(args),
+        cwd=str(ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     if check and proc.returncode != 0:
-        raise RuntimeError("git %s failed: %s" % (" ".join(args), (proc.stderr or proc.stdout).strip()))
+        raise RuntimeError(
+            "git %s failed: %s"
+            % (" ".join(args), (proc.stderr or proc.stdout).strip())
+        )
     return proc
 
 
@@ -42,7 +52,9 @@ def module_version(text):
 
 def entry_version(text):
     for symbol in ("TOOLHUB_ENTRY_VERSION", "MIN_TRUSTED_MANIFEST_VERSION"):
-        found = re.search(r"\bvar\s+%s\s*=\s*(\d+)\s*;" % re.escape(symbol), str(text))
+        found = re.search(
+            r"\bvar\s+%s\s*=\s*(\d+)\s*;" % re.escape(symbol), str(text)
+        )
         if found:
             return int(found.group(1))
     return 0
@@ -66,13 +78,23 @@ def changed_modules(merge_base):
             continue
         current_path = ROOT / rel
         before = module_version(git_show(merge_base, rel))
-        after = module_version(current_path.read_text(encoding="utf-8", errors="replace")) if current_path.exists() else ""
-        out.append({
-            "name": rel[len("code/"):],
-            "from": before,
-            "to": after,
-            "change": "added" if status.startswith("A") else ("deleted" if status.startswith("D") else "updated"),
-        })
+        after = (
+            module_version(current_path.read_text(encoding="utf-8", errors="replace"))
+            if current_path.exists()
+            else ""
+        )
+        out.append(
+            {
+                "name": rel[len("code/") :],
+                "from": before,
+                "to": after,
+                "change": (
+                    "added"
+                    if status.startswith("A")
+                    else ("deleted" if status.startswith("D") else "updated")
+                ),
+            }
+        )
     return out
 
 
@@ -95,47 +117,62 @@ def load_records():
 
 
 def validate_source(record):
+    path = record.get("__path")
     if int(record.get("schema", 0) or 0) != 1:
-        raise RuntimeError("record schema must be 1: %s" % record.get("__path"))
+        raise RuntimeError("record schema must be 1: %s" % path)
     if str(record.get("type", "")) not in ALLOWED_TYPES:
-        raise RuntimeError("invalid record type: %s" % record.get("__path"))
-    if not str(record.get("id", "")).strip() or not str(record.get("title", "")).strip():
-        raise RuntimeError("record id/title missing: %s" % record.get("__path"))
+        raise RuntimeError("invalid record type: %s" % path)
+    if not str(record.get("id", "")).strip() or not str(
+        record.get("title", "")
+    ).strip():
+        raise RuntimeError("record id/title missing: %s" % path)
     details = record.get("details") or []
-    if not isinstance(details, list) or not [x for x in details if str(x).strip()]:
-        raise RuntimeError("record details missing: %s" % record.get("__path"))
+    if not isinstance(details, list) or not [
+        item for item in details if str(item).strip()
+    ]:
+        raise RuntimeError("record details missing: %s" % path)
+    try:
+        version = int(record.get("manifestVersion", 0) or 0)
+    except (TypeError, ValueError):
+        raise RuntimeError("invalid manifestVersion: %s" % path)
+    if version <= 0:
+        unexpected = [field for field in GENERATED_FIELDS if field in record]
+        if unexpected:
+            raise RuntimeError(
+                "pending record contains generated fields %s: %s"
+                % (", ".join(unexpected), path)
+            )
 
 
-def create_auto_record(record_id, title, details):
-    from create_update_record import write_record
-    return write_record(record_id, "optimize", title, details)
-
-
-def finalize_history(manifest_version, base_ref="", date_override="", fallback_title="", fallback_details=None):
+def finalize_history(manifest_version, base_ref="", date_override=""):
     records = load_records()
     for record in records:
         validate_source(record)
-    pending = [item for item in records if int(item.get("manifestVersion", 0) or 0) <= 0]
-    if len(pending) == 0:
-        title = str(fallback_title or "ToolHub 自动签名更新").strip()
-        details = [str(x).strip() for x in (fallback_details or [title]) if str(x).strip()]
-        create_auto_record("auto-%s" % manifest_version, title, details)
-        records = load_records()
-        pending = [item for item in records if int(item.get("manifestVersion", 0) or 0) <= 0]
+
+    pending = [
+        item for item in records if int(item.get("manifestVersion", 0) or 0) <= 0
+    ]
     if len(pending) != 1:
-        raise RuntimeError("exactly one pending update record is required, found %d" % len(pending))
+        raise RuntimeError(
+            "exactly one pending update record is required, found %d; "
+            "create one with scripts/create_update_record.py"
+            % len(pending)
+        )
 
     base = resolve_base(base_ref)
     merge_base = run_git(["merge-base", base, "HEAD"]).stdout.strip()
     if not merge_base:
         raise RuntimeError("empty merge base")
+
     current = pending[0]
     current["manifestVersion"] = int(manifest_version)
     current["date"] = str(date_override or datetime.now(TZ).strftime("%Y-%m-%d"))
     current["modules"] = changed_modules(merge_base)
     current["entry"] = entry_change(merge_base)
     path = current.pop("__path")
-    path.write_text(json.dumps(current, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(current, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     finalized = []
     seen_ids = set()
@@ -145,7 +182,7 @@ def finalize_history(manifest_version, base_ref="", date_override="", fallback_t
         item.pop("__path", None)
         version = int(item.get("manifestVersion", 0) or 0)
         if version <= 0:
-            continue
+            raise RuntimeError("pending update record remains after finalization")
         rid = str(item.get("id", ""))
         if rid in seen_ids:
             raise RuntimeError("duplicate record id: %s" % rid)
@@ -154,14 +191,19 @@ def finalize_history(manifest_version, base_ref="", date_override="", fallback_t
         seen_ids.add(rid)
         seen_versions.add(version)
         finalized.append(item)
-    finalized.sort(key=lambda item: int(item.get("manifestVersion", 0) or 0), reverse=True)
+
+    finalized.sort(
+        key=lambda item: int(item.get("manifestVersion", 0) or 0), reverse=True
+    )
     history = {
         "schema": 1,
-        "historyVersion": int(finalized[0]["manifestVersion"]) if finalized else int(manifest_version),
+        "historyVersion": int(finalized[0]["manifestVersion"]),
         "generatedAt": datetime.now(TZ).isoformat(timespec="seconds"),
         "records": finalized,
     }
-    HISTORY.write_text(json.dumps(history, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    HISTORY.write_text(
+        json.dumps(history, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return current, history
 
 
@@ -170,10 +212,10 @@ def main():
     ap.add_argument("--manifest-version", type=int, required=True)
     ap.add_argument("--base-ref", default="")
     ap.add_argument("--date", default="")
-    ap.add_argument("--title", default="")
-    ap.add_argument("--detail", action="append", default=[])
     args = ap.parse_args()
-    record, history = finalize_history(args.manifest_version, args.base_ref, args.date, args.title, args.detail)
+    record, history = finalize_history(
+        args.manifest_version, args.base_ref, args.date
+    )
     print("record_id=%s" % record.get("id"))
     print("history_records=%d" % len(history.get("records") or []))
 
