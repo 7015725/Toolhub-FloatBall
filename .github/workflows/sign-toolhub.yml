@@ -114,12 +114,12 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
 
-      - name: Verify update history and release flow
+      - name: Verify signed release bundle
         shell: bash
         run: |
-          python3 scripts/verify_update_history.py
-          python3 scripts/verify_release_record_flow.py
+          python3 scripts/verify_manifest.py
           python3 scripts/verify_update_version_page.py
+          python3 .github/scripts/verify_manifest_signature.py
 
       - name: Verify generated storage and position
         shell: bash
@@ -159,10 +159,6 @@ jobs:
           python3 scripts/verify_pointer_regressions.py
           python3 scripts/verify_result_preview.py
 
-      - name: Verify generated manifest signature
-        shell: bash
-        run: python3 .github/scripts/verify_manifest_signature.py
-
       - name: Check generated whitespace
         shell: bash
         run: git diff --check
@@ -188,7 +184,10 @@ jobs:
           import json
           from pathlib import Path
           manifest = json.loads(Path('manifest.json').read_text(encoding='utf-8'))
-          print(str((manifest.get('release') or {}).get('title') or 'ToolHub 更新'))
+          title = str((manifest.get('release') or {}).get('title', '')).strip()
+          if not title:
+              raise SystemExit('manifest.release.title missing')
+          print(title)
           PY
           )"
           git commit -m "生成签名产物：$release_title"
