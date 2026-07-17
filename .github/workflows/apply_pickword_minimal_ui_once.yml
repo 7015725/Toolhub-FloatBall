@@ -30,7 +30,9 @@ jobs:
           python-version: '3.x'
 
       - name: Apply precise minimal UI patch
-        run: python3 scripts/apply_pickword_minimal_ui_once.py
+        run: |
+          python3 scripts/fix_pickword_minimal_patch_once.py
+          python3 scripts/apply_pickword_minimal_ui_once.py
 
       - name: Verify changed module versions
         run: |
@@ -73,6 +75,7 @@ jobs:
 
       - name: Remove one-time automation files
         run: |
+          rm -f scripts/fix_pickword_minimal_patch_once.py
           rm -f scripts/apply_pickword_minimal_ui_once.py
           rm -f .github/workflows/apply_pickword_minimal_ui_once.yml
 
