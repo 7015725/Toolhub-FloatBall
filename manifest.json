@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "0df8f6d1df17b8d46e3573431bd7a5f4bd9f993c0f1ec726754a5590bc0bbb74",
-      "size": 10666,
-      "version": 20260717025642
+      "sha256": "cc6014baf2879076d3f2509ef655551018a24ecc55064f28b156e6bcc306e46b",
+      "size": 12023,
+      "version": 20260717040123
     }
   },
   "entry": {
@@ -104,9 +104,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "fd8516ffeb05d296a3aba6472e4ca6bbdadd49cae3ee04efae264d888ff87ed5",
-      "size": 132773,
-      "version": "1.1.7"
+      "sha256": "cf2629370e16799e6cc66c3a7cb7a14da99975decf8a8bd947ff62a106fb710f",
+      "size": 134987,
+      "version": "1.1.8"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -114,9 +114,9 @@
       "version": "1.0.4"
     },
     "th_15_extra.js": {
-      "sha256": "106fd3cc36199d6a94afd513b2b9f1cec411c42f1f98faff0f38594beae59a1f",
-      "size": 115762,
-      "version": "1.1.19"
+      "sha256": "e79c5673fbe30394d53709d63f3c53952159a35807d17e42391fad039150cd47",
+      "size": 116056,
+      "version": "1.1.20"
     },
     "th_15_main_panel.js": {
       "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
@@ -149,23 +149,23 @@
       "version": "1.0.3"
     },
     "th_21_result_preview.js": {
-      "sha256": "9203070ef0384de0faf26a16981eebe5341d4afed615608b94d87fef5d98acfb",
-      "size": 69193,
-      "version": "1.3.0"
+      "sha256": "9cfc8a20b5c1a3687081c059352ade7f569b40278284909276ac8e1e8833fd79",
+      "size": 66628,
+      "version": "1.3.1"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "新增 0% 至 100% 的结果预览垂直位置参数，以完整物理屏幕高度作为百分比基准",
-      "百分比对应预览窗口中心点，并自动避开状态栏、屏幕挖孔、导航栏和手势区域",
-      "设置页将垂直位置与停留时间统一归入结果预览分类，滑杆松手后更新当前预览",
-      "保存、取消、设置页关闭和横竖屏变化均采用独立位置刷新，不重置预览消失计时",
-      "预览动画改为透明度与缩放，并补充单行双行切换、侧边导航栏和安全空间不足边界校验"
+      "结果预览窗口取消整窗透明度和缩放动画，每次 Canvas 绘制前清空透明缓冲区",
+      "新结果替换、超时关闭和点击反馈不再对透明 Overlay Surface 执行属性变换",
+      "设置首页后台更新检查仅局部刷新更新摘要与红点，不再重复重建设置内容树",
+      "ToolApp 首次显示保持完全不透明和原始尺寸，避免进入动画与内容刷新发生竞争",
+      "补充结果预览、更新入口和 ToolApp 视觉稳定性专项校验"
     ],
     "date": "2026-07-17",
-    "title": "新增结果预览垂直位置设置"
+    "title": "修复结果预览与设置页闪烁"
   },
   "schema": 4,
-  "version": 20260717025642
+  "version": 20260717040123
 }

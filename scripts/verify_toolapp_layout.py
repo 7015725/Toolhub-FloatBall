@@ -26,6 +26,7 @@ def main():
     extra = EXTRA.read_text(encoding="utf-8")
     entry = ENTRY.read_text(encoding="utf-8")
     checks = []
+    add_match, add_body = method_body(extra, "addPanel")
 
     def check(group, name, ok):
         checks.append((group, name, bool(ok)))
@@ -37,6 +38,16 @@ def main():
     check("single-root", "has ensureToolAppShell", "FloatBallAppWM.prototype.ensureToolAppShell" in extra)
     check("single-root", "has updateToolAppShellChrome", "FloatBallAppWM.prototype.updateToolAppShellChrome" in extra)
     check("single-root", "has setToolAppContent", "FloatBallAppWM.prototype.setToolAppContent" in extra)
+    check("visual-stability", "addPanel exists", bool(add_match))
+    check(
+        "visual-stability",
+        "ToolApp overlay enters fully opaque without scale animation",
+        "if (__toolAppPanel)" in add_body and
+        "panel.setAlpha(1);" in add_body and
+        "panel.setScaleX(1);" in add_body and
+        "panel.setScaleY(1);" in add_body and
+        add_body.find("if (__toolAppPanel)") < add_body.find("else if (this.config.ENABLE_ANIMATIONS)"),
+    )
 
     check("adaptive-size", "has calculateToolAppLayout", "FloatBallAppWM.prototype.calculateToolAppLayout" in extra)
     check("adaptive-size", "layout uses screen orientation", "isLandscape" in extra and "shortSide" in extra and "longSide" in extra)

@@ -1,4 +1,4 @@
-// @version 1.1.19
+// @version 1.1.20
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -212,30 +212,39 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
   try { panel.requestFocus(); } catch (eReqFocus) {}
 
   try {
-    if (this.config.ENABLE_ANIMATIONS) {
-        var handledMainEnter = false;
-        if (which === "main" && this.animateMainPanelEnter) {
-          handledMainEnter = this.animateMainPanelEnter(panel, x, y) === true;
-        }
-        if (!handledMainEnter) {
-          panel.setScaleX(0.96);
-          panel.setScaleY(0.96);
-          panel.setAlpha(0);
-          panel.animate()
-            .scaleX(1)
-            .scaleY(1)
-            .alpha(1)
-            .setDuration(180)
-            .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
-            .start();
-        }
+    if (__toolAppPanel) {
+      try { panel.animate().cancel(); } catch (eToolAppCancel) {}
+      try { panel.clearAnimation(); } catch (eToolAppClear) {}
+      panel.setTranslationX(0);
+      panel.setTranslationY(0);
+      panel.setScaleX(1);
+      panel.setScaleY(1);
+      panel.setAlpha(1);
+    } else if (this.config.ENABLE_ANIMATIONS) {
+      var handledMainEnter = false;
+      if (which === "main" && this.animateMainPanelEnter) {
+        handledMainEnter = this.animateMainPanelEnter(panel, x, y) === true;
+      }
+      if (!handledMainEnter) {
+        panel.setScaleX(0.96);
+        panel.setScaleY(0.96);
+        panel.setAlpha(0);
+        panel.animate()
+          .scaleX(1)
+          .scaleY(1)
+          .alpha(1)
+          .setDuration(180)
+          .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+          .start();
+      }
     } else {
-        panel.setTranslationX(0);
-        panel.setScaleX(1);
-        panel.setScaleY(1);
-        panel.setAlpha(1);
+      panel.setTranslationX(0);
+      panel.setTranslationY(0);
+      panel.setScaleX(1);
+      panel.setScaleY(1);
+      panel.setAlpha(1);
     }
-   } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
+  } catch(eA) { safeLog(null, 'e', "catch " + String(eA)); }
 
   // # 日志防抖：5秒内相同面板类型不重复记录
   var now = Date.now();
