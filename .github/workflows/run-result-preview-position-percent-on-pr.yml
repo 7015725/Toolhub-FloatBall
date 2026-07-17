@@ -1,0 +1,58 @@
+name: Run result preview position patch on PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/result-preview-position-percent'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Extract and run focused patch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/apply-result-preview-position-percent.yml').read_text(encoding='utf-8')
+          marker = "          python3 - <<'PY'\n"
+          start = source.index(marker) + len(marker)
+          end = source.index("\n          PY\n", start)
+          lines = source[start:end].splitlines()
+          script = "\n".join(line[10:] if line.startswith("          ") else line for line in lines) + "\n"
+          Path('/tmp/apply_result_preview_position_percent.py').write_text(script, encoding='utf-8')
+          PY
+          python3 /tmp/apply_result_preview_position_percent.py
+
+      - name: Validate JavaScript and contracts
+        shell: bash
+        run: |
+          node --check code/th_01_base.js
+          node --check code/th_05_persistence.js
+          node --check code/th_09_animation.js
+          node --check code/th_13_panel_ui.js
+          node --check code/th_14_panels.js
+          node --check code/th_16_entry.js
+          node --check code/th_21_result_preview.js
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_schema_validator.py
+
+      - name: Commit patched files and remove one-shot workflows
+        shell: bash
+        run: |
+          rm -f .github/workflows/apply-result-preview-position-percent.yml
+          rm -f .github/workflows/run-result-preview-position-percent-on-pr.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add code/th_01_base.js code/th_05_persistence.js code/th_09_animation.js code/th_13_panel_ui.js code/th_14_panels.js code/th_16_entry.js code/th_21_result_preview.js scripts/verify_result_preview.py .github/workflows/apply-result-preview-position-percent.yml .github/workflows/run-result-preview-position-percent-on-pr.yml
+          git commit -m "新增结果预览垂直位置百分比"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
