@@ -1,4 +1,4 @@
-// @version 1.0.11
+// @version 1.0.12
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -335,7 +335,296 @@ FloatBallAppWM.prototype.runSettingsInteractionStressTest = function(iterations)
   return result;
 };
 
+
+// =======================【设置项：拾字翻译配置】=======================
+FloatBallAppWM.prototype.createPickwordTranslateSettingsView = function(item, parent, needDivider) {
+  var self = this;
+  var isDark = this.isDarkTheme ? !!this.isDarkTheme() : false;
+  var C = this.ui.colors;
+  var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
+  var textColor = T ? T.onSurface : (isDark ? C.textPriDark : C.textPriLight);
+  var secColor = T ? T.onSurface2 : (isDark ? C.textSecDark : C.textSecLight);
+  var dividerColor = T ? T.outlineVariant : (isDark ? C.dividerDark : C.dividerLight);
+  var primary = T ? T.primary : C.primary;
+  var onPrimary = T && T.onPrimary ? T.onPrimary : android.graphics.Color.WHITE;
+  var inputBgColor = T ? T.surface2 : (isDark ? C.inputBgDark : C.inputBgLight);
+
+  if (needDivider) {
+    var divider = new android.view.View(context);
+    var dividerLp = new android.widget.LinearLayout.LayoutParams(-1, 1);
+    dividerLp.setMargins(this.dp(14), 0, this.dp(14), 0);
+    divider.setLayoutParams(dividerLp);
+    toolhubSafeSetBackgroundColor(divider, this.withAlpha ? this.withAlpha(dividerColor, isDark ? 0.36 : 0.28) : dividerColor);
+    parent.addView(divider);
+  }
+
+  var root = new android.widget.LinearLayout(context);
+  root.setOrientation(android.widget.LinearLayout.VERTICAL);
+  root.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(14));
+  try { root.setMinimumHeight(this.dp(52)); } catch(eMin) {}
+
+  var title = new android.widget.TextView(context);
+  title.setText("翻译配置");
+  toolhubSafeSetTextColor(title, textColor);
+  title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+  title.setTypeface(null, android.graphics.Typeface.BOLD);
+  root.addView(title);
+
+  var desc = new android.widget.TextView(context);
+  desc.setText("选择翻译引擎后，仅显示对应凭据；两套凭据会分别保存在 ToolHub SQLite 中。");
+  toolhubSafeSetTextColor(desc, secColor);
+  desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  desc.setPadding(0, self.dp(3), 0, self.dp(8));
+  root.addView(desc);
+
+  var engineTitle = new android.widget.TextView(context);
+  engineTitle.setText("翻译引擎");
+  toolhubSafeSetTextColor(engineTitle, textColor);
+  engineTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+  engineTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+  root.addView(engineTitle);
+
+  var radioGroup = new android.widget.RadioGroup(context);
+  radioGroup.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+  radioGroup.setGravity(android.view.Gravity.CENTER_VERTICAL);
+  var radioLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+  radioLp.setMargins(0, self.dp(4), 0, self.dp(8));
+  radioGroup.setLayoutParams(radioLp);
+
+  function buildEngineRadio(label, idValue) {
+    var rb = new android.widget.RadioButton(context);
+    rb.setId(idValue);
+    rb.setText(label);
+    toolhubSafeSetTextColor(rb, textColor);
+    rb.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+    try {
+      var states = [[android.R.attr.state_checked], [-android.R.attr.state_checked]];
+      toolhubSafeApplyColorStateList(rb, "setButtonTintList", toolhubSafeColorStateListFromStates(states, [primary, secColor]));
+    } catch(eTint) {}
+    try { rb.setMinHeight(self.dp(44)); rb.setMinimumHeight(self.dp(44)); rb.setIncludeFontPadding(false); } catch(eSize) {}
+    radioGroup.addView(rb, new android.widget.RadioGroup.LayoutParams(0, self.dp(44), 1));
+    return rb;
+  }
+
+  var baiduId = 210701;
+  var youdaoId = 210702;
+  try {
+    if (android.view.View.generateViewId) {
+      baiduId = android.view.View.generateViewId();
+      youdaoId = android.view.View.generateViewId();
+    }
+  } catch(eIds) {}
+  var baiduRadio = buildEngineRadio("百度翻译", baiduId);
+  var youdaoRadio = buildEngineRadio("有道翻译", youdaoId);
+  root.addView(radioGroup);
+
+  var credentialHost = new android.widget.LinearLayout(context);
+  credentialHost.setOrientation(android.widget.LinearLayout.VERTICAL);
+  credentialHost.setPadding(0, self.dp(2), 0, 0);
+  root.addView(credentialHost, new android.widget.LinearLayout.LayoutParams(-1, -2));
+
+  function createCredentialContainer(providerTitle, providerDesc) {
+    var box = new android.widget.LinearLayout(context);
+    box.setOrientation(android.widget.LinearLayout.VERTICAL);
+    box.setPadding(self.dp(12), self.dp(10), self.dp(12), self.dp(12));
+    try {
+      box.setBackground(self.ui.createStrokeDrawable(
+        inputBgColor,
+        self.withAlpha(dividerColor, isDark ? 0.50 : 0.34),
+        self.dp(1),
+        self.dp(14)
+      ));
+    } catch(eBg) {}
+    var h = new android.widget.TextView(context);
+    h.setText(providerTitle);
+    toolhubSafeSetTextColor(h, textColor);
+    h.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+    h.setTypeface(null, android.graphics.Typeface.BOLD);
+    box.addView(h);
+    var d = new android.widget.TextView(context);
+    d.setText(providerDesc);
+    toolhubSafeSetTextColor(d, secColor);
+    d.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+    d.setPadding(0, self.dp(2), 0, self.dp(6));
+    box.addView(d);
+    return box;
+  }
+
+  function createCredentialField(box, labelText, key, secret, hintText) {
+    var field = new android.widget.LinearLayout(context);
+    field.setOrientation(android.widget.LinearLayout.VERTICAL);
+    var fieldLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+    fieldLp.setMargins(0, self.dp(6), 0, 0);
+    field.setLayoutParams(fieldLp);
+
+    var label = new android.widget.TextView(context);
+    label.setText(labelText);
+    toolhubSafeSetTextColor(label, textColor);
+    label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+    field.addView(label);
+
+    var inputRow = new android.widget.LinearLayout(context);
+    inputRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+    inputRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+    var inputRowLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+    inputRowLp.setMargins(0, self.dp(5), 0, 0);
+    inputRow.setLayoutParams(inputRowLp);
+
+    var edit = new android.widget.EditText(context);
+    var current = self.getPendingValue(key);
+    if (current === undefined || current === null) current = "";
+    edit.setText(String(current));
+    edit.setHint(String(hintText || ""));
+    toolhubSafeSetTextColor(edit, textColor);
+    toolhubSafeSetHintTextColor(edit, secColor);
+    edit.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+    edit.setSingleLine(true);
+    edit.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+    edit.setBackground(self.ui.createStrokeDrawable(
+      T ? T.surface : inputBgColor,
+      self.withAlpha(dividerColor, isDark ? 0.52 : 0.36),
+      self.dp(1),
+      self.dp(12)
+    ));
+    try {
+      edit.setInputType(android.text.InputType.TYPE_CLASS_TEXT | (secret ? android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD : android.text.InputType.TYPE_TEXT_VARIATION_NORMAL));
+      if (secret) edit.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
+    } catch(eInputType) {}
+    edit.addTextChangedListener(new android.text.TextWatcher({
+      beforeTextChanged: function(s, start, count, after) {},
+      onTextChanged: function(s, start, before, count) {},
+      afterTextChanged: function(s) {
+        try {
+          self.touchActivity();
+          self.setPendingValue(key, String(s));
+        } catch(eText) { safeLog(null, "e", "pickword translate setting update failed key=" + String(key)); }
+      }
+    }));
+    edit.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+      try {
+        v.requestFocus();
+        var imm = context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+        imm.showSoftInput(v, 0);
+      } catch(eKeyboard) {}
+    }}));
+    inputRow.addView(edit, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
+
+    if (secret) {
+      var visible = false;
+      var toggle = new android.widget.TextView(context);
+      toggle.setText("显示");
+      toggle.setGravity(android.view.Gravity.CENTER);
+      toggle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+      toggle.setTypeface(null, android.graphics.Typeface.BOLD);
+      toolhubSafeSetTextColor(toggle, primary);
+      toggle.setPadding(self.dp(10), self.dp(8), self.dp(10), self.dp(8));
+      toggle.setBackground(self.ui.createTransparentPressedStateDrawable(self.withAlpha(primary, isDark ? 0.18 : 0.10), self.dp(12)));
+      toggle.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+        try {
+          self.touchActivity();
+          visible = !visible;
+          if (visible) edit.setTransformationMethod(null);
+          else edit.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
+          toggle.setText(visible ? "隐藏" : "显示");
+          edit.setSelection(edit.getText().length());
+        } catch(eToggle) {}
+      }}));
+      var toggleLp = new android.widget.LinearLayout.LayoutParams(self.dp(56), self.dp(44));
+      toggleLp.setMargins(self.dp(6), 0, 0, 0);
+      inputRow.addView(toggle, toggleLp);
+    }
+
+    field.addView(inputRow);
+    box.addView(field);
+    return edit;
+  }
+
+  var baiduBox = createCredentialContainer("百度翻译", "填写百度翻译开放平台的 APPID 与密钥。");
+  createCredentialField(baiduBox, "百度 APPID", "PICKWORD_BAIDU_APP_ID", false, "输入 APPID");
+  createCredentialField(baiduBox, "百度密钥", "PICKWORD_BAIDU_APP_SECRET", true, "输入密钥");
+  credentialHost.addView(baiduBox, new android.widget.LinearLayout.LayoutParams(-1, -2));
+
+  var youdaoBox = createCredentialContainer("有道翻译", "填写有道智云文本翻译服务的 AppKey 与应用密钥。");
+  createCredentialField(youdaoBox, "有道 AppKey", "PICKWORD_YOUDAO_APP_KEY", false, "输入 AppKey");
+  createCredentialField(youdaoBox, "有道应用密钥", "PICKWORD_YOUDAO_APP_SECRET", true, "输入应用密钥");
+  var youdaoLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+  credentialHost.addView(youdaoBox, youdaoLp);
+
+  function refreshProviderVisibility(engineValue) {
+    var engine = String(engineValue || "baidu") === "youdao" ? "youdao" : "baidu";
+    baiduBox.setVisibility(engine === "baidu" ? android.view.View.VISIBLE : android.view.View.GONE);
+    youdaoBox.setVisibility(engine === "youdao" ? android.view.View.VISIBLE : android.view.View.GONE);
+  }
+
+  var currentEngine = String(self.getPendingValue("PICKWORD_TRANSLATE_ENGINE") || "baidu");
+  if (currentEngine !== "youdao") currentEngine = "baidu";
+  baiduRadio.setChecked(currentEngine === "baidu");
+  youdaoRadio.setChecked(currentEngine === "youdao");
+  refreshProviderVisibility(currentEngine);
+
+  radioGroup.setOnCheckedChangeListener(new android.widget.RadioGroup.OnCheckedChangeListener({
+    onCheckedChanged: function(group, checkedId) {
+      try {
+        var nextEngine = checkedId === youdaoId ? "youdao" : "baidu";
+        self.touchActivity();
+        self.setPendingValue("PICKWORD_TRANSLATE_ENGINE", nextEngine);
+        refreshProviderVisibility(nextEngine);
+      } catch(eEngine) { safeLog(null, "e", "pickword translate engine switch failed"); }
+    }
+  }));
+
+  var testing = false;
+  var testButton = null;
+  function finishTesting() {
+    try {
+      testing = false;
+      if (testButton) {
+        testButton.setEnabled(true);
+        testButton.setAlpha(1.0);
+        testButton.setText("测试翻译配置");
+      }
+    } catch(eFinish) {}
+  }
+  testButton = self.ui.createSolidButton(self, "测试翻译配置", primary, onPrimary, function() {
+    if (testing) return;
+    testing = true;
+    try {
+      testButton.setEnabled(false);
+      testButton.setAlpha(0.65);
+      testButton.setText("正在测试…");
+    } catch(eBusy) {}
+    var snapshot = {
+      PICKWORD_TRANSLATE_ENGINE: String(self.getPendingValue("PICKWORD_TRANSLATE_ENGINE") || "baidu"),
+      PICKWORD_BAIDU_APP_ID: String(self.getPendingValue("PICKWORD_BAIDU_APP_ID") || ""),
+      PICKWORD_BAIDU_APP_SECRET: String(self.getPendingValue("PICKWORD_BAIDU_APP_SECRET") || ""),
+      PICKWORD_YOUDAO_APP_KEY: String(self.getPendingValue("PICKWORD_YOUDAO_APP_KEY") || ""),
+      PICKWORD_YOUDAO_APP_SECRET: String(self.getPendingValue("PICKWORD_YOUDAO_APP_SECRET") || "")
+    };
+    if (typeof self.testPickwordTranslateConfiguration !== "function") {
+      if (self.setInlineNotice) self.setInlineNotice("翻译配置测试功能未加载", "error");
+      finishTesting();
+      return;
+    }
+    try {
+      self.testPickwordTranslateConfiguration(snapshot, function() { finishTesting(); });
+    } catch(eTest) {
+      if (self.setInlineNotice) self.setInlineNotice("翻译配置测试启动失败", "error");
+      finishTesting();
+    }
+  });
+  var testLp = new android.widget.LinearLayout.LayoutParams(-1, self.dp(48));
+  testLp.setMargins(0, self.dp(12), 0, 0);
+  root.addView(testButton, testLp);
+
+  parent.addView(root, new android.widget.LinearLayout.LayoutParams(-1, -2));
+};
+
 FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivider) {
+  if (!item || String(item.type || "") === "hidden") return;
+  if (String(item.type || "") === "pickword_translate_settings") {
+    this.createPickwordTranslateSettingsView(item, parent, needDivider);
+    return;
+  }
   var isDark = this.isDarkTheme();
   var C = this.ui.colors;
   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
