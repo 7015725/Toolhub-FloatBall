@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "089c575a873649b3cdbc53269655546b3cc73ac3e2acd47bbdb5046e08258315",
-      "size": 20161,
-      "version": 20260717112406
+      "sha256": "73e391146e64e4cc9f53eed0e05f1339385363b9f77acbf8fdc2a46b296eaacc",
+      "size": 21916,
+      "version": 20260717121857
     }
   },
   "entry": {
@@ -19,9 +19,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "71ab70f8d5c9b71c049e4eec9da46fed73c025e0146ec608a5a17194a50febe0",
-      "size": 80807,
-      "version": "1.1.16"
+      "sha256": "7364960cda658afffb7c250d92e2ca17d279eb57a8c70696b5d3351be1395db7",
+      "size": 82698,
+      "version": "1.1.17"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -74,9 +74,9 @@
       "version": "1.2.4"
     },
     "th_13_panel_ui.js": {
-      "sha256": "a687caa9a741deefc78857d48b67544db5915c7c824a6c8325ed79e0de05ca7a",
-      "size": 39916,
-      "version": "1.0.11"
+      "sha256": "3c5030ea3962acc90a7f3ce69e7c002f760892d1791434cd383601d54b2e7bdf",
+      "size": 53242,
+      "version": "1.0.12"
     },
     "th_14_button_editor.js": {
       "sha256": "6c1bd1a22d2e7acfab4623d340176bf80241a45fcc455b7526ab92197ca6996e",
@@ -104,9 +104,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "cf2629370e16799e6cc66c3a7cb7a14da99975decf8a8bd947ff62a106fb710f",
-      "size": 134987,
-      "version": "1.1.8"
+      "sha256": "7b81c92ccf1d7a34d59c0f7dab34ef04191000c53598a5c28f656477a091daad",
+      "size": 135184,
+      "version": "1.1.9"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -144,9 +144,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "6581192da72877ab5e1dd235a1b070caa6f95e82e95f8a73a9aab2ca68650116",
-      "size": 242488,
-      "version": "1.0.9"
+      "sha256": "663387de7da49b0ca870117635cf8786272a561b3a463c810dfb2fd393e8fb1e",
+      "size": 247315,
+      "version": "1.0.10"
     },
     "th_21_result_preview.js": {
       "sha256": "9abfcf56d340a92c031b91e35e83ae1e384287774801ad886df28c01476563e2",
@@ -157,15 +157,16 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "字号下拉菜单改为锚定字号按钮的PopupWindow浮层，展开时不再加入主LinearLayout参与测量",
-      "菜单右边缘与字号按钮对齐，保留小16sp、中20sp、大24sp、超大28sp四档选择与当前项标记",
-      "点击外部、再次点击字号、选择字号、关闭拾字或配置变化时都会释放菜单浮层",
-      "保留原字号持久化、Canvas重排和旧滑杆入口屏蔽状态",
-      "不修改正文高度、选字、拖选、滚动、放大镜、翻译、钉屏、指针、OCR与顶部结果预览"
+      "设置页新增拾字分类，使用单选框切换百度翻译与有道翻译，并只显示当前引擎对应的配置字段",
+      "百度APPID/密钥与有道AppKey/应用密钥分别作为独立配置键写入ToolHub结构化SQLite",
+      "密钥输入默认遮罩并提供显示/隐藏按钮，切换引擎不会清空另一平台已输入或已保存的凭据",
+      "测试翻译配置使用当前未保存输入，固定测试文本为ToolHub翻译测试，并通过ToolHub自动提醒返回结果",
+      "拾字运行时每次翻译读取已保存配置快照，停止读取ShortX旧翻译引擎、应用ID和应用秘钥局部变量",
+      "保存后无需重启ToolHub即可生效，日志和提醒不输出完整ID、密钥、签名或请求参数"
     ],
     "date": "2026-07-17",
-    "title": "修复拾字字号菜单挤压布局"
+    "title": "新增拾字翻译引擎与凭据设置"
   },
   "schema": 4,
-  "version": 20260717112406
+  "version": 20260717121857
 }

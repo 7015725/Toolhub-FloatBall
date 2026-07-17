@@ -1,4 +1,4 @@
-// @version 1.1.16
+// @version 1.1.17
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -228,6 +228,13 @@ var ConfigValidator = {
 
     // 内容查看器配置
     CONTENT_MAX_ROWS: { type: "int", min: 5, max: 100, default: 20 },
+
+    // 拾字翻译配置（通过 ToolHub 设置页保存到结构化 SQLite）
+    PICKWORD_TRANSLATE_ENGINE: { type: "enum", values: ["baidu", "youdao"], default: "baidu" },
+    PICKWORD_BAIDU_APP_ID: { type: "string", default: "" },
+    PICKWORD_BAIDU_APP_SECRET: { type: "string", default: "" },
+    PICKWORD_YOUDAO_APP_KEY: { type: "string", default: "" },
+    PICKWORD_YOUDAO_APP_SECRET: { type: "string", default: "" },
 
     // ========== 以下配置在 Schema 中但原 ConfigValidator 中缺失 ==========
     // 图标文件配置
@@ -911,6 +918,11 @@ var ConfigManager = {
         POINTER_AREA_MIN_HEIGHT_DP: 20,
         POINTER_AREA_MIN_AREA_DP2: 1200,
         POINTER_AREA_MIN_MOVE_DP: 24,
+        PICKWORD_TRANSLATE_ENGINE: "baidu",
+        PICKWORD_BAIDU_APP_ID: "",
+        PICKWORD_BAIDU_APP_SECRET: "",
+        PICKWORD_YOUDAO_APP_KEY: "",
+        PICKWORD_YOUDAO_APP_SECRET: "",
         PANEL_WIDTH_PERCENT: 90,
         PANEL_AUTO_MAX_COLS: 6,
         PANEL_MIN_CARD_WIDTH_DP: 92,
@@ -982,6 +994,13 @@ var ConfigManager = {
         { key: "POINTER_FRAME_TEXT_HOVER_HEX", name: "文字悬停边框颜色", desc: "检测到文字、尚未达到取字时间时的边框颜色", type: "ball_color" },
         { key: "POINTER_FRAME_TEXT_READY_HEX", name: "取字/框选就绪边框颜色", desc: "达到取字或框选悬停时间后的文字边框颜色", type: "ball_color" },
         { key: "POINTER_FRAME_AREA_HEX", name: "框选区域边框颜色", desc: "拖动框选区域时的边框和半透明填充颜色", type: "ball_color" },
+
+        { type: "section", name: "拾字" },
+        { key: "PICKWORD_TRANSLATE_ENGINE", name: "翻译配置", type: "pickword_translate_settings" },
+        { key: "PICKWORD_BAIDU_APP_ID", name: "百度 APPID", type: "hidden" },
+        { key: "PICKWORD_BAIDU_APP_SECRET", name: "百度密钥", type: "hidden" },
+        { key: "PICKWORD_YOUDAO_APP_KEY", name: "有道 AppKey", type: "hidden" },
+        { key: "PICKWORD_YOUDAO_APP_SECRET", name: "有道应用密钥", type: "hidden" },
 
         { type: "section", name: "面板布局" },
         {
@@ -1125,7 +1144,13 @@ var ConfigManager = {
             sStr.indexOf("POINTER_AREA_MIN_WIDTH_DP") < 0 ||
             sStr.indexOf("POINTER_AREA_MIN_HEIGHT_DP") < 0 ||
             sStr.indexOf("POINTER_AREA_MIN_AREA_DP2") < 0 ||
-            sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0
+            sStr.indexOf("POINTER_AREA_MIN_MOVE_DP") < 0 ||
+            sStr.indexOf("PICKWORD_TRANSLATE_ENGINE") < 0 ||
+            sStr.indexOf("PICKWORD_BAIDU_APP_ID") < 0 ||
+            sStr.indexOf("PICKWORD_BAIDU_APP_SECRET") < 0 ||
+            sStr.indexOf("PICKWORD_YOUDAO_APP_KEY") < 0 ||
+            sStr.indexOf("PICKWORD_YOUDAO_APP_SECRET") < 0 ||
+            sStr.indexOf("pickword_translate_settings") < 0
         ) {
             needReset = true;
         }
@@ -1210,7 +1235,12 @@ var ConfigManager = {
                 schemaItemDiffers("POINTER_COLOR_AREA_HEX", ["name", "desc", "type"]) ||
                 schemaItemDiffers("POINTER_FRAME_TEXT_HOVER_HEX", ["name", "desc", "type"]) ||
                 schemaItemDiffers("POINTER_FRAME_TEXT_READY_HEX", ["name", "desc", "type"]) ||
-                schemaItemDiffers("POINTER_FRAME_AREA_HEX", ["name", "desc", "type"])) {
+                schemaItemDiffers("POINTER_FRAME_AREA_HEX", ["name", "desc", "type"]) ||
+                schemaItemDiffers("PICKWORD_TRANSLATE_ENGINE", ["name", "type"]) ||
+                schemaItemDiffers("PICKWORD_BAIDU_APP_ID", ["name", "type"]) ||
+                schemaItemDiffers("PICKWORD_BAIDU_APP_SECRET", ["name", "type"]) ||
+                schemaItemDiffers("PICKWORD_YOUDAO_APP_KEY", ["name", "type"]) ||
+                schemaItemDiffers("PICKWORD_YOUDAO_APP_SECRET", ["name", "type"])) {
                 needReset = true;
             }
         }

@@ -1,4 +1,4 @@
-// @version 1.1.8
+// @version 1.1.9
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -52,6 +52,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
   return [
     { key: "ball", title: "悬浮球", desc: "大小、图标、颜色、位置和面板距离", sections: ["悬浮球"] },
     { key: "pointer", title: "指针", desc: "大小、贴边、悬停、取字保护、OCR 阈值和颜色", sections: ["指针"] },
+    { key: "pickword", title: "拾字", desc: "百度与有道翻译引擎、应用 ID 和密钥", sections: ["拾字"] },
     { key: "panel", title: "面板", desc: "排列、文字、位置和吸边行为", sections: ["面板布局", "面板文字", "吸边与位置"] },
     { key: "theme", title: "外观", desc: "系统动态配色与背景透明度", sections: ["外观"] },
     { key: "motion", title: "动作与手势", desc: "点击、长按、动画和贴边回弹", sections: ["动画", "动作与手势"] },
@@ -307,6 +308,7 @@ FloatBallAppWM.prototype.getSettingsHomeIcon = function(title) {
   if (t.indexOf("结构") >= 0 || t.indexOf("配置") >= 0) return "◇";
   if (t.indexOf("悬浮") >= 0 || t.indexOf("球") >= 0) return "○";
   if (t.indexOf("面板") >= 0) return "⌂";
+  if (t.indexOf("拾字") >= 0 || t.indexOf("翻译") >= 0) return "文";
   if (t.indexOf("换装") >= 0 || t.indexOf("装饰") >= 0 || t.indexOf("外观") >= 0) return "◎";
   if (t.indexOf("动作") >= 0 || t.indexOf("手势") >= 0) return "↯";
   if (t.indexOf("记录") >= 0 || t.indexOf("日志") >= 0) return "☰";

@@ -134,6 +134,7 @@ jobs:
             python3 scripts/verify_button_editor_direct_save.py
             python3 scripts/verify_button_shortcut_thread_affinity.py
             python3 scripts/verify_schema_validator.py
+            python3 scripts/verify_pickword_translate_settings.py
             python3 scripts/verify_entry_lifecycle.py
             python3 scripts/verify_atomic_update.py
             python3 scripts/verify_release_transaction.py

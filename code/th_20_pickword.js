@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.0.10
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -14,10 +14,6 @@
     // 拾字 - DIY 自定义配置区
     // ==========================================
     var DIY_CONFIG = {
-        // 翻译引擎选择：1 = 百度翻译，2 = 有道翻译。
-        // 也可在 ShortX 局部变量「翻译引擎」里填 1 或 2 覆盖这里。
-        TRANSLATE_API: typeof localVarOf$翻译引擎 !== 'undefined' ? localVarOf$翻译引擎 : 1,
-
         // ===== 新增：Canvas 主文本区字间距 =====
         // 半角字符字间距比例。1.00 = 默认；1.5 = 英文/数字/半角符号按 1.5 倍字符步进绘制。
         // 只作用于主文本加载区；预览区、钉屏 UI、复制/翻译内容均保持原文。
@@ -346,11 +342,39 @@
     var isPartialTextLoaded = false;
     var originalFullText = "";
 
-    // 翻译 API 统一鉴权配置读取
-    var API_APP_ID = typeof localVarOf$应用ID !== 'undefined' ? localVarOf$应用ID : "";
-    var API_APP_SECRET = typeof localVarOf$应用秘钥 !== 'undefined' ? localVarOf$应用秘钥 : "";
+    // 翻译 API 配置只读取 ToolHub 设置；不再读取 ShortX 旧局部变量。
     var BD_API_URL = "https://fanyi-api.baidu.com/api/trans/vip/translate";
     var YD_API_URL = "https://openapi.youdao.com/api";
+
+    function normalizePickwordTranslateEngine20(value) {
+        return String(value || "baidu") === "youdao" ? "youdao" : "baidu";
+    }
+
+    function trimPickwordTranslateValue20(value) {
+        try { return String(value == null ? "" : value).replace(/^\s+|\s+$/g, ""); } catch (e) { return ""; }
+    }
+
+    function getPickwordTranslateConfig20(appObj, overrideConfig) {
+        var cfg = null;
+        try {
+            if (overrideConfig && typeof overrideConfig === "object") cfg = overrideConfig;
+            else if (appObj && appObj.config) cfg = appObj.config;
+        } catch (eCfg) { cfg = null; }
+        if (!cfg) cfg = {};
+        var engine = normalizePickwordTranslateEngine20(cfg.PICKWORD_TRANSLATE_ENGINE);
+        var appId = engine === "youdao"
+            ? trimPickwordTranslateValue20(cfg.PICKWORD_YOUDAO_APP_KEY)
+            : trimPickwordTranslateValue20(cfg.PICKWORD_BAIDU_APP_ID);
+        var secret = engine === "youdao"
+            ? trimPickwordTranslateValue20(cfg.PICKWORD_YOUDAO_APP_SECRET)
+            : trimPickwordTranslateValue20(cfg.PICKWORD_BAIDU_APP_SECRET);
+        return {
+            engine: engine,
+            label: engine === "youdao" ? "有道翻译" : "百度翻译",
+            appId: appId,
+            secret: secret
+        };
+    }
 
     // ==========================================
     // 翻译引擎核心辅助函数
@@ -392,21 +416,21 @@
         return q.substring(0, 10) + len + q.substring(len - 10, len);
     }
 
-    function buildBaiduParams(q, fromLang, toLang) {
+    function buildBaiduParams(auth, q, fromLang, toLang) {
         var salt = java.util.UUID.randomUUID().toString();
-        var signStr = API_APP_ID + q + salt + API_APP_SECRET;
+        var signStr = auth.appId + q + salt + auth.secret;
         var sign = md5(signStr);
-        return { q: q, from: fromLang, to: toLang, appid: API_APP_ID, salt: salt, sign: sign };
+        return { q: q, from: fromLang, to: toLang, appid: auth.appId, salt: salt, sign: sign };
     }
 
-    function buildYoudaoParams(q, fromLang, toLang) {
+    function buildYoudaoParams(auth, q, fromLang, toLang) {
         var salt = java.util.UUID.randomUUID().toString();
         var curtime = String(Math.floor(Date.now() / 1000));
         var input = getYoudaoInput(q);
-        var signStr = API_APP_ID + input + salt + curtime + API_APP_SECRET;
+        var signStr = auth.appId + input + salt + curtime + auth.secret;
         var sign = sha256(signStr);
         return {
-            q: q, from: fromLang, to: toLang, appKey: API_APP_ID,
+            q: q, from: fromLang, to: toLang, appKey: auth.appId,
             salt: salt, sign: sign, signType: "v3", curtime: curtime
         };
     }
@@ -4013,73 +4037,84 @@
             return String(e);
         },
 
-        translateTextSync: function(text) {
-            var apiType = DIY_CONFIG.TRANSLATE_API;
-            var isCh = this.isChinese(text);
+        translateTextSync: function(text, authConfig) {
+            var auth = authConfig || getPickwordTranslateConfig20(toolhubAppRef, null);
+            if (!auth || !auth.appId || !auth.secret) {
+                throw this.createTranslateError("CONFIG", "请先在 ToolHub 设置页配置" + (auth && auth.label ? auth.label : "翻译接口"));
+            }
+            var isCh = this.isChinese(String(text || ""));
             var source = "auto";
             var target = "";
             var params = null;
             var reqUrl = "";
-            if (apiType === 2) {
+            if (auth.engine === "youdao") {
                 target = isCh ? "en" : "zh-CHS";
-                params = buildYoudaoParams(text, source, target);
+                params = buildYoudaoParams(auth, text, source, target);
                 reqUrl = YD_API_URL;
             } else {
                 target = isCh ? "en" : "zh";
-                params = buildBaiduParams(text, source, target);
+                params = buildBaiduParams(auth, text, source, target);
                 reqUrl = BD_API_URL;
             }
 
-            var formBody = urlEncodeForm(params);
-            var url = new java.net.URL(reqUrl);
-            var conn = url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setDoOutput(true);
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(30000);
+            var conn = null;
+            var os = null;
+            var reader = null;
+            try {
+                var formBody = urlEncodeForm(params);
+                var url = new java.net.URL(reqUrl);
+                conn = url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                conn.setDoOutput(true);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(30000);
 
-            var os = conn.getOutputStream();
-            os.write(new java.lang.String(formBody).getBytes("UTF-8"));
-            os.flush();
-            os.close();
+                os = conn.getOutputStream();
+                os.write(new java.lang.String(formBody).getBytes("UTF-8"));
+                os.flush();
+                os.close();
+                os = null;
 
-            var responseCode = conn.getResponseCode();
-            var inputStream = responseCode === 200 ? conn.getInputStream() : conn.getErrorStream();
-            var reader = new java.io.BufferedReader(new java.io.InputStreamReader(inputStream, "UTF-8"));
-            var line;
-            var response = "";
-            while ((line = reader.readLine()) != null) {
-                response += line;
-            }
-            reader.close();
-            if (responseCode !== 200) throw this.createTranslateError("HTTP", "HTTP " + responseCode);
+                var responseCode = conn.getResponseCode();
+                var inputStream = responseCode === 200 ? conn.getInputStream() : conn.getErrorStream();
+                reader = new java.io.BufferedReader(new java.io.InputStreamReader(inputStream, "UTF-8"));
+                var line;
+                var response = "";
+                while ((line = reader.readLine()) != null) response += line;
+                reader.close();
+                reader = null;
+                if (responseCode !== 200) throw this.createTranslateError("HTTP", "HTTP " + responseCode);
 
-            var json = JSON.parse(response);
-            var translatedText = "";
-            if (apiType === 2) {
-                if (json.errorCode && json.errorCode !== "0") throw this.createTranslateError(json.errorCode, "错误码 " + json.errorCode);
-                if (json.translation && json.translation.length > 0) translatedText = json.translation[0];
-            } else {
-                if (json.error_code !== undefined && json.error_code != 0) throw this.createTranslateError(json.error_code, "错误码 " + json.error_code);
-                if (json.trans_result && json.trans_result.length > 0) {
-                    var parts = [];
-                    for (var ti = 0; ti < json.trans_result.length; ti++) {
-                        parts.push(json.trans_result[ti].dst);
+                var json = JSON.parse(response);
+                var translatedText = "";
+                if (auth.engine === "youdao") {
+                    if (json.errorCode && String(json.errorCode) !== "0") throw this.createTranslateError(json.errorCode, "错误码 " + json.errorCode);
+                    if (json.translation && json.translation.length > 0) translatedText = json.translation[0];
+                } else {
+                    if (json.error_code !== undefined && Number(json.error_code) !== 0) throw this.createTranslateError(json.error_code, "错误码 " + json.error_code);
+                    if (json.trans_result && json.trans_result.length > 0) {
+                        var parts = [];
+                        for (var ti = 0; ti < json.trans_result.length; ti++) parts.push(json.trans_result[ti].dst);
+                        translatedText = parts.join("\n");
                     }
-                    translatedText = parts.join("\n");
                 }
+                if (!translatedText) throw this.createTranslateError("EMPTY", "无效响应");
+                return String(translatedText);
+            } finally {
+                try { if (reader) reader.close(); } catch (eReader) {}
+                try { if (os) os.close(); } catch (eOutput) {}
+                try { if (conn && conn.disconnect) conn.disconnect(); } catch (eDisconnect) {}
             }
-            if (!translatedText) throw this.createTranslateError("EMPTY", "无效响应");
-            return translatedText;
         },
 
-        translateTextSyncWithRetry: function(text) {
+        translateTextSyncWithRetry: function(text, authConfig) {
+            var auth = authConfig || getPickwordTranslateConfig20(toolhubAppRef, null);
             var retryDelays = [1200, 2500, 5000];
             var lastError = null;
             for (var attempt = 0; attempt <= retryDelays.length; attempt++) {
                 try {
-                    return this.translateTextSync(text);
+                    return this.translateTextSync(text, auth);
                 } catch (e) {
                     lastError = e;
                     var code = e && e.code ? String(e.code) : "";
@@ -4522,8 +4557,11 @@
             try {
                 if (selectedIndices.length === 0) { showToast("请先选择文字");
                 return; }
-                if (!API_APP_ID || !API_APP_SECRET) { showToast("请先配置翻译接口的 APPID 和 秘钥");
-                return; }
+            var translateAuth = getPickwordTranslateConfig20(toolhubAppRef, null);
+            if (!translateAuth.appId || !translateAuth.secret) {
+                showToast("请先在 ToolHub 设置页配置" + translateAuth.label);
+                return;
+            }
                 if (isTranslating) { showToast("正在翻译中，请稍候...");
                 return; }
 
@@ -4547,7 +4585,7 @@
                     new java.lang.Thread(new java.lang.Runnable({
                         run: function() {
                             try {
-                                var translatedText = self.translateTextSyncWithRetry(previewRange.textToTranslate);
+                                var translatedText = self.translateTextSyncWithRetry(previewRange.textToTranslate, translateAuth);
                                 translatedText = self.buildTranslatedRangeText(previewRange.translateParts, translatedText);
                                 translatedText = String(translatedText == null ? "" : translatedText) + String(previewRange.structuralSuffix || "");
                                 self.replaceSelectedRanges([{
@@ -4589,7 +4627,7 @@
                                 var translatedText = ranges[i].text;
                                 if (ranges[i].textToTranslate.length > 0) {
                                     if (translatedCount > 0) java.lang.Thread.sleep(1200);
-                                    translatedText = self.translateTextSyncWithRetry(ranges[i].textToTranslate);
+                                    translatedText = self.translateTextSyncWithRetry(ranges[i].textToTranslate, translateAuth);
                                     translatedText = self.buildTranslatedRangeText(ranges[i].translateParts, translatedText);
                                     translatedCount++;
                                 }
@@ -4807,6 +4845,50 @@
                         self.state.pickword.lastDisposeReason = String(reason || "");
                     }
                 } catch (eStateDispose) {}
+                return true;
+            };
+
+
+
+            proto.testPickwordTranslateConfiguration = function(configSnapshot, callback) {
+                var self = this;
+                var auth = getPickwordTranslateConfig20(this, configSnapshot || {});
+                var testText = "ToolHub 翻译测试";
+                var done = typeof callback === "function" ? callback : null;
+                if (!auth.appId || !auth.secret) {
+                    try { if (this.setInlineNotice) this.setInlineNotice("翻译配置不可用\n" + auth.label + " · 请填写应用 ID 和密钥", "error"); } catch(eNotice0) {}
+                    if (done) done({ ok: false, code: "CONFIG" });
+                    return false;
+                }
+                try { if (this.setInlineNotice) this.setInlineNotice("正在测试" + auth.label + "…", "info"); } catch(eStartNotice) {}
+                var worker = new java.lang.Thread(new java.lang.Runnable({
+                    run: function() {
+                        var result = { ok: false, engine: auth.engine, label: auth.label, text: "", code: "", error: "" };
+                        try {
+                            result.text = String(拾字Floaty.translateTextSync(testText, auth) || "");
+                            result.ok = result.text.length > 0;
+                            if (!result.ok) result.error = "返回结果为空";
+                        } catch(eTest) {
+                            result.code = eTest && eTest.code ? String(eTest.code) : "";
+                            result.error = 拾字Floaty.getTranslateErrorMessage(eTest);
+                        }
+                        mainHandler.post(new java.lang.Runnable({
+                            run: function() {
+                                try {
+                                    if (result.ok) {
+                                        var displayText = result.text.length > 80 ? result.text.substring(0, 80) + "…" : result.text;
+                                        if (self.setInlineNotice) self.setInlineNotice("翻译配置可用\n" + result.label + " · " + displayText, "ok");
+                                    } else {
+                                        var errorText = result.error || (result.code ? ("错误码 " + result.code) : "请求失败，请检查应用 ID、密钥和网络");
+                                        if (self.setInlineNotice) self.setInlineNotice("翻译配置不可用\n" + result.label + " · " + errorText, "error");
+                                    }
+                                } catch(eNotice) {}
+                                try { if (done) done(result); } catch(eDone) {}
+                            }
+                        }));
+                    }
+                }), "ToolHub-Pickword-Translate-Test");
+                worker.start();
                 return true;
             };
 
