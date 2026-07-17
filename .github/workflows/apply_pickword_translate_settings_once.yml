@@ -8,6 +8,8 @@ on:
       - opened
       - reopened
       - synchronize
+    paths-ignore:
+      - updates/pickword-translate-patch-error.txt
   workflow_dispatch:
 
 permissions:
@@ -31,7 +33,25 @@ jobs:
           python-version: '3.x'
 
       - name: Apply translation settings patch
-        run: python3 scripts/apply_pickword_translate_settings_once.py
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          set +e
+          python3 scripts/apply_pickword_translate_settings_once.py > /tmp/pickword-translate-patch.log 2>&1
+          status=$?
+          cat /tmp/pickword-translate-patch.log
+          if [ "$status" -ne 0 ]; then
+            cp /tmp/pickword-translate-patch.log updates/pickword-translate-patch-error.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add updates/pickword-translate-patch-error.txt
+            git commit -m "记录拾字翻译补丁失败原因"
+            if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+              git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            fi
+            git push origin HEAD:fix/pickword-translate-settings-20260717
+            exit "$status"
+          fi
 
       - name: Verify changed module versions
         run: |
@@ -58,6 +78,7 @@ jobs:
         run: |
           rm -f scripts/apply_pickword_translate_settings_once.py
           rm -f .github/workflows/apply_pickword_translate_settings_once.yml
+          rm -f updates/pickword-translate-patch-error.txt
 
       - name: Check final diff
         run: |
