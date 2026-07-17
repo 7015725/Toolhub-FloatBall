@@ -1,4 +1,4 @@
-// @version 1.0.11
+// @version 1.0.12
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -198,8 +198,6 @@
     var previewTextView = null;
     var previewTextOverride = null;
     var previewSelectionSignature = "";
-    var seekBar = null;
-    var fontSizeLabel = null;
     var scrollView = null;
     var countLabelView = null;
     var copyActionBtn = null;
@@ -207,8 +205,6 @@
     var selectAllActionBtn = null;
     var clearActionBtn = null;
     var pinActionBtn = null;
-    var loadedRemoveSpaceBtn = null;
-    var loadedRemoveNewlineBtn = null;
     var previewRemoveSpaceBtn = null;
     var previewRemoveNewlineBtn = null;
     var previewEditBtn = null;
@@ -222,7 +218,6 @@
     var pinBatchLoadRunnable = null;
     var pinLoadToken = 0;
     var pinnedText = "";
-    var titleBarRefs = { normalMode: null, settingMode: null };
     var toolhubAppRef = null;
     var previewBoxView = null;
     var copyAllActionBtn = null;
@@ -1376,7 +1371,6 @@
             styleReplicaButton20(translateActionBtn, "outline");
             styleReplicaButton20(selectAllActionBtn, "outline");
             styleReplicaButton20(clearActionBtn, "outline");
-            if (fontSizeLabel) safeTextColor(fontSizeLabel, replicaAccent20());
             if (pinLayout) pinLayout.setBackground(createRoundRectDrawable(Colors.surface, isTablet ? 16 : 14));
             if (pinTextView) safeTextColor(pinTextView, Colors.text);
             if (pinProgressView) safeTextColor(pinProgressView, Colors.textTertiary);
@@ -1435,115 +1429,6 @@
             var b = c & 255;
             paintObj.setARGB(a, r, g, b);
         } catch (e) {}
-    }
-
-    function createFontSizeCanvasSlider(owner) {
-        var maxProgress = MAX_FONT_SIZE - MIN_FONT_SIZE;
-        var state = {
-            progress: currentFontSize - MIN_FONT_SIZE,
-            dragging: false
-        };
-        var paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        var rect = new RectF();
-
-        function clampProgress(value) {
-            var p = Math.round(Number(value));
-            if (p < 0) p = 0;
-            if (p > maxProgress) p = maxProgress;
-            return p;
-        }
-
-        function progressFromX(viewObj, xValue) {
-            var w = viewObj.getWidth();
-            var pad = uiDp(18, 20);
-            var left = pad;
-            var right = Math.max(left + 1, w - pad);
-            var x = xValue;
-            if (x < left) x = left;
-            if (x > right) x = right;
-            return clampProgress(((x - left) * maxProgress) / (right - left));
-        }
-
-        function applyProgress(viewObj, progressValue, fromUser, saveNow) {
-            var p = clampProgress(progressValue);
-            state.progress = p;
-            try { viewObj.invalidate(); } catch (e0) {}
-            if (fromUser && owner) {
-                var size = MIN_FONT_SIZE + p;
-                owner.updateFontSize(size, true);
-                if (saveNow) saveFontSize(size);
-            }
-        }
-
-        var sliderView = new JavaAdapter(View, {
-            onDraw: function(canvas) {
-                try {
-                    var w = this.getWidth();
-                    var h = this.getHeight();
-                    var pad = uiDp(18, 20);
-                    var left = pad;
-                    var right = Math.max(left + 1, w - pad);
-                    var centerY = Math.round(h / 2);
-                    var trackH = uiDp(5, 6);
-                    var activeH = uiDp(7, 8);
-                    var radius = Math.round(trackH / 2);
-                    var activeRadius = Math.round(activeH / 2);
-                    var ratio = maxProgress <= 0 ? 0 : state.progress / maxProgress;
-                    var thumbX = Math.round(left + (right - left) * ratio);
-                    var thumbR = uiDp(10, 11);
-
-                    rect.set(left, centerY - Math.round(trackH / 2), right, centerY + Math.round(trackH / 2));
-                    setPaintColor(paint, Colors.surfaceVariant, isDark ? 155 : 185);
-                    canvas.drawRoundRect(rect, radius, radius, paint);
-
-                    rect.set(left, centerY - Math.round(activeH / 2), thumbX, centerY + Math.round(activeH / 2));
-                    setPaintColor(paint, Colors.primary, 255);
-                    canvas.drawRoundRect(rect, activeRadius, activeRadius, paint);
-
-                    setPaintColor(paint, Colors.primary, isDark ? 95 : 80);
-                    canvas.drawCircle(thumbX, centerY, thumbR + uiDp(4, 4), paint);
-                    setPaintColor(paint, Colors.primary, 255);
-                    canvas.drawCircle(thumbX, centerY, thumbR, paint);
-                    setPaintColor(paint, Colors.bg, 245);
-                    canvas.drawCircle(thumbX, centerY, thumbR - uiDp(6, 6), paint);
-                } catch (eDraw) {}
-            },
-            onTouchEvent: function(event) {
-                try {
-                    var action = event.getActionMasked ? event.getActionMasked() : event.getAction();
-                    if (action === MotionEvent.ACTION_DOWN) {
-                        state.dragging = true;
-                        try { this.getParent().requestDisallowInterceptTouchEvent(true); } catch (e0) {}
-                        hapticFeedback(this);
-                        applyProgress(this, progressFromX(this, event.getX()), true, false);
-                        return true;
-                    }
-                    if (action === MotionEvent.ACTION_MOVE && state.dragging) {
-                        applyProgress(this, progressFromX(this, event.getX()), true, false);
-                        return true;
-                    }
-                    if (action === MotionEvent.ACTION_UP || action === MotionEvent.ACTION_CANCEL) {
-                        if (state.dragging) {
-                            applyProgress(this, progressFromX(this, event.getX()), true, action === MotionEvent.ACTION_UP);
-                        }
-                        state.dragging = false;
-                        try { this.getParent().requestDisallowInterceptTouchEvent(false); } catch (e1) {}
-                        return true;
-                    }
-                } catch (eTouch) {}
-                return true;
-            }
-        }, appContext);
-
-        sliderView.setMinimumHeight(uiDp(32, 36));
-        sliderView.setClickable(true);
-        try { sliderView.setLayerType(View.LAYER_TYPE_SOFTWARE, null); } catch (eLayer) {}
-
-        return {
-            view: sliderView,
-            setProgress: function(progressValue) { applyProgress(sliderView, progressValue, false, false); },
-            getProgress: function() { return state.progress; }
-        };
     }
 
     function showToast(msg) {
@@ -1913,8 +1798,6 @@
                 var self = this;
                 runUi(function() {
                     try {
-                        if (seekBar) seekBar.setProgress(currentFontSize - MIN_FONT_SIZE);
-                        if (fontSizeLabel) fontSizeLabel.setText(currentFontSize + "sp");
                         updateFontSizeSelector20();
                         if (textCanvasControl) textCanvasControl.setTextSize(currentFontSize);
                         self.scheduleInitialTextLoad();
@@ -2025,7 +1908,6 @@
                         titleAccentView = null;
                         resultDividerView = null;
                         closeActionView = null;
-                        titleBarRefs = { normalMode: null, settingMode: null };
                     fontSizeDropdownView = null;
                     fontSizeDropdownCardView = null;
                     fontSizePopupWindow = null;
@@ -2386,63 +2268,7 @@
             closeActionView.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.hide(); } }));
             applyButtonAnimation(closeActionView);
 
-            var settingMode = new LinearLayout(appContext);
-            settingMode.setOrientation(LinearLayout.HORIZONTAL);
-            settingMode.setGravity(Gravity.CENTER_VERTICAL);
-            settingMode.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-            settingMode.setVisibility(View.GONE);
-
-            var settingTitle = new TextView(appContext);
-            settingTitle.setText("字号");
-            settingTitle.setTextSize(uiTextSize(13, 15));
-            settingTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-            safeTextColor(settingTitle, Colors.text);
-            settingTitle.setPadding(0, 0, uiDp(10, 14), 0);
-            settingMode.addView(settingTitle);
-
-            seekBar = createFontSizeCanvasSlider(self);
-            seekBar.setProgress(currentFontSize - MIN_FONT_SIZE);
-            var sliderLp = new LinearLayout.LayoutParams(0, uiDp(36, 42), 1);
-            seekBar.view.setLayoutParams(sliderLp);
-            settingMode.addView(seekBar.view);
-
-            fontSizeLabel = new TextView(appContext);
-            fontSizeLabel.setText(currentFontSize + "sp");
-            safeTextColor(fontSizeLabel, replicaAccent20());
-            fontSizeLabel.setTextSize(uiTextSize(11, 12));
-            fontSizeLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-            fontSizeLabel.setGravity(Gravity.CENTER);
-            fontSizeLabel.setPadding(uiDp(8, 10), 0, uiDp(8, 10), 0);
-            var labelLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40));
-            labelLp.setMargins(uiDp(8, 10), 0, uiDp(4, 6), 0);
-            settingMode.addView(fontSizeLabel, labelLp);
-
-            loadedRemoveSpaceBtn = self.createSettingChipBtn("去空格", function() { self.removeLoadedSpaces(); });
-            loadedRemoveNewlineBtn = self.createSettingChipBtn("去换行", function() { self.removeLoadedNewlines(); });
-            settingMode.addView(loadedRemoveSpaceBtn);
-            settingMode.addView(loadedRemoveNewlineBtn);
-
-            var confirmBtn = new TextView(appContext);
-            confirmBtn.setText("完成");
-            safeTextColor(confirmBtn, replicaAccent20());
-            confirmBtn.setTextSize(uiTextSize(11, 12));
-            confirmBtn.setGravity(Gravity.CENTER);
-            confirmBtn.setPadding(uiDp(9, 12), 0, uiDp(6, 8), 0);
-            confirmBtn.setBackground(createPressableDrawable(Color.TRANSPARENT, alphaColor20(replicaAccent20(), 32), isTablet ? 10 : 8));
-            var confirmLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40));
-            settingMode.addView(confirmBtn, confirmLp);
-            confirmBtn.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
-                hapticFeedback(v);
-                if (seekBar) saveFontSize(MIN_FONT_SIZE + seekBar.getProgress());
-                updateFontSizeSelector20();
-                self.toggleFontSizePanel();
-            } }));
-            applyButtonAnimation(confirmBtn);
-
             titleBar.addView(normalMode);
-            titleBar.addView(settingMode);
-            titleBarRefs.normalMode = normalMode;
-            titleBarRefs.settingMode = settingMode;
 
             var touchStartX = 0, touchStartY = 0, layoutStartX = 0, layoutStartY = 0, isDraggingWindow = false;
             titleBar.setOnTouchListener(new View.OnTouchListener({ onTouch: function(v, event) {
@@ -2517,9 +2343,6 @@
                     fontSizePopupWindow.dismiss();
                     return false;
                 }
-                if (titleBarRefs.settingMode) titleBarRefs.settingMode.setVisibility(View.GONE);
-                if (titleBarRefs.normalMode) titleBarRefs.normalMode.setVisibility(View.VISIBLE);
-
                 var popupWidth = uiDp(136, 164);
                 var content = this.createFontSizeDropdown();
                 refreshFontSizeDropdown20();
@@ -2561,24 +2384,8 @@
             return false;
         },
 
-        toggleFontSizePanel: function() {
-            // 旧滑杆式字号入口暂时屏蔽，代码保留供后续独立清理。
-            return false;
-            if (!titleBarRefs.normalMode) return;
-            var isSetting = titleBarRefs.settingMode.getVisibility() === View.VISIBLE;
-            if (isSetting) {
-                titleBarRefs.normalMode.setVisibility(View.VISIBLE);
-                titleBarRefs.settingMode.setVisibility(View.GONE);
-            } else {
-                titleBarRefs.normalMode.setVisibility(View.GONE);
-                titleBarRefs.settingMode.setVisibility(View.VISIBLE);
-                seekBar.setProgress(currentFontSize - MIN_FONT_SIZE); fontSizeLabel.setText(currentFontSize + "sp");
-            }
-        },
-
         updateFontSize: function(size, skipAdjust) {
             currentFontSize = size;
-            if (fontSizeLabel) fontSizeLabel.setText(size + "sp");
             updateFontSizeSelector20();
             if (textCanvasControl) {
                 textCanvasControl.setTextSize(size);
@@ -2695,23 +2502,6 @@
 
         createMiniHeaderBtn: function(textValue, callback) {
             return createReplicaButton20(textValue, "cleanup", "inline", callback, null);
-        },
-
-        createSettingChipBtn: function(textValue, callback) {
-            var btn = new TextView(appContext);
-            btn.setText(textValue);
-            safeTextColor(btn, Colors.textSecondary);
-            btn.setTextSize(uiTextSize(10, 11));
-            btn.setGravity(Gravity.CENTER);
-            btn.setSingleLine(true);
-            btn.setPadding(uiDp(7, 9), 0, uiDp(7, 9), 0);
-            btn.setBackground(createPressableDrawable(Color.TRANSPARENT, alphaColor20(Colors.outline, isDark ? 46 : 28), isTablet ? 9 : 7));
-            var params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40));
-            params.setMargins(uiDp(3, 4), 0, 0, 0);
-            btn.setLayoutParams(params);
-            btn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { callback(); } catch (e) { showToast("操作失败"); } } }));
-            applyButtonAnimation(btn);
-            return btn;
         },
 
         createFingerPreview: function() {
@@ -3411,8 +3201,6 @@
             try { previewSig = this.getPreviewSelectionSignature(); } catch (e0) { previewSig = ""; }
             var hasPreviewSelection = selectedIndices.length > 0;
             var hasLoadedText = fullText && fullText.length > 0;
-            this.updateCleanButtonView(loadedRemoveSpaceBtn, "loaded", "spaces", "去空格", hasLoadedText, false);
-            this.updateCleanButtonView(loadedRemoveNewlineBtn, "loaded", "newlines", "去换行", hasLoadedText, false);
             this.updateCleanButtonView(previewRemoveSpaceBtn, "preview", "spaces", "去空格", hasPreviewSelection, true, previewSig);
             this.updateCleanButtonView(previewRemoveNewlineBtn, "preview", "newlines", "去换行", hasPreviewSelection, true, previewSig);
             if (previewEditBtn) {
@@ -4562,6 +4350,7 @@
                 var chooser = android.content.Intent.createChooser(sendIntent, "分享文字");
                 chooser.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
                 appContext.startActivity(chooser);
+                this.hide();
             } catch (eShare) {
                 showToast("分享失败: " + eShare.message);
             }
@@ -4817,7 +4606,6 @@
                     titleAccentView = null;
                     resultDividerView = null;
                     closeActionView = null;
-                    titleBarRefs = { normalMode: null, settingMode: null };
                     fontSizeDropdownView = null;
                     fontSizeDropdownCardView = null;
                     fontSizePopupWindow = null;
