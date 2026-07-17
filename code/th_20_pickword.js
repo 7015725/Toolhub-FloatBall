@@ -1,4 +1,4 @@
-// @version 1.0.10
+// @version 1.0.11
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -1264,11 +1264,19 @@
             try { callback(); } catch (eCallback) { showToast("操作失败"); }
         } }));
         if (longCallback) {
-            row.setOnLongClickListener(new View.OnLongClickListener({ onLongClick: function(v) {
-                hapticFeedback(v);
-                try { longCallback(); } catch (eLong) { showToast("操作失败"); }
-                return true;
-            } }));
+            row.setOnLongClickListener(new View.OnLongClickListener({
+                onLongClick: function(v) {
+                    hapticFeedback(v);
+                    try { longCallback(); } catch (eLong) { showToast("操作失败"); }
+                    return true;
+                },
+                // Android 14 / API 34 新增的 boolean 回调。Rhino 动态代理必须显式返回，
+                // 否则缺失方法会产生 null，并在 system_server 主线程转换 boolean 时崩溃。
+                // 当前监听器已主动执行 VIRTUAL_KEY 震动，因此禁止系统再追加默认长按震动。
+                onLongClickUseDefaultHapticFeedback: function(v) {
+                    return false;
+                }
+            }));
         }
         applyButtonAnimation(row);
         return row;
@@ -2660,10 +2668,16 @@
             previewTextView.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
                 if (selectedIndices.length > 0) { hapticFeedback(v); self.editPreviewText(); }
             } }));
-            previewTextView.setOnLongClickListener(new View.OnLongClickListener({ onLongClick: function(v) {
-                if (selectedIndices.length > 0) { hapticFeedback(v); self.removeSelectedSpaces(); return true; }
-                return false;
-            } }));
+            previewTextView.setOnLongClickListener(new View.OnLongClickListener({
+                onLongClick: function(v) {
+                    if (selectedIndices.length > 0) { hapticFeedback(v); self.removeSelectedSpaces(); return true; }
+                    return false;
+                },
+                // 与按钮长按保持同一 API 34 兼容策略；业务已自行提供触觉反馈。
+                onLongClickUseDefaultHapticFeedback: function(v) {
+                    return false;
+                }
+            }));
             previewBox.addView(previewTextView, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
             resultDividerView = createReplicaSeparator20(false);

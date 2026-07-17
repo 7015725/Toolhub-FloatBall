@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "historyVersion": 20260717121857,
-  "generatedAt": "2026-07-17T20:18:57+08:00",
+  "historyVersion": 20260717130840,
+  "generatedAt": "2026-07-17T21:08:40+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "fix-pickword-long-click-api34",
+      "type": "fix",
+      "title": "修复拾字长按导致系统重启",
+      "details": [
+        "为拾字预览文字和去重换行按钮的Rhino长按代理补齐Android 14新增的onLongClickUseDefaultHapticFeedback布尔回调",
+        "兼容回调固定返回false，保留现有VIRTUAL_KEY触觉反馈并避免系统追加默认LONG_PRESS造成双重震动",
+        "修复缺失接口方法返回null后无法转换为Java boolean、异常逃逸至system_server主线程并触发软重启的问题",
+        "保留预览文字点击编辑、长按去空格以及去重换行按钮点击清理换行、长按清理空格的原有行为",
+        "不修改翻译请求、翻译替换、选区状态、Canvas拖选、放大镜、WindowManager和设置页逻辑"
+      ],
+      "manifestVersion": 20260717130840,
+      "date": "2026-07-17",
+      "modules": [
+        {
+          "name": "th_20_pickword.js",
+          "from": "1.0.10",
+          "to": "1.0.11",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260714081104,
+        "to": 20260714081104
+      }
+    },
     {
       "schema": 1,
       "id": "feature-pickword-translate-settings",
