@@ -1,0 +1,112 @@
++    out2.sort(function(a, b) { return Number(b.createdAt || 0) - Number(a.createdAt || 0); });
++    return out2;
++  }
++
++  function listSavedImages22() {
++    return withDb22(function(db) {
++      var cursor = null;
++      var out = [];
++      try {
++        cursor = db.rawQuery("SELECT internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,deleted_at FROM toolhub_pickword_images WHERE saved_at>0 AND (saved_public_path<>'' OR saved_content_uri<>'') ORDER BY saved_at DESC", null);
++        while (cursor.moveToNext()) {
++          var row = {
++            kind: "saved",
++            internalPath: String(cursor.getString(0) || ""),
++            createdAt: Number(cursor.getLong(1) || 0),
++            source: String(cursor.getString(2) || ""),
++            width: Number(cursor.getLong(3) || 0),
++            height: Number(cursor.getLong(4) || 0),
++            fileSize: Number(cursor.getLong(5) || 0),
++            publicPath: String(cursor.getString(6) || ""),
++            contentUri: String(cursor.getString(7) || ""),
++            savedAt: Number(cursor.getLong(8) || 0),
++            internalDeleted: Number(cursor.getLong(9) || 0) > 0,
++            available: false,
++            internalAvailable: false
++          };
++          try { row.internalAvailable = isImageFile22(normalizeInternalFile22(row.internalPath)); } catch (eInternal) {}
++          try {
++            var safeUri = safeMediaUri22(row.contentUri);
++            if (safeUri && uriReadable22(safeUri)) row.available = true;
++          } catch (eUri) {}
++          if (!row.available && row.publicPath) {
++            try {
++              var publicFile = normalizePublicFile22(row.publicPath);
++              row.available = isImageFile22(publicFile);
++              if (row.available) row.fileSize = Number(publicFile.length() || row.fileSize || 0);
++            } catch (ePublic) {}
++          }
++          out.push(row);
++        }
++      } finally {
++        try { if (cursor) cursor.close(); } catch (eClose) {}
++      }
++      return out;
++    }, []);
++  }
++
++  function requireInternalImage22(rawPath) {
++    var file = normalizeInternalFile22(rawPath);
++    if (!isImageFile22(file)) throw new Error("内部截图不存在");
++    ensureTracked22(file, "screenshot_manager", Number(file.lastModified() || now22()));
++    return file;
++  }
++
++  function deleteInternalImage22(rawPath) {
++    var file = normalizeInternalFile22(rawPath);
++    var path = String(file.getCanonicalPath());
++    if (file.exists() && (!file.isFile() || !file.delete())) throw new Error("内部截图删除失败");
++    markImageDeleted22(path, now22());
++    return { ok: true, internalPath: path, deletedAt: now22() };
++  }
++
++  function prepareSavedUri22(appObj, internalPath) {
++    var row = loadSaved22(String(internalPath || ""));
++    if (!row) throw new Error("已保存记录不存在");
++    var safeUri = safeMediaUri22(row.contentUri);
++    if (safeUri && uriReadable22(safeUri)) {
++      return { ok: true, contentUri: safeUri, publicPath: row.publicPath || "", reused: true };
++    }
++    var publicFile = normalizePublicFile22(row.publicPath);
++    if (!isImageFile22(publicFile)) throw new Error("公共副本不可用");
++    var base = normalizePublicDir22(configuredPublicDir22(appObj), true);
++    var tempDir = new java.io.File(base, "ShareTemp");
++    if (!tempDir.exists() && !tempDir.mkdirs() && !tempDir.exists()) throw new Error("临时目录创建失败");
++    var expiresAt = now22() + 24 * 60 * 60 * 1000;
++    var result = insertMediaStore22(publicFile, tempDir, displayName22(publicFile, now22(), "ToolHub_View_"), "share_temp", expiresAt);
++    addExport22(String(internalPath || ""), "share_temp", result.publicPath, result.contentUri, result.createdAt, expiresAt);
++    return result;
++  }
++
++  function launchView22(result) {
++    if (!result || !result.contentUri) throw new Error("查看 URI 不可用");
++    var uri = android.net.Uri.parse(String(result.contentUri));
++    var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
++    intent.setDataAndType(uri, "image/*");
++    intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
++    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
++    context.startActivity(intent);
++    return true;
++  }
++
++  function deleteSavedImage22(internalPath) {
++    var row = loadSaved22(String(internalPath || ""));
++    if (!row) return { ok: true, missing: true, internalPath: String(internalPath || "") };
++    var safeUri = safeMediaUri22(row.contentUri);
++    var safePath = "";
++    if (row.publicPath) {
++      try { safePath = String(normalizePublicFile22(row.publicPath).getCanonicalPath()); } catch (ePath) { safePath = ""; }
++    }
++    if (!safeUri && !safePath) throw new Error("公共副本路径不安全");
++    var deleted = deleteContent22(safeUri, safePath);
++    if (!deleted) throw new Error("公共副本删除失败");
++    clearImageSaved22(String(internalPath || ""));
++    return { ok: true, internalPath: String(internalPath || ""), deletedAt: now22() };
++  }
++
+   function install22() {
+     try {
+       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
+       var proto = FloatBallAppWM.prototype;
+-      if (proto.__toolHubPickwordImageViewerInstalled === true) return true;
++      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.0") return true;
