@@ -16,7 +16,6 @@ ALLOWED_TYPES = {"feature", "fix", "optimize", "security"}
 GENERATED_FIELDS = ("date", "modules", "entry")
 TZ = timezone(timedelta(hours=8))
 
-
 def run_git(args, check=True):
     proc = subprocess.run(
         ["git"] + list(args),

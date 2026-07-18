@@ -1,4 +1,4 @@
-// @version 1.0.15
+// @version 1.0.16
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -226,6 +226,219 @@
     var resultDividerView = null;
     var closeActionView = null;
     var textAreaMinHeight = 0;
+
+
+    // =======================【拾字截图预览与原图页面】=======================
+    var currentPickwordMeta20 = null;
+    var pickwordImageController20 = null;
+    var pickwordContentHost20 = null;
+    var pickwordImagePage20 = null;
+    var pickwordImageWindowSnapshot20 = null;
+    var pickwordImageChildSnapshot20 = null;
+
+    function normalizePickwordImageMeta20(meta) {
+        if (!meta || typeof meta !== "object") return null;
+        var rawPath = "";
+        try { rawPath = String(meta.screenshotPath || "").replace(/^\s+|\s+$/g, ""); } catch (ePath) { rawPath = ""; }
+        if (!rawPath) return null;
+        try {
+            var target = new java.io.File(rawPath);
+            if (!target.exists() || !target.isFile() || target.length() <= 0) return null;
+            var base = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
+            if (!base) return null;
+            var root = new java.io.File(base, "ToolHub/screenshots").getCanonicalPath();
+            var canonical = target.getCanonicalPath();
+            if (canonical.indexOf(root + java.io.File.separator) !== 0) return null;
+            return {
+                internalPath: String(canonical),
+                available: true,
+                deleted: false,
+                source: String(meta.source || "pointer_ocr"),
+                previewId: String(meta.previewId || ""),
+                screenshotOk: meta.screenshotOk !== false,
+                allowEmptyText: meta.allowEmptyText === true,
+                imageOnly: meta.allowEmptyText === true,
+                ocrStatus: String(meta.ocrStatus || ""),
+                ocrError: String(meta.ocrError || ""),
+                createdAt: Number(meta.createdAt || 0),
+                rect: meta.rect || null
+            };
+        } catch (eNormalize) {
+            try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image meta rejected: " + String(eNormalize)); } catch (eLog) {}
+        }
+        return null;
+    }
+
+    function releasePickwordImageController20(reason) {
+        try {
+            if (pickwordImageController20 && typeof pickwordImageController20.release === "function") {
+                pickwordImageController20.release(String(reason || "release"));
+            }
+        } catch (eRelease) {}
+        pickwordImageController20 = null;
+        pickwordContentHost20 = null;
+        pickwordImagePage20 = null;
+        pickwordImageWindowSnapshot20 = null;
+        pickwordImageChildSnapshot20 = null;
+    }
+
+    function restorePickwordResultPage20(reason) {
+        try {
+            if (!mainLayout || !layoutParams || !windowManager) return false;
+            if (pickwordImageChildSnapshot20) {
+                for (var i = 0; i < pickwordImageChildSnapshot20.length; i++) {
+                    var one = pickwordImageChildSnapshot20[i];
+                    try { if (one && one.view) one.view.setVisibility(one.visibility); } catch (eVisibility) {}
+                }
+            }
+            if (pickwordImageWindowSnapshot20) {
+                layoutParams.width = pickwordImageWindowSnapshot20.width;
+                layoutParams.height = pickwordImageWindowSnapshot20.height;
+                layoutParams.x = pickwordImageWindowSnapshot20.x;
+                layoutParams.y = pickwordImageWindowSnapshot20.y;
+                layoutParams.gravity = pickwordImageWindowSnapshot20.gravity;
+                try { windowManager.updateViewLayout(mainLayout, layoutParams); } catch (eUpdate) {}
+            }
+            if (pickwordImagePage20) pickwordImagePage20.setVisibility(View.GONE);
+            if (pickwordImageController20 && typeof pickwordImageController20.back === "function") {
+                pickwordImageController20.back(String(reason || "back"));
+            }
+            pickwordImageWindowSnapshot20 = null;
+            pickwordImageChildSnapshot20 = null;
+            return true;
+        } catch (eRestore) {
+            try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image restore fail: " + String(eRestore)); } catch (eLog) {}
+        }
+        return false;
+    }
+
+    function openPickwordImagePage20() {
+        try {
+            if (!mainLayout || !layoutParams || !windowManager || !pickwordImagePage20) return false;
+            if (pickwordImagePage20.getVisibility() === View.VISIBLE) return true;
+            pickwordImageWindowSnapshot20 = {
+                width: layoutParams.width,
+                height: layoutParams.height,
+                x: layoutParams.x,
+                y: layoutParams.y,
+                gravity: layoutParams.gravity
+            };
+            pickwordImageChildSnapshot20 = [];
+            var count = mainLayout.getChildCount();
+            for (var i = 0; i < count; i++) {
+                var child = mainLayout.getChildAt(i);
+                pickwordImageChildSnapshot20.push({ view: child, visibility: child.getVisibility() });
+                child.setVisibility(child === pickwordImagePage20 ? View.VISIBLE : View.GONE);
+            }
+            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.height = LayoutParams.MATCH_PARENT;
+            layoutParams.x = 0;
+            layoutParams.y = 0;
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            windowManager.updateViewLayout(mainLayout, layoutParams);
+            if (pickwordImageController20 && typeof pickwordImageController20.open === "function") {
+                pickwordImageController20.open();
+            }
+            return true;
+        } catch (eOpen) {
+            try { safeLog(toolhubAppRef && toolhubAppRef.L, 'e', "pickword image open fail: " + String(eOpen)); } catch (eLog) {}
+            restorePickwordResultPage20("open_failed");
+        }
+        return false;
+    }
+
+    function applyPickwordImageOnlyActions20() {
+        var meta = currentPickwordMeta20;
+        if (!meta || meta.imageOnly !== true) return;
+        var controls = [copyActionBtn, translateActionBtn, selectAllActionBtn, clearActionBtn, pinActionBtn,
+            copyAllActionBtn, cleanupActionBtn, shareActionBtn];
+        for (var i = 0; i < controls.length; i++) {
+            try {
+                if (controls[i]) {
+                    controls[i].setEnabled(false);
+                    controls[i].setAlpha(0.38);
+                }
+            } catch (eControl) {}
+        }
+    }
+
+    function addPickwordTextArea20(parent, view, originalLp) {
+        var meta = currentPickwordMeta20;
+        if (!meta || meta.available !== true || !toolhubAppRef ||
+            typeof toolhubAppRef.createPickwordImageController !== "function") {
+            if (originalLp) parent.addView(view, originalLp); else parent.addView(view);
+            return;
+        }
+        try {
+            releasePickwordImageController20("replace");
+            pickwordImageController20 = toolhubAppRef.createPickwordImageController({
+                context: appContext,
+                handler: mainHandler,
+                session: meta,
+                onOpen: function() { openPickwordImagePage20(); },
+                onBack: function() { restorePickwordResultPage20("toolbar_back"); },
+                onCloseSession: function() {
+                    try { 拾字Floaty.hide(); } catch (eHide) {}
+                },
+                onError: function(stage, error) {
+                    try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image stage=" + String(stage || "") + " err=" + String(error || "")); } catch (eLog) {}
+                }
+            });
+            if (!pickwordImageController20 || pickwordImageController20.hasImage() !== true) {
+                releasePickwordImageController20("unavailable");
+                if (originalLp) parent.addView(view, originalLp); else parent.addView(view);
+                return;
+            }
+
+            var dm = appContext.getResources().getDisplayMetrics();
+            var widthDp = Number(dm.widthPixels || 0) / Math.max(0.1, Number(dm.density || 1));
+            var horizontal = widthDp >= 520;
+            var host = new LinearLayout(appContext);
+            pickwordContentHost20 = host;
+            host.setOrientation(horizontal ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+            host.setGravity(Gravity.CENTER_VERTICAL);
+
+            var textColumn = new LinearLayout(appContext);
+            textColumn.setOrientation(LinearLayout.VERTICAL);
+            var imageColumn = new LinearLayout(appContext);
+            imageColumn.setOrientation(LinearLayout.VERTICAL);
+            imageColumn.setGravity(Gravity.CENTER);
+            var thumb = pickwordImageController20.createThumbnailView();
+
+            if (horizontal) {
+                textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                imageColumn.addView(thumb, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                host.addView(textColumn, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 7));
+                var imageLp = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 3);
+                imageLp.leftMargin = uiDp(10, 12);
+                host.addView(imageColumn, imageLp);
+            } else {
+                imageColumn.addView(thumb, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(132, 156)));
+                host.addView(imageColumn, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(132, 156)));
+                var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, originalLp && originalLp.height > 0 ? originalLp.height : uiDp(220, 280));
+                textLp.topMargin = uiDp(8, 10);
+                textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                host.addView(textColumn, textLp);
+            }
+
+            var hostLp = originalLp || new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+            if (!horizontal && hostLp && hostLp.height > 0) {
+                hostLp = new LinearLayout.LayoutParams(hostLp.width, hostLp.height + uiDp(140, 164));
+            }
+            parent.addView(host, hostLp);
+
+            pickwordImagePage20 = pickwordImageController20.createFullView();
+            pickwordImagePage20.setVisibility(View.GONE);
+            parent.addView(pickwordImagePage20, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
+            mainHandler.post(new java.lang.Runnable({ run: function() { applyPickwordImageOnlyActions20(); } }));
+        } catch (eBuild) {
+            releasePickwordImageController20("build_failed");
+            try { if (view.getParent()) view.getParent().removeView(view); } catch (eDetach) {}
+            if (originalLp) parent.addView(view, originalLp); else parent.addView(view);
+            try { safeLog(toolhubAppRef && toolhubAppRef.L, 'e', "pickword image layout fallback: " + String(eBuild)); } catch (eLog) {}
+        }
+    }
+
 
     var fullText = "";
     var selectedIndices = [];
@@ -2001,6 +2214,7 @@
     }
 
     function clearMainPickwordViewRefs20() {
+        try { releasePickwordImageController20("clear_refs"); } catch (eImageRelease) {}
         mainLayout = null;
         layoutParams = null;
         previewBoxView = null;
@@ -2027,6 +2241,7 @@
     }
 
     function removeMainPickwordWindowNow20() {
+        try { releasePickwordImageController20("remove_window"); } catch (eImageRelease) {}
         cancelMainPickwordCallbacks20();
         try { 拾字Floaty.removeFingerPreview(); } catch (ePreview) {}
         try {
@@ -2085,7 +2300,8 @@
             this.exactScrollY = 0;
         },
 
-        show: function(text) {
+        show: function(text, meta) {
+            currentPickwordMeta20 = normalizePickwordImageMeta20(meta);
             if (mainLayout !== null) {
                 isShowing = true;
                 this.resetSessionState(text);
@@ -2408,7 +2624,7 @@
             this.setupTextViewTouch();
 
             scrollView.addView(textView);
-            mainLayout.addView(scrollView);
+            addPickwordTextArea20(mainLayout, scrollView);
 
             var previewBox = this.createPreviewBox();
             mainLayout.addView(previewBox);
@@ -4669,7 +4885,7 @@
         return typeof text === 'string' ? text : String(text);
     }
 
-    function startBigBang(text) {
+    function startBigBang(text, meta) {
         var raw = "";
         var loaded = "";
         try {
@@ -4683,7 +4899,7 @@
             }
 
             refreshPickwordTheme20();
-            拾字Floaty.show(loaded);
+            拾字Floaty.show(loaded, meta);
             return {
                 ok: true,
                 code: "PICKWORD_SHOWN",
@@ -4707,7 +4923,9 @@
             proto.showPickwordText = function(text, meta) {
                 toolhubAppRef = this;
                 var raw = normalizePickwordInput20(text);
-                if (!raw) return { ok: false, code: "EMPTY_TEXT", message: "文本为空" };
+                var imageMeta = normalizePickwordImageMeta20(meta);
+                var imageOnly = !raw && imageMeta && imageMeta.available === true && imageMeta.allowEmptyText === true;
+                if (!raw && !imageOnly) return { ok: false, code: "EMPTY_CONTENT", message: "文本和截图均为空" };
                 if (!this.state) return { ok: false, code: "APP_STATE_UNAVAILABLE", message: "ToolHub 状态不可用" };
                 if (!this.state.pickword) {
                     this.state.pickword = {
@@ -4722,18 +4940,22 @@
                 var ps = this.state.pickword;
                 ps.generation = Number(ps.generation || 0) + 1;
                 ps.fullText = raw;
-                ps.loadedText = raw.length > DIY_CONFIG.MAX_CHAR_LIMIT
-                    ? truncatePickwordTextAtSafeBoundary20(raw, DIY_CONFIG.MAX_CHAR_LIMIT, false)
-                    : raw;
-                ps.meta = meta || null;
-                var ret = startBigBang(raw);
+                var displayText = imageOnly ? "未识别到文字" : raw;
+                ps.loadedText = displayText.length > DIY_CONFIG.MAX_CHAR_LIMIT
+                    ? truncatePickwordTextAtSafeBoundary20(displayText, DIY_CONFIG.MAX_CHAR_LIMIT, false)
+                    : displayText;
+                if (imageMeta) imageMeta.imageOnly = imageOnly;
+                ps.meta = imageMeta || null;
+                var ret = startBigBang(displayText, ps.meta);
                 ps.lastResult = ret;
                 ps.showing = !!(ret && ret.ok);
                 try {
                     safeLog(this.L, ret && ret.ok ? 'i' : 'w',
                         "pickword show ok=" + String(!!(ret && ret.ok)) +
                         " originalLen=" + String(raw.length) +
-                        " loadedLen=" + String(ps.loadedText.length));
+                        " loadedLen=" + String(ps.loadedText.length) +
+                        " image=" + String(!!imageMeta) +
+                        " imageOnly=" + String(imageOnly));
                 } catch (eLog) {}
                 return ret;
             };
@@ -4836,6 +5058,7 @@
                 } catch (eFontPopup) {}
                 fontSizePopupWindow = null;
                 refreshPickwordTheme20();
+                try { if (pickwordImageController20 && pickwordImageController20.refreshLayout) pickwordImageController20.refreshLayout(); } catch (eImageLayout) {}
                 try { if (textCanvasControl && textCanvasControl.view) textCanvasControl.view.invalidate(); } catch (eCanvas) {}
                 try { if (mainLayout) mainLayout.invalidate(); } catch (eMain) {}
                 try { if (pinLayout) pinLayout.invalidate(); } catch (ePin) {}

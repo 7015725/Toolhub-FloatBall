@@ -132,7 +132,7 @@ for fragment, label in (
 require(RUNTIME_VERIFY, 'version.group(1) != "1.5.8"', "runtime verifier current version")
 require(DRAG_VERIFY, 'version.group(1) != "1.5.8"', "drag verifier current version")
 require(WORKFLOW, "python3 scripts/verify_main_panel_paging.py", "workflow paging verification")
-require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260714081104;", "unchanged entry version")
+require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260718213000;", "current entry version")
 
 for path in DOC_PATHS:
     text = path.read_text(encoding="utf-8")

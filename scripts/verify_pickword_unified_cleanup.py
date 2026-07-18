@@ -11,7 +11,7 @@ def require(condition, message):
         raise SystemExit(message)
 
 
-require(source.startswith("// @version 1.0.15\n"), "pickword module version must be 1.0.15")
+require(source.startswith("// @version 1.0.16\n"), "pickword module version must be 1.0.16")
 require("CANVAS_DRAG_VISIBLE_LINE_BUFFER: 8" in source, "drag visible-line buffer config missing")
 require("CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS: 40" in source, "drag highlight interval config missing")
 require("parseInt(String(DIY_CONFIG.CANVAS_DRAG_VISIBLE_LINE_BUFFER), 10)" in source, "drag buffer is not consumed")
@@ -42,7 +42,7 @@ require("if (mainLayout !== targetLayout) return;" in hide_block, "stale hide gu
 require("removeMainPickwordWindowNow20();" in hide_block, "hide does not use unified main cleanup")
 
 reset_start = source.find("        resetSessionState: function(text) {")
-reset_end = source.find("        show: function(text) {", reset_start)
+reset_end = source.find("        show: function(text, meta) {", reset_start)
 require(reset_start >= 0 and reset_end > reset_start, "resetSessionState block missing")
 reset_block = source[reset_start:reset_end]
 require("cancelMainPickwordCallbacks20();" in reset_block, "new session must cancel previous main callbacks")

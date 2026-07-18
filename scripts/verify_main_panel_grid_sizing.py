@@ -86,7 +86,7 @@ for marker, label in (
 require(show, "android.view.View.MeasureSpec.AT_MOST", "other panel measure")
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_grid_sizing.py", "workflow")
-require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260714081104;", "entry")
+require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260718213000;", "entry")
 for doc in ("README.md", "ARCHITECTURE.md", "STRUCTURE.md"):
     require((ROOT / doc).read_text(encoding="utf-8"), "网格决定面板宽高", doc)
 

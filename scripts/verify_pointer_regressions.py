@@ -324,19 +324,21 @@ def verify_issue_85(result, pointer, ocr, position, animation):
     )
     result.require(
         group,
-        "N6 empty OCR result is not success",
+        "N6 empty OCR remains failure but keeps screenshot preview",
         '"AREA_OCR_EMPTY"' in apply_ocr
         and "var hasText = textOk === true && normalizedText.length > 0;" in apply_ocr
         and "obj.ok = hasText;" in apply_ocr
         and "obj.ocrEmpty = textOk === true && !hasText;" in apply_ocr
-        and "if (hasText && typeof appObj.publishResultPreview" in apply_ocr
+        and "var previewAllowed = hasText || screenshotOk;" in apply_ocr
+        and "if (previewAllowed && typeof appObj.publishResultPreview" in apply_ocr
+        and "allowEmptyText: !hasText && screenshotOk" in apply_ocr
         and "obj.clipboard = false;" in apply_ocr
         and "obj.clipboardOk = false;" in apply_ocr
         and r'.replace(/^\s+|\s+$/g, "");' in async_ocr
         and "var code = !textOk" in async_ocr
         and '"AREA_OCR_EMPTY"' in async_ocr
         and "copyPointerAreaTextToClipboard" not in ocr,
-        "empty OCR must use AREA_OCR_EMPTY, skip preview publication, and avoid automatic clipboard writes",
+        "empty OCR must keep AREA_OCR_EMPTY and failure semantics, publish only the saved screenshot, and avoid automatic clipboard writes",
     )
 
     can_dispatch_ocr = section(
