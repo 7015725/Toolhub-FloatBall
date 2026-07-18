@@ -1700,6 +1700,11 @@
         pendingFingerPreviewWarmupRunnable = null;
         pendingAdjustRunnable = null;
         dragUpdateScheduled = false;
+        isAutoScrolling = false;
+        try {
+            拾字Floaty.currentScrollDirection = 0;
+            拾字Floaty.currentScrollSpeed = 0;
+        } catch (eState) {}
     }
 
     function cancelPinPickwordCallbacks20() {
@@ -1759,11 +1764,9 @@
         exactScrollY: 0,
 
         resetSessionState: function(text) {
+            // 新文本进入同一窗口前先终止上一会话的长按、自动滚动、延迟排版与拖选刷新。
+            cancelMainPickwordCallbacks20();
             this.resetTextLoadState((typeof text === 'string') ? text : String(text || ""));
-            if (dragUpdateScheduled) {
-                try { mainHandler.removeCallbacks(dragUpdateProcessor); } catch (eDragCancel) {}
-            }
-            dragUpdateScheduled = false;
             selectedIndices = [];
             selectedSet = {};
             previewTextOverride = null;

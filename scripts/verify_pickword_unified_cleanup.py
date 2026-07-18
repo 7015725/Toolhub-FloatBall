@@ -26,6 +26,7 @@ require(main_start >= 0 and main_end > main_start, "main callback cleanup helper
 main_block = source[main_start:main_end]
 require("pinBatchLoadRunnable" not in main_block and "pinLoadToken" not in main_block, "main hide must not cancel pin loading")
 require("dragUpdateProcessor" in main_block, "main cleanup must cancel drag processor")
+require("isAutoScrolling = false;" in main_block, "main cleanup must stop auto-scroll state")
 
 pin_start = main_end
 pin_end = source.find("    function clearMainPickwordViewRefs20() {", pin_start)
@@ -39,6 +40,13 @@ require(hide_start >= 0 and hide_end > hide_start, "hide block missing")
 hide_block = source[hide_start:hide_end]
 require("if (mainLayout !== targetLayout) return;" in hide_block, "stale hide guard missing")
 require("removeMainPickwordWindowNow20();" in hide_block, "hide does not use unified main cleanup")
+
+reset_start = source.find("        resetSessionState: function(text) {")
+reset_end = source.find("        show: function(text) {", reset_start)
+require(reset_start >= 0 and reset_end > reset_start, "resetSessionState block missing")
+reset_block = source[reset_start:reset_end]
+require("cancelMainPickwordCallbacks20();" in reset_block, "new session must cancel previous main callbacks")
+require(reset_block.find("cancelMainPickwordCallbacks20();") < reset_block.find("this.resetTextLoadState"), "callback cancellation must precede text reset")
 
 dispose_start = source.find("            proto.disposePickwordModule = function(reason) {")
 dispose_end = source.find("            proto.testPickwordTranslateConfiguration", dispose_start)
