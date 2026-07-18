@@ -1,4 +1,5 @@
-// @version 1.0.0
+// @version 1.0.1
+// STAGE2_DIAGNOSTIC: sha=d6c5492ab983e9790f5b901d5b01eaca0fbb958e6e4a361937723d6ef1f963f3 expected=65e633a51cf5c9e76bfda8bf640be9bc38d1e8524378cc644a6d61e528767116 length=91595 overlaps=0,1,0,0,0,0,0,0 syntax=line=6 offset=23963 snippet=' {\\n      var cursor = null;\\n      var rows = [];\\n      var result = { scanned: 0, deleted: 0, failed: 0 };\\n      try {\\n        cursor = db.rawQuery("SELECT export_id,public_path,content_uri FROM toolhub_pickword_image_exports WHERE export_kind=\'share_temp\' AND deleted_at=0 AND expires_at>0 AND expires_at<?", stringArgs22([String(now22())]));\\n        while (cursor.moveToNext()) {\\n          rows.push({\\n            id: Number(cursor.getLong(0)),\\n            publicPath: String(cursor.getStri' msg=invalid syntax
 // =======================【拾字截图：单图缩略图与原图查看】=======================
 // 仅消费 ToolHub/screenshots 内已落盘图片；不负责截图、保存、分享、删除或历史列表。
 (function() {

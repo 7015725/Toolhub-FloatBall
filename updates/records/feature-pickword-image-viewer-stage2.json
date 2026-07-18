@@ -8,7 +8,8 @@
     "删除严格限制为 ToolHub/screenshots 内部截图，删除后保留拾字文字、选区与翻译状态",
     "新增图片状态与分享临时副本 SQLite 记录，默认内部截图保留 7 天、分享临时副本保留 24 小时",
     "设置页新增公共保存目录、目录可写测试、保留期限和立即清理入口",
-    "公共保存副本永不参与自动清理，历史截图管理器继续留到第三阶段"
+    "公共保存副本永不参与自动清理，历史截图管理器继续留到第三阶段",
+    "STAGE2_DIAGNOSTIC: sha=d6c5492ab983e9790f5b901d5b01eaca0fbb958e6e4a361937723d6ef1f963f3 expected=65e633a51cf5c9e76bfda8bf640be9bc38d1e8524378cc644a6d61e528767116 length=91595 overlaps=0,1,0,0,0,0,0,0 syntax=line=6 offset=23963 snippet=' {\\\\n      var cursor = null;\\\\n      var rows = [];\\\\n      var result = { scanned: 0, deleted: 0, failed: 0 };\\\\n      try {\\\\n        cursor = db.rawQuery(\"SELECT export_id,public_path,content_uri FROM toolhub_pickword_image_exports WHERE export_kind=\\'share_temp\\' AND deleted_at=0 AND expires_at>0 AND expires_at<?\", stringArgs22([String(now22())]));\\\\n        while (cursor.moveToNext()) {\\\\n          rows.push({\\\\n            id: Number(cursor.getLong(0)),\\\\n            publicPath: String(cursor.getStri' msg=invalid syntax"
   ],
   "manifestVersion": 0
 }
