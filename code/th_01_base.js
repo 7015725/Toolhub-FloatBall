@@ -1,4 +1,4 @@
-// @version 1.1.18
+// @version 1.1.19
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -947,6 +947,13 @@ var ConfigManager = {
     },
     defaultButtons: [
         {
+            id: "builtin_screenshot_manager",
+            title: "截图管理",
+            type: "open_screenshot_manager",
+            enabled: true,
+            iconResName: "ic_menu_gallery"
+        },
+        {
             id: "builtin_settings",
             title: "设置",
             type: "open_settings",
@@ -1646,6 +1653,33 @@ var ConfigManager = {
                     cfgForButtonMigration.BUTTONS_MIGRATION_VERSION = 2;
                     this.saveSettings(cfgForButtonMigration);
                 } catch (eShortcutMigrationVersion) {}
+            }
+
+            if (buttonMigrationVersion < 3) {
+                var hasScreenshotManager = false;
+                for (var smi = 0; smi < btns.length; smi++) {
+                    try {
+                        if (btns[smi] && (String(btns[smi].id || "") === "builtin_screenshot_manager" || String(btns[smi].type || "") === "open_screenshot_manager")) {
+                            hasScreenshotManager = true;
+                            break;
+                        }
+                    } catch (eScreenshotManagerCheck) {}
+                }
+                if (!hasScreenshotManager) {
+                    btns.push({
+                        id: "builtin_screenshot_manager",
+                        title: "截图管理",
+                        type: "open_screenshot_manager",
+                        enabled: true,
+                        iconResName: "ic_menu_gallery"
+                    });
+                    dirty = true;
+                }
+                try {
+                    if (!cfgForButtonMigration) cfgForButtonMigration = this.loadSettings();
+                    cfgForButtonMigration.BUTTONS_MIGRATION_VERSION = 3;
+                    this.saveSettings(cfgForButtonMigration);
+                } catch (eScreenshotManagerMigrationVersion) {}
             }
         }
 

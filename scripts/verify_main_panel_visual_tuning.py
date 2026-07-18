@@ -38,7 +38,7 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(BASE, "1.1.18", "th_01_base.js")
+version(BASE, "1.1.19", "th_01_base.js")
 version(MAIN, "1.5.8", "th_15_main_panel.js")
 
 for marker, label in (
@@ -113,7 +113,7 @@ for name in (
     forbid(source, "1.4.0", name + " stale version")
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_visual_tuning.py", "workflow verification")
-require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260718213000;", "current entry version")
+require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260719024500;", "current entry version")
 for path in DOC_PATHS:
     text = path.read_text(encoding="utf-8")
     require(text, "单页隐藏分页圆点", path.name + " single-page documentation")

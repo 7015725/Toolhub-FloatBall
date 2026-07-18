@@ -65,7 +65,7 @@ def main():
         ("button migration writes explicit mode", 'b.shortcutExecMode = normalizedShortcutMode' in base),
         ("button migration preserves only js-only legacy", '!shortcutIntent && shortcutJs' in base),
         ("obsolete shortcutRunMode is removed", 'delete b.shortcutRunMode' in base),
-        ("migration version advanced", 'BUTTONS_MIGRATION_VERSION = 2' in base),
+        ("migration version advanced", 'BUTTONS_MIGRATION_VERSION = 3' in base),
         ("editor saves intent mode", 'newBtn.shortcutExecMode = "intent"' in editor),
         ("editor saves legacy only explicitly", 'newBtn.shortcutExecMode = "legacy_js"' in editor and 'isLegacyJsEnabled' in editor),
         ("editor no longer forces js mode", 'newBtn.shortcutRunMode = "js"' not in editor),

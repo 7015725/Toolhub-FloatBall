@@ -1,4 +1,4 @@
-// @version 1.1.21
+// @version 1.1.22
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -88,6 +88,10 @@ FloatBallAppWM.prototype.buildPanelView = function(panelType) {
   if (type === "update") return this.buildToolHubUpdateVersionPanelView();
   if (type === "btn_editor") return this.buildButtonEditorPanelView();
   if (type === "schema_editor") return this.buildSchemaEditorPanelView();
+  if (type === "screenshot_manager") {
+    if (typeof this.buildScreenshotManagerPanelView !== "function") throw new Error("截图管理器模块未加载：th_23_screenshot_manager.js");
+    return this.buildScreenshotManagerPanelView();
+  }
   throw new Error("不支持的面板类型：" + type);
 };
 
@@ -268,13 +272,14 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
 // =======================【设置类 UI：App 页面栈实验框架】======================
 FloatBallAppWM.prototype.isToolAppRoute = function(route) {
   var r = String(route || "");
-  return r === "settings" || r === "settings_group" || r === "btn_editor" || r === "schema_editor" || r === "update";
+  return r === "settings" || r === "settings_group" || r === "btn_editor" || r === "schema_editor" || r === "update" || r === "screenshot_manager";
 };
 
 FloatBallAppWM.prototype.getToolAppTitle = function(route) {
   var r = String(route || "settings");
   if (r === "settings") return "设置";
   if (r === "update") return "更新与版本";
+  if (r === "screenshot_manager") return "截图管理器";
   if (r === "settings_group") return this.getSettingsGroupTitle ? this.getSettingsGroupTitle(this.state.settingsGroupKey) : "设置分组";
   if (r === "btn_editor") {
     if (this.state.editingButtonIndex !== null && this.state.editingButtonIndex !== undefined) {

@@ -378,3 +378,8 @@ ToolHub/toolhub.db
 - 默认公共目录为 `/storage/emulated/0/Pictures/ToolHub`，可在“设置 → 拾字”中修改并测试可写性。
 - 内部截图默认保留 7 天；分享临时副本保留 24 小时。公共保存副本不参与自动清理。
 - 图片状态记录在 `toolhub.db` 的独立关系表中；删除截图后保留拾字文字与当前选择状态。
+
+
+## 截图管理器读取边界
+
+截图管理器只读取 `toolhub_pickword_images` 与 `toolhub_pickword_image_exports`。内部标签会合并数据库记录和 `ToolHub/screenshots/` 实际文件；已保存标签只使用数据库中由 ToolHub 写入的公共副本记录。删除公共副本时，以数据库中保存的精确 URI/路径为准，并限制在 MediaStore 或主存储范围内。

@@ -1,4 +1,4 @@
-// @version 1.1.3
+// @version 1.1.4
 // ToolHub - button manager/editor module
 // Stage 4: button manager/list/editor main page split from th_14_panels.js.
 
@@ -68,6 +68,7 @@ FloatBallAppWM.prototype.getButtonManagerTypeLabel = function(btnCfg) {
   try {
     var t = String((btnCfg && btnCfg.type) ? btnCfg.type : "shell");
     if (t === "open_settings") return "设置";
+    if (t === "open_screenshot_manager") return "截图管理";
     if (t === "app") return "应用";
     if (t === "broadcast") return "广播";
     if (t === "shortcut") return "快捷方式";
@@ -80,6 +81,7 @@ FloatBallAppWM.prototype.getButtonManagerSummary = function(btnCfg) {
     var b = btnCfg || {};
     var t = String(b.type || "shell");
     if (t === "open_settings") return "打开 ToolHub 设置";
+    if (t === "open_screenshot_manager") return "打开 ToolHub 截图管理器";
     if (t === "app") return String(b.pkg || "未填写包名");
     if (t === "broadcast") return String(b.action || "未填写 Action");
     if (t === "shortcut") return String(b.shortcutName || b.title || b.pkg || "快捷方式");
@@ -1285,7 +1287,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
       { key: "app", label: "应用" },
       { key: "shell", label: "Shell" },
       { key: "shortcut", label: "快捷方式" },
-      { key: "broadcast", label: "广播" }
+      { key: "broadcast", label: "广播" },
+      { key: "open_screenshot_manager", label: "截图管理" }
     ];
     for (var fi = 0; fi < filters.length; fi++) {
       (function(filterItem) {
@@ -1627,7 +1630,8 @@ FloatBallAppWM.prototype.buildButtonEditorPanelView = function() {
         { id: 1, val: "shell", txt: "Shell" },
         { id: 2, val: "app", txt: "App" },
         { id: 3, val: "broadcast", txt: "发送广播" },
-        { id: 4, val: "shortcut", txt: "快捷方式" }
+        { id: 4, val: "shortcut", txt: "快捷方式" },
+        { id: 5, val: "open_screenshot_manager", txt: "截图管理" }
     ];
 
     // 初始化选中值

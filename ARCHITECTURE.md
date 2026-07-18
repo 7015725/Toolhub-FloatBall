@@ -1217,3 +1217,5 @@ PopupOverlayBase
 - 默认公共目录为 `/storage/emulated/0/Pictures/ToolHub`，可在“设置 → 拾字”中修改并测试可写性。
 - 内部截图默认保留 7 天；分享临时副本保留 24 小时。公共保存副本不参与自动清理。
 - 图片状态记录在 `toolhub.db` 的独立关系表中；删除截图后保留拾字文字与当前选择状态。
+
+- `th_23_screenshot_manager.js`：截图管理器 ToolApp 路由；负责内部截图/已保存列表、缩略图与用户操作编排，文件边界和 SQLite 操作继续由 `th_22_image_viewer.js` 提供。
