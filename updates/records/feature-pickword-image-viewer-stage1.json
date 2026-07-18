@@ -10,5 +10,37 @@
     "新增单图缩放、平移、双击复位、降采样与 BitmapRegionDecoder 可视区域解码",
     "严格限制只读取 ToolHub/screenshots 内部截图，图片模块不接管截图线程和文件删除"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260718133855,
+  "date": "2026-07-18",
+  "modules": [
+    {
+      "name": "th_18_pointer_ocr.js",
+      "from": "1.1.3",
+      "to": "1.1.4",
+      "change": "updated"
+    },
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.15",
+      "to": "1.0.16",
+      "change": "updated"
+    },
+    {
+      "name": "th_21_result_preview.js",
+      "from": "1.3.2",
+      "to": "1.3.3",
+      "change": "updated"
+    },
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "",
+      "to": "1.0.0",
+      "change": "added"
+    }
+  ],
+  "entry": {
+    "changed": true,
+    "from": 20260714081104,
+    "to": 20260718213000
+  }
 }
