@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "id": "feature-screenshot-manager-stage3",
+  "type": "feature",
+  "title": "接入截图管理器与内部/已保存双标签",
+  "details": [
+    "主面板新增普通截图管理入口，旧用户通过按钮迁移版本 3 仅追加一次，不覆盖现有排序和配置",
+    "新增内部截图与已保存双标签，支持缩略图、状态、刷新以及查看、保存、分享和删除操作",
+    "内部截图继续复用原图查看器；删除内部文件不会删除公共副本",
+    "删除已保存公共副本增加永久删除警告，并限制为数据库记录的 MediaStore URI 或主存储路径",
+    "新增 th_23_screenshot_manager.js，SQLite 与文件动作仍由 th_22_image_viewer.js 统一负责"
+  ],
+  "manifestVersion": 20260718180630,
+  "date": "2026-07-19",
+  "modules": [
+    {
+      "name": "th_01_base.js",
+      "from": "1.1.18",
+      "to": "1.1.19",
+      "change": "updated"
+    },
+    {
+      "name": "th_11_action.js",
+      "from": "1.1.1",
+      "to": "1.1.2",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_button_editor.js",
+      "from": "1.1.3",
+      "to": "1.1.4",
+      "change": "updated"
+    },
+    {
+      "name": "th_15_extra.js",
+      "from": "1.1.21",
+      "to": "1.1.22",
+      "change": "updated"
+    },
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "1.1.0",
+      "to": "1.2.0",
+      "change": "updated"
+    },
+    {
+      "name": "th_23_screenshot_manager.js",
+      "from": "",
+      "to": "1.0.0",
+      "change": "added"
+    }
+  ],
+  "entry": {
+    "changed": true,
+    "from": 20260718213000,
+    "to": 20260719024500
+  }
+}

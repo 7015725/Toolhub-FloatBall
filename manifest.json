@@ -4,24 +4,24 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "50ead7cf75336e79f47854db0f6a1612db32c85599b9199cf5b5988c6c1d4d8e",
-      "size": 31350,
-      "version": 20260718172414
+      "sha256": "633996b9cce0f291d707bf685ebe2195064653f4f71307cdf7458270ee93d392",
+      "size": 33225,
+      "version": 20260718180630
     }
   },
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "c5a889cb98787e6735b5293b2db6bafeafe06262bc8867179f123b39296e3e0e",
-    "size": 82799,
-    "version": 20260718213000,
+    "sha256": "ba1f972ece1c7924a013a352f5f975f4f0ae86865840eb511b0d4a178d8b1d3d",
+    "size": 82830,
+    "version": 20260719024500,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "be217e2073e0049a8059f1a7de8e5b4a2772b5c102b08a2d5d166447e65b084f",
-      "size": 83586,
-      "version": "1.1.18"
+      "sha256": "ab6eea7ab8eff9a4108c8a50a422ddfa7c436a731c5239298c618487f4a4519c",
+      "size": 85086,
+      "version": "1.1.19"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -64,9 +64,9 @@
       "version": "1.0.9"
     },
     "th_11_action.js": {
-      "sha256": "0d7b2ca9fa775a3b2b2041206834283af7435fc9dc9dd1d26c7b38b2c1145ff1",
-      "size": 28839,
-      "version": "1.1.1"
+      "sha256": "95ddf32a4bf144e2f8703afccd0890249dcc7b2d056a861c493454ce058ca583",
+      "size": 28947,
+      "version": "1.1.2"
     },
     "th_12_rebuild.js": {
       "sha256": "a54ba99b8e75c429ba29f40ccc80e85f96de651a4cfaac088f51b103437e9bcf",
@@ -79,9 +79,9 @@
       "version": "1.0.13"
     },
     "th_14_button_editor.js": {
-      "sha256": "6c1bd1a22d2e7acfab4623d340176bf80241a45fcc455b7526ab92197ca6996e",
-      "size": 98030,
-      "version": "1.1.3"
+      "sha256": "e816a603df53d4514f363e9e3bfb37b94b17e03e5fb36aca58d93de92c16de79",
+      "size": 98313,
+      "version": "1.1.4"
     },
     "th_14_button_icon_editor.js": {
       "sha256": "a568f94170b4707d5a0fddc6b48b6b49bfcd630be4fc0ac1a6864c9dddbb4cc2",
@@ -114,9 +114,9 @@
       "version": "1.0.4"
     },
     "th_15_extra.js": {
-      "sha256": "85e9cf6ed1a3638e0f0b58670e526c048b65773147e8220f4bba61df9890116c",
-      "size": 118935,
-      "version": "1.1.21"
+      "sha256": "e6e1bf7e2a9ff72155854d079a28ef3a24bf14c2344bfea43411f2d19ecee3e2",
+      "size": 119268,
+      "version": "1.1.22"
     },
     "th_15_main_panel.js": {
       "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
@@ -154,23 +154,28 @@
       "version": "1.3.3"
     },
     "th_22_image_viewer.js": {
-      "sha256": "f07e51a7cd3940b4af63c0efcaefada1cce32cb94d94b8b77362412954cb59a8",
-      "size": 61018,
-      "version": "1.1.0"
+      "sha256": "c3a937e08df520f373260e386efe1c5cf14c45e323fbde1154c46f6e605c46b8",
+      "size": 73040,
+      "version": "1.2.0"
+    },
+    "th_23_screenshot_manager.js": {
+      "sha256": "ac2736686ebfb68762c928f7bae279d453180fe1863a5d9f79fff43800716e3a",
+      "size": 23380,
+      "version": "1.0.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "原图页新增保存、分享和删除操作：公共保存使用 MediaStore，系统分享使用可授权的 content URI",
-      "删除严格限制为 ToolHub/screenshots 内部截图，删除后保留拾字文字、选区与翻译状态",
-      "新增图片状态与分享临时副本 SQLite 记录，默认内部截图保留 7 天、分享临时副本保留 24 小时",
-      "设置页新增公共保存目录、目录可写测试、保留期限和立即清理入口",
-      "公共保存副本永不参与自动清理，历史截图管理器继续留到第三阶段"
+      "主面板新增普通截图管理入口，旧用户通过按钮迁移版本 3 仅追加一次，不覆盖现有排序和配置",
+      "新增内部截图与已保存双标签，支持缩略图、状态、刷新以及查看、保存、分享和删除操作",
+      "内部截图继续复用原图查看器；删除内部文件不会删除公共副本",
+      "删除已保存公共副本增加永久删除警告，并限制为数据库记录的 MediaStore URI 或主存储路径",
+      "新增 th_23_screenshot_manager.js，SQLite 与文件动作仍由 th_22_image_viewer.js 统一负责"
     ],
     "date": "2026-07-19",
-    "title": "接入拾字截图保存、分享、删除与自动清理"
+    "title": "接入截图管理器与内部/已保存双标签"
   },
   "schema": 4,
-  "version": 20260718172414
+  "version": 20260718180630
 }

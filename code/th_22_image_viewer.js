@@ -1,4 +1,4 @@
-// @version 1.1.0
+// @version 1.2.0
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -654,11 +654,261 @@
     return dbStats;
   }
 
+
+  function isImageFile22(file) {
+    try {
+      if (!file || !file.exists() || !file.isFile() || file.length() <= 0) return false;
+      return /\.(png|jpe?g|webp)$/i.test(String(file.getName() || ""));
+    } catch (e0) {}
+    return false;
+  }
+
+  function normalizePublicFile22(rawPath) {
+    var value = String(rawPath || "").replace(/^\s+|\s+$/g, "");
+    if (!value) throw new Error("公共图片路径为空");
+    var storage = android.os.Environment.getExternalStorageDirectory().getCanonicalFile();
+    var target = new java.io.File(value).getCanonicalFile();
+    var rootPath = String(storage.getCanonicalPath());
+    var targetPath = String(target.getCanonicalPath());
+    if (targetPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("公共图片路径越界");
+    return target;
+  }
+
+  function safeMediaUri22(rawUri) {
+    var value = String(rawUri || "").replace(/^\s+|\s+$/g, "");
+    if (!value) return "";
+    try {
+      var uri = android.net.Uri.parse(value);
+      var scheme = String(uri.getScheme() || "").toLowerCase();
+      var authority = String(uri.getAuthority() || "").toLowerCase();
+      if (scheme !== "content" || authority.indexOf("media") < 0) return "";
+      return value;
+    } catch (e0) {}
+    return "";
+  }
+
+  function ensureTracked22(file, sourceType, createdAt) {
+    return withDb22(function(db) {
+      var insert = null;
+      var update = null;
+      try {
+        var path = String(file.getCanonicalPath());
+        var ts = Number(createdAt || file.lastModified() || now22());
+        insert = db.compileStatement("INSERT OR IGNORE INTO toolhub_pickword_images(internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,deleted_at,last_access_at) VALUES(?,?,?,0,0,?,'','',0,0,?)");
+        bindText22(insert, 1, path);
+        insert.bindLong(2, ts);
+        bindText22(insert, 3, sourceType || "screenshot_manager");
+        insert.bindLong(4, Number(file.length() || 0));
+        insert.bindLong(5, now22());
+        insert.executeInsert();
+        update = db.compileStatement("UPDATE toolhub_pickword_images SET file_size=?, last_access_at=?, deleted_at=0 WHERE internal_path=?");
+        update.bindLong(1, Number(file.length() || 0));
+        update.bindLong(2, now22());
+        bindText22(update, 3, path);
+        update.executeUpdateDelete();
+        return true;
+      } finally {
+        try { if (insert) insert.close(); } catch (eInsert) {}
+        try { if (update) update.close(); } catch (eUpdate) {}
+      }
+    }, false);
+  }
+
+  function clearImageSaved22(internalPath) {
+    return withDb22(function(db) {
+      var stmt = null;
+      try {
+        stmt = db.compileStatement("UPDATE toolhub_pickword_images SET saved_public_path='', saved_content_uri='', saved_at=0, last_access_at=? WHERE internal_path=?");
+        stmt.bindLong(1, now22());
+        bindText22(stmt, 2, internalPath);
+        return Number(stmt.executeUpdateDelete()) > 0;
+      } finally {
+        try { if (stmt) stmt.close(); } catch (eClose) {}
+      }
+    }, false);
+  }
+
+  function listInternalImages22() {
+    var rows = withDb22(function(db) {
+      var cursor = null;
+      var out = [];
+      try {
+        cursor = db.rawQuery("SELECT internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,last_access_at FROM toolhub_pickword_images WHERE deleted_at=0 ORDER BY created_at DESC", null);
+        while (cursor.moveToNext()) {
+          out.push({
+            kind: "internal",
+            internalPath: String(cursor.getString(0) || ""),
+            createdAt: Number(cursor.getLong(1) || 0),
+            source: String(cursor.getString(2) || ""),
+            width: Number(cursor.getLong(3) || 0),
+            height: Number(cursor.getLong(4) || 0),
+            fileSize: Number(cursor.getLong(5) || 0),
+            savedPublicPath: String(cursor.getString(6) || ""),
+            savedContentUri: String(cursor.getString(7) || ""),
+            savedAt: Number(cursor.getLong(8) || 0),
+            lastAccessAt: Number(cursor.getLong(9) || 0),
+            tracked: true,
+            available: false
+          });
+        }
+      } finally {
+        try { if (cursor) cursor.close(); } catch (eClose) {}
+      }
+      return out;
+    }, []);
+    var map = {};
+    var out2 = [];
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      try {
+        var file = normalizeInternalFile22(row.internalPath);
+        if (!isImageFile22(file)) continue;
+        row.internalPath = String(file.getCanonicalPath());
+        row.available = true;
+        if (!row.fileSize) row.fileSize = Number(file.length() || 0);
+        if (!row.createdAt) row.createdAt = Number(file.lastModified() || 0);
+        map["$" + row.internalPath] = true;
+        out2.push(row);
+      } catch (eRow) {}
+    }
+    try {
+      var root = internalRoot22();
+      var files = root.listFiles();
+      if (files) {
+        for (var j = 0; j < files.length; j++) {
+          var one = files[j];
+          if (!isImageFile22(one)) continue;
+          var canonical = String(one.getCanonicalPath());
+          if (map["$" + canonical]) continue;
+          out2.push({
+            kind: "internal",
+            internalPath: canonical,
+            createdAt: Number(one.lastModified() || 0),
+            source: "untracked",
+            width: 0,
+            height: 0,
+            fileSize: Number(one.length() || 0),
+            savedPublicPath: "",
+            savedContentUri: "",
+            savedAt: 0,
+            lastAccessAt: 0,
+            tracked: false,
+            available: true
+          });
+        }
+      }
+    } catch (eScan) {}
+    out2.sort(function(a, b) { return Number(b.createdAt || 0) - Number(a.createdAt || 0); });
+    return out2;
+  }
+
+  function listSavedImages22() {
+    return withDb22(function(db) {
+      var cursor = null;
+      var out = [];
+      try {
+        cursor = db.rawQuery("SELECT internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,deleted_at FROM toolhub_pickword_images WHERE saved_at>0 AND (saved_public_path<>'' OR saved_content_uri<>'') ORDER BY saved_at DESC", null);
+        while (cursor.moveToNext()) {
+          var row = {
+            kind: "saved",
+            internalPath: String(cursor.getString(0) || ""),
+            createdAt: Number(cursor.getLong(1) || 0),
+            source: String(cursor.getString(2) || ""),
+            width: Number(cursor.getLong(3) || 0),
+            height: Number(cursor.getLong(4) || 0),
+            fileSize: Number(cursor.getLong(5) || 0),
+            publicPath: String(cursor.getString(6) || ""),
+            contentUri: String(cursor.getString(7) || ""),
+            savedAt: Number(cursor.getLong(8) || 0),
+            internalDeleted: Number(cursor.getLong(9) || 0) > 0,
+            available: false,
+            internalAvailable: false
+          };
+          try { row.internalAvailable = isImageFile22(normalizeInternalFile22(row.internalPath)); } catch (eInternal) {}
+          try {
+            var safeUri = safeMediaUri22(row.contentUri);
+            if (safeUri && uriReadable22(safeUri)) row.available = true;
+          } catch (eUri) {}
+          if (!row.available && row.publicPath) {
+            try {
+              var publicFile = normalizePublicFile22(row.publicPath);
+              row.available = isImageFile22(publicFile);
+              if (row.available) row.fileSize = Number(publicFile.length() || row.fileSize || 0);
+            } catch (ePublic) {}
+          }
+          out.push(row);
+        }
+      } finally {
+        try { if (cursor) cursor.close(); } catch (eClose) {}
+      }
+      return out;
+    }, []);
+  }
+
+  function requireInternalImage22(rawPath) {
+    var file = normalizeInternalFile22(rawPath);
+    if (!isImageFile22(file)) throw new Error("内部截图不存在");
+    ensureTracked22(file, "screenshot_manager", Number(file.lastModified() || now22()));
+    return file;
+  }
+
+  function deleteInternalImage22(rawPath) {
+    var file = normalizeInternalFile22(rawPath);
+    var path = String(file.getCanonicalPath());
+    if (file.exists() && (!file.isFile() || !file.delete())) throw new Error("内部截图删除失败");
+    markImageDeleted22(path, now22());
+    return { ok: true, internalPath: path, deletedAt: now22() };
+  }
+
+  function prepareSavedUri22(appObj, internalPath) {
+    var row = loadSaved22(String(internalPath || ""));
+    if (!row) throw new Error("已保存记录不存在");
+    var safeUri = safeMediaUri22(row.contentUri);
+    if (safeUri && uriReadable22(safeUri)) {
+      return { ok: true, contentUri: safeUri, publicPath: row.publicPath || "", reused: true };
+    }
+    var publicFile = normalizePublicFile22(row.publicPath);
+    if (!isImageFile22(publicFile)) throw new Error("公共副本不可用");
+    var base = normalizePublicDir22(configuredPublicDir22(appObj), true);
+    var tempDir = new java.io.File(base, "ShareTemp");
+    if (!tempDir.exists() && !tempDir.mkdirs() && !tempDir.exists()) throw new Error("临时目录创建失败");
+    var expiresAt = now22() + 24 * 60 * 60 * 1000;
+    var result = insertMediaStore22(publicFile, tempDir, displayName22(publicFile, now22(), "ToolHub_View_"), "share_temp", expiresAt);
+    addExport22(String(internalPath || ""), "share_temp", result.publicPath, result.contentUri, result.createdAt, expiresAt);
+    return result;
+  }
+
+  function launchView22(result) {
+    if (!result || !result.contentUri) throw new Error("查看 URI 不可用");
+    var uri = android.net.Uri.parse(String(result.contentUri));
+    var intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+    intent.setDataAndType(uri, "image/*");
+    intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+    context.startActivity(intent);
+    return true;
+  }
+
+  function deleteSavedImage22(internalPath) {
+    var row = loadSaved22(String(internalPath || ""));
+    if (!row) return { ok: true, missing: true, internalPath: String(internalPath || "") };
+    var safeUri = safeMediaUri22(row.contentUri);
+    var safePath = "";
+    if (row.publicPath) {
+      try { safePath = String(normalizePublicFile22(row.publicPath).getCanonicalPath()); } catch (ePath) { safePath = ""; }
+    }
+    if (!safeUri && !safePath) throw new Error("公共副本路径不安全");
+    var deleted = deleteContent22(safeUri, safePath);
+    if (!deleted) throw new Error("公共副本删除失败");
+    clearImageSaved22(String(internalPath || ""));
+    return { ok: true, internalPath: String(internalPath || ""), deletedAt: now22() };
+  }
+
   function install22() {
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (proto.__toolHubPickwordImageViewerInstalled === true) return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.0") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -721,6 +971,29 @@
         }}), "TH-Pickword-Image-Cleanup");
         thread.start();
         return true;
+      };
+
+
+      proto.getPickwordImageService = function() {
+        var appObj = this;
+        return {
+          listInternal: function() { return listInternalImages22(); },
+          listSaved: function() { return listSavedImages22(); },
+          getStats: function() { return stats22(appObj); },
+          saveInternal: function(internalPath) {
+            var file = requireInternalImage22(internalPath);
+            return savePermanent22(appObj, file, { createdAt: Number(file.lastModified() || now22()) });
+          },
+          prepareShareInternal: function(internalPath) {
+            var file = requireInternalImage22(internalPath);
+            return createShareCopy22(appObj, file, { createdAt: Number(file.lastModified() || now22()) });
+          },
+          deleteInternal: function(internalPath) { return deleteInternalImage22(internalPath); },
+          prepareSavedUri: function(internalPath) { return prepareSavedUri22(appObj, internalPath); },
+          deleteSaved: function(internalPath) { return deleteSavedImage22(internalPath); },
+          launchShare: function(result) { return launchShare22(result); },
+          launchView: function(result) { return launchView22(result); }
+        };
       };
 
       proto.createPickwordImageController = function(options) {
@@ -1410,6 +1683,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
+      proto.__toolHubPickwordImageViewerVersion = "1.2.0";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}

@@ -1,4 +1,4 @@
-// @version 1.1.1
+// @version 1.1.2
 // =======================【Shell 按钮诊断】=======================
 FloatBallAppWM.prototype.getShellDiagCommandMeta = function(cmdPlain, cmdB64) {
   var plain = "";
@@ -138,6 +138,11 @@ FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
 
   if (t === "open_settings") {
     this.showPanelAvoidBall("settings");
+    return;
+  }
+
+  if (t === "open_screenshot_manager") {
+    this.showToolApp("screenshot_manager", true);
     return;
   }
 
