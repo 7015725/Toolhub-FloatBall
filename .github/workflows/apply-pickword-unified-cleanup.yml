@@ -27,7 +27,19 @@ jobs:
           python-version: '3.x'
 
       - name: Apply cleanup patch
-        run: python3 scripts/apply_pickword_unified_cleanup.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/apply_pickword_unified_cleanup.py 2>&1 | tee pickword-patch-log.txt
+
+      - name: Upload patch failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pickword-patch-failure
+          path: pickword-patch-log.txt
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Verify focused boundaries
         shell: bash
