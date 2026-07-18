@@ -161,8 +161,8 @@ def apply_patch():
     clean_temporary_files()
 
     for command in (
-        ["python3", "scripts/check_es5.py"],
-        ["python3", "scripts/check_js_syntax.py"],
+        ["python3", ".github/scripts/es5_scan.py"],
+        ["python3", "scripts/verify_js_syntax.py"],
         ["python3", "scripts/verify_pickword_image_viewer.py"],
     ):
         result = run(command, check=False)
