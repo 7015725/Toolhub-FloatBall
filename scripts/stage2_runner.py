@@ -16,7 +16,8 @@ EXPECTED_SHA256 = "65e633a51cf5c9e76bfda8bf640be9bc38d1e8524378cc644a6d61e528767
 
 
 def normalized_base64(value):
-    return "".join(str(value or "").split())
+    normalized = "".join(str(value or "").split())
+    return normalized + ("=" * ((-len(normalized)) % 4))
 
 
 def decode_payload(encoded):
