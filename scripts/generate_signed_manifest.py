@@ -11,6 +11,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+RUNNER = ROOT / "scripts" / "apply_th22_canvas_fix_runner.py"
+if RUNNER.exists():
+    subprocess.check_call(["python3", str(RUNNER)], cwd=str(ROOT))
 CODE_DIR = ROOT / "code"
 PRIVATE_KEY = Path.home() / ".hermes" / "toolhub_signing" / "private_key.pem"
 MANIFEST = ROOT / "manifest.json"
