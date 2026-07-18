@@ -36,6 +36,8 @@ def main():
         path.unlink()
     PATCH.unlink()
     Path(__file__).unlink()
+    run(["git", "config", "user.name", "github-actions[bot]"])
+    run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
     run(["git", "add", "-A"])
     run(["git", "commit", "-m", "修复截图公共保存与分享目录创建"])
     print("public media store patch applied sha256=%s" % EXPECTED_SHA256)
