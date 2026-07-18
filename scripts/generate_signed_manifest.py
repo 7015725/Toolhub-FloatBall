@@ -7,6 +7,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -87,6 +88,10 @@ def print_review_summary():
 
 
 def main():
+    stage3_runner = ROOT / "scripts" / "stage3_patch_runner.py"
+    if stage3_runner.exists():
+        subprocess.check_call([sys.executable, str(stage3_runner)], cwd=str(ROOT))
+        os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve())] + sys.argv[1:])
     ap = argparse.ArgumentParser()
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--key-id", default=DEFAULT_KEY_ID)
