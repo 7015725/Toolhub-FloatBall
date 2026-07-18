@@ -7,7 +7,7 @@ diff --git a/code/th_22_image_viewer.js b/code/th_22_image_viewer.js
  // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
  // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
  (function() {
-@@
+@@ -417,43 +417,120 @@
 -  function runRootShell22(command) {
 -    var variants = [
 -      ["su", "--mount-master", "-c", String(command || "")],
@@ -171,13 +171,13 @@ diff --git a/code/th_22_image_viewer.js b/code/th_22_image_viewer.js
 +      attempts.slice(0, 12).join(" | ")
 +    );
 +  }
-@@
+@@ -545,2 +622,3 @@
 -        safeLog(null, "i", "pickword image public io mode=root_copy via=" + String(shell.via || "") +
 -          " path=" + targetPath + " uri=" + String(contentUri || ""));
 +        safeLog(null, "i", "pickword image public io mode=root_copy via=" + String(shell.via || "") +
 +          " executable=" + String(shell.executable || "") +
 +          " path=" + targetPath + " uri=" + String(contentUri || ""));
-@@
+@@ -549,3 +627,4 @@
        rootFallback: true,
 -      via: String(shell.via || "")
 +      via: String(shell.via || ""),
@@ -186,10 +186,10 @@ diff --git a/code/th_22_image_viewer.js b/code/th_22_image_viewer.js
 diff --git a/scripts/verify_pickword_image_viewer.py b/scripts/verify_pickword_image_viewer.py
 --- a/scripts/verify_pickword_image_viewer.py
 +++ b/scripts/verify_pickword_image_viewer.py
-@@
+@@ -34,1 +34,1 @@
 -require('// @version 1.2.3' in th22, "image viewer version")
 +require('// @version 1.2.4' in th22, "image viewer version")
-@@
+@@ -47,4 +47,9 @@
 -require('function runRootShell22(command)' in th22, "root shell public fallback missing")
 -require('"su", "--mount-master", "-c"' in th22 and '"su", "-c"' in th22, "root shell fallback variants missing")
 -require('function underlyingPublicPath22(file)' in th22 and '"/data/media/"' in th22, "underlying storage fallback missing")
@@ -206,6 +206,6 @@ diff --git a/scripts/verify_pickword_image_viewer.py b/scripts/verify_pickword_i
 diff --git a/scripts/verify_screenshot_manager.py b/scripts/verify_screenshot_manager.py
 --- a/scripts/verify_screenshot_manager.py
 +++ b/scripts/verify_screenshot_manager.py
-@@
+@@ -25,1 +25,1 @@
 -require('// @version 1.2.3' in th22, 'th22 service version')
 +require('// @version 1.2.4' in th22, 'th22 service version')
