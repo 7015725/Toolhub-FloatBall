@@ -1,4 +1,4 @@
-// @version 1.2.3
+// @version 1.2.4
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -414,48 +414,125 @@
     return "";
   }
 
+  function addRootExecutableCandidate22(out, value) {
+    var path = String(value === undefined || value === null ? "" : value).replace(/^\s+|\s+$/g, "");
+    if (!path) return;
+    for (var i = 0; i < out.length; i++) {
+      if (String(out[i]) === path) return;
+    }
+    out.push(path);
+  }
+
+  function rootExecutableCandidates22() {
+    var out = [];
+    addRootExecutableCandidate22(out, "/system/bin/su");
+    addRootExecutableCandidate22(out, "/system/xbin/su");
+    addRootExecutableCandidate22(out, "/sbin/su");
+    addRootExecutableCandidate22(out, "/debug_ramdisk/su");
+    addRootExecutableCandidate22(out, "/data/adb/ksu/bin/su");
+    addRootExecutableCandidate22(out, "/data/adb/ap/bin/su");
+    addRootExecutableCandidate22(out, "/data/adb/magisk/su");
+    try {
+      var envPath = String(java.lang.System.getenv("PATH") || "");
+      var entries = envPath.split(":");
+      for (var i = 0; i < entries.length; i++) {
+        var one = String(entries[i] || "").replace(/^\s+|\s+$/g, "");
+        if (one) addRootExecutableCandidate22(out, one.replace(/\/+$/g, "") + "/su");
+      }
+    } catch (ePath) {}
+    addRootExecutableCandidate22(out, "su");
+    return out;
+  }
+
+  function processOutput22(process) {
+    var reader = null;
+    var out = "";
+    try {
+      reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+      var line = null;
+      while ((line = reader.readLine()) !== null) {
+        if (out) out += " ";
+        out += String(line);
+        if (out.length >= 480) break;
+      }
+    } catch (eRead) {
+    } finally {
+      try { if (reader) reader.close(); } catch (eClose) {}
+    }
+    return out.length > 480 ? out.substring(0, 480) : out;
+  }
+
   function runRootShell22(command) {
-    var variants = [
-      ["su", "--mount-master", "-c", String(command || "")],
-      ["su", "-c", String(command || "")]
-    ];
-    var lastError = "";
-    for (var i = 0; i < variants.length; i++) {
-      var process = null;
-      try {
-        var args = new java.util.ArrayList();
-        for (var j = 0; j < variants[i].length; j++) args.add(String(variants[i][j]));
-        var builder = new java.lang.ProcessBuilder(args);
-        builder.redirectErrorStream(true);
-        process = builder.start();
-        var deadline = now22() + 15000;
+    var executables = rootExecutableCandidates22();
+    var attempts = [];
+    var fixedPath = "/system/bin:/system/xbin:/vendor/bin:/product/bin:/sbin:/debug_ramdisk:/data/adb/ksu/bin:/data/adb/ap/bin:/data/adb/magisk";
+    for (var i = 0; i < executables.length; i++) {
+      var executable = String(executables[i] || "");
+      var modes = [
+        { args: ["--mount-master", "-c"], via: "su_mount_master" },
+        { args: ["-c"], via: "su" }
+      ];
+      for (var modeIndex = 0; modeIndex < modes.length; modeIndex++) {
+        var process = null;
         var exitCode = null;
-        while (now22() < deadline) {
-          try {
-            exitCode = Number(process.exitValue());
-            break;
-          } catch (eWait) {
-            java.lang.Thread.sleep(50);
+        var output = "";
+        try {
+          var args = new java.util.ArrayList();
+          args.add(executable);
+          for (var j = 0; j < modes[modeIndex].args.length; j++) {
+            args.add(String(modes[modeIndex].args[j]));
           }
+          args.add(String(command || ""));
+          var builder = new java.lang.ProcessBuilder(args);
+          builder.redirectErrorStream(true);
+          try { builder.environment().put("PATH", fixedPath); } catch (eEnv) {}
+          process = builder.start();
+          var deadline = now22() + 15000;
+          while (now22() < deadline) {
+            try {
+              exitCode = Number(process.exitValue());
+              break;
+            } catch (eWait) {
+              java.lang.Thread.sleep(50);
+            }
+          }
+          if (exitCode === null) {
+            try { process.destroy(); } catch (eDestroy) {}
+            attempts.push(executable + ":" + modes[modeIndex].via + ":timeout");
+          } else {
+            output = processOutput22(process);
+            if (exitCode === 0) {
+              try {
+                if (typeof safeLog === "function") {
+                  safeLog(null, "i", "pickword image root executable path=" + executable +
+                    " mode=" + modes[modeIndex].via);
+                }
+              } catch (eLog) {}
+              return {
+                ok: true,
+                via: modes[modeIndex].via,
+                executable: executable
+              };
+            }
+            attempts.push(
+              executable + ":" + modes[modeIndex].via + ":exit=" + String(exitCode) +
+              (output ? ":out=" + output : "")
+            );
+          }
+        } catch (eRun) {
+          attempts.push(executable + ":" + modes[modeIndex].via + ":" + String(eRun));
+        } finally {
+          try { if (process) process.getOutputStream().close(); } catch (eOut) {}
+          try { if (process) process.getInputStream().close(); } catch (eIn) {}
+          try { if (process) process.getErrorStream().close(); } catch (eErr) {}
+          try { if (process) process.destroy(); } catch (eDestroy2) {}
         }
-        if (exitCode === null) {
-          try { process.destroy(); } catch (eDestroy) {}
-          lastError = "timeout";
-        } else if (exitCode === 0) {
-          return { ok: true, via: i === 0 ? "su_mount_master" : "su" };
-        } else {
-          lastError = "exit=" + String(exitCode);
-        }
-      } catch (eRun) {
-        lastError = String(eRun);
-      } finally {
-        try { if (process) process.getOutputStream().close(); } catch (eOut) {}
-        try { if (process) process.getInputStream().close(); } catch (eIn) {}
-        try { if (process) process.getErrorStream().close(); } catch (eErr) {}
-        try { if (process) process.destroy(); } catch (eDestroy2) {}
       }
     }
-    throw new Error("Root 文件操作失败: " + lastError);
+    throw new Error(
+      "Root 文件操作失败，未找到可用 su；attempts=" +
+      attempts.slice(0, 12).join(" | ")
+    );
   }
 
   function queryMediaUriByPath22(file) {
@@ -543,6 +620,7 @@
     try {
       if (typeof safeLog === "function") {
         safeLog(null, "i", "pickword image public io mode=root_copy via=" + String(shell.via || "") +
+          " executable=" + String(shell.executable || "") +
           " path=" + targetPath + " uri=" + String(contentUri || ""));
       }
     } catch (eLog) {}
@@ -556,7 +634,8 @@
       expiresAt: Number(expiresAt || 0),
       fallback: true,
       rootFallback: true,
-      via: String(shell.via || "")
+      via: String(shell.via || ""),
+      rootExecutable: String(shell.executable || "")
     };
   }
 
