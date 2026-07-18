@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_patch_runner.py", line 176, in main
+    apply_patch()
+    ~~~~~~~~~~~^^
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_patch_runner.py", line 132, in apply_patch
+    payload, normalization = load_verified_payload()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_patch_runner.py", line 114, in load_verified_payload
+    raise RuntimeError(
+    ...<9 lines>...
+    )
+RuntimeError: stage2 patch mismatch size=82767 sha256=1e5a1f68b602c481cf97714c96f727070b31f7b2587d681a554d9a2dab579820 expected_size=82766 expected_sha256=e3a101046ddcb5fe4465effcbdd97d0d6845d2ac2fe3c573734f3bafde53e345 part_sizes=19452,17543,17116,17365,11291 expected_part_sizes=19451,17543,17116,17365,11291
+
