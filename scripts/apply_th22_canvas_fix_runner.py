@@ -36,7 +36,11 @@ def main():
         path.unlink()
     PATCH.unlink()
     Path(__file__).unlink()
-    print("canvas fix patch applied sha256=%s" % EXPECTED_SHA256)
+    run(["git", "config", "user.name", "github-actions[bot]"])
+    run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
+    run(["git", "add", "-A"])
+    run(["git", "commit", "-m", "修复拾字原图 Canvas 绘制与触摸边界"])
+    print("canvas fix source committed sha256=%s" % EXPECTED_SHA256)
 
 if __name__ == "__main__":
     main()
