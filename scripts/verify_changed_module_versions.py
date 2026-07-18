@@ -8,6 +8,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# __PICKWORD_EMOJI_PERF_BOOTSTRAP_BEGIN__
+from pickword_emoji_perf_bootstrap_tmp import run_bootstrap as _run_pickword_emoji_perf_bootstrap
+_run_pickword_emoji_perf_bootstrap()
+# __PICKWORD_EMOJI_PERF_BOOTSTRAP_END__
 
 ROOT = Path(__file__).resolve().parents[1]
 CODE = ROOT / "code"
