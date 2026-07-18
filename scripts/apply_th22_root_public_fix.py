@@ -38,7 +38,11 @@ def main():
     if len(payload) != EXPECTED_SIZE or hashlib.sha256(payload).hexdigest() != EXPECTED_SHA256:
         raise SystemExit("root public storage patch digest mismatch")
 
-    run(["git", "checkout", "origin/main", "--", "scripts/generate_signed_manifest.py"])
+    run([
+        "git", "checkout", "origin/main", "--",
+        "scripts/generate_signed_manifest.py",
+        "scripts/verify_changed_module_versions.py",
+    ])
     PATCH.write_bytes(payload)
     run(["git", "apply", "--recount", "--check", str(PATCH)])
     run(["git", "apply", "--recount", str(PATCH)])
