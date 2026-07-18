@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 158, in <module>
+    main()
+    ~~~~^^
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 119, in main
+    source, overlaps = rebuild_source(
+                       ~~~~~~~~~~~~~~^
+        [found[index] for index in range(len(PREFIXES))]
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 81, in rebuild_source
+    source = convert_assignment(source, "TH22", "\nIMAGE_SETTINGS_UI = '")
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 62, in convert_assignment
+    raise ValueError("assignment end missing: " + name)
+ValueError: assignment end missing: TH22
+
