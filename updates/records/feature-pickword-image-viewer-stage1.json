@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "feature-pickword-image-viewer-stage1",
+  "type": "feature",
+  "title": "接入拾字截图缩略图与原图查看",
+  "details": [
+    "框选 OCR 截图路径完整交接到拾字面板，OCR 空结果或失败时仍可保留并查看截图",
+    "拾字文本区与截图缩略图在宽屏按 70/30 并排，窄屏自动切换为上图下文",
+    "原图查看复用同一个拾字 WindowManager 根布局，返回后保留文字、选区、翻译和滚动状态",
+    "新增单图缩放、平移、双击复位、降采样与 BitmapRegionDecoder 可视区域解码",
+    "严格限制只读取 ToolHub/screenshots 内部截图，图片模块不接管截图线程和文件删除"
+  ],
+  "manifestVersion": 0
+}
