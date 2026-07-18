@@ -1,4 +1,4 @@
-// @version 1.2.1
+// @version 1.2.2
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -350,6 +350,45 @@
     }
   }
 
+  function probeMediaStore22(dir) {
+    var resolver = context.getContentResolver();
+    var uri = null;
+    var output = null;
+    var values = new android.content.ContentValues();
+    var relative = relativePath22(dir);
+    try {
+      values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "ToolHub_Probe_" + String(now22()) + ".png");
+      values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "image/png");
+      values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, String(relative));
+      values.put(android.provider.MediaStore.MediaColumns.IS_PENDING, new java.lang.Integer(1));
+      uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+      if (!uri) throw new Error("MediaStore 目录探测创建失败");
+      output = resolver.openOutputStream(uri, "w");
+      if (!output) throw new Error("MediaStore 目录探测输出流为空");
+      var bytes = android.util.Base64.decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        android.util.Base64.DEFAULT
+      );
+      output.write(bytes, 0, bytes.length);
+      output.flush();
+      return true;
+    } finally {
+      closeStream22(output);
+      try { if (uri) resolver.delete(uri, null, null); } catch (eDelete) {}
+    }
+  }
+
+  function preparePublicDir22(appObj, childName, createPhysical) {
+    var base = normalizePublicDir22(configuredPublicDir22(appObj), createPhysical === true);
+    if (!childName) return base;
+    var child = new java.io.File(base, String(childName));
+    if (createPhysical === true && !child.exists() && !child.mkdirs() && !child.exists()) {
+      throw new Error("无法创建保存目录");
+    }
+    if (child.exists() && !child.isDirectory()) throw new Error("保存路径不是目录");
+    return child;
+  }
+
   function relativePath22(dir) {
     var storage = android.os.Environment.getExternalStorageDirectory().getCanonicalFile();
     var rootPath = String(storage.getCanonicalPath());
@@ -503,24 +542,34 @@
       existing.reused = true;
       return existing;
     }
-    var dir = normalizePublicDir22(configuredPublicDir22(appObj), true);
-    probeWritable22(dir);
     var name = displayName22(sourceFile, Number(session.createdAt || now22()), "ToolHub_");
     var result = null;
-    try {
-      result = insertMediaStore22(sourceFile, dir, name, "saved", 0);
-    } catch (eMedia) {
-      result = copyFileFallback22(sourceFile, dir, name);
-      result.mediaStoreError = String(eMedia);
+    if (android.os.Build.VERSION.SDK_INT >= 29) {
+      var mediaDir = preparePublicDir22(appObj, "", false);
+      try {
+        result = insertMediaStore22(sourceFile, mediaDir, name, "saved", 0);
+      } catch (eMedia) {
+        try {
+          var fallbackDir = preparePublicDir22(appObj, "", true);
+          probeWritable22(fallbackDir);
+          result = copyFileFallback22(sourceFile, fallbackDir, name);
+          result.mediaStoreError = String(eMedia);
+        } catch (eFallback) {
+          throw new Error("MediaStore 保存失败: " + String(eMedia) + "; 文件回退失败: " + String(eFallback));
+        }
+      }
+    } else {
+      var legacyDir = preparePublicDir22(appObj, "", true);
+      probeWritable22(legacyDir);
+      result = copyFileFallback22(sourceFile, legacyDir, name);
     }
     updateImageSaved22(String(sourceFile.getCanonicalPath()), result.publicPath, result.contentUri, result.createdAt);
     return result;
   }
 
   function createShareCopy22(appObj, sourceFile, session) {
-    var base = normalizePublicDir22(configuredPublicDir22(appObj), true);
-    var dir = new java.io.File(base, "ShareTemp");
-    if (!dir.exists() && !dir.mkdirs() && !dir.exists()) throw new Error("临时分享目录创建失败");
+    var scoped = android.os.Build.VERSION.SDK_INT >= 29;
+    var dir = preparePublicDir22(appObj, "ShareTemp", !scoped);
     var expiresAt = now22() + 24 * 60 * 60 * 1000;
     var name = displayName22(sourceFile, Number(session.createdAt || now22()), "ToolHub_Share_");
     var result = insertMediaStore22(sourceFile, dir, name, "share_temp", expiresAt);
@@ -869,9 +918,8 @@
     }
     var publicFile = normalizePublicFile22(row.publicPath);
     if (!isImageFile22(publicFile)) throw new Error("公共副本不可用");
-    var base = normalizePublicDir22(configuredPublicDir22(appObj), true);
-    var tempDir = new java.io.File(base, "ShareTemp");
-    if (!tempDir.exists() && !tempDir.mkdirs() && !tempDir.exists()) throw new Error("临时目录创建失败");
+    var scoped = android.os.Build.VERSION.SDK_INT >= 29;
+    var tempDir = preparePublicDir22(appObj, "ShareTemp", !scoped);
     var expiresAt = now22() + 24 * 60 * 60 * 1000;
     var result = insertMediaStore22(publicFile, tempDir, displayName22(publicFile, now22(), "ToolHub_View_"), "share_temp", expiresAt);
     addExport22(String(internalPath || ""), "share_temp", result.publicPath, result.contentUri, result.createdAt, expiresAt);
@@ -908,13 +956,14 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.1") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.2") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
         try {
-          var dir = normalizePublicDir22(pathValue, true);
-          probeWritable22(dir);
+          var scoped = android.os.Build.VERSION.SDK_INT >= 29;
+          var dir = normalizePublicDir22(pathValue, !scoped);
+          if (scoped) probeMediaStore22(dir); else probeWritable22(dir);
           result.ok = true;
           result.path = String(dir.getCanonicalPath());
         } catch (e0) {
