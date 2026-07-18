@@ -11,5 +11,25 @@
     "公共保存副本永不参与自动清理，历史截图管理器继续留到第三阶段",
     "65, default: 7 },\\\\n\\\\n\\'\\\\n        \\'    // ========== 以下配置\\',\\\\n        \"base validator\"\\\\n    )\\\\n    text = replace_once(\\\\n        text,\\\\n        \\'        PICKWORD_YOUDAO_APP_SECRET: \"\",\\\\n        PANEL_WIDTH_PERCENT: 90,\\',\\\\n        \\'        PICKWORD_YOUDAO_APP_SECRET: \"\",\\\\n\\'\\\\n        \\'        PICKWORD_IMAGE_PUBLIC_DIR: \"/storage/emulated/0/Pictures/ToolHub\",\\\\n\\'\\\\n        \\'        PICKWORD_IMAGE_RETENTION_DAYS: 7,\\\\n\\'\\\\n        \\'        PANEL_WIDTH_PERCENT: 90,\\',\\\\n        \"base defaults\"\\\\n    )\\\\n    text = replace_once(\\\\n        text,\\\\n        \\'        { key: \"PICKWORD_YOUDAO_APP_SECRET\", name: \"有道应用密钥\", type: \"hidden\" },\\\\n\\\\n\\'\\\\n        \\'        { type: \"section\", name: \"面板布局\" },\\',\\\\n        \\'        { key: \"PICKWORD_YOUDAO_APP_SECRET\", name: \"有道应用密钥\", type: \"hidden\" },\\\\n\\'\\\\n        \\'        { key: \"PICKWORD_IMAGE_PUBLIC_DIR\", name: \"截图保存与清理\", type: \"pickword_image_settings\" },\\\\n\\'\\\\n        \\'        { key: \"PICKWORD_IMAGE_RETENTION_DAYS\", name: \"内部截图保留天数\", type: \"hidden\" },\\\\n\\\\n\\'\\\\n        \\'        { type: \"section\", name: \"面板布局\" },\\',\\\\n        \"base schema\"\\\\n    )\\\\n    text = replace_once(\\\\n        text,\\\\n        \\'            sStr.indexOf(\"PICKWORD_YOUDAO_APP_SECRET\") < 0 ||\\\\n\\'\\\\n        \\'            sStr.indexOf(\"pickword_translate_settings\") < 0\\\\n\\',\\\\n        \\'            sStr.indexOf(\"PICKWORD_YOUDAO_APP_SECRET\") < 0 ||\\\\n\\'\\\\n        \\'            sStr.indexOf(\"PICKWORD_IMAGE_PUBLIC_DIR\") < 0 ||\\\\n\\'\\\\n        \\'            sStr.indexOf(\"PICKWORD_IMAGE_RETENTION_DAYS\") < 0 ||\\\\n\\'\\\\n        \\'            sStr.indexOf(\"pickword_translate_settings\") < 0 ||\\\\n\\'\\\\n        \\'            sStr.indexOf(\"pickword_image_settings\") < 0\\\\n\\',\\\\n        \"base schema completeness\"' ; L7='    )' ; L8='    text = replace_once('"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260718154258,
+  "date": "2026-07-18",
+  "modules": [
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "1.0.0",
+      "to": "1.0.1",
+      "change": "updated"
+    },
+    {
+      "name": "th_stage2_bootstrap.js",
+      "from": "",
+      "to": "1.0.0",
+      "change": "added"
+    }
+  ],
+  "entry": {
+    "changed": true,
+    "from": 20260718213000,
+    "to": 20260718232000
+  }
 }
