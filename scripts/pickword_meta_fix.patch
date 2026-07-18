@@ -1,0 +1,220 @@
+diff --git a/.github/workflows/sign-toolhub.yml b/.github/workflows/sign-toolhub.yml
+index c01731e..59613ba 100644
+--- a/.github/workflows/sign-toolhub.yml
++++ b/.github/workflows/sign-toolhub.yml
+@@ -158,6 +158,8 @@ jobs:
+         run: |
+           python3 scripts/verify_pointer_regressions.py
+           python3 scripts/verify_result_preview.py
++          python3 scripts/verify_pickword_image_viewer.py
++          python3 scripts/verify_pickword_image_meta_handoff.py
+           python3 scripts/verify_screenshot_manager.py
+ 
+       - name: Check generated whitespace
+diff --git a/.github/workflows/verify.yml b/.github/workflows/verify.yml
+index 0578c3d..3135184 100644
+--- a/.github/workflows/verify.yml
++++ b/.github/workflows/verify.yml
+@@ -167,6 +167,7 @@ jobs:
+             python3 scripts/verify_pointer_regressions.py
+             python3 scripts/verify_result_preview.py
+             python3 scripts/verify_pickword_image_viewer.py
++            python3 scripts/verify_pickword_image_meta_handoff.py
+             python3 scripts/verify_screenshot_manager.py
+             python3 .github/scripts/verify_manifest_signature.py
+           } 2>&1 | tee toolhub-verification-report.txt
+diff --git a/code/th_20_pickword.js b/code/th_20_pickword.js
+index b90a458..d112c4f 100644
+--- a/code/th_20_pickword.js
++++ b/code/th_20_pickword.js
+@@ -1,4 +1,4 @@
+-// @version 1.0.17
++// @version 1.0.18
+ // ==========================================
+ // 拾字 - 文字选择工具
+ // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
+@@ -241,8 +241,21 @@
+ 
+     function normalizePickwordImageMeta20(meta) {
+         if (!meta || typeof meta !== "object") return null;
++        if (meta.deleted === true || meta.available === false) return null;
+         var rawPath = "";
+-        try { rawPath = String(meta.screenshotPath || "").replace(/^\s+|\s+$/g, ""); } catch (ePath) { rawPath = ""; }
++        var sourceField = "";
++        try {
++            if (meta.internalPath) {
++                rawPath = String(meta.internalPath || "").replace(/^\s+|\s+$/g, "");
++                sourceField = "internalPath";
++            } else {
++                rawPath = String(meta.screenshotPath || "").replace(/^\s+|\s+$/g, "");
++                sourceField = "screenshotPath";
++            }
++        } catch (ePath) {
++            rawPath = "";
++            sourceField = "";
++        }
+         if (!rawPath) return null;
+         try {
+             var target = new java.io.File(rawPath);
+@@ -252,7 +265,7 @@
+             var root = new java.io.File(base, "ToolHub/screenshots").getCanonicalPath();
+             var canonical = target.getCanonicalPath();
+             if (canonical.indexOf(root + java.io.File.separator) !== 0) return null;
+-            return {
++            var normalized = {
+                 internalPath: String(canonical),
+                 available: true,
+                 deleted: false,
+@@ -260,7 +273,7 @@
+                 previewId: String(meta.previewId || ""),
+                 screenshotOk: meta.screenshotOk !== false,
+                 allowEmptyText: meta.allowEmptyText === true,
+-                imageOnly: meta.allowEmptyText === true,
++                imageOnly: meta.imageOnly === true || meta.allowEmptyText === true,
+                 ocrStatus: String(meta.ocrStatus || ""),
+                 ocrError: String(meta.ocrError || ""),
+                 createdAt: Number(meta.createdAt || 0),
+@@ -269,6 +282,12 @@
+                 savedContentUri: String(meta.savedContentUri || ""),
+                 savedAt: Number(meta.savedAt || 0)
+             };
++            try {
++                safeLog(toolhubAppRef && toolhubAppRef.L, "i",
++                    "pickword image meta normalized path=" + normalized.internalPath +
++                    " available=true sourceField=" + sourceField);
++            } catch (eMetaLog) {}
++            return normalized;
+         } catch (eNormalize) {
+             try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image meta rejected: " + String(eNormalize)); } catch (eLog) {}
+         }
+@@ -402,6 +421,12 @@
+         var meta = currentPickwordMeta20;
+         if (!meta || meta.available !== true || !toolhubAppRef ||
+             typeof toolhubAppRef.createPickwordImageController !== "function") {
++            try {
++                var fallbackReason = !meta ? "meta_missing" :
++                    (meta.available !== true ? "meta_unavailable" : "controller_missing");
++                safeLog(toolhubAppRef && toolhubAppRef.L, "i",
++                    "pickword image layout mode=text_only controller=false thumbnailAttached=false reason=" + fallbackReason);
++            } catch (eFallbackLog) {}
+             if (originalLp) parent.addView(view, originalLp); else parent.addView(view);
+             return;
+         }
+@@ -437,6 +462,10 @@
+                 }
+             });
+             if (!pickwordImageController20 || pickwordImageController20.hasImage() !== true) {
++                try {
++                    safeLog(toolhubAppRef && toolhubAppRef.L, "w",
++                        "pickword image layout mode=text_only controller=false thumbnailAttached=false reason=image_unavailable");
++                } catch (eUnavailableLog) {}
+                 releasePickwordImageController20("unavailable");
+                 if (originalLp) parent.addView(view, originalLp); else parent.addView(view);
+                 return;
+@@ -482,6 +511,12 @@
+             pickwordImagePage20 = pickwordImageController20.createFullView();
+             pickwordImagePage20.setVisibility(View.GONE);
+             parent.addView(pickwordImagePage20, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
++            try {
++                safeLog(toolhubAppRef && toolhubAppRef.L, "i",
++                    "pickword image layout mode=" + (horizontal ? "horizontal" : "vertical") +
++                    " controller=true thumbnailAttached=" + String(!!(thumb && thumb.getParent())) +
++                    " path=" + String(meta.internalPath || ""));
++            } catch (eLayoutLog) {}
+             mainHandler.post(new java.lang.Runnable({ run: function() { applyPickwordImageOnlyActions20(); } }));
+         } catch (eBuild) {
+             releasePickwordImageController20("build_failed");
+diff --git a/scripts/verify_pickword_emoji_grapheme.py b/scripts/verify_pickword_emoji_grapheme.py
+index 0062aad..bce0b80 100644
+--- a/scripts/verify_pickword_emoji_grapheme.py
++++ b/scripts/verify_pickword_emoji_grapheme.py
+@@ -11,7 +11,7 @@ def require(condition, message):
+         raise SystemExit(message)
+ 
+ 
+-require(text.startswith("// @version 1.0.17\n"), "pickword version must be 1.0.17")
++require(text.startswith("// @version 1.0.18\n"), "pickword version must be 1.0.18")
+ for marker in (
+     "segmentPickwordGraphemes20",
+     "segmentPickwordGraphemesFallback20",
+diff --git a/scripts/verify_pickword_image_meta_handoff.py b/scripts/verify_pickword_image_meta_handoff.py
+new file mode 100644
+index 0000000..bd47a86
+--- /dev/null
++++ b/scripts/verify_pickword_image_meta_handoff.py
+@@ -0,0 +1,33 @@
++#!/usr/bin/env python3
++from pathlib import Path
++import re
++
++ROOT = Path(__file__).resolve().parents[1]
++SOURCE = (ROOT / "code" / "th_20_pickword.js").read_text(encoding="utf-8")
++
++
++def require(value, message):
++    if not value:
++        raise SystemExit("FAIL pickword-image-meta-handoff: " + message)
++
++
++require(SOURCE.startswith("// @version 1.0.18\n"), "th_20 version must be 1.0.18")
++match = re.search(
++    r"function normalizePickwordImageMeta20\(meta\) \{(?P<body>.*?)\n    \}\n\n    function releasePickwordImageController20",
++    SOURCE,
++    re.S,
++)
++require(match is not None, "normalizer block missing")
++body = match.group("body")
++require('if (meta.internalPath)' in body, "normalized internalPath is not accepted")
++require('meta.screenshotPath' in body, "raw screenshotPath fallback missing")
++require(body.index('if (meta.internalPath)') < body.index('meta.screenshotPath'), "internalPath must be preferred")
++require('internalPath: String(canonical)' in body, "canonical internalPath output missing")
++require('meta.deleted === true || meta.available === false' in body, "deleted/unavailable meta guard missing")
++require('meta.imageOnly === true || meta.allowEmptyText === true' in body, "imageOnly state is not preserved")
++require('sourceField = "internalPath"' in body and 'sourceField = "screenshotPath"' in body, "source-field classification missing")
++require('pickword image meta normalized path=' in body, "normalization success log missing")
++require('pickword image layout mode=text_only controller=false thumbnailAttached=false' in SOURCE, "text-only fallback log missing")
++require('pickword image layout mode=' in SOURCE and 'thumbnailAttached=' in SOURCE, "actual layout attachment log missing")
++require('currentPickwordMeta20 = normalizePickwordImageMeta20(meta);' in SOURCE, "second normalization path missing from test boundary")
++print("OK pickword_image_meta_handoff idempotent=internalPath|screenshotPath logs=meta+layout")
+diff --git a/scripts/verify_pickword_image_viewer.py b/scripts/verify_pickword_image_viewer.py
+index a1fa709..6458672 100644
+--- a/scripts/verify_pickword_image_viewer.py
++++ b/scripts/verify_pickword_image_viewer.py
+@@ -25,6 +25,9 @@ require('kind: hasText ? "text" : "image"' in th18, "OCR preview kind missing")
+ require('allowEmptyText: allowEmptyText' in th21, "preview normalized empty-image flag missing")
+ require('allowEmptyText: payload.allowEmptyText === true' in th21, "preview handoff metadata missing")
+ require('addPickwordTextArea20(mainLayout, scrollView' in th20, "pickword text/image layout host missing")
++require('meta.internalPath' in th20 and 'meta.screenshotPath' in th20, "pickword image meta idempotent path handoff missing")
++require('sourceField=" + sourceField' in th20, "pickword image meta source-field log missing")
++require('thumbnailAttached=" + String(!!(thumb && thumb.getParent()))' in th20, "thumbnail attachment log missing")
+ require('removePickwordImageAfterDelete20' in th20, "delete must preserve text and remove image host")
+ require('onSaved: function(info)' in th20 and 'onDeleted: function(info)' in th20, "stage2 callbacks missing")
+ require('createPickwordImageController' in th22, "image controller missing")
+diff --git a/scripts/verify_pickword_long_click_api34.py b/scripts/verify_pickword_long_click_api34.py
+index f2948e4..6aba461 100644
+--- a/scripts/verify_pickword_long_click_api34.py
++++ b/scripts/verify_pickword_long_click_api34.py
+@@ -16,8 +16,8 @@ def fail(message):
+ def main():
+     text = SOURCE.read_text(encoding="utf-8")
+ 
+-    if not text.startswith("// @version 1.0.17\n"):
+-        fail("th_20_pickword.js version must be 1.0.17")
++    if not text.startswith("// @version 1.0.18\n"):
++        fail("th_20_pickword.js version must be 1.0.18")
+ 
+     listeners = list(re.finditer(r"new\s+View\.OnLongClickListener\s*\(\s*\{", text))
+     if len(listeners) != 2:
+diff --git a/scripts/verify_pickword_unified_cleanup.py b/scripts/verify_pickword_unified_cleanup.py
+index 29698d7..6b33609 100644
+--- a/scripts/verify_pickword_unified_cleanup.py
++++ b/scripts/verify_pickword_unified_cleanup.py
+@@ -11,7 +11,7 @@ def require(condition, message):
+         raise SystemExit(message)
+ 
+ 
+-require(source.startswith("// @version 1.0.17\n"), "pickword module version must be 1.0.17")
++require(source.startswith("// @version 1.0.18\n"), "pickword module version must be 1.0.18")
+ require("CANVAS_DRAG_VISIBLE_LINE_BUFFER: 8" in source, "drag visible-line buffer config missing")
+ require("CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS: 40" in source, "drag highlight interval config missing")
+ require("parseInt(String(DIY_CONFIG.CANVAS_DRAG_VISIBLE_LINE_BUFFER), 10)" in source, "drag buffer is not consumed")
