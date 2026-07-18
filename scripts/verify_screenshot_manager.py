@@ -22,7 +22,7 @@ generator = read("scripts/generate_signed_manifest.py")
 boundaries = read("MODULE_BOUNDARIES.json")
 workflow = read(".github/workflows/verify.yml")
 
-require('// @version 1.2.2' in th22, 'th22 service version')
+require('// @version 1.2.3' in th22, 'th22 service version')
 require('// @version 1.0.0' in th23, 'th23 version')
 require('getPickwordImageService' in th22, 'service API')
 for marker in ('listInternal', 'listSaved', 'saveInternal', 'prepareShareInternal', 'deleteInternal', 'prepareSavedUri', 'deleteSaved', 'launchShare', 'launchView'):

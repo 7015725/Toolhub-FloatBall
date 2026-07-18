@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "63f05b462dcd81436d3ce197c13fcffff9481aae680a941122173ffd8db0f243",
-      "size": 36693,
-      "version": 20260718193842
+      "sha256": "3459409096f1f8ca8cafd4396254ec82c8d1f3fa801d410a4549514c96d33bc6",
+      "size": 37986,
+      "version": 20260718212307
     }
   },
   "entry": {
@@ -154,9 +154,9 @@
       "version": "1.3.3"
     },
     "th_22_image_viewer.js": {
-      "sha256": "277e8bed8e62d324c31ca8382e423748838a5f831f9e16e18d398987ea3f258f",
-      "size": 77471,
-      "version": "1.2.2"
+      "sha256": "addd3f22d7f1a739a31529ad009d834af99ad15d4f9c185ce0ec1e5490a5ef74",
+      "size": 87512,
+      "version": "1.2.3"
     },
     "th_23_screenshot_manager.js": {
       "sha256": "ac2736686ebfb68762c928f7bae279d453180fe1863a5d9f79fff43800716e3a",
@@ -167,15 +167,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Android 10 及以上公共保存主路径不再预先 mkdirs 或使用 FileOutputStream 探测，改由 MediaStore RELATIVE_PATH 创建目录",
-      "保存失败时才尝试传统文件回退，并同时保留 MediaStore 与文件回退错误，避免仅显示无法创建保存目录",
-      "分享临时副本与已保存图片查看临时副本统一通过 MediaStore 创建 ShareTemp 相对目录",
-      "设置页目录测试在 API 29 及以上改为创建并删除临时 MediaStore 项，低版本继续使用传统文件写入探测",
-      "补充回归测试，锁定 API 29 及以上不得在 MediaStore 前强制创建公共物理目录"
+      "system_server 环境优先通过 su --mount-master 将内部截图复制到公共目录，避免 MediaStore openOutputStream 的远端 Provider 异常",
+      "Root 复制同时支持 /storage/emulated/0 与 /data/media/<userId> 两条路径，并对目标路径执行主存储边界校验和 Shell 引号转义",
+      "公共图片写入后通过 MediaScannerConnection、系统扫描广播和 MediaStore 路径查询依次取得可分享 content URI",
+      "保存、分享、已保存图片查看、目录测试和公共副本删除统一接入 Root 回退；非 system_server 环境仍优先使用 MediaStore",
+      "新增专项回归，锁定 Root 双路径回退、媒体扫描、分享 URI 和 th_22 版本"
     ],
     "date": "2026-07-19",
-    "title": "修复拾字截图公共保存与分享目录创建失败"
+    "title": "修复 system_server 公共截图保存与分享失败"
   },
   "schema": 4,
-  "version": 20260718193842
+  "version": 20260718212307
 }
