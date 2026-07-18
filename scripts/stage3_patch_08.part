@@ -1,0 +1,104 @@
++      handler.post(new java.lang.Runnable({ run: function() { if (!detached) fn(); } }));
++    }
++
++    function closeImageOverlay(refreshAfter) {
++      try { if (activeController) activeController.release("manager_close"); } catch (eRelease) {}
++      activeController = null;
++      try { if (activeOverlay && activeOverlay.getParent()) activeOverlay.getParent().removeView(activeOverlay); } catch (eRemove) {}
++      activeOverlay = null;
++      if (refreshAfter) loadRecords();
++    }
++
++    function showConfirm(titleText, bodyText, confirmText, strong, onConfirm) {
++      if (activeOverlay || detached) return;
++      var overlay = new android.widget.FrameLayout(context);
++      activeOverlay = overlay;
++      try { toolhubSafeSetBackgroundColor(overlay, 0x99000000 | 0); } catch (eBg) {}
++      var card = new android.widget.LinearLayout(context);
++      card.setOrientation(android.widget.LinearLayout.VERTICAL);
++      card.setPadding(dp23(self, 18), dp23(self, 16), dp23(self, 18), dp23(self, 14));
++      card.setBackground(round23(self, colors.surface, colors.outlineVariant, 18));
++      var title = new android.widget.TextView(context);
++      title.setText(String(titleText || "确认操作"));
++      title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 17);
++      title.setTypeface(null, android.graphics.Typeface.BOLD);
++      safeText23(title, strong ? colors.danger : colors.onSurface);
++      card.addView(title);
++      var body = new android.widget.TextView(context);
++      body.setText(String(bodyText || ""));
++      body.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
++      body.setLineSpacing(dp23(self, 3), 1.0);
++      safeText23(body, colors.onSurface2);
++      var bodyLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
++      bodyLp.topMargin = dp23(self, 10);
++      card.addView(body, bodyLp);
++      var row = new android.widget.LinearLayout(context);
++      row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
++      row.setGravity(android.view.Gravity.END);
++      var cancel = textButton23(self, "取消", colors.onSurface2, function() { closeImageOverlay(false); });
++      row.addView(cancel, new android.widget.LinearLayout.LayoutParams(dp23(self, 88), dp23(self, 46)));
++      var confirm = textButton23(self, confirmText || "删除", strong ? colors.danger : colors.primary, function() {
++        try { if (overlay.getParent()) overlay.getParent().removeView(overlay); } catch (eRm) {}
++        activeOverlay = null;
++        onConfirm();
++      });
++      var confirmLp = new android.widget.LinearLayout.LayoutParams(dp23(self, strong ? 150 : 104), dp23(self, 46));
++      confirmLp.leftMargin = dp23(self, 8);
++      row.addView(confirm, confirmLp);
++      var rowLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
++      rowLp.topMargin = dp23(self, 14);
++      card.addView(row, rowLp);
++      var cardLp = new android.widget.FrameLayout.LayoutParams(Math.min(dp23(self, 420), Math.max(dp23(self, 280), Number(self.state.screen && self.state.screen.w || 720) - dp23(self, 48))), -2, android.view.Gravity.CENTER);
++      overlay.addView(card, cardLp);
++      root.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
++    }
++
++    function runAction(label, worker, done) {
++      if (actionBusy || detached) return;
++      actionBusy = true;
++      status.setText(String(label || "正在处理…"));
++      actionExecutor.execute(new java.lang.Runnable({ run: function() {
++        var result = null;
++        var error = null;
++        try { result = worker(); } catch (e0) { error = e0; }
++        post(function() {
++          actionBusy = false;
++          if (error) {
++            status.setText("操作失败：" + String(error));
++            try { self.toast("操作失败"); } catch (eToast) {}
++            return;
++          }
++          try { done(result); } catch (eDone) { status.setText("操作失败：" + String(eDone)); }
++        });
++      }}));
++    }
++
++    function openInternal(record) {
++      if (activeOverlay || detached) return;
++      try {
++        var overlay = new android.widget.FrameLayout(context);
++        activeOverlay = overlay;
++        activeController = self.createPickwordImageController({
++          context: context,
++          handler: handler,
++          session: {
++            internalPath: String(record.internalPath || ""),
++            createdAt: Number(record.createdAt || 0),
++            source: String(record.source || "screenshot_manager")
++          },
++          onBack: function() { closeImageOverlay(true); },
++          onCloseSession: function() { closeImageOverlay(true); },
++          onSaved: function() { status.setText("保存成功"); },
++          onShared: function() { status.setText("已打开分享面板"); },
++          onDeleted: function() { closeImageOverlay(true); },
++          onError: function(stage, error) { status.setText(String(stage || "图片") + "失败：" + String(error || "")); }
++        });
++        if (!activeController || activeController.hasImage() !== true) throw new Error("截图不可用");
++        var full = activeController.createFullView();
++        overlay.addView(full, new android.widget.FrameLayout.LayoutParams(-1, -1));
++        root.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
++        activeController.open();
++      } catch (e0) {
++        closeImageOverlay(false);
++        status.setText("无法打开截图：" + String(e0));
++      }
