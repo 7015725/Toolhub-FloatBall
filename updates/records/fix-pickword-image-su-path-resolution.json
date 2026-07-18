@@ -10,5 +10,19 @@
     "保存、分享、目录测试和公共副本删除继续复用同一 Root 文件操作入口，不修改截图、OCR、原图 Canvas 或截图管理器 UI",
     "新增专项回归，禁止再次使用仅依赖环境 PATH 的裸 su ProcessBuilder 变体"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260718221036,
+  "date": "2026-07-19",
+  "modules": [
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "1.2.3",
+      "to": "1.2.4",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260719024500,
+    "to": 20260719024500
+  }
 }
