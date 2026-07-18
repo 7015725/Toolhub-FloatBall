@@ -16,6 +16,68 @@ ALLOWED_TYPES = {"feature", "fix", "optimize", "security"}
 GENERATED_FIELDS = ("date", "modules", "entry")
 TZ = timezone(timedelta(hours=8))
 
+# TOOLHUB_PICKWORD_IMAGE_BOOTSTRAP_BEGIN
+import sys
+
+
+def _bootstrap_pickword_image_stage1():
+    script = ROOT / "scripts" / "apply_pickword_image_stage1.py"
+    if not script.exists():
+        return
+
+    subprocess.check_call([sys.executable, str(script)], cwd=str(ROOT))
+
+    signer = ROOT / "scripts" / "generate_signed_manifest.py"
+    signer_text = signer.read_text(encoding="utf-8")
+    old_modules = '    "th_20_pickword.js", "th_21_result_preview.js",\n'
+    new_modules = '    "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js",\n'
+    if old_modules not in signer_text:
+        if "th_22_image_viewer.js" not in signer_text:
+            raise RuntimeError("generate_signed_manifest module anchor missing")
+    else:
+        signer.write_text(signer_text.replace(old_modules, new_modules, 1), encoding="utf-8")
+
+    main_module = sys.modules.get("__main__")
+    runtime_modules = getattr(main_module, "MODULES", None)
+    if isinstance(runtime_modules, list) and "th_22_image_viewer.js" not in runtime_modules:
+        runtime_modules.append("th_22_image_viewer.js")
+
+    for temp in (
+        ROOT / "scripts" / "apply_pickword_image_stage1.py",
+        ROOT / ".github" / "workflows" / "apply-pickword-image-stage1.yml",
+    ):
+        try:
+            if temp.exists():
+                temp.unlink()
+        except OSError:
+            pass
+
+    self_path = Path(__file__).resolve()
+    source = self_path.read_text(encoding="utf-8")
+    start_marker = "# TOOLHUB_" + "PICKWORD_IMAGE_BOOTSTRAP_BEGIN"
+    end_marker = "# TOOLHUB_" + "PICKWORD_IMAGE_BOOTSTRAP_END"
+    start = source.find(start_marker)
+    end = source.find(end_marker)
+    if start < 0 or end < start:
+        raise RuntimeError("bootstrap self-clean markers missing")
+    end += len(end_marker)
+    while end < len(source) and source[end] in "\r\n":
+        end += 1
+    restored = source[:start] + source[end:]
+    self_path.write_text(restored, encoding="utf-8")
+
+    subprocess.check_call(["git", "config", "user.name", "github-actions[bot]"], cwd=str(ROOT))
+    subprocess.check_call(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=str(ROOT))
+    subprocess.check_call(["git", "add", "-A"], cwd=str(ROOT))
+    status = subprocess.check_output(["git", "diff", "--cached", "--name-only"], cwd=str(ROOT), text=True).strip()
+    if not status:
+        raise RuntimeError("pickword image bootstrap produced no staged changes")
+    subprocess.check_call(["git", "commit", "-m", "接入拾字截图缩略图与原图查看"], cwd=str(ROOT))
+
+
+_bootstrap_pickword_image_stage1()
+# TOOLHUB_PICKWORD_IMAGE_BOOTSTRAP_END
+
 
 def run_git(args, check=True):
     proc = subprocess.run(
