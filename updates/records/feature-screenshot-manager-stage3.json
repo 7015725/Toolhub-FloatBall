@@ -10,5 +10,49 @@
     "删除已保存公共副本增加永久删除警告，并限制为数据库记录的 MediaStore URI 或主存储路径",
     "新增 th_23_screenshot_manager.js，SQLite 与文件动作仍由 th_22_image_viewer.js 统一负责"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260718180630,
+  "date": "2026-07-19",
+  "modules": [
+    {
+      "name": "th_01_base.js",
+      "from": "1.1.18",
+      "to": "1.1.19",
+      "change": "updated"
+    },
+    {
+      "name": "th_11_action.js",
+      "from": "1.1.1",
+      "to": "1.1.2",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_button_editor.js",
+      "from": "1.1.3",
+      "to": "1.1.4",
+      "change": "updated"
+    },
+    {
+      "name": "th_15_extra.js",
+      "from": "1.1.21",
+      "to": "1.1.22",
+      "change": "updated"
+    },
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "1.1.0",
+      "to": "1.2.0",
+      "change": "updated"
+    },
+    {
+      "name": "th_23_screenshot_manager.js",
+      "from": "",
+      "to": "1.0.0",
+      "change": "added"
+    }
+  ],
+  "entry": {
+    "changed": true,
+    "from": 20260718213000,
+    "to": 20260719024500
+  }
 }
