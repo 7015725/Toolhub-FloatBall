@@ -81,6 +81,29 @@ def _bootstrap_pickword_image_stage1():
 
     subprocess.check_call([sys.executable, str(script)], cwd=str(ROOT))
 
+    verifier = ROOT / "scripts" / "verify_result_preview.py"
+    verifier_text = verifier.read_text(encoding="utf-8")
+    verifier_text = verifier_text.replace(
+        'section(pickword, "show: function(text)", "hide: function()")',
+        'section(pickword, "show: function(text, meta)", "hide: function()")',
+        1,
+    )
+    verifier_text = verifier_text.replace(
+        '"ocr / success publishes preview only with text",',
+        '"ocr / screenshot-backed results publish preview",',
+        1,
+    )
+    old_ocr_assertion = '''        "if (hasText && typeof appObj.publishResultPreview" in apply_ocr
+        and 'source: "pointer_ocr"' in apply_ocr'''
+    new_ocr_assertion = '''        "var previewAllowed = hasText || screenshotOk;" in apply_ocr
+        and "if (previewAllowed && typeof appObj.publishResultPreview" in apply_ocr
+        and "allowEmptyText: !hasText && screenshotOk" in apply_ocr
+        and 'source: "pointer_ocr"' in apply_ocr'''
+    if old_ocr_assertion not in verifier_text:
+        raise RuntimeError("result preview OCR verifier anchor missing")
+    verifier_text = verifier_text.replace(old_ocr_assertion, new_ocr_assertion, 1)
+    verifier.write_text(verifier_text, encoding="utf-8")
+
     signer = ROOT / "scripts" / "generate_signed_manifest.py"
     signer_text = signer.read_text(encoding="utf-8")
     old_modules = '    "th_20_pickword.js", "th_21_result_preview.js",\n'
