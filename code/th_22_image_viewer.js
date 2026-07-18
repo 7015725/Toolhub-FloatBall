@@ -1,4 +1,4 @@
-// @version 1.2.2
+// @version 1.2.3
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -389,6 +389,247 @@
     return child;
   }
 
+
+  function shellQuote22(value) {
+    return "'" + String(value === undefined || value === null ? "" : value).replace(/'/g, "'\"'\"'") + "'";
+  }
+
+  function preferRootPublicIo22() {
+    try { return Number(android.os.Process.myUid()) === 1000; } catch (e0) {}
+    return false;
+  }
+
+  function underlyingPublicPath22(file) {
+    try {
+      var storage = android.os.Environment.getExternalStorageDirectory().getCanonicalFile();
+      var rootPath = String(storage.getCanonicalPath());
+      var targetPath = String(file.getCanonicalFile().getCanonicalPath());
+      if (targetPath !== rootPath && targetPath.indexOf(rootPath + java.io.File.separator) !== 0) return "";
+      var relative = targetPath.substring(rootPath.length).replace(/^\/+/, "");
+      var userId = 0;
+      try { userId = Number(android.os.UserHandle.myUserId()); } catch (eUser) { userId = 0; }
+      var base = "/data/media/" + String(userId);
+      return relative ? base + "/" + relative : base;
+    } catch (e0) {}
+    return "";
+  }
+
+  function runRootShell22(command) {
+    var variants = [
+      ["su", "--mount-master", "-c", String(command || "")],
+      ["su", "-c", String(command || "")]
+    ];
+    var lastError = "";
+    for (var i = 0; i < variants.length; i++) {
+      var process = null;
+      try {
+        var args = new java.util.ArrayList();
+        for (var j = 0; j < variants[i].length; j++) args.add(String(variants[i][j]));
+        var builder = new java.lang.ProcessBuilder(args);
+        builder.redirectErrorStream(true);
+        process = builder.start();
+        var deadline = now22() + 15000;
+        var exitCode = null;
+        while (now22() < deadline) {
+          try {
+            exitCode = Number(process.exitValue());
+            break;
+          } catch (eWait) {
+            java.lang.Thread.sleep(50);
+          }
+        }
+        if (exitCode === null) {
+          try { process.destroy(); } catch (eDestroy) {}
+          lastError = "timeout";
+        } else if (exitCode === 0) {
+          return { ok: true, via: i === 0 ? "su_mount_master" : "su" };
+        } else {
+          lastError = "exit=" + String(exitCode);
+        }
+      } catch (eRun) {
+        lastError = String(eRun);
+      } finally {
+        try { if (process) process.getOutputStream().close(); } catch (eOut) {}
+        try { if (process) process.getInputStream().close(); } catch (eIn) {}
+        try { if (process) process.getErrorStream().close(); } catch (eErr) {}
+        try { if (process) process.destroy(); } catch (eDestroy2) {}
+      }
+    }
+    throw new Error("Root 文件操作失败: " + lastError);
+  }
+
+  function queryMediaUriByPath22(file) {
+    var cursor = null;
+    try {
+      var collection = android.provider.MediaStore.Files.getContentUri("external");
+      cursor = context.getContentResolver().query(
+        collection,
+        stringArgs22(["_id"]),
+        "_data=?",
+        stringArgs22([String(file.getCanonicalPath())]),
+        "_id DESC"
+      );
+      if (cursor && cursor.moveToFirst()) {
+        return String(android.content.ContentUris.withAppendedId(collection, Number(cursor.getLong(0))).toString());
+      }
+    } catch (e0) {
+    } finally {
+      try { if (cursor) cursor.close(); } catch (eClose) {}
+    }
+    return "";
+  }
+
+  function scanPublicFile22(file) {
+    var holder = { uri: "" };
+    var latch = new java.util.concurrent.CountDownLatch(1);
+    try {
+      var listener = new JavaAdapter(android.media.MediaScannerConnection.OnScanCompletedListener, {
+        onScanCompleted: function(path, uri) {
+          try { holder.uri = uri ? String(uri.toString()) : ""; } catch (e0) { holder.uri = ""; }
+          try { latch.countDown(); } catch (e1) {}
+        }
+      });
+      android.media.MediaScannerConnection.scanFile(
+        context,
+        [String(file.getCanonicalPath())],
+        [String(mime22(extension22(file)))],
+        listener
+      );
+      latch.await(5, java.util.concurrent.TimeUnit.SECONDS);
+    } catch (eScan) {}
+    if (holder.uri) return holder.uri;
+    try {
+      var fileUri = String(android.net.Uri.fromFile(file).toString());
+      runRootShell22(
+        "am broadcast --user 0 -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d " +
+        shellQuote22(fileUri) + " >/dev/null 2>&1"
+      );
+      java.lang.Thread.sleep(350);
+    } catch (eBroadcast) {}
+    return queryMediaUriByPath22(file);
+  }
+
+  function rootCopyPublic22(sourceFile, publicDir, displayName, kind, expiresAt, requireUri) {
+    var source = sourceFile.getCanonicalFile();
+    var dir = publicDir.getCanonicalFile();
+    var target = new java.io.File(dir, String(displayName)).getCanonicalFile();
+    var dirPath = String(dir.getCanonicalPath());
+    var targetPath = String(target.getCanonicalPath());
+    if (targetPath.indexOf(dirPath + java.io.File.separator) !== 0) throw new Error("公共保存目标越界");
+    var sourcePath = String(source.getCanonicalPath());
+    var directCommand =
+      "mkdir -p " + shellQuote22(dirPath) +
+      " && cp -f " + shellQuote22(sourcePath) + " " + shellQuote22(targetPath);
+    var underlyingDir = underlyingPublicPath22(dir);
+    var underlyingTarget = underlyingPublicPath22(target);
+    var command = directCommand;
+    if (underlyingDir && underlyingTarget) {
+      command = "( (" + directCommand + ") || (mkdir -p " + shellQuote22(underlyingDir) +
+        " && cp -f " + shellQuote22(sourcePath) + " " + shellQuote22(underlyingTarget) + ") )";
+    }
+    var shell = runRootShell22(command + " >/dev/null 2>&1");
+    for (var visibleTry = 0; visibleTry < 10; visibleTry++) {
+      if (target.exists() && target.isFile() && target.length() > 0) break;
+      java.lang.Thread.sleep(50);
+    }
+    if (!target.exists() || !target.isFile() || target.length() <= 0) {
+      throw new Error("Root 复制后文件不可用");
+    }
+    var contentUri = scanPublicFile22(target);
+    if (requireUri === true && !contentUri) {
+      try { runRootShell22("rm -f " + shellQuote22(targetPath) + " >/dev/null 2>&1"); } catch (eDelete) {}
+      throw new Error("公共图片已写入但无法取得分享 URI");
+    }
+    try {
+      if (typeof safeLog === "function") {
+        safeLog(null, "i", "pickword image public io mode=root_copy via=" + String(shell.via || "") +
+          " path=" + targetPath + " uri=" + String(contentUri || ""));
+      }
+    } catch (eLog) {}
+    return {
+      ok: true,
+      kind: kind,
+      publicPath: targetPath,
+      contentUri: String(contentUri || ""),
+      bytes: Number(target.length() || 0),
+      createdAt: now22(),
+      expiresAt: Number(expiresAt || 0),
+      fallback: true,
+      rootFallback: true,
+      via: String(shell.via || "")
+    };
+  }
+
+  function rootProbePublicDir22(dir) {
+    var canonical = dir.getCanonicalFile();
+    var dirPath = String(canonical.getCanonicalPath());
+    var probePath = String(new java.io.File(canonical, ".toolhub_root_probe_" + String(now22())).getCanonicalPath());
+    var directCommand =
+      "mkdir -p " + shellQuote22(dirPath) +
+      " && printf 1 > " + shellQuote22(probePath) +
+      " && rm -f " + shellQuote22(probePath);
+    var underlyingDir = underlyingPublicPath22(canonical);
+    var underlyingProbe = underlyingPublicPath22(new java.io.File(probePath));
+    var command = directCommand;
+    if (underlyingDir && underlyingProbe) {
+      command = "( (" + directCommand + ") || (mkdir -p " + shellQuote22(underlyingDir) +
+        " && printf 1 > " + shellQuote22(underlyingProbe) +
+        " && rm -f " + shellQuote22(underlyingProbe) + ") )";
+    }
+    runRootShell22(command + " >/dev/null 2>&1");
+    return true;
+  }
+
+  function rootDeletePublic22(publicPath) {
+    var file = normalizePublicFile22(publicPath);
+    var targetPath = String(file.getCanonicalPath());
+    var underlying = underlyingPublicPath22(file);
+    var command = "rm -f " + shellQuote22(targetPath);
+    if (underlying) command += " " + shellQuote22(underlying);
+    runRootShell22(command + " >/dev/null 2>&1");
+    return true;
+  }
+
+  function exportPublicFile22(sourceFile, publicDir, displayName, kind, expiresAt, requireUri) {
+    if (android.os.Build.VERSION.SDK_INT < 29) {
+      return copyFileFallback22(sourceFile, publicDir, displayName);
+    }
+    var rootFirst = preferRootPublicIo22();
+    var firstError = null;
+    var secondError = null;
+    if (rootFirst) {
+      try { return rootCopyPublic22(sourceFile, publicDir, displayName, kind, expiresAt, requireUri); }
+      catch (eRootFirst) { firstError = eRootFirst; }
+      try { return insertMediaStore22(sourceFile, publicDir, displayName, kind, expiresAt); }
+      catch (eMediaSecond) { secondError = eMediaSecond; }
+    } else {
+      try { return insertMediaStore22(sourceFile, publicDir, displayName, kind, expiresAt); }
+      catch (eMediaFirst) { firstError = eMediaFirst; }
+      try { return rootCopyPublic22(sourceFile, publicDir, displayName, kind, expiresAt, requireUri); }
+      catch (eRootSecond) { secondError = eRootSecond; }
+    }
+    throw new Error(
+      (rootFirst ? "Root 保存失败: " : "MediaStore 保存失败: ") + String(firstError) +
+      "; " + (rootFirst ? "MediaStore 保存失败: " : "Root 保存失败: ") + String(secondError)
+    );
+  }
+
+  function probePublicDir22(dir) {
+    if (android.os.Build.VERSION.SDK_INT < 29) return probeWritable22(dir);
+    var rootFirst = preferRootPublicIo22();
+    var firstError = null;
+    if (rootFirst) {
+      try { return rootProbePublicDir22(dir); } catch (eRoot) { firstError = eRoot; }
+      try { return probeMediaStore22(dir); } catch (eMedia) {
+        throw new Error("Root 目录测试失败: " + String(firstError) + "; MediaStore 目录测试失败: " + String(eMedia));
+      }
+    }
+    try { return probeMediaStore22(dir); } catch (eMediaFirst) { firstError = eMediaFirst; }
+    try { return rootProbePublicDir22(dir); } catch (eRootSecond) {
+      throw new Error("MediaStore 目录测试失败: " + String(firstError) + "; Root 目录测试失败: " + String(eRootSecond));
+    }
+  }
+
   function relativePath22(dir) {
     var storage = android.os.Environment.getExternalStorageDirectory().getCanonicalFile();
     var rootPath = String(storage.getCanonicalPath());
@@ -543,26 +784,10 @@
       return existing;
     }
     var name = displayName22(sourceFile, Number(session.createdAt || now22()), "ToolHub_");
-    var result = null;
-    if (android.os.Build.VERSION.SDK_INT >= 29) {
-      var mediaDir = preparePublicDir22(appObj, "", false);
-      try {
-        result = insertMediaStore22(sourceFile, mediaDir, name, "saved", 0);
-      } catch (eMedia) {
-        try {
-          var fallbackDir = preparePublicDir22(appObj, "", true);
-          probeWritable22(fallbackDir);
-          result = copyFileFallback22(sourceFile, fallbackDir, name);
-          result.mediaStoreError = String(eMedia);
-        } catch (eFallback) {
-          throw new Error("MediaStore 保存失败: " + String(eMedia) + "; 文件回退失败: " + String(eFallback));
-        }
-      }
-    } else {
-      var legacyDir = preparePublicDir22(appObj, "", true);
-      probeWritable22(legacyDir);
-      result = copyFileFallback22(sourceFile, legacyDir, name);
-    }
+    var scoped = android.os.Build.VERSION.SDK_INT >= 29;
+    var dir = preparePublicDir22(appObj, "", !scoped);
+    if (!scoped) probeWritable22(dir);
+    var result = exportPublicFile22(sourceFile, dir, name, "saved", 0, false);
     updateImageSaved22(String(sourceFile.getCanonicalPath()), result.publicPath, result.contentUri, result.createdAt);
     return result;
   }
@@ -570,9 +795,10 @@
   function createShareCopy22(appObj, sourceFile, session) {
     var scoped = android.os.Build.VERSION.SDK_INT >= 29;
     var dir = preparePublicDir22(appObj, "ShareTemp", !scoped);
+    if (!scoped) probeWritable22(dir);
     var expiresAt = now22() + 24 * 60 * 60 * 1000;
     var name = displayName22(sourceFile, Number(session.createdAt || now22()), "ToolHub_Share_");
-    var result = insertMediaStore22(sourceFile, dir, name, "share_temp", expiresAt);
+    var result = exportPublicFile22(sourceFile, dir, name, "share_temp", expiresAt, true);
     addExport22(String(sourceFile.getCanonicalPath()), "share_temp", result.publicPath, result.contentUri, result.createdAt, expiresAt);
     return result;
   }
@@ -605,6 +831,11 @@
         var file = new java.io.File(String(publicPath));
         deleted = !file.exists() || file.delete();
       } catch (e1) {}
+    }
+    if (!deleted && publicPath) {
+      try {
+        deleted = rootDeletePublic22(publicPath);
+      } catch (e2) {}
     }
     return deleted;
   }
@@ -918,10 +1149,28 @@
     }
     var publicFile = normalizePublicFile22(row.publicPath);
     if (!isImageFile22(publicFile)) throw new Error("公共副本不可用");
+    var scannedUri = scanPublicFile22(publicFile);
+    if (scannedUri) {
+      updateImageSaved22(
+        String(internalPath || ""),
+        String(publicFile.getCanonicalPath()),
+        String(scannedUri),
+        Number(row.savedAt || now22())
+      );
+      return { ok: true, contentUri: String(scannedUri), publicPath: String(publicFile.getCanonicalPath()), reused: true, rescanned: true };
+    }
     var scoped = android.os.Build.VERSION.SDK_INT >= 29;
     var tempDir = preparePublicDir22(appObj, "ShareTemp", !scoped);
+    if (!scoped) probeWritable22(tempDir);
     var expiresAt = now22() + 24 * 60 * 60 * 1000;
-    var result = insertMediaStore22(publicFile, tempDir, displayName22(publicFile, now22(), "ToolHub_View_"), "share_temp", expiresAt);
+    var result = exportPublicFile22(
+      publicFile,
+      tempDir,
+      displayName22(publicFile, now22(), "ToolHub_View_"),
+      "share_temp",
+      expiresAt,
+      true
+    );
     addExport22(String(internalPath || ""), "share_temp", result.publicPath, result.contentUri, result.createdAt, expiresAt);
     return result;
   }
@@ -956,14 +1205,14 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.2") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.3") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
         try {
           var scoped = android.os.Build.VERSION.SDK_INT >= 29;
           var dir = normalizePublicDir22(pathValue, !scoped);
-          if (scoped) probeMediaStore22(dir); else probeWritable22(dir);
+          probePublicDir22(dir);
           result.ok = true;
           result.path = String(dir.getCanonicalPath());
         } catch (e0) {
