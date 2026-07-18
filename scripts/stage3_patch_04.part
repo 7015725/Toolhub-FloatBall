@@ -1,0 +1,133 @@
++    if (!value) throw new Error("公共图片路径为空");
++    var storage = android.os.Environment.getExternalStorageDirectory().getCanonicalFile();
++    var target = new java.io.File(value).getCanonicalFile();
++    var rootPath = String(storage.getCanonicalPath());
++    var targetPath = String(target.getCanonicalPath());
++    if (targetPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("公共图片路径越界");
++    return target;
++  }
++
++  function safeMediaUri22(rawUri) {
++    var value = String(rawUri || "").replace(/^\s+|\s+$/g, "");
++    if (!value) return "";
++    try {
++      var uri = android.net.Uri.parse(value);
++      var scheme = String(uri.getScheme() || "").toLowerCase();
++      var authority = String(uri.getAuthority() || "").toLowerCase();
++      if (scheme !== "content" || authority.indexOf("media") < 0) return "";
++      return value;
++    } catch (e0) {}
++    return "";
++  }
++
++  function ensureTracked22(file, sourceType, createdAt) {
++    return withDb22(function(db) {
++      var insert = null;
++      var update = null;
++      try {
++        var path = String(file.getCanonicalPath());
++        var ts = Number(createdAt || file.lastModified() || now22());
++        insert = db.compileStatement("INSERT OR IGNORE INTO toolhub_pickword_images(internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,deleted_at,last_access_at) VALUES(?,?,?,0,0,?,'','',0,0,?)");
++        bindText22(insert, 1, path);
++        insert.bindLong(2, ts);
++        bindText22(insert, 3, sourceType || "screenshot_manager");
++        insert.bindLong(4, Number(file.length() || 0));
++        insert.bindLong(5, now22());
++        insert.executeInsert();
++        update = db.compileStatement("UPDATE toolhub_pickword_images SET file_size=?, last_access_at=?, deleted_at=0 WHERE internal_path=?");
++        update.bindLong(1, Number(file.length() || 0));
++        update.bindLong(2, now22());
++        bindText22(update, 3, path);
++        update.executeUpdateDelete();
++        return true;
++      } finally {
++        try { if (insert) insert.close(); } catch (eInsert) {}
++        try { if (update) update.close(); } catch (eUpdate) {}
++      }
++    }, false);
++  }
++
++  function clearImageSaved22(internalPath) {
++    return withDb22(function(db) {
++      var stmt = null;
++      try {
++        stmt = db.compileStatement("UPDATE toolhub_pickword_images SET saved_public_path='', saved_content_uri='', saved_at=0, last_access_at=? WHERE internal_path=?");
++        stmt.bindLong(1, now22());
++        bindText22(stmt, 2, internalPath);
++        return Number(stmt.executeUpdateDelete()) > 0;
++      } finally {
++        try { if (stmt) stmt.close(); } catch (eClose) {}
++      }
++    }, false);
++  }
++
++  function listInternalImages22() {
++    var rows = withDb22(function(db) {
++      var cursor = null;
++      var out = [];
++      try {
++        cursor = db.rawQuery("SELECT internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,last_access_at FROM toolhub_pickword_images WHERE deleted_at=0 ORDER BY created_at DESC", null);
++        while (cursor.moveToNext()) {
++          out.push({
++            kind: "internal",
++            internalPath: String(cursor.getString(0) || ""),
++            createdAt: Number(cursor.getLong(1) || 0),
++            source: String(cursor.getString(2) || ""),
++            width: Number(cursor.getLong(3) || 0),
++            height: Number(cursor.getLong(4) || 0),
++            fileSize: Number(cursor.getLong(5) || 0),
++            savedPublicPath: String(cursor.getString(6) || ""),
++            savedContentUri: String(cursor.getString(7) || ""),
++            savedAt: Number(cursor.getLong(8) || 0),
++            lastAccessAt: Number(cursor.getLong(9) || 0),
++            tracked: true,
++            available: false
++          });
++        }
++      } finally {
++        try { if (cursor) cursor.close(); } catch (eClose) {}
++      }
++      return out;
++    }, []);
++    var map = {};
++    var out2 = [];
++    for (var i = 0; i < rows.length; i++) {
++      var row = rows[i];
++      try {
++        var file = normalizeInternalFile22(row.internalPath);
++        if (!isImageFile22(file)) continue;
++        row.internalPath = String(file.getCanonicalPath());
++        row.available = true;
++        if (!row.fileSize) row.fileSize = Number(file.length() || 0);
++        if (!row.createdAt) row.createdAt = Number(file.lastModified() || 0);
++        map["$" + row.internalPath] = true;
++        out2.push(row);
++      } catch (eRow) {}
++    }
++    try {
++      var root = internalRoot22();
++      var files = root.listFiles();
++      if (files) {
++        for (var j = 0; j < files.length; j++) {
++          var one = files[j];
++          if (!isImageFile22(one)) continue;
++          var canonical = String(one.getCanonicalPath());
++          if (map["$" + canonical]) continue;
++          out2.push({
++            kind: "internal",
++            internalPath: canonical,
++            createdAt: Number(one.lastModified() || 0),
++            source: "untracked",
++            width: 0,
++            height: 0,
++            fileSize: Number(one.length() || 0),
++            savedPublicPath: "",
++            savedContentUri: "",
++            savedAt: 0,
++            lastAccessAt: 0,
++            tracked: false,
++            available: true
++          });
++        }
++      }
++    } catch (eScan) {}
