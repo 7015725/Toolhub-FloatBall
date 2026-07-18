@@ -30,9 +30,14 @@ cleanup_line = '''replace_once(
     "",
     "remove stale text-area-height comment",
 )
-for diagnostic_line_no, diagnostic_line in enumerate(text.splitlines(), 1):
-    if "FINGER_PREVIEW_CONTENT_INTERVAL" in diagnostic_line:
-        print("FINGER_PREVIEW_CONTENT_INTERVAL residual line %d: %s" % (diagnostic_line_no, diagnostic_line))
+text, removed_content_intervals = re.subn(
+    r"^\\s*FINGER_PREVIEW_CONTENT_INTERVAL\\s*=\\s*\\d+;\\n",
+    "",
+    text,
+    flags=re.M,
+)
+if removed_content_intervals != 4:
+    raise SystemExit("magnifier content interval assignments: expected 4, found %d" % removed_content_intervals)
 
 # Final source invariants.
 '''
