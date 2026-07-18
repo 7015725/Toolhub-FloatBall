@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# One-shot branch patch; removed after the verifier contract is updated.
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
