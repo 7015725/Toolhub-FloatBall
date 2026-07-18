@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import json
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def replace_once(text, old, new, name):
+    if old not in text:
+        raise SystemExit('missing anchor: ' + name)
+    return text.replace(old, new, 1)
+
+
+def update_th22():
+    path = ROOT / 'code/th_22_image_viewer.js'
+    text = path.read_text(encoding='utf-8')
+    text = replace_once(text, '// @version 1.2.4', '// @version 1.2.5', 'th22 version')
+    start = text.index('  function addRootExecutableCandidate22(out, value) {')
+    end = text.index('\n\n  function queryMediaUriByPath22(file) {', start)
+    bridge = r'''  function resolveShellBridgeApp22(appObj) {
+    try {
+      if (appObj && typeof appObj.execShellSmart === "function") return appObj;
+    } catch (e0) {}
+    try {
+      if (typeof TOOLHUB_ACTIVE_APP !== "undefined" && TOOLHUB_ACTIVE_APP &&
+          typeof TOOLHUB_ACTIVE_APP.execShellSmart === "function") return TOOLHUB_ACTIVE_APP;
+    } catch (e1) {}
+    return null;
+  }
+
+  function shellBridgeMarkerDir22() {
+    var base = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
+    if (!base) throw new Error("ShortX 目录为空");
+    var dir = new java.io.File(base, "ToolHub/cache/shell_bridge").getCanonicalFile();
+    if (!dir.exists() && !dir.mkdirs() && !dir.exists()) throw new Error("无法创建 Shell 桥结果目录");
+    if (!dir.isDirectory()) throw new Error("Shell 桥结果路径不是目录");
+    return dir;
+  }
+
+  function cleanupShellBridgeMarkers22(dir) {
+    try {
+      var files = dir.listFiles();
+      if (!files) return;
+      var cutoff = now22() - 60 * 60 * 1000;
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        try {
+          if (file && file.isFile() && String(file.getName() || "").indexOf("root_") === 0 &&
+              Number(file.lastModified() || 0) < cutoff) file.delete();
+        } catch (eOne) {}
+      }
+    } catch (e0) {}
+  }
+
+  function writeShellBridgeMarker22(file, text) {
+    var writer = null;
+    try {
+      writer = new java.io.OutputStreamWriter(new java.io.FileOutputStream(file, false), "UTF-8");
+      writer.write(String(text || ""));
+      writer.flush();
+      return true;
+    } finally {
+      try { if (writer) writer.close(); } catch (eClose) {}
+    }
+  }
+
+  function readShellBridgeMarker22(file) {
+    var reader = null;
+    try {
+      if (!file || !file.exists() || !file.isFile()) return "";
+      reader = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(file), "UTF-8"));
+      var line = reader.readLine();
+      return line === null ? "" : String(line);
+    } catch (e0) {
+      return "";
+    } finally {
+      try { if (reader) reader.close(); } catch (eClose) {}
+    }
+  }
+
+  function encodeShellBridgeCommand22(command) {
+    try {
+      if (typeof encodeBase64Utf8 === "function") {
+        var encoded = String(encodeBase64Utf8(String(command || "")) || "");
+        if (encoded) return encoded;
+      }
+    } catch (e0) {}
+    try {
+      var bytes = new java.lang.String(String(command || "")).getBytes("UTF-8");
+      return String(android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP));
+    } catch (e1) {}
+    return "";
+  }
+
+  function shellBridgeToken22() {
+    var tid = 0;
+    try { tid = Number(java.lang.Thread.currentThread().getId()); } catch (e0) { tid = 0; }
+    var random = 0;
+    try { random = Math.floor(Math.random() * 1000000000); } catch (e1) { random = 0; }
+    return String(now22()) + "_" + String(tid) + "_" + String(random);
+  }
+
+  function runRootShell22(command, appObj) {
+    var app = resolveShellBridgeApp22(appObj);
+    if (!app) throw new Error("ShortX Shell 广播桥不可用");
+    var dir = shellBridgeMarkerDir22();
+    cleanupShellBridgeMarkers22(dir);
+    var token = shellBridgeToken22();
+    var marker = new java.io.File(dir, "root_" + token + ".status").getCanonicalFile();
+    var dirPath = String(dir.getCanonicalPath());
+    var markerPath = String(marker.getCanonicalPath());
+    if (markerPath.indexOf(dirPath + java.io.File.separator) !== 0) throw new Error("Shell 桥结果路径越界");
+    var pending = "pending:" + token;
+    var donePrefix = "done:" + token + ":";
+    writeShellBridgeMarker22(marker, pending);
+    var wrapped =
+      "if [ -f " + shellQuote22(markerPath) + " ]; then " +
+      "( " + String(command || "") + " ); th_rc=$?; " +
+      "printf " + shellQuote22(donePrefix + "%s") + " \"$th_rc\" > " + shellQuote22(markerPath) +
+      "; fi";
+    var commandB64 = encodeShellBridgeCommand22(wrapped);
+    if (!commandB64) {
+      try { marker.delete(); } catch (eDelete0) {}
+      throw new Error("Shell 桥命令编码失败");
+    }
+    var sent = null;
+    try { sent = app.execShellSmart(commandB64, true); }
+    catch (eSend) {
+      try { marker.delete(); } catch (eDelete1) {}
+      throw new Error("Shell 广播桥发送异常: " + String(eSend));
+    }
+    if (!sent || sent.ok !== true || sent.sent !== true) {
+      try { marker.delete(); } catch (eDelete2) {}
+      throw new Error("Shell 广播桥发送失败: " + String(sent && sent.err || "unknown"));
+    }
+    try {
+      safeLog(app.L, "i", "pickword image root bridge dispatched via=" + String(sent.via || "") +
+        " marker=" + String(marker.getName() || ""));
+    } catch (eLog0) {}
+    var deadline = now22() + 20000;
+    var status = pending;
+    while (now22() < deadline) {
+      status = readShellBridgeMarker22(marker);
+      if (status.indexOf(donePrefix) === 0) break;
+      java.lang.Thread.sleep(80);
+    }
+    if (status.indexOf(donePrefix) !== 0) {
+      try { marker.delete(); } catch (eDelete3) {}
+      throw new Error("Shell 广播桥执行超时");
+    }
+    var exitText = status.substring(donePrefix.length).replace(/^\s+|\s+$/g, "");
+    var exitCode = parseInt(exitText, 10);
+    try { marker.delete(); } catch (eDelete4) {}
+    if (isNaN(exitCode)) throw new Error("Shell 广播桥结果无效: " + exitText);
+    if (exitCode !== 0) throw new Error("Shell 广播桥命令失败 exit=" + String(exitCode));
+    try { safeLog(app.L, "i", "pickword image root bridge completed via=" + String(sent.via || "") + " exit=0"); }
+    catch (eLog1) {}
+    return {
+      ok: true,
+      via: "shortx_shell_bridge",
+      executable: String(sent.via || "BroadcastBridge"),
+      bridgeMode: String(sent.bridgeMode || ""),
+      targetMode: String(sent.targetMode || "")
+    };
+  }'''
