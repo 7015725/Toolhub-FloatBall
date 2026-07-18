@@ -1,0 +1,112 @@
+diff --git a/.github/workflows/sign-toolhub.yml b/.github/workflows/sign-toolhub.yml
+index 98a86af..c01731e 100644
+--- a/.github/workflows/sign-toolhub.yml
++++ b/.github/workflows/sign-toolhub.yml
+@@ -158,6 +158,7 @@ jobs:
+         run: |
+           python3 scripts/verify_pointer_regressions.py
+           python3 scripts/verify_result_preview.py
++          python3 scripts/verify_screenshot_manager.py
+ 
+       - name: Check generated whitespace
+         shell: bash
+diff --git a/.github/workflows/verify.yml b/.github/workflows/verify.yml
+index 5c7b7a1..0578c3d 100644
+--- a/.github/workflows/verify.yml
++++ b/.github/workflows/verify.yml
+@@ -167,6 +167,7 @@ jobs:
+             python3 scripts/verify_pointer_regressions.py
+             python3 scripts/verify_result_preview.py
+             python3 scripts/verify_pickword_image_viewer.py
++            python3 scripts/verify_screenshot_manager.py
+             python3 .github/scripts/verify_manifest_signature.py
+           } 2>&1 | tee toolhub-verification-report.txt
+ 
+diff --git a/ARCHITECTURE.md b/ARCHITECTURE.md
+index bad1b51..6af92fd 100644
+--- a/ARCHITECTURE.md
++++ b/ARCHITECTURE.md
+@@ -1217,3 +1217,5 @@ PopupOverlayBase
+ - 默认公共目录为 `/storage/emulated/0/Pictures/ToolHub`，可在“设置 → 拾字”中修改并测试可写性。
+ - 内部截图默认保留 7 天；分享临时副本保留 24 小时。公共保存副本不参与自动清理。
+ - 图片状态记录在 `toolhub.db` 的独立关系表中；删除截图后保留拾字文字与当前选择状态。
++
++- `th_23_screenshot_manager.js`：截图管理器 ToolApp 路由；负责内部截图/已保存列表、缩略图与用户操作编排，文件边界和 SQLite 操作继续由 `th_22_image_viewer.js` 提供。
+diff --git a/DEAD_CODE_AUDIT.md b/DEAD_CODE_AUDIT.md
+index b4ba8d1..64d6535 100644
+--- a/DEAD_CODE_AUDIT.md
++++ b/DEAD_CODE_AUDIT.md
+@@ -9,9 +9,9 @@
+ 
+ ## 扫描摘要
+ 
+-- 加载模块：`28`
+-- 原型方法定义：`505`
+-- 唯一原型方法：`495`
++- 加载模块：`29`
++- 原型方法定义：`507`
++- 唯一原型方法：`497`
+ - 已登记重复方法：`10`
+ - 最终覆盖型候选节点：`0`
+ - 受保护覆盖/包装链：`10`
+diff --git a/ENTRY_SYMBOL_AUDIT.md b/ENTRY_SYMBOL_AUDIT.md
+index 05f4b42..c2e9682 100644
+--- a/ENTRY_SYMBOL_AUDIT.md
++++ b/ENTRY_SYMBOL_AUDIT.md
+@@ -10,7 +10,7 @@
+ ## 扫描摘要
+ 
+ - 入口行数：`1889`
+-- 子模块文件：`28`
++- 子模块文件：`29`
+ - 普通函数定义：`94`
+ - 顶层变量：`30`
+ - 跨模块引用函数：`10`
+diff --git a/MODULE_BOUNDARIES.json b/MODULE_BOUNDARIES.json
+index b5ab169..b7a9f15 100644
+--- a/MODULE_BOUNDARIES.json
++++ b/MODULE_BOUNDARIES.json
+@@ -37,7 +37,9 @@
+     "openResultPreviewPrimaryAction": "th_21_result_preview.js",
+     "disposeResultPreview": "th_21_result_preview.js",
+     "onResultPreviewConfigurationChanged": "th_21_result_preview.js",
+-    "createPickwordImageController": "th_22_image_viewer.js"
++    "createPickwordImageController": "th_22_image_viewer.js",
++    "getPickwordImageService": "th_22_image_viewer.js",
++    "buildScreenshotManagerPanelView": "th_23_screenshot_manager.js"
+   },
+   "duplicateDefinitions": [
+     {
+diff --git a/README.md b/README.md
+index 4716227..f8ea44b 100644
+--- a/README.md
++++ b/README.md
+@@ -607,3 +607,8 @@ update_history.json
+ - 默认公共目录为 `/storage/emulated/0/Pictures/ToolHub`，可在“设置 → 拾字”中修改并测试可写性。
+ - 内部截图默认保留 7 天；分享临时副本保留 24 小时。公共保存副本不参与自动清理。
+ - 图片状态记录在 `toolhub.db` 的独立关系表中；删除截图后保留拾字文字与当前选择状态。
++
++
++## 截图管理器
++
++主面板提供“截图管理”入口，包含“内部截图”和“已保存”两个标签。内部截图支持查看原图、保存、分享和删除；已保存标签管理系统相册或公共目录副本，删除公共副本时会显示额外的永久删除警告。公共副本不会被内部截图保留策略自动清理。
+diff --git a/SQLITE_STORAGE.md b/SQLITE_STORAGE.md
+index aa31b30..5e8d26c 100644
+--- a/SQLITE_STORAGE.md
++++ b/SQLITE_STORAGE.md
+@@ -378,3 +378,8 @@ ToolHub/toolhub.db
+ - 默认公共目录为 `/storage/emulated/0/Pictures/ToolHub`，可在“设置 → 拾字”中修改并测试可写性。
+ - 内部截图默认保留 7 天；分享临时副本保留 24 小时。公共保存副本不参与自动清理。
+ - 图片状态记录在 `toolhub.db` 的独立关系表中；删除截图后保留拾字文字与当前选择状态。
++
++
++## 截图管理器读取边界
++
++截图管理器只读取 `toolhub_pickword_images` 与 `toolhub_pickword_image_exports`。内部标签会合并数据库记录和 `ToolHub/screenshots/` 实际文件；已保存标签只使用数据库中由 ToolHub 写入的公共副本记录。删除公共副本时，以数据库中保存的精确 URI/路径为准，并限制在 MediaStore 或主存储范围内。
+diff --git a/STRUCTURE.md b/STRUCTURE.md
+index 3d43d27..812837d 100644
+--- a/STRUCTURE.md
++++ b/STRUCTURE.md
+@@ -684,3 +684,5 @@ GitHub Release 固定附带 `ToolHub.js`、入口哈希、manifest、RSA 签名
+ - 默认公共目录为 `/storage/emulated/0/Pictures/ToolHub`，可在“设置 → 拾字”中修改并测试可写性。
+ - 内部截图默认保留 7 天；分享临时副本保留 24 小时。公共保存副本不参与自动清理。
