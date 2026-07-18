@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_patch_runner.py", line 192, in main
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_patch_runner.py", line 170, in apply_patch
+RuntimeError: verification failed command=python3 scripts/check_es5.py
+python3: can't open file '/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/check_es5.py': [Errno 2] No such file or directory
+
+
