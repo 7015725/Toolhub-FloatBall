@@ -1,0 +1,108 @@
+    end = text.index('\n  var pathButtonLp = ', start)
+    block = '''  var pathTesting = false;
+  var pathButton = null;
+  var pathHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+  function finishPathTest13(result) {
+    pathTesting = false;
+    try {
+      if (pathButton) {
+        pathButton.setEnabled(true);
+        pathButton.setAlpha(1.0);
+        pathButton.setText("测试保存目录");
+      }
+      if (result && result.ok) {
+        self.setPendingValue("PICKWORD_IMAGE_PUBLIC_DIR", String(result.path || ""));
+        pathInput.setText(String(result.path || ""));
+        pathInput.setSelection(pathInput.getText().length());
+        setStatus13("目录可写：" + String(result.path || ""), false);
+      } else {
+        var errorText = String(result && result.error || "未知错误");
+        if (errorText.length > 700) errorText = errorText.substring(0, 700) + "…";
+        setStatus13("目录不可用：" + errorText, true);
+      }
+    } catch(eFinish) {
+      setStatus13("目录测试结果更新失败", true);
+    }
+  }
+  pathButton = self.ui.createSolidButton(self, "测试保存目录", primary, onPrimary, function() {
+    if (pathTesting) return;
+    try {
+      if (typeof self.validatePickwordImagePublicDir !== "function") {
+        setStatus13("截图存储模块尚未加载", true);
+        return;
+      }
+      self.touchActivity();
+      var pathSnapshot = String(pathInput.getText() || "");
+      pathTesting = true;
+      pathButton.setEnabled(false);
+      pathButton.setAlpha(0.65);
+      pathButton.setText("正在测试…");
+      setStatus13("正在通过 ShortX Shell 桥测试目录…", false);
+      var thread = new java.lang.Thread(new java.lang.Runnable({ run: function() {
+        var result = null;
+        try { result = self.validatePickwordImagePublicDir(pathSnapshot); }
+        catch(eTest) { result = { ok: false, path: pathSnapshot, error: String(eTest) }; }
+        pathHandler.post(new java.lang.Runnable({ run: function() { finishPathTest13(result); }}));
+      }}), "TH-Pickword-Image-Dir-Test");
+      thread.start();
+    } catch(eStart) {
+      finishPathTest13({ ok: false, error: "目录测试启动失败：" + String(eStart) });
+    }
+  });'''
+    path.write_text(text[:start] + block + text[end:], encoding='utf-8')
+
+
+def update_tests():
+    path = ROOT / 'scripts/verify_pickword_image_viewer.py'
+    text = path.read_text(encoding='utf-8')
+    text = text.replace('// @version 1.2.4', '// @version 1.2.5')
+    text = text.replace("require('createPickwordImageController' in th22, \"image controller missing\")", "require('createPickwordImageController' in th22, \"image controller missing\")\nrequire('__toolHubPickwordImageViewerVersion = \\\"1.2.5\\\"' in th22 and '=== \\\"1.2.5\\\"' in th22, \"image viewer install version guard missing\")")
+    start = text.index("require('function runRootShell22")
+    end = text.index("require('function underlyingPublicPath22", start)
+    assertions = '''require('function runRootShell22(command, appObj)' in th22, "ShortX shell bridge root fallback missing")
+require('function resolveShellBridgeApp22(appObj)' in th22 and 'execShellSmart(commandB64, true)' in th22, "ShortX shell bridge dispatch missing")
+require('ToolHub/cache/shell_bridge' in th22 and 'pending:' in th22 and 'done:' in th22, "ShortX shell bridge completion marker missing")
+require('shortx_shell_bridge' in th22 and 'pickword image root bridge completed' in th22, "ShortX shell bridge completion log missing")
+require('new java.lang.ProcessBuilder' not in th22, "system_server must not execute Root through ProcessBuilder")
+'''
+    text = text[:start] + assertions + text[end:]
+    text = text.replace("'function scanPublicFile22(file)'", "'function scanPublicFile22(file, appObj)'")
+    text = text.replace("'exportPublicFile22(sourceFile, dir, name, \"saved\", 0, false)'", "'exportPublicFile22(appObj, sourceFile, dir, name, \"saved\", 0, false)'")
+    text = text.replace("'exportPublicFile22(sourceFile, dir, name, \"share_temp\", expiresAt, true)'", "'exportPublicFile22(appObj, sourceFile, dir, name, \"share_temp\", expiresAt, true)'")
+    text = text.replace("'probePublicDir22(dir);'", "'probePublicDir22(this, dir);'")
+    marker = "require('createPickwordImageSettingsView' in ui, \"image settings UI missing\")\n"
+    extra = """require('// @version 1.0.14' in ui, \"settings UI version\")
+require('TH-Pickword-Image-Dir-Test' in ui and '正在通过 ShortX Shell 桥测试目录' in ui, \"async directory test missing\")
+require('pathHandler.post' in ui and 'pathButton.setEnabled(false)' in ui, \"directory test UI-thread handoff missing\")
+"""
+    text = replace_once(text, marker, marker + extra, 'settings test marker')
+    path.write_text(text, encoding='utf-8')
+    path2 = ROOT / 'scripts/verify_screenshot_manager.py'
+    text2 = path2.read_text(encoding='utf-8').replace('// @version 1.2.4', '// @version 1.2.5')
+    path2.write_text(text2, encoding='utf-8')
+
+
+def write_record():
+    record = {
+      'schema': 1,
+      'id': 'fix-pickword-image-shell-bridge-public-io',
+      'type': 'fix',
+      'title': '修复 system_server 公共截图改用 ShortX Shell 桥执行',
+      'details': [
+        'system_server 不再直接启动 Root 可执行文件，公共截图保存、分享、目录测试和删除统一复用 ToolHub 已有 ShortX Shell 广播桥',
+        'Shell 桥命令使用 ToolHub/cache/shell_bridge 内部结果文件确认真实退出码，避免把广播发送成功误判为文件操作完成',
+        '结果文件使用唯一标识、路径边界校验、超时和过期清理，失败时返回桥不可用、发送失败、执行超时或实际退出码',
+        '设置页目录测试迁移到独立后台线程，完成后回到主线程更新按钮和状态，避免等待桥接结果时阻塞 UI',
+        'th_22_image_viewer.js 升级到 1.2.5，th_13_panel_ui.js 升级到 1.0.14，并修正图片查看器安装版本守卫'
+      ],
+      'manifestVersion': 0
+    }
+    path = ROOT / 'updates/records/fix-pickword-image-shell-bridge-public-io.json'
+    path.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+
+update_th22()
+update_th13()
+update_tests()
+write_record()
+print('applied ShortX shell bridge public image fix')
