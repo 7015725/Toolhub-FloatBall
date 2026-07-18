@@ -1,0 +1,391 @@
+   var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
+diff --git a/code/th_14_panels.js b/code/th_14_panels.js
+index 3c6f070..7d00698 100644
+--- a/code/th_14_panels.js
++++ b/code/th_14_panels.js
+@@ -1,4 +1,4 @@
+-// @version 1.1.9
++// @version 1.1.10
+ 
+ 
+ FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
+@@ -52,7 +52,7 @@ FloatBallAppWM.prototype.getSettingsGroupDefs = function() {
+   return [
+     { key: "ball", title: "悬浮球", desc: "大小、图标、颜色、位置和面板距离", sections: ["悬浮球"] },
+     { key: "pointer", title: "指针", desc: "大小、贴边、悬停、取字保护、OCR 阈值和颜色", sections: ["指针"] },
+-    { key: "pickword", title: "拾字", desc: "百度与有道翻译引擎、应用 ID 和密钥", sections: ["拾字"] },
++    { key: "pickword", title: "拾字", desc: "翻译引擎、截图保存目录、分享与自动清理", sections: ["拾字"] },
+     { key: "panel", title: "面板", desc: "排列、文字、位置和吸边行为", sections: ["面板布局", "面板文字", "吸边与位置"] },
+     { key: "theme", title: "外观", desc: "系统动态配色与背景透明度", sections: ["外观"] },
+     { key: "motion", title: "动作与手势", desc: "点击、长按、动画和贴边回弹", sections: ["动画", "动作与手势"] },
+diff --git a/code/th_20_pickword.js b/code/th_20_pickword.js
+index 254a9b1..b90a458 100644
+--- a/code/th_20_pickword.js
++++ b/code/th_20_pickword.js
+@@ -1,4 +1,4 @@
+-// @version 1.0.16
++// @version 1.0.17
+ // ==========================================
+ // 拾字 - 文字选择工具
+ // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
+@@ -235,6 +235,9 @@
+     var pickwordImagePage20 = null;
+     var pickwordImageWindowSnapshot20 = null;
+     var pickwordImageChildSnapshot20 = null;
++    var pickwordImageTextParent20 = null;
++    var pickwordImageTextView20 = null;
++    var pickwordImageTextOriginalLp20 = null;
+ 
+     function normalizePickwordImageMeta20(meta) {
+         if (!meta || typeof meta !== "object") return null;
+@@ -261,7 +264,10 @@
+                 ocrStatus: String(meta.ocrStatus || ""),
+                 ocrError: String(meta.ocrError || ""),
+                 createdAt: Number(meta.createdAt || 0),
+-                rect: meta.rect || null
++                rect: meta.rect || null,
++                savedPublicPath: String(meta.savedPublicPath || ""),
++                savedContentUri: String(meta.savedContentUri || ""),
++                savedAt: Number(meta.savedAt || 0)
+             };
+         } catch (eNormalize) {
+             try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image meta rejected: " + String(eNormalize)); } catch (eLog) {}
+@@ -280,6 +286,36 @@
+         pickwordImagePage20 = null;
+         pickwordImageWindowSnapshot20 = null;
+         pickwordImageChildSnapshot20 = null;
++        pickwordImageTextParent20 = null;
++        pickwordImageTextView20 = null;
++        pickwordImageTextOriginalLp20 = null;
++    }
++
++    function removePickwordImageAfterDelete20(info) {
++        var parent = pickwordImageTextParent20;
++        var view = pickwordImageTextView20;
++        var originalLp = pickwordImageTextOriginalLp20;
++        var host = pickwordContentHost20;
++        var imagePage = pickwordImagePage20;
++        try { restorePickwordResultPage20("image_deleted"); } catch (eRestore) {}
++        try { if (view && view.getParent()) view.getParent().removeView(view); } catch (eDetach) {}
++        try { if (host && host.getParent()) host.getParent().removeView(host); } catch (eHost) {}
++        try { if (imagePage && imagePage.getParent()) imagePage.getParent().removeView(imagePage); } catch (ePage) {}
++        if (currentPickwordMeta20) {
++            currentPickwordMeta20.available = false;
++            currentPickwordMeta20.deleted = true;
++            currentPickwordMeta20.deletedAt = Number(info && info.deletedAt || java.lang.System.currentTimeMillis());
++        }
++        releasePickwordImageController20("deleted");
++        try {
++            if (parent && view) {
++                if (originalLp) parent.addView(view, originalLp);
++                else parent.addView(view);
++            }
++        } catch (eAttach) {
++            try { safeLog(toolhubAppRef && toolhubAppRef.L, "e", "pickword image text restore fail: " + String(eAttach)); } catch (eLog) {}
++        }
++        return true;
+     }
+ 
+     function restorePickwordResultPage20(reason) {
+@@ -371,6 +407,9 @@
+         }
+         try {
+             releasePickwordImageController20("replace");
++            pickwordImageTextParent20 = parent;
++            pickwordImageTextView20 = view;
++            pickwordImageTextOriginalLp20 = originalLp || null;
+             pickwordImageController20 = toolhubAppRef.createPickwordImageController({
+                 context: appContext,
+                 handler: mainHandler,
+@@ -380,6 +419,19 @@
+                 onCloseSession: function() {
+                     try { 拾字Floaty.hide(); } catch (eHide) {}
+                 },
++                onSaved: function(info) {
++                    try {
++                        if (currentPickwordMeta20) {
++                            currentPickwordMeta20.savedPublicPath = String(info && info.publicPath || "");
++                            currentPickwordMeta20.savedContentUri = String(info && info.contentUri || "");
++                            currentPickwordMeta20.savedAt = Number(info && info.savedAt || java.lang.System.currentTimeMillis());
++                        }
++                    } catch (eSaved) {}
++                },
++                onShared: function(info) {
++                    try { safeLog(toolhubAppRef && toolhubAppRef.L, "i", "pickword image shared uri=" + String(info && info.contentUri || "")); } catch (eShared) {}
++                },
++                onDeleted: function(info) { removePickwordImageAfterDelete20(info); },
+                 onError: function(stage, error) {
+                     try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image stage=" + String(stage || "") + " err=" + String(error || "")); } catch (eLog) {}
+                 }
+diff --git a/code/th_22_image_viewer.js b/code/th_22_image_viewer.js
+index 0b08e24..0c7c79c 100644
+--- a/code/th_22_image_viewer.js
++++ b/code/th_22_image_viewer.js
+@@ -1,6 +1,6 @@
+-// @version 1.0.0
+-// =======================【拾字截图：单图缩略图与原图查看】=======================
+-// 仅消费 ToolHub/screenshots 内已落盘图片；不负责截图、保存、分享、删除或历史列表。
++// @version 1.1.0
++// =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
++// 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
+ (function() {
+   function now22() {
+     try { return java.lang.System.currentTimeMillis(); } catch (e0) {}
+@@ -32,6 +32,10 @@
+     try { toolhubSafeSetTextColor(view, Number(color) | 0); } catch (e0) {}
+   }
+ 
++  function safeBg22(view, color) {
++    try { toolhubSafeSetBackgroundColor(view, Number(color) | 0); } catch (e0) {}
++  }
++
+   function theme22(appObj) {
+     var dark = false;
+     try { dark = !!(appObj && appObj.isDarkTheme && appObj.isDarkTheme()); } catch (e0) {}
+@@ -41,7 +45,9 @@
+       text: dark ? (0xFFF1F5F9 | 0) : (0xFF111827 | 0),
+       secondary: dark ? (0xFFCBD5E1 | 0) : (0xFF64748B | 0),
+       primary: dark ? (0xFFA8C7FA | 0) : (0xFF005BC0 | 0),
+-      stroke: dark ? (0x55FFFFFF | 0) : (0x22000000 | 0)
++      danger: dark ? (0xFFFFB4AB | 0) : (0xFFBA1A1A | 0),
++      stroke: dark ? (0x55FFFFFF | 0) : (0x22000000 | 0),
++      scrim: (0x99000000 | 0)
+     };
+     try {
+       if (appObj && appObj.getSettingsColorScheme) {
+@@ -52,6 +58,7 @@
+           out.text = Number(s.onSurface) | 0;
+           out.secondary = Number(s.onSurface2 || s.onSurface) | 0;
+           out.primary = Number(s.primary) | 0;
++          out.danger = Number(s.danger || out.danger) | 0;
+           out.stroke = Number(s.outlineVariant) | 0;
+         }
+       }
+@@ -87,9 +94,9 @@
+     } catch (e0) {}
+   }
+ 
+-  function safeClose22(decoder) {
+-    try { if (decoder && decoder.recycle) decoder.recycle(); } catch (e0) {}
+-    try { if (decoder && decoder.close) decoder.close(); } catch (e1) {}
++  function safeClose22(value) {
++    try { if (value && value.recycle) value.recycle(); } catch (e0) {}
++    try { if (value && value.close) value.close(); } catch (e1) {}
+   }
+ 
+   function fileSizeText22(bytes) {
+@@ -99,23 +106,636 @@
+     return String(Math.round(n)) + " B";
+   }
+ 
++  function closeStream22(value) {
++    try { if (value) value.close(); } catch (e0) {}
++  }
++
++  function stringArgs22(values) {
++    try {
++      if (typeof ConfigManager !== "undefined" && ConfigManager.__toolHubSqliteStore &&
++          ConfigManager.__toolHubSqliteStore.stringArgs) {
++        return ConfigManager.__toolHubSqliteStore.stringArgs(values);
++      }
++    } catch (e0) {}
++    var arr = java.lang.reflect.Array.newInstance(java.lang.String, values.length);
++    for (var i = 0; i < values.length; i++) arr[i] = String(values[i]);
++    return arr;
++  }
++
++  function store22() {
++    try {
++      if (typeof ConfigManager !== "undefined" && ConfigManager &&
++          ConfigManager.__toolHubSqliteStore) return ConfigManager.__toolHubSqliteStore;
++    } catch (e0) {}
++    return null;
++  }
++
++  function ensureImageTables22(db) {
++    db.execSQL("CREATE TABLE IF NOT EXISTS toolhub_pickword_images (internal_path TEXT PRIMARY KEY NOT NULL, created_at INTEGER NOT NULL, source_type TEXT NOT NULL, width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0, file_size INTEGER NOT NULL DEFAULT 0, saved_public_path TEXT NOT NULL DEFAULT '', saved_content_uri TEXT NOT NULL DEFAULT '', saved_at INTEGER NOT NULL DEFAULT 0, deleted_at INTEGER NOT NULL DEFAULT 0, last_access_at INTEGER NOT NULL DEFAULT 0)");
++    db.execSQL("CREATE INDEX IF NOT EXISTS idx_toolhub_pickword_images_created ON toolhub_pickword_images(created_at, deleted_at)");
++    db.execSQL("CREATE TABLE IF NOT EXISTS toolhub_pickword_image_exports (export_id INTEGER PRIMARY KEY AUTOINCREMENT, internal_path TEXT NOT NULL, export_kind TEXT NOT NULL, public_path TEXT NOT NULL DEFAULT '', content_uri TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL DEFAULT 0, deleted_at INTEGER NOT NULL DEFAULT 0)");
++    db.execSQL("CREATE INDEX IF NOT EXISTS idx_toolhub_pickword_exports_expiry ON toolhub_pickword_image_exports(export_kind, expires_at, deleted_at)");
++  }
++
++  function withDb22(callback, fallback) {
++    var store = store22();
++    if (!store || !store.openDb) return fallback;
++    var db = null;
++    var locked = false;
++    try {
++      if (store._writeLock) {
++        store._writeLock.lock();
++        locked = true;
++      }
++      db = store.openDb();
++      if (!db) return fallback;
++      ensureImageTables22(db);
++      return callback(db, store);
++    } catch (e0) {
++      try { if (typeof safeLog === "function") safeLog(null, "w", "pickword image db fail " + String(e0)); } catch (eLog) {}
++      return fallback;
++    } finally {
++      try { if (store.closeDb) store.closeDb(db); else if (db) db.close(); } catch (eClose) {}
++      try { if (locked && store._writeLock) store._writeLock.unlock(); } catch (eUnlock) {}
++    }
++  }
++
++  function bindText22(stmt, index, value) {
++    stmt.bindString(index, String(value === undefined || value === null ? "" : value));
++  }
++
++  function upsertImage22(info) {
++    return withDb22(function(db) {
++      var stmt = null;
++      try {
++        stmt = db.compileStatement("INSERT OR REPLACE INTO toolhub_pickword_images(internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,deleted_at,last_access_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
++        bindText22(stmt, 1, info.internalPath);
++        stmt.bindLong(2, Number(info.createdAt || now22()));
++        bindText22(stmt, 3, info.source || "pointer_ocr");
++        stmt.bindLong(4, Number(info.width || 0));
++        stmt.bindLong(5, Number(info.height || 0));
++        stmt.bindLong(6, Number(info.fileSize || 0));
++        bindText22(stmt, 7, info.savedPublicPath || "");
++        bindText22(stmt, 8, info.savedContentUri || "");
++        stmt.bindLong(9, Number(info.savedAt || 0));
++        stmt.bindLong(10, Number(info.deletedAt || 0));
++        stmt.bindLong(11, Number(now22()));
++        stmt.executeInsert();
++        return true;
++      } finally {
++        try { if (stmt) stmt.close(); } catch (eClose) {}
++      }
++    }, false);
++  }
++
++  function updateImageSaved22(internalPath, publicPath, contentUri, savedAt) {
++    return withDb22(function(db) {
++      var stmt = null;
++      try {
++        stmt = db.compileStatement("UPDATE toolhub_pickword_images SET saved_public_path=?, saved_content_uri=?, saved_at=?, last_access_at=? WHERE internal_path=?");
++        bindText22(stmt, 1, publicPath);
++        bindText22(stmt, 2, contentUri);
++        stmt.bindLong(3, Number(savedAt || now22()));
++        stmt.bindLong(4, Number(now22()));
++        bindText22(stmt, 5, internalPath);
++        return Number(stmt.executeUpdateDelete()) > 0;
++      } finally {
++        try { if (stmt) stmt.close(); } catch (eClose) {}
++      }
++    }, false);
++  }
++
++  function markImageDeleted22(internalPath, deletedAt) {
++    return withDb22(function(db) {
++      var stmt = null;
++      try {
++        stmt = db.compileStatement("UPDATE toolhub_pickword_images SET deleted_at=?, last_access_at=? WHERE internal_path=?");
++        stmt.bindLong(1, Number(deletedAt || now22()));
++        stmt.bindLong(2, Number(now22()));
++        bindText22(stmt, 3, internalPath);
++        return Number(stmt.executeUpdateDelete()) > 0;
++      } finally {
++        try { if (stmt) stmt.close(); } catch (eClose) {}
++      }
++    }, false);
++  }
++
++  function loadSaved22(internalPath) {
++    return withDb22(function(db) {
++      var cursor = null;
++      try {
++        cursor = db.rawQuery("SELECT saved_public_path,saved_content_uri,saved_at FROM toolhub_pickword_images WHERE internal_path=? AND deleted_at=0", stringArgs22([internalPath]));
++        if (!cursor.moveToFirst()) return null;
++        return {
++          publicPath: String(cursor.getString(0) || ""),
++          contentUri: String(cursor.getString(1) || ""),
++          savedAt: Number(cursor.getLong(2) || 0)
++        };
++      } finally {
++        try { if (cursor) cursor.close(); } catch (eClose) {}
++      }
++    }, null);
++  }
++
++  function addExport22(internalPath, kind, publicPath, contentUri, createdAt, expiresAt) {
++    return withDb22(function(db) {
++      var stmt = null;
++      try {
++        stmt = db.compileStatement("INSERT INTO toolhub_pickword_image_exports(internal_path,export_kind,public_path,content_uri,created_at,expires_at,deleted_at) VALUES(?,?,?,?,?,?,0)");
++        bindText22(stmt, 1, internalPath);
++        bindText22(stmt, 2, kind);
++        bindText22(stmt, 3, publicPath || "");
++        bindText22(stmt, 4, contentUri || "");
++        stmt.bindLong(5, Number(createdAt || now22()));
++        stmt.bindLong(6, Number(expiresAt || 0));
++        stmt.executeInsert();
++        return true;
++      } finally {
++        try { if (stmt) stmt.close(); } catch (eClose) {}
++      }
++    }, false);
++  }
++
++  function getMeta22(key) {
++    return withDb22(function(db, store) {
++      if (store.getMeta) return store.getMeta(db, key);
++      return null;
++    }, null);
++  }
++
++  function putMeta22(key, value) {
++    return withDb22(function(db, store) {
++      if (store.putMeta) return store.putMeta(db, key, value);
++      return false;
++    }, false);
++  }
++
++  function internalRoot22() {
++    var base = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
++    if (!base) throw new Error("ShortX 目录为空");
++    return new java.io.File(base, "ToolHub/screenshots").getCanonicalFile();
++  }
++
++  function normalizeInternalFile22(rawPath) {
++    var root = internalRoot22();
++    var target = new java.io.File(String(rawPath || "")).getCanonicalFile();
++    var rootPath = String(root.getCanonicalPath());
++    var targetPath = String(target.getCanonicalPath());
++    if (targetPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("截图路径越界");
++    return target;
++  }
++
++  function defaultPublicDir22() {
++    return "/storage/emulated/0/Pictures/ToolHub";
++  }
++
++  function configuredPublicDir22(appObj) {
++    var value = "";
++    try {
++      if (appObj && appObj.config) value = String(appObj.config.PICKWORD_IMAGE_PUBLIC_DIR || "");
++    } catch (e0) {}
++    if (!value) {
++      try {
++        var cfg = ConfigManager.loadSettings();
++        value = String(cfg.PICKWORD_IMAGE_PUBLIC_DIR || "");
++      } catch (e1) {}
++    }
++    return value || defaultPublicDir22();
++  }
++
++  function configuredRetention22(appObj, overrideValue) {
++    var value = overrideValue;
++    if (value === undefined || value === null || String(value) === "") {
++      try { value = appObj && appObj.config ? appObj.config.PICKWORD_IMAGE_RETENTION_DAYS : null; } catch (e0) {}
++    }
++    if (value === undefined || value === null || String(value) === "") {
++      try { value = ConfigManager.loadSettings().PICKWORD_IMAGE_RETENTION_DAYS; } catch (e1) {}
++    }
++    value = int22(value, 7);
++    if (value < 0) value = 0;
++    if (value > 365) value = 365;
++    return value;
++  }
++
