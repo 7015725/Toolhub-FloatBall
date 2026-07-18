@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "id": "fix-pickword-image-meta-handoff",
+  "type": "fix",
+  "title": "修复拾字截图缩略图在二次交接时丢失",
+  "details": [
+    "拾字图片元数据标准化同时接受原始 screenshotPath 与已标准化 internalPath，保证重复标准化结果一致",
+    "保留 imageOnly 等会话状态，并拒绝已删除或明确不可用的截图元数据，避免错误复活图片",
+    "补充元数据来源、纯文字降级原因和缩略图实际挂载状态日志，便于区分截图、交接和 UI 构建问题",
+    "新增专项回归，锁定结果预览交接到拾字面板后的截图缩略图和原图入口"
+  ],
+  "manifestVersion": 0
+}
