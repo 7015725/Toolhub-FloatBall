@@ -6,8 +6,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PATCH = ROOT / "scripts" / "th22_su_path_fix.patch"
-EXPECTED_SIZE = 9484
-EXPECTED_SHA256 = "b80e87f8d445724c7f3ed854fb06d19bf15922b4ad219110c573e5ef0762d569"
+EXPECTED_SIZE = 9583
+EXPECTED_SHA256 = "d25b7c49e4733d936564167c1b30d3650bd32f1f184dd13eb80c96765d01e809"
 VERIFIER = ROOT / "scripts" / "verify_changed_module_versions.py"
 
 
