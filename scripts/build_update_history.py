@@ -28,10 +28,56 @@ def _bootstrap_pickword_image_stage1():
     script_text = script.read_text(encoding="utf-8")
     invalid_cast = "((android.view.ViewGroup)view.getParent()).removeView(view);"
     safe_parent_call = "view.getParent().removeView(view);"
-    if invalid_cast in script_text:
-        script.write_text(
-            script_text.replace(invalid_cast, safe_parent_call), encoding="utf-8"
-        )
+    script_text = script_text.replace(invalid_cast, safe_parent_call)
+
+    old_color_state = '''  function colorState22(color) {
+    try {
+      return android.content.res.ColorStateList.valueOf(java.lang.Integer.valueOf(Number(color) | 0));
+    } catch (e0) {}
+    return null;
+  }
+
+'''
+    script_text = script_text.replace(old_color_state, "")
+
+    old_safe_text = '''  function safeText22(view, color) {
+    try {
+      if (typeof toolhubSafeSetTextColor === "function") toolhubSafeSetTextColor(view, colorState22(color));
+      else view.setTextColor(colorState22(color));
+    } catch (e0) {}
+  }
+'''
+    new_safe_text = '''  function safeText22(view, color) {
+    try { toolhubSafeSetTextColor(view, Number(color) | 0); } catch (e0) {}
+  }
+'''
+    if old_safe_text not in script_text:
+        raise RuntimeError("safeText22 generator anchor missing")
+    script_text = script_text.replace(old_safe_text, new_safe_text, 1)
+
+    old_round = '''  function roundBg22(color, stroke, radius) {
+    var gd = new android.graphics.drawable.GradientDrawable();
+    try {
+      if (typeof toolhubSafeSetColor === "function") toolhubSafeSetColor(gd, colorState22(color));
+      else gd.setColor(colorState22(color));
+    } catch (e0) {}
+    try { gd.setCornerRadius(dp22(radius || 12)); } catch (e1) {}
+    try { gd.setStroke(dp22(1), colorState22(stroke)); } catch (e2) {}
+    return gd;
+  }
+'''
+    new_round = '''  function roundBg22(color, stroke, radius) {
+    var gd = new android.graphics.drawable.GradientDrawable();
+    try { toolhubSafeSetGradientColor(gd, Number(color) | 0); } catch (e0) {}
+    try { gd.setCornerRadius(dp22(radius || 12)); } catch (e1) {}
+    try { toolhubSafeSetGradientStroke(gd, dp22(1), Number(stroke) | 0); } catch (e2) {}
+    return gd;
+  }
+'''
+    if old_round not in script_text:
+        raise RuntimeError("roundBg22 generator anchor missing")
+    script_text = script_text.replace(old_round, new_round, 1)
+    script.write_text(script_text, encoding="utf-8")
 
     subprocess.check_call([sys.executable, str(script)], cwd=str(ROOT))
 
