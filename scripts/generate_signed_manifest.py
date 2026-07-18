@@ -11,9 +11,6 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-_PICKWORD_META_FIX = ROOT / "scripts" / "apply_pickword_meta_fix.py"
-if _PICKWORD_META_FIX.exists():
-    subprocess.check_call(["python3", str(_PICKWORD_META_FIX)], cwd=str(ROOT))
 CODE_DIR = ROOT / "code"
 PRIVATE_KEY = Path.home() / ".hermes" / "toolhub_signing" / "private_key.pem"
 MANIFEST = ROOT / "manifest.json"

@@ -158,6 +158,8 @@ jobs:
         run: |
           python3 scripts/verify_pointer_regressions.py
           python3 scripts/verify_result_preview.py
+          python3 scripts/verify_pickword_image_viewer.py
+          python3 scripts/verify_pickword_image_meta_handoff.py
           python3 scripts/verify_screenshot_manager.py
 
       - name: Check generated whitespace
