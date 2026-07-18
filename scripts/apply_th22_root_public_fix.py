@@ -28,23 +28,27 @@ def run(args):
 
 def apply_fix():
     chunks = []
+    metrics = []
     for index, path in enumerate(PARTS):
         if not path.exists():
             raise SystemExit("missing patch part: %s" % path.name)
         data = path.read_bytes()
-        if len(data) != PART_SIZES[index]:
-            raise SystemExit("patch part size mismatch: %s actual=%d expected=%d" % (path.name, len(data), PART_SIZES[index]))
         actual = hashlib.sha256(data).hexdigest()
-        if actual != PART_SHA256[index]:
-            raise SystemExit("patch part digest mismatch: %s actual=%s expected=%s" % (path.name, actual, PART_SHA256[index]))
+        metrics.append("%s size=%d sha256=%s" % (path.name, len(data), actual))
         chunks.append(data)
     payload = b"".join(chunks)
     actual_payload = hashlib.sha256(payload).hexdigest()
+    metrics.append("payload size=%d sha256=%s" % (len(payload), actual_payload))
+    print("\n".join(metrics), flush=True)
+
+    mismatches = []
+    for index, data in enumerate(chunks):
+        if len(data) != PART_SIZES[index] or hashlib.sha256(data).hexdigest() != PART_SHA256[index]:
+            mismatches.append(PARTS[index].name)
     if len(payload) != EXPECTED_SIZE or actual_payload != EXPECTED_SHA256:
-        raise SystemExit(
-            "root public storage patch digest mismatch size=%d expected_size=%d sha=%s expected_sha=%s"
-            % (len(payload), EXPECTED_SIZE, actual_payload, EXPECTED_SHA256)
-        )
+        mismatches.append("payload")
+    if mismatches:
+        raise SystemExit("root public storage patch lock mismatch: " + ",".join(mismatches))
 
     run([
         "git", "checkout", "origin/main", "--",
