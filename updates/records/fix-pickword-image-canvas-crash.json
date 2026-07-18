@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "id": "fix-pickword-image-canvas-crash",
+  "type": "fix",
+  "title": "修复拾字原图页空白与触摸重启",
+  "details": [
+    "原图 Canvas 不再调用 Rhino 作用域中不存在的裸 getWidth、getHeight 和 invalidate 方法",
+    "绘制尺寸统一使用 onSizeChanged 状态并以 Canvas 尺寸兜底，原图解码完成后可正常绘制",
+    "整个触摸回调增加顶层异常保护，平移刷新通过明确的 imageCanvas 实例执行，避免异常越过 JavaAdapter 输入分发边界",
+    "连续绘制异常达到阈值后停止区域解码和交互刷新，保留返回、保存、分享与删除操作",
+    "新增静态回归，禁止 JavaAdapter 自绘 View 中再次出现裸 View 方法调用"
+  ],
+  "manifestVersion": 0,
+  "date": "2026-07-19"
+}
