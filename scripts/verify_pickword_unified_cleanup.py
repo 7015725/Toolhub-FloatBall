@@ -11,7 +11,7 @@ def require(condition, message):
         raise SystemExit(message)
 
 
-require(source.startswith("// @version 1.0.13\n"), "pickword module version must be 1.0.13")
+require(source.startswith("// @version 1.0.14\n"), "pickword module version must be 1.0.14")
 require("CANVAS_DRAG_VISIBLE_LINE_BUFFER: 8" in source, "drag visible-line buffer config missing")
 require("CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS: 40" in source, "drag highlight interval config missing")
 require("parseInt(String(DIY_CONFIG.CANVAS_DRAG_VISIBLE_LINE_BUFFER), 10)" in source, "drag buffer is not consumed")

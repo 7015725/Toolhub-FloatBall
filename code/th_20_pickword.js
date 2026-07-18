@@ -1,4 +1,4 @@
-// @version 1.0.13
+// @version 1.0.14
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -571,6 +571,8 @@
     function createCanvasTextControl() {
         var state = {
             text: "",
+            units: [],
+            unitStarts: [],
             textSizeSp: currentFontSize,
             lines: [],
             contentHeight: 0,
@@ -578,6 +580,7 @@
             layoutDirty: true,
             measuredWidth: 0,
             lineHeight: 0,
+            baselineOffset: 0,
             widthCache: {}
         };
 
@@ -603,39 +606,54 @@
             };
         }
 
-        function getCharAdvance(ch) {
-            if (ch === "\n" || ch === "\r") return 0;
-            var code = 0;
-            try { code = ch.charCodeAt(0); } catch (eCode) { code = 0; }
-            var fastFullWidth = false;
-            try {
-                fastFullWidth = DIY_CONFIG.CANVAS_FAST_FULL_WIDTH_CACHE === true && code >= 0x2E80 && code !== 0x3000 && !(code >= 0xFF61 && code <= 0xFFDC);
-            } catch (eFast) { fastFullWidth = false; }
+        function rebuildTextUnits20(source) {
+            state.units = segmentPickwordGraphemes20(source);
+            state.unitStarts = [];
+            for (var i = 0; i < state.units.length; i++) state.unitStarts.push(state.units[i].start);
+        }
 
-            var key = fastFullWidth ? (state.textSizeSp + "#FULL_WIDTH") : (state.textSizeSp + "#" + ch);
+        function isFastCjkWidthUnit20(unit) {
+            if (!unit || unit.newline || !unit.text) return false;
+            var info = getCodePointInfo20(unit.text, 0);
+            if (info.length !== unit.text.length || info.value < 0) return false;
+            var code = info.value;
+            if (code >= 0xD800 && code <= 0xDFFF) return false;
+            return (code >= 0x2E80 && code <= 0xA4CF) ||
+                (code >= 0xAC00 && code <= 0xD7A3) ||
+                (code >= 0xF900 && code <= 0xFAFF) ||
+                (code >= 0xFE10 && code <= 0xFE6F) ||
+                (code >= 0xFF01 && code <= 0xFF60);
+        }
+
+        function getTextUnitAdvance20(unit) {
+            if (!unit || unit.newline) return 0;
+            var fastFullWidth = false;
+            try { fastFullWidth = DIY_CONFIG.CANVAS_FAST_FULL_WIDTH_CACHE === true && isFastCjkWidthUnit20(unit); } catch (eFast) { fastFullWidth = false; }
+            var key = fastFullWidth ? (state.textSizeSp + "#FULL_WIDTH") : (state.textSizeSp + "#" + unit.text);
             if (state.widthCache[key] !== undefined) return state.widthCache[key];
             var base = 0;
             try {
                 if (fastFullWidth) base = textPaint.measureText(new java.lang.String("中"));
-                else base = textPaint.measureText(new java.lang.String(ch));
+                else base = textPaint.measureText(new java.lang.String(unit.text));
             } catch (e0) {
                 try {
                     if (fastFullWidth) base = textPaint.measureText("中");
-                    else base = textPaint.measureText(String(ch));
-                } catch (e1) { base = sp(state.textSizeSp) * (fastFullWidth ? 1.0 : 0.55); }
+                    else base = textPaint.measureText(String(unit.text));
+                } catch (e1) { base = sp(state.textSizeSp) * (fastFullWidth ? 1.0 : 0.75); }
             }
-            if (base < 1) base = sp(state.textSizeSp) * (fastFullWidth ? 1.0 : 0.55);
-            var scale = getCharSpacingScale(ch);
-            var adv = base;
-            if (Math.abs(scale - 1.0) > 0.001) adv = base * scale;
-            state.widthCache[key] = adv;
-            return adv;
+            if (base < 1) base = sp(state.textSizeSp) * (fastFullWidth ? 1.0 : 0.75);
+            var scale = getTextUnitSpacingScale20(unit.text);
+            var advance = Math.abs(scale - 1.0) > 0.001 ? base * scale : base;
+            state.widthCache[key] = advance;
+            return advance;
         }
 
-        function pushLine(start, end, xs, topValue) {
+        function pushLine(start, end, unitStart, unitEnd, xs, topValue) {
             state.lines.push({
                 start: start,
                 end: end,
+                unitStart: unitStart,
+                unitEnd: unitEnd,
                 xs: xs,
                 top: topValue,
                 bottom: topValue + state.lineHeight,
@@ -657,118 +675,159 @@
             state.contentWidth = widthValue;
 
             var source = String(state.text || "");
-            var len = source.length;
+            var units = state.units || [];
             var y = padding.top;
             var lineStart = 0;
+            var lineUnitStart = 0;
             var lineX = 0;
             var xs = [0];
-            var i = 0;
+            var unitIndex = 0;
 
-            if (len === 0) {
-                pushLine(0, 0, [0], y);
+            if (units.length === 0) {
+                pushLine(0, 0, 0, 0, [0], y);
                 state.contentHeight = Math.round(y + state.lineHeight + padding.bottom);
                 state.layoutDirty = false;
                 return;
             }
 
-            while (i < len) {
-                var ch = source.charAt(i);
-                if (ch === "\r" || ch === "\n") {
-                    pushLine(lineStart, i, xs, y);
+            while (unitIndex < units.length) {
+                var unit = units[unitIndex];
+                if (unit.newline) {
+                    pushLine(lineStart, unit.start, lineUnitStart, unitIndex, xs, y);
                     y += state.lineHeight;
-                    if (ch === "\r" && i + 1 < len && source.charAt(i + 1) === "\n") i++;
-                    i++;
-                    lineStart = i;
+                    unitIndex++;
+                    lineStart = unit.end;
+                    lineUnitStart = unitIndex;
                     lineX = 0;
                     xs = [0];
                     continue;
                 }
 
-                var adv = getCharAdvance(ch);
-                if (lineX > 0 && lineX + adv > available) {
-                    pushLine(lineStart, i, xs, y);
+                var advance = getTextUnitAdvance20(unit);
+                if (lineX > 0 && lineX + advance > available) {
+                    pushLine(lineStart, unit.start, lineUnitStart, unitIndex, xs, y);
                     y += state.lineHeight;
-                    lineStart = i;
+                    lineStart = unit.start;
+                    lineUnitStart = unitIndex;
                     lineX = 0;
                     xs = [0];
                     continue;
                 }
 
-                lineX += adv;
+                lineX += advance;
                 xs.push(lineX);
-                i++;
+                unitIndex++;
             }
 
-            pushLine(lineStart, len, xs, y);
+            pushLine(lineStart, source.length, lineUnitStart, units.length, xs, y);
             state.contentHeight = Math.round(y + state.lineHeight + padding.bottom);
             state.layoutDirty = false;
         }
 
         function ensureLayout(viewObj) {
-            var w = 0;
-            try { w = viewObj.getWidth(); } catch (e0) { w = 0; }
-            if (w <= 0) w = state.measuredWidth;
-            if (w <= 0) w = Math.round(windowWidth - uiDp(32, 40));
-            if (state.layoutDirty || state.contentWidth !== w || state.lines.length === 0) {
-                rebuildLayout(w, viewObj);
-            }
+            var width = 0;
+            try { width = viewObj.getWidth(); } catch (e0) { width = 0; }
+            if (width <= 0) width = state.measuredWidth;
+            if (width <= 0) width = Math.round(windowWidth - uiDp(32, 40));
+            if (state.layoutDirty || state.contentWidth !== width || state.lines.length === 0) rebuildLayout(width, viewObj);
+        }
+
+        function getUnitRangeAt20(indexValue) {
+            if (!state.units || state.units.length === 0) return null;
+            var unitIndex = findPickwordUnitIndex20(state.units, indexValue);
+            if (unitIndex < 0 || unitIndex >= state.units.length) return null;
+            var unit = state.units[unitIndex];
+            return { start: unit.start, end: unit.end, text: unit.text, newline: unit.newline === true, unitIndex: unitIndex };
         }
 
         function isIndexSelectedForCanvas(indexValue) {
             try {
                 if (isDragging && dragSnapshotSet && dragStartIndex >= 0 && lastDragVisualMin >= 0 && lastDragVisualMax >= 0) {
-                    if (indexValue >= lastDragVisualMin && indexValue <= lastDragVisualMax) {
-                        return !dragStartWasSelected;
-                    }
+                    if (indexValue >= lastDragVisualMin && indexValue <= lastDragVisualMax) return !dragStartWasSelected;
                     return dragSnapshotSet[indexValue] === true;
                 }
             } catch (e0) {}
             return selectedSet[indexValue] === true;
         }
 
+        function isUnitSelectedWithResolver20(unit, resolver) {
+            if (!unit || unit.newline) return false;
+            for (var index = unit.start; index < unit.end; index++) {
+                if (resolver(index) === true) return true;
+            }
+            return false;
+        }
+
+        function isUnitSelectedForCanvas20(unit) {
+            return isUnitSelectedWithResolver20(unit, isIndexSelectedForCanvas);
+        }
+
         function drawSelectionForLine(canvas, line, paddingLeft) {
             try {
-                var runStart = -1;
-                var i;
-                for (i = line.start; i <= line.end; i++) {
-                    var selected = (i < line.end && isIndexSelectedForCanvas(i));
-                    if (selected && runStart < 0) runStart = i;
-                    if ((!selected || i === line.end) && runStart >= 0) {
-                        var runEnd = i;
-                        var leftIndex = runStart - line.start;
-                        var rightIndex = runEnd - line.start;
+                var runStartLocal = -1;
+                var localCount = Math.max(0, line.unitEnd - line.unitStart);
+                for (var localIndex = 0; localIndex <= localCount; localIndex++) {
+                    var selected = false;
+                    if (localIndex < localCount) selected = isUnitSelectedForCanvas20(state.units[line.unitStart + localIndex]);
+                    if (selected && runStartLocal < 0) runStartLocal = localIndex;
+                    if ((!selected || localIndex === localCount) && runStartLocal >= 0) {
+                        var leftIndex = runStartLocal;
+                        var rightIndex = localIndex;
                         if (leftIndex < 0) leftIndex = 0;
                         if (rightIndex >= line.xs.length) rightIndex = line.xs.length - 1;
-                        var l = paddingLeft + line.xs[leftIndex];
-                        var r = paddingLeft + line.xs[rightIndex];
-                        if (r < l + 1) r = l + 1;
-                        rectF.set(l, line.top + 1, r, line.bottom - 1);
+                        var left = paddingLeft + line.xs[leftIndex];
+                        var right = paddingLeft + line.xs[rightIndex];
+                        if (right < left + 1) right = left + 1;
+                        rectF.set(left, line.top + 1, right, line.bottom - 1);
                         setPaintColor(bgPaint, Colors.selectionBg, 220);
                         canvas.drawRoundRect(rectF, uiDp(3, 4), uiDp(3, 4), bgPaint);
-                        runStart = -1;
+                        runStartLocal = -1;
                     }
                 }
             } catch (e) {}
         }
 
+        function countSelectedUnits20(setObj) {
+            if (!setObj || !state.units) return 0;
+            var count = 0;
+            for (var i = 0; i < state.units.length; i++) {
+                var unit = state.units[i];
+                if (!unit || unit.newline) continue;
+                if (isUnitSelectedWithResolver20(unit, function(indexValue) { return setObj[indexValue] === true; })) count++;
+            }
+            return count;
+        }
+
+        function countDragSelectionUnits20(snapshotSet, minIndex, maxIndex, removeRange) {
+            if (!state.units) return 0;
+            if (minIndex > maxIndex) { var temp = minIndex; minIndex = maxIndex; maxIndex = temp; }
+            var count = 0;
+            for (var i = 0; i < state.units.length; i++) {
+                var unit = state.units[i];
+                if (!unit || unit.newline) continue;
+                var selected = isUnitSelectedWithResolver20(unit, function(indexValue) { return snapshotSet && snapshotSet[indexValue] === true; });
+                if (unit.end - 1 >= minIndex && unit.start <= maxIndex) selected = removeRange !== true;
+                if (selected) count++;
+            }
+            return count;
+        }
+
         var canvasView = new JavaAdapter(View, {
             onMeasure: function(widthMeasureSpec, heightMeasureSpec) {
                 try {
-                    var w = android.view.View.MeasureSpec.getSize(widthMeasureSpec);
-                    if (w <= 0) w = Math.round(windowWidth - uiDp(32, 40));
-                    state.measuredWidth = w;
-                    if (state.layoutDirty || state.contentWidth !== w || state.lines.length === 0) {
-                        rebuildLayout(w, this);
-                    }
-                    var h = Math.max(Math.round(state.contentHeight), Math.round(uiDp(80, 96)));
-                    this.setMeasuredDimension(w, h);
+                    var width = android.view.View.MeasureSpec.getSize(widthMeasureSpec);
+                    if (width <= 0) width = Math.round(windowWidth - uiDp(32, 40));
+                    state.measuredWidth = width;
+                    if (state.layoutDirty || state.contentWidth !== width || state.lines.length === 0) rebuildLayout(width, this);
+                    var height = Math.max(Math.round(state.contentHeight), Math.round(uiDp(80, 96)));
+                    this.setMeasuredDimension(width, height);
                 } catch (e) {
                     this.setMeasuredDimension(Math.round(windowWidth - uiDp(32, 40)), Math.round(uiDp(120, 150)));
                 }
             },
-            onSizeChanged: function(w, h, oldw, oldh) {
+            onSizeChanged: function(width, height, oldWidth, oldHeight) {
                 try {
-                    if (w !== oldw) {
+                    if (width !== oldWidth) {
                         state.layoutDirty = true;
                         ensureLayout(this);
                     }
@@ -784,21 +843,20 @@
                     var clipBottom = hasClip ? clipRect.bottom : this.getHeight();
                     try {
                         if (scrollView) {
-                            var svTop = scrollView.getScrollY();
-                            var svBottom = svTop + scrollView.getHeight();
-                            if (svBottom > svTop) {
-                                clipTop = Math.max(clipTop, svTop);
-                                clipBottom = Math.min(clipBottom, svBottom);
+                            var scrollTop = scrollView.getScrollY();
+                            var scrollBottom = scrollTop + scrollView.getHeight();
+                            if (scrollBottom > scrollTop) {
+                                clipTop = Math.max(clipTop, scrollTop);
+                                clipBottom = Math.min(clipBottom, scrollBottom);
                                 if (clipBottom <= clipTop) {
-                                    clipTop = svTop;
-                                    clipBottom = svBottom;
+                                    clipTop = scrollTop;
+                                    clipBottom = scrollBottom;
                                 }
                             }
                         }
                     } catch (eClip) {}
 
                     resetPaint();
-                    var source = String(state.text || "");
                     var lastSelected = null;
                     var bufferLines = 50;
                     try {
@@ -812,24 +870,24 @@
                     var endLine = Math.ceil((clipBottom - padding.top) / Math.max(1, state.lineHeight)) + bufferLines;
                     if (startLine < 0) startLine = 0;
                     if (endLine >= state.lines.length) endLine = state.lines.length - 1;
-                    for (var li = startLine; li <= endLine; li++) {
-                        var line = state.lines[li];
+                    for (var lineIndex = startLine; lineIndex <= endLine; lineIndex++) {
+                        var line = state.lines[lineIndex];
                         if (!line) continue;
-
                         drawSelectionForLine(canvas, line, padding.left);
                         var x = padding.left;
-                        for (var idx = line.start; idx < line.end; idx++) {
-                            var ch = source.charAt(idx);
-                            var selected = isIndexSelectedForCanvas(idx);
+                        for (var unitIndex = line.unitStart; unitIndex < line.unitEnd; unitIndex++) {
+                            var unit = state.units[unitIndex];
+                            if (!unit || unit.newline) continue;
+                            var selected = isUnitSelectedForCanvas20(unit);
                             if (lastSelected !== selected) {
                                 setPaintColor(textPaint, selected ? Colors.selectionText : Colors.text, 255);
                                 lastSelected = selected;
                             }
-                            try { canvas.drawText(new java.lang.String(ch), x, line.baseline, textPaint); } catch (e1) {
-                                try { canvas.drawText(String(ch), x, line.baseline, textPaint); } catch (e2) {}
+                            try { canvas.drawText(new java.lang.String(unit.text), x, line.baseline, textPaint); } catch (e1) {
+                                try { canvas.drawText(String(unit.text), x, line.baseline, textPaint); } catch (e2) {}
                             }
-                            var pos = idx - line.start;
-                            if (pos + 1 < line.xs.length) x = padding.left + line.xs[pos + 1];
+                            var local = unitIndex - line.unitStart;
+                            if (local + 1 < line.xs.length) x = padding.left + line.xs[local + 1];
                         }
                     }
                 } catch (e3) {}
@@ -846,7 +904,11 @@
         return {
             view: canvasView,
             setText: function(textValue) {
-                state.text = String(textValue == null ? "" : textValue);
+                var nextText = String(textValue == null ? "" : textValue);
+                if (state.text !== nextText) {
+                    state.text = nextText;
+                    rebuildTextUnits20(nextText);
+                }
                 state.layoutDirty = true;
                 try { canvasView.requestLayout(); } catch (e0) {}
                 try { canvasView.invalidate(); } catch (e1) {}
@@ -873,7 +935,7 @@
                     if (lineIndex >= lines.length) lineIndex = lines.length - 1;
                     var line = lines[lineIndex];
                     if (!line) return -1;
-                    if (line.end <= line.start) return line.start >= 0 && line.start < state.text.length ? line.start : -1;
+                    if (line.unitEnd <= line.unitStart) return line.start >= 0 && line.start < state.text.length ? line.start : -1;
                     var localX = x - canvasView.getPaddingLeft();
                     if (localX < 0) localX = 0;
                     var xs = line.xs;
@@ -882,16 +944,38 @@
                     var answer = hi;
                     while (lo <= hi) {
                         var midIndex = Math.floor((lo + hi) / 2);
-                        var mid = (xs[midIndex] + xs[midIndex + 1]) / 2;
-                        if (localX < mid) {
+                        var midpoint = (xs[midIndex] + xs[midIndex + 1]) / 2;
+                        if (localX < midpoint) {
                             answer = midIndex;
                             hi = midIndex - 1;
                         } else {
                             lo = midIndex + 1;
                         }
                     }
-                    return Math.max(line.start, Math.min(line.start + answer, state.text.length - 1));
+                    var unitIndex = line.unitStart + Math.max(0, answer);
+                    if (unitIndex < line.unitStart) unitIndex = line.unitStart;
+                    if (unitIndex >= line.unitEnd) unitIndex = line.unitEnd - 1;
+                    var unit = state.units[unitIndex];
+                    return unit ? unit.start : -1;
                 } catch (e) { return -1; }
+            },
+            getUnitRangeAt: function(indexValue) {
+                return getUnitRangeAt20(indexValue);
+            },
+            normalizeRange: function(startIndex, endIndex) {
+                var startRange = getUnitRangeAt20(startIndex);
+                var endRange = getUnitRangeAt20(endIndex);
+                if (!startRange || !endRange) return null;
+                return {
+                    start: Math.min(startRange.start, endRange.start),
+                    end: Math.max(startRange.end, endRange.end)
+                };
+            },
+            countSelectedUnits: function(setObj) {
+                return countSelectedUnits20(setObj || {});
+            },
+            countDragSelectionUnits: function(snapshotSet, minIndex, maxIndex, removeRange) {
+                return countDragSelectionUnits20(snapshotSet || {}, minIndex, maxIndex, removeRange === true);
             },
             invalidateVisible: function() {
                 try {
@@ -902,12 +986,10 @@
                         bottom = Math.min(canvasView.getHeight(), scrollView.getScrollY() + scrollView.getHeight() + state.lineHeight * 4);
                     }
                     var width = Math.max(1, canvasView.getWidth());
-                    var itop = Math.round(top);
-                    var ibottom = Math.round(bottom);
-                    if (ibottom <= itop) ibottom = Math.min(canvasView.getHeight(), itop + Math.max(1, state.lineHeight * 8));
-                    try { canvasView.invalidate(0, itop, width, ibottom); } catch (e2) { canvasView.invalidate(); }
-                    // 快速滚动时部分 ROM / 硬件加速路径不会主动重绘新露出的子区域，父容器也补一次 invalidate。
-                    // 但长按拖选 + 放大镜期间如果每帧补父容器和动画刷新，会明显掉帧，所以拖选时只刷新子 View 局部。
+                    var intTop = Math.round(top);
+                    var intBottom = Math.round(bottom);
+                    if (intBottom <= intTop) intBottom = Math.min(canvasView.getHeight(), intTop + Math.max(1, state.lineHeight * 8));
+                    try { canvasView.invalidate(0, intTop, width, intBottom); } catch (e2) { canvasView.invalidate(); }
                     if (!isDragging) {
                         try { if (scrollView) scrollView.invalidate(); } catch (e3) {}
                         try { if (android.os.Build.VERSION.SDK_INT >= 16) canvasView.postInvalidateOnAnimation(); } catch (e4) {}
@@ -921,7 +1003,7 @@
                         this.invalidateVisible();
                         return;
                     }
-                    if (startIndex > endIndex) { var tmp = startIndex; startIndex = endIndex; endIndex = tmp; }
+                    if (startIndex > endIndex) { var temp = startIndex; startIndex = endIndex; endIndex = temp; }
                     var lines = state.lines;
                     if (!lines || lines.length === 0) { this.invalidateVisible(); return; }
                     var startLine = Math.floor((Math.max(0, startIndex) / Math.max(1, state.text.length)) * lines.length);
@@ -938,7 +1020,7 @@
                     var bottom = Math.min(canvasView.getHeight(), lines[endLine].bottom + state.lineHeight * 2);
                     canvasView.invalidate(0, Math.round(top), Math.max(1, canvasView.getWidth()), Math.round(bottom));
                 } catch (e0) { this.invalidateVisible(); }
-            },
+            }
         };
     }
 
@@ -1616,14 +1698,194 @@
         return n;
     }
 
-    function getCharSpacingScale(ch) {
-        if (!ch || ch.length === 0) return 1.0;
-        var code = ch.charCodeAt(0);
+    function getCodePointInfo20(textValue, indexValue) {
+        var source = String(textValue == null ? "" : textValue);
+        var index = Math.max(0, parseInt(String(indexValue), 10) || 0);
+        if (index >= source.length) return { value: -1, length: 0 };
+        var first = source.charCodeAt(index);
+        if (first >= 0xD800 && first <= 0xDBFF && index + 1 < source.length) {
+            var second = source.charCodeAt(index + 1);
+            if (second >= 0xDC00 && second <= 0xDFFF) {
+                return { value: ((first - 0xD800) * 0x400) + (second - 0xDC00) + 0x10000, length: 2 };
+            }
+        }
+        return { value: first, length: 1 };
+    }
+
+    function isPickwordVariationSelector20(codePoint) {
+        return codePoint === 0xFE0E || codePoint === 0xFE0F || (codePoint >= 0xE0100 && codePoint <= 0xE01EF);
+    }
+
+    function isPickwordEmojiModifier20(codePoint) {
+        return codePoint >= 0x1F3FB && codePoint <= 0x1F3FF;
+    }
+
+    function isPickwordRegionalIndicator20(codePoint) {
+        return codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF;
+    }
+
+    function isPickwordTagCodePoint20(codePoint) {
+        return codePoint >= 0xE0020 && codePoint <= 0xE007F;
+    }
+
+    function isPickwordCombiningCodePoint20(codePoint) {
+        return (codePoint >= 0x0300 && codePoint <= 0x036F) ||
+            (codePoint >= 0x0483 && codePoint <= 0x0489) ||
+            (codePoint >= 0x0591 && codePoint <= 0x05BD) || codePoint === 0x05BF ||
+            (codePoint >= 0x05C1 && codePoint <= 0x05C2) ||
+            (codePoint >= 0x0610 && codePoint <= 0x061A) ||
+            (codePoint >= 0x064B && codePoint <= 0x065F) || codePoint === 0x0670 ||
+            (codePoint >= 0x06D6 && codePoint <= 0x06ED) ||
+            (codePoint >= 0x1AB0 && codePoint <= 0x1AFF) ||
+            (codePoint >= 0x1DC0 && codePoint <= 0x1DFF) ||
+            (codePoint >= 0x20D0 && codePoint <= 0x20FF) ||
+            (codePoint >= 0xFE20 && codePoint <= 0xFE2F) ||
+            codePoint === 0x20E3;
+    }
+
+    function buildPickwordUnit20(source, start, end) {
+        var value = String(source || "").substring(start, end);
+        return {
+            start: start,
+            end: end,
+            text: value,
+            newline: value === "\n" || value === "\r" || value === "\r\n"
+        };
+    }
+
+    function segmentPickwordGraphemesFallback20(textValue) {
+        var source = String(textValue == null ? "" : textValue);
+        var units = [];
+        var i = 0;
+        while (i < source.length) {
+            var start = i;
+            var firstInfo = getCodePointInfo20(source, i);
+            var firstCode = firstInfo.value;
+            i += Math.max(1, firstInfo.length);
+
+            if (firstCode === 0x0D) {
+                if (i < source.length && source.charCodeAt(i) === 0x0A) i++;
+                units.push(buildPickwordUnit20(source, start, i));
+                continue;
+            }
+            if (firstCode === 0x0A) {
+                units.push(buildPickwordUnit20(source, start, i));
+                continue;
+            }
+
+            if (isPickwordRegionalIndicator20(firstCode) && i < source.length) {
+                var regionalNext = getCodePointInfo20(source, i);
+                if (isPickwordRegionalIndicator20(regionalNext.value)) i += regionalNext.length;
+            }
+
+            var continueCluster = true;
+            while (continueCluster && i < source.length) {
+                continueCluster = false;
+                var nextInfo = getCodePointInfo20(source, i);
+                var nextCode = nextInfo.value;
+                if (isPickwordVariationSelector20(nextCode) || isPickwordEmojiModifier20(nextCode) ||
+                    isPickwordCombiningCodePoint20(nextCode) || isPickwordTagCodePoint20(nextCode)) {
+                    i += nextInfo.length;
+                    continueCluster = true;
+                    continue;
+                }
+                if (nextCode === 0x200D) {
+                    i += nextInfo.length;
+                    if (i < source.length) {
+                        var joinedInfo = getCodePointInfo20(source, i);
+                        i += Math.max(1, joinedInfo.length);
+                    }
+                    continueCluster = true;
+                }
+            }
+            units.push(buildPickwordUnit20(source, start, i));
+        }
+        return units;
+    }
+
+    function segmentPickwordGraphemes20(textValue) {
+        var source = String(textValue == null ? "" : textValue);
+        if (!source) return [];
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 24) {
+                var iterator = android.icu.text.BreakIterator.getCharacterInstance(java.util.Locale.getDefault());
+                iterator.setText(new java.lang.String(source));
+                var units = [];
+                var start = iterator.first();
+                var done = android.icu.text.BreakIterator.DONE;
+                var end = iterator.next();
+                while (end !== done) {
+                    if (end > start) units.push(buildPickwordUnit20(source, start, end));
+                    start = end;
+                    end = iterator.next();
+                }
+                if (units.length > 0 && units[units.length - 1].end === source.length) return units;
+            }
+        } catch (eIcu) {}
+        return segmentPickwordGraphemesFallback20(source);
+    }
+
+    function findPickwordUnitIndex20(units, utf16Index) {
+        if (!units || units.length === 0) return -1;
+        var index = parseInt(String(utf16Index), 10);
+        if (isNaN(index)) index = 0;
+        if (index < 0) index = 0;
+        var lo = 0;
+        var hi = units.length - 1;
+        while (lo <= hi) {
+            var mid = Math.floor((lo + hi) / 2);
+            var unit = units[mid];
+            if (index < unit.start) hi = mid - 1;
+            else if (index >= unit.end) lo = mid + 1;
+            else return mid;
+        }
+        if (index >= units[units.length - 1].end) return units.length - 1;
+        return Math.max(0, Math.min(units.length - 1, lo));
+    }
+
+    function findPickwordSafeBoundary20(units, desiredIndex, allowForwardUnit) {
+        if (!units || units.length === 0) return 0;
+        var desired = Math.max(0, parseInt(String(desiredIndex), 10) || 0);
+        var lastEnd = units[units.length - 1].end;
+        if (desired >= lastEnd) return lastEnd;
+        var unitIndex = findPickwordUnitIndex20(units, desired);
+        if (unitIndex < 0) return 0;
+        var unit = units[unitIndex];
+        if (desired === unit.start) return unit.start;
+        if (desired >= unit.end) return unit.end;
+        return allowForwardUnit === true ? unit.end : unit.start;
+    }
+
+    function truncatePickwordTextAtSafeBoundary20(textValue, limitValue, allowForwardUnit) {
+        var source = String(textValue == null ? "" : textValue);
+        var limit = Math.max(0, parseInt(String(limitValue), 10) || 0);
+        if (source.length <= limit) return source;
+        var units = segmentPickwordGraphemes20(source);
+        var boundary = findPickwordSafeBoundary20(units, limit, allowForwardUnit === true);
+        if (boundary < 0) boundary = 0;
+        if (boundary > source.length) boundary = source.length;
+        return source.substring(0, boundary);
+    }
+
+    function countPickwordGraphemes20(textValue) {
+        return segmentPickwordGraphemes20(String(textValue == null ? "" : textValue)).length;
+    }
+
+    function getTextUnitSpacingScale20(unitText) {
+        var text = String(unitText == null ? "" : unitText);
+        if (!text) return 1.0;
+        var firstInfo = getCodePointInfo20(text, 0);
+        if (firstInfo.length <= 0 || text.length !== firstInfo.length) return 1.0;
+        var code = firstInfo.value;
         if (code === 10 || code === 13 || code === 9 || code === 32 || code === 0x3000) return 1.0;
         if ((code >= 0x21 && code <= 0x7E) || (code >= 0xFF61 && code <= 0xFFDC)) {
             return getSafeScaleValue(DIY_CONFIG.HALF_WIDTH_CHAR_SPACING_SCALE, 1.0);
         }
-        if (code >= 0x2E80 || code > 0xFF00) {
+        if ((code >= 0x2E80 && code <= 0xA4CF) ||
+            (code >= 0xAC00 && code <= 0xD7A3) ||
+            (code >= 0xF900 && code <= 0xFAFF) ||
+            (code >= 0xFE10 && code <= 0xFE6F) ||
+            (code >= 0xFF01 && code <= 0xFF60)) {
             return getSafeScaleValue(DIY_CONFIG.FULL_WIDTH_CHAR_SPACING_SCALE, 1.0);
         }
         return 1.0;
@@ -1640,33 +1902,48 @@
     function countSelectedSet(setObj) {
         var count = 0;
         try {
-            for (var k in setObj) {
-                if (Object.prototype.hasOwnProperty.call(setObj, k) && setObj[k] === true) count++;
+            for (var key in setObj) {
+                if (Object.prototype.hasOwnProperty.call(setObj, key) && setObj[key] === true) count++;
             }
         } catch (e) {}
         return count;
     }
 
-    function countSelectedInRange(setObj, startIndex, endIndex) {
-        if (!setObj) return 0;
-        if (startIndex > endIndex) { var tmp = startIndex; startIndex = endIndex; endIndex = tmp; }
-        if (startIndex < 0) startIndex = 0;
-        var count = 0;
+    function countSelectedGraphemes20(setObj) {
         try {
-            for (var i = startIndex; i <= endIndex; i++) {
-                if (setObj[i] === true) count++;
+            if (textCanvasControl && typeof textCanvasControl.countSelectedUnits === "function") {
+                return textCanvasControl.countSelectedUnits(setObj || {});
             }
-        } catch (e) {}
+        } catch (eCanvas) {}
+        var units = segmentPickwordGraphemes20(fullText);
+        var count = 0;
+        for (var i = 0; i < units.length; i++) {
+            var unit = units[i];
+            if (!unit || unit.newline) continue;
+            for (var index = unit.start; index < unit.end; index++) {
+                if (setObj && setObj[index] === true) { count++; break; }
+            }
+        }
         return count;
     }
 
     function calcDragSelectionCount(minIndex, maxIndex) {
-        if (!dragSnapshotSet || minIndex < 0 || maxIndex < 0) return selectedIndices.length;
-        if (minIndex > maxIndex) { var tmp = minIndex; minIndex = maxIndex; maxIndex = tmp; }
-        var selectedInRange = countSelectedInRange(dragSnapshotSet, minIndex, maxIndex);
-        var rangeLen = maxIndex - minIndex + 1;
-        if (dragStartWasSelected) return Math.max(0, dragSnapshotCount - selectedInRange);
-        return Math.max(0, dragSnapshotCount + rangeLen - selectedInRange);
+        try {
+            if (textCanvasControl && typeof textCanvasControl.countDragSelectionUnits === "function") {
+                return textCanvasControl.countDragSelectionUnits(dragSnapshotSet || {}, minIndex, maxIndex, dragStartWasSelected);
+            }
+        } catch (eCanvas) {}
+        if (!dragSnapshotSet || minIndex < 0 || maxIndex < 0) return countSelectedGraphemes20(selectedSet);
+        var previewSet = {};
+        for (var key in dragSnapshotSet) {
+            if (Object.prototype.hasOwnProperty.call(dragSnapshotSet, key) && dragSnapshotSet[key] === true) previewSet[key] = true;
+        }
+        if (minIndex > maxIndex) { var temp = minIndex; minIndex = maxIndex; maxIndex = temp; }
+        for (var index = minIndex; index <= maxIndex; index++) {
+            if (dragStartWasSelected) delete previewSet[index];
+            else previewSet[index] = true;
+        }
+        return countSelectedGraphemes20(previewSet);
     }
 
     var dragUpdateProcessor = new java.lang.Runnable({
@@ -1936,7 +2213,7 @@
                 var source = String(originalFullText || fullText || "");
                 if (source.length > INITIAL_TEXT_FAST_LIMIT) {
                     isPartialTextLoaded = true;
-                    fullText = source.substring(0, INITIAL_TEXT_FAST_LIMIT);
+                    fullText = truncatePickwordTextAtSafeBoundary20(source, INITIAL_TEXT_FAST_LIMIT, true);
                 } else {
                     isPartialTextLoaded = false;
                     fullText = source;
@@ -2665,7 +2942,7 @@
 
                     switch(action) {
                         case MotionEvent.ACTION_DOWN:
-                            isPressed = true; isDragging = false; dragStartIndex = -1; dragSnapshot = []; dragSnapshotSet = null; dragSnapshotCount = 0; dragStartWasSelected = false; dragPendingDirtyMin = -1; dragPendingDirtyMax = -1; lastValidIndex = -1; dragSelectionCount = selectedIndices.length; lastDragVisualMin = -1; lastDragVisualMax = -1;
+                            isPressed = true; isDragging = false; dragStartIndex = -1; dragSnapshot = []; dragSnapshotSet = null; dragSnapshotCount = 0; dragStartWasSelected = false; dragPendingDirtyMin = -1; dragPendingDirtyMax = -1; lastValidIndex = -1; dragSelectionCount = countSelectedGraphemes20(selectedSet); lastDragVisualMin = -1; lastDragVisualMax = -1;
                             touchDownTime = Date.now(); touchDownX = x; touchDownY = y;
                             lastTouchX = x; lastTouchY = y;
                             if (scrollView) scrollView.requestDisallowInterceptTouchEvent(true);
@@ -2684,19 +2961,21 @@
                                         }
                                     }
                                     if (indexAtLongPress < 0) return;
-                                    isDragging = true; lastValidIndex = indexAtLongPress; dragStartIndex = indexAtLongPress; dragSnapshot = setToArray(selectedSet);
+                                    var startUnit = self.getTextUnitRangeAt20(indexAtLongPress);
+                                    if (!startUnit) return;
+                                    isDragging = true; lastValidIndex = startUnit.start; dragStartIndex = startUnit.start; dragSnapshot = setToArray(selectedSet);
                                     dragSnapshotSet = rebuildSelectedSetFromIndices(dragSnapshot);
-                                    dragSnapshotCount = dragSnapshot.length;
-                                    dragStartWasSelected = dragSnapshotSet[dragStartIndex] === true;
+                                    dragSnapshotCount = countSelectedGraphemes20(dragSnapshotSet);
+                                    dragStartWasSelected = self.isTextUnitSelectedInSet20(startUnit, dragSnapshotSet);
                                     dragPendingDirtyMin = -1;
                                     dragPendingDirtyMax = -1;
                                     try { textViewRef.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
                                     } catch (e) {}
                                     if (dragStartIndex >= 0) {
-                                        lastDragVisualMin = dragStartIndex;
-                                        lastDragVisualMax = dragStartIndex;
+                                        lastDragVisualMin = startUnit.start;
+                                        lastDragVisualMax = startUnit.end - 1;
                                         dragSelectionCount = calcDragSelectionCount(lastDragVisualMin, lastDragVisualMax);
-                                        self.updateSelectionSpans(dragStartIndex, dragStartIndex);
+                                        self.updateSelectionSpans(lastDragVisualMin, lastDragVisualMax);
                                         self.updatePreviewDuringDrag();
                                         self.showFingerPreview(dragStartIndex);
                                     }
@@ -2709,15 +2988,15 @@
                         case MotionEvent.ACTION_MOVE:
                             if (!isPressed) return true;
                             lastTouchX = x; lastTouchY = y;
-                            var moveIndex = self.getCharIndexAtPosition(x, y, isDragging);
+                            var moveIndex = self.getCharIndexAtPosition(x, y);
                             if (moveIndex < 0 && isDragging) {
                                 if (lastValidIndex >= 0) moveIndex = lastValidIndex;
                                 if (moveIndex < 0) {
                                     for (var offset = 5; offset <= 40; offset += 5) {
-                                        if ((moveIndex = self.getCharIndexAtPosition(x + offset, y, true)) >= 0) break;
-                                        if ((moveIndex = self.getCharIndexAtPosition(x - offset, y, true)) >= 0) break;
-                                        if ((moveIndex = self.getCharIndexAtPosition(x, y + offset, true)) >= 0) break;
-                                        if ((moveIndex = self.getCharIndexAtPosition(x, y - offset, true)) >= 0) break;
+                                        if ((moveIndex = self.getCharIndexAtPosition(x + offset, y)) >= 0) break;
+                                        if ((moveIndex = self.getCharIndexAtPosition(x - offset, y)) >= 0) break;
+                                        if ((moveIndex = self.getCharIndexAtPosition(x, y + offset)) >= 0) break;
+                                        if ((moveIndex = self.getCharIndexAtPosition(x, y - offset)) >= 0) break;
                                     }
                                 }
                             }
@@ -2755,7 +3034,7 @@
                             self.hideFingerPreview();
                             isDragging = false; dragStartIndex = -1; dragSnapshot = []; dragSnapshotSet = null; dragSnapshotCount = 0; dragStartWasSelected = false; lastValidIndex = -1;
                             lastTouchX = 0; lastTouchY = 0;
-                            lastDragEnd = -1; lastDragUpdateTime = 0; lastDragVisualMin = -1; lastDragVisualMax = -1; dragPendingDirtyMin = -1; dragPendingDirtyMax = -1; dragSelectionCount = selectedIndices.length;
+                            lastDragEnd = -1; lastDragUpdateTime = 0; lastDragVisualMin = -1; lastDragVisualMax = -1; dragPendingDirtyMin = -1; dragPendingDirtyMax = -1; dragSelectionCount = countSelectedGraphemes20(selectedSet);
                             return true;
                     }
                     return false;
@@ -2765,17 +3044,21 @@
         },
 
         updateDragSelection: function(start, end, snapshot) {
-            if (end === lastDragEnd) return;
+            var normalized = this.normalizeTextUnitRange20(start, end);
+            if (!normalized) return;
+            var normalizedEndKey = normalized.end - 1;
+            if (normalizedEndKey === lastDragEnd && normalized.start === lastDragVisualMin) return;
             var oldMin = lastDragVisualMin;
             var oldMax = lastDragVisualMax;
-            lastDragEnd = end;
-            var currentMin = Math.min(start, end);
-            var currentMax = Math.max(start, end);
+            lastDragEnd = normalizedEndKey;
+            var currentMin = normalized.start;
+            var currentMax = normalized.end - 1;
 
             if (!dragSnapshotSet) {
                 dragSnapshotSet = rebuildSelectedSetFromIndices(snapshot || []);
-                dragSnapshotCount = snapshot ? snapshot.length : countSelectedSet(selectedSet);
-                dragStartWasSelected = dragSnapshotSet[start] === true;
+                dragSnapshotCount = countSelectedGraphemes20(dragSnapshotSet);
+                var startUnit = this.getTextUnitRangeAt20(start);
+                dragStartWasSelected = this.isTextUnitSelectedInSet20(startUnit, dragSnapshotSet);
             }
 
             dragSelectionCount = calcDragSelectionCount(currentMin, currentMax);
@@ -2819,7 +3102,7 @@
         commitDragSelection: function() {
             if (!dragSnapshotSet || lastDragVisualMin < 0 || lastDragVisualMax < 0) {
                 selectedIndices = setToArray(selectedSet);
-                dragSelectionCount = selectedIndices.length;
+                dragSelectionCount = countSelectedGraphemes20(selectedSet);
                 return;
             }
             var result = {};
@@ -2837,7 +3120,7 @@
             } catch (e) {}
             selectedSet = result;
             selectedIndices = setToArray(selectedSet);
-            dragSelectionCount = selectedIndices.length;
+            dragSelectionCount = countSelectedGraphemes20(selectedSet);
         },
 
         checkAndScroll: function(touchX, touchY) {
@@ -2902,7 +3185,7 @@
                         scrollView.scrollTo(0, newIntY);
                         try { if (textCanvasControl) textCanvasControl.invalidateVisible(); } catch (eInv) {}
                         self.startCanvasScrollRefresh();
-                        var moveIndex = self.getCharIndexAtPosition(lastTouchX, lastTouchY, true);
+                        var moveIndex = self.getCharIndexAtPosition(lastTouchX, lastTouchY);
                         if (moveIndex >= 0 && dragStartIndex >= 0) {
                             self.updateDragSelection(dragStartIndex, moveIndex, dragSnapshot);
                             self.updateFingerPreview(moveIndex, false);
@@ -2938,19 +3221,75 @@
             } catch (e) { return -1; }
         },
 
+        getTextUnitRangeAt20: function(index) {
+            try {
+                if (textCanvasControl && typeof textCanvasControl.getUnitRangeAt === "function") {
+                    var range = textCanvasControl.getUnitRangeAt(index);
+                    if (range) return range;
+                }
+            } catch (eCanvas) {}
+            var units = segmentPickwordGraphemes20(fullText);
+            var unitIndex = findPickwordUnitIndex20(units, index);
+            if (unitIndex < 0 || unitIndex >= units.length) return null;
+            return units[unitIndex];
+        },
+
+        normalizeTextUnitRange20: function(startIndex, endIndex) {
+            try {
+                if (textCanvasControl && typeof textCanvasControl.normalizeRange === "function") {
+                    var normalized = textCanvasControl.normalizeRange(startIndex, endIndex);
+                    if (normalized) return normalized;
+                }
+            } catch (eCanvas) {}
+            var startUnit = this.getTextUnitRangeAt20(startIndex);
+            var endUnit = this.getTextUnitRangeAt20(endIndex);
+            if (!startUnit || !endUnit) return null;
+            return { start: Math.min(startUnit.start, endUnit.start), end: Math.max(startUnit.end, endUnit.end) };
+        },
+
+        isTextUnitSelectedInSet20: function(unitRange, setObj) {
+            if (!unitRange || !setObj) return false;
+            for (var index = unitRange.start; index < unitRange.end; index++) {
+                if (setObj[index] === true) return true;
+            }
+            return false;
+        },
+
+        setTextUnitSelection20: function(unitRange, selected) {
+            if (!unitRange) return false;
+            for (var index = unitRange.start; index < unitRange.end; index++) {
+                if (selected) selectedSet[index] = true;
+                else delete selectedSet[index];
+            }
+            selectedIndices = setToArray(selectedSet);
+            dragSelectionCount = countSelectedGraphemes20(selectedSet);
+            return true;
+        },
+
         toggleSelection: function(index) {
             if (textView) hapticFeedback(textView);
-            if (selectedSet[index]) this.removeFromSelection(index); else this.addToSelection(index);
+            var unitRange = this.getTextUnitRangeAt20(index);
+            if (!unitRange || unitRange.newline) return;
+            var selected = this.isTextUnitSelectedInSet20(unitRange, selectedSet);
+            this.setTextUnitSelection20(unitRange, !selected);
+            this.updateSelectionSpans(unitRange.start, unitRange.end - 1);
+            this.updatePreview();
         },
 
         addToSelection: function(index) {
-            if (index < 0 || index >= fullText.length || selectedSet[index]) return;
-            selectedSet[index] = true; selectedIndices = setToArray(selectedSet); dragSelectionCount = selectedIndices.length; this.updateSelectionSpans(index, index); this.updatePreview();
+            var unitRange = this.getTextUnitRangeAt20(index);
+            if (!unitRange || unitRange.newline || this.isTextUnitSelectedInSet20(unitRange, selectedSet)) return;
+            this.setTextUnitSelection20(unitRange, true);
+            this.updateSelectionSpans(unitRange.start, unitRange.end - 1);
+            this.updatePreview();
         },
 
         removeFromSelection: function(index) {
-            if (index < 0 || index >= fullText.length || !selectedSet[index]) return;
-            delete selectedSet[index]; selectedIndices = setToArray(selectedSet); dragSelectionCount = selectedIndices.length; this.updateSelectionSpans(index, index); this.updatePreview();
+            var unitRange = this.getTextUnitRangeAt20(index);
+            if (!unitRange || unitRange.newline || !this.isTextUnitSelectedInSet20(unitRange, selectedSet)) return;
+            this.setTextUnitSelection20(unitRange, false);
+            this.updateSelectionSpans(unitRange.start, unitRange.end - 1);
+            this.updatePreview();
         },
 
         // Canvas 文本区：选区高亮由 onDraw 根据 selectedSet 自绘。
@@ -2970,7 +3309,7 @@
                 if (textCanvasControl) {
                 textCanvasControl.setText(fullText);
             }
-            dragSelectionCount = selectedIndices.length;
+            dragSelectionCount = countSelectedGraphemes20(selectedSet);
             this.updatePreview();
             if (!skipAdjust) this.adjustScrollViewHeight();
         },
@@ -3286,7 +3625,7 @@
         },
 
         updatePreviewDuringDrag: function() {
-            var count = isDragging ? dragSelectionCount : selectedIndices.length;
+            var count = isDragging ? dragSelectionCount : countSelectedGraphemes20(selectedSet);
             setCountLabel20(count);
             this.updateActionButtons();
             try {
@@ -3303,14 +3642,14 @@
         },
 
         updatePreview: function() {
-            var count = selectedIndices.length;
+            var count = countSelectedGraphemes20(selectedSet);
             setCountLabel20(count);
             this.updateActionButtons();
             if (count === 0) {
                 previewTextOverride = null;
                 previewSelectionSignature = "";
                 this.clearCleanUndoStack("preview");
-                if (isPartialTextLoaded) previewTextView.setText("长文本自动加载中，先显示前" + fullText.length + "字…");
+                if (isPartialTextLoaded) previewTextView.setText("长文本自动加载中，先显示前" + countPickwordGraphemes20(fullText) + "个字符…");
                 else previewTextView.setText("点击文字选择");
                 safeTextColor(previewTextView, Colors.textSecondary);
                 return;
@@ -3428,7 +3767,7 @@
                         undoLp.setMargins(0, 0, uiDp(6, 8), 0);
                         metaRow.addView(editUndoBtn, undoLp);
                         var countChip = new TextView(appContext);
-                        countChip.setText(String(oldText == null ? "" : oldText).length + " 字");
+                        countChip.setText(countPickwordGraphemes20(String(oldText == null ? "" : oldText)) + " 字");
                         safeTextColor(countChip, Colors.primary);
                         countChip.setTextSize(uiTextSize(10, 11));
                         countChip.setGravity(Gravity.CENTER);
@@ -3440,7 +3779,7 @@
                             edit.addTextChangedListener(new android.text.TextWatcher({
                                 beforeTextChanged: function(s, start, count, after) {},
                                 onTextChanged: function(s, start, before, count) {
-                                    try { countChip.setText(String(edit.getText().toString()).length + " 字"); } catch (eCount) {}
+                                    try { countChip.setText(countPickwordGraphemes20(String(edit.getText().toString())) + " 字"); } catch (eCount) {}
                                 },
                                 afterTextChanged: function(s) {}
                             }));
@@ -3823,6 +4162,7 @@
                 if (!pinTextView) return;
                 var source = String(text == null ? "" : text);
                 var total = source.length;
+                var pinUnits = segmentPickwordGraphemes20(source);
                 var firstChars = parseInt(String(DIY_CONFIG.PIN_BATCH_FIRST_CHARS), 10);
                 var batchChars = parseInt(String(DIY_CONFIG.PIN_BATCH_CHARS), 10);
                 var delayMs = parseInt(String(DIY_CONFIG.PIN_BATCH_DELAY_MS), 10);
@@ -3838,7 +4178,8 @@
                 }
 
                 var token = pinLoadToken;
-                var offset = Math.min(firstChars, total);
+                var offset = findPickwordSafeBoundary20(pinUnits, Math.min(firstChars, total), true);
+                if (offset <= 0 && total > 0 && pinUnits.length > 0) offset = pinUnits[0].end;
                 pinTextView.setText(new java.lang.String(source.substring(0, offset)));
                 this.updatePinProgress(offset, total, false);
 
@@ -3847,8 +4188,10 @@
                     run: function() {
                         try {
                             if (token !== pinLoadToken || pinLayout === null || pinTextView === null) return;
-                            var end = offset + batchChars;
-                            if (end > total) end = total;
+                            var desiredEnd = offset + batchChars;
+                            if (desiredEnd > total) desiredEnd = total;
+                            var end = findPickwordSafeBoundary20(pinUnits, desiredEnd, true);
+                            if (end <= offset && offset < total) end = total;
                             if (end > offset) {
                                 pinTextView.append(new java.lang.String(source.substring(offset, end)));
                                 offset = end;
@@ -4325,8 +4668,8 @@
 
             loaded = raw;
             if (loaded.length > DIY_CONFIG.MAX_CHAR_LIMIT) {
-                loaded = loaded.substring(0, DIY_CONFIG.MAX_CHAR_LIMIT);
-                showToast("文本过长，拾字已载入前" + DIY_CONFIG.MAX_CHAR_LIMIT + "字");
+                loaded = truncatePickwordTextAtSafeBoundary20(loaded, DIY_CONFIG.MAX_CHAR_LIMIT, false);
+                showToast("文本过长，拾字已安全载入前" + countPickwordGraphemes20(loaded) + "个字符");
             }
 
             refreshPickwordTheme20();
@@ -4370,7 +4713,7 @@
                 ps.generation = Number(ps.generation || 0) + 1;
                 ps.fullText = raw;
                 ps.loadedText = raw.length > DIY_CONFIG.MAX_CHAR_LIMIT
-                    ? raw.substring(0, DIY_CONFIG.MAX_CHAR_LIMIT)
+                    ? truncatePickwordTextAtSafeBoundary20(raw, DIY_CONFIG.MAX_CHAR_LIMIT, false)
                     : raw;
                 ps.meta = meta || null;
                 var ret = startBigBang(raw);
