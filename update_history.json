@@ -1,8 +1,29 @@
 {
   "schema": 1,
-  "historyVersion": 20260718133855,
-  "generatedAt": "2026-07-18T21:38:55+08:00",
+  "historyVersion": 20260718172158,
+  "generatedAt": "2026-07-19T01:21:58+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "feature-pickword-image-viewer-stage2",
+      "type": "feature",
+      "title": "接入拾字截图保存、分享、删除与自动清理",
+      "details": [
+        "原图页新增保存、分享和删除操作：公共保存使用 MediaStore，系统分享使用可授权的 content URI",
+        "删除严格限制为 ToolHub/screenshots 内部截图，删除后保留拾字文字、选区与翻译状态",
+        "新增图片状态与分享临时副本 SQLite 记录，默认内部截图保留 7 天、分享临时副本保留 24 小时",
+        "设置页新增公共保存目录、目录可写测试、保留期限和立即清理入口",
+        "公共保存副本永不参与自动清理，历史截图管理器继续留到第三阶段"
+      ],
+      "manifestVersion": 20260718172158,
+      "date": "2026-07-19",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260718213000,
+        "to": 20260718213000
+      }
+    },
     {
       "schema": 1,
       "id": "feature-pickword-image-viewer-stage1",
