@@ -51,22 +51,29 @@ def append_without_overlap(current, following):
     return current + following, 0
 
 
-def convert_assignment(source, name, next_marker):
+def convert_assignment(source, name, next_name):
     marker = name + " = '"
     start = source.find(marker)
     if start < 0:
         raise ValueError("assignment missing: " + name)
     value_start = start + len(marker)
-    next_pos = source.find(next_marker, value_start)
+    boundary = "\n" + next_name
+    next_pos = source.find(boundary, value_start)
     if next_pos < 0:
-        raise ValueError("assignment end missing: " + name)
-    encoded_value = source[value_start:next_pos]
-    if not encoded_value.endswith("'"):
-        raise ValueError("assignment quote missing: " + name)
-    encoded_value = encoded_value[:-1]
+        raise ValueError("assignment end missing: %s next=%s" % (name, next_name))
+
+    encoded_segment = source[value_start:next_pos]
+    stripped = encoded_segment.rstrip()
+    trailing = encoded_segment[len(stripped):]
+    if not stripped.endswith("'"):
+        raise ValueError(
+            "assignment quote missing: %s tail=%r" % (name, stripped[-160:])
+        )
+    encoded_value = stripped[:-1]
     if "'''" in encoded_value:
         raise ValueError("triple quote collision: " + name)
-    replacement = name + " = '''" + encoded_value + "'''"
+
+    replacement = name + " = '''" + encoded_value + "'''" + trailing
     return source[:start] + replacement + source[next_pos:]
 
 
@@ -78,9 +85,9 @@ def rebuild_source(parts):
         overlaps.append(overlap)
     if not source.endswith("\n"):
         source += "\n"
-    source = convert_assignment(source, "TH22", "\nIMAGE_SETTINGS_UI = '")
-    source = convert_assignment(source, "IMAGE_SETTINGS_UI", "\nVERIFY_STAGE2 = '")
-    source = convert_assignment(source, "VERIFY_STAGE2", "\n\ndef read(rel):")
+    source = convert_assignment(source, "TH22", "IMAGE_SETTINGS_UI =")
+    source = convert_assignment(source, "IMAGE_SETTINGS_UI", "VERIFY_STAGE2 =")
+    source = convert_assignment(source, "VERIFY_STAGE2", "def read(rel):")
     return source, overlaps
 
 
