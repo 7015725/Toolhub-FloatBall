@@ -1,0 +1,30 @@
+@@ -46,9 +46,15 @@ require('ScaleGestureDetector' in th22 and 'GestureDetector' in th22, "image ge
+ require('MediaStore.MediaColumns.RELATIVE_PATH' in th22, "MediaStore relative path missing")
+ require('MediaStore.MediaColumns.IS_PENDING' in th22, "MediaStore pending transaction missing")
+ require('function probeMediaStore22(dir)' in th22, "MediaStore directory probe missing")
+-require('preparePublicDir22(appObj, "", false)' in th22, "API29 save must not pre-create physical directory")
++require('function runRootShell22(command)' in th22, "root shell public fallback missing")
++require('"su", "--mount-master", "-c"' in th22 and '"su", "-c"' in th22, "root shell fallback variants missing")
++require('function underlyingPublicPath22(file)' in th22 and '"/data/media/"' in th22, "underlying storage fallback missing")
++require('function rootCopyPublic22(' in th22 and 'function scanPublicFile22(file)' in th22, "root copy and media scan missing")
++require('function exportPublicFile22(' in th22 and 'preferRootPublicIo22()' in th22, "system_server root-first export missing")
++require('exportPublicFile22(sourceFile, dir, name, "saved", 0, false)' in th22, "saved export route missing")
++require('exportPublicFile22(sourceFile, dir, name, "share_temp", expiresAt, true)' in th22, "share export route missing")
+ require('preparePublicDir22(appObj, "ShareTemp", !scoped)' in th22, "share temp must use scoped MediaStore directory")
+-require('if (scoped) probeMediaStore22(dir); else probeWritable22(dir);' in th22, "settings directory probe must use MediaStore on API29+")
++require('probePublicDir22(dir);' in th22 and 'rootProbePublicDir22' in th22, "settings directory probe fallback missing")
+ require('Intent.EXTRA_STREAM' in th22 and 'FLAG_GRANT_READ_URI_PERMISSION' in th22, "content URI sharing missing")
+ require('ClipData.newRawUri' in th22, "share ClipData grant missing")
+ require('toolhub_pickword_images' in th22 and 'toolhub_pickword_image_exports' in th22, "image SQLite tables missing")
+diff --git a/scripts/verify_screenshot_manager.py b/scripts/verify_screenshot_manager.py
+index d8fd8fd..0000000 100644
+--- a/scripts/verify_screenshot_manager.py
++++ b/scripts/verify_screenshot_manager.py
+@@ -24,7 +24,7 @@ generator = read("scripts/generate_signed_manifest.py")
+ boundaries = read("MODULE_BOUNDARIES.json")
+ workflow = read(".github/workflows/verify.yml")
+
+-require('// @version 1.2.2' in th22, 'th22 service version')
++require('// @version 1.2.3' in th22, 'th22 service version')
+ require('// @version 1.0.0' in th23, 'th23 version')
+ require('getPickwordImageService' in th22, 'service API')
