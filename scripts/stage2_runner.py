@@ -104,6 +104,23 @@ def append_without_overlap(current, following):
     return current + following, 0
 
 
+def normalize_outer_literals(source):
+    replacements = [
+        ("TH22 = '", "TH22 = '''"),
+        (")();\\n'\nIMAGE_SETTINGS_UI = '\\n", ")();\\n'''\nIMAGE_SETTINGS_UI = '''\\n"),
+        ("};\\n\\n'\nVERIFY_STAGE2 = '", "};\\n\\n'''\nVERIFY_STAGE2 = '''"),
+        (
+            'print("OK pickword-image-viewer stage2 save=media_store share=content_uri delete=internal sqlite=tracked cleanup=7d")\\n\'\n\ndef read(rel):',
+            'print("OK pickword-image-viewer stage2 save=media_store share=content_uri delete=internal sqlite=tracked cleanup=7d")\\n\'\'\'\n\ndef read(rel):',
+        ),
+    ]
+    for old, new in replacements:
+        if old not in source:
+            raise ValueError("outer literal marker missing: " + old[:48])
+        source = source.replace(old, new, 1)
+    return source
+
+
 def syntax_detail(error):
     text = str(error.text or "")
     offset = int(error.offset or 0)
@@ -144,19 +161,20 @@ def main():
         overlaps.append(overlap)
     if not source.endswith("\n"):
         source += "\n"
-    script = source.encode("utf-8")
-    digest = hashlib.sha256(script).hexdigest()
+    digest_before = hashlib.sha256(source.encode("utf-8")).hexdigest()
     try:
+        source = normalize_outer_literals(source)
         compile(source, str(TARGET), "exec")
-    except SyntaxError as error:
+    except (SyntaxError, ValueError) as error:
+        detail = syntax_detail(error) if isinstance(error, SyntaxError) else str(error)
         commit_diagnostic(
-            "sha=%s expected=%s length=%d overlaps=%s syntax=%s" % (
-                digest, EXPECTED_SHA256, len(script),
-                ",".join(str(value) for value in overlaps), syntax_detail(error),
+            "before_sha=%s expected=%s length=%d overlaps=%s normalize=%s" % (
+                digest_before, EXPECTED_SHA256, len(source.encode("utf-8")),
+                ",".join(str(value) for value in overlaps), detail,
             )
         )
         return
-    TARGET.write_bytes(script)
+    TARGET.write_text(source, encoding="utf-8")
     proc = subprocess.run(
         ["python3", str(TARGET)], cwd=str(ROOT),
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
@@ -164,8 +182,8 @@ def main():
     if proc.returncode != 0:
         output = str(proc.stdout or "").strip()
         commit_diagnostic(
-            "sha=%s expected=%s length=%d overlaps=%s exit=%d output=%s" % (
-                digest, EXPECTED_SHA256, len(script),
+            "before_sha=%s expected=%s length=%d overlaps=%s exit=%d output=%s" % (
+                digest_before, EXPECTED_SHA256, len(source.encode("utf-8")),
                 ",".join(str(value) for value in overlaps), proc.returncode, output[-1200:],
             )
         )
