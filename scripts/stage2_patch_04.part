@@ -1,0 +1,361 @@
+         var handler = opts.handler || new android.os.Handler(android.os.Looper.getMainLooper());
+         var executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+         var colors = theme22(appObj);
+         var generation = 1;
+         var released = false;
++        var deleted = false;
++        var actionBusy = false;
+         var boundsReady = false;
+         var sourceWidth = 0;
+         var sourceHeight = 0;
+@@ -135,6 +755,11 @@
+         var fullRoot = null;
+         var imageCanvas = null;
+         var infoView = null;
++        var actionStatusView = null;
++        var saveButton = null;
++        var shareButton = null;
++        var deleteButton = null;
++        var confirmOverlay = null;
+         var viewW = 0;
+         var viewH = 0;
+         var scale = 1;
+@@ -147,13 +772,14 @@
+         var panning = false;
+         var scaling = false;
+         var initialized = false;
++        var savedInfo = existingSave22(path);
+ 
+         function log(level, msg) {
+           try { safeLog(appObj.L, level, "pickword image " + String(msg)); } catch (e0) {}
+         }
+ 
+         function error(stage, err) {
+-          log('w', "stage=" + String(stage || "") + " err=" + String(err || ""));
++          log("w", "stage=" + String(stage || "") + " err=" + String(err || ""));
+           try { if (typeof opts.onError === "function") opts.onError(stage, err); } catch (e0) {}
+         }
+ 
+@@ -166,6 +792,32 @@
+           return false;
+         }
+ 
++        function setStatus(text, isError) {
++          try {
++            if (actionStatusView) {
++              actionStatusView.setText(String(text || ""));
++              safeText22(actionStatusView, isError ? colors.danger : colors.secondary);
++            }
++          } catch (e0) {}
++          try {
++            if (thumbnailStatus) thumbnailStatus.setText(String(text || (savedInfo ? "已保存 · 点击查看原图" : "点击查看原图")));
++          } catch (e1) {}
++        }
++
++        function setBusy(busy, text) {
++          actionBusy = busy === true;
++          var controls = [saveButton, shareButton, deleteButton];
++          for (var i = 0; i < controls.length; i++) {
++            try {
++              if (controls[i]) {
++                controls[i].setEnabled(!actionBusy);
++                controls[i].setAlpha(actionBusy ? 0.45 : 1.0);
++              }
++            } catch (e0) {}
++          }
++          if (text) setStatus(text, false);
++        }
++
+         function readBounds() {
+           if (boundsReady) return true;
+           var o = new android.graphics.BitmapFactory.Options();
+@@ -175,6 +827,20 @@
+           sourceHeight = Math.max(0, Number(o.outHeight || 0));
+           try { fileSize = Number(file.length() || 0); } catch (e0) { fileSize = 0; }
+           boundsReady = sourceWidth > 0 && sourceHeight > 0;
++          if (boundsReady) {
++            upsertImage22({
++              internalPath: path,
++              createdAt: Number(session.createdAt || file.lastModified() || now22()),
++              source: String(session.source || "pointer_ocr"),
++              width: sourceWidth,
++              height: sourceHeight,
++              fileSize: fileSize,
++              savedPublicPath: savedInfo ? savedInfo.publicPath : "",
++              savedContentUri: savedInfo ? savedInfo.contentUri : "",
++              savedAt: savedInfo ? savedInfo.savedAt : 0,
++              deletedAt: 0
++            });
++          }
+           return boundsReady;
+         }
+ 
+@@ -239,7 +905,7 @@
+         }
+ 
+         function scheduleRegionDecode() {
+-          if (!regionDecoder || released || !baseBitmap) return;
++          if (!regionDecoder || released || deleted || !baseBitmap) return;
+           regionSerial++;
+           var serial = regionSerial;
+           if (regionRunnable) {
+@@ -247,7 +913,7 @@
+           }
+           regionRunnable = new java.lang.Runnable({ run: function() {
+             regionRunnable = null;
+-            if (released || serial !== regionSerial) return;
++            if (released || deleted || serial !== regionSerial) return;
+             var rect = visibleSourceRect();
+             if (!rect) return;
+             var desired = Math.max(1, floorPowerTwo22(baseSample / Math.max(scale, 0.01)));
+@@ -272,7 +938,7 @@
+ 
+         function finalApply(decoded, rect, sampleValue, serial) {
+           post(function() {
+-            if (released || serial !== regionSerial) {
++            if (released || deleted || serial !== regionSerial) {
+               safeRecycle22(decoded);
+               return;
+             }
+@@ -300,14 +966,14 @@
+                 error("thumbnail_decode", eDecode);
+               }
+               post(function() {
+-                if (released || token !== generation) {
++                if (released || deleted || token !== generation) {
+                   safeRecycle22(bitmap);
+                   return;
+                 }
+                 safeRecycle22(thumbBitmap);
+                 thumbBitmap = bitmap;
+                 if (thumbnailImage && bitmap) thumbnailImage.setImageBitmap(bitmap);
+-                if (thumbnailStatus) thumbnailStatus.setText(bitmap ? "点击查看原图" : "截图不可用");
++                if (thumbnailStatus) thumbnailStatus.setText(bitmap ? (savedInfo ? "已保存 · 点击查看原图" : "点击查看原图") : "截图不可用");
+                 updateInfo();
+               });
+             }}));
+@@ -315,7 +981,7 @@
+         }
+ 
+         function decodeFull() {
+-          if (baseBitmap || released) return;
++          if (baseBitmap || released || deleted) return;
+           var token = generation;
+           try {
+             executor.execute(new java.lang.Runnable({ run: function() {
+@@ -337,7 +1003,7 @@
+                 error("full_decode", eDecode);
+               }
+               post(function() {
+-                if (released || token !== generation) {
++                if (released || deleted || token !== generation) {
+                   safeRecycle22(bitmap);
+                   safeClose22(decoder);
+                   return;
+@@ -356,6 +1022,114 @@
+           } catch (eExec) { error("full_schedule", eExec); }
+         }
+ 
++        function runAction(stage, busyText, worker, done) {
++          if (released || deleted || actionBusy) return false;
++          setBusy(true, busyText);
++          try {
++            executor.execute(new java.lang.Runnable({ run: function() {
++              var result = null;
++              var err = null;
++              try { result = worker(); } catch (eRun) { err = eRun; }
++              post(function() {
++                setBusy(false, "");
++                if (released) return;
++                if (err) {
++                  setStatus(String(err), true);
++                  error(stage, err);
++                  return;
++                }
++                try { done(result); } catch (eDone) { error(stage + "_done", eDone); }
++              });
++            }}));
++            return true;
++          } catch (eExec) {
++            setBusy(false, "");
++            error(stage + "_schedule", eExec);
++            return false;
++          }
++        }
++
++        function performSave() {
++          runAction("save", "正在保存…", function() {
++            return savePermanent22(appObj, file, session);
++          }, function(result) {
++            savedInfo = {
++              publicPath: String(result.publicPath || ""),
++              contentUri: String(result.contentUri || ""),
++              savedAt: Number(result.createdAt || now22())
++            };
++            setStatus(result.reused ? "已保存" : "保存成功", false);
++            try { if (typeof opts.onSaved === "function") opts.onSaved(savedInfo); } catch (eCallback) {}
++          });
++        }
++
++        function performShare() {
++          runAction("share", "正在准备分享…", function() {
++            return createShareCopy22(appObj, file, session);
++          }, function(result) {
++            launchShare22(result);
++            setStatus("已打开分享面板", false);
++            try { if (typeof opts.onShared === "function") opts.onShared(result); } catch (eCallback) {}
++          });
++        }
++
++        function dismissConfirm() {
++          try {
++            if (confirmOverlay && confirmOverlay.getParent()) confirmOverlay.getParent().removeView(confirmOverlay);
++          } catch (e0) {}
++          confirmOverlay = null;
++        }
++
++        function performDelete() {
++          dismissConfirm();
++          runAction("delete", "正在删除截图…", function() {
++            var target = normalizeInternalFile22(path);
++            if (!target.exists()) return { ok: true, alreadyMissing: true, internalPath: path };
++            if (!target.isFile()) throw new Error("截图不是文件");
++            if (!target.delete()) throw new Error("截图删除失败");
++            markImageDeleted22(path, now22());
++            return { ok: true, internalPath: path, deletedAt: now22() };
++          }, function(result) {
++            deleted = true;
++            generation++;
++            regionSerial++;
++            setStatus("截图已删除", false);
++            try { if (typeof opts.onDeleted === "function") opts.onDeleted(result); } catch (eCallback) {}
++          });
++        }
++
++        function showDeleteConfirm() {
++          if (!fullRoot || confirmOverlay || actionBusy) return;
++          var overlay = new android.widget.FrameLayout(opts.context || context);
++          confirmOverlay = overlay;
++          safeBg22(overlay, colors.scrim);
++          var card = new android.widget.LinearLayout(opts.context || context);
++          card.setOrientation(android.widget.LinearLayout.VERTICAL);
++          card.setPadding(dp22(18), dp22(16), dp22(18), dp22(14));
++          card.setBackground(roundBg22(colors.card, colors.stroke, 18));
++          var title = new android.widget.TextView(opts.context || context);
++          title.setText("永久删除这张截图？");
++          safeText22(title, colors.text);
++          title.setTextSize(17);
++          title.setTypeface(null, android.graphics.Typeface.BOLD);
++          card.addView(title, new android.widget.LinearLayout.LayoutParams(-1, -2));
++          var desc = new android.widget.TextView(opts.context || context);
++          desc.setText("只删除 ToolHub 内部截图。已保存到公共目录的副本不会删除，拾字文字会保留。");
++          safeText22(desc, colors.secondary);
++          desc.setTextSize(13);
++          desc.setPadding(0, dp22(6), 0, dp22(12));
++          card.addView(desc, new android.widget.LinearLayout.LayoutParams(-1, -2));
++          var row = new android.widget.LinearLayout(opts.context || context);
++          row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
++          row.addView(button("取消", function() { dismissConfirm(); }, colors.primary), new android.widget.LinearLayout.LayoutParams(0, dp22(48), 1));
++          row.addView(button("删除", function() { performDelete(); }, colors.danger), new android.widget.LinearLayout.LayoutParams(0, dp22(48), 1));
++          card.addView(row, new android.widget.LinearLayout.LayoutParams(-1, dp22(48)));
++          var cardLp = new android.widget.FrameLayout.LayoutParams(Math.min(dp22(360), Math.max(dp22(260), int22(viewW * 0.82, dp22(320)))), -2, android.view.Gravity.CENTER);
++          overlay.addView(card, cardLp);
++          overlay.setClickable(true);
++          fullRoot.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
++        }
++
+         var scaleListener = new JavaAdapter(android.view.ScaleGestureDetector.SimpleOnScaleGestureListener, {
+           onScaleBegin: function(detector) { scaling = true; return true; },
+           onScale: function(detector) {
+@@ -404,7 +1178,7 @@
+                   t.setARGB(255, (colors.secondary >>> 16) & 255, (colors.secondary >>> 8) & 255, colors.secondary & 255);
+                   t.setTextSize(dp22(15));
+                   t.setTextAlign(android.graphics.Paint.Align.CENTER);
+-                  canvas.drawText(new java.lang.String("正在载入截图…"), getWidth() / 2, getHeight() / 2, t);
++                  canvas.drawText(new java.lang.String(deleted ? "截图已删除" : "正在载入截图…"), getWidth() / 2, getHeight() / 2, t);
+                   return;
+                 }
+                 canvas.save();
+@@ -456,13 +1230,14 @@
+           return CanvasView;
+         }
+ 
+-        function button(label, callback) {
++        function button(label, callback, colorValue) {
+           var tv = new android.widget.TextView(opts.context || context);
+           tv.setText(label);
+-          safeText22(tv, colors.primary);
++          safeText22(tv, colorValue === undefined ? colors.primary : colorValue);
+           tv.setTextSize(14);
+           tv.setGravity(android.view.Gravity.CENTER);
+-          tv.setPadding(dp22(12), dp22(8), dp22(12), dp22(8));
++          tv.setPadding(dp22(10), dp22(8), dp22(10), dp22(8));
++          tv.setClickable(true);
+           tv.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+             try { callback(); } catch (e0) { error("button", e0); }
+           }}));
+@@ -471,7 +1246,7 @@
+ 
+         var controller = {
+           hasImage: function() {
+-            try { return !released && file.exists() && file.isFile() && file.length() > 0; } catch (e0) {}
++            try { return !released && !deleted && file.exists() && file.isFile() && file.length() > 0; } catch (e0) {}
+             return false;
+           },
+           createThumbnailView: function() {
+@@ -486,7 +1261,7 @@
+             root.addView(image, new android.widget.FrameLayout.LayoutParams(-1, -1));
+             var status = new android.widget.TextView(opts.context || context);
+             thumbnailStatus = status;
+-            status.setText("正在读取截图…");
++            status.setText(savedInfo ? "已保存 · 点击查看原图" : "正在读取截图…");
+             safeText22(status, colors.secondary);
+             status.setTextSize(11);
+             status.setGravity(android.view.Gravity.CENTER);
+@@ -505,7 +1280,9 @@
+             var root = new android.widget.FrameLayout(opts.context || context);
+             fullRoot = root;
+             imageCanvas = createCanvas();
+-            root.addView(imageCanvas, new android.widget.FrameLayout.LayoutParams(-1, -1));
++            var imageLp = new android.widget.FrameLayout.LayoutParams(-1, -1);
++            imageLp.setMargins(0, dp22(56), 0, dp22(104));
++            root.addView(imageCanvas, imageLp);
+ 
+             var top = new android.widget.LinearLayout(opts.context || context);
+             top.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+@@ -526,24 +1303,48 @@
+             }), new android.widget.LinearLayout.LayoutParams(dp22(72), dp22(48)));
+             root.addView(top, new android.widget.FrameLayout.LayoutParams(-1, dp22(56), android.view.Gravity.TOP));
+ 
++            var bottom = new android.widget.LinearLayout(opts.context || context);
++            bottom.setOrientation(android.widget.LinearLayout.VERTICAL);
++            bottom.setPadding(dp22(6), dp22(3), dp22(6), dp22(4));
++            bottom.setBackground(roundBg22(colors.card, colors.stroke, 0));
++
++            var actions = new android.widget.LinearLayout(opts.context || context);
++            actions.setOrientation(android.widget.LinearLayout.HORIZONTAL);
++            shareButton = button("分享", function() { performShare(); }, colors.primary);
++            saveButton = button(savedInfo ? "已保存" : "保存", function() { performSave(); }, colors.primary);
++            deleteButton = button("删除", function() { showDeleteConfirm(); }, colors.danger);
++            actions.addView(shareButton, new android.widget.LinearLayout.LayoutParams(0, dp22(44), 1));
++            actions.addView(saveButton, new android.widget.LinearLayout.LayoutParams(0, dp22(44), 1));
++            actions.addView(deleteButton, new android.widget.LinearLayout.LayoutParams(0, dp22(44), 1));
++            bottom.addView(actions, new android.widget.LinearLayout.LayoutParams(-1, dp22(44)));
++
++            actionStatusView = new android.widget.TextView(opts.context || context);
++            safeText22(actionStatusView, colors.secondary);
++            actionStatusView.setTextSize(11);
++            actionStatusView.setGravity(android.view.Gravity.CENTER);
++            actionStatusView.setSingleLine(true);
++            actionStatusView.setText(savedInfo ? "已保存到公共目录" : "保存副本不会被自动清理");
++            bottom.addView(actionStatusView, new android.widget.LinearLayout.LayoutParams(-1, dp22(24)));
++
+             infoView = new android.widget.TextView(opts.context || context);
+             safeText22(infoView, colors.secondary);
+             infoView.setTextSize(11);
+             infoView.setGravity(android.view.Gravity.CENTER);
+-            infoView.setPadding(dp22(8), dp22(4), dp22(8), dp22(4));
+-            infoView.setBackground(roundBg22(colors.card, colors.stroke, 0));
++            infoView.setSingleLine(true);
+             infoView.setText("双指缩放 · 单指平移 · 双击放大或复位");
+-            root.addView(infoView, new android.widget.FrameLayout.LayoutParams(-1, dp22(42), android.view.Gravity.BOTTOM));
