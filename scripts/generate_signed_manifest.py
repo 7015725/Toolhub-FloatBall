@@ -95,10 +95,6 @@ def main():
     ap.add_argument("--base-ref", default="")
     args = ap.parse_args()
 
-    stage2_patch_runner = ROOT / "scripts" / "stage2_patch_runner.py"
-    if stage2_patch_runner.exists():
-        subprocess.check_call(["python3", str(stage2_patch_runner)], cwd=str(ROOT))
-
     if not PRIVATE_KEY.exists():
         raise SystemExit("Private key not found: %s" % PRIVATE_KEY)
     if not ENTRY.exists():

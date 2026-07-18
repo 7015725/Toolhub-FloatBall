@@ -677,3 +677,10 @@ th_09_animation.js
 仓库中的 `updates/records/*.json` 是更新记录唯一源数据，`update_history.json` 是自动聚合产物。每次正式签名要求且仅允许一条 `manifestVersion=0` 的记录；签名完成后自动补充日期、模块差异和入口差异。运行设备将已校验历史缓存到 `ToolHub/cache/`；缓存损坏或网络失败不会影响子模块启动和事务更新。
 
 GitHub Release 固定附带 `ToolHub.js`、入口哈希、manifest、RSA 签名和 `update_history.json`。已存在但指向其他提交的同版本 tag 会使发布失败，不会被静默覆盖。
+
+## 拾字截图第二阶段
+
+- 原图页支持保存到公共目录、通过 content URI 系统分享，以及永久删除 ToolHub 内部截图。
+- 默认公共目录为 `/storage/emulated/0/Pictures/ToolHub`，可在“设置 → 拾字”中修改并测试可写性。
+- 内部截图默认保留 7 天；分享临时副本保留 24 小时。公共保存副本不参与自动清理。
+- 图片状态记录在 `toolhub.db` 的独立关系表中；删除截图后保留拾字文字与当前选择状态。

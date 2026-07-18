@@ -1,4 +1,4 @@
-// @version 1.1.17
+// @version 1.1.18
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -235,6 +235,8 @@ var ConfigValidator = {
     PICKWORD_BAIDU_APP_SECRET: { type: "string", default: "" },
     PICKWORD_YOUDAO_APP_KEY: { type: "string", default: "" },
     PICKWORD_YOUDAO_APP_SECRET: { type: "string", default: "" },
+    PICKWORD_IMAGE_PUBLIC_DIR: { type: "string", default: "/storage/emulated/0/Pictures/ToolHub" },
+    PICKWORD_IMAGE_RETENTION_DAYS: { type: "int", min: 0, max: 365, default: 7 },
 
     // ========== 以下配置在 Schema 中但原 ConfigValidator 中缺失 ==========
     // 图标文件配置
@@ -923,6 +925,8 @@ var ConfigManager = {
         PICKWORD_BAIDU_APP_SECRET: "",
         PICKWORD_YOUDAO_APP_KEY: "",
         PICKWORD_YOUDAO_APP_SECRET: "",
+        PICKWORD_IMAGE_PUBLIC_DIR: "/storage/emulated/0/Pictures/ToolHub",
+        PICKWORD_IMAGE_RETENTION_DAYS: 7,
         PANEL_WIDTH_PERCENT: 90,
         PANEL_AUTO_MAX_COLS: 6,
         PANEL_MIN_CARD_WIDTH_DP: 92,
@@ -1001,6 +1005,8 @@ var ConfigManager = {
         { key: "PICKWORD_BAIDU_APP_SECRET", name: "百度密钥", type: "hidden" },
         { key: "PICKWORD_YOUDAO_APP_KEY", name: "有道 AppKey", type: "hidden" },
         { key: "PICKWORD_YOUDAO_APP_SECRET", name: "有道应用密钥", type: "hidden" },
+        { key: "PICKWORD_IMAGE_PUBLIC_DIR", name: "截图保存与清理", type: "pickword_image_settings" },
+        { key: "PICKWORD_IMAGE_RETENTION_DAYS", name: "内部截图保留天数", type: "hidden" },
 
         { type: "section", name: "面板布局" },
         {
@@ -1150,7 +1156,10 @@ var ConfigManager = {
             sStr.indexOf("PICKWORD_BAIDU_APP_SECRET") < 0 ||
             sStr.indexOf("PICKWORD_YOUDAO_APP_KEY") < 0 ||
             sStr.indexOf("PICKWORD_YOUDAO_APP_SECRET") < 0 ||
-            sStr.indexOf("pickword_translate_settings") < 0
+            sStr.indexOf("PICKWORD_IMAGE_PUBLIC_DIR") < 0 ||
+            sStr.indexOf("PICKWORD_IMAGE_RETENTION_DAYS") < 0 ||
+            sStr.indexOf("pickword_translate_settings") < 0 ||
+            sStr.indexOf("pickword_image_settings") < 0
         ) {
             needReset = true;
         }
@@ -1240,7 +1249,9 @@ var ConfigManager = {
                 schemaItemDiffers("PICKWORD_BAIDU_APP_ID", ["name", "type"]) ||
                 schemaItemDiffers("PICKWORD_BAIDU_APP_SECRET", ["name", "type"]) ||
                 schemaItemDiffers("PICKWORD_YOUDAO_APP_KEY", ["name", "type"]) ||
-                schemaItemDiffers("PICKWORD_YOUDAO_APP_SECRET", ["name", "type"])) {
+                schemaItemDiffers("PICKWORD_YOUDAO_APP_SECRET", ["name", "type"]) ||
+                schemaItemDiffers("PICKWORD_IMAGE_PUBLIC_DIR", ["name", "type"]) ||
+                schemaItemDiffers("PICKWORD_IMAGE_RETENTION_DAYS", ["name", "type", "min", "max", "step"])) {
                 needReset = true;
             }
         }
