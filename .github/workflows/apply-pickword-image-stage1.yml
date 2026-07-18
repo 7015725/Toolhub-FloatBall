@@ -35,12 +35,82 @@ jobs:
       - name: Apply source changes
         run: python3 scripts/apply_pickword_image_stage1.py
 
+      - name: Apply ColorOS safety and restore release scripts
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('code/th_22_image_viewer.js')
+          text = path.read_text(encoding='utf-8')
+
+          old_color_state = '''  function colorState22(color) {
+            try {
+              return android.content.res.ColorStateList.valueOf(java.lang.Integer.valueOf(Number(color) | 0));
+            } catch (e0) {}
+            return null;
+          }
+
+'''
+          text = text.replace(old_color_state, '')
+
+          old_safe_text = '''  function safeText22(view, color) {
+            try {
+              if (typeof toolhubSafeSetTextColor === "function") toolhubSafeSetTextColor(view, colorState22(color));
+              else view.setTextColor(colorState22(color));
+            } catch (e0) {}
+          }
+'''
+          new_safe_text = '''  function safeText22(view, color) {
+            try { toolhubSafeSetTextColor(view, Number(color) | 0); } catch (e0) {}
+          }
+'''
+          if old_safe_text not in text:
+              raise SystemExit('safeText22 anchor missing')
+          text = text.replace(old_safe_text, new_safe_text, 1)
+
+          old_round = '''  function roundBg22(color, stroke, radius) {
+            var gd = new android.graphics.drawable.GradientDrawable();
+            try {
+              if (typeof toolhubSafeSetColor === "function") toolhubSafeSetColor(gd, colorState22(color));
+              else gd.setColor(colorState22(color));
+            } catch (e0) {}
+            try { gd.setCornerRadius(dp22(radius || 12)); } catch (e1) {}
+            try { gd.setStroke(dp22(1), colorState22(stroke)); } catch (e2) {}
+            return gd;
+          }
+'''
+          new_round = '''  function roundBg22(color, stroke, radius) {
+            var gd = new android.graphics.drawable.GradientDrawable();
+            try { toolhubSafeSetGradientColor(gd, Number(color) | 0); } catch (e0) {}
+            try { gd.setCornerRadius(dp22(radius || 12)); } catch (e1) {}
+            try { toolhubSafeSetGradientStroke(gd, dp22(1), Number(stroke) | 0); } catch (e2) {}
+            return gd;
+          }
+'''
+          if old_round not in text:
+              raise SystemExit('roundBg22 anchor missing')
+          text = text.replace(old_round, new_round, 1)
+          path.write_text(text, encoding='utf-8')
+
+          signer = Path('scripts/generate_signed_manifest.py')
+          signer_text = signer.read_text(encoding='utf-8')
+          old_modules = '    "th_20_pickword.js", "th_21_result_preview.js",\n'
+          new_modules = '    "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js",\n'
+          if old_modules in signer_text:
+              signer.write_text(signer_text.replace(old_modules, new_modules, 1), encoding='utf-8')
+          elif 'th_22_image_viewer.js' not in signer_text:
+              raise SystemExit('signer module anchor missing')
+          PY
+
+          git checkout origin/main -- scripts/build_update_history.py
+
       - name: Refresh generated audits
         shell: bash
         run: |
-          python3 scripts/report_dead_module_symbols.py
-          python3 scripts/report_protected_wrapper_chains.py
-          python3 scripts/report_entry_symbols.py
+          python3 scripts/report_dead_module_symbols.py --write DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_entry_symbols.py --write ENTRY_SYMBOL_AUDIT.md
 
       - name: Validate stage one
         shell: bash
@@ -49,10 +119,12 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
           python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
           python3 scripts/verify_pointer_regressions.py
           python3 scripts/verify_result_preview.py
           python3 scripts/verify_pickword_image_viewer.py
-          python3 scripts/verify_changed_module_versions.py --base-ref HEAD^
+          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
           python3 scripts/verify_update_history.py --require-one-pending
           git diff --check
 
