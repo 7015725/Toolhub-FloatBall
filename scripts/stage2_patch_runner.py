@@ -16,6 +16,7 @@ RUNNER = ROOT / "scripts" / "stage2_patch_runner.py"
 DIAGNOSTIC = ROOT / "stage2_patch_failure.txt"
 EXPECTED_SIZE = 82766
 EXPECTED_SHA256 = "e3a101046ddcb5fe4465effcbdd97d0d6845d2ac2fe3c573734f3bafde53e345"
+EXPECTED_PART_SIZES = [19451, 17543, 17116, 17365, 11291]
 HOOK = (
     '    stage2_patch_runner = ROOT / "scripts" / "stage2_patch_runner.py"\n'
     '    if stage2_patch_runner.exists():\n'
@@ -93,29 +94,32 @@ def load_verified_payload():
     if payload_matches(payload):
         return payload, "exact"
 
+    actual_sizes = [len(part) for part in raw_parts]
     if len(payload) == EXPECTED_SIZE + 1:
-        for index, part in enumerate(raw_parts):
-            if part.endswith(b"\n"):
+        for part_index, part in enumerate(raw_parts):
+            if len(part) != EXPECTED_PART_SIZES[part_index] + 1:
+                continue
+            for offset, value in enumerate(part):
+                if value != 10:
+                    continue
                 candidate_parts = list(raw_parts)
-                candidate_parts[index] = part[:-1]
+                candidate_parts[part_index] = part[:offset] + part[offset + 1:]
                 candidate = b"".join(candidate_parts)
                 if payload_matches(candidate):
-                    return candidate, "trim_part_%02d_tail" % (index + 1)
-            if part.startswith(b"\n"):
-                candidate_parts = list(raw_parts)
-                candidate_parts[index] = part[1:]
-                candidate = b"".join(candidate_parts)
-                if payload_matches(candidate):
-                    return candidate, "trim_part_%02d_head" % (index + 1)
+                    return candidate, "trim_part_%02d_newline_at_%d" % (
+                        part_index + 1,
+                        offset,
+                    )
 
     raise RuntimeError(
-        "stage2 patch mismatch size=%d sha256=%s expected_size=%d expected_sha256=%s part_sizes=%s"
+        "stage2 patch mismatch size=%d sha256=%s expected_size=%d expected_sha256=%s part_sizes=%s expected_part_sizes=%s"
         % (
             len(payload),
             hashlib.sha256(payload).hexdigest(),
             EXPECTED_SIZE,
             EXPECTED_SHA256,
-            ",".join(str(len(part)) for part in raw_parts),
+            ",".join(str(value) for value in actual_sizes),
+            ",".join(str(value) for value in EXPECTED_PART_SIZES),
         )
     )
 
