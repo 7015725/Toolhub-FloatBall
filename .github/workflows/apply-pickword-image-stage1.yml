@@ -1,0 +1,64 @@
+name: apply-pickword-image-stage1
+
+on:
+  push:
+    branches:
+      - fix/pickword-image-viewer-stage1-20260718
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-pickword-image-stage1
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: fix/pickword-image-viewer-stage1-20260718
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply source changes
+        run: python3 scripts/apply_pickword_image_stage1.py
+
+      - name: Refresh generated audits
+        shell: bash
+        run: |
+          python3 scripts/report_dead_module_symbols.py
+          python3 scripts/report_protected_wrapper_chains.py
+          python3 scripts/report_entry_symbols.py
+
+      - name: Validate stage one
+        shell: bash
+        run: |
+          set -eo pipefail
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_pointer_regressions.py
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_pickword_image_viewer.py
+          python3 scripts/verify_changed_module_versions.py --base-ref HEAD^
+          python3 scripts/verify_update_history.py --require-one-pending
+          git diff --check
+
+      - name: Commit implementation
+        shell: bash
+        run: |
+          set -e
+          rm -f scripts/apply_pickword_image_stage1.py
+          rm -f .github/workflows/apply-pickword-image-stage1.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "接入拾字截图缩略图与原图查看"
+          git push origin HEAD:fix/pickword-image-viewer-stage1-20260718
