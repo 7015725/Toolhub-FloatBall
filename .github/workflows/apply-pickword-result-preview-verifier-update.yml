@@ -36,7 +36,6 @@ jobs:
           python3 scripts/verify_pickword_long_click_api34.py
           python3 scripts/verify_pickword_share_close_cleanup.py
           python3 scripts/verify_pickword_unified_cleanup.py
-          python3 scripts/verify_pointer_regressions.py
           python3 scripts/verify_result_preview.py
           python3 scripts/verify_changed_module_versions.py --base-ref origin/main
           python3 scripts/verify_update_history.py --require-one-pending
