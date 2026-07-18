@@ -9,28 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_PR = 339
 PREFIXES = ["STAGE2_SOURCE_%02d\n" % index for index in range(1, 10)]
-GENERATOR = ROOT / "scripts" / "generate_signed_manifest.py"
-ENTRY = ROOT / "ToolHub.js"
-TEMP_MODULE = ROOT / "code" / "th_stage2_bootstrap.js"
 TARGET = ROOT / "scripts" / "apply_pickword_image_stage2.py"
-
-
-def git_run(args):
-    return subprocess.run(
-        ["git"] + list(args), cwd=str(ROOT), text=True,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-    )
-
-
-def commit_local(message, paths):
-    git_run(["config", "user.name", "github-actions[bot]"])
-    git_run(["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
-    add = git_run(["add"] + list(paths))
-    if add.returncode != 0:
-        raise SystemExit("git add failed: " + str(add.stdout or ""))
-    commit = git_run(["commit", "-m", message])
-    if commit.returncode != 0:
-        raise SystemExit("git commit failed: " + str(commit.stdout or ""))
 
 
 def append_without_overlap(current, following):
@@ -74,72 +53,14 @@ def rebuild_source(parts):
     return source, overlaps
 
 
-def restore_trigger_files():
-    for rel in ("manifest.sig", "ToolHub.js.sha256"):
-        proc = subprocess.run(
-            ["git", "show", "origin/main:" + rel], cwd=str(ROOT),
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        )
-        if proc.returncode == 0:
-            (ROOT / rel).write_bytes(proc.stdout)
-
-
-def add_temp_entry(version):
-    entry = ENTRY.read_text(encoding="utf-8")
-    old_version = "var TOOLHUB_ENTRY_VERSION = 20260718213000;"
-    if old_version not in entry:
-        raise SystemExit("entry version anchor missing")
-    entry = entry.replace(
-        old_version,
-        "var TOOLHUB_ENTRY_VERSION = %s;" % version,
-        1,
-    )
-    old_modules = '"th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js"];'
-    if old_modules not in entry:
-        raise SystemExit("entry module anchor missing")
-    entry = entry.replace(
-        old_modules,
-        '"th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_stage2_bootstrap.js"];',
-        1,
-    )
-    ENTRY.write_text(entry, encoding="utf-8")
-
-
-def prepare_bridge():
-    TEMP_MODULE.write_text(
-        "// @version 1.0.0\n"
-        "// 第二阶段临时签名桥接；正式分支会回退到父提交。\n"
-        "(function() {})();\n",
-        encoding="utf-8",
-    )
-    generator = GENERATOR.read_text(encoding="utf-8")
-    module_anchor = (
-        '    "th_20_pickword.js", "th_21_result_preview.js", '
-        '"th_22_image_viewer.js",\n]'
-    )
-    if module_anchor not in generator:
-        raise SystemExit("generator module anchor missing after apply")
-    generator = generator.replace(
-        module_anchor,
-        '    "th_20_pickword.js", "th_21_result_preview.js", '
-        '"th_22_image_viewer.js",\n'
-        '    "th_stage2_bootstrap.js",\n]',
-        1,
-    )
-    GENERATOR.write_text(generator, encoding="utf-8")
-    add_temp_entry("20260718234500")
-    commit_local(
-        "添加第二阶段临时签名桥接",
-        ["ToolHub.js", "scripts/generate_signed_manifest.py", "code/th_stage2_bootstrap.js"],
-    )
-
-
 def main():
     repo = str(os.environ.get("GITHUB_REPOSITORY", ""))
     if not repo:
         raise SystemExit("GITHUB_REPOSITORY missing")
+
     url = "https://api.github.com/repos/%s/issues/%d/comments?per_page=100" % (
-        repo, SOURCE_PR,
+        repo,
+        SOURCE_PR,
     )
     request = urllib.request.Request(
         url,
@@ -150,6 +71,7 @@ def main():
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         comments = json.loads(response.read().decode("utf-8"))
+
     found = {}
     for item in comments:
         body = str(item.get("body") or "")
@@ -159,9 +81,13 @@ def main():
                 if part.endswith("\n"):
                     part = part[:-1]
                 found[index] = part
+
     if len(found) != len(PREFIXES):
         raise SystemExit("source parts missing: %d/%d" % (len(found), len(PREFIXES)))
-    source, overlaps = rebuild_source([found[index] for index in range(len(PREFIXES))])
+
+    source, overlaps = rebuild_source(
+        [found[index] for index in range(len(PREFIXES))]
+    )
     digest = hashlib.sha256(source.encode("utf-8")).hexdigest()
     try:
         compile(source, str(TARGET), "exec")
@@ -169,20 +95,31 @@ def main():
         raise SystemExit(
             "rebuilt source syntax error line=%s offset=%s msg=%s sha=%s overlaps=%s text=%r"
             % (
-                error.lineno, error.offset, error.msg, digest,
-                ",".join(str(value) for value in overlaps), error.text,
+                error.lineno,
+                error.offset,
+                error.msg,
+                digest,
+                ",".join(str(value) for value in overlaps),
+                error.text,
             )
         )
-    restore_trigger_files()
+
     TARGET.write_text(source, encoding="utf-8")
     proc = subprocess.run(
-        ["python3", str(TARGET)], cwd=str(ROOT),
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        ["python3", str(TARGET)],
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
     )
     if proc.returncode != 0:
         output = str(proc.stdout or "").strip()
-        raise SystemExit("stage2 apply failed: " + output[-2400:])
-    prepare_bridge()
+        raise SystemExit("stage2 apply failed: " + output[-3000:])
+
+    print(
+        "stage2 source applied sha=%s overlaps=%s"
+        % (digest, ",".join(str(value) for value in overlaps))
+    )
 
 
 if __name__ == "__main__":
