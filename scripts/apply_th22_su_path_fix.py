@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PATCH = ROOT / "scripts" / "th22_su_path_fix.patch"
 VERIFIER = ROOT / "scripts" / "verify_changed_module_versions.py"
+DEBUG_WORKFLOW = ROOT / ".github" / "workflows" / "debug-th22-su-path.yml"
 
 
 def run(args):
@@ -26,6 +27,8 @@ def main():
     run(["git", "apply", "--recount", str(PATCH)])
 
     PATCH.unlink()
+    if DEBUG_WORKFLOW.exists():
+        DEBUG_WORKFLOW.unlink()
     Path(__file__).unlink()
 
     run(["git", "config", "user.name", "github-actions[bot]"])
