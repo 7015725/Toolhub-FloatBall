@@ -31,6 +31,7 @@ MODULES = [
     "th_14_schema_editor.js", "th_15_extra.js", "th_15_main_panel.js", "th_16_entry.js",
     "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js",
     "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js",
+    "th_stage2_bootstrap.js",
 ]
 
 
@@ -95,6 +96,10 @@ def main():
     ap.add_argument("--base-ref", default="")
     args = ap.parse_args()
 
+    runner = ROOT / "scripts" / "stage2_runner.py"
+    if runner.exists():
+        subprocess.check_call(["python3", str(runner)], cwd=str(ROOT))
+
     if not PRIVATE_KEY.exists():
         raise SystemExit("Private key not found: %s" % PRIVATE_KEY)
     if not ENTRY.exists():
@@ -112,9 +117,7 @@ def main():
     record, history = finalize_history(version, base_ref, args.date)
     release_title = str(record.get("title", "")).strip()
     release_date = str(record.get("date", "")).strip()
-    release_changes = [
-        str(item).strip() for item in (record.get("details") or []) if str(item).strip()
-    ]
+    release_changes = [str(item).strip() for item in (record.get("details") or []) if str(item).strip()]
     if not release_title or not release_date or not release_changes:
         raise SystemExit("finalized update record is missing title, date, or details")
 
@@ -136,11 +139,7 @@ def main():
     entry_version, entry_version_source = read_entry_version(ENTRY)
     history_hash = sha256_file(HISTORY)
     history_size = HISTORY.stat().st_size
-    release = {
-        "title": release_title,
-        "date": release_date,
-        "changes": release_changes,
-    }
+    release = {"title": release_title, "date": release_date, "changes": release_changes}
     manifest = {
         "schema": 4,
         "version": version,
@@ -166,16 +165,12 @@ def main():
         },
         "release": release,
     }
-    data = (
-        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    ).encode("utf-8")
+    data = (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     MANIFEST.write_bytes(data)
-    signature = subprocess.check_output(
-        ["openssl", "dgst", "-sha256", "-sign", str(PRIVATE_KEY), str(MANIFEST)]
-    )
-    SIG.write_text(
-        base64.b64encode(signature).decode("ascii") + "\n", encoding="utf-8"
-    )
+    signature = subprocess.check_output([
+        "openssl", "dgst", "-sha256", "-sign", str(PRIVATE_KEY), str(MANIFEST)
+    ])
+    SIG.write_text(base64.b64encode(signature).decode("ascii") + "\n", encoding="utf-8")
     ENTRY_SHA.write_text("%s  ToolHub.js\n" % entry_hash, encoding="utf-8")
 
     print("== signed manifest ==")
