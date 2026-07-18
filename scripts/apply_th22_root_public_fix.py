@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import hashlib
+import os
 import subprocess
+import sys
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,6 +17,7 @@ PART_SHA256 = [
 EXPECTED_SIZE = 19083
 EXPECTED_SHA256 = "68b5ae648c57c43dae8597532f726ba2e2118633654d96981f43ae471d1c65de"
 PATCH = ROOT / "scripts" / "th22_root_public_fix.patch"
+DIAG = ROOT / "scripts" / "th22_root_fix_failure.txt"
 
 
 def run(args):
@@ -23,20 +27,25 @@ def run(args):
     return proc
 
 
-def main():
+def apply_fix():
     chunks = []
     for index, path in enumerate(PARTS):
         if not path.exists():
             raise SystemExit("missing patch part: %s" % path.name)
         data = path.read_bytes()
         if len(data) != PART_SIZES[index]:
-            raise SystemExit("patch part size mismatch: %s" % path.name)
-        if hashlib.sha256(data).hexdigest() != PART_SHA256[index]:
-            raise SystemExit("patch part digest mismatch: %s" % path.name)
+            raise SystemExit("patch part size mismatch: %s actual=%d expected=%d" % (path.name, len(data), PART_SIZES[index]))
+        actual = hashlib.sha256(data).hexdigest()
+        if actual != PART_SHA256[index]:
+            raise SystemExit("patch part digest mismatch: %s actual=%s expected=%s" % (path.name, actual, PART_SHA256[index]))
         chunks.append(data)
     payload = b"".join(chunks)
-    if len(payload) != EXPECTED_SIZE or hashlib.sha256(payload).hexdigest() != EXPECTED_SHA256:
-        raise SystemExit("root public storage patch digest mismatch")
+    actual_payload = hashlib.sha256(payload).hexdigest()
+    if len(payload) != EXPECTED_SIZE or actual_payload != EXPECTED_SHA256:
+        raise SystemExit(
+            "root public storage patch digest mismatch size=%d expected_size=%d sha=%s expected_sha=%s"
+            % (len(payload), EXPECTED_SIZE, actual_payload, EXPECTED_SHA256)
+        )
 
     run([
         "git", "checkout", "origin/main", "--",
@@ -57,6 +66,30 @@ def main():
     run(["git", "add", "-A"])
     run(["git", "commit", "-m", "修复 system_server 公共截图 Root 存储回退"])
     print("root public storage patch applied sha256=%s" % EXPECTED_SHA256)
+
+
+def publish_diagnostic(exc):
+    if DIAG.exists():
+        return
+    message = "%s\n\n%s" % (str(exc), traceback.format_exc())
+    DIAG.write_text(message[-6000:] + "\n", encoding="utf-8")
+    subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=str(ROOT))
+    subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], cwd=str(ROOT))
+    subprocess.run(["git", "add", "-A"], cwd=str(ROOT))
+    subprocess.run(["git", "commit", "-m", "记录 Root 公共存储补丁失败原因"], cwd=str(ROOT))
+    branch = str(os.environ.get("TARGET_BRANCH", "")).strip()
+    if branch:
+        subprocess.run(["git", "push", "origin", "HEAD:" + branch], cwd=str(ROOT))
+
+
+def main():
+    if DIAG.exists():
+        raise SystemExit("prior root public storage diagnostic exists")
+    try:
+        apply_fix()
+    except BaseException as exc:
+        publish_diagnostic(exc)
+        raise
 
 
 if __name__ == "__main__":
