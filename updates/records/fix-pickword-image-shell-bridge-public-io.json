@@ -10,5 +10,25 @@
     "设置页目录测试迁移到独立后台线程，完成后回到主线程更新按钮和状态，避免等待桥接结果时阻塞 UI",
     "th_22_image_viewer.js 升级到 1.2.5，th_13_panel_ui.js 升级到 1.0.14，并修正图片查看器安装版本守卫"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260718231132,
+  "date": "2026-07-19",
+  "modules": [
+    {
+      "name": "th_13_panel_ui.js",
+      "from": "1.0.13",
+      "to": "1.0.14",
+      "change": "updated"
+    },
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "1.2.4",
+      "to": "1.2.5",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260719024500,
+    "to": 20260719024500
+  }
 }
