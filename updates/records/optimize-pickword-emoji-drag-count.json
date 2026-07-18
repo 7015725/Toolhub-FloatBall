@@ -9,5 +9,19 @@
     "移除逐字素闭包分配和未读取的unitStarts状态，降低8000字长文本拖选期间的system_server开销",
     "保持Emoji字素分段、UTF-16选区范围、翻译替换、撤销、钉屏、放大镜和生命周期边界不变"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260718031425,
+  "date": "2026-07-18",
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.14",
+      "to": "1.0.15",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
 }
