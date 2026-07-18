@@ -1,0 +1,214 @@
++            bottom.addView(infoView, new android.widget.LinearLayout.LayoutParams(-1, dp22(28)));
++            root.addView(bottom, new android.widget.FrameLayout.LayoutParams(-1, dp22(104), android.view.Gravity.BOTTOM));
+             updateInfo();
+             return root;
+           },
+           open: function() {
+-            if (released) return false;
++            if (released || deleted) return false;
+             decodeFull();
+             try { if (fullRoot) fullRoot.setVisibility(android.view.View.VISIBLE); } catch (e0) {}
+             return true;
+           },
+           back: function(reason) {
++            dismissConfirm();
+             try { if (fullRoot) fullRoot.setVisibility(android.view.View.GONE); } catch (e0) {}
+             return true;
+           },
+@@ -561,7 +1362,10 @@
+               height: sourceHeight,
+               fileSize: fileSize,
+               sampleSize: baseSample,
+-              createdAt: Number(session.createdAt || 0)
++              createdAt: Number(session.createdAt || 0),
++              savedPublicPath: savedInfo ? savedInfo.publicPath : "",
++              savedContentUri: savedInfo ? savedInfo.contentUri : "",
++              deleted: deleted
+             };
+           },
+           release: function(reason) {
+@@ -569,6 +1373,7 @@
+             released = true;
+             generation++;
+             regionSerial++;
++            dismissConfirm();
+             try { if (regionRunnable) handler.removeCallbacks(regionRunnable); } catch (e0) {}
+             regionRunnable = null;
+             try { executor.shutdownNow(); } catch (e1) {}
+@@ -587,21 +1392,29 @@
+             fullRoot = null;
+             imageCanvas = null;
+             infoView = null;
+-            log('i', "released reason=" + String(reason || "") + " path=" + path);
++            actionStatusView = null;
++            saveButton = null;
++            shareButton = null;
++            deleteButton = null;
++            log("i", "released reason=" + String(reason || "") + " path=" + path);
+             return true;
+           }
+         };
+ 
+-        log('i', "controller created path=" + path + " createdAt=" + String(now22()));
++        try { readBounds(); } catch (eBounds) { error("register", eBounds); }
++        try {
++          appObj.runPickwordImageCleanupNow({ force: false, activePath: path }, null);
++        } catch (eCleanup) {}
++        log("i", "controller created path=" + path + " createdAt=" + String(now22()));
+         return controller;
+       };
+ 
+       proto.__toolHubPickwordImageViewerInstalled = true;
+       return true;
+     } catch (eInstall) {
+-      try { safeLog(null, 'e', "install pickword image viewer fail: " + String(eInstall)); } catch (e0) {}
++      try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
++      return false;
+     }
+-    return false;
+   }
+ 
+   install22();
+diff --git a/scripts/verify_legacy_main_panel_cleanup.py b/scripts/verify_legacy_main_panel_cleanup.py
+index 5dc9246..bdfca5b 100644
+--- a/scripts/verify_legacy_main_panel_cleanup.py
++++ b/scripts/verify_legacy_main_panel_cleanup.py
+@@ -38,7 +38,7 @@ def version_at_least(text, expected, name):
+ 
+ version_at_least(BASE, "1.1.15", "th_01_base.js")
+ version_at_least(PERSIST, "1.0.6", "th_05_persistence.js")
+-version_at_least(EXTRA, "1.1.17", "th_15_extra.js")
++version_at_least(EXTRA, "1.1.18", "th_15_extra.js")
+ version_at_least(MAIN, "1.5.8", "th_15_main_panel.js")
+ version_at_least(ENTRY, "1.0.13", "th_16_entry.js")
+ 
+diff --git a/scripts/verify_main_panel_adaptive_layout.py b/scripts/verify_main_panel_adaptive_layout.py
+index 00b0ac2..1177d56 100755
+--- a/scripts/verify_main_panel_adaptive_layout.py
++++ b/scripts/verify_main_panel_adaptive_layout.py
+@@ -31,7 +31,7 @@ def version(text, expected, name):
+         fail("%s expected version %s" % (name, expected))
+ 
+ 
+-version(BASE, "1.1.17", "th_01_base.js")
++version(BASE, "1.1.18", "th_01_base.js")
+ version(PERSIST, "1.0.7", "th_05_persistence.js")
+ version(MAIN, "1.5.8", "th_15_main_panel.js")
+ 
+diff --git a/scripts/verify_main_panel_visual_tuning.py b/scripts/verify_main_panel_visual_tuning.py
+index 568f4a0..5084106 100755
+--- a/scripts/verify_main_panel_visual_tuning.py
++++ b/scripts/verify_main_panel_visual_tuning.py
+@@ -38,7 +38,7 @@ def version(text, expected, name):
+         fail("%s expected version %s" % (name, expected))
+ 
+ 
+-version(BASE, "1.1.17", "th_01_base.js")
++version(BASE, "1.1.18", "th_01_base.js")
+ version(MAIN, "1.5.8", "th_15_main_panel.js")
+ 
+ for marker, label in (
+diff --git a/scripts/verify_panel_layout_settings_cleanup.py b/scripts/verify_panel_layout_settings_cleanup.py
+index 1315966..27899a8 100644
+--- a/scripts/verify_panel_layout_settings_cleanup.py
++++ b/scripts/verify_panel_layout_settings_cleanup.py
+@@ -38,7 +38,7 @@ def version_at_least(text, expected, name):
+ version_at_least(BASE, "1.1.15", "th_01_base.js")
+ version_at_least(PERSIST, "1.0.6", "th_05_persistence.js")
+ version_at_least(MAIN, "1.5.8", "th_15_main_panel.js")
+-version_at_least(EXTRA, "1.1.17", "th_15_extra.js")
++version_at_least(EXTRA, "1.1.18", "th_15_extra.js")
+ 
+ active_base = re.sub(
+     r"var REMOVED_SETTINGS_CONFIG_KEYS = \{.*?\};",
+diff --git a/scripts/verify_pickword_emoji_grapheme.py b/scripts/verify_pickword_emoji_grapheme.py
+index d299057..0062aad 100644
+--- a/scripts/verify_pickword_emoji_grapheme.py
++++ b/scripts/verify_pickword_emoji_grapheme.py
+@@ -11,7 +11,7 @@ def require(condition, message):
+         raise SystemExit(message)
+ 
+ 
+-require(text.startswith("// @version 1.0.16\n"), "pickword version must be 1.0.16")
++require(text.startswith("// @version 1.0.17\n"), "pickword version must be 1.0.17")
+ for marker in (
+     "segmentPickwordGraphemes20",
+     "segmentPickwordGraphemesFallback20",
+diff --git a/scripts/verify_pickword_image_viewer.py b/scripts/verify_pickword_image_viewer.py
+index 6caf791..a1fa709 100644
+--- a/scripts/verify_pickword_image_viewer.py
++++ b/scripts/verify_pickword_image_viewer.py
+@@ -11,6 +11,9 @@ def require(value, message):
+     if not value:
+         raise SystemExit("FAIL pickword-image-viewer: " + message)
+ 
++base = text("code/th_01_base.js")
++ui = text("code/th_13_panel_ui.js")
++panels = text("code/th_14_panels.js")
+ th18 = text("code/th_18_pointer_ocr.js")
+ th20 = text("code/th_20_pickword.js")
+ th21 = text("code/th_21_result_preview.js")
+@@ -20,15 +23,31 @@ entry = text("ToolHub.js")
+ require('allowEmptyText: !hasText && screenshotOk' in th18, "OCR empty screenshot preview missing")
+ require('kind: hasText ? "text" : "image"' in th18, "OCR preview kind missing")
+ require('allowEmptyText: allowEmptyText' in th21, "preview normalized empty-image flag missing")
+-require('ocrStatus: String(src.ocrStatus' in th21, "preview OCR status missing")
+ require('allowEmptyText: payload.allowEmptyText === true' in th21, "preview handoff metadata missing")
+ require('addPickwordTextArea20(mainLayout, scrollView' in th20, "pickword text/image layout host missing")
+-require('openPickwordImagePage20' in th20 and 'restorePickwordResultPage20' in th20, "same-root image page state missing")
+-require('startBigBang(displayText, ps.meta)' in th20, "pickword metadata pipeline missing")
++require('removePickwordImageAfterDelete20' in th20, "delete must preserve text and remove image host")
++require('onSaved: function(info)' in th20 and 'onDeleted: function(info)' in th20, "stage2 callbacks missing")
+ require('createPickwordImageController' in th22, "image controller missing")
+ require('BitmapRegionDecoder' in th22, "large image region decode missing")
+ require('ScaleGestureDetector' in th22 and 'GestureDetector' in th22, "image gestures missing")
++require('MediaStore.MediaColumns.RELATIVE_PATH' in th22, "MediaStore relative path missing")
++require('MediaStore.MediaColumns.IS_PENDING' in th22, "MediaStore pending transaction missing")
++require('Intent.EXTRA_STREAM' in th22 and 'FLAG_GRANT_READ_URI_PERMISSION' in th22, "content URI sharing missing")
++require('ClipData.newRawUri' in th22, "share ClipData grant missing")
++require('toolhub_pickword_images' in th22 and 'toolhub_pickword_image_exports' in th22, "image SQLite tables missing")
++require('expiresAt = now22() + 24 * 60 * 60 * 1000' in th22, "24-hour share expiry missing")
++require('PICKWORD_IMAGE_RETENTION_DAYS' in base and 'default: 7' in base, "7-day retention config missing")
++require('PICKWORD_IMAGE_PUBLIC_DIR' in base and '/storage/emulated/0/Pictures/ToolHub' in base, "public directory config missing")
++require('type: "pickword_image_settings"' in base, "image settings schema item missing")
++require('createPickwordImageSettingsView' in ui, "image settings UI missing")
++require('validatePickwordImagePublicDir' in th22 and 'runPickwordImageCleanupNow' in th22, "settings runtime methods missing")
++require('公共保存副本不会被自动清理' in th22, "public-copy cleanup boundary missing")
++require('normalizeInternalFile22(path)' in th22 and '截图路径越界' in th22, "internal delete boundary missing")
++require('永久删除这张截图？' in th22, "delete confirmation missing")
++require('ShareTemp' in th22, "share temp directory missing")
++require('{ key: "pickword", title: "拾字"' in panels and '截图保存' in panels, "pickword settings description missing")
+ require('th_22_image_viewer.js' in entry, "entry module list missing")
++require('file://' not in th22, "file URI sharing must not be used")
+ for banned in (r'\blet\b', r'\bconst\b', r'=>', r'`'):
+     require(re.search(banned, th22) is None, "ES6 token in th_22: %s" % banned)
+-print("OK pickword-image-viewer stage1")
++print("OK pickword-image-viewer stage2 save=media_store share=content_uri delete=internal sqlite=tracked cleanup=7d")
+diff --git a/scripts/verify_pickword_long_click_api34.py b/scripts/verify_pickword_long_click_api34.py
+index f1a66ef..f2948e4 100644
+--- a/scripts/verify_pickword_long_click_api34.py
++++ b/scripts/verify_pickword_long_click_api34.py
+@@ -16,8 +16,8 @@ def fail(message):
+ def main():
+     text = SOURCE.read_text(encoding="utf-8")
+ 
+-    if not text.startswith("// @version 1.0.16\n"):
+-        fail("th_20_pickword.js version must be 1.0.16")
++    if not text.startswith("// @version 1.0.17\n"):
++        fail("th_20_pickword.js version must be 1.0.17")
+ 
+     listeners = list(re.finditer(r"new\s+View\.OnLongClickListener\s*\(\s*\{", text))
+     if len(listeners) != 2:
+diff --git a/scripts/verify_pickword_unified_cleanup.py b/scripts/verify_pickword_unified_cleanup.py
+index 2fbbe26..29698d7 100644
+--- a/scripts/verify_pickword_unified_cleanup.py
++++ b/scripts/verify_pickword_unified_cleanup.py
+@@ -11,7 +11,7 @@ def require(condition, message):
+         raise SystemExit(message)
+ 
+ 
+-require(source.startswith("// @version 1.0.16\n"), "pickword module version must be 1.0.16")
++require(source.startswith("// @version 1.0.17\n"), "pickword module version must be 1.0.17")
+ require("CANVAS_DRAG_VISIBLE_LINE_BUFFER: 8" in source, "drag visible-line buffer config missing")
+ require("CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS: 40" in source, "drag highlight interval config missing")
+ require("parseInt(String(DIY_CONFIG.CANVAS_DRAG_VISIBLE_LINE_BUFFER), 10)" in source, "drag buffer is not consumed")
