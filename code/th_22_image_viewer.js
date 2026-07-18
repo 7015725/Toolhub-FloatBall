@@ -1,4 +1,4 @@
-// @version 1.2.4
+// @version 1.2.5
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -414,125 +414,151 @@
     return "";
   }
 
-  function addRootExecutableCandidate22(out, value) {
-    var path = String(value === undefined || value === null ? "" : value).replace(/^\s+|\s+$/g, "");
-    if (!path) return;
-    for (var i = 0; i < out.length; i++) {
-      if (String(out[i]) === path) return;
+  function resolveShellBridgeApp22(appObj) {
+    try {
+      if (appObj && typeof appObj.execShellSmart === "function") return appObj;
+    } catch (e0) {}
+    try {
+      if (typeof TOOLHUB_ACTIVE_APP !== "undefined" && TOOLHUB_ACTIVE_APP &&
+          typeof TOOLHUB_ACTIVE_APP.execShellSmart === "function") return TOOLHUB_ACTIVE_APP;
+    } catch (e1) {}
+    return null;
+  }
+
+  function shellBridgeMarkerDir22() {
+    var base = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
+    if (!base) throw new Error("ShortX 目录为空");
+    var dir = new java.io.File(base, "ToolHub/cache/shell_bridge").getCanonicalFile();
+    if (!dir.exists() && !dir.mkdirs() && !dir.exists()) throw new Error("无法创建 Shell 桥结果目录");
+    if (!dir.isDirectory()) throw new Error("Shell 桥结果路径不是目录");
+    return dir;
+  }
+
+  function cleanupShellBridgeMarkers22(dir) {
+    try {
+      var files = dir.listFiles();
+      if (!files) return;
+      var cutoff = now22() - 60 * 60 * 1000;
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        try {
+          if (file && file.isFile() && String(file.getName() || "").indexOf("root_") === 0 &&
+              Number(file.lastModified() || 0) < cutoff) file.delete();
+        } catch (eOne) {}
+      }
+    } catch (e0) {}
+  }
+
+  function writeShellBridgeMarker22(file, text) {
+    var writer = null;
+    try {
+      writer = new java.io.OutputStreamWriter(new java.io.FileOutputStream(file, false), "UTF-8");
+      writer.write(String(text || ""));
+      writer.flush();
+      return true;
+    } finally {
+      try { if (writer) writer.close(); } catch (eClose) {}
     }
-    out.push(path);
   }
 
-  function rootExecutableCandidates22() {
-    var out = [];
-    addRootExecutableCandidate22(out, "/system/bin/su");
-    addRootExecutableCandidate22(out, "/system/xbin/su");
-    addRootExecutableCandidate22(out, "/sbin/su");
-    addRootExecutableCandidate22(out, "/debug_ramdisk/su");
-    addRootExecutableCandidate22(out, "/data/adb/ksu/bin/su");
-    addRootExecutableCandidate22(out, "/data/adb/ap/bin/su");
-    addRootExecutableCandidate22(out, "/data/adb/magisk/su");
-    try {
-      var envPath = String(java.lang.System.getenv("PATH") || "");
-      var entries = envPath.split(":");
-      for (var i = 0; i < entries.length; i++) {
-        var one = String(entries[i] || "").replace(/^\s+|\s+$/g, "");
-        if (one) addRootExecutableCandidate22(out, one.replace(/\/+$/g, "") + "/su");
-      }
-    } catch (ePath) {}
-    addRootExecutableCandidate22(out, "su");
-    return out;
-  }
-
-  function processOutput22(process) {
+  function readShellBridgeMarker22(file) {
     var reader = null;
-    var out = "";
     try {
-      reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
-      var line = null;
-      while ((line = reader.readLine()) !== null) {
-        if (out) out += " ";
-        out += String(line);
-        if (out.length >= 480) break;
-      }
-    } catch (eRead) {
+      if (!file || !file.exists() || !file.isFile()) return "";
+      reader = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(file), "UTF-8"));
+      var line = reader.readLine();
+      return line === null ? "" : String(line);
+    } catch (e0) {
+      return "";
     } finally {
       try { if (reader) reader.close(); } catch (eClose) {}
     }
-    return out.length > 480 ? out.substring(0, 480) : out;
   }
 
-  function runRootShell22(command) {
-    var executables = rootExecutableCandidates22();
-    var attempts = [];
-    var fixedPath = "/system/bin:/system/xbin:/vendor/bin:/product/bin:/sbin:/debug_ramdisk:/data/adb/ksu/bin:/data/adb/ap/bin:/data/adb/magisk";
-    for (var i = 0; i < executables.length; i++) {
-      var executable = String(executables[i] || "");
-      var modes = [
-        { args: ["--mount-master", "-c"], via: "su_mount_master" },
-        { args: ["-c"], via: "su" }
-      ];
-      for (var modeIndex = 0; modeIndex < modes.length; modeIndex++) {
-        var process = null;
-        var exitCode = null;
-        var output = "";
-        try {
-          var args = new java.util.ArrayList();
-          args.add(executable);
-          for (var j = 0; j < modes[modeIndex].args.length; j++) {
-            args.add(String(modes[modeIndex].args[j]));
-          }
-          args.add(String(command || ""));
-          var builder = new java.lang.ProcessBuilder(args);
-          builder.redirectErrorStream(true);
-          try { builder.environment().put("PATH", fixedPath); } catch (eEnv) {}
-          process = builder.start();
-          var deadline = now22() + 15000;
-          while (now22() < deadline) {
-            try {
-              exitCode = Number(process.exitValue());
-              break;
-            } catch (eWait) {
-              java.lang.Thread.sleep(50);
-            }
-          }
-          if (exitCode === null) {
-            try { process.destroy(); } catch (eDestroy) {}
-            attempts.push(executable + ":" + modes[modeIndex].via + ":timeout");
-          } else {
-            output = processOutput22(process);
-            if (exitCode === 0) {
-              try {
-                if (typeof safeLog === "function") {
-                  safeLog(null, "i", "pickword image root executable path=" + executable +
-                    " mode=" + modes[modeIndex].via);
-                }
-              } catch (eLog) {}
-              return {
-                ok: true,
-                via: modes[modeIndex].via,
-                executable: executable
-              };
-            }
-            attempts.push(
-              executable + ":" + modes[modeIndex].via + ":exit=" + String(exitCode) +
-              (output ? ":out=" + output : "")
-            );
-          }
-        } catch (eRun) {
-          attempts.push(executable + ":" + modes[modeIndex].via + ":" + String(eRun));
-        } finally {
-          try { if (process) process.getOutputStream().close(); } catch (eOut) {}
-          try { if (process) process.getInputStream().close(); } catch (eIn) {}
-          try { if (process) process.getErrorStream().close(); } catch (eErr) {}
-          try { if (process) process.destroy(); } catch (eDestroy2) {}
-        }
+  function encodeShellBridgeCommand22(command) {
+    try {
+      if (typeof encodeBase64Utf8 === "function") {
+        var encoded = String(encodeBase64Utf8(String(command || "")) || "");
+        if (encoded) return encoded;
       }
+    } catch (e0) {}
+    try {
+      var bytes = new java.lang.String(String(command || "")).getBytes("UTF-8");
+      return String(android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP));
+    } catch (e1) {}
+    return "";
+  }
+
+  function shellBridgeToken22() {
+    var tid = 0;
+    try { tid = Number(java.lang.Thread.currentThread().getId()); } catch (e0) { tid = 0; }
+    var random = 0;
+    try { random = Math.floor(Math.random() * 1000000000); } catch (e1) { random = 0; }
+    return String(now22()) + "_" + String(tid) + "_" + String(random);
+  }
+
+  function runRootShell22(command, appObj) {
+    var app = resolveShellBridgeApp22(appObj);
+    if (!app) throw new Error("ShortX Shell 广播桥不可用");
+    var dir = shellBridgeMarkerDir22();
+    cleanupShellBridgeMarkers22(dir);
+    var token = shellBridgeToken22();
+    var marker = new java.io.File(dir, "root_" + token + ".status").getCanonicalFile();
+    var dirPath = String(dir.getCanonicalPath());
+    var markerPath = String(marker.getCanonicalPath());
+    if (markerPath.indexOf(dirPath + java.io.File.separator) !== 0) throw new Error("Shell 桥结果路径越界");
+    var pending = "pending:" + token;
+    var donePrefix = "done:" + token + ":";
+    writeShellBridgeMarker22(marker, pending);
+    var wrapped =
+      "if [ -f " + shellQuote22(markerPath) + " ]; then " +
+      "( " + String(command || "") + " ); th_rc=$?; " +
+      "printf " + shellQuote22(donePrefix + "%s") + " \"$th_rc\" > " + shellQuote22(markerPath) +
+      "; fi";
+    var commandB64 = encodeShellBridgeCommand22(wrapped);
+    if (!commandB64) {
+      try { marker.delete(); } catch (eDelete0) {}
+      throw new Error("Shell 桥命令编码失败");
     }
-    throw new Error(
-      "Root 文件操作失败，未找到可用 su；attempts=" +
-      attempts.slice(0, 12).join(" | ")
-    );
+    var sent = null;
+    try { sent = app.execShellSmart(commandB64, true); }
+    catch (eSend) {
+      try { marker.delete(); } catch (eDelete1) {}
+      throw new Error("Shell 广播桥发送异常: " + String(eSend));
+    }
+    if (!sent || sent.ok !== true || sent.sent !== true) {
+      try { marker.delete(); } catch (eDelete2) {}
+      throw new Error("Shell 广播桥发送失败: " + String(sent && sent.err || "unknown"));
+    }
+    try {
+      safeLog(app.L, "i", "pickword image root bridge dispatched via=" + String(sent.via || "") +
+        " marker=" + String(marker.getName() || ""));
+    } catch (eLog0) {}
+    var deadline = now22() + 20000;
+    var status = pending;
+    while (now22() < deadline) {
+      status = readShellBridgeMarker22(marker);
+      if (status.indexOf(donePrefix) === 0) break;
+      java.lang.Thread.sleep(80);
+    }
+    if (status.indexOf(donePrefix) !== 0) {
+      try { marker.delete(); } catch (eDelete3) {}
+      throw new Error("Shell 广播桥执行超时");
+    }
+    var exitText = status.substring(donePrefix.length).replace(/^\s+|\s+$/g, "");
+    var exitCode = parseInt(exitText, 10);
+    try { marker.delete(); } catch (eDelete4) {}
+    if (isNaN(exitCode)) throw new Error("Shell 广播桥结果无效: " + exitText);
+    if (exitCode !== 0) throw new Error("Shell 广播桥命令失败 exit=" + String(exitCode));
+    try { safeLog(app.L, "i", "pickword image root bridge completed via=" + String(sent.via || "") + " exit=0"); }
+    catch (eLog1) {}
+    return {
+      ok: true,
+      via: "shortx_shell_bridge",
+      executable: String(sent.via || "BroadcastBridge"),
+      bridgeMode: String(sent.bridgeMode || ""),
+      targetMode: String(sent.targetMode || "")
+    };
   }
 
   function queryMediaUriByPath22(file) {
@@ -556,7 +582,7 @@
     return "";
   }
 
-  function scanPublicFile22(file) {
+  function scanPublicFile22(file, appObj) {
     var holder = { uri: "" };
     var latch = new java.util.concurrent.CountDownLatch(1);
     try {
@@ -579,14 +605,15 @@
       var fileUri = String(android.net.Uri.fromFile(file).toString());
       runRootShell22(
         "am broadcast --user 0 -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d " +
-        shellQuote22(fileUri) + " >/dev/null 2>&1"
+        shellQuote22(fileUri) + " >/dev/null 2>&1",
+        appObj
       );
       java.lang.Thread.sleep(350);
     } catch (eBroadcast) {}
     return queryMediaUriByPath22(file);
   }
 
-  function rootCopyPublic22(sourceFile, publicDir, displayName, kind, expiresAt, requireUri) {
+  function rootCopyPublic22(appObj, sourceFile, publicDir, displayName, kind, expiresAt, requireUri) {
     var source = sourceFile.getCanonicalFile();
     var dir = publicDir.getCanonicalFile();
     var target = new java.io.File(dir, String(displayName)).getCanonicalFile();
@@ -604,23 +631,26 @@
       command = "( (" + directCommand + ") || (mkdir -p " + shellQuote22(underlyingDir) +
         " && cp -f " + shellQuote22(sourcePath) + " " + shellQuote22(underlyingTarget) + ") )";
     }
-    var shell = runRootShell22(command + " >/dev/null 2>&1");
+    var shell = runRootShell22(command + " >/dev/null 2>&1", appObj);
+    var publicBytes = Number(source.length() || 0);
     for (var visibleTry = 0; visibleTry < 10; visibleTry++) {
-      if (target.exists() && target.isFile() && target.length() > 0) break;
+      try {
+        if (target.exists() && target.isFile() && target.length() > 0) {
+          publicBytes = Number(target.length() || publicBytes);
+          break;
+        }
+      } catch (eVisible) {}
       java.lang.Thread.sleep(50);
     }
-    if (!target.exists() || !target.isFile() || target.length() <= 0) {
-      throw new Error("Root 复制后文件不可用");
-    }
-    var contentUri = scanPublicFile22(target);
+    var contentUri = scanPublicFile22(target, appObj);
     if (requireUri === true && !contentUri) {
-      try { runRootShell22("rm -f " + shellQuote22(targetPath) + " >/dev/null 2>&1"); } catch (eDelete) {}
+      try { runRootShell22("rm -f " + shellQuote22(targetPath) + " >/dev/null 2>&1", appObj); } catch (eDelete) {}
       throw new Error("公共图片已写入但无法取得分享 URI");
     }
     try {
       if (typeof safeLog === "function") {
-        safeLog(null, "i", "pickword image public io mode=root_copy via=" + String(shell.via || "") +
-          " executable=" + String(shell.executable || "") +
+        safeLog(appObj && appObj.L ? appObj.L : null, "i", "pickword image public io mode=root_copy via=" + String(shell.via || "") +
+          " bridge=" + String(shell.executable || "") +
           " path=" + targetPath + " uri=" + String(contentUri || ""));
       }
     } catch (eLog) {}
@@ -629,17 +659,17 @@
       kind: kind,
       publicPath: targetPath,
       contentUri: String(contentUri || ""),
-      bytes: Number(target.length() || 0),
+      bytes: publicBytes,
       createdAt: now22(),
       expiresAt: Number(expiresAt || 0),
       fallback: true,
       rootFallback: true,
       via: String(shell.via || ""),
-      rootExecutable: String(shell.executable || "")
+      shellBridge: String(shell.executable || "")
     };
   }
 
-  function rootProbePublicDir22(dir) {
+  function rootProbePublicDir22(appObj, dir) {
     var canonical = dir.getCanonicalFile();
     var dirPath = String(canonical.getCanonicalPath());
     var probePath = String(new java.io.File(canonical, ".toolhub_root_probe_" + String(now22())).getCanonicalPath());
@@ -655,21 +685,21 @@
         " && printf 1 > " + shellQuote22(underlyingProbe) +
         " && rm -f " + shellQuote22(underlyingProbe) + ") )";
     }
-    runRootShell22(command + " >/dev/null 2>&1");
+    runRootShell22(command + " >/dev/null 2>&1", appObj);
     return true;
   }
 
-  function rootDeletePublic22(publicPath) {
+  function rootDeletePublic22(appObj, publicPath) {
     var file = normalizePublicFile22(publicPath);
     var targetPath = String(file.getCanonicalPath());
     var underlying = underlyingPublicPath22(file);
     var command = "rm -f " + shellQuote22(targetPath);
     if (underlying) command += " " + shellQuote22(underlying);
-    runRootShell22(command + " >/dev/null 2>&1");
+    runRootShell22(command + " >/dev/null 2>&1", appObj);
     return true;
   }
 
-  function exportPublicFile22(sourceFile, publicDir, displayName, kind, expiresAt, requireUri) {
+  function exportPublicFile22(appObj, sourceFile, publicDir, displayName, kind, expiresAt, requireUri) {
     if (android.os.Build.VERSION.SDK_INT < 29) {
       return copyFileFallback22(sourceFile, publicDir, displayName);
     }
@@ -677,14 +707,14 @@
     var firstError = null;
     var secondError = null;
     if (rootFirst) {
-      try { return rootCopyPublic22(sourceFile, publicDir, displayName, kind, expiresAt, requireUri); }
+      try { return rootCopyPublic22(appObj, sourceFile, publicDir, displayName, kind, expiresAt, requireUri); }
       catch (eRootFirst) { firstError = eRootFirst; }
       try { return insertMediaStore22(sourceFile, publicDir, displayName, kind, expiresAt); }
       catch (eMediaSecond) { secondError = eMediaSecond; }
     } else {
       try { return insertMediaStore22(sourceFile, publicDir, displayName, kind, expiresAt); }
       catch (eMediaFirst) { firstError = eMediaFirst; }
-      try { return rootCopyPublic22(sourceFile, publicDir, displayName, kind, expiresAt, requireUri); }
+      try { return rootCopyPublic22(appObj, sourceFile, publicDir, displayName, kind, expiresAt, requireUri); }
       catch (eRootSecond) { secondError = eRootSecond; }
     }
     throw new Error(
@@ -693,18 +723,18 @@
     );
   }
 
-  function probePublicDir22(dir) {
+  function probePublicDir22(appObj, dir) {
     if (android.os.Build.VERSION.SDK_INT < 29) return probeWritable22(dir);
     var rootFirst = preferRootPublicIo22();
     var firstError = null;
     if (rootFirst) {
-      try { return rootProbePublicDir22(dir); } catch (eRoot) { firstError = eRoot; }
+      try { return rootProbePublicDir22(appObj, dir); } catch (eRoot) { firstError = eRoot; }
       try { return probeMediaStore22(dir); } catch (eMedia) {
         throw new Error("Root 目录测试失败: " + String(firstError) + "; MediaStore 目录测试失败: " + String(eMedia));
       }
     }
     try { return probeMediaStore22(dir); } catch (eMediaFirst) { firstError = eMediaFirst; }
-    try { return rootProbePublicDir22(dir); } catch (eRootSecond) {
+    try { return rootProbePublicDir22(appObj, dir); } catch (eRootSecond) {
       throw new Error("MediaStore 目录测试失败: " + String(firstError) + "; Root 目录测试失败: " + String(eRootSecond));
     }
   }
@@ -866,7 +896,7 @@
     var scoped = android.os.Build.VERSION.SDK_INT >= 29;
     var dir = preparePublicDir22(appObj, "", !scoped);
     if (!scoped) probeWritable22(dir);
-    var result = exportPublicFile22(sourceFile, dir, name, "saved", 0, false);
+    var result = exportPublicFile22(appObj, sourceFile, dir, name, "saved", 0, false);
     updateImageSaved22(String(sourceFile.getCanonicalPath()), result.publicPath, result.contentUri, result.createdAt);
     return result;
   }
@@ -877,7 +907,7 @@
     if (!scoped) probeWritable22(dir);
     var expiresAt = now22() + 24 * 60 * 60 * 1000;
     var name = displayName22(sourceFile, Number(session.createdAt || now22()), "ToolHub_Share_");
-    var result = exportPublicFile22(sourceFile, dir, name, "share_temp", expiresAt, true);
+    var result = exportPublicFile22(appObj, sourceFile, dir, name, "share_temp", expiresAt, true);
     addExport22(String(sourceFile.getCanonicalPath()), "share_temp", result.publicPath, result.contentUri, result.createdAt, expiresAt);
     return result;
   }
@@ -898,7 +928,7 @@
     return true;
   }
 
-  function deleteContent22(contentUri, publicPath) {
+  function deleteContent22(appObj, contentUri, publicPath) {
     var deleted = false;
     if (contentUri) {
       try {
@@ -913,7 +943,7 @@
     }
     if (!deleted && publicPath) {
       try {
-        deleted = rootDeletePublic22(publicPath);
+        deleted = rootDeletePublic22(appObj, publicPath);
       } catch (e2) {}
     }
     return deleted;
@@ -956,7 +986,7 @@
     return result;
   }
 
-  function cleanupExports22() {
+  function cleanupExports22(appObj) {
     return withDb22(function(db) {
       var cursor = null;
       var rows = [];
@@ -976,7 +1006,7 @@
       for (var i = 0; i < rows.length; i++) {
         result.scanned++;
         var one = rows[i];
-        var ok = deleteContent22(one.contentUri, one.publicPath);
+        var ok = deleteContent22(appObj, one.contentUri, one.publicPath);
         if (ok) result.deleted++; else result.failed++;
         var stmt = null;
         try {
@@ -1228,7 +1258,7 @@
     }
     var publicFile = normalizePublicFile22(row.publicPath);
     if (!isImageFile22(publicFile)) throw new Error("公共副本不可用");
-    var scannedUri = scanPublicFile22(publicFile);
+    var scannedUri = scanPublicFile22(publicFile, appObj);
     if (scannedUri) {
       updateImageSaved22(
         String(internalPath || ""),
@@ -1243,6 +1273,7 @@
     if (!scoped) probeWritable22(tempDir);
     var expiresAt = now22() + 24 * 60 * 60 * 1000;
     var result = exportPublicFile22(
+      appObj,
       publicFile,
       tempDir,
       displayName22(publicFile, now22(), "ToolHub_View_"),
@@ -1265,7 +1296,7 @@
     return true;
   }
 
-  function deleteSavedImage22(internalPath) {
+  function deleteSavedImage22(appObj, internalPath) {
     var row = loadSaved22(String(internalPath || ""));
     if (!row) return { ok: true, missing: true, internalPath: String(internalPath || "") };
     var safeUri = safeMediaUri22(row.contentUri);
@@ -1274,7 +1305,7 @@
       try { safePath = String(normalizePublicFile22(row.publicPath).getCanonicalPath()); } catch (ePath) { safePath = ""; }
     }
     if (!safeUri && !safePath) throw new Error("公共副本路径不安全");
-    var deleted = deleteContent22(safeUri, safePath);
+    var deleted = deleteContent22(appObj, safeUri, safePath);
     if (!deleted) throw new Error("公共副本删除失败");
     clearImageSaved22(String(internalPath || ""));
     return { ok: true, internalPath: String(internalPath || ""), deletedAt: now22() };
@@ -1284,14 +1315,14 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.3") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.5") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
         try {
           var scoped = android.os.Build.VERSION.SDK_INT >= 29;
           var dir = normalizePublicDir22(pathValue, !scoped);
-          probePublicDir22(dir);
+          probePublicDir22(this, dir);
           result.ok = true;
           result.path = String(dir.getCanonicalPath());
         } catch (e0) {
@@ -1326,7 +1357,7 @@
           try {
             result.retentionDays = configuredRetention22(appObj, opts.retentionDays);
             result.internal = scanInternalCleanup22(result.retentionDays, String(opts.activePath || ""));
-            result.exports = cleanupExports22();
+            result.exports = cleanupExports22(appObj);
             result.completedAt = now22();
             putMeta22("pickword_image_cleanup_last_at", String(result.completedAt));
             result.ok = true;
@@ -1367,7 +1398,7 @@
           },
           deleteInternal: function(internalPath) { return deleteInternalImage22(internalPath); },
           prepareSavedUri: function(internalPath) { return prepareSavedUri22(appObj, internalPath); },
-          deleteSaved: function(internalPath) { return deleteSavedImage22(internalPath); },
+          deleteSaved: function(internalPath) { return deleteSavedImage22(appObj, internalPath); },
           launchShare: function(result) { return launchShare22(result); },
           launchView: function(result) { return launchView22(result); }
         };
@@ -2110,7 +2141,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.2.1";
+      proto.__toolHubPickwordImageViewerVersion = "1.2.5";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}

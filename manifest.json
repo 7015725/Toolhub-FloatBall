@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "c34755a831c75956c8ca39ed7ebe902bb38a2323018fa75727d657243b428aec",
-      "size": 39261,
-      "version": 20260718221036
+      "sha256": "555f46a82ca887abe6438f31119fa94921c05fbef403a24d081bafd04d0fd3b8",
+      "size": 40746,
+      "version": 20260718231132
     }
   },
   "entry": {
@@ -74,9 +74,9 @@
       "version": "1.2.4"
     },
     "th_13_panel_ui.js": {
-      "sha256": "cb54f527480e0a40b105826314c6f5a72e67fe991bd7808bed9a9e30062f58cb",
-      "size": 64080,
-      "version": "1.0.13"
+      "sha256": "dc1af12c7176de8381ac07f42d08e24c9a713f483bbc57b9a4d93edcb7d4c08c",
+      "size": 65355,
+      "version": "1.0.14"
     },
     "th_14_button_editor.js": {
       "sha256": "e816a603df53d4514f363e9e3bfb37b94b17e03e5fb36aca58d93de92c16de79",
@@ -154,9 +154,9 @@
       "version": "1.3.3"
     },
     "th_22_image_viewer.js": {
-      "sha256": "e30e63ac5eb31a613dc127d3de1f5b063a2dcd62f191184bf592f7dc0aeb4db3",
-      "size": 90664,
-      "version": "1.2.4"
+      "sha256": "7048170010a21ef07eb3c181afcdf2ab6cac8812ace4905af5f1a1c6792d3c6a",
+      "size": 92147,
+      "version": "1.2.5"
     },
     "th_23_screenshot_manager.js": {
       "sha256": "ac2736686ebfb68762c928f7bae279d453180fe1863a5d9f79fff43800716e3a",
@@ -167,15 +167,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Root 文件操作不再依赖 system_server 的 PATH 查找裸 su 命令，改为依次尝试系统、KernelSU、APatch 与 Magisk 常见绝对路径",
-      "每个 Root 可执行文件分别尝试 --mount-master 与普通 -c 模式，并为子进程补充受控 PATH",
-      "成功时记录实际使用的 su 路径和执行模式；全部失败时记录候选路径、退出码与有限输出，便于继续定位设备差异",
-      "保存、分享、目录测试和公共副本删除继续复用同一 Root 文件操作入口，不修改截图、OCR、原图 Canvas 或截图管理器 UI",
-      "新增专项回归，禁止再次使用仅依赖环境 PATH 的裸 su ProcessBuilder 变体"
+      "system_server 不再直接启动 Root 可执行文件，公共截图保存、分享、目录测试和删除统一复用 ToolHub 已有 ShortX Shell 广播桥",
+      "Shell 桥命令使用 ToolHub/cache/shell_bridge 内部结果文件确认真实退出码，避免把广播发送成功误判为文件操作完成",
+      "结果文件使用唯一标识、路径边界校验、超时和过期清理，失败时返回桥不可用、发送失败、执行超时或实际退出码",
+      "设置页目录测试迁移到独立后台线程，完成后回到主线程更新按钮和状态，避免等待桥接结果时阻塞 UI",
+      "th_22_image_viewer.js 升级到 1.2.5，th_13_panel_ui.js 升级到 1.0.14，并修正图片查看器安装版本守卫"
     ],
     "date": "2026-07-19",
-    "title": "修复 system_server 无法定位 Root 可执行文件"
+    "title": "修复 system_server 公共截图改用 ShortX Shell 桥执行"
   },
   "schema": 4,
-  "version": 20260718221036
+  "version": 20260718231132
 }

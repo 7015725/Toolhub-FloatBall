@@ -1,4 +1,4 @@
-// @version 1.0.13
+// @version 1.0.14
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -739,23 +739,54 @@ FloatBallAppWM.prototype.createPickwordImageSettingsView = function(item, parent
     }
   }
 
-  var pathButton = self.ui.createSolidButton(self, "测试保存目录", primary, onPrimary, function() {
+  var pathTesting = false;
+  var pathButton = null;
+  var pathHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+  function finishPathTest13(result) {
+    pathTesting = false;
     try {
-      if (typeof self.validatePickwordImagePublicDir !== "function") {
-        setStatus13("截图存储模块尚未加载", true);
-        return;
+      if (pathButton) {
+        pathButton.setEnabled(true);
+        pathButton.setAlpha(1.0);
+        pathButton.setText("测试保存目录");
       }
-      var result = self.validatePickwordImagePublicDir(String(pathInput.getText() || ""));
       if (result && result.ok) {
         self.setPendingValue("PICKWORD_IMAGE_PUBLIC_DIR", String(result.path || ""));
         pathInput.setText(String(result.path || ""));
         pathInput.setSelection(pathInput.getText().length());
         setStatus13("目录可写：" + String(result.path || ""), false);
       } else {
-        setStatus13("目录不可用：" + String(result && result.error || "未知错误"), true);
+        var errorText = String(result && result.error || "未知错误");
+        if (errorText.length > 700) errorText = errorText.substring(0, 700) + "…";
+        setStatus13("目录不可用：" + errorText, true);
       }
-    } catch(eTest) {
-      setStatus13("目录测试失败：" + String(eTest), true);
+    } catch(eFinish) {
+      setStatus13("目录测试结果更新失败", true);
+    }
+  }
+  pathButton = self.ui.createSolidButton(self, "测试保存目录", primary, onPrimary, function() {
+    if (pathTesting) return;
+    try {
+      if (typeof self.validatePickwordImagePublicDir !== "function") {
+        setStatus13("截图存储模块尚未加载", true);
+        return;
+      }
+      self.touchActivity();
+      var pathSnapshot = String(pathInput.getText() || "");
+      pathTesting = true;
+      pathButton.setEnabled(false);
+      pathButton.setAlpha(0.65);
+      pathButton.setText("正在测试…");
+      setStatus13("正在通过 ShortX Shell 桥测试目录…", false);
+      var thread = new java.lang.Thread(new java.lang.Runnable({ run: function() {
+        var result = null;
+        try { result = self.validatePickwordImagePublicDir(pathSnapshot); }
+        catch(eTest) { result = { ok: false, path: pathSnapshot, error: String(eTest) }; }
+        pathHandler.post(new java.lang.Runnable({ run: function() { finishPathTest13(result); }}));
+      }}), "TH-Pickword-Image-Dir-Test");
+      thread.start();
+    } catch(eStart) {
+      finishPathTest13({ ok: false, error: "目录测试启动失败：" + String(eStart) });
     }
   });
   var pathButtonLp = new android.widget.LinearLayout.LayoutParams(-1, self.dp(46));
