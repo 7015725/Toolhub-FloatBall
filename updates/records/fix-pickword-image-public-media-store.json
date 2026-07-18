@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "id": "fix-pickword-image-public-media-store",
+  "type": "fix",
+  "title": "修复拾字截图公共保存与分享目录创建失败",
+  "details": [
+    "Android 10 及以上公共保存主路径不再预先 mkdirs 或使用 FileOutputStream 探测，改由 MediaStore RELATIVE_PATH 创建目录",
+    "保存失败时才尝试传统文件回退，并同时保留 MediaStore 与文件回退错误，避免仅显示无法创建保存目录",
+    "分享临时副本与已保存图片查看临时副本统一通过 MediaStore 创建 ShareTemp 相对目录",
+    "设置页目录测试在 API 29 及以上改为创建并删除临时 MediaStore 项，低版本继续使用传统文件写入探测",
+    "补充回归测试，锁定 API 29 及以上不得在 MediaStore 前强制创建公共物理目录"
+  ],
+  "manifestVersion": 20260718193842,
+  "date": "2026-07-19",
+  "modules": [
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "1.2.1",
+      "to": "1.2.2",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260719024500,
+    "to": 20260719024500
+  }
+}
