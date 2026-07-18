@@ -1,0 +1,118 @@
++              } catch (eDraw) {
++                disableDrawing(eDraw);
++              }
+             },
+             onTouchEvent: function(event) {
+-              try { scaleDetector.onTouchEvent(event); } catch (eScale) {}
+-              try { gestureDetector.onTouchEvent(event); } catch (eGesture) {}
+-              var action = event.getActionMasked ? event.getActionMasked() : event.getAction();
+-              if (action === android.view.MotionEvent.ACTION_DOWN) {
+-                lastX = event.getX();
+-                lastY = event.getY();
+-                panning = true;
++              try {
++                if (drawDisabled || released || deleted) return true;
++                try { scaleDetector.onTouchEvent(event); } catch (eScale) { error("touch_scale", eScale); }
++                try { gestureDetector.onTouchEvent(event); } catch (eGesture) { error("touch_gesture", eGesture); }
++                var action = event.getActionMasked ? event.getActionMasked() : event.getAction();
++                if (action === android.view.MotionEvent.ACTION_DOWN) {
++                  lastX = event.getX();
++                  lastY = event.getY();
++                  panning = true;
++                  return true;
++                }
++                if (action === android.view.MotionEvent.ACTION_MOVE && panning && !scaling && event.getPointerCount() === 1) {
++                  var nx = event.getX();
++                  var ny = event.getY();
++                  tx += nx - lastX;
++                  ty += ny - lastY;
++                  lastX = nx;
++                  lastY = ny;
++                  clampTranslation();
++                  invalidateImageCanvas("touch_invalidate");
++                  scheduleRegionDecode();
++                  return true;
++                }
++                if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
++                  panning = false;
++                  scheduleRegionDecode();
++                  return true;
++                }
++                return true;
++              } catch (eTouch) {
++                panning = false;
++                scaling = false;
++                error("touch", eTouch);
+                 return true;
+               }
+-              if (action === android.view.MotionEvent.ACTION_MOVE && panning && !scaling && event.getPointerCount() === 1) {
+-                var nx = event.getX();
+-                var ny = event.getY();
+-                tx += nx - lastX;
+-                ty += ny - lastY;
+-                lastX = nx;
+-                lastY = ny;
+-                clampTranslation();
+-                invalidate();
+-                scheduleRegionDecode();
+-                return true;
+-              }
+-              if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
+-                panning = false;
+-                scheduleRegionDecode();
+-                return true;
+-              }
+-              return true;
+             }
+           }, opts.context || context);
+           CanvasView.setClickable(true);
+           return CanvasView;
+         }
+@@ -1681,11 +1731,11 @@
+         log("i", "controller created path=" + path + " createdAt=" + String(now22()));
+         return controller;
+       };
+ 
+       proto.__toolHubPickwordImageViewerInstalled = true;
+-      proto.__toolHubPickwordImageViewerVersion = "1.2.0";
++      proto.__toolHubPickwordImageViewerVersion = "1.2.1";
+       return true;
+     } catch (eInstall) {
+       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
+       return false;
+     }
+--- a/scripts/verify_pickword_image_viewer.py
++++ b/scripts/verify_pickword_image_viewer.py
+@@ -29,10 +29,18 @@
+ require('sourceField=" + sourceField' in th20, "pickword image meta source-field log missing")
+ require('thumbnailAttached=" + String(!!(thumb && thumb.getParent()))' in th20, "thumbnail attachment log missing")
+ require('removePickwordImageAfterDelete20' in th20, "delete must preserve text and remove image host")
+ require('onSaved: function(info)' in th20 and 'onDeleted: function(info)' in th20, "stage2 callbacks missing")
+ require('createPickwordImageController' in th22, "image controller missing")
++require('// @version 1.2.1' in th22, "image viewer version")
++require(re.search(r'(?<![\.\w])getWidth\s*\(', th22) is None, "bare getWidth call in JavaAdapter callback")
++require(re.search(r'(?<![\.\w])getHeight\s*\(', th22) is None, "bare getHeight call in JavaAdapter callback")
++require(re.search(r'(?<![\.\w])invalidate\s*\(', th22) is None, "bare invalidate call in JavaAdapter callback")
++require('canvas.getWidth()' in th22 and 'canvas.getHeight()' in th22, "explicit canvas size fallback missing")
++require('invalidateImageCanvas("touch_invalidate")' in th22, "safe touch invalidation missing")
++require('catch (eTouch)' in th22 and 'error("touch", eTouch)' in th22, "top-level touch callback guard missing")
++require('drawFailureCount' in th22 and 'drawDisabled' in th22 and 'disableDrawing(eDraw)' in th22, "draw failure circuit breaker missing")
+ require('BitmapRegionDecoder' in th22, "large image region decode missing")
+ require('ScaleGestureDetector' in th22 and 'GestureDetector' in th22, "image gestures missing")
+ require('MediaStore.MediaColumns.RELATIVE_PATH' in th22, "MediaStore relative path missing")
+ require('MediaStore.MediaColumns.IS_PENDING' in th22, "MediaStore pending transaction missing")
+ require('Intent.EXTRA_STREAM' in th22 and 'FLAG_GRANT_READ_URI_PERMISSION' in th22, "content URI sharing missing")
+--- a/scripts/verify_screenshot_manager.py
++++ b/scripts/verify_screenshot_manager.py
+@@ -20,11 +20,11 @@
+ entry = read("ToolHub.js")
+ generator = read("scripts/generate_signed_manifest.py")
+ boundaries = read("MODULE_BOUNDARIES.json")
+ workflow = read(".github/workflows/verify.yml")
+ 
+-require('// @version 1.2.0' in th22, 'th22 service version')
++require('// @version 1.2.1' in th22, 'th22 service version')
+ require('// @version 1.0.0' in th23, 'th23 version')
+ require('getPickwordImageService' in th22, 'service API')
+ for marker in ('listInternal', 'listSaved', 'saveInternal', 'prepareShareInternal', 'deleteInternal', 'prepareSavedUri', 'deleteSaved', 'launchShare', 'launchView'):
+     require(marker in th22, 'service method ' + marker)
