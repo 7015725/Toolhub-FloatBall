@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "633996b9cce0f291d707bf685ebe2195064653f4f71307cdf7458270ee93d392",
-      "size": 33225,
-      "version": 20260718180630
+      "sha256": "f9aa62710c3d157fd08ef15959f195c1624ce39943ecdfd7b78279ba9e928cdc",
+      "size": 34292,
+      "version": 20260718183704
     }
   },
   "entry": {
@@ -144,9 +144,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "d4cb5be29e2750babf9214f8b1b2eff7676482b17fccf26dca502a5d4eb0004e",
-      "size": 257126,
-      "version": "1.0.17"
+      "sha256": "4597d4142eab1d02e88b98c88ad51ac97d4b5c4b0100ac8d65bd1f6902691ccd",
+      "size": 258936,
+      "version": "1.0.18"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -167,15 +167,14 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "主面板新增普通截图管理入口，旧用户通过按钮迁移版本 3 仅追加一次，不覆盖现有排序和配置",
-      "新增内部截图与已保存双标签，支持缩略图、状态、刷新以及查看、保存、分享和删除操作",
-      "内部截图继续复用原图查看器；删除内部文件不会删除公共副本",
-      "删除已保存公共副本增加永久删除警告，并限制为数据库记录的 MediaStore URI 或主存储路径",
-      "新增 th_23_screenshot_manager.js，SQLite 与文件动作仍由 th_22_image_viewer.js 统一负责"
+      "拾字图片元数据标准化同时接受原始 screenshotPath 与已标准化 internalPath，保证重复标准化结果一致",
+      "保留 imageOnly 等会话状态，并拒绝已删除或明确不可用的截图元数据，避免错误复活图片",
+      "补充元数据来源、纯文字降级原因和缩略图实际挂载状态日志，便于区分截图、交接和 UI 构建问题",
+      "新增专项回归，锁定结果预览交接到拾字面板后的截图缩略图和原图入口"
     ],
     "date": "2026-07-19",
-    "title": "接入截图管理器与内部/已保存双标签"
+    "title": "修复拾字截图缩略图在二次交接时丢失"
   },
   "schema": 4,
-  "version": 20260718180630
+  "version": 20260718183704
 }

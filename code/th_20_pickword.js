@@ -1,4 +1,4 @@
-// @version 1.0.17
+// @version 1.0.18
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -241,8 +241,21 @@
 
     function normalizePickwordImageMeta20(meta) {
         if (!meta || typeof meta !== "object") return null;
+        if (meta.deleted === true || meta.available === false) return null;
         var rawPath = "";
-        try { rawPath = String(meta.screenshotPath || "").replace(/^\s+|\s+$/g, ""); } catch (ePath) { rawPath = ""; }
+        var sourceField = "";
+        try {
+            if (meta.internalPath) {
+                rawPath = String(meta.internalPath || "").replace(/^\s+|\s+$/g, "");
+                sourceField = "internalPath";
+            } else {
+                rawPath = String(meta.screenshotPath || "").replace(/^\s+|\s+$/g, "");
+                sourceField = "screenshotPath";
+            }
+        } catch (ePath) {
+            rawPath = "";
+            sourceField = "";
+        }
         if (!rawPath) return null;
         try {
             var target = new java.io.File(rawPath);
@@ -252,7 +265,7 @@
             var root = new java.io.File(base, "ToolHub/screenshots").getCanonicalPath();
             var canonical = target.getCanonicalPath();
             if (canonical.indexOf(root + java.io.File.separator) !== 0) return null;
-            return {
+            var normalized = {
                 internalPath: String(canonical),
                 available: true,
                 deleted: false,
@@ -260,7 +273,7 @@
                 previewId: String(meta.previewId || ""),
                 screenshotOk: meta.screenshotOk !== false,
                 allowEmptyText: meta.allowEmptyText === true,
-                imageOnly: meta.allowEmptyText === true,
+                imageOnly: meta.imageOnly === true || meta.allowEmptyText === true,
                 ocrStatus: String(meta.ocrStatus || ""),
                 ocrError: String(meta.ocrError || ""),
                 createdAt: Number(meta.createdAt || 0),
@@ -269,6 +282,12 @@
                 savedContentUri: String(meta.savedContentUri || ""),
                 savedAt: Number(meta.savedAt || 0)
             };
+            try {
+                safeLog(toolhubAppRef && toolhubAppRef.L, "i",
+                    "pickword image meta normalized path=" + normalized.internalPath +
+                    " available=true sourceField=" + sourceField);
+            } catch (eMetaLog) {}
+            return normalized;
         } catch (eNormalize) {
             try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image meta rejected: " + String(eNormalize)); } catch (eLog) {}
         }
@@ -402,6 +421,12 @@
         var meta = currentPickwordMeta20;
         if (!meta || meta.available !== true || !toolhubAppRef ||
             typeof toolhubAppRef.createPickwordImageController !== "function") {
+            try {
+                var fallbackReason = !meta ? "meta_missing" :
+                    (meta.available !== true ? "meta_unavailable" : "controller_missing");
+                safeLog(toolhubAppRef && toolhubAppRef.L, "i",
+                    "pickword image layout mode=text_only controller=false thumbnailAttached=false reason=" + fallbackReason);
+            } catch (eFallbackLog) {}
             if (originalLp) parent.addView(view, originalLp); else parent.addView(view);
             return;
         }
@@ -437,6 +462,10 @@
                 }
             });
             if (!pickwordImageController20 || pickwordImageController20.hasImage() !== true) {
+                try {
+                    safeLog(toolhubAppRef && toolhubAppRef.L, "w",
+                        "pickword image layout mode=text_only controller=false thumbnailAttached=false reason=image_unavailable");
+                } catch (eUnavailableLog) {}
                 releasePickwordImageController20("unavailable");
                 if (originalLp) parent.addView(view, originalLp); else parent.addView(view);
                 return;
@@ -482,6 +511,12 @@
             pickwordImagePage20 = pickwordImageController20.createFullView();
             pickwordImagePage20.setVisibility(View.GONE);
             parent.addView(pickwordImagePage20, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
+            try {
+                safeLog(toolhubAppRef && toolhubAppRef.L, "i",
+                    "pickword image layout mode=" + (horizontal ? "horizontal" : "vertical") +
+                    " controller=true thumbnailAttached=" + String(!!(thumb && thumb.getParent())) +
+                    " path=" + String(meta.internalPath || ""));
+            } catch (eLayoutLog) {}
             mainHandler.post(new java.lang.Runnable({ run: function() { applyPickwordImageOnlyActions20(); } }));
         } catch (eBuild) {
             releasePickwordImageController20("build_failed");
