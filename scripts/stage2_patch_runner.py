@@ -17,6 +17,13 @@ DIAGNOSTIC = ROOT / "stage2_patch_failure.txt"
 EXPECTED_SIZE = 82766
 EXPECTED_SHA256 = "e3a101046ddcb5fe4465effcbdd97d0d6845d2ac2fe3c573734f3bafde53e345"
 EXPECTED_PART_SIZES = [19451, 17543, 17116, 17365, 11291]
+EXPECTED_PART_SHA256 = [
+    "50acd0045a1481baf4f6a40461b826a6cb5b7776a6ae8b0ec66d0b26ec01630b",
+    "53d2d432ee83c0c4596d074478485b516c4e594f198895019e0f9ca231a36384",
+    "b0c6e0ad27e8ab85850cfd5261837c6f9f11d28d39d2a2e02bcb045b15c32307",
+    "3f7ce8bf02365f66038d67387c3fbf4512d7e34a05e27e651c897f33bac13126",
+    "7abccd912de196908cc351180ae7f144161f05ab3d132ddd4a3faa017fd2ca97",
+]
 HOOK = (
     '    stage2_patch_runner = ROOT / "scripts" / "stage2_patch_runner.py"\n'
     '    if stage2_patch_runner.exists():\n'
@@ -33,6 +40,10 @@ def run(args, check=True):
         stderr=subprocess.STDOUT,
         check=check,
     )
+
+
+def sha256_bytes(value):
+    return hashlib.sha256(value).hexdigest()
 
 
 def configure_git():
@@ -81,47 +92,52 @@ def commit_diagnostic(message):
         raise SystemExit("stage2 diagnostic commit failed: " + str(result.stdout or ""))
 
 
-def payload_matches(payload):
-    return (
-        len(payload) == EXPECTED_SIZE
-        and hashlib.sha256(payload).hexdigest() == EXPECTED_SHA256
+def normalize_part(index, part):
+    expected_size = EXPECTED_PART_SIZES[index]
+    expected_sha256 = EXPECTED_PART_SHA256[index]
+    if len(part) == expected_size and sha256_bytes(part) == expected_sha256:
+        return part, "exact"
+
+    if len(part) == expected_size + 1:
+        for offset in range(len(part)):
+            candidate = part[:offset] + part[offset + 1:]
+            if sha256_bytes(candidate) == expected_sha256:
+                return candidate, "drop_byte_%d_value_%d" % (offset, part[offset])
+
+    raise RuntimeError(
+        "stage2 part mismatch part=%02d size=%d sha256=%s expected_size=%d expected_sha256=%s"
+        % (
+            index + 1,
+            len(part),
+            sha256_bytes(part),
+            expected_size,
+            expected_sha256,
+        )
     )
 
 
 def load_verified_payload():
-    raw_parts = [path.read_bytes() for path in PARTS]
-    payload = b"".join(raw_parts)
-    if payload_matches(payload):
-        return payload, "exact"
+    normalized_parts = []
+    normalizations = []
+    for index, path in enumerate(PARTS):
+        normalized, note = normalize_part(index, path.read_bytes())
+        normalized_parts.append(normalized)
+        normalizations.append("%02d:%s" % (index + 1, note))
 
-    actual_sizes = [len(part) for part in raw_parts]
-    if len(payload) == EXPECTED_SIZE + 1:
-        for part_index, part in enumerate(raw_parts):
-            if len(part) != EXPECTED_PART_SIZES[part_index] + 1:
-                continue
-            for offset, value in enumerate(part):
-                if value != 10:
-                    continue
-                candidate_parts = list(raw_parts)
-                candidate_parts[part_index] = part[:offset] + part[offset + 1:]
-                candidate = b"".join(candidate_parts)
-                if payload_matches(candidate):
-                    return candidate, "trim_part_%02d_newline_at_%d" % (
-                        part_index + 1,
-                        offset,
-                    )
-
-    raise RuntimeError(
-        "stage2 patch mismatch size=%d sha256=%s expected_size=%d expected_sha256=%s part_sizes=%s expected_part_sizes=%s"
-        % (
-            len(payload),
-            hashlib.sha256(payload).hexdigest(),
-            EXPECTED_SIZE,
-            EXPECTED_SHA256,
-            ",".join(str(value) for value in actual_sizes),
-            ",".join(str(value) for value in EXPECTED_PART_SIZES),
+    payload = b"".join(normalized_parts)
+    actual_sha256 = sha256_bytes(payload)
+    if len(payload) != EXPECTED_SIZE or actual_sha256 != EXPECTED_SHA256:
+        raise RuntimeError(
+            "stage2 normalized patch mismatch size=%d sha256=%s expected_size=%d expected_sha256=%s notes=%s"
+            % (
+                len(payload),
+                actual_sha256,
+                EXPECTED_SIZE,
+                EXPECTED_SHA256,
+                ",".join(normalizations),
+            )
         )
-    )
+    return payload, ",".join(normalizations)
 
 
 def apply_patch():
@@ -130,7 +146,7 @@ def apply_patch():
         raise RuntimeError("stage2 patch parts missing: " + ", ".join(missing))
 
     payload, normalization = load_verified_payload()
-    actual_sha256 = hashlib.sha256(payload).hexdigest()
+    actual_sha256 = sha256_bytes(payload)
 
     PATCH.write_bytes(payload)
     relative_patch = str(PATCH.relative_to(ROOT))
