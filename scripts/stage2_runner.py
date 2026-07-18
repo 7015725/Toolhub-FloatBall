@@ -4,15 +4,46 @@ import gzip
 import hashlib
 import json
 import subprocess
+import traceback
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "scripts" / "apply_pickword_image_stage2.py"
+DIAGNOSTIC = ROOT / "stage2_payload_failure.txt"
 SOURCE_PR = 339
 PREFIX = "STAGE2_PAYLOAD_01\n"
 EXPECTED_SIZE = 91547
 EXPECTED_SHA256 = "65e633a51cf5c9e76bfda8bf640be9bc38d1e8524378cc644a6d61e528767116"
+
+
+def git_run(args):
+    return subprocess.run(
+        ["git"] + list(args),
+        cwd=str(ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def commit_diagnostic(message):
+    text = str(message or "unknown stage2 payload failure")
+    if len(text) > 5000:
+        text = text[-5000:]
+    DIAGNOSTIC.write_text(text + "\n", encoding="utf-8")
+    git_run(["config", "user.name", "github-actions[bot]"])
+    git_run([
+        "config",
+        "user.email",
+        "41898282+github-actions[bot]@users.noreply.github.com",
+    ])
+    add = git_run(["add", "stage2_payload_failure.txt"])
+    if add.returncode != 0:
+        raise SystemExit("diagnostic git add failed: " + str(add.stdout or ""))
+    commit = git_run(["commit", "-m", "记录第二阶段单载荷诊断"])
+    if commit.returncode != 0:
+        raise SystemExit("diagnostic commit failed: " + str(commit.stdout or ""))
 
 
 def normalized_base64(value):
@@ -20,13 +51,21 @@ def normalized_base64(value):
 
 
 def decode_payload(encoded):
-    compressed = base64.b64decode(normalized_base64(encoded))
+    normalized = normalized_base64(encoded)
+    compressed = base64.b64decode(normalized)
     payload = gzip.decompress(compressed)
     actual_sha256 = hashlib.sha256(payload).hexdigest()
     if len(payload) != EXPECTED_SIZE or actual_sha256 != EXPECTED_SHA256:
         raise SystemExit(
-            "stage2 payload mismatch compressed=%d size=%d sha256=%s"
-            % (len(compressed), len(payload), actual_sha256)
+            "stage2 payload mismatch chars=%d compressed=%d size=%d sha256=%s head=%r tail=%r"
+            % (
+                len(normalized),
+                len(compressed),
+                len(payload),
+                actual_sha256,
+                payload[:80],
+                payload[-80:],
+            )
         )
     return payload
 
@@ -47,7 +86,7 @@ def patch_bootstrap_cleanup(payload):
     new = "    write(\"scripts/generate_signed_manifest.py\", gen)\n"
     if source.count(old) != 1:
         position = source.find("temp_module")
-        snippet = source[max(0, position - 240):position + 700] if position >= 0 else ""
+        snippet = source[max(0, position - 300):position + 900] if position >= 0 else ""
         raise SystemExit(
             "stage2 bootstrap cleanup anchor mismatch count=%d position=%d snippet=%r"
             % (source.count(old), position, snippet)
@@ -88,4 +127,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BaseException:
+        commit_diagnostic(traceback.format_exc())
