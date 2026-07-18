@@ -1,15 +1,16 @@
 name: apply-pickword-unified-cleanup
 
 on:
-  push:
-    branches:
-      - fix/pickword-unified-cleanup-20260718
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.event.pull_request.head.ref == 'fix/pickword-unified-cleanup-20260718'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
@@ -17,6 +18,8 @@ jobs:
         with:
           ref: fix/pickword-unified-cleanup-20260718
           fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -41,8 +44,14 @@ jobs:
 
       - name: Commit patched files
         shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
           set -euo pipefail
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
           rm -f scripts/apply_pickword_unified_cleanup.py
           rm -f .github/workflows/apply-pickword-unified-cleanup.yml
           git config user.name "github-actions[bot]"
@@ -55,4 +64,5 @@ jobs:
             scripts/apply_pickword_unified_cleanup.py \
             .github/workflows/apply-pickword-unified-cleanup.yml
           git commit -m "统一清理拾字冗余状态与窗口生命周期"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin HEAD:fix/pickword-unified-cleanup-20260718
