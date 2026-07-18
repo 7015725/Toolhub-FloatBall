@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "id": "optimize-pickword-emoji-drag-count",
+  "type": "optimize",
+  "title": "优化拾字 Emoji 拖选计数热路径",
+  "details": [
+    "拖选计数改为只扫描当前拖选范围内的字素，不再每40毫秒全量遍历整篇文本",
+    "使用拖选开始时的字素计数作为稳定基线，分别计算添加与移除范围后的可见字符数",
+    "移除逐字素闭包分配和未读取的unitStarts状态，降低8000字长文本拖选期间的system_server开销",
+    "保持Emoji字素分段、UTF-16选区范围、翻译替换、撤销、钉屏、放大镜和生命周期边界不变"
+  ],
+  "manifestVersion": 20260718031425,
+  "date": "2026-07-18",
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.14",
+      "to": "1.0.15",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
+}

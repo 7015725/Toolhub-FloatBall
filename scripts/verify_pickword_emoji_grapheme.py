@@ -11,7 +11,7 @@ def require(condition, message):
         raise SystemExit(message)
 
 
-require(text.startswith("// @version 1.0.14\n"), "pickword version must be 1.0.14")
+require(text.startswith("// @version 1.0.15\n"), "pickword version must be 1.0.14")
 for marker in (
     "segmentPickwordGraphemes20",
     "segmentPickwordGraphemesFallback20",
@@ -39,6 +39,13 @@ for marker in (
 
 require("var ch = source.charAt(idx);" not in text, "canvas still draws UTF-16 code units")
 require("getCharAdvance(ch)" not in text, "legacy UTF-16 advance path remains")
+require("unitStarts" not in text, "unused grapheme-start cache remains")
+require("isUnitSelectedInSet20" in text, "direct grapheme selection helper missing")
+require("var startUnitIndex = findPickwordUnitIndex20(state.units, minIndex);" in text, "drag count does not use range lookup")
+require("dragSnapshotCount + rangeUnitCount - selectedInRange" in text, "drag add-count formula missing")
+require("dragSnapshotCount - selectedInRange" in text, "drag remove-count formula missing")
+require("function(indexValue) { return setObj[indexValue] === true; }" not in text, "selection count allocates per-unit closures")
+require("function(indexValue) { return snapshotSet && snapshotSet[indexValue] === true; }" not in text, "drag count allocates per-unit closures")
 require("source.substring(0, INITIAL_TEXT_FAST_LIMIT)" not in text, "unsafe initial truncation remains")
 require("loaded.substring(0, DIY_CONFIG.MAX_CHAR_LIMIT)" not in text, "unsafe maximum truncation remains")
 require("raw.substring(0, DIY_CONFIG.MAX_CHAR_LIMIT)" not in text, "unsafe state truncation remains")

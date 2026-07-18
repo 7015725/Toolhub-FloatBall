@@ -12,7 +12,14 @@
   ],
   "manifestVersion": 20260718025356,
   "date": "2026-07-18",
-  "modules": [],
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.13",
+      "to": "1.0.14",
+      "change": "updated"
+    }
+  ],
   "entry": {
     "changed": false,
     "from": 20260714081104,

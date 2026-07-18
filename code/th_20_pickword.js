@@ -1,4 +1,4 @@
-// @version 1.0.14
+// @version 1.0.15
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -572,7 +572,6 @@
         var state = {
             text: "",
             units: [],
-            unitStarts: [],
             textSizeSp: currentFontSize,
             lines: [],
             contentHeight: 0,
@@ -608,8 +607,6 @@
 
         function rebuildTextUnits20(source) {
             state.units = segmentPickwordGraphemes20(source);
-            state.unitStarts = [];
-            for (var i = 0; i < state.units.length; i++) state.unitStarts.push(state.units[i].start);
         }
 
         function isFastCjkWidthUnit20(unit) {
@@ -787,29 +784,42 @@
             } catch (e) {}
         }
 
+        function isUnitSelectedInSet20(unit, setObj) {
+            if (!unit || unit.newline || !setObj) return false;
+            for (var index = unit.start; index < unit.end; index++) {
+                if (setObj[index] === true) return true;
+            }
+            return false;
+        }
+
         function countSelectedUnits20(setObj) {
             if (!setObj || !state.units) return 0;
             var count = 0;
             for (var i = 0; i < state.units.length; i++) {
                 var unit = state.units[i];
                 if (!unit || unit.newline) continue;
-                if (isUnitSelectedWithResolver20(unit, function(indexValue) { return setObj[indexValue] === true; })) count++;
+                if (isUnitSelectedInSet20(unit, setObj)) count++;
             }
             return count;
         }
 
         function countDragSelectionUnits20(snapshotSet, minIndex, maxIndex, removeRange) {
-            if (!state.units) return 0;
+            if (!state.units || state.units.length === 0 || minIndex < 0 || maxIndex < 0) return dragSnapshotCount;
             if (minIndex > maxIndex) { var temp = minIndex; minIndex = maxIndex; maxIndex = temp; }
-            var count = 0;
-            for (var i = 0; i < state.units.length; i++) {
+            var startUnitIndex = findPickwordUnitIndex20(state.units, minIndex);
+            var endUnitIndex = findPickwordUnitIndex20(state.units, maxIndex);
+            if (startUnitIndex < 0 || endUnitIndex < 0) return dragSnapshotCount;
+            if (startUnitIndex > endUnitIndex) { var unitTemp = startUnitIndex; startUnitIndex = endUnitIndex; endUnitIndex = unitTemp; }
+            var rangeUnitCount = 0;
+            var selectedInRange = 0;
+            for (var i = startUnitIndex; i <= endUnitIndex; i++) {
                 var unit = state.units[i];
                 if (!unit || unit.newline) continue;
-                var selected = isUnitSelectedWithResolver20(unit, function(indexValue) { return snapshotSet && snapshotSet[indexValue] === true; });
-                if (unit.end - 1 >= minIndex && unit.start <= maxIndex) selected = removeRange !== true;
-                if (selected) count++;
+                rangeUnitCount++;
+                if (isUnitSelectedInSet20(unit, snapshotSet)) selectedInRange++;
             }
-            return count;
+            if (removeRange === true) return Math.max(0, dragSnapshotCount - selectedInRange);
+            return Math.max(0, dragSnapshotCount + rangeUnitCount - selectedInRange);
         }
 
         var canvasView = new JavaAdapter(View, {
