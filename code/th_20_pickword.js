@@ -1,4 +1,4 @@
-// @version 1.0.12
+// @version 1.0.13
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -27,8 +27,12 @@
         // 数值越大快速滑动越稳，绘制成本也越高。建议 40~60。
         CANVAS_VISIBLE_LINE_BUFFER: 50,
 
-        // 长按拖选 + 放大镜期间的可见行缓冲。数值越小越流畅，太小可能边缘高亮不够及时。
+        // 长按拖选 + 放大镜期间，只绘制可见区域上下各 N 行。
         // 建议 4~12；当前 8 是流畅性和显示稳定性的折中值。
+        CANVAS_DRAG_VISIBLE_LINE_BUFFER: 8,
+
+        // 长按拖选期间选区高亮刷新节流(ms)。数值越小反馈越及时，CPU 与重绘压力也越高。
+        // 建议 24~48；当前 40ms 优先保证 system_server 稳定。
         CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS: 40,
 
         // Canvas 滚动兜底刷新间隔(ms)。用于修复快速滑动后新露出区域不自动重绘的问题。
@@ -95,9 +99,6 @@
         // 建议：普通手机 3000~5000；性能较好可 8000；如果首屏仍慢，可先降到 3000 验证。
         MAX_CHAR_LIMIT: 8000,
 
-        // 主文本区最大高度(dp)。数值越大，单屏显示行数越多，但窗口更高、布局测量更重。
-        // 建议：手机 360~420；平板 480~560；如果遮挡严重可调小。
-        TEXT_AREA_HEIGHT_DP: 320,
 
         // 边缘下拉/上推滚动时的自动滚动刷新延迟(ms)。
         // 数值越小滚动越丝滑，但 MOVE/选区/放大镜刷新更频繁，更吃 CPU。
@@ -118,7 +119,6 @@
     var LayoutParams = android.view.WindowManager.LayoutParams;
     var LinearLayout = android.widget.LinearLayout;
     var TextView = android.widget.TextView;
-    var Button = android.widget.Button;
     var ScrollView = android.widget.ScrollView;
     var GradientDrawable = android.graphics.drawable.GradientDrawable;
     var Color = android.graphics.Color;
@@ -131,7 +131,6 @@
     var View = android.view.View;
     var Handler = android.os.Handler;
     var Looper = android.os.Looper;
-    var ColorStateList = android.content.res.ColorStateList;
     var JavaArray = java.lang.reflect.Array;
 
     // ColorOS / realmeOS 稳定性修复：避免 Rhino 直接调用 Android UI 的 int 颜色重载。
@@ -177,14 +176,13 @@
     }
 
     var mainHandler = new Handler(Looper.getMainLooper());
-    var keepAliveTimer = null;
 
     var PREFS_NAME = "拾字Prefs";
     var KEY_FONT_SIZE = "fontSize";
-    // 字号范围：设置面板里的滑块上下限。调太小不易点选，调太大容易增加排版高度。
+    // 字号兼容范围：继续接受旧版本已保存的 12~32sp 数值；当前 UI 使用四档字号菜单。
     var MIN_FONT_SIZE = 12;
     var MAX_FONT_SIZE = 32;
-    var DEFAULT_FONT_SIZE = 20;      // 默认字号；首次使用或读取失败时采用此值，后续会记住用户滑块选择。
+    var DEFAULT_FONT_SIZE = 20;      // 默认字号；首次使用或读取失败时采用此值，后续会记住用户选择。
     var currentFontSize = DEFAULT_FONT_SIZE;
     var windowManager = null;
     var mainLayout = null;
@@ -205,9 +203,6 @@
     var selectAllActionBtn = null;
     var clearActionBtn = null;
     var pinActionBtn = null;
-    var previewRemoveSpaceBtn = null;
-    var previewRemoveNewlineBtn = null;
-    var previewEditBtn = null;
     var cleanUndoStack = [];
     var pinLayout = null;
     var pinLayoutParams = null;
@@ -224,7 +219,6 @@
     var cleanupActionBtn = null;
     var shareActionBtn = null;
     var fontSizeSelectorView = null;
-    var fontSizeDropdownView = null;
     var fontSizeDropdownCardView = null;
     var fontSizePopupWindow = null;
     var fontSizeOptionViews = [];
@@ -245,8 +239,6 @@
     var touchDownTime = 0;
     var touchDownX = 0;
     var touchDownY = 0;
-    var touchDownRawX = 0;
-    var touchDownRawY = 0;
     var isShowing = false;
     var selectedSet = {};
     var dragSelectionCount = 0;
@@ -263,14 +255,12 @@
     var lastDragUpdateTime = 0;
     // 拖选刷新节流(ms)：会优先读取 DIY_CONFIG.CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS。
     var DRAG_UPDATE_INTERVAL = 40;
-    var pendingDragUpdate = null;
+    var dragUpdateScheduled = false;
     var lastDragEnd = -1;
 
     var autoScrollRunnable = null;
     var lastTouchX = 0;
     var lastTouchY = 0;
-    var lastTouchRawX = 0;
-    var lastTouchRawY = 0;
     var isAutoScrolling = false;
     // 边缘自动滚动触发区比例：0.15 表示顶部/底部 15% 区域触发自动滚动。
     // 调大更容易触发滚动；调小可减少误触。
@@ -282,7 +272,6 @@
 
     var fingerPreviewLastIndex = -1;
     var fingerPreviewLastUpdateTime = 0;
-    var fingerPreviewLastContentUpdateTime = 0;
     var fingerPreviewLastShownX = -99999;
     var fingerPreviewLastShownY = -99999;
     var fingerPreviewCreateErrorShown = false;
@@ -312,8 +301,6 @@
     var FINGER_PREVIEW_ZOOM = 1.35;
     // 放大镜位置刷新间隔(ms)：16 约等于 60fps；卡顿时可调 24~33。
     var FINGER_PREVIEW_INTERVAL = 16;
-    // 放大镜内容/选中态刷新间隔(ms)：越小同步越及时，越大越省性能。
-    var FINGER_PREVIEW_CONTENT_INTERVAL = 24;
 
     // ===== 系统放大镜外观 DIY 参数（胶囊形） =====
     // 高度 = FINGER_PREVIEW_SIZE_DP * MAGNIFIER_HEIGHT_RATIO（再受最小高度限制）
@@ -328,7 +315,6 @@
     var MAGNIFIER_CORNER_RATIO = 0.5;
 
     // 长文本首屏加载策略：窗口显示前同步排版前 N 字，并一次确定稳定文本区高度。
-    // TEXT_AREA_HEIGHT_DP 仅作为最大高度；短文本按实际高度，长文本超出后在内部滚动。
     var INITIAL_TEXT_FAST_LIMIT = 1500;
     // 完整长文本补全延迟(ms)。补全文时保持首次文本区高度不变，避免外层窗口二次伸缩。
     var FULL_TEXT_DELAY_MS = 1200;
@@ -557,10 +543,8 @@
     var screenHeight = 0;
     var isTablet = false;
     var windowWidth = 0;
-    var maxWindowHeight = 0;
     var textAreaHeight = 0;
     var uiScale = 1.0;
-    var screenCategory = "phone";
 
     function uiTextSize(phoneSp, tabletSp) {
         var base = isTablet ? tabletSp : phoneSp;
@@ -648,12 +632,11 @@
             return adv;
         }
 
-        function pushLine(start, end, xs, widthValue, topValue) {
+        function pushLine(start, end, xs, topValue) {
             state.lines.push({
                 start: start,
                 end: end,
                 xs: xs,
-                width: widthValue,
                 top: topValue,
                 bottom: topValue + state.lineHeight,
                 baseline: topValue + state.baselineOffset
@@ -682,7 +665,7 @@
             var i = 0;
 
             if (len === 0) {
-                pushLine(0, 0, [0], 0, y);
+                pushLine(0, 0, [0], y);
                 state.contentHeight = Math.round(y + state.lineHeight + padding.bottom);
                 state.layoutDirty = false;
                 return;
@@ -691,7 +674,7 @@
             while (i < len) {
                 var ch = source.charAt(i);
                 if (ch === "\r" || ch === "\n") {
-                    pushLine(lineStart, i, xs, lineX, y);
+                    pushLine(lineStart, i, xs, y);
                     y += state.lineHeight;
                     if (ch === "\r" && i + 1 < len && source.charAt(i + 1) === "\n") i++;
                     i++;
@@ -703,7 +686,7 @@
 
                 var adv = getCharAdvance(ch);
                 if (lineX > 0 && lineX + adv > available) {
-                    pushLine(lineStart, i, xs, lineX, y);
+                    pushLine(lineStart, i, xs, y);
                     y += state.lineHeight;
                     lineStart = i;
                     lineX = 0;
@@ -716,7 +699,7 @@
                 i++;
             }
 
-            pushLine(lineStart, len, xs, lineX, y);
+            pushLine(lineStart, len, xs, y);
             state.contentHeight = Math.round(y + state.lineHeight + padding.bottom);
             state.layoutDirty = false;
         }
@@ -880,10 +863,6 @@
                 try { ensureLayout(canvasView); } catch (e0) {}
                 return state.contentHeight;
             },
-            getLineCount: function() {
-                try { ensureLayout(canvasView); } catch (e0) {}
-                return state.lines.length;
-            },
             getCharIndexAt: function(x, y) {
                 try {
                     ensureLayout(canvasView);
@@ -960,12 +939,6 @@
                     canvasView.invalidate(0, Math.round(top), Math.max(1, canvasView.getWidth()), Math.round(bottom));
                 } catch (e0) { this.invalidateVisible(); }
             },
-            invalidate: function() {
-                try { this.invalidateVisible(); } catch (e0) { try { canvasView.invalidate(); } catch (e1) {} }
-            },
-            requestLayout: function() {
-                try { canvasView.requestLayout(); } catch (e0) {}
-            }
         };
     }
 
@@ -984,37 +957,15 @@
             var shortestPx = Math.min(screenWidth, screenHeight);
             isTablet = smallestWidth >= 600;
 
-            if (isTablet) {
-                if (smallestWidth >= 900) { screenCategory = "large_tablet"; uiScale = 1.28; }
-                else { screenCategory = "tablet"; uiScale = 1.16; }
-            } else if (smallestWidth <= 360 || shortestPx <= 720) {
-                screenCategory = "small_phone"; uiScale = 0.92;
-            } else if (smallestWidth >= 480) {
-                screenCategory = "large_phone"; uiScale = 1.08;
-            } else {
-                screenCategory = "phone"; uiScale = 1.0;
-            }
-
-            if (isTablet) {
-                windowWidth = Math.min(screenWidth * 0.78, dp(smallestWidth >= 900 ? 920 : 760));
-                maxWindowHeight = screenHeight * 0.85;
-                textAreaHeight = uiDp(DIY_CONFIG.TEXT_AREA_HEIGHT_DP, smallestWidth >= 900 ? DIY_CONFIG.TEXT_AREA_HEIGHT_DP + 100 : DIY_CONFIG.TEXT_AREA_HEIGHT_DP);
-            } else if (screenCategory === "large_phone") {
-                windowWidth = screenWidth * 0.88;
-                maxWindowHeight = screenHeight * 0.85;
-                textAreaHeight = uiDp(DIY_CONFIG.TEXT_AREA_HEIGHT_DP, DIY_CONFIG.TEXT_AREA_HEIGHT_DP);
-            } else if (screenCategory === "small_phone") {
-                windowWidth = screenWidth * 0.97;
-                maxWindowHeight = screenHeight * 0.90;
-                textAreaHeight = uiDp(DIY_CONFIG.TEXT_AREA_HEIGHT_DP - 50, DIY_CONFIG.TEXT_AREA_HEIGHT_DP - 50);
-            } else {
-                windowWidth = screenWidth * 0.92;
-                maxWindowHeight = screenHeight * 0.85;
-                textAreaHeight = uiDp(DIY_CONFIG.TEXT_AREA_HEIGHT_DP, DIY_CONFIG.TEXT_AREA_HEIGHT_DP);
-            }
+            if (isTablet) uiScale = smallestWidth >= 900 ? 1.28 : 1.16;
+            else if (smallestWidth <= 360 || shortestPx <= 720) uiScale = 0.92;
+            else if (smallestWidth >= 480) uiScale = 1.08;
+            else uiScale = 1.0;
         } catch (e) {
-            screenCategory = "phone"; uiScale = 1.0;
-            windowWidth = dp(360); maxWindowHeight = dp(600); textAreaHeight = dp(280);
+            screenWidth = Math.round(dp(360));
+            screenHeight = Math.round(dp(720));
+            isTablet = false;
+            uiScale = 1.0;
         }
     }
 
@@ -1273,7 +1224,6 @@
                 }
             }));
         }
-        applyButtonAnimation(row);
         return row;
     }
 
@@ -1378,8 +1328,8 @@
         } catch (eThemeApply) {}
     }
 
-    // 钉屏与拾字根窗口均静态显示，避免透明 Overlay 属性动画。
-    function animateWindowEnter(view) {
+    // 拾字主窗口与钉屏窗口均静态显示，避免透明 Overlay 属性动画和 Surface 闪烁。
+    function stabilizePickwordOverlayView20(view) {
         if (!view) return;
         try { view.animate().cancel(); } catch (eCancel) {}
         try { view.clearAnimation(); } catch (eClear) {}
@@ -1390,26 +1340,6 @@
             view.setScaleY(1);
             view.setTranslationY(0);
         } catch (eStable) {}
-    }
-
-    // 主拾字窗口保持静态、完全不透明，避免 WindowManager 根 Surface 属性动画闪烁。
-    function animatePickwordMainEnter(view) {
-        if (!view) return;
-        try { view.animate().cancel(); } catch (eCancel) {}
-        try { view.clearAnimation(); } catch (eClear) {}
-        try {
-            view.setVisibility(View.VISIBLE);
-            view.setAlpha(1);
-            view.setScaleX(1);
-            view.setScaleY(1);
-            view.setTranslationY(0);
-        } catch (eStable) {}
-    }
-
-    // 按压反馈交给 StateListDrawable；不再缩放子 View，避免浮窗合成抖动。
-    function applyButtonAnimation(btn) {
-        if (!btn) return;
-        try { btn.setClickable(true); } catch (eClickable) {}
     }
 
     function hapticFeedback(view) {
@@ -1549,7 +1479,6 @@
             magnifierSafeMode = true;
             MAGNIFIER_MAX_ERROR_COUNT = 1;
             FINGER_PREVIEW_INTERVAL = 40;
-            FINGER_PREVIEW_CONTENT_INTERVAL = 80;
             return;
         }
 
@@ -1558,7 +1487,6 @@
             magnifierSafeMode = true;
             MAGNIFIER_MAX_ERROR_COUNT = 1;
             FINGER_PREVIEW_INTERVAL = 40;
-            FINGER_PREVIEW_CONTENT_INTERVAL = 80;
             return;
         }
 
@@ -1567,7 +1495,6 @@
             magnifierSafeMode = true;
             MAGNIFIER_MAX_ERROR_COUNT = 1;
             FINGER_PREVIEW_INTERVAL = 33;
-            FINGER_PREVIEW_CONTENT_INTERVAL = 66;
             return;
         }
 
@@ -1576,7 +1503,6 @@
             magnifierSafeMode = true;
             MAGNIFIER_MAX_ERROR_COUNT = 2;
             FINGER_PREVIEW_INTERVAL = 28;
-            FINGER_PREVIEW_CONTENT_INTERVAL = 56;
             return;
         }
 
@@ -1745,7 +1671,7 @@
 
     var dragUpdateProcessor = new java.lang.Runnable({
         run: function() {
-            pendingDragUpdate = null;
+            dragUpdateScheduled = false;
             var dmin = dragPendingDirtyMin;
             var dmax = dragPendingDirtyMax;
             dragPendingDirtyMin = -1;
@@ -1760,39 +1686,119 @@
         }
     });
 
+    function cancelMainPickwordCallbacks20() {
+        try { if (longPressHandler) mainHandler.removeCallbacks(longPressHandler); } catch (e0) {}
+        try { if (autoScrollRunnable) mainHandler.removeCallbacks(autoScrollRunnable); } catch (e1) {}
+        try { if (pendingFullTextRunnable) mainHandler.removeCallbacks(pendingFullTextRunnable); } catch (e2) {}
+        try { if (pendingFingerPreviewWarmupRunnable) mainHandler.removeCallbacks(pendingFingerPreviewWarmupRunnable); } catch (e3) {}
+        try { if (pendingAdjustRunnable) mainHandler.removeCallbacks(pendingAdjustRunnable); } catch (e4) {}
+        try { if (dragUpdateScheduled) mainHandler.removeCallbacks(dragUpdateProcessor); } catch (e5) {}
+        try { 拾字Floaty.stopCanvasScrollRefresh(); } catch (e6) {}
+        longPressHandler = null;
+        autoScrollRunnable = null;
+        pendingFullTextRunnable = null;
+        pendingFingerPreviewWarmupRunnable = null;
+        pendingAdjustRunnable = null;
+        dragUpdateScheduled = false;
+    }
+
+    function cancelPinPickwordCallbacks20() {
+        pinLoadToken++;
+        try { if (pinBatchLoadRunnable) mainHandler.removeCallbacks(pinBatchLoadRunnable); } catch (e0) {}
+        pinBatchLoadRunnable = null;
+    }
+
+    function clearMainPickwordViewRefs20() {
+        mainLayout = null;
+        layoutParams = null;
+        previewBoxView = null;
+        countLabelView = null;
+        copyAllActionBtn = null;
+        cleanupActionBtn = null;
+        shareActionBtn = null;
+        copyActionBtn = null;
+        translateActionBtn = null;
+        selectAllActionBtn = null;
+        clearActionBtn = null;
+        pinActionBtn = null;
+        fontSizeSelectorView = null;
+        fontSizeDropdownCardView = null;
+        fontSizePopupWindow = null;
+        fontSizeOptionViews = [];
+        titleAccentView = null;
+        resultDividerView = null;
+        closeActionView = null;
+        textView = null;
+        textCanvasControl = null;
+        scrollView = null;
+        previewTextView = null;
+    }
+
+    function removeMainPickwordWindowNow20() {
+        cancelMainPickwordCallbacks20();
+        try { 拾字Floaty.removeFingerPreview(); } catch (ePreview) {}
+        try {
+            if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) fontSizePopupWindow.dismiss();
+        } catch (eFontPopup) {}
+        var targetLayout = mainLayout;
+        try {
+            if (windowManager !== null && targetLayout !== null) windowManager.removeView(targetLayout);
+        } catch (eRemove) {
+        } finally {
+            clearMainPickwordViewRefs20();
+            isShowing = false;
+            isDragging = false;
+        }
+        return true;
+    }
+
     var 拾字Floaty = {
         // 动态动画流参数
         currentScrollDirection: 0,
         currentScrollSpeed: 0,
         exactScrollY: 0,
 
+        resetSessionState: function(text) {
+            this.resetTextLoadState((typeof text === 'string') ? text : String(text || ""));
+            if (dragUpdateScheduled) {
+                try { mainHandler.removeCallbacks(dragUpdateProcessor); } catch (eDragCancel) {}
+            }
+            dragUpdateScheduled = false;
+            selectedIndices = [];
+            selectedSet = {};
+            previewTextOverride = null;
+            previewSelectionSignature = "";
+            cleanUndoStack = [];
+            isDragging = false;
+            dragStartIndex = -1;
+            dragSnapshot = [];
+            dragSnapshotSet = null;
+            dragSnapshotCount = 0;
+            dragStartWasSelected = false;
+            dragPendingDirtyMin = -1;
+            dragPendingDirtyMax = -1;
+            dragSelectionCount = 0;
+            lastDragEnd = -1;
+            lastDragUpdateTime = 0;
+            lastDragVisualMin = -1;
+            lastDragVisualMax = -1;
+            isAutoScrolling = false;
+            lastTouchX = 0;
+            lastTouchY = 0;
+            fingerPreviewLastIndex = -1;
+            fingerPreviewLastUpdateTime = 0;
+            fingerPreviewLastShownX = -99999;
+            fingerPreviewLastShownY = -99999;
+            lastTranslationState = null;
+            this.currentScrollDirection = 0;
+            this.currentScrollSpeed = 0;
+            this.exactScrollY = 0;
+        },
+
         show: function(text) {
             if (mainLayout !== null) {
                 isShowing = true;
-                this.resetTextLoadState((typeof text === 'string') ? text : String(text || ""));
-                selectedIndices = [];
-                selectedSet = {};
-                previewTextOverride = null;
-                previewSelectionSignature = "";
-                cleanUndoStack = [];
-                isDragging = false;
-                dragStartIndex = -1;
-                isAutoScrolling = false;
-                lastTouchX = 0;
-                lastTouchY = 0;
-                lastTouchRawX = 0;
-                lastTouchRawY = 0;
-                fingerPreviewLastIndex = -1;
-                fingerPreviewLastUpdateTime = 0;
-                lastDragEnd = -1;
-                dragSnapshotSet = null;
-                dragSnapshotCount = 0;
-                dragStartWasSelected = false;
-                dragPendingDirtyMin = -1;
-                dragPendingDirtyMax = -1;
-                lastTranslationState = null;
-                this.currentScrollDirection = 0;
-                this.currentScrollSpeed = 0;
+                this.resetSessionState(text);
 
                 loadFontSize();
                 var self = this;
@@ -1802,7 +1808,7 @@
                         if (textCanvasControl) textCanvasControl.setTextSize(currentFontSize);
                         self.scheduleInitialTextLoad();
                         mainLayout.setVisibility(View.VISIBLE);
-                        animatePickwordMainEnter(mainLayout);
+                        stabilizePickwordOverlayView20(mainLayout);
                     } catch (e) {
                         showToast("显示窗口失败: " + e.message);
                         isShowing = false;
@@ -1829,36 +1835,13 @@
             }
 
             isShowing = true;
-            this.resetTextLoadState((typeof text === 'string') ? text : String(text || ""));
-            selectedIndices = [];
-            selectedSet = {};
-            previewTextOverride = null;
-            previewSelectionSignature = "";
-            cleanUndoStack = [];
-                isDragging = false;
-            dragStartIndex = -1;
-            isAutoScrolling = false;
-            lastTouchX = 0;
-            lastTouchY = 0;
-            lastTouchRawX = 0;
-            lastTouchRawY = 0;
-            fingerPreviewLastIndex = -1;
-            fingerPreviewLastUpdateTime = 0;
-            lastDragEnd = -1;
-            dragSnapshotSet = null;
-            dragSnapshotCount = 0;
-            dragStartWasSelected = false;
-            dragPendingDirtyMin = -1;
-            dragPendingDirtyMax = -1;
-            lastTranslationState = null;
-            this.currentScrollDirection = 0;
-            this.currentScrollSpeed = 0;
+            this.resetSessionState(text);
 
             var self = this;
             runUi(function() {
                 try {
                     self.createWindow();
-                    animatePickwordMainEnter(mainLayout);
+                    stabilizePickwordOverlayView20(mainLayout);
                 } catch (e) {
                     showToast("创建窗口失败: " + e.message);
                     isShowing = false;
@@ -1867,60 +1850,17 @@
         },
 
         hide: function() {
-            if (windowManager !== null && mainLayout !== null) {
-                runUi(function() {
-                    try {
-                        if (longPressHandler) {
-                            mainHandler.removeCallbacks(longPressHandler);
-                            longPressHandler = null;
-                        }
-                        if (autoScrollRunnable) {
-                            mainHandler.removeCallbacks(autoScrollRunnable);
-                            autoScrollRunnable = null;
-                        }
-                        if (keepAliveTimer && pinLayout === null) {
-                            mainHandler.removeCallbacks(keepAliveTimer);
-                            keepAliveTimer = null;
-                        }
-                        if (pendingFullTextRunnable) {
-                            mainHandler.removeCallbacks(pendingFullTextRunnable);
-                            pendingFullTextRunnable = null;
-                        }
-                        if (pendingFingerPreviewWarmupRunnable) {
-                            mainHandler.removeCallbacks(pendingFingerPreviewWarmupRunnable);
-                            pendingFingerPreviewWarmupRunnable = null;
-                        }
-                        拾字Floaty.stopCanvasScrollRefresh();
-
-                        拾字Floaty.removeFingerPreview();
-                        try {
-                            if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) fontSizePopupWindow.dismiss();
-                        } catch (eFontPopup) {}
-                        fontSizePopupWindow = null;
-
-                        windowManager.removeView(mainLayout);
-                        mainLayout = null;
-                        previewBoxView = null;
-                        copyAllActionBtn = null;
-                        cleanupActionBtn = null;
-                        shareActionBtn = null;
-                        fontSizeSelectorView = null;
-                        titleAccentView = null;
-                        resultDividerView = null;
-                        closeActionView = null;
-                    fontSizeDropdownView = null;
-                    fontSizeDropdownCardView = null;
-                    fontSizePopupWindow = null;
-                    fontSizeOptionViews = [];
-                        textView = null;
-                        textCanvasControl = null;
-                        scrollView = null;
-                        previewTextView = null;
-
-                    } catch (e) {}
-                    isShowing = false;
-                });
+            var targetLayout = mainLayout;
+            if (targetLayout === null) {
+                cancelMainPickwordCallbacks20();
+                isShowing = false;
+                return;
             }
+            runUi(function() {
+                // 防止旧 hide Runnable 误删随后创建的新窗口。
+                if (mainLayout !== targetLayout) return;
+                removeMainPickwordWindowNow20();
+            });
         },
 
         resetTextLoadState: function(text) {
@@ -2252,9 +2192,8 @@
             var selectorLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(42, 50));
             selectorLp.setMargins(uiDp(8, 12), 0, uiDp(10, 14), 0);
             normalMode.addView(fontSizeSelectorView, selectorLp);
-            // 原字号滑杆按钮入口暂时屏蔽；当前入口只打开四档字号下拉菜单。
+            // 点击打开小、中、大、超大四档字号菜单。
             fontSizeSelectorView.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.toggleFontSizeDropdown(); } }));
-            applyButtonAnimation(fontSizeSelectorView);
 
             closeActionView = new TextView(appContext);
             closeActionView.setText("×");
@@ -2266,7 +2205,6 @@
             var closeLp = new LinearLayout.LayoutParams(uiDp(42, 50), uiDp(42, 50));
             normalMode.addView(closeActionView, closeLp);
             closeActionView.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.hide(); } }));
-            applyButtonAnimation(closeActionView);
 
             titleBar.addView(normalMode);
 
@@ -2292,7 +2230,6 @@
         createFontSizeDropdown: function() {
             var self = this;
             var card = new LinearLayout(appContext);
-            fontSizeDropdownView = card;
             fontSizeDropdownCardView = card;
             card.setOrientation(LinearLayout.VERTICAL);
             card.setPadding(uiDp(4, 5), uiDp(4, 5), uiDp(4, 5), uiDp(4, 5));
@@ -2326,7 +2263,6 @@
                         } catch (eDismissOption) {}
                         showToast("字号已切换为" + preset.label);
                     } }));
-                    applyButtonAnimation(option);
                     fontSizeOptionViews.push(option);
                     card.addView(option, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(38, 44)));
                 })(presets[iPreset]);
@@ -2345,7 +2281,6 @@
                 }
                 var popupWidth = uiDp(136, 164);
                 var content = this.createFontSizeDropdown();
-                refreshFontSizeDropdown20();
                 var popup = new android.widget.PopupWindow(
                     content,
                     popupWidth,
@@ -2358,8 +2293,6 @@
                 try { popup.setElevation(uiDp(8, 10)); } catch (ePopupElevation) {}
                 try { popup.setClippingEnabled(true); } catch (ePopupClip) {}
                 popup.setOnDismissListener(new android.widget.PopupWindow.OnDismissListener({ onDismiss: function() {
-                    if (fontSizePopupWindow === popup) fontSizePopupWindow = null;
-                    fontSizeDropdownView = null;
                     fontSizeDropdownCardView = null;
                     fontSizePopupWindow = null;
                     fontSizeOptionViews = [];
@@ -2376,7 +2309,6 @@
                     if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) fontSizePopupWindow.dismiss();
                 } catch (eDismissFail) {}
                 fontSizePopupWindow = null;
-                fontSizeDropdownView = null;
                 fontSizeDropdownCardView = null;
                 fontSizeOptionViews = [];
                 showToast("字号菜单打开失败");
@@ -2500,9 +2432,6 @@
             return createReplicaButton20(textValue, iconKind, "outline", callback, null);
         },
 
-        createMiniHeaderBtn: function(textValue, callback) {
-            return createReplicaButton20(textValue, "cleanup", "inline", callback, null);
-        },
 
         createFingerPreview: function() {
             if (systemMagnifierEnabled && systemMagnifier) return; // 已创建且可用：直接复用，避免重复创建
@@ -2592,8 +2521,7 @@
             }
         },
 
-        showFingerPreview: function(rawX, rawY, index) {
-            // 兼容旧调用签名：rawX/rawY/index 目前不直接使用，统一以 lastTouchX/lastTouchY 为准。
+        showFingerPreview: function(index) {
             try {
                 this.createFingerPreview();
                 if (!systemMagnifierEnabled || !systemMagnifier) return;
@@ -2610,6 +2538,7 @@
                 }
                 fingerPreviewLastShownX = sx;
                 fingerPreviewLastShownY = sy;
+                fingerPreviewLastIndex = index;
             } catch (e) {
                 magnifierSafeMode = true; // 出现异常后自动切入安全模式
                 magnifierUseAdvancedShow = false;
@@ -2629,8 +2558,7 @@
             }
         },
 
-        updateFingerPreview: function(rawX, rawY, index, force) {
-            // 兼容旧调用签名：rawX/rawY 目前不直接使用，坐标统一取 lastTouchX/lastTouchY。
+        updateFingerPreview: function(index, force) {
             if (!systemMagnifierEnabled || !systemMagnifier) return;
             try {
                 var now = Date.now();
@@ -2670,10 +2598,7 @@
                 fingerPreviewLastShownX = sx;
                 fingerPreviewLastShownY = sy;
 
-                if (force || index !== fingerPreviewLastIndex || now - fingerPreviewLastContentUpdateTime >= FINGER_PREVIEW_CONTENT_INTERVAL) {
-                    fingerPreviewLastIndex = index;
-                    fingerPreviewLastContentUpdateTime = now;
-                }
+                fingerPreviewLastIndex = index;
             } catch (e) {
                 magnifierSafeMode = true; // 更新异常后自动切入安全模式
                 magnifierUseAdvancedShow = false;
@@ -2696,7 +2621,6 @@
         hideFingerPreview: function() {
             fingerPreviewLastIndex = -1;
             fingerPreviewLastUpdateTime = 0;
-            fingerPreviewLastContentUpdateTime = 0;
             fingerPreviewLastShownX = -99999;
             fingerPreviewLastShownY = -99999;
             try {
@@ -2718,7 +2642,6 @@
             magnifierUseAdvancedShow = false;
             fingerPreviewLastIndex = -1;
             fingerPreviewLastUpdateTime = 0;
-            fingerPreviewLastContentUpdateTime = 0;
             fingerPreviewLastShownX = -99999;
             fingerPreviewLastShownY = -99999;
             fingerPreviewCreateErrorShown = false;
@@ -2734,15 +2657,14 @@
             var onTouch = new View.OnTouchListener({
                 onTouch: function(v, event) {
                     var action = event.getAction(); var x = event.getX(); var y = event.getY();
-                    var rawX = event.getRawX(); var rawY = event.getRawY();
                     var currentIndex = -1;
                     if (action === MotionEvent.ACTION_UP) currentIndex = self.getCharIndexAtPosition(x, y);
 
                     switch(action) {
                         case MotionEvent.ACTION_DOWN:
                             isPressed = true; isDragging = false; dragStartIndex = -1; dragSnapshot = []; dragSnapshotSet = null; dragSnapshotCount = 0; dragStartWasSelected = false; dragPendingDirtyMin = -1; dragPendingDirtyMax = -1; lastValidIndex = -1; dragSelectionCount = selectedIndices.length; lastDragVisualMin = -1; lastDragVisualMax = -1;
-                            touchDownTime = Date.now(); touchDownX = x; touchDownY = y; touchDownRawX = rawX; touchDownRawY = rawY;
-                            lastTouchX = x; lastTouchY = y; lastTouchRawX = rawX; lastTouchRawY = rawY;
+                            touchDownTime = Date.now(); touchDownX = x; touchDownY = y;
+                            lastTouchX = x; lastTouchY = y;
                             if (scrollView) scrollView.requestDisallowInterceptTouchEvent(true);
                             if (longPressRunnable) mainHandler.removeCallbacks(longPressRunnable);
                             var textViewRef = textView;
@@ -2773,7 +2695,7 @@
                                         dragSelectionCount = calcDragSelectionCount(lastDragVisualMin, lastDragVisualMax);
                                         self.updateSelectionSpans(dragStartIndex, dragStartIndex);
                                         self.updatePreviewDuringDrag();
-                                        self.showFingerPreview(touchDownRawX, touchDownRawY, dragStartIndex);
+                                        self.showFingerPreview(dragStartIndex);
                                     }
                                 }
                             });
@@ -2783,7 +2705,7 @@
 
                         case MotionEvent.ACTION_MOVE:
                             if (!isPressed) return true;
-                            lastTouchX = x; lastTouchY = y; lastTouchRawX = rawX; lastTouchRawY = rawY;
+                            lastTouchX = x; lastTouchY = y;
                             var moveIndex = self.getCharIndexAtPosition(x, y, isDragging);
                             if (moveIndex < 0 && isDragging) {
                                 if (lastValidIndex >= 0) moveIndex = lastValidIndex;
@@ -2805,7 +2727,7 @@
                                 self.startCanvasScrollRefresh();
                             }
                             if (isDragging && moveIndex >= 0) { self.updateDragSelection(dragStartIndex, moveIndex, dragSnapshot);
-                                self.updateFingerPreview(rawX, rawY, moveIndex, false);
+                                self.updateFingerPreview(moveIndex, false);
                                 self.checkAndScroll(x, y); }
                             return true;
                         case MotionEvent.ACTION_UP:
@@ -2820,8 +2742,8 @@
                             }
 
                             if (isDragging) {
-                                if (pendingDragUpdate) { mainHandler.removeCallbacks(dragUpdateProcessor);
-                                pendingDragUpdate = null; }
+                                if (dragUpdateScheduled) { mainHandler.removeCallbacks(dragUpdateProcessor);
+                                dragUpdateScheduled = false; }
                                 self.commitDragSelection();
                                 self.updateSelectionSpans(lastDragVisualMin, lastDragVisualMax);
                                 self.updatePreview();
@@ -2829,7 +2751,7 @@
                             self.stopAutoScroll();
                             self.hideFingerPreview();
                             isDragging = false; dragStartIndex = -1; dragSnapshot = []; dragSnapshotSet = null; dragSnapshotCount = 0; dragStartWasSelected = false; lastValidIndex = -1;
-                            lastTouchX = 0; lastTouchY = 0; lastTouchRawX = 0; lastTouchRawY = 0;
+                            lastTouchX = 0; lastTouchY = 0;
                             lastDragEnd = -1; lastDragUpdateTime = 0; lastDragVisualMin = -1; lastDragVisualMax = -1; dragPendingDirtyMin = -1; dragPendingDirtyMax = -1; dragSelectionCount = selectedIndices.length;
                             return true;
                     }
@@ -2877,8 +2799,8 @@
 
             var now = Date.now();
             if (now - lastDragUpdateTime < interval) {
-                if (pendingDragUpdate) mainHandler.removeCallbacks(dragUpdateProcessor);
-                pendingDragUpdate = true;
+                if (dragUpdateScheduled) mainHandler.removeCallbacks(dragUpdateProcessor);
+                dragUpdateScheduled = true;
                 mainHandler.postDelayed(dragUpdateProcessor, interval);
             } else {
                 var dmin = dragPendingDirtyMin;
@@ -2980,7 +2902,7 @@
                         var moveIndex = self.getCharIndexAtPosition(lastTouchX, lastTouchY, true);
                         if (moveIndex >= 0 && dragStartIndex >= 0) {
                             self.updateDragSelection(dragStartIndex, moveIndex, dragSnapshot);
-                            self.updateFingerPreview(lastTouchRawX, lastTouchRawY, moveIndex, false);
+                            self.updateFingerPreview(moveIndex, false);
                         }
                     }
 
@@ -3003,7 +2925,7 @@
             }
         },
 
-        getCharIndexAtPosition: function(x, y, useCachedLayout) {
+        getCharIndexAtPosition: function(x, y) {
             if (!textCanvasControl || !fullText || fullText.length === 0) return -1;
             try {
                 var offset = textCanvasControl.getCharIndexAt(x, y);
@@ -3196,37 +3118,6 @@
             cleanUndoStack = kept;
         },
 
-        updateCleanButtons: function() {
-            var previewSig = "";
-            try { previewSig = this.getPreviewSelectionSignature(); } catch (e0) { previewSig = ""; }
-            var hasPreviewSelection = selectedIndices.length > 0;
-            var hasLoadedText = fullText && fullText.length > 0;
-            this.updateCleanButtonView(previewRemoveSpaceBtn, "preview", "spaces", "去空格", hasPreviewSelection, true, previewSig);
-            this.updateCleanButtonView(previewRemoveNewlineBtn, "preview", "newlines", "去换行", hasPreviewSelection, true, previewSig);
-            if (previewEditBtn) {
-                try {
-                    previewEditBtn.setText("编辑");
-                    previewEditBtn.setEnabled(!!hasPreviewSelection);
-                    previewEditBtn.setAlpha(hasPreviewSelection ? 1.0 : 0.45);
-                    safeTextColor(previewEditBtn, Colors.onPrimary);
-                } catch (eEditBtn) {}
-            }
-        },
-
-        updateCleanButtonView: function(btn, scope, mode, normalText, enabled, isPreview, previewSig) {
-            if (!btn) return;
-            try {
-                var topState = this.getTopCleanUndoState();
-                var isUndo = !!topState && topState.scope === scope && topState.mode === mode;
-                if (isUndo && scope === "preview" && topState.selectionSignature !== previewSig) isUndo = false;
-                btn.setText(isUndo ? "↶ 撤销" : normalText);
-                btn.setEnabled(!!enabled || isUndo);
-                btn.setAlpha((enabled || isUndo) ? 1.0 : 0.45);
-                if (isUndo) safeTextColor(btn, Colors.success);
-                else safeTextColor(btn, isPreview ? Colors.onPrimary : Colors.textSecondary);
-            } catch (e) {}
-        },
-
         isCleanUndoTarget: function(scope, mode) {
             var topState = this.getTopCleanUndoState();
             if (!topState || topState.scope !== scope || topState.mode !== mode) return false;
@@ -3244,13 +3135,11 @@
                 cleanUndoStack.pop();
                 if (state.scope === "preview") {
                     if (state.selectionSignature !== this.getPreviewSelectionSignature()) {
-                        this.updateCleanButtons();
                         return;
                     }
                     previewTextOverride = state.previewTextOverride;
                     previewSelectionSignature = state.previewSelectionSignature || this.getPreviewSelectionSignature();
                     this.updatePreview();
-                    this.updateCleanButtons();
                     return;
                 }
                 if (state.scope === "loaded") {
@@ -3265,10 +3154,8 @@
                         try {
                             self.updateTextView();
                             self.updateSelectionSpans();
-                            self.adjustScrollViewHeight();
                             if (scrollView) scrollView.scrollTo(0, state.scrollY || 0);
                             self.updateActionButtons();
-                            self.updateCleanButtons();
                         } catch (e1) {
                         }
                     });
@@ -3296,7 +3183,6 @@
             this.setActionEnabled(cleanupActionBtn, hasText);
             this.setActionEnabled(shareActionBtn, hasSelection || hasText);
             this.setActionEnabled(pinActionBtn, hasSelection);
-            this.updateCleanButtons();
         },
 
         applyReplacementsToText: function(sourceText, replacements) {
@@ -3363,7 +3249,6 @@
                 try {
                     self.updateTextView();
                     self.updateSelectionSpans();
-                    self.adjustScrollViewHeight();
                     self.updateActionButtons();
                 } catch (e) {
                     showToast("替换失败");
@@ -3372,15 +3257,6 @@
             return true;
         },
 
-        replaceSelectedText: function(newText) {
-            var ranges = this.collectSelectedRanges();
-            if (ranges.length === 0) return false;
-            var replacements = [];
-            for (var i = 0; i < ranges.length; i++) {
-                replacements.push({ start: ranges[i].start, end: ranges[i].end, translatedText: String(newText == null ? "" : newText) });
-            }
-            return this.replaceSelectedRanges(replacements);
-        },
 
         undoLastTranslation: function() {
             if (!lastTranslationState) { showToast("没有可撤销内容");
@@ -3397,7 +3273,6 @@
                 try {
                     self.updateTextView();
                     self.updateSelectionSpans();
-                    self.adjustScrollViewHeight();
                     if (scrollView) {
                         scrollView.post(new java.lang.Runnable({ run: function() { try { scrollView.scrollTo(0, restoreScrollY); } catch (e1) {} } }));
                     }
@@ -3432,7 +3307,6 @@
                 previewTextOverride = null;
                 previewSelectionSignature = "";
                 this.clearCleanUndoStack("preview");
-                this.updateCleanButtons();
                 if (isPartialTextLoaded) previewTextView.setText("长文本自动加载中，先显示前" + fullText.length + "字…");
                 else previewTextView.setText("点击文字选择");
                 safeTextColor(previewTextView, Colors.textSecondary);
@@ -3582,7 +3456,6 @@
                                 editUndoBtn.setBackground(createRoundRectDrawable(Colors.btnSecondaryBg, isTablet ? 12 : 10));
                             } catch (eUndoEdit) {}
                         } }));
-                        applyButtonAnimation(editUndoBtn);
 
                         var inputLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
                         inputLp.setMargins(0, 0, 0, uiDp(12, 14));
@@ -3600,7 +3473,6 @@
                         cancelBtn.setPadding(uiDp(14, 18), uiDp(7, 9), uiDp(14, 18), uiDp(7, 9));
                         cancelBtn.setBackground(createPressableDrawable(Colors.btnSecondaryBg, Colors.btnSecondaryPressed, isTablet ? 14 : 12));
                         cancelBtn.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); try { dialog.dismiss(); } catch (eCancel) {} } }));
-                        applyButtonAnimation(cancelBtn);
 
                         var saveBtn = new TextView(appContext);
                         saveBtn.setText("保存");
@@ -3629,14 +3501,12 @@
                                         previewTextView.setText(newText);
                                         safeTextColor(previewTextView, Colors.text);
                                     }
-                                    self.updateCleanButtons();
                                 }
                                 dialog.dismiss();
                             } catch (eSave) {
                                 try { dialog.dismiss(); } catch (eDismiss) {}
                             }
                         } }));
-                        applyButtonAnimation(saveBtn);
 
                         var cancelLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
                         cancelLp.setMargins(0, 0, uiDp(8, 10), 0);
@@ -3678,11 +3548,6 @@
             return text;
         },
 
-        getTransformLabel: function(mode) {
-            if (mode === "spaces") return "空格";
-            if (mode === "newlines") return "换行";
-            return "文本";
-        },
 
         applyPreviewTextTransform: function(mode) {
             try {
@@ -3698,7 +3563,6 @@
                 var currentSignature = this.getPreviewSelectionSignature();
                 var source = this.getSelectedText();
                 var transformed = this.transformTextByMode(source, mode);
-                var label = this.getTransformLabel(mode);
                 var removed = source.length - transformed.length;
                 if (removed <= 0) {
                     return;
@@ -3716,7 +3580,6 @@
                     previewTextView.setText(transformed);
                     safeTextColor(previewTextView, Colors.text);
                 }
-                this.updateCleanButtons();
             } catch (e) {
             }
         },
@@ -3740,7 +3603,6 @@
                 var source = String(originalFullText || fullText || "");
                 var beforeLen = source.length;
                 var transformed = this.transformTextByMode(source, mode);
-                var label = this.getTransformLabel(mode);
                 if (mode !== "spaces" && mode !== "newlines") return;
                 var removed = beforeLen - transformed.length;
                 if (removed <= 0) {
@@ -3773,9 +3635,6 @@
                 runUi(function() {
                     try {
                         self.updateTextView();
-                        self.updateActionButtons();
-                        self.updateCleanButtons();
-                        self.adjustScrollViewHeight();
                         if (scrollView) scrollView.scrollTo(0, 0);
                     } catch (e1) {
                     }
@@ -3927,27 +3786,8 @@
             throw lastError;
         },
 
-        ensureKeepAlive: function() {
-            // ToolHub 主实例负责生命周期；子模块不得创建独立保活循环。
-            return true;
-        },
-
-        releaseKeepAliveIfIdle: function() {
-            try {
-                if (keepAliveTimer) mainHandler.removeCallbacks(keepAliveTimer);
-            } catch (e) {}
-            keepAliveTimer = null;
-            return true;
-        },
-
         cancelPinnedTextBatchLoad: function() {
-            try {
-                pinLoadToken++;
-                if (pinBatchLoadRunnable) {
-                    try { mainHandler.removeCallbacks(pinBatchLoadRunnable); } catch (e0) {}
-                    pinBatchLoadRunnable = null;
-                }
-            } catch (e) {}
+            cancelPinPickwordCallbacks20();
         },
 
         updatePinProgress: function(loaded, total, done) {
@@ -4294,8 +4134,7 @@
                     self.startPinnedTextBatchLoad(pinnedText);
 
                     pinWindowManager.addView(pinLayout, pinLayoutParams);
-                    animateWindowEnter(pinLayout);
-                    self.ensureKeepAlive();
+                    stabilizePickwordOverlayView20(pinLayout);
                     mainHandler.postDelayed(new java.lang.Runnable({
                         run: function() {
                             try { self.hide(); } catch (eHide) {}
@@ -4321,7 +4160,6 @@
             pinScrollView = null;
             pinProgressView = null;
             pinnedText = "";
-            this.releaseKeepAliveIfIdle();
         },
 
         copyAllText: function() {
@@ -4504,27 +4342,6 @@
         }
     }
 
-    function cancelPickwordCallbacks20() {
-        try { if (longPressHandler) mainHandler.removeCallbacks(longPressHandler); } catch (e0) {}
-        try { if (autoScrollRunnable) mainHandler.removeCallbacks(autoScrollRunnable); } catch (e1) {}
-        try { if (keepAliveTimer) mainHandler.removeCallbacks(keepAliveTimer); } catch (e2) {}
-        try { if (pendingFullTextRunnable) mainHandler.removeCallbacks(pendingFullTextRunnable); } catch (e3) {}
-        try { if (pendingFingerPreviewWarmupRunnable) mainHandler.removeCallbacks(pendingFingerPreviewWarmupRunnable); } catch (e4) {}
-        try { if (pendingAdjustRunnable) mainHandler.removeCallbacks(pendingAdjustRunnable); } catch (e5) {}
-        try { if (pendingDragUpdate) mainHandler.removeCallbacks(pendingDragUpdate); } catch (e6) {}
-        try { if (pinBatchLoadRunnable) mainHandler.removeCallbacks(pinBatchLoadRunnable); } catch (e7) {}
-        try { 拾字Floaty.stopCanvasScrollRefresh(); } catch (e8) {}
-        longPressHandler = null;
-        autoScrollRunnable = null;
-        keepAliveTimer = null;
-        pendingFullTextRunnable = null;
-        pendingFingerPreviewWarmupRunnable = null;
-        pendingAdjustRunnable = null;
-        pendingDragUpdate = null;
-        pinBatchLoadRunnable = null;
-        pinLoadToken++;
-    }
-
     function installPickword20() {
         try {
             if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
@@ -4583,45 +4400,8 @@
             proto.disposePickwordModule = function(reason) {
                 var self = this;
                 var cleanup = function() {
-                    cancelPickwordCallbacks20();
-                    try { 拾字Floaty.removeFingerPreview(); } catch (ePreview) {}
-                    try { 拾字Floaty.hide(); } catch (eHide) {}
-                    try { 拾字Floaty.removePinnedTextWindow(); } catch (ePin) {}
-                    try {
-                        if (fontSizePopupWindow && fontSizePopupWindow.isShowing()) fontSizePopupWindow.dismiss();
-                    } catch (eFontPopup) {}
-                    fontSizePopupWindow = null;
-                    try {
-                        if (windowManager !== null && mainLayout !== null) windowManager.removeView(mainLayout);
-                    } catch (eMainRemove) {}
-                    try {
-                        if (pinLayout !== null) (pinWindowManager || windowManager).removeView(pinLayout);
-                    } catch (ePinRemove) {}
-                    mainLayout = null;
-                    previewBoxView = null;
-                    copyAllActionBtn = null;
-                    cleanupActionBtn = null;
-                    shareActionBtn = null;
-                    fontSizeSelectorView = null;
-                    titleAccentView = null;
-                    resultDividerView = null;
-                    closeActionView = null;
-                    fontSizeDropdownView = null;
-                    fontSizeDropdownCardView = null;
-                    fontSizePopupWindow = null;
-                    fontSizeOptionViews = [];
-                    textView = null;
-                    textCanvasControl = null;
-                    scrollView = null;
-                    previewTextView = null;
-                    pinLayout = null;
-                    pinLayoutParams = null;
-                    pinTextView = null;
-                    pinScrollView = null;
-                    pinProgressView = null;
-                    pinnedText = "";
-                    isShowing = false;
-                    isDragging = false;
+                    removeMainPickwordWindowNow20();
+                    try { 拾字Floaty.removePinnedTextWindow(); } catch (ePin) { cancelPinPickwordCallbacks20(); }
                     isTranslating = false;
                     return true;
                 };
