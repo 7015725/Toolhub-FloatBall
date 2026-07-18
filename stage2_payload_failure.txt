@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 131, in <module>
+    main()
+    ~~~~^^
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 122, in main
+    payload = decode_payload(payload_text)
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 55, in decode_payload
+    compressed = base64.b64decode(normalized)
+  File "/opt/hostedtoolcache/Python/3.14.6/x64/lib/python3.14/base64.py", line 85, in b64decode
+    return binascii.a2b_base64(s, strict_mode=validate)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+binascii.Error: Incorrect padding
+
