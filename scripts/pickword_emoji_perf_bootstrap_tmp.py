@@ -4,7 +4,7 @@ import os
 import subprocess
 from pathlib import Path
 
-BRANCH = "fix/pickword-emoji-grapheme-20260718"
+BRANCH = "fix/pickword-emoji-perf-20260718"
 BEGIN = "# __PICKWORD_EMOJI_PERF_BOOTSTRAP_BEGIN__\n"
 END = "# __PICKWORD_EMOJI_PERF_BOOTSTRAP_END__\n"
 
