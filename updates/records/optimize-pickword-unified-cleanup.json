@@ -11,5 +11,19 @@
     "清理旧预览按钮、空保活、无调用包装、重复字号引用、无效放大镜参数和被覆盖的尺寸配置",
     "保留Android 14长按兼容、ColorOS颜色安全、四档字号与旧值读取、分享关闭、翻译、钉屏和Canvas拖选边界"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260718004245,
+  "date": "2026-07-18",
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.12",
+      "to": "1.0.13",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
 }
