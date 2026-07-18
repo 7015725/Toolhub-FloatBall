@@ -1,0 +1,21 @@
+Traceback (most recent call last):
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 59, in decode_payload
+    payload = gzip.decompress(compressed)
+  File "/opt/hostedtoolcache/Python/3.14.6/x64/lib/python3.14/gzip.py", line 655, in decompress
+    decompressed = do.decompress(data[fp.tell():])
+zlib.error: Error -3 while decompressing data: invalid distance too far back
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 147, in <module>
+    main()
+    ~~~~^^
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 138, in main
+    payload = decode_payload(payload_text)
+  File "/home/runner/work/Toolhub-FloatBall/Toolhub-FloatBall/scripts/stage2_runner.py", line 61, in decode_payload
+    raise SystemExit(
+    ...<10 lines>...
+    )
+SystemExit: stage2 gzip failed chars=6999 mod4=3 padded=1 compressed=5249 head=b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xdd\xbd\xfbw\x1b\xc7\x91(\xfc\xbb\xfe\x8a\x11\xf6\xc6\x02,\x08\x04\xa9\xa7)\xd3Z\x88\x84,\xde\xf0\xb5' tail=b'\x15\xabr\x13\xb1\x16\x97\xe7w:\xee\xd8s\xa9\x18.\xed\xb8\x91WM\xfc<.\xa3\x17\xde2\x8e\xd5{1p>e&x\x8c\xe2\x99' error=error('Error -3 while decompressing data: invalid distance too far back')
+
