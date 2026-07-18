@@ -1,4 +1,4 @@
-// @version 1.3.2
+// @version 1.3.3
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -1385,7 +1385,7 @@
   }
 
   function showState21(appObj, st) {
-    if (!st || !st.payload || !st.payload.text) return false;
+    if (!st || !st.payload || (!st.payload.text && !(st.payload.allowEmptyText === true && st.payload.screenshotPath))) return false;
     prepareLines21(appObj, st);
     cancelDismiss21(st);
     cancelVisibilityFallback21(st);
@@ -1429,7 +1429,10 @@
     var src = input || {};
     var text = "";
     try { text = String(src.text === null || src.text === undefined ? "" : src.text); } catch (eText) { text = ""; }
-    if (!text) return null;
+    var screenshotPath = "";
+    try { screenshotPath = String(src.screenshotPath || "").replace(/^\s+|\s+$/g, ""); } catch (ePath) { screenshotPath = ""; }
+    var allowEmptyText = src.allowEmptyText === true && screenshotPath.length > 0;
+    if (!text && !allowEmptyText) return null;
     var st = ensureState21(appObj);
     if (!st) return null;
     st.sequence = Number(st.sequence || 0) + 1;
@@ -1439,8 +1442,12 @@
       kind: String(src.kind || "text"),
       source: String(src.source || "pointer_text"),
       text: text,
-      previewText: cleanPreviewText21(src.previewText || text),
-      screenshotPath: String(src.screenshotPath || ""),
+      previewText: cleanPreviewText21(src.previewText || text || "点击查看截图"),
+      screenshotPath: screenshotPath,
+      screenshotOk: src.screenshotOk === true || screenshotPath.length > 0,
+      allowEmptyText: allowEmptyText,
+      ocrStatus: String(src.ocrStatus || (text ? "success" : "empty")),
+      ocrError: String(src.ocrError || ""),
       rect: cloneRect21(src.rect),
       primaryAction: String(src.primaryAction || "pickword"),
       actions: src.actions && src.actions.length !== undefined ? src.actions : [],
@@ -1456,7 +1463,7 @@
 
       proto.publishResultPreview = function(payload) {
         var normalized = normalizePayload21(this, payload);
-        if (!normalized) return { ok: false, code: "EMPTY_PREVIEW_TEXT", previewId: "" };
+        if (!normalized) return { ok: false, code: "EMPTY_PREVIEW_CONTENT", previewId: "" };
         var st = ensureState21(this);
         st.generation = Number(st.generation || 0) + 1;
         st.payload = normalized;
@@ -1545,6 +1552,11 @@
               source: String(payload.source || ""),
               previewId: String(payload.id || ""),
               screenshotPath: String(payload.screenshotPath || ""),
+              screenshotOk: payload.screenshotOk === true,
+              allowEmptyText: payload.allowEmptyText === true,
+              ocrStatus: String(payload.ocrStatus || ""),
+              ocrError: String(payload.ocrError || ""),
+              createdAt: Number(payload.createdAt || 0),
               rect: cloneRect21(payload.rect)
             });
           } else {

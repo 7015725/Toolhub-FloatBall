@@ -117,7 +117,7 @@ def main() -> int:
         failures,
     )
     overlay_stabilizer = section(pickword, "function stabilizePickwordOverlayView20(view)", "function hapticFeedback(view)")
-    pickword_show = section(pickword, "show: function(text)", "hide: function()")
+    pickword_show = section(pickword, "show: function(text, meta)", "hide: function()")
     require(
         "pickword / opaque overlay stabilization",
         "view.setAlpha(1)" in overlay_stabilizer
@@ -542,8 +542,10 @@ def main() -> int:
 
     apply_ocr = section(ocr, "function applyAreaOcrResult18", "function isAreaOcrTokenCurrent18")
     require(
-        "ocr / success publishes preview only with text",
-        "if (hasText && typeof appObj.publishResultPreview" in apply_ocr
+        "ocr / screenshot-backed results publish preview",
+        "var previewAllowed = hasText || screenshotOk;" in apply_ocr
+        and "if (previewAllowed && typeof appObj.publishResultPreview" in apply_ocr
+        and "allowEmptyText: !hasText && screenshotOk" in apply_ocr
         and 'source: "pointer_ocr"' in apply_ocr
         and "obj.preview" in apply_ocr
         and "obj.clipboard = false" in apply_ocr,

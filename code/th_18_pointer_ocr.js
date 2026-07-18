@@ -1,4 +1,4 @@
-// @version 1.1.3
+// @version 1.1.4
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -383,14 +383,20 @@ function applyPerfDefaults18(appObj) {
       obj.clipboardError = "";
 
       var previewRet = null;
-      if (hasText && typeof appObj.publishResultPreview === "function") {
+      var previewAllowed = hasText || screenshotOk;
+      var ocrStatus = hasText ? "success" : (textOk === true ? "empty" : "failed");
+      if (previewAllowed && typeof appObj.publishResultPreview === "function") {
         try {
           previewRet = appObj.publishResultPreview({
-            kind: "text",
+            kind: hasText ? "text" : "image",
             source: "pointer_ocr",
-            text: normalizedText,
-            previewText: normalizedText,
+            text: hasText ? normalizedText : "",
+            previewText: hasText ? normalizedText : (ocrStatus === "empty" ? "未识别到文字，点击查看截图" : "识别失败，点击查看截图"),
             screenshotPath: obj.screenshotFilePath,
+            screenshotOk: screenshotOk,
+            allowEmptyText: !hasText && screenshotOk,
+            ocrStatus: ocrStatus,
+            ocrError: obj.ocrError,
             rect: obj.captureRect,
             primaryAction: "pickword",
             actions: [],

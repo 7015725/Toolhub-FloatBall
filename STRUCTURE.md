@@ -71,6 +71,7 @@ Toolhub-FloatBall/
 │   ├── th_19_position_state.js
 │   ├── th_20_pickword.js
 │   └── th_21_result_preview.js
+th_22_image_viewer.js：拾字截图缩略图、同窗原图查看、缩放平移与大图区域解码。
 └── scripts/
     ├── generate_signed_manifest.py
     ├── verify_module_versions.py

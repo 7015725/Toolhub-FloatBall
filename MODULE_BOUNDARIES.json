@@ -36,7 +36,8 @@
     "dismissResultPreview": "th_21_result_preview.js",
     "openResultPreviewPrimaryAction": "th_21_result_preview.js",
     "disposeResultPreview": "th_21_result_preview.js",
-    "onResultPreviewConfigurationChanged": "th_21_result_preview.js"
+    "onResultPreviewConfigurationChanged": "th_21_result_preview.js",
+    "createPickwordImageController": "th_22_image_viewer.js"
   },
   "duplicateDefinitions": [
     {

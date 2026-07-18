@@ -4,7 +4,7 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260714081104; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260718213000; // 入口文件版本，仅在 ToolHub.js 变化时提升
 var GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/main/";
 var __updateSecurityModeText = "";
 var __updateSecurityModeFallback = false;
@@ -1455,7 +1455,7 @@ var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.j
                "th_06_icon_parser.js", "th_08_content.js", "th_09_animation.js",
                "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
                "th_14_panels.js", "th_14_button_shortcut.js", "th_14_button_icon_editor.js", "th_14_button_editor.js",
-               "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_15_main_panel.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js"];
+               "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_15_main_panel.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js"];
 var __moduleUpdates = [];
 var __pendingModuleUpdates = [];
 var loadErrors = [];

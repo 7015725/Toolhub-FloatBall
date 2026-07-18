@@ -30,7 +30,7 @@ MODULES = [
     "th_14_color_picker.js", "th_14_icon_picker.js",
     "th_14_schema_editor.js", "th_15_extra.js", "th_15_main_panel.js", "th_16_entry.js",
     "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js",
-    "th_20_pickword.js", "th_21_result_preview.js",
+    "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js",
 ]
 
 
