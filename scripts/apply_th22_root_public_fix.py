@@ -2,7 +2,6 @@
 import hashlib
 import os
 import subprocess
-import sys
 import traceback
 from pathlib import Path
 
@@ -49,6 +48,7 @@ def apply_fix():
 
     run([
         "git", "checkout", "origin/main", "--",
+        ".github/workflows/sign-toolhub.yml",
         "scripts/generate_signed_manifest.py",
         "scripts/verify_changed_module_versions.py",
     ])
