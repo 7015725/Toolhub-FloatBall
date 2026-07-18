@@ -2,7 +2,6 @@
 import hashlib
 import json
 import os
-import re
 import subprocess
 import urllib.request
 from pathlib import Path
@@ -20,11 +19,8 @@ TARGET = ROOT / "scripts" / "apply_pickword_image_stage2.py"
 
 def run_git(args):
     return subprocess.run(
-        ["git"] + list(args),
-        cwd=str(ROOT),
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        ["git"] + list(args), cwd=str(ROOT), text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
     )
 
 
@@ -43,8 +39,7 @@ def add_temp_entry(entry_version):
     entry = ENTRY.read_text(encoding="utf-8")
     entry = entry.replace(
         "var TOOLHUB_ENTRY_VERSION = 20260718213000;",
-        "var TOOLHUB_ENTRY_VERSION = %s;" % entry_version,
-        1,
+        "var TOOLHUB_ENTRY_VERSION = %s;" % entry_version, 1,
     )
     entry = entry.replace(
         '"th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js"];',
@@ -85,82 +80,61 @@ def commit_diagnostic(message):
         pass
     diagnostic = "STAGE2_DIAGNOSTIC: " + str(message).replace("\r", " ").replace("\n", " | ")
     if len(diagnostic) > 1800:
-        diagnostic = diagnostic[-1800:]
+        diagnostic = diagnostic[:1800]
     th22 = TH22.read_text(encoding="utf-8")
     th22 = th22.replace(
         "// @version 1.0.0\n",
-        "// @version 1.0.1\n// " + diagnostic + "\n",
-        1,
+        "// @version 1.0.1\n// " + diagnostic + "\n", 1,
     )
     TH22.write_text(th22, encoding="utf-8")
     add_temp_entry("20260718232000")
     record = json.loads(RECORD.read_text(encoding="utf-8"))
     details = [
-        str(item)
-        for item in (record.get("details") or [])
+        str(item) for item in (record.get("details") or [])
         if not str(item).startswith("STAGE2_DIAGNOSTIC:")
     ]
     details.append(diagnostic)
     record["details"] = details
     RECORD.write_text(
-        json.dumps(record, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
+        json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
     )
     commit_local(
         "记录第二阶段执行诊断",
-        [
-            "ToolHub.js",
-            "code/th_22_image_viewer.js",
-            "updates/records/feature-pickword-image-viewer-stage2.json",
-        ],
+        ["ToolHub.js", "code/th_22_image_viewer.js", "updates/records/feature-pickword-image-viewer-stage2.json"],
     )
 
 
 def append_without_overlap(current, following):
     limit = min(1024, len(current), len(following))
-    overlap = 0
     for size in range(limit, 0, -1):
         if current.endswith(following[:size]):
-            overlap = size
-            break
-    return current + following[overlap:], overlap
+            return current + following[size:], size
+    return current + following, 0
 
 
-def compile_context(source, output):
-    line_number = 0
-    match = re.search(r"line\s+(\d+)", str(output or ""))
-    if match:
-        line_number = int(match.group(1))
-    lines = source.splitlines()
-    if line_number <= 0:
-        return "line=0 output=%r" % str(output or "")[-500:]
-    start = max(1, line_number - 2)
-    end = min(len(lines), line_number + 2)
-    context = []
-    for number in range(start, end + 1):
-        context.append("L%d=%r" % (number, lines[number - 1]))
-    return "line=%d %s" % (line_number, " ; ".join(context))
+def syntax_detail(source, error):
+    line_number = int(error.lineno or 0)
+    offset = int(error.offset or 0)
+    text = str(error.text or "")
+    start = max(0, offset - 251)
+    end = min(len(text), offset + 250)
+    snippet = text[start:end]
+    return "line=%d offset=%d snippet=%r msg=%s" % (
+        line_number, offset, snippet, str(error.msg or ""),
+    )
 
 
 def main():
-    event = json.loads(
-        Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8")
-    )
+    event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
     number = int((event.get("pull_request") or {}).get("number") or 0)
     repo = str(os.environ.get("GITHUB_REPOSITORY", ""))
     if not number or not repo:
         raise SystemExit("stage2 runner requires a pull_request event")
 
-    url = "https://api.github.com/repos/%s/issues/%d/comments?per_page=100" % (
-        repo,
-        number,
-    )
+    url = "https://api.github.com/repos/%s/issues/%d/comments?per_page=100" % (repo, number)
     request = urllib.request.Request(
         url,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "toolhub-stage2-runner",
-        },
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "toolhub-stage2-runner"},
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         comments = json.loads(response.read().decode("utf-8"))
@@ -176,9 +150,7 @@ def main():
                 parts[index] = part
 
     if len(parts) != len(PART_PREFIXES):
-        commit_diagnostic(
-            "source parts missing %d/%d" % (len(parts), len(PART_PREFIXES))
-        )
+        commit_diagnostic("source parts missing %d/%d" % (len(parts), len(PART_PREFIXES)))
         return
 
     source = parts[0]
@@ -191,48 +163,32 @@ def main():
 
     script = source.encode("utf-8")
     digest = hashlib.sha256(script).hexdigest()
-    TARGET.write_bytes(script)
-
-    compile_proc = subprocess.run(
-        ["python3", "-m", "py_compile", str(TARGET)],
-        cwd=str(ROOT),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-    if compile_proc.returncode != 0:
+    try:
+        compile(source, str(TARGET), "exec")
+    except SyntaxError as error:
         commit_diagnostic(
-            "digest=%s expected=%s length=%d overlaps=%s compile_context=%s"
-            % (
-                digest,
-                SCRIPT_SHA256,
-                len(script),
+            "digest=%s expected=%s length=%d overlaps=%s syntax=%s" % (
+                digest, SCRIPT_SHA256, len(script),
                 ",".join(str(item) for item in overlaps),
-                compile_context(source, compile_proc.stdout),
+                syntax_detail(source, error),
             )
         )
         return
 
+    TARGET.write_bytes(script)
     proc = subprocess.run(
-        ["python3", str(TARGET)],
-        cwd=str(ROOT),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
+        ["python3", str(TARGET)], cwd=str(ROOT),
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
     )
     if proc.returncode != 0:
         output = str(proc.stdout or "").strip()
-        if len(output) > 1500:
-            output = output[-1500:]
+        if len(output) > 1300:
+            output = output[-1300:]
         commit_diagnostic(
-            "digest=%s expected=%s length=%d overlaps=%s apply_exit=%d output=%s"
-            % (
-                digest,
-                SCRIPT_SHA256,
-                len(script),
+            "digest=%s expected=%s length=%d overlaps=%s apply_exit=%d output=%s" % (
+                digest, SCRIPT_SHA256, len(script),
                 ",".join(str(item) for item in overlaps),
-                proc.returncode,
-                output,
+                proc.returncode, output,
             )
         )
         return
