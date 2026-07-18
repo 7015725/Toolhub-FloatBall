@@ -7,7 +7,11 @@ diff --git a/code/th_22_image_viewer.js b/code/th_22_image_viewer.js
  // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
  // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
  (function() {
-@@ -417,43 +417,120 @@
+@@ -414,49 +414,126 @@
+     } catch (e0) {}
+     return "";
+   }
+ 
 -  function runRootShell22(command) {
 -    var variants = [
 -      ["su", "--mount-master", "-c", String(command || "")],
@@ -171,25 +175,70 @@ diff --git a/code/th_22_image_viewer.js b/code/th_22_image_viewer.js
 +      attempts.slice(0, 12).join(" | ")
 +    );
 +  }
-@@ -545,2 +622,3 @@
+ 
+   function queryMediaUriByPath22(file) {
+     var cursor = null;
+@@ -542,21 +619,23 @@
+-    }
+-    try {
+-      if (typeof safeLog === "function") {
 -        safeLog(null, "i", "pickword image public io mode=root_copy via=" + String(shell.via || "") +
 -          " path=" + targetPath + " uri=" + String(contentUri || ""));
+-      }
+-    } catch (eLog) {}
+-    return {
+-      ok: true,
+-      kind: kind,
+-      publicPath: targetPath,
+-      contentUri: String(contentUri || ""),
+-      bytes: Number(target.length() || 0),
+-      createdAt: now22(),
+-      expiresAt: Number(expiresAt || 0),
+-      fallback: true,
+-      rootFallback: true,
+-      via: String(shell.via || "")
+-    };
+-  }
+-
++    }
++    try {
++      if (typeof safeLog === "function") {
 +        safeLog(null, "i", "pickword image public io mode=root_copy via=" + String(shell.via || "") +
 +          " executable=" + String(shell.executable || "") +
 +          " path=" + targetPath + " uri=" + String(contentUri || ""));
-@@ -549,3 +627,4 @@
-       rootFallback: true,
--      via: String(shell.via || "")
++      }
++    } catch (eLog) {}
++    return {
++      ok: true,
++      kind: kind,
++      publicPath: targetPath,
++      contentUri: String(contentUri || ""),
++      bytes: Number(target.length() || 0),
++      createdAt: now22(),
++      expiresAt: Number(expiresAt || 0),
++      fallback: true,
++      rootFallback: true,
 +      via: String(shell.via || ""),
 +      rootExecutable: String(shell.executable || "")
-     };
++    };
++  }
++
 diff --git a/scripts/verify_pickword_image_viewer.py b/scripts/verify_pickword_image_viewer.py
 --- a/scripts/verify_pickword_image_viewer.py
 +++ b/scripts/verify_pickword_image_viewer.py
-@@ -34,1 +34,1 @@
+@@ -32,5 +32,5 @@
+-require('onSaved: function(info)' in th20 and 'onDeleted: function(info)' in th20, "stage2 callbacks missing")
+-require('createPickwordImageController' in th22, "image controller missing")
 -require('// @version 1.2.3' in th22, "image viewer version")
+-require(re.search(r'(?<![\.\w])getWidth\s*\(', th22) is None, "bare getWidth call in JavaAdapter callback")
+-require(re.search(r'(?<![\.\w])getHeight\s*\(', th22) is None, "bare getHeight call in JavaAdapter callback")
++require('onSaved: function(info)' in th20 and 'onDeleted: function(info)' in th20, "stage2 callbacks missing")
++require('createPickwordImageController' in th22, "image controller missing")
 +require('// @version 1.2.4' in th22, "image viewer version")
-@@ -47,4 +47,9 @@
++require(re.search(r'(?<![\.\w])getWidth\s*\(', th22) is None, "bare getWidth call in JavaAdapter callback")
++require(re.search(r'(?<![\.\w])getHeight\s*\(', th22) is None, "bare getHeight call in JavaAdapter callback")
+@@ -46,6 +46,11 @@
+ require('function probeMediaStore22(dir)' in th22, "MediaStore directory probe missing")
 -require('function runRootShell22(command)' in th22, "root shell public fallback missing")
 -require('"su", "--mount-master", "-c"' in th22 and '"su", "-c"' in th22, "root shell fallback variants missing")
 -require('function underlyingPublicPath22(file)' in th22 and '"/data/media/"' in th22, "underlying storage fallback missing")
@@ -203,9 +252,18 @@ diff --git a/scripts/verify_pickword_image_viewer.py b/scripts/verify_pickword_i
 +require('["su", "--mount-master"' not in th22, "bare su ProcessBuilder variant must not be primary implementation")
 +require('function underlyingPublicPath22(file)' in th22 and '"/data/media/"' in th22, "underlying storage fallback missing")
 +require('function rootCopyPublic22(' in th22 and 'function scanPublicFile22(file)' in th22, "root copy and media scan missing")
+ require('function exportPublicFile22(' in th22 and 'preferRootPublicIo22()' in th22, "system_server root-first export missing")
 diff --git a/scripts/verify_screenshot_manager.py b/scripts/verify_screenshot_manager.py
 --- a/scripts/verify_screenshot_manager.py
 +++ b/scripts/verify_screenshot_manager.py
-@@ -25,1 +25,1 @@
+@@ -23,5 +23,5 @@
+-workflow = read(".github/workflows/verify.yml")
+-
 -require('// @version 1.2.3' in th22, 'th22 service version')
+-require('// @version 1.0.0' in th23, 'th23 version')
+-require('getPickwordImageService' in th22, 'service API')
++workflow = read(".github/workflows/verify.yml")
++
 +require('// @version 1.2.4' in th22, 'th22 service version')
++require('// @version 1.0.0' in th23, 'th23 version')
++require('getPickwordImageService' in th22, 'service API')
