@@ -7,14 +7,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PARTS = [ROOT / "scripts" / ("th22_root_fix_%02d.part" % i) for i in range(1, 4)]
-PART_SIZES = [10971, 5496, 2616]
+PART_SIZES = [10880, 5496, 2616]
 PART_SHA256 = [
-    "3e51c4c99c476c812ce9f77a066f69465ca884daf858d12bd22a395b669cb77c",
+    "eb0ebfb3b99c0fd9d680aa2787e8cb69960c0c91431aff47dd85188c449a9659",
     "9cb898b510af5c93095359bd02a0fc2dfb0bf0bab39c988fcd51d24e15bb90d0",
     "64654fdf809c27c10c38a937e16c12113e0a12b37f97971174ffc0732dfb1393",
 ]
-EXPECTED_SIZE = 19083
-EXPECTED_SHA256 = "68b5ae648c57c43dae8597532f726ba2e2118633654d96981f43ae471d1c65de"
+EXPECTED_SIZE = 18992
+EXPECTED_SHA256 = "332b1fecd5b85683c51111a0c61b3be7ae1021f66de505be1c0d8280e24a1c76"
 PATCH = ROOT / "scripts" / "th22_root_public_fix.patch"
 DIAG = ROOT / "scripts" / "th22_root_fix_failure.txt"
 
