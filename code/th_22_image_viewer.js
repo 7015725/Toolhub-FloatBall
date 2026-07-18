@@ -1,4 +1,4 @@
-// @version 1.2.0
+// @version 1.2.1
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -908,7 +908,7 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.0") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.1") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -1045,6 +1045,8 @@
         var panning = false;
         var scaling = false;
         var initialized = false;
+        var drawFailureCount = 0;
+        var drawDisabled = false;
         var savedInfo = existingSave22(path);
 
         function log(level, msg) {
@@ -1054,6 +1056,33 @@
         function error(stage, err) {
           log("w", "stage=" + String(stage || "") + " err=" + String(err || ""));
           try { if (typeof opts.onError === "function") opts.onError(stage, err); } catch (e0) {}
+        }
+
+        function disableDrawing(err) {
+          drawFailureCount++;
+          error("draw", err);
+          if (drawFailureCount < 3 || drawDisabled) return;
+          drawDisabled = true;
+          panning = false;
+          scaling = false;
+          regionSerial++;
+          try { if (regionRunnable) handler.removeCallbacks(regionRunnable); } catch (e0) {}
+          regionRunnable = null;
+          setStatus("图片显示失败，可返回或使用保存/分享", true);
+          log("e", "draw disabled after failures=" + String(drawFailureCount));
+        }
+
+        function invalidateImageCanvas(stage) {
+          if (drawDisabled || released || deleted) return false;
+          try {
+            if (imageCanvas) {
+              imageCanvas.invalidate();
+              return true;
+            }
+          } catch (e0) {
+            error(String(stage || "invalidate"), e0);
+          }
+          return false;
         }
 
         function post(fn) {
@@ -1426,32 +1455,42 @@
         function createCanvas() {
           var CanvasView = new JavaAdapter(android.view.View, {
             onSizeChanged: function(w, h, oldw, oldh) {
-              viewW = Number(w || 0);
-              viewH = Number(h || 0);
-              if (baseBitmap) {
-                if (!initialized) fitTransform();
-                else clampTranslation();
-                scheduleRegionDecode();
+              try {
+                viewW = Math.max(0, Number(w || 0));
+                viewH = Math.max(0, Number(h || 0));
+                if (baseBitmap) {
+                  if (!initialized) fitTransform();
+                  else clampTranslation();
+                  scheduleRegionDecode();
+                }
+              } catch (eSize) {
+                error("size_changed", eSize);
               }
             },
             onDraw: function(canvas) {
               try {
+                var drawWidth = Math.max(0, Number(viewW || 0));
+                var drawHeight = Math.max(0, Number(viewH || 0));
+                try { if (!(drawWidth > 0)) drawWidth = Math.max(0, Number(canvas.getWidth() || 0)); } catch (eWidth) {}
+                try { if (!(drawHeight > 0)) drawHeight = Math.max(0, Number(canvas.getHeight() || 0)); } catch (eHeight) {}
                 canvas.drawARGB(255, (colors.bg >>> 16) & 255, (colors.bg >>> 8) & 255, colors.bg & 255);
                 var cell = dp22(18);
                 var p = new android.graphics.Paint();
-                for (var yy = 0; yy < getHeight(); yy += cell) {
-                  for (var xx = 0; xx < getWidth(); xx += cell) {
+                for (var yy = 0; yy < drawHeight; yy += cell) {
+                  for (var xx = 0; xx < drawWidth; xx += cell) {
                     var v = (((xx / cell) + (yy / cell)) % 2 === 0) ? 20 : 8;
                     p.setARGB(v, 128, 128, 128);
-                    canvas.drawRect(xx, yy, xx + cell, yy + cell, p);
+                    canvas.drawRect(xx, yy, Math.min(drawWidth, xx + cell), Math.min(drawHeight, yy + cell), p);
                   }
                 }
-                if (!baseBitmap) {
+                if (drawDisabled || !baseBitmap) {
                   var t = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+                  var message = drawDisabled ? "图片显示失败" : (deleted ? "截图已删除" : "正在载入截图…");
                   t.setARGB(255, (colors.secondary >>> 16) & 255, (colors.secondary >>> 8) & 255, colors.secondary & 255);
                   t.setTextSize(dp22(15));
                   t.setTextAlign(android.graphics.Paint.Align.CENTER);
-                  canvas.drawText(new java.lang.String(deleted ? "截图已删除" : "正在载入截图…"), getWidth() / 2, getHeight() / 2, t);
+                  canvas.drawText(new java.lang.String(message), drawWidth / 2, drawHeight / 2, t);
+                  drawFailureCount = 0;
                   return;
                 }
                 canvas.save();
@@ -1467,36 +1506,47 @@
                   var dst = new android.graphics.RectF(left, top, right, bottom);
                   canvas.drawBitmap(regionBitmap, null, dst, null);
                 }
-              } catch (eDraw) { error("draw", eDraw); }
+                drawFailureCount = 0;
+              } catch (eDraw) {
+                disableDrawing(eDraw);
+              }
             },
             onTouchEvent: function(event) {
-              try { scaleDetector.onTouchEvent(event); } catch (eScale) {}
-              try { gestureDetector.onTouchEvent(event); } catch (eGesture) {}
-              var action = event.getActionMasked ? event.getActionMasked() : event.getAction();
-              if (action === android.view.MotionEvent.ACTION_DOWN) {
-                lastX = event.getX();
-                lastY = event.getY();
-                panning = true;
+              try {
+                if (drawDisabled || released || deleted) return true;
+                try { scaleDetector.onTouchEvent(event); } catch (eScale) { error("touch_scale", eScale); }
+                try { gestureDetector.onTouchEvent(event); } catch (eGesture) { error("touch_gesture", eGesture); }
+                var action = event.getActionMasked ? event.getActionMasked() : event.getAction();
+                if (action === android.view.MotionEvent.ACTION_DOWN) {
+                  lastX = event.getX();
+                  lastY = event.getY();
+                  panning = true;
+                  return true;
+                }
+                if (action === android.view.MotionEvent.ACTION_MOVE && panning && !scaling && event.getPointerCount() === 1) {
+                  var nx = event.getX();
+                  var ny = event.getY();
+                  tx += nx - lastX;
+                  ty += ny - lastY;
+                  lastX = nx;
+                  lastY = ny;
+                  clampTranslation();
+                  invalidateImageCanvas("touch_invalidate");
+                  scheduleRegionDecode();
+                  return true;
+                }
+                if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
+                  panning = false;
+                  scheduleRegionDecode();
+                  return true;
+                }
                 return true;
-              }
-              if (action === android.view.MotionEvent.ACTION_MOVE && panning && !scaling && event.getPointerCount() === 1) {
-                var nx = event.getX();
-                var ny = event.getY();
-                tx += nx - lastX;
-                ty += ny - lastY;
-                lastX = nx;
-                lastY = ny;
-                clampTranslation();
-                invalidate();
-                scheduleRegionDecode();
-                return true;
-              }
-              if (action === android.view.MotionEvent.ACTION_UP || action === android.view.MotionEvent.ACTION_CANCEL) {
+              } catch (eTouch) {
                 panning = false;
-                scheduleRegionDecode();
+                scaling = false;
+                error("touch", eTouch);
                 return true;
               }
-              return true;
             }
           }, opts.context || context);
           CanvasView.setClickable(true);
@@ -1683,7 +1733,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.2.0";
+      proto.__toolHubPickwordImageViewerVersion = "1.2.1";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
