@@ -4,17 +4,17 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "350c65c9b16cf2a6df370a8bd8ea552a05716081f52651f6ce59ad0ac80a3240",
-      "size": 29622,
-      "version": 20260718133855
+      "sha256": "1540f66d88bd0a75912b361ae66b9a7a85107b6dd331fde5b24add572e8e4e91",
+      "size": 31722,
+      "version": 20260718154840
     }
   },
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "c5a889cb98787e6735b5293b2db6bafeafe06262bc8867179f123b39296e3e0e",
-    "size": 82799,
-    "version": 20260718213000,
+    "sha256": "27c72ac06e987e2b30d66ab0f197e43d0c2e599952a4f140123cd6c9533413b0",
+    "size": 82825,
+    "version": 20260718232000,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -154,23 +154,29 @@
       "version": "1.3.3"
     },
     "th_22_image_viewer.js": {
-      "sha256": "4120b158add1c9c946889e7d53b324bace169befbcaf5500f1c8a28d47d68591",
-      "size": 26188,
+      "sha256": "bdf984992bee7940d0147e106f686031d2e6941120a369a6b5ae8fe553d9b94b",
+      "size": 26960,
+      "version": "1.0.1"
+    },
+    "th_stage2_bootstrap.js": {
+      "sha256": "4151c67ae27717fa9f2051d4ddc90c9b3595577f42ba0044931fcfe4354d0fe1",
+      "size": 113,
       "version": "1.0.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "框选 OCR 截图路径完整交接到拾字面板，OCR 空结果或失败时仍可保留并查看截图",
-      "拾字文本区与截图缩略图在宽屏按 70/30 并排，窄屏自动切换为上图下文",
-      "原图查看复用同一个拾字 WindowManager 根布局，返回后保留文字、选区、翻译和滚动状态",
-      "新增单图缩放、平移、双击复位、降采样与 BitmapRegionDecoder 可视区域解码",
-      "严格限制只读取 ToolHub/screenshots 内部截图，图片模块不接管截图线程和文件删除"
+      "原图页新增保存、分享和删除操作：公共保存使用 MediaStore，系统分享使用可授权的 content URI",
+      "删除严格限制为 ToolHub/screenshots 内部截图，删除后保留拾字文字、选区与翻译状态",
+      "新增图片状态与分享临时副本 SQLite 记录，默认内部截图保留 7 天、分享临时副本保留 24 小时",
+      "设置页新增公共保存目录、目录可写测试、保留期限和立即清理入口",
+      "公共保存副本永不参与自动清理，历史截图管理器继续留到第三阶段",
+      "STAGE2_DIAGNOSTIC: sha=d6c5492ab983e9790f5b901d5b01eaca0fbb958e6e4a361937723d6ef1f963f3 expected=65e633a51cf5c9e76bfda8bf640be9bc38d1e8524378cc644a6d61e528767116 length=91595 overlaps=0,1,0,0,0,0,0,0 syntax=line=6 offset=23963 snippet=' {\\\\n      var cursor = null;\\\\n      var rows = [];\\\\n      var result = { scanned: 0, deleted: 0, failed: 0 };\\\\n      try {\\\\n        cursor = db.rawQuery(\"SELECT export_id,public_path,content_uri FROM toolhub_pickword_image_exports WHERE export_kind=\\'share_temp\\' AND deleted_at=0 AND expires_at>0 AND expires_at<?\", stringArgs22([String(now22())]));\\\\n        while (cursor.moveToNext()) {\\\\n          rows.push({\\\\n            id: Number(cursor.getLong(0)),\\\\n            publicPath: String(cursor.getStri' msg=invalid syntax"
     ],
     "date": "2026-07-18",
-    "title": "接入拾字截图缩略图与原图查看"
+    "title": "接入拾字截图保存、分享、删除与自动清理"
   },
   "schema": 4,
-  "version": 20260718133855
+  "version": 20260718154840
 }
