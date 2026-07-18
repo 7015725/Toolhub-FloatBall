@@ -104,6 +104,31 @@ def _bootstrap_pickword_image_stage1():
     verifier_text = verifier_text.replace(old_ocr_assertion, new_ocr_assertion, 1)
     verifier.write_text(verifier_text, encoding="utf-8")
 
+    pointer_verifier = ROOT / "scripts" / "verify_pointer_regressions.py"
+    pointer_verifier_text = pointer_verifier.read_text(encoding="utf-8")
+    pointer_verifier_text = pointer_verifier_text.replace(
+        '"N6 empty OCR result is not success",',
+        '"N6 empty OCR remains failure but keeps screenshot preview",',
+        1,
+    )
+    old_pointer_ocr_assertion = '''        and "if (hasText && typeof appObj.publishResultPreview" in apply_ocr
+        and "obj.clipboard = false;" in apply_ocr'''
+    new_pointer_ocr_assertion = '''        and "var previewAllowed = hasText || screenshotOk;" in apply_ocr
+        and "if (previewAllowed && typeof appObj.publishResultPreview" in apply_ocr
+        and "allowEmptyText: !hasText && screenshotOk" in apply_ocr
+        and "obj.clipboard = false;" in apply_ocr'''
+    if old_pointer_ocr_assertion not in pointer_verifier_text:
+        raise RuntimeError("pointer OCR verifier anchor missing")
+    pointer_verifier_text = pointer_verifier_text.replace(
+        old_pointer_ocr_assertion, new_pointer_ocr_assertion, 1
+    )
+    pointer_verifier_text = pointer_verifier_text.replace(
+        "empty OCR must use AREA_OCR_EMPTY, skip preview publication, and avoid automatic clipboard writes",
+        "empty OCR must keep AREA_OCR_EMPTY and failure semantics, publish only the saved screenshot, and avoid automatic clipboard writes",
+        1,
+    )
+    pointer_verifier.write_text(pointer_verifier_text, encoding="utf-8")
+
     signer = ROOT / "scripts" / "generate_signed_manifest.py"
     signer_text = signer.read_text(encoding="utf-8")
     old_modules = '    "th_20_pickword.js", "th_21_result_preview.js",\n'
