@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "id": "fix-pickword-emoji-grapheme",
+  "type": "fix",
+  "title": "修复拾字 Emoji 字素绘制与完整选区",
+  "details": [
+    "拾字 Canvas 改为按 Unicode 字素簇测量、换行和整串绘制，修复 Emoji 代理项被拆成替代字符的问题",
+    "点击、长按和拖选统一扩展到完整字素边界，复制、翻译、替换与撤销继续保留 UTF-16 范围模型",
+    "顶部选中计数、拖选计数和编辑计数改为按用户可见字符统计，不再把一个 Emoji 计为多个字",
+    "最大载入、首屏载入和钉屏分批追加使用安全字素边界，避免从代理对、肤色、国旗或 ZWJ 序列中间截断",
+    "保留 Rhino ES5、Android 14 长按回调、ColorOS 安全颜色、Canvas 可见区刷新、放大镜和钉屏生命周期边界"
+  ],
+  "manifestVersion": 20260718025356,
+  "date": "2026-07-18",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260714081104,
+    "to": 20260714081104
+  }
+}
