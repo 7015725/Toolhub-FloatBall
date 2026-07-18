@@ -25,6 +25,14 @@ def _bootstrap_pickword_image_stage1():
     if not script.exists():
         return
 
+    script_text = script.read_text(encoding="utf-8")
+    invalid_cast = "((android.view.ViewGroup)view.getParent()).removeView(view);"
+    safe_parent_call = "view.getParent().removeView(view);"
+    if invalid_cast in script_text:
+        script.write_text(
+            script_text.replace(invalid_cast, safe_parent_call), encoding="utf-8"
+        )
+
     subprocess.check_call([sys.executable, str(script)], cwd=str(ROOT))
 
     signer = ROOT / "scripts" / "generate_signed_manifest.py"
