@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import subprocess
+import traceback
 import urllib.request
 from pathlib import Path
 
@@ -10,6 +11,36 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_PR = 339
 PREFIXES = ["STAGE2_SOURCE_%02d\n" % index for index in range(1, 10)]
 TARGET = ROOT / "scripts" / "apply_pickword_image_stage2.py"
+DIAGNOSTIC = ROOT / "stage2_final_failure.txt"
+
+
+def git_run(args):
+    return subprocess.run(
+        ["git"] + list(args),
+        cwd=str(ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def commit_diagnostic(message):
+    text = str(message or "unknown stage2 failure")
+    if len(text) > 5000:
+        text = text[-5000:]
+    DIAGNOSTIC.write_text(text + "\n", encoding="utf-8")
+    git_run(["config", "user.name", "github-actions[bot]"])
+    git_run([
+        "config",
+        "user.email",
+        "41898282+github-actions[bot]@users.noreply.github.com",
+    ])
+    add = git_run(["add", "stage2_final_failure.txt"])
+    if add.returncode != 0:
+        raise SystemExit("diagnostic git add failed: " + str(add.stdout or ""))
+    commit = git_run(["commit", "-m", "记录第二阶段最终执行诊断"])
+    if commit.returncode != 0:
+        raise SystemExit("diagnostic commit failed: " + str(commit.stdout or ""))
 
 
 def append_without_overlap(current, following):
@@ -123,4 +154,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BaseException:
+        commit_diagnostic(traceback.format_exc())
