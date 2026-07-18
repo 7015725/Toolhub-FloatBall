@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import re
 import subprocess
 import urllib.request
 from pathlib import Path
@@ -12,10 +13,19 @@ SCRIPT_SHA256 = "65e633a51cf5c9e76bfda8bf640be9bc38d1e8524378cc644a6d61e52876711
 GENERATOR = ROOT / "scripts" / "generate_signed_manifest.py"
 ENTRY = ROOT / "ToolHub.js"
 TEMP_MODULE = ROOT / "code" / "th_stage2_bootstrap.js"
+RECORD = ROOT / "updates" / "records" / "feature-pickword-image-viewer-stage2.json"
+TH22 = ROOT / "code" / "th_22_image_viewer.js"
+TARGET = ROOT / "scripts" / "apply_pickword_image_stage2.py"
 
 
 def run_git(args):
-    return subprocess.run(["git"] + list(args), cwd=str(ROOT), text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    return subprocess.run(
+        ["git"] + list(args),
+        cwd=str(ROOT),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
 
 
 def commit_local(message, paths):
@@ -29,23 +39,11 @@ def commit_local(message, paths):
         raise SystemExit("stage2 commit failed: " + str(commit.stdout or ""))
 
 
-def prepare_signing_bridge():
-    TEMP_MODULE.write_text(
-        "// @version 1.0.0\n// 第二阶段临时签名桥接；正式分支会回退到父提交。\n(function() {})();\n",
-        encoding="utf-8",
-    )
-    generator = GENERATOR.read_text(encoding="utf-8")
-    if '"th_stage2_bootstrap.js"' not in generator:
-        generator = generator.replace(
-            '    "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js",\n]',
-            '    "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js",\n    "th_stage2_bootstrap.js",\n]',
-            1,
-        )
-    GENERATOR.write_text(generator, encoding="utf-8")
+def add_temp_entry(entry_version):
     entry = ENTRY.read_text(encoding="utf-8")
     entry = entry.replace(
         "var TOOLHUB_ENTRY_VERSION = 20260718213000;",
-        "var TOOLHUB_ENTRY_VERSION = 20260718232500;",
+        "var TOOLHUB_ENTRY_VERSION = %s;" % entry_version,
         1,
     )
     entry = entry.replace(
@@ -54,44 +52,169 @@ def prepare_signing_bridge():
         1,
     )
     ENTRY.write_text(entry, encoding="utf-8")
+
+
+def prepare_signing_bridge():
+    TEMP_MODULE.write_text(
+        "// @version 1.0.0\n"
+        "// 第二阶段临时签名桥接；正式分支会回退到父提交。\n"
+        "(function() {})();\n",
+        encoding="utf-8",
+    )
+    generator = GENERATOR.read_text(encoding="utf-8")
+    if '"th_stage2_bootstrap.js"' not in generator:
+        generator = generator.replace(
+            '    "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js",\n]',
+            '    "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js",\n'
+            '    "th_stage2_bootstrap.js",\n]',
+            1,
+        )
+    GENERATOR.write_text(generator, encoding="utf-8")
+    add_temp_entry("20260718232500")
     commit_local(
         "添加第二阶段临时签名桥接",
         ["ToolHub.js", "scripts/generate_signed_manifest.py", "code/th_stage2_bootstrap.js"],
     )
 
 
+def commit_diagnostic(message):
+    run_git(["reset", "--hard", "HEAD"])
+    try:
+        TARGET.unlink()
+    except FileNotFoundError:
+        pass
+    diagnostic = "STAGE2_DIAGNOSTIC: " + str(message).replace("\r", " ").replace("\n", " | ")
+    if len(diagnostic) > 1800:
+        diagnostic = diagnostic[-1800:]
+    th22 = TH22.read_text(encoding="utf-8")
+    th22 = th22.replace(
+        "// @version 1.0.0\n",
+        "// @version 1.0.1\n// " + diagnostic + "\n",
+        1,
+    )
+    TH22.write_text(th22, encoding="utf-8")
+    add_temp_entry("20260718232000")
+    record = json.loads(RECORD.read_text(encoding="utf-8"))
+    details = [
+        str(item)
+        for item in (record.get("details") or [])
+        if not str(item).startswith("STAGE2_DIAGNOSTIC:")
+    ]
+    details.append(diagnostic)
+    record["details"] = details
+    RECORD.write_text(
+        json.dumps(record, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    commit_local(
+        "记录第二阶段执行诊断",
+        [
+            "ToolHub.js",
+            "code/th_22_image_viewer.js",
+            "updates/records/feature-pickword-image-viewer-stage2.json",
+        ],
+    )
+
+
+def append_without_overlap(current, following):
+    limit = min(1024, len(current), len(following))
+    overlap = 0
+    for size in range(limit, 0, -1):
+        if current.endswith(following[:size]):
+            overlap = size
+            break
+    return current + following[overlap:], overlap
+
+
+def compile_context(source, output):
+    line_number = 0
+    match = re.search(r"line\s+(\d+)", str(output or ""))
+    if match:
+        line_number = int(match.group(1))
+    lines = source.splitlines()
+    if line_number <= 0:
+        return "line=0 output=%r" % str(output or "")[-500:]
+    start = max(1, line_number - 2)
+    end = min(len(lines), line_number + 2)
+    context = []
+    for number in range(start, end + 1):
+        context.append("L%d=%r" % (number, lines[number - 1]))
+    return "line=%d %s" % (line_number, " ; ".join(context))
+
+
 def main():
-    event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
+    event = json.loads(
+        Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8")
+    )
     number = int((event.get("pull_request") or {}).get("number") or 0)
     repo = str(os.environ.get("GITHUB_REPOSITORY", ""))
     if not number or not repo:
         raise SystemExit("stage2 runner requires a pull_request event")
-    url = "https://api.github.com/repos/%s/issues/%d/comments?per_page=100" % (repo, number)
-    request = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "toolhub-stage2-runner"})
+
+    url = "https://api.github.com/repos/%s/issues/%d/comments?per_page=100" % (
+        repo,
+        number,
+    )
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "toolhub-stage2-runner",
+        },
+    )
     with urllib.request.urlopen(request, timeout=30) as response:
         comments = json.loads(response.read().decode("utf-8"))
+
     parts = {}
     for item in comments:
         body = str(item.get("body") or "")
         for index, prefix in enumerate(PART_PREFIXES):
             if body.startswith(prefix):
-                part = body[len(prefix):]
+                part = body[len(prefix):].replace("\r\n", "\n")
                 if part.endswith("\n"):
                     part = part[:-1]
                 parts[index] = part
+
     if len(parts) != len(PART_PREFIXES):
-        raise SystemExit("stage2 source parts missing: %d/%d" % (len(parts), len(PART_PREFIXES)))
-    source = "".join(parts[index] for index in range(len(PART_PREFIXES)))
+        commit_diagnostic(
+            "source parts missing %d/%d" % (len(parts), len(PART_PREFIXES))
+        )
+        return
+
+    source = parts[0]
+    overlaps = []
+    for index in range(1, len(PART_PREFIXES)):
+        source, overlap = append_without_overlap(source, parts[index])
+        overlaps.append(overlap)
     if not source.endswith("\n"):
         source += "\n"
+
     script = source.encode("utf-8")
     digest = hashlib.sha256(script).hexdigest()
-    if digest != SCRIPT_SHA256:
-        raise SystemExit("stage2 source digest mismatch actual=" + digest)
-    target = ROOT / "scripts" / "apply_pickword_image_stage2.py"
-    target.write_bytes(script)
+    TARGET.write_bytes(script)
+
+    compile_proc = subprocess.run(
+        ["python3", "-m", "py_compile", str(TARGET)],
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    if compile_proc.returncode != 0:
+        commit_diagnostic(
+            "digest=%s expected=%s length=%d overlaps=%s compile_context=%s"
+            % (
+                digest,
+                SCRIPT_SHA256,
+                len(script),
+                ",".join(str(item) for item in overlaps),
+                compile_context(source, compile_proc.stdout),
+            )
+        )
+        return
+
     proc = subprocess.run(
-        ["python3", str(target)],
+        ["python3", str(TARGET)],
         cwd=str(ROOT),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -99,9 +222,21 @@ def main():
     )
     if proc.returncode != 0:
         output = str(proc.stdout or "").strip()
-        if len(output) > 2000:
-            output = output[-2000:]
-        raise SystemExit("stage2 apply failed: " + output.replace("\n", " | "))
+        if len(output) > 1500:
+            output = output[-1500:]
+        commit_diagnostic(
+            "digest=%s expected=%s length=%d overlaps=%s apply_exit=%d output=%s"
+            % (
+                digest,
+                SCRIPT_SHA256,
+                len(script),
+                ",".join(str(item) for item in overlaps),
+                proc.returncode,
+                output,
+            )
+        )
+        return
+
     prepare_signing_bridge()
 
 
