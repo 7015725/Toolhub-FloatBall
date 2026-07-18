@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "historyVersion": 20260718193842,
-  "generatedAt": "2026-07-19T03:38:42+08:00",
+  "historyVersion": 20260718212307,
+  "generatedAt": "2026-07-19T05:23:07+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "fix-pickword-image-root-public-io",
+      "type": "fix",
+      "title": "修复 system_server 公共截图保存与分享失败",
+      "details": [
+        "system_server 环境优先通过 su --mount-master 将内部截图复制到公共目录，避免 MediaStore openOutputStream 的远端 Provider 异常",
+        "Root 复制同时支持 /storage/emulated/0 与 /data/media/<userId> 两条路径，并对目标路径执行主存储边界校验和 Shell 引号转义",
+        "公共图片写入后通过 MediaScannerConnection、系统扫描广播和 MediaStore 路径查询依次取得可分享 content URI",
+        "保存、分享、已保存图片查看、目录测试和公共副本删除统一接入 Root 回退；非 system_server 环境仍优先使用 MediaStore",
+        "新增专项回归，锁定 Root 双路径回退、媒体扫描、分享 URI 和 th_22 版本"
+      ],
+      "manifestVersion": 20260718212307,
+      "date": "2026-07-19",
+      "modules": [
+        {
+          "name": "th_22_image_viewer.js",
+          "from": "1.2.2",
+          "to": "1.2.3",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260719024500,
+        "to": 20260719024500
+      }
+    },
     {
       "schema": 1,
       "id": "fix-pickword-image-public-media-store",
