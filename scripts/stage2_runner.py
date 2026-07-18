@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "scripts" / "apply_pickword_image_stage2.py"
 SOURCE_PR = 339
-PREFIXES = ["STAGE2_PAYLOAD_%02d\n" % index for index in range(1, 5)]
+PREFIX = "STAGE2_PAYLOAD_01\n"
 EXPECTED_SIZE = 91547
 EXPECTED_SHA256 = "65e633a51cf5c9e76bfda8bf640be9bc38d1e8524378cc644a6d61e528767116"
 
@@ -19,35 +19,16 @@ def normalized_base64(value):
     return "".join(str(value or "").split())
 
 
-def decode_payload(parts):
-    decoded_parts = []
-    for part in parts:
-        decoded_parts.append(base64.b64decode(normalized_base64(part)))
-
-    candidates = []
-    try:
-        candidates.append(gzip.decompress(base64.b64decode(normalized_base64("".join(parts)))))
-    except Exception:
-        pass
-    try:
-        candidates.append(gzip.decompress(b"".join(decoded_parts)))
-    except Exception:
-        pass
-    try:
-        candidates.append(b"".join(gzip.decompress(item) for item in decoded_parts))
-    except Exception:
-        pass
-    candidates.append(b"".join(decoded_parts))
-
-    for payload in candidates:
-        if len(payload) != EXPECTED_SIZE:
-            continue
-        if hashlib.sha256(payload).hexdigest() == EXPECTED_SHA256:
-            return payload
-    raise SystemExit(
-        "stage2 payload verification failed candidates="
-        + ",".join(str(len(item)) for item in candidates)
-    )
+def decode_payload(encoded):
+    compressed = base64.b64decode(normalized_base64(encoded))
+    payload = gzip.decompress(compressed)
+    actual_sha256 = hashlib.sha256(payload).hexdigest()
+    if len(payload) != EXPECTED_SIZE or actual_sha256 != EXPECTED_SHA256:
+        raise SystemExit(
+            "stage2 payload mismatch compressed=%d size=%d sha256=%s"
+            % (len(compressed), len(payload), actual_sha256)
+        )
+    return payload
 
 
 def patch_bootstrap_cleanup(payload):
@@ -65,7 +46,12 @@ def patch_bootstrap_cleanup(payload):
     )
     new = "    write(\"scripts/generate_signed_manifest.py\", gen)\n"
     if source.count(old) != 1:
-        raise SystemExit("stage2 bootstrap cleanup anchor mismatch")
+        position = source.find("temp_module")
+        snippet = source[max(0, position - 240):position + 700] if position >= 0 else ""
+        raise SystemExit(
+            "stage2 bootstrap cleanup anchor mismatch count=%d position=%d snippet=%r"
+            % (source.count(old), position, snippet)
+        )
     return source.replace(old, new, 1)
 
 
@@ -85,16 +71,16 @@ def main():
     with urllib.request.urlopen(request, timeout=30) as response:
         comments = json.loads(response.read().decode("utf-8"))
 
-    found = {}
+    payload_text = ""
     for item in comments:
         body = str(item.get("body") or "")
-        for index, prefix in enumerate(PREFIXES):
-            if body.startswith(prefix):
-                found[index] = body[len(prefix):]
-    if len(found) != len(PREFIXES):
-        raise SystemExit("stage2 payload parts missing: %d/%d" % (len(found), len(PREFIXES)))
+        if body.startswith(PREFIX):
+            payload_text = body[len(PREFIX):]
+            break
+    if not payload_text:
+        raise SystemExit("stage2 payload comment missing")
 
-    payload = decode_payload([found[index] for index in range(len(PREFIXES))])
+    payload = decode_payload(payload_text)
     source = patch_bootstrap_cleanup(payload)
     compile(source, str(TARGET), "exec")
     TARGET.write_text(source, encoding="utf-8")
