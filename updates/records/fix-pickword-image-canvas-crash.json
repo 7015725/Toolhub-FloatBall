@@ -10,5 +10,12 @@
     "连续绘制异常达到阈值后停止区域解码和交互刷新，保留返回、保存、分享与删除操作",
     "新增静态回归，禁止 JavaAdapter 自绘 View 中再次出现裸 View 方法调用"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260718191407,
+  "date": "2026-07-19",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260719024500,
+    "to": 20260719024500
+  }
 }
