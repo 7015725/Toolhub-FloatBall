@@ -1,4 +1,4 @@
-// @version 1.0.16
+// @version 1.0.17
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -235,6 +235,9 @@
     var pickwordImagePage20 = null;
     var pickwordImageWindowSnapshot20 = null;
     var pickwordImageChildSnapshot20 = null;
+    var pickwordImageTextParent20 = null;
+    var pickwordImageTextView20 = null;
+    var pickwordImageTextOriginalLp20 = null;
 
     function normalizePickwordImageMeta20(meta) {
         if (!meta || typeof meta !== "object") return null;
@@ -261,7 +264,10 @@
                 ocrStatus: String(meta.ocrStatus || ""),
                 ocrError: String(meta.ocrError || ""),
                 createdAt: Number(meta.createdAt || 0),
-                rect: meta.rect || null
+                rect: meta.rect || null,
+                savedPublicPath: String(meta.savedPublicPath || ""),
+                savedContentUri: String(meta.savedContentUri || ""),
+                savedAt: Number(meta.savedAt || 0)
             };
         } catch (eNormalize) {
             try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image meta rejected: " + String(eNormalize)); } catch (eLog) {}
@@ -280,6 +286,36 @@
         pickwordImagePage20 = null;
         pickwordImageWindowSnapshot20 = null;
         pickwordImageChildSnapshot20 = null;
+        pickwordImageTextParent20 = null;
+        pickwordImageTextView20 = null;
+        pickwordImageTextOriginalLp20 = null;
+    }
+
+    function removePickwordImageAfterDelete20(info) {
+        var parent = pickwordImageTextParent20;
+        var view = pickwordImageTextView20;
+        var originalLp = pickwordImageTextOriginalLp20;
+        var host = pickwordContentHost20;
+        var imagePage = pickwordImagePage20;
+        try { restorePickwordResultPage20("image_deleted"); } catch (eRestore) {}
+        try { if (view && view.getParent()) view.getParent().removeView(view); } catch (eDetach) {}
+        try { if (host && host.getParent()) host.getParent().removeView(host); } catch (eHost) {}
+        try { if (imagePage && imagePage.getParent()) imagePage.getParent().removeView(imagePage); } catch (ePage) {}
+        if (currentPickwordMeta20) {
+            currentPickwordMeta20.available = false;
+            currentPickwordMeta20.deleted = true;
+            currentPickwordMeta20.deletedAt = Number(info && info.deletedAt || java.lang.System.currentTimeMillis());
+        }
+        releasePickwordImageController20("deleted");
+        try {
+            if (parent && view) {
+                if (originalLp) parent.addView(view, originalLp);
+                else parent.addView(view);
+            }
+        } catch (eAttach) {
+            try { safeLog(toolhubAppRef && toolhubAppRef.L, "e", "pickword image text restore fail: " + String(eAttach)); } catch (eLog) {}
+        }
+        return true;
     }
 
     function restorePickwordResultPage20(reason) {
@@ -371,6 +407,9 @@
         }
         try {
             releasePickwordImageController20("replace");
+            pickwordImageTextParent20 = parent;
+            pickwordImageTextView20 = view;
+            pickwordImageTextOriginalLp20 = originalLp || null;
             pickwordImageController20 = toolhubAppRef.createPickwordImageController({
                 context: appContext,
                 handler: mainHandler,
@@ -380,6 +419,19 @@
                 onCloseSession: function() {
                     try { 拾字Floaty.hide(); } catch (eHide) {}
                 },
+                onSaved: function(info) {
+                    try {
+                        if (currentPickwordMeta20) {
+                            currentPickwordMeta20.savedPublicPath = String(info && info.publicPath || "");
+                            currentPickwordMeta20.savedContentUri = String(info && info.contentUri || "");
+                            currentPickwordMeta20.savedAt = Number(info && info.savedAt || java.lang.System.currentTimeMillis());
+                        }
+                    } catch (eSaved) {}
+                },
+                onShared: function(info) {
+                    try { safeLog(toolhubAppRef && toolhubAppRef.L, "i", "pickword image shared uri=" + String(info && info.contentUri || "")); } catch (eShared) {}
+                },
+                onDeleted: function(info) { removePickwordImageAfterDelete20(info); },
                 onError: function(stage, error) {
                     try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image stage=" + String(stage || "") + " err=" + String(error || "")); } catch (eLog) {}
                 }

@@ -600,3 +600,10 @@ manifest.json
 manifest.sig
 update_history.json
 ```
+
+## 拾字截图第二阶段
+
+- 原图页支持保存到公共目录、通过 content URI 系统分享，以及永久删除 ToolHub 内部截图。
+- 默认公共目录为 `/storage/emulated/0/Pictures/ToolHub`，可在“设置 → 拾字”中修改并测试可写性。
+- 内部截图默认保留 7 天；分享临时副本保留 24 小时。公共保存副本不参与自动清理。
+- 图片状态记录在 `toolhub.db` 的独立关系表中；删除截图后保留拾字文字与当前选择状态。

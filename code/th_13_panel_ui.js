@@ -1,4 +1,4 @@
-// @version 1.0.12
+// @version 1.0.13
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -619,10 +619,259 @@ FloatBallAppWM.prototype.createPickwordTranslateSettingsView = function(item, pa
   parent.addView(root, new android.widget.LinearLayout.LayoutParams(-1, -2));
 };
 
+
+// =======================【设置项：拾字截图保存与清理】=======================
+FloatBallAppWM.prototype.createPickwordImageSettingsView = function(item, parent, needDivider) {
+  var self = this;
+  var isDark = this.isDarkTheme ? !!this.isDarkTheme() : false;
+  var C = this.ui.colors;
+  var T = this.getSettingsColorScheme ? this.getSettingsColorScheme() : null;
+  var textColor = T ? T.onSurface : (isDark ? C.textPriDark : C.textPriLight);
+  var secColor = T ? T.onSurface2 : (isDark ? C.textSecDark : C.textSecLight);
+  var dividerColor = T ? T.outlineVariant : (isDark ? C.dividerDark : C.dividerLight);
+  var primary = T ? T.primary : C.primary;
+  var onPrimary = T && T.onPrimary ? T.onPrimary : android.graphics.Color.WHITE;
+  var inputBgColor = T ? T.surface2 : (isDark ? C.inputBgDark : C.inputBgLight);
+
+  if (needDivider) {
+    var divider = new android.view.View(context);
+    var dividerLp = new android.widget.LinearLayout.LayoutParams(-1, 1);
+    dividerLp.setMargins(this.dp(14), 0, this.dp(14), 0);
+    divider.setLayoutParams(dividerLp);
+    toolhubSafeSetBackgroundColor(divider, this.withAlpha ? this.withAlpha(dividerColor, isDark ? 0.36 : 0.28) : dividerColor);
+    parent.addView(divider);
+  }
+
+  var root = new android.widget.LinearLayout(context);
+  root.setOrientation(android.widget.LinearLayout.VERTICAL);
+  root.setPadding(this.dp(14), this.dp(12), this.dp(14), this.dp(14));
+
+  var title = new android.widget.TextView(context);
+  title.setText("截图保存与清理");
+  toolhubSafeSetTextColor(title, textColor);
+  title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+  title.setTypeface(null, android.graphics.Typeface.BOLD);
+  root.addView(title);
+
+  var desc = new android.widget.TextView(context);
+  desc.setText("原始截图保存在 ToolHub 内部目录；可保存公共副本或系统分享。自动清理只删除内部截图和过期分享临时副本。");
+  toolhubSafeSetTextColor(desc, secColor);
+  desc.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  desc.setPadding(0, self.dp(3), 0, self.dp(8));
+  root.addView(desc);
+
+  var pathTitle = new android.widget.TextView(context);
+  pathTitle.setText("公共保存目录");
+  toolhubSafeSetTextColor(pathTitle, textColor);
+  pathTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+  pathTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+  root.addView(pathTitle);
+
+  var pathInput = new android.widget.EditText(context);
+  var currentPath = self.getPendingValue("PICKWORD_IMAGE_PUBLIC_DIR");
+  if (currentPath === undefined || currentPath === null || String(currentPath).length === 0) {
+    currentPath = "/storage/emulated/0/Pictures/ToolHub";
+  }
+  pathInput.setText(String(currentPath));
+  pathInput.setHint("/storage/emulated/0/Pictures/ToolHub");
+  pathInput.setSingleLine(true);
+  pathInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+  toolhubSafeSetTextColor(pathInput, textColor);
+  toolhubSafeSetHintTextColor(pathInput, secColor);
+  pathInput.setPadding(self.dp(12), self.dp(8), self.dp(12), self.dp(8));
+  pathInput.setBackground(self.ui.createStrokeDrawable(
+    inputBgColor,
+    self.withAlpha(dividerColor, isDark ? 0.52 : 0.36),
+    self.dp(1),
+    self.dp(12)
+  ));
+  var pathLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+  pathLp.setMargins(0, self.dp(6), 0, self.dp(6));
+  root.addView(pathInput, pathLp);
+  pathInput.addTextChangedListener(new android.text.TextWatcher({
+    beforeTextChanged: function(s, start, count, after) {},
+    onTextChanged: function(s, start, before, count) {},
+    afterTextChanged: function(s) {
+      try {
+        self.touchActivity();
+        self.setPendingValue("PICKWORD_IMAGE_PUBLIC_DIR", String(s));
+      } catch(eText) {}
+    }
+  }));
+  pathInput.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
+    try {
+      v.requestFocus();
+      var imm = context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+      imm.showSoftInput(v, 0);
+    } catch(eKeyboard) {}
+  }}));
+
+  var status = new android.widget.TextView(context);
+  status.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+  status.setPadding(0, self.dp(2), 0, self.dp(6));
+  toolhubSafeSetTextColor(status, secColor);
+  root.addView(status, new android.widget.LinearLayout.LayoutParams(-1, -2));
+
+  function setStatus13(text, errorValue) {
+    try {
+      status.setText(String(text || ""));
+      toolhubSafeSetTextColor(status, errorValue === true && T && T.danger ? T.danger : secColor);
+    } catch(eStatus) {}
+  }
+
+  function refreshStats13() {
+    try {
+      if (typeof self.getPickwordImageStorageStats !== "function") {
+        setStatus13("截图存储模块尚未加载", true);
+        return;
+      }
+      var info = self.getPickwordImageStorageStats() || {};
+      var retention = Number(self.getPendingValue("PICKWORD_IMAGE_RETENTION_DAYS"));
+      if (isNaN(retention)) retention = Number(info.retentionDays || 7);
+      var retentionText = retention <= 0 ? "永久保留内部截图" : ("内部截图保留 " + String(retention) + " 天");
+      setStatus13(
+        "已记录 " + String(info.tracked || 0) + " 张 · 已保存 " + String(info.saved || 0) +
+        " 张 · " + retentionText,
+        false
+      );
+    } catch(eStats) {
+      setStatus13("读取截图状态失败", true);
+    }
+  }
+
+  var pathButton = self.ui.createSolidButton(self, "测试保存目录", primary, onPrimary, function() {
+    try {
+      if (typeof self.validatePickwordImagePublicDir !== "function") {
+        setStatus13("截图存储模块尚未加载", true);
+        return;
+      }
+      var result = self.validatePickwordImagePublicDir(String(pathInput.getText() || ""));
+      if (result && result.ok) {
+        self.setPendingValue("PICKWORD_IMAGE_PUBLIC_DIR", String(result.path || ""));
+        pathInput.setText(String(result.path || ""));
+        pathInput.setSelection(pathInput.getText().length());
+        setStatus13("目录可写：" + String(result.path || ""), false);
+      } else {
+        setStatus13("目录不可用：" + String(result && result.error || "未知错误"), true);
+      }
+    } catch(eTest) {
+      setStatus13("目录测试失败：" + String(eTest), true);
+    }
+  });
+  var pathButtonLp = new android.widget.LinearLayout.LayoutParams(-1, self.dp(46));
+  pathButtonLp.setMargins(0, 0, 0, self.dp(10));
+  root.addView(pathButton, pathButtonLp);
+
+  var retentionTitle = new android.widget.TextView(context);
+  retentionTitle.setText("内部截图保留时间");
+  toolhubSafeSetTextColor(retentionTitle, textColor);
+  retentionTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+  retentionTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+  root.addView(retentionTitle);
+
+  var retentionGroup = new android.widget.RadioGroup(context);
+  retentionGroup.setOrientation(android.widget.RadioGroup.VERTICAL);
+  var retentionOptions = [
+    { label: "3 天", value: 3 },
+    { label: "7 天（默认）", value: 7 },
+    { label: "15 天", value: 15 },
+    { label: "30 天", value: 30 },
+    { label: "永久保留", value: 0 }
+  ];
+  var retentionIds = {};
+  var currentRetention = Number(self.getPendingValue("PICKWORD_IMAGE_RETENTION_DAYS"));
+  if (isNaN(currentRetention)) currentRetention = 7;
+  for (var i = 0; i < retentionOptions.length; i++) {
+    (function(option, index) {
+      var rb = new android.widget.RadioButton(context);
+      var id = 221000 + index;
+      try { if (android.view.View.generateViewId) id = android.view.View.generateViewId(); } catch(eId) {}
+      retentionIds[String(id)] = Number(option.value);
+      rb.setId(id);
+      rb.setText(String(option.label));
+      rb.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+      toolhubSafeSetTextColor(rb, textColor);
+      try {
+        toolhubSafeApplyColorStateList(
+          rb,
+          "setButtonTintList",
+          toolhubSafeColorStateListFromStates(
+            [[android.R.attr.state_checked], [-android.R.attr.state_checked]],
+            [primary, secColor]
+          )
+        );
+      } catch(eTint) {}
+      rb.setChecked(Number(option.value) === currentRetention);
+      retentionGroup.addView(rb, new android.widget.RadioGroup.LayoutParams(-1, self.dp(40)));
+    })(retentionOptions[i], i);
+  }
+  retentionGroup.setOnCheckedChangeListener(new android.widget.RadioGroup.OnCheckedChangeListener({
+    onCheckedChanged: function(group, checkedId) {
+      try {
+        if (retentionIds.hasOwnProperty(String(checkedId))) {
+          self.touchActivity();
+          self.setPendingValue("PICKWORD_IMAGE_RETENTION_DAYS", Number(retentionIds[String(checkedId)]));
+          refreshStats13();
+        }
+      } catch(eRetention) {}
+    }
+  }));
+  var retentionLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+  retentionLp.setMargins(0, self.dp(4), 0, self.dp(8));
+  root.addView(retentionGroup, retentionLp);
+
+  var cleanupButton = self.ui.createSolidButton(self, "立即清理", primary, onPrimary, function() {
+    try {
+      if (typeof self.runPickwordImageCleanupNow !== "function") {
+        setStatus13("截图清理模块尚未加载", true);
+        return;
+      }
+      cleanupButton.setEnabled(false);
+      cleanupButton.setAlpha(0.55);
+      cleanupButton.setText("正在清理…");
+      setStatus13("正在清理内部截图和过期分享临时副本…", false);
+      self.runPickwordImageCleanupNow({
+        force: true,
+        retentionDays: Number(self.getPendingValue("PICKWORD_IMAGE_RETENTION_DAYS"))
+      }, function(result) {
+        try {
+          cleanupButton.setEnabled(true);
+          cleanupButton.setAlpha(1.0);
+          cleanupButton.setText("立即清理");
+          if (result && result.ok) {
+            setStatus13(
+              "清理完成：内部 " + String(result.internal ? result.internal.deleted : 0) +
+              " 张，分享临时副本 " + String(result.exports ? result.exports.deleted : 0) + " 张",
+              false
+            );
+          } else {
+            setStatus13("清理失败：" + String(result && result.error || "未知错误"), true);
+          }
+        } catch(eDone) {}
+      });
+    } catch(eCleanup) {
+      cleanupButton.setEnabled(true);
+      cleanupButton.setAlpha(1.0);
+      cleanupButton.setText("立即清理");
+      setStatus13("清理启动失败：" + String(eCleanup), true);
+    }
+  });
+  var cleanupLp = new android.widget.LinearLayout.LayoutParams(-1, self.dp(48));
+  cleanupLp.setMargins(0, self.dp(4), 0, 0);
+  root.addView(cleanupButton, cleanupLp);
+
+  refreshStats13();
+  parent.addView(root, new android.widget.LinearLayout.LayoutParams(-1, -2));
+};
+
 FloatBallAppWM.prototype.createSettingItemView = function(item, parent, needDivider) {
   if (!item || String(item.type || "") === "hidden") return;
   if (String(item.type || "") === "pickword_translate_settings") {
     this.createPickwordTranslateSettingsView(item, parent, needDivider);
+    return;
+  }
+  if (String(item.type || "") === "pickword_image_settings") {
+    this.createPickwordImageSettingsView(item, parent, needDivider);
     return;
   }
   var isDark = this.isDarkTheme();

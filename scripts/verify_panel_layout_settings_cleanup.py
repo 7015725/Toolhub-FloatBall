@@ -38,7 +38,7 @@ def version_at_least(text, expected, name):
 version_at_least(BASE, "1.1.15", "th_01_base.js")
 version_at_least(PERSIST, "1.0.6", "th_05_persistence.js")
 version_at_least(MAIN, "1.5.8", "th_15_main_panel.js")
-version_at_least(EXTRA, "1.1.17", "th_15_extra.js")
+version_at_least(EXTRA, "1.1.18", "th_15_extra.js")
 
 active_base = re.sub(
     r"var REMOVED_SETTINGS_CONFIG_KEYS = \{.*?\};",
