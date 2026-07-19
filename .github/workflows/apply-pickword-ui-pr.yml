@@ -25,11 +25,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PATCH_GZ_B64="$(sed -n 's/^          PATCH_GZ_B64: //p' .github/workflows/export-ui-source.yml | head -n 1)"
-          test -n "$PATCH_GZ_B64"
+          PATCH_GZ_B64="$(cat .github/patches/pickword-ui.part* | tr -d '\r\n')"
+          test "${#PATCH_GZ_B64}" -eq 11736
+          printf '%s' "$PATCH_GZ_B64" | sha256sum | grep -q '^b91b3345b99db6db9f319f9b3f8e1c60813f2955f37bfd4eb1893a521b4a2508  -$'
           printf '%s' "$PATCH_GZ_B64" | base64 -d | gzip -d > /tmp/pickword-compact-ui.patch
           git apply --check /tmp/pickword-compact-ui.patch
           git apply /tmp/pickword-compact-ui.patch
+          rm -rf .github/patches
           rm -f .github/workflows/export-ui-source.yml
           rm -f .github/workflows/apply-pickword-ui-pr.yml
           rm -f .github/apply-pickword-ui.trigger
