@@ -1,4 +1,4 @@
-// @version 1.2.8
+// @version 1.2.9
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -868,34 +868,206 @@
     }
   }
 
-  function uriReadable22(rawUri) {
-    if (!rawUri) return false;
+  function uriReadableState22(rawUri) {
+    var state = { readable: false, error: "" };
+    if (!rawUri) return state;
     var input = null;
     try {
       input = context.getContentResolver().openInputStream(android.net.Uri.parse(String(rawUri)));
-      return !!input;
+      state.readable = !!input;
     } catch (e0) {
-      return false;
+      state.error = String(e0);
     } finally {
       closeStream22(input);
     }
+    return state;
   }
 
-  function existingSave22(internalPath) {
+  function uriReadable22(rawUri) {
+    return uriReadableState22(rawUri).readable === true;
+  }
+
+  function queryMediaUriState22(rawUri) {
+    var state = { safeUri: "", checked: false, exists: false, size: 0, sizeKnown: false, error: "" };
+    var safeUri = safeMediaUri22(rawUri);
+    state.safeUri = safeUri;
+    if (!safeUri) return state;
+    var resolver = context.getContentResolver();
+    var uri = android.net.Uri.parse(safeUri);
+    var cursor = null;
+    try {
+      state.checked = true;
+      cursor = resolver.query(uri, stringArgs22(["_id", "_size"]), null, null, null);
+      if (cursor && cursor.moveToFirst()) {
+        state.exists = true;
+        try {
+          if (!cursor.isNull(1)) {
+            state.size = Number(cursor.getLong(1) || 0);
+            state.sizeKnown = true;
+            if (state.size <= 0) state.exists = false;
+          }
+        } catch (eSize) {}
+      }
+      return state;
+    } catch (e0) {
+      try { if (cursor) cursor.close(); } catch (eClose0) {}
+      cursor = null;
+      try {
+        state.checked = true;
+        cursor = resolver.query(uri, stringArgs22(["_id"]), null, null, null);
+        if (cursor && cursor.moveToFirst()) state.exists = true;
+      } catch (e1) {
+        state.error = String(e1 || e0);
+      }
+      return state;
+    } finally {
+      try { if (cursor) cursor.close(); } catch (eClose) {}
+    }
+  }
+
+  function javaPublicFileState22(rawPath) {
+    var state = { checked: false, exists: false, size: 0, path: "", error: "" };
+    if (!rawPath) return state;
+    try {
+      var file = normalizePublicFile22(rawPath);
+      state.checked = true;
+      state.path = String(file.getCanonicalPath());
+      state.exists = isImageFile22(file);
+      if (state.exists) state.size = Number(file.length() || 0);
+    } catch (e0) {
+      state.error = String(e0);
+    }
+    return state;
+  }
+
+  function rootPublicFileState22(appObj, rawPath) {
+    var state = { checked: false, exists: false, path: "", underlyingPath: "", error: "" };
+    if (!rawPath) return state;
+    try {
+      var file = normalizePublicFile22(rawPath);
+      state.path = String(file.getCanonicalPath());
+      state.underlyingPath = String(underlyingPublicPath22(file) || "");
+      state.checked = true;
+      var test = "( [ -f " + shellQuote22(state.path) + " ] && [ -s " + shellQuote22(state.path) + " ] )";
+      if (state.underlyingPath) {
+        test += " || ( [ -f " + shellQuote22(state.underlyingPath) + " ] && [ -s " + shellQuote22(state.underlyingPath) + " ] )";
+      }
+      try {
+        runRootShell22("if " + test + "; then exit 0; else exit 44; fi", appObj);
+        state.exists = true;
+      } catch (eProbe) {
+        var message = String(eProbe);
+        if (message.indexOf("exit=44") < 0) state.error = message;
+      }
+    } catch (e0) {
+      state.error = String(e0);
+    }
+    return state;
+  }
+
+  function logSavedProbe22(appObj, stage, state) {
+    try {
+      var level = state.exists ? "d" : (state.definitiveMissing ? "i" : "w");
+      safeLog(appObj && appObj.L ? appObj.L : null, level,
+        "pickword image saved availability stage=" + String(stage || "unknown") +
+        " internalPath=" + String(state.internalPath || "") +
+        " contentUri=" + String(state.contentUri || "") +
+        " publicPath=" + String(state.publicPath || "") +
+        " mediaExists=" + String(state.mediaExists) +
+        " mediaSize=" + String(state.mediaSize || 0) +
+        " uriReadable=" + String(state.directReadable) +
+        " javaFileExists=" + String(state.javaFileExists) +
+        " rootFileExists=" + String(state.rootFileExists) +
+        " definitiveMissing=" + String(state.definitiveMissing) +
+        " uncertain=" + String(state.uncertain) +
+        " source=" + String(state.source || "") +
+        " mediaError=" + String(state.mediaError || "") +
+        " uriError=" + String(state.uriError || "") +
+        " javaError=" + String(state.javaError || "") +
+        " rootError=" + String(state.rootError || ""));
+    } catch (e0) {}
+  }
+
+  function probeSavedCopy22(appObj, row, stage) {
+    var item = row || {};
+    var state = {
+      internalPath: String(item.internalPath || ""),
+      publicPath: String(item.publicPath || ""),
+      contentUri: safeMediaUri22(item.contentUri),
+      exists: false,
+      mediaExists: false,
+      mediaSize: 0,
+      directReadable: false,
+      javaFileExists: false,
+      rootFileExists: false,
+      previewReadable: false,
+      definitiveMissing: false,
+      uncertain: false,
+      source: "",
+      mediaError: "",
+      uriError: "",
+      javaError: "",
+      rootError: ""
+    };
+    var media = queryMediaUriState22(state.contentUri);
+    state.mediaExists = media.exists === true;
+    state.mediaSize = Number(media.size || 0);
+    state.mediaError = String(media.error || "");
+    var readable = uriReadableState22(state.contentUri);
+    state.directReadable = readable.readable === true;
+    state.uriError = String(readable.error || "");
+    var javaFile = javaPublicFileState22(state.publicPath);
+    state.javaFileExists = javaFile.exists === true;
+    state.javaError = String(javaFile.error || "");
+    if (state.mediaExists) {
+      state.exists = true;
+      state.source = "media";
+    } else if (state.directReadable) {
+      state.exists = true;
+      state.source = "stream";
+    } else if (state.javaFileExists) {
+      state.exists = true;
+      state.source = "java_file";
+    }
+    var rootFile = { checked: false, exists: false, error: "" };
+    if (!state.exists && state.publicPath) {
+      rootFile = rootPublicFileState22(appObj, state.publicPath);
+      state.rootFileExists = rootFile.exists === true;
+      state.rootError = String(rootFile.error || "");
+      if (state.rootFileExists) {
+        state.exists = true;
+        state.source = "root_file";
+      }
+    }
+    state.previewReadable = state.directReadable || state.javaFileExists;
+    var mediaComplete = !state.contentUri || (media.checked === true && !state.mediaError);
+    var pathComplete = !state.publicPath || (
+      javaFile.checked === true && !state.javaError &&
+      (state.javaFileExists || (rootFile.checked === true && !state.rootError))
+    );
+    state.definitiveMissing = !state.exists && mediaComplete && pathComplete;
+    state.uncertain = !state.exists && !state.definitiveMissing;
+    logSavedProbe22(appObj, stage, state);
+    return state;
+  }
+
+  function existingSave22(appObj, internalPath) {
     var row = loadSavedCopy22(internalPath);
     if (!row) return null;
-    if (row.contentUri && uriReadable22(row.contentUri)) return row;
-    if (row.publicPath) {
-      try {
-        var file = new java.io.File(row.publicPath);
-        if (file.exists() && file.isFile() && file.length() > 0) return row;
-      } catch (e0) {}
+    row.internalPath = String(internalPath || "");
+    var probe = probeSavedCopy22(appObj, row, "existing_save");
+    if (probe.exists) {
+      row.availabilitySource = probe.source;
+      row.directReadable = probe.directReadable;
+      row.previewReadable = probe.previewReadable;
+      return row;
     }
+    if (probe.uncertain) throw new Error("已保存副本状态无法确认，请稍后重试");
     return null;
   }
 
   function savePermanent22(appObj, sourceFile, session) {
-    var existing = existingSave22(String(sourceFile.getCanonicalPath()));
+    var existing = existingSave22(appObj, String(sourceFile.getCanonicalPath()));
     if (existing) {
       existing.ok = true;
       existing.reused = true;
@@ -1151,10 +1323,14 @@
     }, false);
   }
 
-  function clearSavedRecord22(internalPath) {
+  function clearSavedRecord22(appObj, internalPath) {
     var path = String(internalPath || "");
     var row = loadSavedCopy22(path);
     if (!row) return { ok: true, alreadyMissing: true, internalPath: path };
+    row.internalPath = path;
+    var probe = probeSavedCopy22(appObj, row, "clear_record_verify");
+    if (probe.exists) throw new Error("公共副本仍存在，不能清理记录");
+    if (!probe.definitiveMissing) throw new Error("公共副本状态未确认，不能清理记录");
     if (!clearImageSaved22(path)) throw new Error("保存记录清理失败");
     return { ok: true, recordCleared: true, internalPath: path, clearedAt: now22() };
   }
@@ -1233,14 +1409,14 @@
     return out2;
   }
 
-  function listSavedImages22() {
-    return withDb22(function(db) {
+  function listSavedImages22(appObj) {
+    var rows = withDb22(function(db) {
       var cursor = null;
       var out = [];
       try {
         cursor = db.rawQuery("SELECT internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,deleted_at FROM toolhub_pickword_images WHERE saved_at>0 AND (saved_public_path<>'' OR saved_content_uri<>'') ORDER BY saved_at DESC", null);
         while (cursor.moveToNext()) {
-          var row = {
+          out.push({
             kind: "saved",
             internalPath: String(cursor.getString(0) || ""),
             createdAt: Number(cursor.getLong(1) || 0),
@@ -1253,27 +1429,36 @@
             savedAt: Number(cursor.getLong(8) || 0),
             internalDeleted: Number(cursor.getLong(9) || 0) > 0,
             available: false,
+            directReadable: false,
+            previewReadable: false,
+            definitiveMissing: false,
+            probeUncertain: false,
+            availabilitySource: "",
+            mediaExists: false,
+            rootFileExists: false,
             internalAvailable: false
-          };
-          try { row.internalAvailable = isImageFile22(normalizeInternalFile22(row.internalPath)); } catch (eInternal) {}
-          try {
-            var safeUri = safeMediaUri22(row.contentUri);
-            if (safeUri && uriReadable22(safeUri)) row.available = true;
-          } catch (eUri) {}
-          if (!row.available && row.publicPath) {
-            try {
-              var publicFile = normalizePublicFile22(row.publicPath);
-              row.available = isImageFile22(publicFile);
-              if (row.available) row.fileSize = Number(publicFile.length() || row.fileSize || 0);
-            } catch (ePublic) {}
-          }
-          out.push(row);
+          });
         }
       } finally {
         try { if (cursor) cursor.close(); } catch (eClose) {}
       }
       return out;
     }, []);
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      try { row.internalAvailable = isImageFile22(normalizeInternalFile22(row.internalPath)); } catch (eInternal) {}
+      var probe = probeSavedCopy22(appObj, row, "list_saved");
+      row.available = probe.exists === true;
+      row.directReadable = probe.directReadable === true;
+      row.previewReadable = probe.previewReadable === true;
+      row.definitiveMissing = probe.definitiveMissing === true;
+      row.probeUncertain = probe.uncertain === true;
+      row.availabilitySource = String(probe.source || "");
+      row.mediaExists = probe.mediaExists === true;
+      row.rootFileExists = probe.rootFileExists === true;
+      if (probe.mediaSize > 0) row.fileSize = Number(probe.mediaSize);
+    }
+    return rows;
   }
 
   function requireInternalImage22(rawPath) {
@@ -1292,24 +1477,55 @@
   }
 
   function prepareSavedUri22(appObj, internalPath) {
-    var row = loadSavedCopy22(String(internalPath || ""));
+    var path = String(internalPath || "");
+    var row = loadSavedCopy22(path);
     if (!row) throw new Error("已保存记录不存在");
-    var safeUri = safeMediaUri22(row.contentUri);
-    if (safeUri && uriReadable22(safeUri)) {
-      return { ok: true, contentUri: safeUri, publicPath: row.publicPath || "", reused: true };
+    row.internalPath = path;
+    var probe = probeSavedCopy22(appObj, row, "prepare_saved_uri");
+    var safeUri = probe.contentUri;
+    if (safeUri && (probe.mediaExists || probe.directReadable)) {
+      return {
+        ok: true,
+        contentUri: safeUri,
+        publicPath: row.publicPath || "",
+        reused: true,
+        directReadable: probe.directReadable,
+        availabilitySource: probe.source
+      };
     }
-    var publicFile = normalizePublicFile22(row.publicPath);
-    if (!isImageFile22(publicFile)) throw new Error("公共副本不可用");
-    var scannedUri = scanPublicFile22(publicFile, appObj);
-    if (scannedUri) {
-      updateImageSaved22(
-        String(internalPath || ""),
-        String(publicFile.getCanonicalPath()),
-        String(scannedUri),
-        Number(row.savedAt || now22())
-      );
-      return { ok: true, contentUri: String(scannedUri), publicPath: String(publicFile.getCanonicalPath()), reused: true, rescanned: true };
+    if (!probe.exists) {
+      if (probe.uncertain) throw new Error("公共副本状态无法确认，请稍后重试");
+      throw new Error("公共副本不可用");
     }
+    var publicFile = null;
+    if (row.publicPath) {
+      try { publicFile = normalizePublicFile22(row.publicPath); } catch (ePath) { publicFile = null; }
+    }
+    if (publicFile) {
+      var scannedUri = scanPublicFile22(publicFile, appObj);
+      if (scannedUri) {
+        updateImageSaved22(path, String(publicFile.getCanonicalPath()), String(scannedUri), Number(row.savedAt || now22()));
+        return {
+          ok: true,
+          contentUri: String(scannedUri),
+          publicPath: String(publicFile.getCanonicalPath()),
+          reused: true,
+          rescanned: true,
+          availabilitySource: probe.source
+        };
+      }
+    }
+    if (safeUri) {
+      return {
+        ok: true,
+        contentUri: safeUri,
+        publicPath: row.publicPath || "",
+        reused: true,
+        unverified: true,
+        availabilitySource: probe.source
+      };
+    }
+    if (!publicFile) throw new Error("公共副本缺少可重新授权的路径");
     var scoped = android.os.Build.VERSION.SDK_INT >= 29;
     var tempDir = preparePublicDir22(appObj, "ShareTemp", !scoped);
     if (!scoped) probeWritable22(tempDir);
@@ -1323,7 +1539,7 @@
       expiresAt,
       true
     );
-    addExport22(String(internalPath || ""), "share_temp", result.publicPath, result.contentUri, result.createdAt, expiresAt);
+    addExport22(path, "share_temp", result.publicPath, result.contentUri, result.createdAt, expiresAt);
     return result;
   }
 
@@ -1350,12 +1566,10 @@
     if (!safeUri && !safePath) throw new Error("公共副本路径不安全");
     var deleted = deleteContent22(appObj, safeUri, safePath);
     if (!deleted) {
-      var stillAvailable = false;
-      try { stillAvailable = !!(safeUri && uriReadable22(safeUri)); } catch (eUri) {}
-      if (!stillAvailable && safePath) {
-        try { stillAvailable = isImageFile22(new java.io.File(safePath)); } catch (eFile) {}
-      }
-      if (stillAvailable) throw new Error("公共副本删除失败");
+      row.internalPath = path;
+      var verifyProbe = probeSavedCopy22(appObj, row, "delete_saved_verify");
+      if (verifyProbe.exists) throw new Error("公共副本删除失败");
+      if (!verifyProbe.definitiveMissing) throw new Error("公共副本删除结果无法确认，未清理保存记录");
       if (!clearImageSaved22(path)) throw new Error("公共副本已不存在，但保存记录清理失败");
       return { ok: true, alreadyMissing: true, recordCleared: true, internalPath: path, deletedAt: now22() };
     }
@@ -1367,7 +1581,7 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.8") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.9") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -1438,7 +1652,7 @@
         var appObj = this;
         return {
           listInternal: function() { return listInternalImages22(); },
-          listSaved: function() { return listSavedImages22(); },
+          listSaved: function() { return listSavedImages22(appObj); },
           getStats: function() { return stats22(appObj); },
           saveInternal: function(internalPath) {
             var file = requireInternalImage22(internalPath);
@@ -1451,7 +1665,7 @@
           deleteInternal: function(internalPath) { return deleteInternalImage22(internalPath); },
           prepareSavedUri: function(internalPath) { return prepareSavedUri22(appObj, internalPath); },
           deleteSaved: function(internalPath) { return deleteSavedImage22(appObj, internalPath); },
-          clearSavedRecord: function(internalPath) { return clearSavedRecord22(internalPath); },
+          clearSavedRecord: function(internalPath) { return clearSavedRecord22(appObj, internalPath); },
           launchShare: function(result) { return launchShare22(result); },
           launchView: function(result) { return launchView22(result); }
         };
@@ -2193,7 +2407,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.2.8";
+      proto.__toolHubPickwordImageViewerVersion = "1.2.9";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
