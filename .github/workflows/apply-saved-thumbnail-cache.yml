@@ -3,16 +3,27 @@ name: apply-saved-thumbnail-cache
 on:
   push:
     branches: [fix/saved-thumbnail-cache]
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
-  group: apply-saved-thumbnail-cache
+  group: apply-saved-thumbnail-cache-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   apply:
+    if: >
+      (github.event_name == 'push' && github.ref_name == 'fix/saved-thumbnail-cache') ||
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.head.ref == 'fix/saved-thumbnail-cache'
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout fix branch
