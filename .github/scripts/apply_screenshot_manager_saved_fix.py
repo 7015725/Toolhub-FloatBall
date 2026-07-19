@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# One-shot wrapper: apply the source patch only; version checks run in the workflow.
 from pathlib import Path
 import importlib.util
 
