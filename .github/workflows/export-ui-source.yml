@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/pickword-compact-image-ui-20260719
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
