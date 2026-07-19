@@ -47,6 +47,20 @@ jobs:
           set -euo pipefail
           base64 -d .github/scripts/apply_screenshot_manager_modal_delete.py.gz.b64 | gzip -dc | python3 -
 
+      - name: Normalize unified delete assertion
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/verify_pickword_image_viewer.py')
+          text = path.read_text(encoding='utf-8')
+          old = "require('normalizeInternalFile22(path)' in th22 and '截图路径越界' in th22, \"internal delete boundary missing\")"
+          new = "require('normalizeInternalFile22(rawPath)' in th22 and '截图路径越界' in th22, \"internal delete boundary missing\")"
+          if text.count(old) != 1:
+              raise SystemExit('FAIL normalize unified delete assertion count=%d' % text.count(old))
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Fetch main baseline
         run: git fetch --no-tags origin main
 
