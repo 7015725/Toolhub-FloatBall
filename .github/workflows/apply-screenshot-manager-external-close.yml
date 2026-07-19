@@ -1,0 +1,62 @@
+name: apply-screenshot-manager-external-close
+
+on:
+  pull_request:
+    types: [ready_for_review]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/screenshot-manager-external-close'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/screenshot-manager-external-close
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply exact patch
+        run: python scripts/apply_screenshot_manager_external_close.py
+
+      - name: Verify screenshot manager
+        run: python scripts/verify_screenshot_manager.py
+
+      - name: Verify JavaScript syntax
+        run: node --check code/th_23_screenshot_manager.js
+
+      - name: Check expected files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git diff --name-only | sort)
+          printf '%s\n' "${files[@]}"
+          expected=$(printf '%s\n' \
+            code/th_23_screenshot_manager.js \
+            scripts/verify_screenshot_manager.py \
+            updates/records/20260720-screenshot-manager-external-close.json | sort)
+          actual=$(printf '%s\n' "${files[@]}")
+          test "$actual" = "$expected"
+          git diff --check
+
+      - name: Remove one-shot files
+        run: |
+          rm -f scripts/apply_screenshot_manager_external_close.py
+          rm -f .github/workflows/apply-screenshot-manager-external-close.yml
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix: close screenshot manager after external launch"
+          git push origin HEAD:fix/screenshot-manager-external-close
