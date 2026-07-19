@@ -1,0 +1,77 @@
+name: One-shot screenshot cache cleanup PR
+
+on:
+  pull_request:
+    types:
+      - ready_for_review
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'fix/screenshot-cache-cleanup'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/screenshot-cache-cleanup
+          fetch-depth: 0
+
+      - name: Apply exact patch
+        run: python3 scripts/oneshot_screenshot_cache_cleanup.py
+
+      - name: JavaScript syntax
+        run: |
+          node --check code/th_22_image_viewer.js
+          node --check code/th_23_screenshot_manager.js
+
+      - name: Screenshot image viewer verification
+        run: python3 scripts/verify_pickword_image_viewer.py
+
+      - name: Screenshot manager verification
+        run: python3 scripts/verify_screenshot_manager.py
+
+      - name: Strict ES5 token check
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          for path in (Path('code/th_22_image_viewer.js'), Path('code/th_23_screenshot_manager.js')):
+              text = path.read_text(encoding='utf-8')
+              for token in (r'\blet\b', r'\bconst\b', r'=>', r'`'):
+                  if re.search(token, text):
+                      raise SystemExit('FAIL ES5 %s token=%s' % (path, token))
+          print('OK strict ES5')
+          PY
+
+      - name: Remove one-shot files
+        run: |
+          rm -f scripts/oneshot_screenshot_cache_cleanup.py
+          rm -f .github/workflows/oneshot-screenshot-cache-cleanup-pr.yml
+
+      - name: Validate final changed files
+        run: |
+          git add -A
+          git diff --cached --name-only | sort | tee /tmp/actual-files
+          for required in \
+            code/th_22_image_viewer.js \
+            code/th_23_screenshot_manager.js \
+            scripts/verify_pickword_image_viewer.py \
+            scripts/verify_screenshot_manager.py \
+            updates/records/20260720-screenshot-cache-lifecycle-cleanup.json; do
+            grep -Fx "$required" /tmp/actual-files >/dev/null
+          done
+          if grep -E 'oneshot-screenshot-cache-cleanup|oneshot_screenshot_cache_cleanup|tmp/placeholder' /tmp/actual-files; then
+            echo 'temporary file remained in final diff'
+            exit 1
+          fi
+          git diff --cached --check
+
+      - name: Commit and push
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "fix: close screenshot thumbnail cache lifecycle"
+          git push origin HEAD:fix/screenshot-cache-cleanup
