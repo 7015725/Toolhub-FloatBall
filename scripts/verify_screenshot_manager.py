@@ -22,10 +22,10 @@ generator = read("scripts/generate_signed_manifest.py")
 boundaries = read("MODULE_BOUNDARIES.json")
 workflow = read(".github/workflows/verify.yml")
 
-require('// @version 1.3.0' in th22, 'th22 service version')
-require('// @version 1.0.4' in th23, 'th23 version')
+require('// @version 1.3.1' in th22, 'th22 service version')
+require('// @version 1.0.5' in th23, 'th23 version')
 require('getPickwordImageService' in th22, 'service API')
-for marker in ('listInternal', 'listSaved', 'saveInternal', 'prepareShareInternal', 'deleteInternal', 'prepareSavedUri', 'deleteSaved', 'clearSavedRecord', 'launchShare', 'launchView'):
+for marker in ('listInternal', 'listSaved', 'saveInternal', 'prepareShareInternal', 'deleteInternal', 'loadSavedThumbnail', 'prepareSavedUri', 'deleteSaved', 'clearSavedRecord', 'launchShare', 'launchView'):
     require(marker in th22, 'service method ' + marker)
 require('normalizeInternalFile22' in th22 and '截图路径越界' in th22, 'internal boundary')
 require('normalizePublicFile22' in th22 and '公共图片路径越界' in th22, 'public boundary')
@@ -63,7 +63,9 @@ require('function verifySavedDelete22(appObj, row)' in th22 and 'delete_saved_ve
 require('mediaRowExists' in th22 and '!state.mediaRowExists' in th22, 'definitive missing must require MediaStore row absence')
 require('var deletion = emptyRecord ? { ok: true } : deleteContent22' in th22 and 'deletion.ok === true' in th22, 'share export cleanup must honor structured delete result')
 require('screenshot manager action fail action=' in th23 and 'actionContext23(record)' in th23, 'manager action diagnostics missing')
-require('sourceMode === "uri"' in th23 and 'if (!path) return null' in th23, 'saved thumbnail URI-to-path fallback missing')
+require('service.loadSavedThumbnail(record.internalPath, 360)' in th23, 'saved thumbnail must use service layer')
+require('公共副本存在 · 缩略图可用' in th23 and 'thumbnailSource' in th23, 'saved thumbnail UI state missing')
+require('decodeUri23' not in th23 and 'record.kind === "saved"' in th23, 'saved public decoding must leave UI module')
 require('open_screenshot_manager' in action and 'showToolApp("screenshot_manager", true)' in action, 'button action')
 require('screenshot_manager' in routes and '截图管理器' in routes, 'toolapp route')
 require('builtin_screenshot_manager' in base and 'BUTTONS_MIGRATION_VERSION = 3' in base, 'button migration v3')
@@ -74,4 +76,4 @@ require('verify_screenshot_manager.py' in workflow, 'workflow verification')
 for source, name in ((th22, 'th22'), (th23, 'th23')):
     for banned in (r'\blet\b', r'\bconst\b', r'=>', r'`'):
         require(re.search(banned, source) is None, name + ' ES6 token ' + banned)
-print('OK screenshot-manager modal=topmost viewer=existing delete_internal=java,shell delete_saved=provider,root,verify migration=3')
+print('OK screenshot-manager saved_thumbnail=service,cache,provider,shell bitmap=caller_owned migration=3')

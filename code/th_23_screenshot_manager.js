@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // =======================【截图管理器：内部截图 / 已保存】=======================
 (function() {
   function dp23(appObj, value) {
@@ -58,55 +58,16 @@
     try { if (bitmap && bitmap.recycle && (!bitmap.isRecycled || bitmap.isRecycled() !== true)) bitmap.recycle(); } catch (e0) {}
   }
 
-  function close23(stream) {
-    try { if (stream) stream.close(); } catch (e0) {}
-  }
-
-  function sample23(width, height, maxEdge) {
-    var sample = 1;
-    var limit = Math.max(64, Number(maxEdge || 360));
-    while (Math.max(width / sample, height / sample) > limit) sample *= 2;
-    return sample;
-  }
-
-  function decodeUri23(rawUri, options) {
-    var input = null;
-    try {
-      input = context.getContentResolver().openInputStream(android.net.Uri.parse(String(rawUri || "")));
-      if (!input) return null;
-      return android.graphics.BitmapFactory.decodeStream(input, null, options);
-    } finally { close23(input); }
-  }
-
   function decodeThumbnail23(record, maxEdge) {
-    var saved = String(record.kind || "") === "saved";
-    var sourceMode = "";
-    var path = String(saved ? record.publicPath : record.internalPath);
+    var path = String(record && record.internalPath || "");
+    if (!path) return null;
     var bounds = new android.graphics.BitmapFactory.Options();
     bounds.inJustDecodeBounds = true;
-    if (saved && record.contentUri) {
-      try {
-        decodeUri23(record.contentUri, bounds);
-        if (bounds.outWidth > 0 && bounds.outHeight > 0) sourceMode = "uri";
-      } catch (eUriBounds) {}
-    }
-    if (!sourceMode) {
-      bounds = new android.graphics.BitmapFactory.Options();
-      bounds.inJustDecodeBounds = true;
-      try { android.graphics.BitmapFactory.decodeFile(path, bounds); } catch (eFileBounds) {}
-      if (bounds.outWidth > 0 && bounds.outHeight > 0) sourceMode = "file";
-    }
-    if (!sourceMode) return null;
+    try { android.graphics.BitmapFactory.decodeFile(path, bounds); } catch (eBounds) {}
+    if (!(bounds.outWidth > 0) || !(bounds.outHeight > 0)) return null;
     var actual = new android.graphics.BitmapFactory.Options();
     actual.inSampleSize = sample23(bounds.outWidth, bounds.outHeight, maxEdge);
     actual.inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888;
-    if (sourceMode === "uri") {
-      try {
-        var uriBitmap = decodeUri23(record.contentUri, actual);
-        if (uriBitmap) return uriBitmap;
-      } catch (eUriDecode) {}
-      if (!path) return null;
-    }
     return android.graphics.BitmapFactory.decodeFile(path, actual);
   }
 
@@ -122,6 +83,8 @@
       " definitiveMissing=" + String(item.definitiveMissing === true) +
       " probeUncertain=" + String(item.probeUncertain === true) +
       " availabilitySource=" + String(item.availabilitySource || "") +
+      " thumbnailAvailable=" + String(item.thumbnailAvailable === true) +
+      " thumbnailSource=" + String(item.thumbnailSource || "") +
       " internalDeleted=" + String(item.internalDeleted === true) +
       " internalPath=" + String(item.internalPath || "") +
       " publicPath=" + String(item.publicPath || "") +
@@ -130,6 +93,7 @@
 
   function savedStatus23(record) {
     if (record.available === true) {
+      if (record.thumbnailAvailable === true) return "公共副本存在 · 缩略图可用";
       return record.previewReadable === true ? "公共副本可用" : "公共副本存在 · 预览受限";
     }
     return record.probeUncertain === true ? "公共副本状态待确认" : "公共副本不可用";
@@ -542,8 +506,22 @@
       if (record.available !== false) {
         thumbExecutor.execute(new java.lang.Runnable({ run: function() {
           var bitmap = null;
-          try { bitmap = decodeThumbnail23(record, 360); } catch (eDecode) { bitmap = null; }
+          var thumbnailResult = null;
+          var decodeError = null;
+          try {
+            if (record.kind === "saved") {
+              thumbnailResult = service.loadSavedThumbnail(record.internalPath, 360);
+              bitmap = thumbnailResult && thumbnailResult.bitmap ? thumbnailResult.bitmap : null;
+            } else {
+              bitmap = decodeThumbnail23(record, 360);
+            }
+          } catch (eDecode) {
+            decodeError = eDecode;
+            bitmap = null;
+          }
           var finalBitmap = bitmap;
+          var finalResult = thumbnailResult;
+          var finalError = decodeError;
           var posted = postAlways23(function() {
             if (detached || !isCurrent(token)) {
               recycle23(finalBitmap);
@@ -553,8 +531,15 @@
               bitmaps.push(finalBitmap);
               image.setImageBitmap(finalBitmap);
               placeholder.setVisibility(android.view.View.GONE);
+              if (record.kind === "saved") {
+                record.thumbnailAvailable = true;
+                record.thumbnailSource = String(finalResult && finalResult.source || "unknown");
+                meta.setText(formatDate23(timeValue) + "\n" + formatSize23(record.fileSize) + " · " + savedStatus23(record) + (record.internalDeleted ? " · 内部截图已清理" : ""));
+                safeActionLog23(self, "i", "screenshot manager thumbnail loaded source=" + String(record.thumbnailSource || "") + " " + actionContext23(record));
+              }
             } else {
-              placeholder.setText(record.available === true && record.previewReadable === false ? "文件存在\n预览受限" : "预览失败");
+              placeholder.setText(record.available === true ? "文件存在\n缩略图受限" : "预览失败");
+              safeActionLog23(self, "w", "screenshot manager thumbnail fail error=" + String(finalError || "") + " " + actionContext23(record));
             }
           });
           if (!posted) recycle23(finalBitmap);

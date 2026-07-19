@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "20260720-saved-thumbnail-cache",
+  "type": "fix",
+  "title": "修复截图管理器已保存图片缩略图",
+  "details": [
+    "已保存图片缩略图改由 th_22 图片服务统一加载，截图管理 UI 不再直接处理公共路径与 MediaStore 读取边界。",
+    "新增 ToolHub 私有缩略图缓存，新保存公共副本时从内部原图生成缓存，避免列表刷新重复解码公共原图。",
+    "旧记录依次尝试缓存、MediaProvider loadThumbnail、Content URI、Java 公共路径、内部原图代理和 Shell/Root 回填。",
+    "Shell 回填仅从安全 MediaStore URI 或规范化公共路径读取，并只写入 ToolHub/cache/screenshot_thumbnails 受控目录。",
+    "删除公共副本、清理失效记录和定期清理会同步处理缩略图缓存，内部截图删除不破坏公共副本缩略图。",
+    "截图管理器记录缩略图来源和失败原因，并在成功后显示公共副本存在、缩略图可用。"
+  ]
+}

@@ -1,4 +1,4 @@
-// @version 1.3.0
+// @version 1.3.1
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -1086,11 +1086,323 @@
     return null;
   }
 
+
+  var savedThumbnailLocks22 = new java.util.concurrent.ConcurrentHashMap();
+
+  function thumbnailCacheRoot22() {
+    var basePath = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
+    if (!basePath) throw new Error("ShortX 目录为空");
+    var base = new java.io.File(basePath).getCanonicalFile();
+    var root = new java.io.File(base, "ToolHub/cache/screenshot_thumbnails").getCanonicalFile();
+    var baseCanonical = String(base.getCanonicalPath());
+    var rootCanonical = String(root.getCanonicalPath());
+    if (rootCanonical.indexOf(baseCanonical + java.io.File.separator) !== 0) throw new Error("缩略图缓存目录越界");
+    if (!root.exists() && !root.mkdirs() && !root.exists()) throw new Error("无法创建缩略图缓存目录");
+    if (!root.isDirectory()) throw new Error("缩略图缓存路径不是目录");
+    return root;
+  }
+
+  function sha256Text22(value) {
+    var digest = java.security.MessageDigest.getInstance("SHA-256");
+    var bytes = digest.digest(new java.lang.String(String(value || "")).getBytes("UTF-8"));
+    var out = "";
+    for (var i = 0; i < bytes.length; i++) {
+      var one = Number(bytes[i]) & 255;
+      var hex = one.toString(16);
+      if (hex.length < 2) hex = "0" + hex;
+      out += hex;
+    }
+    return out;
+  }
+
+  function thumbnailCacheKey22(internalPath) {
+    return sha256Text22(String(normalizeInternalFile22(internalPath).getCanonicalPath()));
+  }
+
+  function thumbnailCacheFile22(internalPath, maxEdge) {
+    var root = thumbnailCacheRoot22();
+    var limit = Math.max(96, Math.min(1024, int22(maxEdge, 360)));
+    var file = new java.io.File(root, thumbnailCacheKey22(internalPath) + "_" + String(limit) + ".png").getCanonicalFile();
+    if (String(file.getCanonicalPath()).indexOf(String(root.getCanonicalPath()) + java.io.File.separator) !== 0) {
+      throw new Error("缩略图缓存文件越界");
+    }
+    return file;
+  }
+
+  function thumbnailCacheExists22(internalPath, maxEdge) {
+    try {
+      var file = thumbnailCacheFile22(internalPath, maxEdge);
+      return file.exists() && file.isFile() && file.length() > 0;
+    } catch (e0) {}
+    return false;
+  }
+
+  function fitThumbnailBitmap22(bitmap, maxEdge) {
+    if (!bitmap) return null;
+    var limit = Math.max(96, Math.min(1024, int22(maxEdge, 360)));
+    var width = Number(bitmap.getWidth() || 0);
+    var height = Number(bitmap.getHeight() || 0);
+    var longest = Math.max(width, height);
+    if (!(longest > limit) || width <= 0 || height <= 0) return bitmap;
+    var ratio = limit / longest;
+    var scaled = android.graphics.Bitmap.createScaledBitmap(
+      bitmap,
+      Math.max(1, Math.round(width * ratio)),
+      Math.max(1, Math.round(height * ratio)),
+      true
+    );
+    if (scaled && scaled !== bitmap) safeRecycle22(bitmap);
+    return scaled || bitmap;
+  }
+
+  function decodeThumbnailFile22(rawFile, maxEdge) {
+    var file = rawFile && rawFile.getCanonicalFile ? rawFile.getCanonicalFile() : new java.io.File(String(rawFile || "")).getCanonicalFile();
+    if (!file.exists() || !file.isFile() || file.length() <= 0) return null;
+    var bounds = new android.graphics.BitmapFactory.Options();
+    bounds.inJustDecodeBounds = true;
+    android.graphics.BitmapFactory.decodeFile(String(file.getCanonicalPath()), bounds);
+    if (!(bounds.outWidth > 0) || !(bounds.outHeight > 0)) return null;
+    var actual = new android.graphics.BitmapFactory.Options();
+    actual.inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888;
+    actual.inSampleSize = sampleSize22(bounds.outWidth, bounds.outHeight, Math.max(96, int22(maxEdge, 360)));
+    return fitThumbnailBitmap22(android.graphics.BitmapFactory.decodeFile(String(file.getCanonicalPath()), actual), maxEdge);
+  }
+
+  function decodeThumbnailUri22(rawUri, maxEdge) {
+    var safeUri = safeMediaUri22(rawUri);
+    if (!safeUri) return null;
+    var uri = android.net.Uri.parse(safeUri);
+    var input = null;
+    var bounds = new android.graphics.BitmapFactory.Options();
+    bounds.inJustDecodeBounds = true;
+    try {
+      input = context.getContentResolver().openInputStream(uri);
+      if (!input) return null;
+      android.graphics.BitmapFactory.decodeStream(input, null, bounds);
+    } finally {
+      closeStream22(input);
+    }
+    if (!(bounds.outWidth > 0) || !(bounds.outHeight > 0)) return null;
+    var actual = new android.graphics.BitmapFactory.Options();
+    actual.inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888;
+    actual.inSampleSize = sampleSize22(bounds.outWidth, bounds.outHeight, Math.max(96, int22(maxEdge, 360)));
+    input = null;
+    try {
+      input = context.getContentResolver().openInputStream(uri);
+      if (!input) return null;
+      return fitThumbnailBitmap22(android.graphics.BitmapFactory.decodeStream(input, null, actual), maxEdge);
+    } finally {
+      closeStream22(input);
+    }
+  }
+
+  function loadProviderThumbnail22(rawUri, maxEdge) {
+    if (android.os.Build.VERSION.SDK_INT < 29) return null;
+    var safeUri = safeMediaUri22(rawUri);
+    if (!safeUri) return null;
+    var limit = Math.max(96, Math.min(1024, int22(maxEdge, 360)));
+    return fitThumbnailBitmap22(context.getContentResolver().loadThumbnail(
+      android.net.Uri.parse(safeUri),
+      new android.util.Size(limit, limit),
+      null
+    ), limit);
+  }
+
+  function writeThumbnailCache22(bitmap, cacheFile) {
+    if (!bitmap) throw new Error("缩略图为空");
+    var root = thumbnailCacheRoot22();
+    var target = cacheFile.getCanonicalFile();
+    var rootPath = String(root.getCanonicalPath());
+    if (String(target.getCanonicalPath()).indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("缩略图写入路径越界");
+    var temp = new java.io.File(root, String(target.getName()) + ".tmp_" + String(now22()) + "_" + String(java.lang.Thread.currentThread().getId())).getCanonicalFile();
+    if (String(temp.getCanonicalPath()).indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("缩略图临时路径越界");
+    var output = null;
+    var input = null;
+    try {
+      output = new java.io.FileOutputStream(temp, false);
+      if (!bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output)) throw new Error("缩略图压缩失败");
+      output.flush();
+      try { output.getFD().sync(); } catch (eSync) {}
+      closeStream22(output);
+      output = null;
+      if (target.exists() && !target.delete()) throw new Error("旧缩略图删除失败");
+      if (!temp.renameTo(target)) {
+        input = new java.io.FileInputStream(temp);
+        output = new java.io.FileOutputStream(target, false);
+        copyStream22(input, output);
+        closeStream22(input);
+        input = null;
+        closeStream22(output);
+        output = null;
+      }
+      if (!target.exists() || !target.isFile() || target.length() <= 0) throw new Error("缩略图缓存不可用");
+      return true;
+    } finally {
+      closeStream22(input);
+      closeStream22(output);
+      try { if (temp.exists()) temp.delete(); } catch (eTemp) {}
+    }
+  }
+
+  function clearSavedThumbnail22(internalPath) {
+    var root = thumbnailCacheRoot22();
+    var prefix = thumbnailCacheKey22(internalPath) + "_";
+    var files = root.listFiles();
+    var result = { scanned: 0, deleted: 0, failed: 0 };
+    if (!files) return result;
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      try {
+        if (!file || !file.isFile() || String(file.getName() || "").indexOf(prefix) !== 0) continue;
+        result.scanned++;
+        if (file.delete() || !file.exists()) result.deleted++;
+        else result.failed++;
+      } catch (eOne) {
+        result.failed++;
+      }
+    }
+    return result;
+  }
+
+  function cleanupThumbnailCache22() {
+    var root = thumbnailCacheRoot22();
+    var files = root.listFiles();
+    var result = { scanned: 0, deleted: 0, failed: 0 };
+    if (!files) return result;
+    var cutoff = now22() - 60 * 60 * 1000;
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      try {
+        if (!file || !file.isFile()) continue;
+        result.scanned++;
+        var name = String(file.getName() || "");
+        if (name.indexOf(".tmp_") < 0 && name.indexOf(".stage_") < 0) continue;
+        if (Number(file.lastModified() || 0) >= cutoff) continue;
+        if (file.delete() || !file.exists()) result.deleted++;
+        else result.failed++;
+      } catch (eOne) {
+        result.failed++;
+      }
+    }
+    return result;
+  }
+
+  function ensureSavedThumbnailCache22(appObj, sourceFile, internalPath, maxEdge) {
+    var cacheFile = thumbnailCacheFile22(internalPath, maxEdge);
+    if (cacheFile.exists() && cacheFile.isFile() && cacheFile.length() > 0) return true;
+    var bitmap = null;
+    try {
+      bitmap = decodeThumbnailFile22(sourceFile, maxEdge);
+      return bitmap ? writeThumbnailCache22(bitmap, cacheFile) : false;
+    } catch (e0) {
+      try { safeLog(appObj && appObj.L ? appObj.L : null, "w", "pickword image thumbnail cache fail path=" + String(internalPath || "") + " err=" + String(e0)); } catch (eLog) {}
+      return false;
+    } finally {
+      safeRecycle22(bitmap);
+    }
+  }
+
+  function stageSavedThumbnailSource22(appObj, row, internalPath) {
+    var root = thumbnailCacheRoot22();
+    var temp = new java.io.File(root, thumbnailCacheKey22(internalPath) + ".stage_" + String(now22()) + ".tmp").getCanonicalFile();
+    var rootPath = String(root.getCanonicalPath());
+    var tempPath = String(temp.getCanonicalPath());
+    if (tempPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("缩略图回填路径越界");
+    var safeUri = safeMediaUri22(row.contentUri);
+    var safePath = "";
+    var underlying = "";
+    if (row.publicPath) {
+      var publicFile = normalizePublicFile22(row.publicPath);
+      safePath = String(publicFile.getCanonicalPath());
+      underlying = String(underlyingPublicPath22(publicFile) || "");
+    }
+    if (!safeUri && !safePath && !underlying) throw new Error("公共副本缺少回填来源");
+    var userId = 0;
+    try { userId = Number(android.os.UserHandle.myUserId()); } catch (eUser) { userId = 0; }
+    var uid = 1000;
+    try { uid = Number(android.os.Process.myUid()); } catch (eUid) { uid = 1000; }
+    var command = "rm -f " + shellQuote22(tempPath) + "; th_ok=1; ";
+    if (safeUri) command += "content read --user " + String(userId) + " --uri " + shellQuote22(safeUri) + " > " + shellQuote22(tempPath) + " 2>/dev/null && [ -s " + shellQuote22(tempPath) + " ] && th_ok=0 || rm -f " + shellQuote22(tempPath) + "; ";
+    if (safePath) command += "if [ \"$th_ok\" -ne 0 ]; then cp -f " + shellQuote22(safePath) + " " + shellQuote22(tempPath) + " >/dev/null 2>&1 && [ -s " + shellQuote22(tempPath) + " ] && th_ok=0 || rm -f " + shellQuote22(tempPath) + "; fi; ";
+    if (underlying) command += "if [ \"$th_ok\" -ne 0 ]; then cp -f " + shellQuote22(underlying) + " " + shellQuote22(tempPath) + " >/dev/null 2>&1 && [ -s " + shellQuote22(tempPath) + " ] && th_ok=0 || rm -f " + shellQuote22(tempPath) + "; fi; ";
+    command += "if [ \"$th_ok\" -ne 0 ]; then exit 52; fi; chown " + String(uid) + ":" + String(uid) + " " + shellQuote22(tempPath) + " >/dev/null 2>&1 || true; chmod 0600 " + shellQuote22(tempPath) + " >/dev/null 2>&1 || true";
+    runRootShell22(command, appObj);
+    if (!temp.exists() || !temp.isFile() || temp.length() <= 0) throw new Error("公共副本回填文件不可用");
+    return temp;
+  }
+
+  function loadSavedThumbnail22(appObj, internalPath, maxEdge) {
+    var path = String(normalizeInternalFile22(internalPath).getCanonicalPath());
+    var row = loadSavedCopy22(path);
+    if (!row) throw new Error("已保存记录不存在");
+    row.internalPath = path;
+    var limit = Math.max(96, Math.min(1024, int22(maxEdge, 360)));
+    var cacheFile = thumbnailCacheFile22(path, limit);
+    var lockKey = String(cacheFile.getName());
+    var created = new java.util.concurrent.locks.ReentrantLock();
+    var prior = savedThumbnailLocks22.putIfAbsent(lockKey, created);
+    var lock = prior || created;
+    var bitmap = null;
+    var stage = null;
+    var source = "";
+    var cached = false;
+    var failures = [];
+    lock.lock();
+    try {
+      try {
+        bitmap = decodeThumbnailFile22(cacheFile, limit);
+        if (bitmap) { source = "cache"; cached = true; }
+        else if (cacheFile.exists()) cacheFile.delete();
+      } catch (eCache) { failures.push("cache=" + String(eCache)); }
+      if (!bitmap && row.contentUri) {
+        try { bitmap = loadProviderThumbnail22(row.contentUri, limit); if (bitmap) source = "provider_thumbnail"; }
+        catch (eProvider) { failures.push("provider=" + String(eProvider)); }
+      }
+      if (!bitmap && row.contentUri) {
+        try { bitmap = decodeThumbnailUri22(row.contentUri, limit); if (bitmap) source = "uri_stream"; }
+        catch (eUri) { failures.push("uri=" + String(eUri)); }
+      }
+      if (!bitmap && row.publicPath) {
+        try { bitmap = decodeThumbnailFile22(normalizePublicFile22(row.publicPath), limit); if (bitmap) source = "java_file"; }
+        catch (ePublic) { failures.push("java=" + String(ePublic)); }
+      }
+      if (!bitmap) {
+        try {
+          var internalFile = normalizeInternalFile22(path);
+          if (isImageFile22(internalFile)) {
+            bitmap = decodeThumbnailFile22(internalFile, limit);
+            if (bitmap) source = "internal_proxy";
+          }
+        } catch (eInternal) { failures.push("internal=" + String(eInternal)); }
+      }
+      if (!bitmap) {
+        try {
+          stage = stageSavedThumbnailSource22(appObj, row, path);
+          bitmap = decodeThumbnailFile22(stage, limit);
+          if (bitmap) source = "root_stage";
+        } catch (eStage) { failures.push("stage=" + String(eStage)); }
+      }
+      if (!bitmap) throw new Error("已保存缩略图读取失败: " + failures.join("; "));
+      if (!cached) {
+        try { cached = writeThumbnailCache22(bitmap, cacheFile); }
+        catch (eWrite) { failures.push("write=" + String(eWrite)); cached = false; }
+      }
+      try { safeLog(appObj && appObj.L ? appObj.L : null, "i", "pickword image saved thumbnail loaded internalPath=" + path + " source=" + source + " cached=" + String(cached) + " failures=" + failures.join("|")); } catch (eLog) {}
+      return { ok: true, bitmap: bitmap, source: source, cached: cached, callerOwnsBitmap: true };
+    } finally {
+      try { if (stage && stage.exists()) stage.delete(); } catch (eStageDelete) {}
+      try { lock.unlock(); } catch (eUnlock) {}
+      try { savedThumbnailLocks22.remove(lockKey); } catch (eRemove) {}
+    }
+  }
+
   function savePermanent22(appObj, sourceFile, session) {
-    var existing = existingSave22(appObj, String(sourceFile.getCanonicalPath()));
+    var internalPath = String(sourceFile.getCanonicalPath());
+    var existing = existingSave22(appObj, internalPath);
     if (existing) {
       existing.ok = true;
       existing.reused = true;
+      existing.thumbnailCached = ensureSavedThumbnailCache22(appObj, sourceFile, internalPath, 360);
       return existing;
     }
     var name = displayName22(sourceFile, Number(session.createdAt || now22()), "ToolHub_");
@@ -1098,7 +1410,9 @@
     var dir = preparePublicDir22(appObj, "", !scoped);
     if (!scoped) probeWritable22(dir);
     var result = exportPublicFile22(appObj, sourceFile, dir, name, "saved", 0, false);
-    updateImageSaved22(String(sourceFile.getCanonicalPath()), result.publicPath, result.contentUri, result.createdAt);
+    if (!updateImageSaved22(internalPath, result.publicPath, result.contentUri, result.createdAt)) throw new Error("公共副本已保存，但保存记录更新失败");
+    try { clearSavedThumbnail22(internalPath); } catch (eClearThumb) {}
+    result.thumbnailCached = ensureSavedThumbnailCache22(appObj, sourceFile, internalPath, 360);
     return result;
   }
 
@@ -1376,15 +1690,20 @@
   }
 
   function clearSavedRecord22(appObj, internalPath) {
-    var path = String(internalPath || "");
+    var path = String(normalizeInternalFile22(internalPath).getCanonicalPath());
     var row = loadSavedCopy22(path);
-    if (!row) return { ok: true, alreadyMissing: true, internalPath: path };
+    if (!row) {
+      try { clearSavedThumbnail22(path); } catch (eMissingThumb) {}
+      return { ok: true, alreadyMissing: true, internalPath: path };
+    }
     row.internalPath = path;
     var probe = probeSavedCopy22(appObj, row, "clear_record_verify");
     if (probe.exists) throw new Error("公共副本仍存在，不能清理记录");
     if (!probe.definitiveMissing) throw new Error("公共副本状态未确认，不能清理记录");
     if (!clearImageSaved22(path)) throw new Error("保存记录清理失败");
-    return { ok: true, recordCleared: true, internalPath: path, clearedAt: now22() };
+    var thumbnailCleanup = null;
+    try { thumbnailCleanup = clearSavedThumbnail22(path); } catch (eThumb) {}
+    return { ok: true, recordCleared: true, internalPath: path, clearedAt: now22(), thumbnailCleanup: thumbnailCleanup };
   }
 
   function listInternalImages22() {
@@ -1488,7 +1807,8 @@
             availabilitySource: "",
             mediaExists: false,
             rootFileExists: false,
-            internalAvailable: false
+            internalAvailable: false,
+            thumbnailAvailable: false
           });
         }
       } finally {
@@ -1508,6 +1828,7 @@
       row.availabilitySource = String(probe.source || "");
       row.mediaExists = probe.mediaExists === true;
       row.rootFileExists = probe.rootFileExists === true;
+      row.thumbnailAvailable = row.available && thumbnailCacheExists22(row.internalPath, 360);
       if (probe.mediaSize > 0) row.fileSize = Number(probe.mediaSize);
     }
     return rows;
@@ -1674,6 +1995,8 @@
       throw new Error("公共副本删除结果无法确认，未清理保存记录");
     }
     if (!clearImageSaved22(path)) throw new Error("公共副本已删除，但保存记录清理失败");
+    var thumbnailCleanup = null;
+    try { thumbnailCleanup = clearSavedThumbnail22(path); } catch (eThumbnail) {}
     try {
       safeLog(appObj && appObj.L ? appObj.L : null, "i",
         "pickword image saved delete done internalPath=" + path +
@@ -1685,14 +2008,14 @@
         " definitiveMissing=" + String(verifyProbe.definitiveMissing === true) +
         " recordCleared=true");
     } catch (eLog) {}
-    return { ok: true, recordCleared: true, internalPath: path, deletedAt: now22() };
+    return { ok: true, recordCleared: true, internalPath: path, deletedAt: now22(), thumbnailCleanup: thumbnailCleanup };
   }
 
   function install22() {
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.3.0") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.3.1") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -1730,11 +2053,12 @@
         proto.__pickwordImageCleanupRunning22 = true;
         var handler = new android.os.Handler(android.os.Looper.getMainLooper());
         var thread = new java.lang.Thread(new java.lang.Runnable({ run: function() {
-          var result = { ok: false, internal: null, exports: null, retentionDays: 0, completedAt: 0, error: "" };
+          var result = { ok: false, internal: null, exports: null, thumbnails: null, retentionDays: 0, completedAt: 0, error: "" };
           try {
             result.retentionDays = configuredRetention22(appObj, opts.retentionDays);
             result.internal = scanInternalCleanup22(result.retentionDays, String(opts.activePath || ""));
             result.exports = cleanupExports22(appObj);
+            result.thumbnails = cleanupThumbnailCache22();
             result.completedAt = now22();
             putMeta22("pickword_image_cleanup_last_at", String(result.completedAt));
             result.ok = true;
@@ -1749,6 +2073,7 @@
                 " retentionDays=" + String(result.retentionDays) +
                 " internalDeleted=" + String(result.internal ? result.internal.deleted : 0) +
                 " tempDeleted=" + String(result.exports ? result.exports.deleted : 0) +
+                " thumbnailDeleted=" + String(result.thumbnails ? result.thumbnails.deleted : 0) +
                 " error=" + String(result.error || ""));
             } catch (eLog) {}
             try { if (callback) callback(result); } catch (eCallback) {}
@@ -1774,6 +2099,7 @@
             return createShareCopy22(appObj, file, { createdAt: Number(file.lastModified() || now22()) });
           },
           deleteInternal: function(internalPath) { return deleteInternalImage22(appObj, internalPath); },
+          loadSavedThumbnail: function(internalPath, maxEdge) { return loadSavedThumbnail22(appObj, internalPath, maxEdge); },
           prepareSavedUri: function(internalPath) { return prepareSavedUri22(appObj, internalPath); },
           deleteSaved: function(internalPath) { return deleteSavedImage22(appObj, internalPath); },
           clearSavedRecord: function(internalPath) { return clearSavedRecord22(appObj, internalPath); },
@@ -2514,7 +2840,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.3.0";
+      proto.__toolHubPickwordImageViewerVersion = "1.3.1";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
