@@ -10,5 +10,31 @@
     "截图管理器丢弃并回收过期缩略图任务，已保存按钮会重新校验公共副本。",
     "保存目录测试忽略页面销毁或输入变化后的过期结果。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260719005714,
+  "date": "2026-07-19",
+  "modules": [
+    {
+      "name": "th_13_panel_ui.js",
+      "from": "1.0.14",
+      "to": "1.0.15",
+      "change": "updated"
+    },
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "1.2.5",
+      "to": "1.2.6",
+      "change": "updated"
+    },
+    {
+      "name": "th_23_screenshot_manager.js",
+      "from": "1.0.0",
+      "to": "1.0.1",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260719024500,
+    "to": 20260719024500
+  }
 }
