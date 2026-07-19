@@ -1,41 +1,47 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import runpy
-import subprocess
-import traceback
+import importlib.util
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 CORE = HERE / "apply_screenshot_manager_saved_fix_core.py"
 SYNC = HERE / "sync_pickword_viewer_verifier.py"
-DIAG = ROOT / ".github" / "screenshot_manager_fix_error.txt"
 
+spec = importlib.util.spec_from_file_location("screenshot_manager_saved_fix_core", str(CORE))
+if spec is None or spec.loader is None:
+    raise SystemExit("FAIL screenshot-manager-saved-fix: core loader unavailable")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+module.main()
 
-def command(args):
-    return subprocess.run(args, cwd=str(ROOT), text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+verify_path = ROOT / "scripts" / "verify_pickword_image_viewer.py"
+lines = verify_path.read_text(encoding="utf-8").splitlines(True)
+guard_count = 0
+version_count = 0
+out = []
+for line in lines:
+    if "image viewer install version guard missing" in line:
+        replaced = line.replace("1.2.7", "1.2.8")
+        if replaced != line:
+            guard_count += 1
+        line = replaced
+    if "image viewer version" in line and "// @version 1.2.7" in line:
+        replaced = line.replace("// @version 1.2.7", "// @version 1.2.8")
+        if replaced != line:
+            version_count += 1
+        line = replaced
+    out.append(line)
+if guard_count != 1 or version_count != 1:
+    raise SystemExit("FAIL sync-pickword-viewer-verifier guard=%d version=%d" % (guard_count, version_count))
+verify_text = "".join(out)
+if '__toolHubPickwordImageViewerVersion = "1.2.8"' not in verify_text or '// @version 1.2.8' not in verify_text:
+    raise SystemExit("FAIL sync-pickword-viewer-verifier new assertions missing")
+verify_path.write_text(verify_text, encoding="utf-8")
 
-
-ok = False
-try:
-    runpy.run_path(str(CORE), run_name="__main__")
-    runpy.run_path(str(SYNC), run_name="__main__")
-    ok = True
-except BaseException as exc:
-    detail = "type=%s\nerror=%s\n\n%s" % (type(exc).__name__, str(exc), traceback.format_exc())
-    DIAG.write_text(detail, encoding="utf-8")
-    command(["git", "config", "user.name", "github-actions[bot]"])
-    command(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
-    command(["git", "add", str(DIAG.relative_to(ROOT))])
-    committed = command(["git", "commit", "-m", "记录截图管理修复执行异常"])
-    if committed.returncode == 0:
-        command(["git", "push", "origin", "HEAD:fix/screenshot-manager-saved-records"])
-    raise
-finally:
-    if ok:
-        for path in (CORE, SYNC):
-            try:
-                path.unlink()
-            except FileNotFoundError:
-                pass
+for path in (CORE, SYNC):
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
 
 print("OK screenshot-manager-saved-fix wrapper completed")
