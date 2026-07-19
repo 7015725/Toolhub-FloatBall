@@ -34,7 +34,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
