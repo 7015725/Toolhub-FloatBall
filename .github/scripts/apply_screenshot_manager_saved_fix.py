@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# One-shot compatibility wrapper; the active workflow calls the core script directly.
 from pathlib import Path
 import importlib.util
 
