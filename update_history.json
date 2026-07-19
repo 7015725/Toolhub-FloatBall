@@ -1,8 +1,43 @@
 {
   "schema": 1,
-  "historyVersion": 20260719140237,
-  "generatedAt": "2026-07-19T22:02:37+08:00",
+  "historyVersion": 20260719160448,
+  "generatedAt": "2026-07-20T00:04:48+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260719-screenshot-manager-modal-delete",
+      "type": "fix",
+      "title": "修复截图管理查看器层级与截图删除链路",
+      "details": [
+        "截图管理器新增独立顶层 modalHost，图片查看器和删除确认框统一挂载到最高层并阻断底层卡片触摸。",
+        "内部截图卡片和已有图片查看器统一调用同一删除函数，Java 删除失败时通过现有 ShortX Shell 广播桥安全回退。",
+        "公共副本删除同时尝试 ContentResolver、Java 公共路径和 Root 映射路径，并通过 Shell content delete 清理 MediaStore 行。",
+        "公共副本删除完成后按有限重试重新探测 MediaStore、公共路径和 Root 实体路径，只有确认全部消失才清理 ToolHub 保存记录。",
+        "新增查看器挂载、确认框操作、删除传输和删除后验证日志，便于区分 UI 层级、Provider、Java 和 Root 失败。",
+        "保留删除确认遮罩，并让过期分享副本清理显式读取结构化删除结果，避免失败对象被当作成功。"
+      ],
+      "manifestVersion": 20260719160448,
+      "date": "2026-07-20",
+      "modules": [
+        {
+          "name": "th_22_image_viewer.js",
+          "from": "1.2.9",
+          "to": "1.3.0",
+          "change": "updated"
+        },
+        {
+          "name": "th_23_screenshot_manager.js",
+          "from": "1.0.3",
+          "to": "1.0.4",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260719024500,
+        "to": 20260719024500
+      }
+    },
     {
       "schema": 1,
       "id": "20260719-screenshot-public-availability",

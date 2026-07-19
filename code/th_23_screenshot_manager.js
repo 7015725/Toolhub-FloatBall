@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【截图管理器：内部截图 / 已保存】=======================
 (function() {
   function dp23(appObj, value) {
@@ -178,12 +178,20 @@
     var actionBusy = false;
     var bitmaps = [];
     var activeController = null;
-    var activeOverlay = null;
+    var activeViewerView = null;
+    var activeManagerConfirm = null;
+    var activeModalKind = "";
 
     var root = new android.widget.FrameLayout(context);
     var panel = this.ui.createStyledPanel(this, 12);
     try { panel.setBackground(round23(this, colors.background, colors.outlineVariant, 18)); } catch (ePanel) {}
     root.addView(panel, new android.widget.FrameLayout.LayoutParams(-1, -1));
+    var modalHost = new android.widget.FrameLayout(context);
+    modalHost.setVisibility(android.view.View.GONE);
+    modalHost.setClickable(true);
+    modalHost.setFocusable(true);
+    modalHost.setFocusableInTouchMode(true);
+    root.addView(modalHost, new android.widget.FrameLayout.LayoutParams(-1, -1));
 
     var tabs = new android.widget.LinearLayout(context);
     tabs.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -248,19 +256,62 @@
       return false;
     }
 
+    function modalChildIndex23(parent, child) {
+      try { return parent && child ? Number(parent.indexOfChild(child)) : -1; } catch (e0) {}
+      return -1;
+    }
+
+    function showModal23(kind, view) {
+      if (!view || detached) return false;
+      try { modalHost.removeAllViews(); } catch (eClear) {}
+      activeModalKind = String(kind || "unknown");
+      if (activeModalKind === "viewer") activeViewerView = view;
+      else activeManagerConfirm = view;
+      modalHost.addView(view, new android.widget.FrameLayout.LayoutParams(-1, -1));
+      modalHost.setVisibility(android.view.View.VISIBLE);
+      try { modalHost.bringToFront(); } catch (eFront) {}
+      try { modalHost.setElevation(dp23(self, 96)); } catch (eElevation) {}
+      try { modalHost.setTranslationZ(dp23(self, 96)); } catch (eTranslation) {}
+      try { modalHost.requestFocus(); } catch (eFocus) {}
+      safeActionLog23(self, "i", "screenshot manager modal show kind=" + activeModalKind +
+        " rootChildren=" + String(root.getChildCount()) +
+        " panelIndex=" + String(modalChildIndex23(root, panel)) +
+        " hostIndex=" + String(modalChildIndex23(root, modalHost)) +
+        " panelElevation=" + String(panel.getElevation ? panel.getElevation() : 0) +
+        " hostElevation=" + String(modalHost.getElevation ? modalHost.getElevation() : 0) +
+        " hostWidth=" + String(modalHost.getWidth()) +
+        " hostHeight=" + String(modalHost.getHeight()));
+      return true;
+    }
+
+    function clearModalHost23(kind) {
+      var closing = String(kind || activeModalKind || "unknown");
+      try { modalHost.removeAllViews(); } catch (eRemove) {}
+      try { modalHost.setVisibility(android.view.View.GONE); } catch (eHide) {}
+      activeViewerView = null;
+      activeManagerConfirm = null;
+      activeModalKind = "";
+      safeActionLog23(self, "i", "screenshot manager modal hide kind=" + closing);
+    }
+
     function closeImageOverlay(refreshAfter) {
       try { if (activeController) activeController.release("manager_close"); } catch (eRelease) {}
       activeController = null;
-      try { if (activeOverlay && activeOverlay.getParent()) activeOverlay.getParent().removeView(activeOverlay); } catch (eRemove) {}
-      activeOverlay = null;
+      if (activeViewerView || activeModalKind === "viewer") clearModalHost23("viewer");
       if (refreshAfter) loadRecords();
     }
 
-    function showConfirm(titleText, bodyText, confirmText, strong, onConfirm) {
-      if (activeOverlay || detached) return;
+    function dismissManagerConfirm23(reason) {
+      if (activeManagerConfirm || activeModalKind === "confirm") clearModalHost23("confirm");
+      safeActionLog23(self, "i", "screenshot manager confirm " + String(reason || "dismiss"));
+    }
+
+    function showConfirm(actionId, titleText, bodyText, confirmText, strong, onConfirm) {
+      if (activeViewerView || activeManagerConfirm || detached) return;
       var overlay = new android.widget.FrameLayout(context);
-      activeOverlay = overlay;
       try { toolhubSafeSetBackgroundColor(overlay, 0x99000000 | 0); } catch (eBg) {}
+      overlay.setClickable(true);
+      overlay.setFocusable(true);
       var card = new android.widget.LinearLayout(context);
       card.setOrientation(android.widget.LinearLayout.VERTICAL);
       card.setPadding(dp23(self, 18), dp23(self, 16), dp23(self, 18), dp23(self, 14));
@@ -282,11 +333,14 @@
       var row = new android.widget.LinearLayout(context);
       row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
       row.setGravity(android.view.Gravity.END);
-      var cancel = textButton23(self, "取消", colors.onSurface2, function() { closeImageOverlay(false); });
+      var cancel = textButton23(self, "取消", colors.onSurface2, function() {
+        safeActionLog23(self, "i", "screenshot manager confirm cancel action=" + String(actionId || "unknown"));
+        dismissManagerConfirm23("cancel action=" + String(actionId || "unknown"));
+      });
       row.addView(cancel, new android.widget.LinearLayout.LayoutParams(dp23(self, 88), dp23(self, 46)));
       var confirm = textButton23(self, confirmText || "删除", strong ? colors.danger : colors.primary, function() {
-        try { if (overlay.getParent()) overlay.getParent().removeView(overlay); } catch (eRm) {}
-        activeOverlay = null;
+        safeActionLog23(self, "i", "screenshot manager confirm accept action=" + String(actionId || "unknown"));
+        dismissManagerConfirm23("accept action=" + String(actionId || "unknown"));
         onConfirm();
       });
       var confirmLp = new android.widget.LinearLayout.LayoutParams(dp23(self, strong ? 150 : 104), dp23(self, 46));
@@ -297,7 +351,8 @@
       card.addView(row, rowLp);
       var cardLp = new android.widget.FrameLayout.LayoutParams(Math.min(dp23(self, 420), Math.max(dp23(self, 280), Number(self.state.screen && self.state.screen.w || 720) - dp23(self, 48))), -2, android.view.Gravity.CENTER);
       overlay.addView(card, cardLp);
-      root.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
+      safeActionLog23(self, "i", "screenshot manager confirm show action=" + String(actionId || "unknown"));
+      showModal23("confirm", overlay);
     }
 
     function runAction(actionId, label, record, worker, done) {
@@ -340,10 +395,9 @@
     }
 
     function openInternal(record) {
-      if (activeOverlay || detached) return;
+      if (activeViewerView || activeManagerConfirm || detached) return;
       try {
         var overlay = new android.widget.FrameLayout(context);
-        activeOverlay = overlay;
         activeController = self.createPickwordImageController({
           context: context,
           handler: handler,
@@ -362,7 +416,8 @@
         if (!activeController || activeController.hasImage() !== true) throw new Error("截图不可用");
         var full = activeController.createFullView();
         overlay.addView(full, new android.widget.FrameLayout.LayoutParams(-1, -1));
-        root.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        if (!showModal23("viewer", overlay)) throw new Error("图片查看器顶层容器挂载失败");
+        safeActionLog23(self, "i", "pickword image full view mounted path=" + String(record.internalPath || ""));
         activeController.open();
       } catch (e0) {
         closeImageOverlay(false);
@@ -447,7 +502,7 @@
           runAction("share_internal", "正在准备分享…", record, function() { return service.prepareShareInternal(record.internalPath); }, function(result) { service.launchShare(result); status.setText("已打开分享面板"); });
         }, true);
         addAction("删除", colors.danger, function() {
-          showConfirm("删除内部截图？", "将删除 ToolHub 内部截图文件。已保存到系统相册的公共副本不会删除。", "删除", false, function() {
+          showConfirm("delete_internal", "删除内部截图？", "将删除 ToolHub 内部截图文件。已保存到系统相册的公共副本不会删除。", "删除", false, function() {
             runAction("delete_internal", "正在删除内部截图…", record, function() { return service.deleteInternal(record.internalPath); }, function() { status.setText("内部截图已删除"); loadRecords(); });
           });
         }, true);
@@ -462,7 +517,7 @@
         }, savedAvailable);
         if (savedAvailable) {
           addAction("删除公共副本", colors.danger, function() {
-            showConfirm("永久删除已保存副本？", "此操作会从系统相册或公共保存目录永久删除该图片，无法撤销。ToolHub 内部截图如仍存在将继续保留。", "永久删除公共副本", true, function() {
+            showConfirm("delete_saved", "永久删除已保存副本？", "此操作会从系统相册或公共保存目录永久删除该图片，无法撤销。ToolHub 内部截图如仍存在将继续保留。", "永久删除公共副本", true, function() {
               runAction("delete_saved", "正在删除公共副本…", record, function() { return service.deleteSaved(record.internalPath); }, function(result) {
                 status.setText(result && result.alreadyMissing ? "公共副本记录已清理" : "公共副本已删除");
                 loadRecords();
@@ -471,7 +526,7 @@
           }, true);
         } else if (canClearSaved) {
           addAction("清理记录", colors.danger, function() {
-            showConfirm("清理失效记录？", "MediaStore、公共路径与 Root 实体路径均确认不存在后，只清理 ToolHub 保存记录。", "清理记录", false, function() {
+            showConfirm("clear_saved_record", "清理失效记录？", "MediaStore、公共路径与 Root 实体路径均确认不存在后，只清理 ToolHub 保存记录。", "清理记录", false, function() {
               runAction("clear_saved_record", "正在二次确认并清理记录…", record, function() { return service.clearSavedRecord(record.internalPath); }, function() {
                 status.setText("失效记录已清理");
                 loadRecords();
@@ -551,6 +606,10 @@
         detached = true;
         try { if (activeController) activeController.release("manager_detach"); } catch (eController) {}
         activeController = null;
+        activeViewerView = null;
+        activeManagerConfirm = null;
+        activeModalKind = "";
+        try { modalHost.removeAllViews(); modalHost.setVisibility(android.view.View.GONE); } catch (eModal) {}
         try { listExecutor.shutdownNow(); } catch (eList) {}
         try { thumbExecutor.shutdownNow(); } catch (eThumb) {}
         try { actionExecutor.shutdownNow(); } catch (eAction) {}
