@@ -1,4 +1,4 @@
-// @version 1.0.1
+// @version 1.0.2
 // =======================【截图管理器：内部截图 / 已保存】=======================
 (function() {
   function dp23(appObj, value) {
@@ -69,30 +69,66 @@
     return sample;
   }
 
-  function decodeThumbnail23(record, maxEdge) {
-    var opts = new android.graphics.BitmapFactory.Options();
-    opts.inJustDecodeBounds = true;
+  function decodeUri23(rawUri, options) {
     var input = null;
     try {
-      if (String(record.kind || "") === "saved" && record.contentUri) {
-        input = context.getContentResolver().openInputStream(android.net.Uri.parse(String(record.contentUri)));
-        android.graphics.BitmapFactory.decodeStream(input, null, opts);
-      } else {
-        var path = String(record.kind === "saved" ? record.publicPath : record.internalPath);
-        android.graphics.BitmapFactory.decodeFile(path, opts);
-      }
+      input = context.getContentResolver().openInputStream(android.net.Uri.parse(String(rawUri || "")));
+      if (!input) return null;
+      return android.graphics.BitmapFactory.decodeStream(input, null, options);
     } finally { close23(input); }
-    if (opts.outWidth <= 0 || opts.outHeight <= 0) return null;
-    var actual = new android.graphics.BitmapFactory.Options();
-    actual.inSampleSize = sample23(opts.outWidth, opts.outHeight, maxEdge);
-    actual.inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888;
-    if (String(record.kind || "") === "saved" && record.contentUri) {
+  }
+
+  function decodeThumbnail23(record, maxEdge) {
+    var saved = String(record.kind || "") === "saved";
+    var sourceMode = "";
+    var path = String(saved ? record.publicPath : record.internalPath);
+    var bounds = new android.graphics.BitmapFactory.Options();
+    bounds.inJustDecodeBounds = true;
+    if (saved && record.contentUri) {
       try {
-        input = context.getContentResolver().openInputStream(android.net.Uri.parse(String(record.contentUri)));
-        return android.graphics.BitmapFactory.decodeStream(input, null, actual);
-      } finally { close23(input); }
+        decodeUri23(record.contentUri, bounds);
+        if (bounds.outWidth > 0 && bounds.outHeight > 0) sourceMode = "uri";
+      } catch (eUriBounds) {}
     }
-    return android.graphics.BitmapFactory.decodeFile(String(record.kind === "saved" ? record.publicPath : record.internalPath), actual);
+    if (!sourceMode) {
+      bounds = new android.graphics.BitmapFactory.Options();
+      bounds.inJustDecodeBounds = true;
+      try { android.graphics.BitmapFactory.decodeFile(path, bounds); } catch (eFileBounds) {}
+      if (bounds.outWidth > 0 && bounds.outHeight > 0) sourceMode = "file";
+    }
+    if (!sourceMode) return null;
+    var actual = new android.graphics.BitmapFactory.Options();
+    actual.inSampleSize = sample23(bounds.outWidth, bounds.outHeight, maxEdge);
+    actual.inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888;
+    if (sourceMode === "uri") {
+      try {
+        var uriBitmap = decodeUri23(record.contentUri, actual);
+        if (uriBitmap) return uriBitmap;
+      } catch (eUriDecode) {}
+      if (!path) return null;
+    }
+    return android.graphics.BitmapFactory.decodeFile(path, actual);
+  }
+
+  function safeActionLog23(appObj, level, message) {
+    try { safeLog(appObj && appObj.L ? appObj.L : null, level, String(message || "")); } catch (e0) {}
+  }
+
+  function actionContext23(record) {
+    var item = record || {};
+    return "kind=" + String(item.kind || "") +
+      " available=" + String(item.available === true) +
+      " internalDeleted=" + String(item.internalDeleted === true) +
+      " internalPath=" + String(item.internalPath || "") +
+      " publicPath=" + String(item.publicPath || "") +
+      " contentUriPresent=" + String(!!item.contentUri);
+  }
+
+  function setActionEnabled23(view, enabled) {
+    var active = enabled !== false;
+    try { view.setEnabled(active); } catch (e0) {}
+    try { view.setClickable(active); } catch (e1) {}
+    try { view.setAlpha(active ? 1.0 : 0.38); } catch (e2) {}
   }
 
   function textButton23(appObj, label, color, onClick) {
@@ -253,24 +289,43 @@
       root.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
     }
 
-    function runAction(label, worker, done) {
-      if (actionBusy || detached) return;
+    function runAction(actionId, label, record, worker, done) {
+      if (actionBusy || detached) return false;
       actionBusy = true;
       status.setText(String(label || "正在处理…"));
-      actionExecutor.execute(new java.lang.Runnable({ run: function() {
-        var result = null;
-        var error = null;
-        try { result = worker(); } catch (e0) { error = e0; }
-        post(function() {
-          actionBusy = false;
-          if (error) {
-            status.setText("操作失败：" + String(error));
-            try { self.toast("操作失败"); } catch (eToast) {}
-            return;
+      safeActionLog23(self, "i", "screenshot manager action begin action=" + String(actionId || "unknown") + " " + actionContext23(record));
+      try {
+        actionExecutor.execute(new java.lang.Runnable({ run: function() {
+          var result = null;
+          var error = null;
+          try { result = worker(); } catch (e0) { error = e0; }
+          var posted = post(function() {
+            actionBusy = false;
+            if (error) {
+              safeActionLog23(self, "w", "screenshot manager action fail action=" + String(actionId || "unknown") + " " + actionContext23(record) + " error=" + String(error));
+              status.setText("操作失败：" + String(error));
+              try { self.toast("操作失败"); } catch (eToast) {}
+              return;
+            }
+            try {
+              done(result);
+            } catch (eDone) {
+              safeActionLog23(self, "w", "screenshot manager action done fail action=" + String(actionId || "unknown") + " " + actionContext23(record) + " error=" + String(eDone));
+              status.setText("操作失败：" + String(eDone));
+            }
+          });
+          if (!posted) {
+            actionBusy = false;
+            safeActionLog23(self, "w", "screenshot manager action post fail action=" + String(actionId || "unknown") + " " + actionContext23(record));
           }
-          try { done(result); } catch (eDone) { status.setText("操作失败：" + String(eDone)); }
-        });
-      }}));
+        }}));
+        return true;
+      } catch (eSchedule) {
+        actionBusy = false;
+        safeActionLog23(self, "w", "screenshot manager action schedule fail action=" + String(actionId || "unknown") + " " + actionContext23(record) + " error=" + String(eSchedule));
+        status.setText("操作失败：" + String(eSchedule));
+        return false;
+      }
     }
 
     function openInternal(record) {
@@ -343,7 +398,7 @@
       var meta = new android.widget.TextView(context);
       var timeValue = record.kind === "saved" ? record.savedAt : record.createdAt;
       var statusText = record.kind === "saved"
-        ? (record.available ? "公共副本可用" : "公共副本不可用")
+        ? ((record.available ? "公共副本可用" : "公共副本不可用") + (record.internalDeleted ? " · 内部截图已清理" : ""))
         : (record.savedAt > 0 ? "已保存公共副本" : (record.tracked ? "内部记录" : "未登记文件"));
       meta.setText(formatDate23(timeValue) + "\n" + formatSize23(record.fileSize) + " · " + statusText);
       meta.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
@@ -360,41 +415,58 @@
       actions.setGravity(android.view.Gravity.END);
       actions.setPadding(0, dp23(self, 8), 0, 0);
 
-      function addAction(label, color, fn) {
+      function addAction(label, color, fn, enabled) {
         var btn = textButton23(self, label, color, fn);
+        setActionEnabled23(btn, enabled !== false);
         var lp = new android.widget.LinearLayout.LayoutParams(0, dp23(self, 44), 1);
         lp.leftMargin = dp23(self, 5);
         actions.addView(btn, lp);
+        return btn;
       }
 
       if (record.kind === "internal") {
-        addAction("查看", colors.primary, function() { openInternal(record); });
+        addAction("查看", colors.primary, function() { openInternal(record); }, true);
         addAction(record.savedAt > 0 ? "已保存" : "保存", colors.primary, function() {
-          runAction("正在校验并保存…", function() { return service.saveInternal(record.internalPath); }, function(result) {
+          runAction("save_internal", "正在校验并保存…", record, function() { return service.saveInternal(record.internalPath); }, function(result) {
             status.setText(result && result.reused ? "公共副本仍可用" : "保存成功");
             loadRecords();
           });
-        });
+        }, true);
         addAction("分享", colors.primary, function() {
-          runAction("正在准备分享…", function() { return service.prepareShareInternal(record.internalPath); }, function(result) { service.launchShare(result); status.setText("已打开分享面板"); });
-        });
+          runAction("share_internal", "正在准备分享…", record, function() { return service.prepareShareInternal(record.internalPath); }, function(result) { service.launchShare(result); status.setText("已打开分享面板"); });
+        }, true);
         addAction("删除", colors.danger, function() {
           showConfirm("删除内部截图？", "将删除 ToolHub 内部截图文件。已保存到系统相册的公共副本不会删除。", "删除", false, function() {
-            runAction("正在删除内部截图…", function() { return service.deleteInternal(record.internalPath); }, function() { status.setText("内部截图已删除"); loadRecords(); });
+            runAction("delete_internal", "正在删除内部截图…", record, function() { return service.deleteInternal(record.internalPath); }, function() { status.setText("内部截图已删除"); loadRecords(); });
           });
-        });
+        }, true);
       } else {
+        var savedAvailable = record.available === true;
         addAction("打开", colors.primary, function() {
-          runAction("正在打开公共副本…", function() { return service.prepareSavedUri(record.internalPath); }, function(result) { service.launchView(result); status.setText("已交给系统图片查看器"); });
-        });
+          runAction("open_saved", "正在打开公共副本…", record, function() { return service.prepareSavedUri(record.internalPath); }, function(result) { service.launchView(result); status.setText("已交给系统图片查看器"); });
+        }, savedAvailable);
         addAction("分享", colors.primary, function() {
-          runAction("正在准备分享…", function() { return service.prepareSavedUri(record.internalPath); }, function(result) { service.launchShare(result); status.setText("已打开分享面板"); });
-        });
-        addAction("删除公共副本", colors.danger, function() {
-          showConfirm("永久删除已保存副本？", "此操作会从系统相册或公共保存目录永久删除该图片，无法撤销。ToolHub 内部截图如仍存在将继续保留。", "永久删除公共副本", true, function() {
-            runAction("正在删除公共副本…", function() { return service.deleteSaved(record.internalPath); }, function() { status.setText("公共副本已删除"); loadRecords(); });
-          });
-        });
+          runAction("share_saved", "正在准备分享…", record, function() { return service.prepareSavedUri(record.internalPath); }, function(result) { service.launchShare(result); status.setText("已打开分享面板"); });
+        }, savedAvailable);
+        if (savedAvailable) {
+          addAction("删除公共副本", colors.danger, function() {
+            showConfirm("永久删除已保存副本？", "此操作会从系统相册或公共保存目录永久删除该图片，无法撤销。ToolHub 内部截图如仍存在将继续保留。", "永久删除公共副本", true, function() {
+              runAction("delete_saved", "正在删除公共副本…", record, function() { return service.deleteSaved(record.internalPath); }, function(result) {
+                status.setText(result && result.alreadyMissing ? "公共副本记录已清理" : "公共副本已删除");
+                loadRecords();
+              });
+            });
+          }, true);
+        } else {
+          addAction("清理记录", colors.danger, function() {
+            showConfirm("清理失效记录？", "只清理 ToolHub 中无法访问的公共副本记录，不会删除任何仍可访问的图片文件。", "清理记录", false, function() {
+              runAction("clear_saved_record", "正在清理失效记录…", record, function() { return service.clearSavedRecord(record.internalPath); }, function() {
+                status.setText("失效记录已清理");
+                loadRecords();
+              });
+            });
+          }, true);
+        }
       }
       card.addView(actions, new android.widget.LinearLayout.LayoutParams(-1, dp23(self, 52)));
 
