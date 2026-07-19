@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "id": "20260720-screenshot-manager-external-close",
+  "type": "fix",
+  "title": "截图管理器外部打开后自动关闭",
+  "details": [
+    "截图管理器内部截图卡片分享成功拉起系统分享面板后，关闭整个截图管理器 ToolApp。",
+    "内部截图原图查看器分享成功后，通过外层回调关闭截图管理器，不让图片服务直接管理 ToolApp 生命周期。",
+    "已保存分类的打开和分享在系统相册、图片查看器或分享面板成功启动后关闭截图管理器。",
+    "系统 Intent 启动失败时保留当前页面并显示原有错误，不提前关闭截图管理器。",
+    "关闭统一复用 closeToolApp 与页面 detach 清理链，释放 Controller、Bitmap、线程池和 modalHost，仅保留悬浮球。"
+  ],
+  "manifestVersion": 0,
+  "date": "2026-07-20",
+  "modules": [
+    {
+      "name": "th_23_screenshot_manager.js",
+      "from": "1.0.5",
+      "to": "1.0.6",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260719024500,
+    "to": 20260719024500
+  }
+}
