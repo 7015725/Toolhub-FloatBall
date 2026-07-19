@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "748f2d3be467989ce3e51e88f10f29eeba795f216adeaa1edac846943dae123c",
-      "size": 49724,
-      "version": 20260719171851
+      "sha256": "c14743c4b8db52a4e8d80b6843c6c222839b116703a9ba68e9723376b758ba1e",
+      "size": 50957,
+      "version": 20260719181526
     }
   },
   "entry": {
@@ -159,24 +159,23 @@
       "version": "1.3.1"
     },
     "th_23_screenshot_manager.js": {
-      "sha256": "fe7036f079f0463cbd946cae42e0296ca28fd2bb1de9ae3b7374a27cbf58a1f3",
-      "size": 31749,
-      "version": "1.0.5"
+      "sha256": "b2f9c7b825848c2897bbf6276f011e0ac749295ca3b89039aaf62870c6e1424a",
+      "size": 33309,
+      "version": "1.0.6"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "已保存图片缩略图改由 th_22 图片服务统一加载，截图管理 UI 不再直接处理公共路径与 MediaStore 读取边界。",
-      "新增 ToolHub 私有缩略图缓存，新保存公共副本时从内部原图生成缓存，避免列表刷新重复解码公共原图。",
-      "旧记录依次尝试缓存、MediaProvider loadThumbnail、Content URI、Java 公共路径、内部原图代理和 Shell/Root 回填。",
-      "Shell 回填仅从安全 MediaStore URI 或规范化公共路径读取，并只写入 ToolHub/cache/screenshot_thumbnails 受控目录。",
-      "删除公共副本、清理失效记录和定期清理会同步处理缩略图缓存，内部截图删除不破坏公共副本缩略图。",
-      "截图管理器记录缩略图来源和失败原因，并在成功后显示公共副本存在、缩略图可用。"
+      "截图管理器内部截图卡片分享成功拉起系统分享面板后，关闭整个截图管理器 ToolApp。",
+      "内部截图原图查看器分享成功后，通过外层回调关闭截图管理器，不让图片服务直接管理 ToolApp 生命周期。",
+      "已保存分类的打开和分享在系统相册、图片查看器或分享面板成功启动后关闭截图管理器。",
+      "系统 Intent 启动失败时保留当前页面并显示原有错误，不提前关闭截图管理器。",
+      "关闭统一复用 closeToolApp 与页面 detach 清理链，释放 Controller、Bitmap、线程池和 modalHost，仅保留悬浮球。"
     ],
     "date": "2026-07-20",
-    "title": "修复截图管理器已保存图片缩略图"
+    "title": "截图管理器外部打开后自动关闭"
   },
   "schema": 4,
-  "version": 20260719171851
+  "version": 20260719181526
 }

@@ -10,5 +10,19 @@
     "系统 Intent 启动失败时保留当前页面并显示原有错误，不提前关闭截图管理器。",
     "关闭统一复用 closeToolApp 与页面 detach 清理链，释放 Controller、Bitmap、线程池和 modalHost，仅保留悬浮球。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260719181526,
+  "date": "2026-07-20",
+  "modules": [
+    {
+      "name": "th_23_screenshot_manager.js",
+      "from": "1.0.5",
+      "to": "1.0.6",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260719024500,
+    "to": 20260719024500
+  }
 }
