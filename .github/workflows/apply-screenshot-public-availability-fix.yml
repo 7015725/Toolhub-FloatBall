@@ -3,17 +3,30 @@ name: apply-screenshot-public-availability-fix
 on:
   push:
     branches: [agent/fix-screenshot-public-availability]
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
-  group: apply-screenshot-public-availability-fix
+  group: apply-screenshot-public-availability-fix-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   apply:
+    if: >
+      (github.event_name == 'push' && github.ref_name == 'agent/fix-screenshot-public-availability') ||
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.head.ref == 'agent/fix-screenshot-public-availability'
+      )
     runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: agent/fix-screenshot-public-availability
     steps:
       - name: Checkout fix branch
         uses: actions/checkout@v4
@@ -76,4 +89,4 @@ jobs:
           if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
             git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           fi
-          git push origin HEAD:agent/fix-screenshot-public-availability
+          git push origin "HEAD:${TARGET_BRANCH}"
