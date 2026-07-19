@@ -1,4 +1,4 @@
-// @version 1.3.1
+// @version 1.3.2
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -899,10 +899,6 @@
     return state;
   }
 
-  function uriReadable22(rawUri) {
-    return uriReadableState22(rawUri).readable === true;
-  }
-
   function queryMediaUriState22(rawUri) {
     var state = { safeUri: "", checked: false, rowExists: false, exists: false, size: 0, sizeKnown: false, error: "" };
     var safeUri = safeMediaUri22(rawUri);
@@ -1087,7 +1083,19 @@
   }
 
 
-  var savedThumbnailLocks22 = new java.util.concurrent.ConcurrentHashMap();
+  var SAVED_THUMBNAIL_LOCK_STRIPE_COUNT22 = 32;
+  var savedThumbnailLockStripes22 = [];
+  for (var savedThumbnailLockIndex22 = 0; savedThumbnailLockIndex22 < SAVED_THUMBNAIL_LOCK_STRIPE_COUNT22; savedThumbnailLockIndex22++) {
+    savedThumbnailLockStripes22.push(new java.util.concurrent.locks.ReentrantLock());
+  }
+
+  function savedThumbnailLock22(internalPath) {
+    var key = thumbnailCacheKey22(internalPath);
+    var hash = 0;
+    for (var i = 0; i < key.length; i++) hash = ((hash * 31) + key.charCodeAt(i)) | 0;
+    var index = (hash & 0x7FFFFFFF) % SAVED_THUMBNAIL_LOCK_STRIPE_COUNT22;
+    return savedThumbnailLockStripes22[index];
+  }
 
   function thumbnailCacheRoot22() {
     var basePath = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
@@ -1244,7 +1252,7 @@
     }
   }
 
-  function clearSavedThumbnail22(internalPath) {
+  function clearSavedThumbnailUnlocked22(internalPath) {
     var root = thumbnailCacheRoot22();
     var prefix = thumbnailCacheKey22(internalPath) + "_";
     var files = root.listFiles();
@@ -1262,6 +1270,17 @@
       }
     }
     return result;
+  }
+
+  function clearSavedThumbnail22(internalPath) {
+    var path = String(normalizeInternalFile22(internalPath).getCanonicalPath());
+    var lock = savedThumbnailLock22(path);
+    lock.lock();
+    try {
+      return clearSavedThumbnailUnlocked22(path);
+    } finally {
+      try { lock.unlock(); } catch (eUnlock) {}
+    }
   }
 
   function cleanupThumbnailCache22() {
@@ -1287,18 +1306,31 @@
     return result;
   }
 
-  function ensureSavedThumbnailCache22(appObj, sourceFile, internalPath, maxEdge) {
-    var cacheFile = thumbnailCacheFile22(internalPath, maxEdge);
+  function ensureSavedThumbnailCacheUnlocked22(appObj, sourceFile, internalPath, maxEdge) {
+    var path = String(normalizeInternalFile22(internalPath).getCanonicalPath());
+    if (!loadSavedCopy22(path)) return false;
+    var cacheFile = thumbnailCacheFile22(path, maxEdge);
     if (cacheFile.exists() && cacheFile.isFile() && cacheFile.length() > 0) return true;
     var bitmap = null;
     try {
       bitmap = decodeThumbnailFile22(sourceFile, maxEdge);
       return bitmap ? writeThumbnailCache22(bitmap, cacheFile) : false;
     } catch (e0) {
-      try { safeLog(appObj && appObj.L ? appObj.L : null, "w", "pickword image thumbnail cache fail path=" + String(internalPath || "") + " err=" + String(e0)); } catch (eLog) {}
+      try { safeLog(appObj && appObj.L ? appObj.L : null, "w", "pickword image thumbnail cache fail path=" + path + " err=" + String(e0)); } catch (eLog) {}
       return false;
     } finally {
       safeRecycle22(bitmap);
+    }
+  }
+
+  function ensureSavedThumbnailCache22(appObj, sourceFile, internalPath, maxEdge) {
+    var path = String(normalizeInternalFile22(internalPath).getCanonicalPath());
+    var lock = savedThumbnailLock22(path);
+    lock.lock();
+    try {
+      return ensureSavedThumbnailCacheUnlocked22(appObj, sourceFile, path, maxEdge);
+    } finally {
+      try { lock.unlock(); } catch (eUnlock) {}
     }
   }
 
@@ -1334,22 +1366,19 @@
 
   function loadSavedThumbnail22(appObj, internalPath, maxEdge) {
     var path = String(normalizeInternalFile22(internalPath).getCanonicalPath());
-    var row = loadSavedCopy22(path);
-    if (!row) throw new Error("已保存记录不存在");
-    row.internalPath = path;
-    var limit = Math.max(96, Math.min(1024, int22(maxEdge, 360)));
-    var cacheFile = thumbnailCacheFile22(path, limit);
-    var lockKey = String(cacheFile.getName());
-    var created = new java.util.concurrent.locks.ReentrantLock();
-    var prior = savedThumbnailLocks22.putIfAbsent(lockKey, created);
-    var lock = prior || created;
+    var lock = savedThumbnailLock22(path);
     var bitmap = null;
     var stage = null;
-    var source = "";
-    var cached = false;
-    var failures = [];
     lock.lock();
     try {
+      var row = loadSavedCopy22(path);
+      if (!row) throw new Error("已保存记录不存在");
+      row.internalPath = path;
+      var limit = Math.max(96, Math.min(1024, int22(maxEdge, 360)));
+      var cacheFile = thumbnailCacheFile22(path, limit);
+      var source = "";
+      var cached = false;
+      var failures = [];
       try {
         bitmap = decodeThumbnailFile22(cacheFile, limit);
         if (bitmap) { source = "cache"; cached = true; }
@@ -1807,7 +1836,6 @@
             availabilitySource: "",
             mediaExists: false,
             rootFileExists: false,
-            internalAvailable: false,
             thumbnailAvailable: false
           });
         }
@@ -1818,7 +1846,6 @@
     }, []);
     for (var i = 0; i < rows.length; i++) {
       var row = rows[i];
-      try { row.internalAvailable = isImageFile22(normalizeInternalFile22(row.internalPath)); } catch (eInternal) {}
       var probe = probeSavedCopy22(appObj, row, "list_saved");
       row.available = probe.exists === true;
       row.directReadable = probe.directReadable === true;
@@ -2015,7 +2042,7 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.3.1") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.3.2") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -2840,7 +2867,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.3.1";
+      proto.__toolHubPickwordImageViewerVersion = "1.3.2";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}

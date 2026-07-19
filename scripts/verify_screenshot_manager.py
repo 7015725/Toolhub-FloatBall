@@ -22,8 +22,8 @@ generator = read("scripts/generate_signed_manifest.py")
 boundaries = read("MODULE_BOUNDARIES.json")
 workflow = read(".github/workflows/verify.yml")
 
-require('// @version 1.3.1' in th22, 'th22 service version')
-require('// @version 1.0.6' in th23, 'th23 version')
+require('// @version 1.3.2' in th22, 'th22 service version')
+require('// @version 1.0.7' in th23, 'th23 version')
 require('getPickwordImageService' in th22, 'service API')
 for marker in ('listInternal', 'listSaved', 'saveInternal', 'prepareShareInternal', 'deleteInternal', 'loadSavedThumbnail', 'prepareSavedUri', 'deleteSaved', 'clearSavedRecord', 'launchShare', 'launchView'):
     require(marker in th22, 'service method ' + marker)
@@ -80,6 +80,10 @@ require('service.loadSavedThumbnail(record.internalPath, 360)' in th23, 'saved t
 require('公共副本存在 · 缩略图可用' in th23 and 'thumbnailSource' in th23, 'saved thumbnail UI state missing')
 require('decodeUri23' not in th23 and 'record.kind === "saved"' in th23, 'saved public decoding must leave UI module')
 require('function sample23(width, height, maxEdge)' in th23 and 'actual.inSampleSize = sample23(' in th23, 'internal thumbnail sampling helper missing')
+require('internalAvailable' not in th22, 'unused saved internal availability state must stay removed')
+require('function uriReadable22(' not in th22 and 'function uriReadableState22(' in th22, 'unused URI readability wrapper must stay removed')
+require('modalChildIndex23' not in th23 and 'modalHost.bringToFront()' in th23 and 'modalHost.setElevation(dp23(self, 96))' in th23, 'modal diagnostics cleanup must preserve z-order behavior')
+require('record.thumbnailAvailable = false;' in th23 and 'record.thumbnailSource = "";' in th23, 'thumbnail failure state reset missing')
 require('open_screenshot_manager' in action and 'showToolApp("screenshot_manager", true)' in action, 'button action')
 require('screenshot_manager' in routes and '截图管理器' in routes, 'toolapp route')
 require('builtin_screenshot_manager' in base and 'BUTTONS_MIGRATION_VERSION = 3' in base, 'button migration v3')
@@ -90,4 +94,4 @@ require('verify_screenshot_manager.py' in workflow, 'workflow verification')
 for source, name in ((th22, 'th22'), (th23, 'th23')):
     for banned in (r'\blet\b', r'\bconst\b', r'=>', r'`'):
         require(re.search(banned, source) is None, name + ' ES6 token ' + banned)
-print('OK screenshot-manager saved_thumbnail=service,cache,provider,shell bitmap=caller_owned migration=3')
+print('OK screenshot-manager saved_thumbnail=service,stripe_lock,failure_sync diagnostics=trimmed migration=3')
