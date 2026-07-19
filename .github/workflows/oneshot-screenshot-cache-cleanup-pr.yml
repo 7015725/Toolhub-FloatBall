@@ -1,5 +1,6 @@
 name: One-shot screenshot cache recovery
 
+# Draft synchronization trigger for the atomic recovery commit.
 on:
   pull_request:
     types:
