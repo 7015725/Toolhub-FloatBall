@@ -1,4 +1,4 @@
-// @version 1.0.14
+// @version 1.0.15
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -742,7 +742,23 @@ FloatBallAppWM.prototype.createPickwordImageSettingsView = function(item, parent
   var pathTesting = false;
   var pathButton = null;
   var pathHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-  function finishPathTest13(result) {
+  var pathTestGeneration13 = 0;
+  var pathViewEverAttached13 = false;
+  var pathViewDisposed13 = false;
+  root.addOnAttachStateChangeListener(new android.view.View.OnAttachStateChangeListener({
+    onViewAttachedToWindow: function(v) {
+      pathViewEverAttached13 = true;
+      pathViewDisposed13 = false;
+    },
+    onViewDetachedFromWindow: function(v) {
+      if (!pathViewEverAttached13) return;
+      pathViewDisposed13 = true;
+      pathTesting = false;
+      pathTestGeneration13++;
+    }
+  }));
+  function finishPathTest13(result, testToken, pathSnapshot) {
+    if (pathViewDisposed13 || testToken !== pathTestGeneration13) return;
     pathTesting = false;
     try {
       if (pathButton) {
@@ -750,8 +766,11 @@ FloatBallAppWM.prototype.createPickwordImageSettingsView = function(item, parent
         pathButton.setAlpha(1.0);
         pathButton.setText("测试保存目录");
       }
+      if (String(pathInput.getText() || "") !== String(pathSnapshot || "")) {
+        setStatus13("目录内容已修改，已忽略旧测试结果", false);
+        return;
+      }
       if (result && result.ok) {
-        self.setPendingValue("PICKWORD_IMAGE_PUBLIC_DIR", String(result.path || ""));
         pathInput.setText(String(result.path || ""));
         pathInput.setSelection(pathInput.getText().length());
         setStatus13("目录可写：" + String(result.path || ""), false);
@@ -773,6 +792,8 @@ FloatBallAppWM.prototype.createPickwordImageSettingsView = function(item, parent
       }
       self.touchActivity();
       var pathSnapshot = String(pathInput.getText() || "");
+      pathTestGeneration13++;
+      var testToken = pathTestGeneration13;
       pathTesting = true;
       pathButton.setEnabled(false);
       pathButton.setAlpha(0.65);
@@ -782,11 +803,11 @@ FloatBallAppWM.prototype.createPickwordImageSettingsView = function(item, parent
         var result = null;
         try { result = self.validatePickwordImagePublicDir(pathSnapshot); }
         catch(eTest) { result = { ok: false, path: pathSnapshot, error: String(eTest) }; }
-        pathHandler.post(new java.lang.Runnable({ run: function() { finishPathTest13(result); }}));
+        pathHandler.post(new java.lang.Runnable({ run: function() { finishPathTest13(result, testToken, pathSnapshot); }}));
       }}), "TH-Pickword-Image-Dir-Test");
       thread.start();
     } catch(eStart) {
-      finishPathTest13({ ok: false, error: "目录测试启动失败：" + String(eStart) });
+      finishPathTest13({ ok: false, error: "目录测试启动失败：" + String(eStart) }, testToken, pathSnapshot);
     }
   });
   var pathButtonLp = new android.widget.LinearLayout.LayoutParams(-1, self.dp(46));

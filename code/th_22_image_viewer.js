@@ -1,4 +1,4 @@
-// @version 1.2.5
+// @version 1.2.6
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -166,24 +166,32 @@
 
   function upsertImage22(info) {
     return withDb22(function(db) {
-      var stmt = null;
+      var insert = null;
+      var update = null;
       try {
-        stmt = db.compileStatement("INSERT OR REPLACE INTO toolhub_pickword_images(internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,deleted_at,last_access_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
-        bindText22(stmt, 1, info.internalPath);
-        stmt.bindLong(2, Number(info.createdAt || now22()));
-        bindText22(stmt, 3, info.source || "pointer_ocr");
-        stmt.bindLong(4, Number(info.width || 0));
-        stmt.bindLong(5, Number(info.height || 0));
-        stmt.bindLong(6, Number(info.fileSize || 0));
-        bindText22(stmt, 7, info.savedPublicPath || "");
-        bindText22(stmt, 8, info.savedContentUri || "");
-        stmt.bindLong(9, Number(info.savedAt || 0));
-        stmt.bindLong(10, Number(info.deletedAt || 0));
-        stmt.bindLong(11, Number(now22()));
-        stmt.executeInsert();
+        var accessedAt = now22();
+        insert = db.compileStatement("INSERT OR IGNORE INTO toolhub_pickword_images(internal_path,created_at,source_type,width,height,file_size,saved_public_path,saved_content_uri,saved_at,deleted_at,last_access_at) VALUES(?,?,?,?,?,?,'','',0,0,?)");
+        bindText22(insert, 1, info.internalPath);
+        insert.bindLong(2, Number(info.createdAt || accessedAt));
+        bindText22(insert, 3, info.source || "pointer_ocr");
+        insert.bindLong(4, Number(info.width || 0));
+        insert.bindLong(5, Number(info.height || 0));
+        insert.bindLong(6, Number(info.fileSize || 0));
+        insert.bindLong(7, accessedAt);
+        insert.executeInsert();
+
+        update = db.compileStatement("UPDATE toolhub_pickword_images SET source_type=?, width=?, height=?, file_size=?, deleted_at=0, last_access_at=? WHERE internal_path=?");
+        bindText22(update, 1, info.source || "pointer_ocr");
+        update.bindLong(2, Number(info.width || 0));
+        update.bindLong(3, Number(info.height || 0));
+        update.bindLong(4, Number(info.fileSize || 0));
+        update.bindLong(5, accessedAt);
+        bindText22(update, 6, info.internalPath);
+        update.executeUpdateDelete();
         return true;
       } finally {
-        try { if (stmt) stmt.close(); } catch (eClose) {}
+        try { if (insert) insert.close(); } catch (eInsert) {}
+        try { if (update) update.close(); } catch (eUpdate) {}
       }
     }, false);
   }
@@ -986,11 +994,10 @@
     return result;
   }
 
-  function cleanupExports22(appObj) {
+  function loadExpiredExports22() {
     return withDb22(function(db) {
       var cursor = null;
       var rows = [];
-      var result = { scanned: 0, deleted: 0, failed: 0 };
       try {
         cursor = db.rawQuery("SELECT export_id,public_path,content_uri FROM toolhub_pickword_image_exports WHERE export_kind='share_temp' AND deleted_at=0 AND expires_at>0 AND expires_at<?", stringArgs22([String(now22())]));
         while (cursor.moveToNext()) {
@@ -1003,23 +1010,49 @@
       } finally {
         try { if (cursor) cursor.close(); } catch (eClose) {}
       }
-      for (var i = 0; i < rows.length; i++) {
-        result.scanned++;
-        var one = rows[i];
-        var ok = deleteContent22(appObj, one.contentUri, one.publicPath);
-        if (ok) result.deleted++; else result.failed++;
-        var stmt = null;
-        try {
-          stmt = db.compileStatement("UPDATE toolhub_pickword_image_exports SET deleted_at=? WHERE export_id=?");
-          stmt.bindLong(1, Number(now22()));
-          stmt.bindLong(2, Number(one.id));
-          stmt.executeUpdateDelete();
-        } finally {
-          try { if (stmt) stmt.close(); } catch (eStmt) {}
+      return rows;
+    }, []);
+  }
+
+  function markExportsDeleted22(ids, deletedAt) {
+    if (!ids || !ids.length) return 0;
+    return withDb22(function(db) {
+      var stmt = null;
+      var updated = 0;
+      try {
+        stmt = db.compileStatement("UPDATE toolhub_pickword_image_exports SET deleted_at=? WHERE export_id=? AND deleted_at=0");
+        for (var i = 0; i < ids.length; i++) {
+          try { stmt.clearBindings(); } catch (eClear) {}
+          stmt.bindLong(1, Number(deletedAt || now22()));
+          stmt.bindLong(2, Number(ids[i]));
+          updated += Number(stmt.executeUpdateDelete() || 0);
         }
+        return updated;
+      } finally {
+        try { if (stmt) stmt.close(); } catch (eStmt) {}
       }
-      return result;
-    }, { scanned: 0, deleted: 0, failed: 0 });
+    }, 0);
+  }
+
+  function cleanupExports22(appObj) {
+    var rows = loadExpiredExports22();
+    var successIds = [];
+    var result = { scanned: 0, deleted: 0, failed: 0, marked: 0 };
+    for (var i = 0; i < rows.length; i++) {
+      result.scanned++;
+      var one = rows[i];
+      var emptyRecord = !one.contentUri && !one.publicPath;
+      var ok = emptyRecord || deleteContent22(appObj, one.contentUri, one.publicPath);
+      if (ok) {
+        result.deleted++;
+        successIds.push(one.id);
+      } else {
+        result.failed++;
+      }
+    }
+    result.marked = markExportsDeleted22(successIds, now22());
+    if (result.marked < successIds.length) result.failed += successIds.length - result.marked;
+    return result;
   }
 
   function stats22(appObj) {
@@ -1315,7 +1348,7 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.5") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.6") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -1545,9 +1578,6 @@
               width: sourceWidth,
               height: sourceHeight,
               fileSize: fileSize,
-              savedPublicPath: savedInfo ? savedInfo.publicPath : "",
-              savedContentUri: savedInfo ? savedInfo.contentUri : "",
-              savedAt: savedInfo ? savedInfo.savedAt : 0,
               deletedAt: 0
             });
           }
@@ -2141,7 +2171,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.2.5";
+      proto.__toolHubPickwordImageViewerVersion = "1.2.6";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
