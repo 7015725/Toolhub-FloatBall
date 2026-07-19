@@ -1,4 +1,4 @@
-// @version 1.0.18
+// @version 1.0.19
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -238,6 +238,7 @@
     var pickwordImageTextParent20 = null;
     var pickwordImageTextView20 = null;
     var pickwordImageTextOriginalLp20 = null;
+    var pickwordImageTextOriginalIndex20 = -1;
 
     function normalizePickwordImageMeta20(meta) {
         if (!meta || typeof meta !== "object") return null;
@@ -308,12 +309,14 @@
         pickwordImageTextParent20 = null;
         pickwordImageTextView20 = null;
         pickwordImageTextOriginalLp20 = null;
+        pickwordImageTextOriginalIndex20 = -1;
     }
 
     function removePickwordImageAfterDelete20(info) {
         var parent = pickwordImageTextParent20;
         var view = pickwordImageTextView20;
         var originalLp = pickwordImageTextOriginalLp20;
+        var originalIndex = pickwordImageTextOriginalIndex20;
         var host = pickwordContentHost20;
         var imagePage = pickwordImagePage20;
         try { restorePickwordResultPage20("image_deleted"); } catch (eRestore) {}
@@ -328,8 +331,19 @@
         releasePickwordImageController20("deleted");
         try {
             if (parent && view) {
-                if (originalLp) parent.addView(view, originalLp);
-                else parent.addView(view);
+                var childCount = Math.max(0, Number(parent.getChildCount() || 0));
+                var insertIndex = Number(originalIndex);
+                if (isNaN(insertIndex) || insertIndex < 0) insertIndex = childCount;
+                if (insertIndex > childCount) insertIndex = childCount;
+                if (!originalLp) originalLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+                parent.addView(view, insertIndex, originalLp);
+                try { view.requestLayout(); } catch (eViewLayout) {}
+                try { parent.requestLayout(); } catch (eParentLayout) {}
+                try {
+                    mainHandler.post(new java.lang.Runnable({ run: function() {
+                        try { if (拾字Floaty && 拾字Floaty.adjustScrollViewHeight) 拾字Floaty.adjustScrollViewHeight(); } catch (eAdjust) {}
+                    }}));
+                } catch (ePost) {}
             }
         } catch (eAttach) {
             try { safeLog(toolhubAppRef && toolhubAppRef.L, "e", "pickword image text restore fail: " + String(eAttach)); } catch (eLog) {}
@@ -367,6 +381,51 @@
         return false;
     }
 
+    function resolvePickwordImageWindowSize20() {
+        var sourceWidth = 0;
+        var sourceHeight = 0;
+        try {
+            if (pickwordImageController20 && typeof pickwordImageController20.getImageInfo === "function") {
+                var info = pickwordImageController20.getImageInfo() || {};
+                sourceWidth = Math.max(0, Number(info.width || 0));
+                sourceHeight = Math.max(0, Number(info.height || 0));
+            }
+        } catch (eInfo) {}
+        var availableWidth = Math.max(1, Number(screenWidth || 0));
+        var availableHeight = Math.max(1, Number(screenHeight || 0));
+        try {
+            if (!(availableWidth > 1) || !(availableHeight > 1)) {
+                var dm = appContext.getResources().getDisplayMetrics();
+                availableWidth = Math.max(1, Number(dm.widthPixels || 1));
+                availableHeight = Math.max(1, Number(dm.heightPixels || 1));
+            }
+        } catch (eMetrics) {}
+        var targetWidth = Math.round(availableWidth * 0.94);
+        var maxWidth = Math.round(uiDp(620, 980));
+        if (targetWidth > maxWidth) targetWidth = maxWidth;
+        var minWidth = Math.round(uiDp(300, 520));
+        if (targetWidth < minWidth) targetWidth = Math.min(Math.round(availableWidth * 0.98), minWidth);
+        var horizontalInset = Math.round(uiDp(16, 24)) * 2;
+        var verticalInset = Math.round(uiDp(12, 18) + uiDp(14, 20));
+        var toolbarHeight = Math.round(dp(48));
+        var footerHeight = Math.round(dp(76));
+        var chromeHeight = verticalInset + toolbarHeight + footerHeight;
+        var contentWidth = Math.max(Math.round(uiDp(220, 360)), targetWidth - horizontalInset);
+        var ratioHeight = sourceWidth > 0 && sourceHeight > 0 ? Math.round(contentWidth * sourceHeight / sourceWidth) : Math.round(contentWidth * 0.5625);
+        var minImageHeight = Math.round(uiDp(120, 180));
+        var imageWindowHeightLimit20 = Math.max(chromeHeight + minImageHeight, Math.round(availableHeight * 0.86));
+        if (imageWindowHeightLimit20 > Math.round(availableHeight * 0.92)) imageWindowHeightLimit20 = Math.round(availableHeight * 0.92);
+        var maxImageHeight = Math.max(minImageHeight, imageWindowHeightLimit20 - chromeHeight);
+        var imageHeight = Math.max(minImageHeight, Math.min(ratioHeight, maxImageHeight));
+        return {
+            width: targetWidth,
+            height: Math.min(imageWindowHeightLimit20, imageHeight + chromeHeight),
+            imageHeight: imageHeight,
+            sourceWidth: sourceWidth,
+            sourceHeight: sourceHeight
+        };
+    }
+
     function openPickwordImagePage20() {
         try {
             if (!mainLayout || !layoutParams || !windowManager || !pickwordImagePage20) return false;
@@ -385,12 +444,19 @@
                 pickwordImageChildSnapshot20.push({ view: child, visibility: child.getVisibility() });
                 child.setVisibility(child === pickwordImagePage20 ? View.VISIBLE : View.GONE);
             }
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
+            var targetSize = resolvePickwordImageWindowSize20();
+            layoutParams.width = targetSize.width;
+            layoutParams.height = targetSize.height;
             layoutParams.x = 0;
             layoutParams.y = 0;
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            layoutParams.gravity = Gravity.CENTER;
             windowManager.updateViewLayout(mainLayout, layoutParams);
+            try {
+                safeLog(toolhubAppRef && toolhubAppRef.L, "i",
+                    "pickword image page size=" + String(targetSize.width) + "x" + String(targetSize.height) +
+                    " imageHeight=" + String(targetSize.imageHeight) +
+                    " source=" + String(targetSize.sourceWidth) + "x" + String(targetSize.sourceHeight));
+            } catch (eSizeLog) {}
             if (pickwordImageController20 && typeof pickwordImageController20.open === "function") {
                 pickwordImageController20.open();
             }
@@ -432,9 +498,13 @@
         }
         try {
             releasePickwordImageController20("replace");
+            var resolvedOriginalLp = originalLp || null;
+            try { if (!resolvedOriginalLp && view) resolvedOriginalLp = view.getLayoutParams(); } catch (eOriginalLp) {}
+            if (!resolvedOriginalLp) resolvedOriginalLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
             pickwordImageTextParent20 = parent;
             pickwordImageTextView20 = view;
-            pickwordImageTextOriginalLp20 = originalLp || null;
+            pickwordImageTextOriginalLp20 = resolvedOriginalLp;
+            try { pickwordImageTextOriginalIndex20 = Math.max(0, Number(parent.getChildCount() || 0)); } catch (eIndex) { pickwordImageTextOriginalIndex20 = -1; }
             pickwordImageController20 = toolhubAppRef.createPickwordImageController({
                 context: appContext,
                 handler: mainHandler,
@@ -486,26 +556,27 @@
             imageColumn.setGravity(Gravity.CENTER);
             var thumb = pickwordImageController20.createThumbnailView();
 
+            var thumbHeight20 = Math.round(uiDp(108, 132));
             if (horizontal) {
                 textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
                 imageColumn.addView(thumb, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
                 host.addView(textColumn, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 7));
                 var imageLp = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 3);
-                imageLp.leftMargin = uiDp(10, 12);
+                imageLp.leftMargin = uiDp(8, 10);
                 host.addView(imageColumn, imageLp);
             } else {
-                imageColumn.addView(thumb, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(132, 156)));
-                host.addView(imageColumn, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(132, 156)));
-                var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, originalLp && originalLp.height > 0 ? originalLp.height : uiDp(220, 280));
-                textLp.topMargin = uiDp(8, 10);
+                imageColumn.addView(thumb, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, thumbHeight20));
+                host.addView(imageColumn, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, thumbHeight20));
+                var compactTextHeight20 = Math.round(Math.min(textAreaHeight, uiDp(156, 220)));
+                if (!(compactTextHeight20 > 0)) compactTextHeight20 = Math.round(uiDp(156, 220));
+                var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, compactTextHeight20);
+                textLp.topMargin = uiDp(6, 8);
                 textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
                 host.addView(textColumn, textLp);
             }
 
-            var hostLp = originalLp || new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-            if (!horizontal && hostLp && hostLp.height > 0) {
-                hostLp = new LinearLayout.LayoutParams(hostLp.width, hostLp.height + uiDp(140, 164));
-            }
+            var hostWidth20 = resolvedOriginalLp && resolvedOriginalLp.width !== undefined ? resolvedOriginalLp.width : LayoutParams.MATCH_PARENT;
+            var hostLp = new LinearLayout.LayoutParams(hostWidth20, LayoutParams.WRAP_CONTENT);
             parent.addView(host, hostLp);
 
             pickwordImagePage20 = pickwordImageController20.createFullView();
@@ -2686,7 +2757,7 @@
             mainLayout.setOrientation(LinearLayout.VERTICAL);
             mainLayout.setBackground(createRoundRectDrawable(replicaSoftSurface20(), isTablet ? 28 : 24));
             mainLayout.setElevation(uiDp(8, 12));
-            mainLayout.setPadding(uiDp(18, 28), uiDp(18, 24), uiDp(18, 28), uiDp(18, 24));
+            mainLayout.setPadding(uiDp(16, 24), uiDp(12, 18), uiDp(16, 24), uiDp(14, 20));
 
             var titleBar = this.createTitleBar();
             mainLayout.addView(titleBar);
@@ -2696,7 +2767,7 @@
             scrollView = new ScrollView(appContext);
             var scrollParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, uiDp(60, 72));
             scrollParams.height = textAreaMinHeight;
-            scrollParams.setMargins(0, uiDp(18, 22), 0, uiDp(12, 16));
+            scrollParams.setMargins(0, uiDp(10, 14), 0, uiDp(8, 12));
             scrollView.setLayoutParams(scrollParams);
             scrollView.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 18 : 15, 1));
             try { scrollView.setFillViewport(false); } catch (eFill) {}
@@ -2720,7 +2791,7 @@
             var actionBar = new LinearLayout(appContext);
             actionBar.setOrientation(LinearLayout.HORIZONTAL);
             actionBar.setGravity(Gravity.CENTER_VERTICAL);
-            actionBar.setPadding(0, uiDp(14, 18), 0, 0);
+            actionBar.setPadding(0, uiDp(10, 14), 0, 0);
 
             copyActionBtn = this.createPrimaryBtn("复制", function() { self.doCopy(); });
             translateActionBtn = this.createIconBtn("翻译", "globe", function() {
@@ -2731,8 +2802,8 @@
 
             var bottomButtons = [copyActionBtn, translateActionBtn, selectAllActionBtn, clearActionBtn];
             for (var iBottom = 0; iBottom < bottomButtons.length; iBottom++) {
-                var bottomLp = new LinearLayout.LayoutParams(0, uiDp(52, 60), 1);
-                if (iBottom > 0) bottomLp.setMargins(uiDp(7, 10), 0, 0, 0);
+                var bottomLp = new LinearLayout.LayoutParams(0, uiDp(48, 56), 1);
+                if (iBottom > 0) bottomLp.setMargins(uiDp(6, 8), 0, 0, 0);
                 bottomButtons[iBottom].setLayoutParams(bottomLp);
                 actionBar.addView(bottomButtons[iBottom]);
             }
@@ -2756,14 +2827,14 @@
 
             titleAccentView = new View(appContext);
             titleAccentView.setBackground(createRoundRectDrawable(replicaAccent20(), isTablet ? 5 : 4));
-            var accentLp = new LinearLayout.LayoutParams(uiDp(6, 8), uiDp(28, 36));
-            accentLp.setMargins(0, 0, uiDp(12, 16), 0);
+            var accentLp = new LinearLayout.LayoutParams(uiDp(5, 7), uiDp(24, 30));
+            accentLp.setMargins(0, 0, uiDp(10, 14), 0);
             normalMode.addView(titleAccentView, accentLp);
 
             var titleText = new TextView(appContext);
             titleText.setText("拾字");
             safeTextColor(titleText, Colors.text);
-            titleText.setTextSize(uiTextSize(22, 27));
+            titleText.setTextSize(uiTextSize(20, 24));
             titleText.setTypeface(null, android.graphics.Typeface.BOLD);
             titleText.setGravity(Gravity.CENTER_VERTICAL);
             titleText.setContentDescription("拾字；点击复制博客链接");
@@ -2779,11 +2850,11 @@
             fontSizeSelectorView.setTextSize(uiTextSize(12, 14));
             fontSizeSelectorView.setGravity(Gravity.CENTER);
             fontSizeSelectorView.setSingleLine(true);
-            fontSizeSelectorView.setPadding(uiDp(14, 18), 0, uiDp(14, 18), 0);
+            fontSizeSelectorView.setPadding(uiDp(12, 16), 0, uiDp(12, 16), 0);
             fontSizeSelectorView.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 15 : 13, 1));
             fontSizeSelectorView.setContentDescription("字号设置，当前" + getFontSizeLevel20());
-            var selectorLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(42, 50));
-            selectorLp.setMargins(uiDp(8, 12), 0, uiDp(10, 14), 0);
+            var selectorLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(38, 46));
+            selectorLp.setMargins(uiDp(8, 10), 0, uiDp(8, 12), 0);
             normalMode.addView(fontSizeSelectorView, selectorLp);
             // 点击打开小、中、大、超大四档字号菜单。
             fontSizeSelectorView.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.toggleFontSizeDropdown(); } }));
@@ -2791,11 +2862,11 @@
             closeActionView = new TextView(appContext);
             closeActionView.setText("×");
             safeTextColor(closeActionView, Colors.text);
-            closeActionView.setTextSize(uiTextSize(28, 34));
+            closeActionView.setTextSize(uiTextSize(26, 32));
             closeActionView.setGravity(Gravity.CENTER);
             closeActionView.setContentDescription("关闭拾字");
             closeActionView.setBackground(createPressableDrawable(Color.TRANSPARENT, alphaColor20(Colors.outline, isDark ? 60 : 34), isTablet ? 14 : 12));
-            var closeLp = new LinearLayout.LayoutParams(uiDp(42, 50), uiDp(42, 50));
+            var closeLp = new LinearLayout.LayoutParams(uiDp(38, 46), uiDp(38, 46));
             normalMode.addView(closeActionView, closeLp);
             closeActionView.setOnClickListener(new View.OnClickListener({ onClick: function(v) { hapticFeedback(v); self.hide(); } }));
 
@@ -2966,7 +3037,7 @@
             safeTextColor(countLabelView, Colors.text);
             countLabelView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             setCountLabel20(0);
-            var countLp = new LinearLayout.LayoutParams(0, uiDp(44, 50), 1);
+            var countLp = new LinearLayout.LayoutParams(0, uiDp(40, 46), 1);
             metaRow.addView(countLabelView, countLp);
 
             var inlineActions = new LinearLayout(appContext);
@@ -2978,13 +3049,13 @@
             shareActionBtn = createReplicaButton20("分享", "share", "inline", function() { self.sharePickwordText(); }, null);
             pinActionBtn = createReplicaButton20("钉屏", "pin", "pin", function() { self.pinSelectedText(); }, null);
 
-            inlineActions.addView(copyAllActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(38, 44)));
+            inlineActions.addView(copyAllActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40)));
             inlineActions.addView(createReplicaSeparator20(true));
-            inlineActions.addView(cleanupActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(38, 44)));
+            inlineActions.addView(cleanupActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40)));
             inlineActions.addView(createReplicaSeparator20(true));
-            inlineActions.addView(shareActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(38, 44)));
+            inlineActions.addView(shareActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40)));
             inlineActions.addView(createReplicaSeparator20(true));
-            inlineActions.addView(pinActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(40, 46)));
+            inlineActions.addView(pinActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(36, 42)));
             metaRow.addView(inlineActions);
             previewBox.addView(metaRow);
 
@@ -2993,7 +3064,7 @@
             safeTextColor(previewTextView, Colors.textSecondary);
             previewTextView.setTextSize(uiTextSize(12, 13));
             previewTextView.setLineSpacing(uiDp(1, 2), 1);
-            previewTextView.setPadding(0, uiDp(8, 10), 0, uiDp(12, 14));
+            previewTextView.setPadding(0, uiDp(5, 7), 0, uiDp(8, 10));
             previewTextView.setMaxLines(2);
             try { previewTextView.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch (eEllipsize) {}
             previewTextView.setContentDescription("选中文字预览；点击编辑，长按去空格");
