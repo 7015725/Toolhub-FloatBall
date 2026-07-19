@@ -44,7 +44,9 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          base64 -d .github/scripts/apply_saved_thumbnail_cache.py.gz.b64 | gzip -dc | python3 - 2>&1 | tee saved-thumbnail-apply.log
+          base64 -d .github/scripts/apply_saved_thumbnail_cache.py.gz.b64 | gzip -dc > /tmp/apply_saved_thumbnail_cache.py
+          sed -i 's|ROOT = Path(__file__).resolve().parents\[2\]|ROOT = Path.cwd()|' /tmp/apply_saved_thumbnail_cache.py
+          python3 /tmp/apply_saved_thumbnail_cache.py 2>&1 | tee saved-thumbnail-apply.log
 
       - name: Upload apply diagnostic
         if: always()
