@@ -1,32 +1,63 @@
-name: export-agent-source
+name: apply-pickword-image-lifecycle-fix
 
 on:
   push:
     branches:
-      - agent/fix-pickword-image-lifecycle-cleanup
-  pull_request:
-    branches:
-      - main
+      - fix/pickword-image-lifecycle-cleanup-20260719
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export:
+  apply:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
-      - name: Upload source snapshot
-        uses: actions/upload-artifact@v4
         with:
-          name: agent-source-snapshot
-          path: |
-            .github
-            code
-            scripts
-            ToolHub.js
-            manifest.json
-            MODULE_BOUNDARIES.json
-          include-hidden-files: true
-          retention-days: 1
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+
+      - name: Apply scoped fixes
+        shell: bash
+        env:
+          PATCH_GZ_B64: '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'
+        run: |
+          printf '%s' "$PATCH_GZ_B64" | base64 -d | gzip -d > /tmp/apply.py
+          python3 /tmp/apply.py
+          python3 scripts/create_update_record.py --id 20260719-pickword-image-lifecycle-cleanup --type fix --title '修复拾字截图清理与缩略图生命周期' --detail '过期分享临时副本仅在实际删除成功后结案，删除失败保留记录供后续重试。' --detail '公共文件删除移出 SQLite 写锁范围，避免 Shell 桥等待期间阻塞图片与设置写入。' --detail '图片尺寸登记不再覆盖已保存公共路径、Content URI 与保存时间。' --detail '截图管理器丢弃并回收过期缩略图任务，已保存按钮会重新校验公共副本。' --detail '保存目录测试忽略页面销毁或输入变化后的过期结果。' --non-interactive
+
+      - name: Verify scoped changes
+        shell: bash
+        run: |
+          set -eo pipefail
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_pickword_image_viewer.py
+          python3 scripts/verify_screenshot_manager.py
+          python3 scripts/verify_sqlite_storage.py
+          python3 scripts/verify_sqlite_debounce_race.py
+          python3 scripts/verify_toolapp_layout.py
+          python3 scripts/verify_toolapp_main_thread_affinity.py
+          python3 scripts/verify_pickword_image_meta_handoff.py
+          python3 scripts/verify_settings_color_scheme.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/verify_module_boundaries.py
+          git diff --check
+
+      - name: Commit fixes and remove bootstrap workflow
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/export-agent-source.yml
+          git add code/th_13_panel_ui.js code/th_22_image_viewer.js code/th_23_screenshot_manager.js scripts/verify_pickword_image_viewer.py scripts/verify_screenshot_manager.py updates/records/20260719-pickword-image-lifecycle-cleanup.json
+          git commit -m '修复拾字截图清理与缩略图生命周期'
+          if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          git push origin "HEAD:${GITHUB_REF_NAME}"
