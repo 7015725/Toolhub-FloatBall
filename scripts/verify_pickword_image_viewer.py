@@ -71,6 +71,7 @@ require('function queryMediaUriState22(rawUri)' in th22 and '["_id", "_size"]' i
 require('function rootPublicFileState22(appObj, rawPath)' in th22 and 'exit 44' in th22, "Root saved-copy existence probe missing")
 require('function probeSavedCopy22(appObj, row, stage)' in th22 and 'definitiveMissing' in th22, "saved-copy evidence model missing")
 require('已保存副本状态无法确认，请稍后重试' in th22, "uncertain saved copy must not be duplicated")
+require('var savedInfo = existingSave22(appObj, path);' in th22, "image controller must pass app context to saved-copy probe")
 require('function exportPublicFile22(' in th22 and 'preferRootPublicIo22()' in th22, "system_server root-first export missing")
 require('exportPublicFile22(appObj, sourceFile, dir, name, "saved", 0, false)' in th22, "saved export route missing")
 require('exportPublicFile22(appObj, sourceFile, dir, name, "share_temp", expiresAt, true)' in th22, "share export route missing")

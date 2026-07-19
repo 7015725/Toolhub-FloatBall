@@ -51,6 +51,8 @@ require('function listSavedImages22(appObj)' in th22 and 'probeSavedCopy22(appOb
 require('公共副本状态未确认，不能清理记录' in th22 and 'clearSavedRecord22(appObj, internalPath)' in th22, 'clear record second verification missing')
 require('var canClearSaved = !savedAvailable && record.definitiveMissing === true' in th23, 'clear action must require definitive missing state')
 require('公共副本存在 · 预览受限' in th23 and '公共副本状态待确认' in th23, 'saved state UI distinction missing')
+require('deleted = !file.exists() || file.delete();' not in th22, 'Java-invisible public file must not count as deleted')
+require('if (file.exists()) deleted = file.isFile() && file.delete();' in th22 and 'rootDeletePublic22(appObj, publicPath)' in th22, 'public delete must fall through to Root when Java path is invisible')
 require('screenshot manager action fail action=' in th23 and 'actionContext23(record)' in th23, 'manager action diagnostics missing')
 require('sourceMode === "uri"' in th23 and 'if (!path) return null' in th23, 'saved thumbnail URI-to-path fallback missing')
 require('open_screenshot_manager' in action and 'showToolApp("screenshot_manager", true)' in action, 'button action')

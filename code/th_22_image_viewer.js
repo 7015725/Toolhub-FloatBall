@@ -1118,8 +1118,8 @@
     }
     if (!deleted && publicPath) {
       try {
-        var file = new java.io.File(String(publicPath));
-        deleted = !file.exists() || file.delete();
+        var file = normalizePublicFile22(publicPath);
+        if (file.exists()) deleted = file.isFile() && file.delete();
       } catch (e1) {}
     }
     if (!deleted && publicPath) {
@@ -1702,7 +1702,7 @@
         var thumbnailStatus = null;
         var fullRoot = null;
         var imageCanvas = null;
-        var savedInfo = existingSave22(path);
+        var savedInfo = existingSave22(appObj, path);
         var infoView = null;
         var actionStatusView = null;
         var infoStatusText = savedInfo ? "已保存到公共目录" : "保存副本不会被自动清理";
