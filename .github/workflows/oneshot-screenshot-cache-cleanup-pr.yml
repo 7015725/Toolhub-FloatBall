@@ -51,6 +51,7 @@ jobs:
           rm -f scripts/oneshot_screenshot_cache_cleanup.py
           rm -f .github/workflows/oneshot-screenshot-cache-cleanup.yml
           rm -f .github/workflows/oneshot-screenshot-cache-cleanup-pr.yml
+          rm -f tmp/placeholder.txt
 
       - name: Validate final changed files
         run: |
