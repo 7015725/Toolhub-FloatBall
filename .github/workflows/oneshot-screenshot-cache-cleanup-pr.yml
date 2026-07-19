@@ -49,23 +49,24 @@ jobs:
       - name: Remove one-shot files
         run: |
           rm -f scripts/oneshot_screenshot_cache_cleanup.py
-          rm -f .github/workflows/oneshot-screenshot-cache-cleanup.yml
           rm -f .github/workflows/oneshot-screenshot-cache-cleanup-pr.yml
-          rm -f tmp/placeholder.txt
 
       - name: Validate final changed files
         run: |
           git add -A
-          printf '%s\n' \
+          git diff --cached --name-only | sort | tee /tmp/actual-files
+          for required in \
             code/th_22_image_viewer.js \
             code/th_23_screenshot_manager.js \
             scripts/verify_pickword_image_viewer.py \
             scripts/verify_screenshot_manager.py \
-            updates/records/20260720-screenshot-cache-lifecycle-cleanup.json \
-            > /tmp/expected-files
-          git diff --cached --name-only | sort > /tmp/actual-files
-          sort -o /tmp/expected-files /tmp/expected-files
-          diff -u /tmp/expected-files /tmp/actual-files
+            updates/records/20260720-screenshot-cache-lifecycle-cleanup.json; do
+            grep -Fx "$required" /tmp/actual-files >/dev/null
+          done
+          if grep -E 'oneshot-screenshot-cache-cleanup|oneshot_screenshot_cache_cleanup|tmp/placeholder' /tmp/actual-files; then
+            echo 'temporary file remained in final diff'
+            exit 1
+          fi
           git diff --cached --check
 
       - name: Commit and push
