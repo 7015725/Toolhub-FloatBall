@@ -43,8 +43,25 @@ jobs:
 
       - name: Apply source fix
         shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
-          base64 -d .github/scripts/apply_screenshot_public_availability_fix.py.gz.b64 | gzip -dc | python3 -
+          set +e
+          base64 -d .github/scripts/apply_screenshot_public_availability_fix.py.gz.b64 | gzip -dc | python3 - > /tmp/screenshot_public_fix.log 2>&1
+          rc=$?
+          cat /tmp/screenshot_public_fix.log
+          if [ "$rc" -ne 0 ]; then
+            cp /tmp/screenshot_public_fix.log .github/screenshot_public_fix_error.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/screenshot_public_fix_error.txt
+            git commit -m "记录截图公共副本修复匹配错误" || true
+            if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+              git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            fi
+            git push origin "HEAD:${TARGET_BRANCH}"
+            exit "$rc"
+          fi
 
       - name: Fetch main baseline
         run: git fetch --no-tags origin main
@@ -76,6 +93,7 @@ jobs:
       - name: Remove one-shot files
         run: |
           rm -f .github/scripts/apply_screenshot_public_availability_fix.py.gz.b64
+          rm -f .github/screenshot_public_fix_error.txt
           rm -f .github/workflows/apply-screenshot-public-availability-fix.yml
 
       - name: Commit source fix
