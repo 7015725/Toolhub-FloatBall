@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // =======================【截图管理器：内部截图 / 已保存】=======================
 (function() {
   function dp23(appObj, value) {
@@ -186,7 +186,19 @@
     }
 
     function post(fn) {
-      handler.post(new java.lang.Runnable({ run: function() { if (!detached) fn(); } }));
+      try {
+        return handler.post(new java.lang.Runnable({ run: function() { if (!detached) fn(); } })) === true;
+      } catch (ePost) {}
+      return false;
+    }
+
+    function postAlways23(fn) {
+      try {
+        return handler.post(new java.lang.Runnable({ run: function() {
+          try { fn(); } catch (eRun) {}
+        }})) === true;
+      } catch (ePost) {}
+      return false;
     }
 
     function closeImageOverlay(refreshAfter) {
@@ -292,7 +304,7 @@
       }
     }
 
-    function createCard(record) {
+    function createCard(record, token) {
       var card = new android.widget.LinearLayout(context);
       card.setOrientation(android.widget.LinearLayout.VERTICAL);
       card.setPadding(dp23(self, 10), dp23(self, 10), dp23(self, 10), dp23(self, 8));
@@ -358,8 +370,10 @@
       if (record.kind === "internal") {
         addAction("查看", colors.primary, function() { openInternal(record); });
         addAction(record.savedAt > 0 ? "已保存" : "保存", colors.primary, function() {
-          if (record.savedAt > 0) { status.setText("该截图已保存到公共目录"); return; }
-          runAction("正在保存…", function() { return service.saveInternal(record.internalPath); }, function() { status.setText("保存成功"); loadRecords(); });
+          runAction("正在校验并保存…", function() { return service.saveInternal(record.internalPath); }, function(result) {
+            status.setText(result && result.reused ? "公共副本仍可用" : "保存成功");
+            loadRecords();
+          });
         });
         addAction("分享", colors.primary, function() {
           runAction("正在准备分享…", function() { return service.prepareShareInternal(record.internalPath); }, function(result) { service.launchShare(result); status.setText("已打开分享面板"); });
@@ -389,8 +403,11 @@
           var bitmap = null;
           try { bitmap = decodeThumbnail23(record, 360); } catch (eDecode) { bitmap = null; }
           var finalBitmap = bitmap;
-          post(function() {
-            if (detached) { recycle23(finalBitmap); return; }
+          var posted = postAlways23(function() {
+            if (detached || !isCurrent(token)) {
+              recycle23(finalBitmap);
+              return;
+            }
             if (finalBitmap) {
               bitmaps.push(finalBitmap);
               image.setImageBitmap(finalBitmap);
@@ -399,6 +416,7 @@
               placeholder.setText("预览失败");
             }
           });
+          if (!posted) recycle23(finalBitmap);
         }}));
       }
       return card;
@@ -436,7 +454,7 @@
             list.addView(empty, new android.widget.LinearLayout.LayoutParams(-1, dp23(self, 180)));
             return;
           }
-          for (var i = 0; i < records.length; i++) list.addView(createCard(records[i]));
+          for (var i = 0; i < records.length; i++) list.addView(createCard(records[i], token));
         });
       }}));
     }
