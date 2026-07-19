@@ -1,4 +1,4 @@
-// @version 1.2.9
+// @version 1.3.0
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -698,14 +698,30 @@
     return true;
   }
 
-  function rootDeletePublic22(appObj, publicPath) {
+  function rootDeleteInternal22(appObj, rawPath) {
+    var file = normalizeInternalFile22(rawPath);
+    var path = String(file.getCanonicalPath());
+    var command =
+      "if [ -e " + shellQuote22(path) + " ]; then " +
+      "[ -f " + shellQuote22(path) + " ] || exit 42; " +
+      "rm -f " + shellQuote22(path) + " || exit 43; fi; " +
+      "[ ! -e " + shellQuote22(path) + " ] || exit 44";
+    return runRootShell22(command + " >/dev/null 2>&1", appObj);
+  }
+
+  function rootDeletePublic22(appObj, publicPath, contentUri) {
     var file = normalizePublicFile22(publicPath);
     var targetPath = String(file.getCanonicalPath());
     var underlying = underlyingPublicPath22(file);
-    var command = "rm -f " + shellQuote22(targetPath);
+    var safeUri = safeMediaUri22(contentUri);
+    var command = "";
+    if (safeUri) command += "content delete --uri " + shellQuote22(safeUri) + " >/dev/null 2>&1 || true; ";
+    command += "rm -f " + shellQuote22(targetPath);
     if (underlying) command += " " + shellQuote22(underlying);
-    runRootShell22(command + " >/dev/null 2>&1", appObj);
-    return true;
+    command += " >/dev/null 2>&1 || exit 46; ";
+    command += "[ ! -e " + shellQuote22(targetPath) + " ] || exit 47; ";
+    if (underlying) command += "[ ! -e " + shellQuote22(underlying) + " ] || exit 48; ";
+    return runRootShell22(command, appObj);
   }
 
   function exportPublicFile22(appObj, sourceFile, publicDir, displayName, kind, expiresAt, requireUri) {
@@ -888,7 +904,7 @@
   }
 
   function queryMediaUriState22(rawUri) {
-    var state = { safeUri: "", checked: false, exists: false, size: 0, sizeKnown: false, error: "" };
+    var state = { safeUri: "", checked: false, rowExists: false, exists: false, size: 0, sizeKnown: false, error: "" };
     var safeUri = safeMediaUri22(rawUri);
     state.safeUri = safeUri;
     if (!safeUri) return state;
@@ -899,6 +915,7 @@
       state.checked = true;
       cursor = resolver.query(uri, stringArgs22(["_id", "_size"]), null, null, null);
       if (cursor && cursor.moveToFirst()) {
+        state.rowExists = true;
         state.exists = true;
         try {
           if (!cursor.isNull(1)) {
@@ -915,7 +932,7 @@
       try {
         state.checked = true;
         cursor = resolver.query(uri, stringArgs22(["_id"]), null, null, null);
-        if (cursor && cursor.moveToFirst()) state.exists = true;
+        if (cursor && cursor.moveToFirst()) { state.rowExists = true; state.exists = true; }
       } catch (e1) {
         state.error = String(e1 || e0);
       }
@@ -973,6 +990,7 @@
         " internalPath=" + String(state.internalPath || "") +
         " contentUri=" + String(state.contentUri || "") +
         " publicPath=" + String(state.publicPath || "") +
+        " mediaRowExists=" + String(state.mediaRowExists) +
         " mediaExists=" + String(state.mediaExists) +
         " mediaSize=" + String(state.mediaSize || 0) +
         " uriReadable=" + String(state.directReadable) +
@@ -995,6 +1013,7 @@
       publicPath: String(item.publicPath || ""),
       contentUri: safeMediaUri22(item.contentUri),
       exists: false,
+      mediaRowExists: false,
       mediaExists: false,
       mediaSize: 0,
       directReadable: false,
@@ -1010,6 +1029,7 @@
       rootError: ""
     };
     var media = queryMediaUriState22(state.contentUri);
+    state.mediaRowExists = media.rowExists === true;
     state.mediaExists = media.exists === true;
     state.mediaSize = Number(media.size || 0);
     state.mediaError = String(media.error || "");
@@ -1045,7 +1065,7 @@
       javaFile.checked === true && !state.javaError &&
       (state.javaFileExists || (rootFile.checked === true && !state.rootError))
     );
-    state.definitiveMissing = !state.exists && mediaComplete && pathComplete;
+    state.definitiveMissing = !state.exists && !state.mediaRowExists && mediaComplete && pathComplete;
     state.uncertain = !state.exists && !state.definitiveMissing;
     logSavedProbe22(appObj, stage, state);
     return state;
@@ -1110,24 +1130,53 @@
   }
 
   function deleteContent22(appObj, contentUri, publicPath) {
-    var deleted = false;
-    if (contentUri) {
+    var safeUri = safeMediaUri22(contentUri);
+    var result = {
+      resolverDeleteCount: 0,
+      resolverError: "",
+      javaVisible: false,
+      javaDeleted: false,
+      javaError: "",
+      rootBridgeUsed: false,
+      rootError: ""
+    };
+    if (safeUri) {
       try {
-        deleted = context.getContentResolver().delete(android.net.Uri.parse(String(contentUri)), null, null) > 0;
-      } catch (e0) {}
+        result.resolverDeleteCount = Number(context.getContentResolver().delete(android.net.Uri.parse(safeUri), null, null) || 0);
+      } catch (eResolver) {
+        result.resolverError = String(eResolver);
+      }
     }
-    if (!deleted && publicPath) {
+    if (publicPath) {
       try {
         var file = normalizePublicFile22(publicPath);
-        if (file.exists()) deleted = file.isFile() && file.delete();
-      } catch (e1) {}
-    }
-    if (!deleted && publicPath) {
+        result.javaVisible = file.exists();
+        if (result.javaVisible) {
+          if (!file.isFile()) throw new Error("公共副本不是文件");
+          result.javaDeleted = file.delete() === true;
+        }
+      } catch (eJava) {
+        result.javaError = String(eJava);
+      }
       try {
-        deleted = rootDeletePublic22(appObj, publicPath);
-      } catch (e2) {}
+        rootDeletePublic22(appObj, publicPath, safeUri);
+        result.rootBridgeUsed = true;
+      } catch (eRoot) {
+        result.rootError = String(eRoot);
+      }
     }
-    return deleted;
+    try {
+      safeLog(appObj && appObj.L ? appObj.L : null, result.rootError ? "w" : "i",
+        "pickword image saved delete transport" +
+        " resolverDeleteCount=" + String(result.resolverDeleteCount) +
+        " resolverError=" + String(result.resolverError || "") +
+        " javaVisible=" + String(result.javaVisible) +
+        " javaDeleted=" + String(result.javaDeleted) +
+        " javaError=" + String(result.javaError || "") +
+        " rootBridgeUsed=" + String(result.rootBridgeUsed) +
+        " rootError=" + String(result.rootError || ""));
+    } catch (eLog) {}
+    return result;
   }
 
   function scanInternalCleanup22(retentionDays, activePath) {
@@ -1468,12 +1517,49 @@
     return file;
   }
 
-  function deleteInternalImage22(rawPath) {
+  function deleteInternalImage22(appObj, rawPath) {
     var file = normalizeInternalFile22(rawPath);
     var path = String(file.getCanonicalPath());
-    if (file.exists() && (!file.isFile() || !file.delete())) throw new Error("内部截图删除失败");
+    var existed = false;
+    var javaDeleted = false;
+    var javaError = "";
+    var rootFallback = false;
+    try { existed = file.exists(); } catch (eExists) { javaError = String(eExists); }
+    if (!existed && !javaError) {
+      markImageDeleted22(path, now22());
+      return { ok: true, alreadyMissing: true, internalPath: path, deletedAt: now22() };
+    }
+    if (existed) {
+      try {
+        if (!file.isFile()) throw new Error("截图不是文件");
+        javaDeleted = file.delete() === true;
+      } catch (eJava) {
+        javaError = String(eJava);
+      }
+    }
+    if (!javaDeleted) {
+      rootDeleteInternal22(appObj, path);
+      rootFallback = true;
+    }
+    if (!rootFallback) {
+      try { if (file.exists()) throw new Error("内部截图删除后仍存在"); }
+      catch (eVerify) { if (String(eVerify).indexOf("仍存在") >= 0) throw eVerify; }
+    }
     markImageDeleted22(path, now22());
-    return { ok: true, internalPath: path, deletedAt: now22() };
+    try {
+      safeLog(appObj && appObj.L ? appObj.L : null, "i",
+        "pickword image internal delete done path=" + path +
+        " javaDeleted=" + String(javaDeleted) +
+        " rootFallback=" + String(rootFallback) +
+        " javaError=" + String(javaError || ""));
+    } catch (eLog) {}
+    return {
+      ok: true,
+      internalPath: path,
+      deletedAt: now22(),
+      javaDeleted: javaDeleted,
+      rootFallback: rootFallback
+    };
   }
 
   function prepareSavedUri22(appObj, internalPath) {
@@ -1554,6 +1640,17 @@
     return true;
   }
 
+  function verifySavedDelete22(appObj, row) {
+    var waits = [0, 120, 300, 600];
+    var probe = null;
+    for (var i = 0; i < waits.length; i++) {
+      if (waits[i] > 0) java.lang.Thread.sleep(waits[i]);
+      probe = probeSavedCopy22(appObj, row, "delete_saved_verify_" + String(i));
+      if (probe.definitiveMissing === true) return probe;
+    }
+    return probe;
+  }
+
   function deleteSavedImage22(appObj, internalPath) {
     var path = String(internalPath || "");
     var row = loadSavedCopy22(path);
@@ -1564,16 +1661,27 @@
       try { safePath = String(normalizePublicFile22(row.publicPath).getCanonicalPath()); } catch (ePath) { safePath = ""; }
     }
     if (!safeUri && !safePath) throw new Error("公共副本路径不安全");
-    var deleted = deleteContent22(appObj, safeUri, safePath);
-    if (!deleted) {
-      row.internalPath = path;
-      var verifyProbe = probeSavedCopy22(appObj, row, "delete_saved_verify");
-      if (verifyProbe.exists) throw new Error("公共副本删除失败");
-      if (!verifyProbe.definitiveMissing) throw new Error("公共副本删除结果无法确认，未清理保存记录");
-      if (!clearImageSaved22(path)) throw new Error("公共副本已不存在，但保存记录清理失败");
-      return { ok: true, alreadyMissing: true, recordCleared: true, internalPath: path, deletedAt: now22() };
+    row.internalPath = path;
+    var transport = deleteContent22(appObj, safeUri, safePath);
+    var verifyProbe = verifySavedDelete22(appObj, row);
+    if (!verifyProbe || verifyProbe.definitiveMissing !== true) {
+      if (verifyProbe && verifyProbe.mediaRowExists) throw new Error("公共文件删除后 MediaStore 记录仍存在，未清理保存记录");
+      if (verifyProbe && verifyProbe.rootFileExists) throw new Error("MediaStore 记录已删除，但公共实体文件仍存在");
+      if (verifyProbe && verifyProbe.exists) throw new Error("公共副本删除失败");
+      throw new Error("公共副本删除结果无法确认，未清理保存记录");
     }
     if (!clearImageSaved22(path)) throw new Error("公共副本已删除，但保存记录清理失败");
+    try {
+      safeLog(appObj && appObj.L ? appObj.L : null, "i",
+        "pickword image saved delete done internalPath=" + path +
+        " resolverDeleteCount=" + String(transport.resolverDeleteCount || 0) +
+        " javaDeleted=" + String(transport.javaDeleted === true) +
+        " rootBridgeUsed=" + String(transport.rootBridgeUsed === true) +
+        " mediaRowExistsAfter=" + String(verifyProbe.mediaRowExists === true) +
+        " rootFileExistsAfter=" + String(verifyProbe.rootFileExists === true) +
+        " definitiveMissing=" + String(verifyProbe.definitiveMissing === true) +
+        " recordCleared=true");
+    } catch (eLog) {}
     return { ok: true, recordCleared: true, internalPath: path, deletedAt: now22() };
   }
 
@@ -1581,7 +1689,7 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.9") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.3.0") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -1662,7 +1770,7 @@
             var file = requireInternalImage22(internalPath);
             return createShareCopy22(appObj, file, { createdAt: Number(file.lastModified() || now22()) });
           },
-          deleteInternal: function(internalPath) { return deleteInternalImage22(internalPath); },
+          deleteInternal: function(internalPath) { return deleteInternalImage22(appObj, internalPath); },
           prepareSavedUri: function(internalPath) { return prepareSavedUri22(appObj, internalPath); },
           deleteSaved: function(internalPath) { return deleteSavedImage22(appObj, internalPath); },
           clearSavedRecord: function(internalPath) { return clearSavedRecord22(appObj, internalPath); },
@@ -2060,21 +2168,17 @@
 
         function performDelete() {
           dismissConfirm();
+          log("i", "delete begin path=" + path);
           runAction("delete", "正在删除截图…", function() {
-            var target = normalizeInternalFile22(path);
-            if (!target.exists()) {
-              markImageDeleted22(path, now22());
-              return { ok: true, alreadyMissing: true, internalPath: path };
-            }
-            if (!target.isFile()) throw new Error("截图不是文件");
-            if (!target.delete()) throw new Error("截图删除失败");
-            markImageDeleted22(path, now22());
-            return { ok: true, internalPath: path, deletedAt: now22() };
+            return deleteInternalImage22(appObj, path);
           }, function(result) {
             deleted = true;
             generation++;
             regionSerial++;
             setStatus("截图已删除", false);
+            log("i", "delete done path=" + path +
+              " javaDeleted=" + String(result && result.javaDeleted === true) +
+              " rootFallback=" + String(result && result.rootFallback === true));
             try { if (typeof opts.onDeleted === "function") opts.onDeleted(result); } catch (eCallback) {}
           });
         }
@@ -2407,7 +2511,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.2.9";
+      proto.__toolHubPickwordImageViewerVersion = "1.3.0";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
