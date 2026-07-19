@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 // =======================【截图管理器：内部截图 / 已保存】=======================
 (function() {
   function dp23(appObj, value) {
@@ -152,6 +152,7 @@
     var activeViewerView = null;
     var activeManagerConfirm = null;
     var activeModalKind = "";
+    var externalLaunchClosing = false;
 
     var root = new android.widget.FrameLayout(context);
     var panel = this.ui.createStyledPanel(this, 12);
@@ -225,6 +226,37 @@
         }})) === true;
       } catch (ePost) {}
       return false;
+    }
+
+    function closeAfterExternalLaunch23(actionId, record) {
+      if (externalLaunchClosing || detached) return false;
+      if (!self.state || self.state.toolAppActive !== true ||
+          String(self.state.toolAppRoute || "") !== "screenshot_manager") {
+        safeActionLog23(self, "w", "screenshot manager external close skipped action=" +
+          String(actionId || "unknown") + " reason=route_not_active " + actionContext23(record));
+        return false;
+      }
+      externalLaunchClosing = true;
+      safeActionLog23(self, "i", "screenshot manager external launch success action=" +
+        String(actionId || "unknown") + " closeToolApp=true " + actionContext23(record));
+      try {
+        if (typeof self.closeToolApp !== "function") throw new Error("ToolApp关闭入口不可用");
+        self.closeToolApp();
+        return true;
+      } catch (eClose) {
+        externalLaunchClosing = false;
+        safeActionLog23(self, "w", "screenshot manager external close fail action=" +
+          String(actionId || "unknown") + " error=" + String(eClose));
+        throw eClose;
+      }
+    }
+
+    function launchExternalAndClose23(actionId, record, launcher, result) {
+      if (typeof launcher !== "function") throw new Error("系统页面启动入口不可用");
+      var launched = launcher(result);
+      if (launched !== true) throw new Error("系统页面启动失败");
+      closeAfterExternalLaunch23(actionId, record);
+      return true;
     }
 
     function modalChildIndex23(parent, child) {
@@ -380,7 +412,7 @@
           onBack: function() { closeImageOverlay(true); },
           onCloseSession: function() { closeImageOverlay(true); },
           onSaved: function() { status.setText("保存成功"); },
-          onShared: function() { status.setText("已打开分享面板"); },
+          onShared: function(result) { closeAfterExternalLaunch23("share_internal_viewer", record); },
           onDeleted: function() { closeImageOverlay(true); },
           onError: function(stage, error) { status.setText(String(stage || "图片") + "失败：" + String(error || "")); }
         });
@@ -470,7 +502,7 @@
           });
         }, true);
         addAction("分享", colors.primary, function() {
-          runAction("share_internal", "正在准备分享…", record, function() { return service.prepareShareInternal(record.internalPath); }, function(result) { service.launchShare(result); status.setText("已打开分享面板"); });
+          runAction("share_internal", "正在准备分享…", record, function() { return service.prepareShareInternal(record.internalPath); }, function(result) { launchExternalAndClose23("share_internal_card", record, service.launchShare, result); });
         }, true);
         addAction("删除", colors.danger, function() {
           showConfirm("delete_internal", "删除内部截图？", "将删除 ToolHub 内部截图文件。已保存到系统相册的公共副本不会删除。", "删除", false, function() {
@@ -481,10 +513,10 @@
         var savedAvailable = record.available === true;
         var canClearSaved = !savedAvailable && record.definitiveMissing === true;
         addAction("打开", colors.primary, function() {
-          runAction("open_saved", "正在打开公共副本…", record, function() { return service.prepareSavedUri(record.internalPath); }, function(result) { service.launchView(result); status.setText("已交给系统图片查看器"); });
+          runAction("open_saved", "正在打开公共副本…", record, function() { return service.prepareSavedUri(record.internalPath); }, function(result) { launchExternalAndClose23("open_saved", record, service.launchView, result); });
         }, savedAvailable);
         addAction("分享", colors.primary, function() {
-          runAction("share_saved", "正在准备分享…", record, function() { return service.prepareSavedUri(record.internalPath); }, function(result) { service.launchShare(result); status.setText("已打开分享面板"); });
+          runAction("share_saved", "正在准备分享…", record, function() { return service.prepareSavedUri(record.internalPath); }, function(result) { launchExternalAndClose23("share_saved", record, service.launchShare, result); });
         }, savedAvailable);
         if (savedAvailable) {
           addAction("删除公共副本", colors.danger, function() {
