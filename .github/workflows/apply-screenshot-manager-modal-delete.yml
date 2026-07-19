@@ -63,7 +63,19 @@ jobs:
         run: python3 scripts/verify_js_syntax.py
 
       - name: Verify image viewer
-        run: python3 scripts/verify_pickword_image_viewer.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/verify_pickword_image_viewer.py 2>&1 | tee /tmp/modal-delete-viewer.log
+
+      - name: Upload image viewer diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-manager-modal-delete-viewer-log
+          path: /tmp/modal-delete-viewer.log
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Verify screenshot manager
         run: python3 scripts/verify_screenshot_manager.py
