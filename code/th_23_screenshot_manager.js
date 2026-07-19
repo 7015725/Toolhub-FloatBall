@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // =======================【截图管理器：内部截图 / 已保存】=======================
 (function() {
   function dp23(appObj, value) {
@@ -259,11 +259,6 @@
       return true;
     }
 
-    function modalChildIndex23(parent, child) {
-      try { return parent && child ? Number(parent.indexOfChild(child)) : -1; } catch (e0) {}
-      return -1;
-    }
-
     function showModal23(kind, view) {
       if (!view || detached) return false;
       try { modalHost.removeAllViews(); } catch (eClear) {}
@@ -276,14 +271,7 @@
       try { modalHost.setElevation(dp23(self, 96)); } catch (eElevation) {}
       try { modalHost.setTranslationZ(dp23(self, 96)); } catch (eTranslation) {}
       try { modalHost.requestFocus(); } catch (eFocus) {}
-      safeActionLog23(self, "i", "screenshot manager modal show kind=" + activeModalKind +
-        " rootChildren=" + String(root.getChildCount()) +
-        " panelIndex=" + String(modalChildIndex23(root, panel)) +
-        " hostIndex=" + String(modalChildIndex23(root, modalHost)) +
-        " panelElevation=" + String(panel.getElevation ? panel.getElevation() : 0) +
-        " hostElevation=" + String(modalHost.getElevation ? modalHost.getElevation() : 0) +
-        " hostWidth=" + String(modalHost.getWidth()) +
-        " hostHeight=" + String(modalHost.getHeight()));
+      safeActionLog23(self, "i", "screenshot manager modal show kind=" + activeModalKind);
       return true;
     }
 
@@ -577,6 +565,11 @@
                 safeActionLog23(self, "i", "screenshot manager thumbnail loaded source=" + String(record.thumbnailSource || "") + " " + actionContext23(record));
               }
             } else {
+              if (record.kind === "saved") {
+                record.thumbnailAvailable = false;
+                record.thumbnailSource = "";
+                meta.setText(formatDate23(timeValue) + "\n" + formatSize23(record.fileSize) + " · " + savedStatus23(record) + (record.internalDeleted ? " · 内部截图已清理" : ""));
+              }
               placeholder.setText(record.available === true ? "文件存在\n缩略图受限" : "预览失败");
               safeActionLog23(self, "w", "screenshot manager thumbnail fail error=" + String(finalError || "") + " " + actionContext23(record));
             }
