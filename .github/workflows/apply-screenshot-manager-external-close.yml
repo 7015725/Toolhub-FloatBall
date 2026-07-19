@@ -36,6 +36,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git add -N updates/records/20260720-screenshot-manager-external-close.json
           mapfile -t files < <(git diff --name-only | sort)
           printf '%s\n' "${files[@]}"
           expected=$(printf '%s\n' \
