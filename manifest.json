@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "95304fbbb27db4d909c17438883350bedfed94837c634d2444cef139579bf0a0",
-      "size": 44736,
-      "version": 20260719130701
+      "sha256": "7f26b27c8a7ea63e00bcb4ab08eeebd69d857a709bc5318d889f704fa52ed173",
+      "size": 46513,
+      "version": 20260719140237
     }
   },
   "entry": {
@@ -154,28 +154,29 @@
       "version": "1.3.3"
     },
     "th_22_image_viewer.js": {
-      "sha256": "bbfcc095439469ce9bafa8910b70638265eee8c6360e52b95b7899ff30fc0f50",
-      "size": 94383,
-      "version": "1.2.8"
+      "sha256": "b5c878ea5d27c308f4c83c161b64f627ca6269098dad154b85f878160717efee",
+      "size": 102554,
+      "version": "1.2.9"
     },
     "th_23_screenshot_manager.js": {
-      "sha256": "2ee29b1d024a64567535fa6be968da99d8ac5d79d8df4984ce950c17199efc60",
-      "size": 27318,
-      "version": "1.0.2"
+      "sha256": "823fd725ab798c2feac5ebf37ec7904d0af0e1aba51b2bef5a6af4aedae638c5",
+      "size": 28189,
+      "version": "1.0.3"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "公共副本查询不再依赖内部截图 deleted_at 状态，内部截图手动删除或自动清理后仍可打开、分享和删除已保存副本。",
-      "公共副本已经在系统相册中消失时，删除操作会幂等清理 SQLite 保存字段，避免假成功后记录反复出现。",
-      "已保存记录不可访问时禁用打开与分享，并提供只清理 ToolHub 元数据的失效记录入口。",
-      "截图管理动作日志增加动作类型、记录状态、路径与异常正文，连续操作失败可直接定位具体阶段。",
-      "缩略图在旧 Content URI 失效但公共文件仍有效时回退到文件路径解码。"
+      "已保存副本可用性改为 MediaStore 记录、Content URI 直接读取、Java 公共路径和 Root 实体路径四层证据判断，不再把 system_server 无法直接读取等同于文件不存在。",
+      "同一内部截图再次保存前会复用已确认存在的公共副本；探测结果不确定时停止重复复制并提示稍后重试。",
+      "打开与分享优先复用有效 MediaStore URI；公共文件存在但当前进程预览受限时仍允许通过带读取授权的系统 Intent 打开或分享。",
+      "清理记录只有在 MediaStore、公共路径和 Root 实体路径均确认不存在后才显示，并在执行时再次探测，避免清除仍存在图片的关联。",
+      "截图管理列表区分公共副本可用、存在但预览受限、状态待确认和确认不可用，并记录完整探测来源与异常。",
+      "公共副本删除不再把 system_server Java 路径不可见当作文件已删除；Java 无法确认时继续使用 Root 同时清理映射路径与实体路径。"
     ],
     "date": "2026-07-19",
-    "title": "修复截图管理已保存副本状态与失效操作"
+    "title": "修复截图公共副本存在性误判与重复保存"
   },
   "schema": 4,
-  "version": 20260719130701
+  "version": 20260719140237
 }

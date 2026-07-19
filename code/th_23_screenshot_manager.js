@@ -1,4 +1,4 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【截图管理器：内部截图 / 已保存】=======================
 (function() {
   function dp23(appObj, value) {
@@ -118,10 +118,21 @@
     var item = record || {};
     return "kind=" + String(item.kind || "") +
       " available=" + String(item.available === true) +
+      " directReadable=" + String(item.directReadable === true) +
+      " definitiveMissing=" + String(item.definitiveMissing === true) +
+      " probeUncertain=" + String(item.probeUncertain === true) +
+      " availabilitySource=" + String(item.availabilitySource || "") +
       " internalDeleted=" + String(item.internalDeleted === true) +
       " internalPath=" + String(item.internalPath || "") +
       " publicPath=" + String(item.publicPath || "") +
       " contentUriPresent=" + String(!!item.contentUri);
+  }
+
+  function savedStatus23(record) {
+    if (record.available === true) {
+      return record.previewReadable === true ? "公共副本可用" : "公共副本存在 · 预览受限";
+    }
+    return record.probeUncertain === true ? "公共副本状态待确认" : "公共副本不可用";
   }
 
   function setActionEnabled23(view, enabled) {
@@ -377,7 +388,7 @@
       image.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
       thumbWrap.addView(image, new android.widget.FrameLayout.LayoutParams(-1, -1));
       var placeholder = new android.widget.TextView(context);
-      placeholder.setText(record.available === false ? "不可用" : "载入中");
+      placeholder.setText(record.available === false ? (record.probeUncertain === true ? "待确认" : "不可用") : "载入中");
       placeholder.setGravity(android.view.Gravity.CENTER);
       placeholder.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
       safeText23(placeholder, colors.onSurface2);
@@ -398,7 +409,7 @@
       var meta = new android.widget.TextView(context);
       var timeValue = record.kind === "saved" ? record.savedAt : record.createdAt;
       var statusText = record.kind === "saved"
-        ? ((record.available ? "公共副本可用" : "公共副本不可用") + (record.internalDeleted ? " · 内部截图已清理" : ""))
+        ? (savedStatus23(record) + (record.internalDeleted ? " · 内部截图已清理" : ""))
         : (record.savedAt > 0 ? "已保存公共副本" : (record.tracked ? "内部记录" : "未登记文件"));
       meta.setText(formatDate23(timeValue) + "\n" + formatSize23(record.fileSize) + " · " + statusText);
       meta.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
@@ -442,6 +453,7 @@
         }, true);
       } else {
         var savedAvailable = record.available === true;
+        var canClearSaved = !savedAvailable && record.definitiveMissing === true;
         addAction("打开", colors.primary, function() {
           runAction("open_saved", "正在打开公共副本…", record, function() { return service.prepareSavedUri(record.internalPath); }, function(result) { service.launchView(result); status.setText("已交给系统图片查看器"); });
         }, savedAvailable);
@@ -457,15 +469,17 @@
               });
             });
           }, true);
-        } else {
+        } else if (canClearSaved) {
           addAction("清理记录", colors.danger, function() {
-            showConfirm("清理失效记录？", "只清理 ToolHub 中无法访问的公共副本记录，不会删除任何仍可访问的图片文件。", "清理记录", false, function() {
-              runAction("clear_saved_record", "正在清理失效记录…", record, function() { return service.clearSavedRecord(record.internalPath); }, function() {
+            showConfirm("清理失效记录？", "MediaStore、公共路径与 Root 实体路径均确认不存在后，只清理 ToolHub 保存记录。", "清理记录", false, function() {
+              runAction("clear_saved_record", "正在二次确认并清理记录…", record, function() { return service.clearSavedRecord(record.internalPath); }, function() {
                 status.setText("失效记录已清理");
                 loadRecords();
               });
             });
           }, true);
+        } else {
+          addAction("状态待确认", colors.onSurface2, function() {}, false);
         }
       }
       card.addView(actions, new android.widget.LinearLayout.LayoutParams(-1, dp23(self, 52)));
@@ -485,7 +499,7 @@
               image.setImageBitmap(finalBitmap);
               placeholder.setVisibility(android.view.View.GONE);
             } else {
-              placeholder.setText("预览失败");
+              placeholder.setText(record.available === true && record.previewReadable === false ? "文件存在\n预览受限" : "预览失败");
             }
           });
           if (!posted) recycle23(finalBitmap);
