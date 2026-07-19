@@ -63,6 +63,22 @@ jobs:
             exit "$rc"
           fi
 
+      - name: Normalize pending update record
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('updates/records/20260719-screenshot-public-availability.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          data['manifestVersion'] = 0
+          for field in ('date', 'modules', 'entry'):
+              data.pop(field, None)
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print('OK normalized pending update record')
+          PY
+
       - name: Fetch main baseline
         run: git fetch --no-tags origin main
 
