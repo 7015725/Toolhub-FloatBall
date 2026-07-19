@@ -22,10 +22,10 @@ generator = read("scripts/generate_signed_manifest.py")
 boundaries = read("MODULE_BOUNDARIES.json")
 workflow = read(".github/workflows/verify.yml")
 
-require('// @version 1.2.7' in th22, 'th22 service version')
-require('// @version 1.0.1' in th23, 'th23 version')
+require('// @version 1.2.8' in th22, 'th22 service version')
+require('// @version 1.0.2' in th23, 'th23 version')
 require('getPickwordImageService' in th22, 'service API')
-for marker in ('listInternal', 'listSaved', 'saveInternal', 'prepareShareInternal', 'deleteInternal', 'prepareSavedUri', 'deleteSaved', 'launchShare', 'launchView'):
+for marker in ('listInternal', 'listSaved', 'saveInternal', 'prepareShareInternal', 'deleteInternal', 'prepareSavedUri', 'deleteSaved', 'clearSavedRecord', 'launchShare', 'launchView'):
     require(marker in th22, 'service method ' + marker)
 require('normalizeInternalFile22' in th22 and '截图路径越界' in th22, 'internal boundary')
 require('normalizePublicFile22' in th22 and '公共图片路径越界' in th22, 'public boundary')
@@ -40,6 +40,13 @@ require('function createCard(record, token)' in th23 and 'createCard(records[i],
 require('detached || !isCurrent(token)' in th23 and 'if (!posted) recycle23(finalBitmap)' in th23, 'stale thumbnail recycle missing')
 require('if (record.savedAt > 0) { status.setText' not in th23, 'saved marker must not bypass availability validation')
 require('result && result.reused ? "公共副本仍可用" : "保存成功"' in th23, 'saved copy revalidation result missing')
+require('function loadSavedCopy22(internalPath)' in th22, 'saved-copy query helper missing')
+require("saved_at>0 AND (saved_public_path<>'' OR saved_content_uri<>'')" in th22, 'saved-copy query must use public-copy state')
+require('internal_path=? AND deleted_at=0' not in th22, 'saved-copy query must not depend on internal deletion state')
+require('clearSavedRecord22' in th22 and 'clearSavedRecord: function' in th22, 'stale saved-record cleanup API missing')
+require('record.available === true' in th23 and '清理失效记录？' in th23, 'saved action availability boundary missing')
+require('screenshot manager action fail action=' in th23 and 'actionContext23(record)' in th23, 'manager action diagnostics missing')
+require('sourceMode === "uri"' in th23 and 'if (!path) return null' in th23, 'saved thumbnail URI-to-path fallback missing')
 require('open_screenshot_manager' in action and 'showToolApp("screenshot_manager", true)' in action, 'button action')
 require('screenshot_manager' in routes and '截图管理器' in routes, 'toolapp route')
 require('builtin_screenshot_manager' in base and 'BUTTONS_MIGRATION_VERSION = 3' in base, 'button migration v3')
@@ -50,4 +57,4 @@ require('verify_screenshot_manager.py' in workflow, 'workflow verification')
 for source, name in ((th22, 'th22'), (th23, 'th23')):
     for banned in (r'\blet\b', r'\bconst\b', r'=>', r'`'):
         require(re.search(banned, source) is None, name + ' ES6 token ' + banned)
-print('OK screenshot-manager tabs=internal,saved actions=view,save,share,delete migration=3')
+print('OK screenshot-manager tabs=internal,saved actions=view,save,share,delete,clear saved_state=independent migration=3')

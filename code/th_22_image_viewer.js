@@ -1,4 +1,4 @@
-// @version 1.2.7
+// @version 1.2.8
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -228,16 +228,17 @@
     }, false);
   }
 
-  function loadSaved22(internalPath) {
+  function loadSavedCopy22(internalPath) {
     return withDb22(function(db) {
       var cursor = null;
       try {
-        cursor = db.rawQuery("SELECT saved_public_path,saved_content_uri,saved_at FROM toolhub_pickword_images WHERE internal_path=? AND deleted_at=0", stringArgs22([internalPath]));
+        cursor = db.rawQuery("SELECT saved_public_path,saved_content_uri,saved_at,deleted_at FROM toolhub_pickword_images WHERE internal_path=? AND saved_at>0 AND (saved_public_path<>'' OR saved_content_uri<>'') LIMIT 1", stringArgs22([internalPath]));
         if (!cursor.moveToFirst()) return null;
         return {
           publicPath: String(cursor.getString(0) || ""),
           contentUri: String(cursor.getString(1) || ""),
-          savedAt: Number(cursor.getLong(2) || 0)
+          savedAt: Number(cursor.getLong(2) || 0),
+          internalDeleted: Number(cursor.getLong(3) || 0) > 0
         };
       } finally {
         try { if (cursor) cursor.close(); } catch (eClose) {}
@@ -881,7 +882,7 @@
   }
 
   function existingSave22(internalPath) {
-    var row = loadSaved22(internalPath);
+    var row = loadSavedCopy22(internalPath);
     if (!row) return null;
     if (row.contentUri && uriReadable22(row.contentUri)) return row;
     if (row.publicPath) {
@@ -1150,6 +1151,14 @@
     }, false);
   }
 
+  function clearSavedRecord22(internalPath) {
+    var path = String(internalPath || "");
+    var row = loadSavedCopy22(path);
+    if (!row) return { ok: true, alreadyMissing: true, internalPath: path };
+    if (!clearImageSaved22(path)) throw new Error("保存记录清理失败");
+    return { ok: true, recordCleared: true, internalPath: path, clearedAt: now22() };
+  }
+
   function listInternalImages22() {
     var rows = withDb22(function(db) {
       var cursor = null;
@@ -1283,7 +1292,7 @@
   }
 
   function prepareSavedUri22(appObj, internalPath) {
-    var row = loadSaved22(String(internalPath || ""));
+    var row = loadSavedCopy22(String(internalPath || ""));
     if (!row) throw new Error("已保存记录不存在");
     var safeUri = safeMediaUri22(row.contentUri);
     if (safeUri && uriReadable22(safeUri)) {
@@ -1330,8 +1339,9 @@
   }
 
   function deleteSavedImage22(appObj, internalPath) {
-    var row = loadSaved22(String(internalPath || ""));
-    if (!row) return { ok: true, missing: true, internalPath: String(internalPath || "") };
+    var path = String(internalPath || "");
+    var row = loadSavedCopy22(path);
+    if (!row) return { ok: true, alreadyMissing: true, internalPath: path };
     var safeUri = safeMediaUri22(row.contentUri);
     var safePath = "";
     if (row.publicPath) {
@@ -1339,16 +1349,25 @@
     }
     if (!safeUri && !safePath) throw new Error("公共副本路径不安全");
     var deleted = deleteContent22(appObj, safeUri, safePath);
-    if (!deleted) throw new Error("公共副本删除失败");
-    clearImageSaved22(String(internalPath || ""));
-    return { ok: true, internalPath: String(internalPath || ""), deletedAt: now22() };
+    if (!deleted) {
+      var stillAvailable = false;
+      try { stillAvailable = !!(safeUri && uriReadable22(safeUri)); } catch (eUri) {}
+      if (!stillAvailable && safePath) {
+        try { stillAvailable = isImageFile22(new java.io.File(safePath)); } catch (eFile) {}
+      }
+      if (stillAvailable) throw new Error("公共副本删除失败");
+      if (!clearImageSaved22(path)) throw new Error("公共副本已不存在，但保存记录清理失败");
+      return { ok: true, alreadyMissing: true, recordCleared: true, internalPath: path, deletedAt: now22() };
+    }
+    if (!clearImageSaved22(path)) throw new Error("公共副本已删除，但保存记录清理失败");
+    return { ok: true, recordCleared: true, internalPath: path, deletedAt: now22() };
   }
 
   function install22() {
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.7") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.8") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -1432,6 +1451,7 @@
           deleteInternal: function(internalPath) { return deleteInternalImage22(internalPath); },
           prepareSavedUri: function(internalPath) { return prepareSavedUri22(appObj, internalPath); },
           deleteSaved: function(internalPath) { return deleteSavedImage22(appObj, internalPath); },
+          clearSavedRecord: function(internalPath) { return clearSavedRecord22(internalPath); },
           launchShare: function(result) { return launchShare22(result); },
           launchView: function(result) { return launchView22(result); }
         };
@@ -1828,7 +1848,10 @@
           dismissConfirm();
           runAction("delete", "正在删除截图…", function() {
             var target = normalizeInternalFile22(path);
-            if (!target.exists()) return { ok: true, alreadyMissing: true, internalPath: path };
+            if (!target.exists()) {
+              markImageDeleted22(path, now22());
+              return { ok: true, alreadyMissing: true, internalPath: path };
+            }
             if (!target.isFile()) throw new Error("截图不是文件");
             if (!target.delete()) throw new Error("截图删除失败");
             markImageDeleted22(path, now22());
@@ -2170,7 +2193,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.2.7";
+      proto.__toolHubPickwordImageViewerVersion = "1.2.8";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
