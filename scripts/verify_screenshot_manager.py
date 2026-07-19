@@ -66,6 +66,7 @@ require('screenshot manager action fail action=' in th23 and 'actionContext23(re
 require('service.loadSavedThumbnail(record.internalPath, 360)' in th23, 'saved thumbnail must use service layer')
 require('公共副本存在 · 缩略图可用' in th23 and 'thumbnailSource' in th23, 'saved thumbnail UI state missing')
 require('decodeUri23' not in th23 and 'record.kind === "saved"' in th23, 'saved public decoding must leave UI module')
+require('function sample23(width, height, maxEdge)' in th23 and 'actual.inSampleSize = sample23(' in th23, 'internal thumbnail sampling helper missing')
 require('open_screenshot_manager' in action and 'showToolApp("screenshot_manager", true)' in action, 'button action')
 require('screenshot_manager' in routes and '截图管理器' in routes, 'toolapp route')
 require('builtin_screenshot_manager' in base and 'BUTTONS_MIGRATION_VERSION = 3' in base, 'button migration v3')

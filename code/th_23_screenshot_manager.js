@@ -58,6 +58,13 @@
     try { if (bitmap && bitmap.recycle && (!bitmap.isRecycled || bitmap.isRecycled() !== true)) bitmap.recycle(); } catch (e0) {}
   }
 
+  function sample23(width, height, maxEdge) {
+    var sample = 1;
+    var limit = Math.max(64, Number(maxEdge || 360));
+    while (Math.max(width / sample, height / sample) > limit) sample *= 2;
+    return sample;
+  }
+
   function decodeThumbnail23(record, maxEdge) {
     var path = String(record && record.internalPath || "");
     if (!path) return null;

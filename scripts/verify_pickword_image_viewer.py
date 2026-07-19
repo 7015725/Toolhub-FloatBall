@@ -106,6 +106,8 @@ require('function loadProviderThumbnail22(rawUri, maxEdge)' in th22 and '.loadTh
 require('content read --user ' in th22 and 'function stageSavedThumbnailSource22' in th22, "Shell content-read thumbnail staging missing")
 require('internal_proxy' in th22 and 'root_stage' in th22 and 'callerOwnsBitmap: true' in th22, "saved thumbnail fallback ownership missing")
 require('function cleanupThumbnailCache22()' in th22 and 'clearSavedThumbnail22(path)' in th22, "saved thumbnail lifecycle cleanup missing")
+require('stageToken = String(now22())' in th22 and 'Thread.currentThread().getId()' in th22, "saved thumbnail staging token must be collision resistant")
+require('savedThumbnailLocks22.remove(lockKey)' not in th22, "saved thumbnail lock must remain stable while waiters can acquire it")
 require('loadSavedThumbnail: function(internalPath, maxEdge)' in th22, "saved thumbnail service API missing")
 require('return deleteInternalImage22(appObj, path);' in th22, "image controller must reuse service-grade internal delete")
 require('markImageDeleted22(path, now22())' in th22 and 'rootFallback' in th22, "internal delete verification and diagnostics missing")

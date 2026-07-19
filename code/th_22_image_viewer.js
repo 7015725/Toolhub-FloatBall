@@ -1304,7 +1304,8 @@
 
   function stageSavedThumbnailSource22(appObj, row, internalPath) {
     var root = thumbnailCacheRoot22();
-    var temp = new java.io.File(root, thumbnailCacheKey22(internalPath) + ".stage_" + String(now22()) + ".tmp").getCanonicalFile();
+    var stageToken = String(now22()) + "_" + String(java.lang.Thread.currentThread().getId()) + "_" + String(Math.floor(Math.random() * 1000000));
+    var temp = new java.io.File(root, thumbnailCacheKey22(internalPath) + ".stage_" + stageToken + ".tmp").getCanonicalFile();
     var rootPath = String(root.getCanonicalPath());
     var tempPath = String(temp.getCanonicalPath());
     if (tempPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("缩略图回填路径越界");
@@ -1392,7 +1393,6 @@
     } finally {
       try { if (stage && stage.exists()) stage.delete(); } catch (eStageDelete) {}
       try { lock.unlock(); } catch (eUnlock) {}
-      try { savedThumbnailLocks22.remove(lockKey); } catch (eRemove) {}
     }
   }
 
