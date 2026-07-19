@@ -1,8 +1,6 @@
 name: apply-screenshot-manager-saved-fix
 
 on:
-  push:
-    branches: [fix/screenshot-manager-saved-records]
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize, ready_for_review]
@@ -21,7 +19,6 @@ jobs:
     name: apply-screenshot-manager-saved-fix
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && github.ref_name == 'fix/screenshot-manager-saved-records') ||
       (
         github.event.pull_request.base.ref == 'main' &&
         github.event.pull_request.head.repo.full_name == github.repository &&
@@ -44,10 +41,11 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Apply screenshot manager fix
-        run: |
-          python3 .github/scripts/apply_screenshot_manager_saved_fix.py
-          python3 .github/scripts/sync_pickword_viewer_verifier.py
+      - name: Apply screenshot manager source fix
+        run: python3 .github/scripts/apply_screenshot_manager_saved_fix_core.py
+
+      - name: Synchronize image viewer regression version
+        run: python3 .github/scripts/sync_pickword_viewer_verifier.py
 
       - name: Fetch main baseline
         run: git fetch --no-tags origin main
@@ -80,7 +78,9 @@ jobs:
         shell: bash
         run: |
           rm -f .github/scripts/apply_screenshot_manager_saved_fix.py
+          rm -f .github/scripts/apply_screenshot_manager_saved_fix_core.py
           rm -f .github/scripts/sync_pickword_viewer_verifier.py
+          rm -f .github/screenshot_manager_fix_error.txt
           rm -f .github/workflows/apply-screenshot-manager-saved-fix.yml
 
       - name: Commit applied source fix
