@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "e9b6d58d5d30efeb31ee904098aac34a5d750e7fb2dcba51f57713c99551227f",
-      "size": 48153,
-      "version": 20260719160448
+      "sha256": "748f2d3be467989ce3e51e88f10f29eeba795f216adeaa1edac846943dae123c",
+      "size": 49724,
+      "version": 20260719171851
     }
   },
   "entry": {
@@ -154,29 +154,29 @@
       "version": "1.3.3"
     },
     "th_22_image_viewer.js": {
-      "sha256": "ab838036c27cf6696ea1881cf31601ef3aaf822daf074d76fcfb39edeb3b6e2b",
-      "size": 107047,
-      "version": "1.3.0"
+      "sha256": "4510785f3f50bf0e9db333192e45173b2d9b0dd1c6fa52f7c7338a1996b6fe26",
+      "size": 122958,
+      "version": "1.3.1"
     },
     "th_23_screenshot_manager.js": {
-      "sha256": "a6c822016d3324d1e16ee1f20edbb4a9c02f967ac9821db202e0d985d63ed2c2",
-      "size": 31426,
-      "version": "1.0.4"
+      "sha256": "fe7036f079f0463cbd946cae42e0296ca28fd2bb1de9ae3b7374a27cbf58a1f3",
+      "size": 31749,
+      "version": "1.0.5"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "截图管理器新增独立顶层 modalHost，图片查看器和删除确认框统一挂载到最高层并阻断底层卡片触摸。",
-      "内部截图卡片和已有图片查看器统一调用同一删除函数，Java 删除失败时通过现有 ShortX Shell 广播桥安全回退。",
-      "公共副本删除同时尝试 ContentResolver、Java 公共路径和 Root 映射路径，并通过 Shell content delete 清理 MediaStore 行。",
-      "公共副本删除完成后按有限重试重新探测 MediaStore、公共路径和 Root 实体路径，只有确认全部消失才清理 ToolHub 保存记录。",
-      "新增查看器挂载、确认框操作、删除传输和删除后验证日志，便于区分 UI 层级、Provider、Java 和 Root 失败。",
-      "保留删除确认遮罩，并让过期分享副本清理显式读取结构化删除结果，避免失败对象被当作成功。"
+      "已保存图片缩略图改由 th_22 图片服务统一加载，截图管理 UI 不再直接处理公共路径与 MediaStore 读取边界。",
+      "新增 ToolHub 私有缩略图缓存，新保存公共副本时从内部原图生成缓存，避免列表刷新重复解码公共原图。",
+      "旧记录依次尝试缓存、MediaProvider loadThumbnail、Content URI、Java 公共路径、内部原图代理和 Shell/Root 回填。",
+      "Shell 回填仅从安全 MediaStore URI 或规范化公共路径读取，并只写入 ToolHub/cache/screenshot_thumbnails 受控目录。",
+      "删除公共副本、清理失效记录和定期清理会同步处理缩略图缓存，内部截图删除不破坏公共副本缩略图。",
+      "截图管理器记录缩略图来源和失败原因，并在成功后显示公共副本存在、缩略图可用。"
     ],
     "date": "2026-07-20",
-    "title": "修复截图管理查看器层级与截图删除链路"
+    "title": "修复截图管理器已保存图片缩略图"
   },
   "schema": 4,
-  "version": 20260719160448
+  "version": 20260719171851
 }
