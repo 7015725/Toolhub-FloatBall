@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "c14743c4b8db52a4e8d80b6843c6c222839b116703a9ba68e9723376b758ba1e",
-      "size": 50957,
-      "version": 20260719181526
+      "sha256": "59a135c5dab447c94e710777a0ba12245605ae3044c5b65ef0a2284e1351e5b0",
+      "size": 52531,
+      "version": 20260719202326
     }
   },
   "entry": {
@@ -154,28 +154,29 @@
       "version": "1.3.3"
     },
     "th_22_image_viewer.js": {
-      "sha256": "4510785f3f50bf0e9db333192e45173b2d9b0dd1c6fa52f7c7338a1996b6fe26",
-      "size": 122958,
-      "version": "1.3.1"
+      "sha256": "83493e002044620f15116b2e351ec5b8a554ce83a8a5f776387510b0482b542a",
+      "size": 123952,
+      "version": "1.3.2"
     },
     "th_23_screenshot_manager.js": {
-      "sha256": "b2f9c7b825848c2897bbf6276f011e0ac749295ca3b89039aaf62870c6e1424a",
-      "size": 33309,
-      "version": "1.0.6"
+      "sha256": "fe47a98de21344b31c6447eb2759906fb119e7f129caa31effa57689e1bccd89",
+      "size": 33007,
+      "version": "1.0.7"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "截图管理器内部截图卡片分享成功拉起系统分享面板后，关闭整个截图管理器 ToolApp。",
-      "内部截图原图查看器分享成功后，通过外层回调关闭截图管理器，不让图片服务直接管理 ToolApp 生命周期。",
-      "已保存分类的打开和分享在系统相册、图片查看器或分享面板成功启动后关闭截图管理器。",
-      "系统 Intent 启动失败时保留当前页面并显示原有错误，不提前关闭截图管理器。",
-      "关闭统一复用 closeToolApp 与页面 detach 清理链，释放 Controller、Bitmap、线程池和 modalHost，仅保留悬浮球。"
+      "缩略图缓存从按文件名永久增长的锁表改为固定 32 条带锁，长期运行时锁对象数量保持有界。",
+      "已保存记录在缩略图锁内重新读取，缓存加载、生成和删除共用同一路径锁，避免删除后旧任务重新写回孤儿缓存。",
+      "移除未被消费的 internalAvailable 实时探测和未使用的 uriReadable22 薄封装，保留完整 URI 错误状态探测。",
+      "已保存缩略图加载失败时同步清除缩略图可用状态并刷新卡片说明，避免可用与受限提示同时出现。",
+      "精简截图管理器 Modal 成功层级诊断，保留 bringToFront、Elevation、TranslationZ 和焦点控制。",
+      "不改变 ShareTemp、未验证旧 URI 回退、MediaStore/Java/Root 证据模型、公共副本删除验证和外部启动关闭链。"
     ],
     "date": "2026-07-20",
-    "title": "截图管理器外部打开后自动关闭"
+    "title": "收口截图缩略图缓存并清理冗余状态"
   },
   "schema": 4,
-  "version": 20260719181526
+  "version": 20260719202326
 }

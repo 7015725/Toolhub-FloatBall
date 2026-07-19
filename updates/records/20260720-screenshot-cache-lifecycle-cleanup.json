@@ -10,5 +10,26 @@
     "已保存缩略图加载失败时同步清除缩略图可用状态并刷新卡片说明，避免可用与受限提示同时出现。",
     "精简截图管理器 Modal 成功层级诊断，保留 bringToFront、Elevation、TranslationZ 和焦点控制。",
     "不改变 ShareTemp、未验证旧 URI 回退、MediaStore/Java/Root 证据模型、公共副本删除验证和外部启动关闭链。"
-  ]
+  ],
+  "manifestVersion": 20260719202326,
+  "date": "2026-07-20",
+  "modules": [
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "1.3.1",
+      "to": "1.3.2",
+      "change": "updated"
+    },
+    {
+      "name": "th_23_screenshot_manager.js",
+      "from": "1.0.6",
+      "to": "1.0.7",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260719024500,
+    "to": 20260719024500
+  }
 }
