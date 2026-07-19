@@ -1,0 +1,29 @@
+name: export-ui-source
+
+on:
+  push:
+    branches:
+      - fix/pickword-compact-image-ui-20260719
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: pickword-ui-source
+          path: |
+            .github
+            code
+            scripts
+            manifest.json
+            update_history.json
+            updates/records
+          include-hidden-files: true
+          retention-days: 1
