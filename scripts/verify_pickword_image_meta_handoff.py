@@ -11,7 +11,7 @@ def require(value, message):
         raise SystemExit("FAIL pickword-image-meta-handoff: " + message)
 
 
-require(SOURCE.startswith("// @version 1.0.18\n"), "th_20 version must be 1.0.18")
+require(SOURCE.startswith("// @version 1.0.19\n"), "th_20 version must be 1.0.19")
 match = re.search(
     r"function normalizePickwordImageMeta20\(meta\) \{(?P<body>.*?)\n    \}\n\n    function releasePickwordImageController20",
     SOURCE,

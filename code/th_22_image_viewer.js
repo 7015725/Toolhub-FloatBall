@@ -1,4 +1,4 @@
-// @version 1.2.6
+// @version 1.2.7
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -1348,7 +1348,7 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.6") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.2.7") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -1468,8 +1468,11 @@
         var thumbnailStatus = null;
         var fullRoot = null;
         var imageCanvas = null;
+        var savedInfo = existingSave22(path);
         var infoView = null;
         var actionStatusView = null;
+        var infoStatusText = savedInfo ? "已保存到公共目录" : "保存副本不会被自动清理";
+        var infoStatusError = false;
         var saveButton = null;
         var shareButton = null;
         var deleteButton = null;
@@ -1488,7 +1491,6 @@
         var initialized = false;
         var drawFailureCount = 0;
         var drawDisabled = false;
-        var savedInfo = existingSave22(path);
 
         function log(level, msg) {
           try { safeLog(appObj.L, level, "pickword image " + String(msg)); } catch (e0) {}
@@ -1536,12 +1538,9 @@
         }
 
         function setStatus(text, isError) {
-          try {
-            if (actionStatusView) {
-              actionStatusView.setText(String(text || ""));
-              safeText22(actionStatusView, isError ? colors.danger : colors.secondary);
-            }
-          } catch (e0) {}
+          infoStatusText = String(text || (savedInfo ? "已保存到公共目录" : "保存副本不会被自动清理"));
+          infoStatusError = isError === true;
+          updateInfo();
           try {
             if (thumbnailStatus) thumbnailStatus.setText(String(text || (savedInfo ? "已保存 · 点击查看原图" : "点击查看原图")));
           } catch (e1) {}
@@ -1586,8 +1585,13 @@
 
         function updateInfo() {
           if (!infoView) return;
-          var text = sourceWidth > 0 ? (String(sourceWidth) + " × " + String(sourceHeight) + "  ·  " + fileSizeText22(fileSize)) : "图片信息不可用";
-          try { infoView.setText(text); } catch (e0) {}
+          var imageText = sourceWidth > 0 ? (String(sourceWidth) + " × " + String(sourceHeight) + " · " + fileSizeText22(fileSize)) : "图片信息不可用";
+          var statusText = String(infoStatusText || "");
+          var text = statusText ? (imageText + " · " + statusText) : imageText;
+          try {
+            infoView.setText(text);
+            safeText22(infoView, infoStatusError ? colors.danger : colors.secondary);
+          } catch (e0) {}
         }
 
         function fitTransform() {
@@ -2015,18 +2019,20 @@
             var root = new android.widget.FrameLayout(opts.context || context);
             thumbnailRoot = root;
             root.setBackground(roundBg22(colors.card, colors.stroke, 14));
-            root.setPadding(dp22(6), dp22(6), dp22(6), dp22(6));
+            root.setPadding(dp22(4), dp22(4), dp22(4), dp22(4));
             var image = new android.widget.ImageView(opts.context || context);
             thumbnailImage = image;
-            image.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
-            root.addView(image, new android.widget.FrameLayout.LayoutParams(-1, -1));
+            image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+            var thumbnailImageLp22 = new android.widget.FrameLayout.LayoutParams(-1, -1);
+            thumbnailImageLp22.bottomMargin = dp22(24);
+            root.addView(image, thumbnailImageLp22);
             var status = new android.widget.TextView(opts.context || context);
             thumbnailStatus = status;
             status.setText(savedInfo ? "已保存 · 点击查看原图" : "正在读取截图…");
             safeText22(status, colors.secondary);
-            status.setTextSize(11);
+            status.setTextSize(10);
             status.setGravity(android.view.Gravity.CENTER);
-            var statusLp = new android.widget.FrameLayout.LayoutParams(-1, dp22(30), android.view.Gravity.BOTTOM);
+            var statusLp = new android.widget.FrameLayout.LayoutParams(-1, dp22(24), android.view.Gravity.BOTTOM);
             root.addView(status, statusLp);
             root.setClickable(true);
             root.setContentDescription("截图缩略图，点击查看原图");
@@ -2042,31 +2048,31 @@
             fullRoot = root;
             imageCanvas = createCanvas();
             var imageLp = new android.widget.FrameLayout.LayoutParams(-1, -1);
-            imageLp.setMargins(0, dp22(56), 0, dp22(104));
+            imageLp.setMargins(0, dp22(48), 0, dp22(76));
             root.addView(imageCanvas, imageLp);
 
             var top = new android.widget.LinearLayout(opts.context || context);
             top.setOrientation(android.widget.LinearLayout.HORIZONTAL);
             top.setGravity(android.view.Gravity.CENTER_VERTICAL);
-            top.setPadding(dp22(6), dp22(4), dp22(6), dp22(4));
+            top.setPadding(dp22(4), dp22(2), dp22(4), dp22(2));
             top.setBackground(roundBg22(colors.card, colors.stroke, 0));
             top.addView(button("返回", function() {
               try { if (typeof opts.onBack === "function") opts.onBack(); } catch (e0) { error("back_callback", e0); }
-            }), new android.widget.LinearLayout.LayoutParams(dp22(72), dp22(48)));
+            }), new android.widget.LinearLayout.LayoutParams(dp22(64), dp22(42)));
             var title = new android.widget.TextView(opts.context || context);
             title.setText("截图原图");
             safeText22(title, colors.text);
-            title.setTextSize(16);
+            title.setTextSize(15);
             title.setGravity(android.view.Gravity.CENTER);
-            top.addView(title, new android.widget.LinearLayout.LayoutParams(0, dp22(48), 1));
+            top.addView(title, new android.widget.LinearLayout.LayoutParams(0, dp22(42), 1));
             top.addView(button("关闭", function() {
               try { if (typeof opts.onCloseSession === "function") opts.onCloseSession(); } catch (e0) { error("close_callback", e0); }
-            }), new android.widget.LinearLayout.LayoutParams(dp22(72), dp22(48)));
-            root.addView(top, new android.widget.FrameLayout.LayoutParams(-1, dp22(56), android.view.Gravity.TOP));
+            }), new android.widget.LinearLayout.LayoutParams(dp22(64), dp22(42)));
+            root.addView(top, new android.widget.FrameLayout.LayoutParams(-1, dp22(48), android.view.Gravity.TOP));
 
             var bottom = new android.widget.LinearLayout(opts.context || context);
             bottom.setOrientation(android.widget.LinearLayout.VERTICAL);
-            bottom.setPadding(dp22(6), dp22(3), dp22(6), dp22(4));
+            bottom.setPadding(dp22(4), dp22(2), dp22(4), dp22(3));
             bottom.setBackground(roundBg22(colors.card, colors.stroke, 0));
 
             var actions = new android.widget.LinearLayout(opts.context || context);
@@ -2074,27 +2080,20 @@
             shareButton = button("分享", function() { performShare(); }, colors.primary);
             saveButton = button(savedInfo ? "已保存" : "保存", function() { performSave(); }, colors.primary);
             deleteButton = button("删除", function() { showDeleteConfirm(); }, colors.danger);
-            actions.addView(shareButton, new android.widget.LinearLayout.LayoutParams(0, dp22(44), 1));
-            actions.addView(saveButton, new android.widget.LinearLayout.LayoutParams(0, dp22(44), 1));
-            actions.addView(deleteButton, new android.widget.LinearLayout.LayoutParams(0, dp22(44), 1));
-            bottom.addView(actions, new android.widget.LinearLayout.LayoutParams(-1, dp22(44)));
-
-            actionStatusView = new android.widget.TextView(opts.context || context);
-            safeText22(actionStatusView, colors.secondary);
-            actionStatusView.setTextSize(11);
-            actionStatusView.setGravity(android.view.Gravity.CENTER);
-            actionStatusView.setSingleLine(true);
-            actionStatusView.setText(savedInfo ? "已保存到公共目录" : "保存副本不会被自动清理");
-            bottom.addView(actionStatusView, new android.widget.LinearLayout.LayoutParams(-1, dp22(24)));
+            actions.addView(shareButton, new android.widget.LinearLayout.LayoutParams(0, dp22(42), 1));
+            actions.addView(saveButton, new android.widget.LinearLayout.LayoutParams(0, dp22(42), 1));
+            actions.addView(deleteButton, new android.widget.LinearLayout.LayoutParams(0, dp22(42), 1));
+            bottom.addView(actions, new android.widget.LinearLayout.LayoutParams(-1, dp22(42)));
 
             infoView = new android.widget.TextView(opts.context || context);
+            actionStatusView = infoView;
             safeText22(infoView, colors.secondary);
-            infoView.setTextSize(11);
+            infoView.setTextSize(10);
             infoView.setGravity(android.view.Gravity.CENTER);
             infoView.setSingleLine(true);
-            infoView.setText("双指缩放 · 单指平移 · 双击放大或复位");
-            bottom.addView(infoView, new android.widget.LinearLayout.LayoutParams(-1, dp22(28)));
-            root.addView(bottom, new android.widget.FrameLayout.LayoutParams(-1, dp22(104), android.view.Gravity.BOTTOM));
+            try { infoView.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch (eEllipsize) {}
+            bottom.addView(infoView, new android.widget.LinearLayout.LayoutParams(-1, dp22(26)));
+            root.addView(bottom, new android.widget.FrameLayout.LayoutParams(-1, dp22(76), android.view.Gravity.BOTTOM));
             updateInfo();
             return root;
           },
@@ -2171,7 +2170,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.2.6";
+      proto.__toolHubPickwordImageViewerVersion = "1.2.7";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
