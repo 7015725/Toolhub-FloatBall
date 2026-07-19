@@ -1,8 +1,42 @@
 {
   "schema": 1,
-  "historyVersion": 20260719005714,
-  "generatedAt": "2026-07-19T08:57:14+08:00",
+  "historyVersion": 20260719015801,
+  "generatedAt": "2026-07-19T09:58:01+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260719-pickword-compact-image-ui",
+      "type": "optimize",
+      "title": "优化拾字截图与原图紧凑布局",
+      "details": [
+        "压缩拾字标题、统计区和底部操作区高度，减少无效留白。",
+        "截图缩略图改为紧凑高度并使用 FIT_CENTER 完整显示，状态栏不再覆盖图片。",
+        "删除内部截图后按原始子视图索引恢复文字区域，避免文字移动到操作按钮下方。",
+        "原图查看窗口按截图宽高比动态计算卡片尺寸，不再强制全屏。",
+        "原图顶部和底部工具栏压缩，尺寸、文件大小与操作状态合并为一行。"
+      ],
+      "manifestVersion": 20260719015801,
+      "date": "2026-07-19",
+      "modules": [
+        {
+          "name": "th_20_pickword.js",
+          "from": "1.0.18",
+          "to": "1.0.19",
+          "change": "updated"
+        },
+        {
+          "name": "th_22_image_viewer.js",
+          "from": "1.2.6",
+          "to": "1.2.7",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260719024500,
+        "to": 20260719024500
+      }
+    },
     {
       "schema": 1,
       "id": "20260719-pickword-image-lifecycle-cleanup",
