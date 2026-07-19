@@ -40,10 +40,20 @@ jobs:
           python-version: '3.x'
 
       - name: Apply saved thumbnail fix
+        id: apply_fix
         shell: bash
         run: |
-          set -euo pipefail
-          base64 -d .github/scripts/apply_saved_thumbnail_cache.py.gz.b64 | gzip -dc | python3 -
+          set -o pipefail
+          base64 -d .github/scripts/apply_saved_thumbnail_cache.py.gz.b64 | gzip -dc | python3 - 2>&1 | tee saved-thumbnail-apply.log
+
+      - name: Upload apply diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: saved-thumbnail-apply-log
+          path: saved-thumbnail-apply.log
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Fetch main baseline
         run: git fetch --no-tags origin main
