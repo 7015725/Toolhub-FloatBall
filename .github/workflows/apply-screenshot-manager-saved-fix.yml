@@ -41,27 +41,46 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Apply screenshot manager fix
-        run: python3 .github/scripts/apply_screenshot_manager_saved_fix.py
+      - name: Apply screenshot manager source fix
+        run: python3 .github/scripts/apply_screenshot_manager_saved_fix_core.py
 
-      - name: Verify focused regressions
-        shell: bash
-        run: |
-          set -eo pipefail
-          git fetch --no-tags origin main
-          python3 scripts/verify_changed_module_versions.py --base-ref origin/main
-          python3 scripts/verify_update_history.py --require-one-pending
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_pickword_image_viewer.py
-          python3 scripts/verify_screenshot_manager.py
-          python3 scripts/verify_module_boundaries.py
-          git diff --check
+      - name: Synchronize image viewer regression version
+        run: python3 .github/scripts/sync_pickword_viewer_verifier.py
+
+      - name: Fetch main baseline
+        run: git fetch --no-tags origin main
+
+      - name: Verify changed module versions
+        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify pending update record
+        run: python3 scripts/verify_update_history.py --require-one-pending
+
+      - name: Verify ES5 scan
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: Verify JavaScript syntax
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: Verify image viewer
+        run: python3 scripts/verify_pickword_image_viewer.py
+
+      - name: Verify screenshot manager
+        run: python3 scripts/verify_screenshot_manager.py
+
+      - name: Verify module boundaries
+        run: python3 scripts/verify_module_boundaries.py
+
+      - name: Verify whitespace
+        run: git diff --check
 
       - name: Remove one-shot patch files
         shell: bash
         run: |
           rm -f .github/scripts/apply_screenshot_manager_saved_fix.py
+          rm -f .github/scripts/apply_screenshot_manager_saved_fix_core.py
+          rm -f .github/scripts/sync_pickword_viewer_verifier.py
+          rm -f .github/screenshot_manager_fix_error.txt
           rm -f .github/workflows/apply-screenshot-manager-saved-fix.yml
 
       - name: Commit applied source fix
