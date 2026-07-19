@@ -11,5 +11,25 @@
     "截图管理列表区分公共副本可用、存在但预览受限、状态待确认和确认不可用，并记录完整探测来源与异常。",
     "公共副本删除不再把 system_server Java 路径不可见当作文件已删除；Java 无法确认时继续使用 Root 同时清理映射路径与实体路径。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260719140237,
+  "date": "2026-07-19",
+  "modules": [
+    {
+      "name": "th_22_image_viewer.js",
+      "from": "1.2.8",
+      "to": "1.2.9",
+      "change": "updated"
+    },
+    {
+      "name": "th_23_screenshot_manager.js",
+      "from": "1.0.2",
+      "to": "1.0.3",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260719024500,
+    "to": 20260719024500
+  }
 }
