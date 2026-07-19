@@ -21,7 +21,7 @@ for line in lines:
 if guard_count != 1 or version_count != 1:
     raise SystemExit("FAIL sync-pickword-viewer-verifier guard=%d version=%d" % (guard_count, version_count))
 text = "".join(out)
-if '__toolHubPickwordImageViewerVersion = "1.2.8"' not in text or '// @version 1.2.8' not in text:
+if "1.2.8" not in text or "image viewer install version guard missing" not in text or "// @version 1.2.8" not in text:
     raise SystemExit("FAIL sync-pickword-viewer-verifier new assertions missing")
 path.write_text(text, encoding="utf-8")
 print("OK sync-pickword-viewer-verifier 1.2.8")
