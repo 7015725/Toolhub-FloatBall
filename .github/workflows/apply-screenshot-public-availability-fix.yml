@@ -1,0 +1,79 @@
+name: apply-screenshot-public-availability-fix
+
+on:
+  push:
+    branches: [agent/fix-screenshot-public-availability]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-screenshot-public-availability-fix
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fix branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/fix-screenshot-public-availability
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply source fix
+        shell: bash
+        run: |
+          base64 -d .github/scripts/apply_screenshot_public_availability_fix.py.gz.b64 | gzip -dc | python3 -
+
+      - name: Fetch main baseline
+        run: git fetch --no-tags origin main
+
+      - name: Verify changed module versions
+        run: python3 scripts/verify_changed_module_versions.py --base-ref origin/main
+
+      - name: Verify pending update record
+        run: python3 scripts/verify_update_history.py --require-one-pending
+
+      - name: Verify ES5 scan
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: Verify JavaScript syntax
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: Verify image viewer
+        run: python3 scripts/verify_pickword_image_viewer.py
+
+      - name: Verify screenshot manager
+        run: python3 scripts/verify_screenshot_manager.py
+
+      - name: Verify module boundaries
+        run: python3 scripts/verify_module_boundaries.py
+
+      - name: Verify whitespace
+        run: git diff --check
+
+      - name: Remove one-shot files
+        run: |
+          rm -f .github/scripts/apply_screenshot_public_availability_fix.py.gz.b64
+          rm -f .github/workflows/apply-screenshot-public-availability-fix.yml
+
+      - name: Commit source fix
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "修复截图公共副本存在性探测"
+          if [ -n "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          git push origin HEAD:agent/fix-screenshot-public-availability
