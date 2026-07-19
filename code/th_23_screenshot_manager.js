@@ -309,6 +309,7 @@
     function showConfirm(actionId, titleText, bodyText, confirmText, strong, onConfirm) {
       if (activeViewerView || activeManagerConfirm || detached) return;
       var overlay = new android.widget.FrameLayout(context);
+      try { toolhubSafeSetBackgroundColor(overlay, 0x99000000 | 0); } catch (eBg) {}
       overlay.setClickable(true);
       overlay.setFocusable(true);
       var card = new android.widget.LinearLayout(context);

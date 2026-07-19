@@ -1132,6 +1132,7 @@
   function deleteContent22(appObj, contentUri, publicPath) {
     var safeUri = safeMediaUri22(contentUri);
     var result = {
+      ok: false,
       resolverDeleteCount: 0,
       resolverError: "",
       javaVisible: false,
@@ -1165,6 +1166,7 @@
         result.rootError = String(eRoot);
       }
     }
+    result.ok = result.resolverDeleteCount > 0 || result.javaDeleted === true || result.rootBridgeUsed === true;
     try {
       safeLog(appObj && appObj.L ? appObj.L : null, result.rootError ? "w" : "i",
         "pickword image saved delete transport" +
@@ -1264,7 +1266,8 @@
       result.scanned++;
       var one = rows[i];
       var emptyRecord = !one.contentUri && !one.publicPath;
-      var ok = emptyRecord || deleteContent22(appObj, one.contentUri, one.publicPath);
+      var deletion = emptyRecord ? { ok: true } : deleteContent22(appObj, one.contentUri, one.publicPath);
+      var ok = emptyRecord || (deletion && deletion.ok === true);
       if (ok) {
         result.deleted++;
         successIds.push(one.id);
