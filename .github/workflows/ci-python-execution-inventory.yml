@@ -1,0 +1,58 @@
+name: ci-python-execution-inventory
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/**'
+      - '.github/scripts/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/**'
+      - '.github/scripts/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    name: ci-python-execution-inventory
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Verify workflow script references
+        run: python3 scripts/verify_workflow_script_references.py
+
+      - name: Build CI Python execution inventory
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_ci_python_execution.py --output ci-python-execution-inventory.md 2>&1 | tee ci-python-execution-inventory-log.txt
+
+      - name: Upload CI Python execution inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-python-execution-inventory
+          path: |
+            ci-python-execution-inventory.md
+            ci-python-execution-inventory-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Check git whitespace
+        shell: bash
+        run: git diff --check
