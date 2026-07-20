@@ -88,23 +88,22 @@ def move_files():
 
 def update_python_paths():
     replacements = (
-        ('ROOT / "ARCHITECTURE.md"', 'ROOT / "docs" / "ARCHITECTURE.md"'),
-        ('ROOT / "STRUCTURE.md"', 'ROOT / "docs" / "STRUCTURE.md"'),
-        ('ROOT / "SQLITE_STORAGE.md"', 'ROOT / "docs" / "SQLITE_STORAGE.md"'),
-        ('ROOT / "MODULE_BOUNDARIES.json"', 'ROOT / "constraints" / "MODULE_BOUNDARIES.json"'),
-        ('ROOT / "DEAD_CODE_AUDIT.md"', 'ROOT / "docs" / "audits" / "DEAD_CODE_AUDIT.md"'),
-        ('ROOT / "ENTRY_SYMBOL_AUDIT.md"', 'ROOT / "docs" / "audits" / "ENTRY_SYMBOL_AUDIT.md"'),
-        ('ROOT / "MODULE_SYMBOL_AUDIT.md"', 'ROOT / "docs" / "audits" / "MODULE_SYMBOL_AUDIT.md"'),
-        ('ROOT / "PROTECTED_WRAPPER_AUDIT.md"', 'ROOT / "docs" / "audits" / "PROTECTED_WRAPPER_AUDIT.md"'),
         ('"MODULE_BOUNDARIES.json"', '"constraints/MODULE_BOUNDARIES.json"'),
         ("'MODULE_BOUNDARIES.json'", "'constraints/MODULE_BOUNDARIES.json'"),
         ('"DEAD_CODE_AUDIT.md"', '"docs/audits/DEAD_CODE_AUDIT.md"'),
+        ("'DEAD_CODE_AUDIT.md'", "'docs/audits/DEAD_CODE_AUDIT.md'"),
         ('"ENTRY_SYMBOL_AUDIT.md"', '"docs/audits/ENTRY_SYMBOL_AUDIT.md"'),
+        ("'ENTRY_SYMBOL_AUDIT.md'", "'docs/audits/ENTRY_SYMBOL_AUDIT.md'"),
         ('"MODULE_SYMBOL_AUDIT.md"', '"docs/audits/MODULE_SYMBOL_AUDIT.md"'),
+        ("'MODULE_SYMBOL_AUDIT.md'", "'docs/audits/MODULE_SYMBOL_AUDIT.md'"),
         ('"PROTECTED_WRAPPER_AUDIT.md"', '"docs/audits/PROTECTED_WRAPPER_AUDIT.md"'),
+        ("'PROTECTED_WRAPPER_AUDIT.md'", "'docs/audits/PROTECTED_WRAPPER_AUDIT.md'"),
         ('"ARCHITECTURE.md"', '"docs/ARCHITECTURE.md"'),
+        ("'ARCHITECTURE.md'", "'docs/ARCHITECTURE.md'"),
         ('"STRUCTURE.md"', '"docs/STRUCTURE.md"'),
+        ("'STRUCTURE.md'", "'docs/STRUCTURE.md'"),
         ('"SQLITE_STORAGE.md"', '"docs/SQLITE_STORAGE.md"'),
+        ("'SQLITE_STORAGE.md'", "'docs/SQLITE_STORAGE.md'"),
     )
     for path in sorted((ROOT / "scripts").glob("*.py")):
         if path.name == "migrate_repository_layout.py":
@@ -175,8 +174,7 @@ def update_constraint_registry_validator():
     text = path.read_text(encoding="utf-8")
     old = 'for name in ("registry.json", "syntax.json", "api.json", "threading.json", "lifecycle.json", "exceptions.json"):'
     new = 'for name in ("registry.json", "syntax.json", "methods.json", "MODULE_BOUNDARIES.json", "api.json", "threading.json", "lifecycle.json", "exceptions.json"):'
-    text = text.replace(old, new)
-    path.write_text(text, encoding="utf-8")
+    path.write_text(text.replace(old, new), encoding="utf-8")
 
 
 def update_workflow():
@@ -208,7 +206,7 @@ def update_workflow():
 def update_structure_document():
     path = ROOT / "docs" / "STRUCTURE.md"
     text = path.read_text(encoding="utf-8")
-    old_lines = (
+    for line in (
         "├── ARCHITECTURE.md\n",
         "├── STRUCTURE.md\n",
         "├── SQLITE_STORAGE.md\n",
@@ -217,8 +215,7 @@ def update_structure_document():
         "├── MODULE_SYMBOL_AUDIT.md\n",
         "├── PROTECTED_WRAPPER_AUDIT.md\n",
         "├── MODULE_BOUNDARIES.json\n",
-    )
-    for line in old_lines:
+    ):
         text = text.replace(line, "")
     if "docs/audits/" not in text:
         text += (
