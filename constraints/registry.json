@@ -10,7 +10,7 @@
   },
   "domains": {
     "syntax": {"file": "constraints/syntax.json", "enforcement": "hybrid"},
-    "methods": {"file": "MODULE_BOUNDARIES.json", "enforcement": "declarative"},
+    "methods": {"file": "constraints/methods.json", "enforcement": "declarative"},
     "api": {"file": "constraints/api.json", "enforcement": "hybrid"},
     "threading": {"file": "constraints/threading.json", "enforcement": "plugin"},
     "lifecycle": {"file": "constraints/lifecycle.json", "enforcement": "hybrid"},
