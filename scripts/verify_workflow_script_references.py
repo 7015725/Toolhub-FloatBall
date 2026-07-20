@@ -15,6 +15,13 @@ def fail(message):
     raise SystemExit("FAIL workflow-script-references: " + message)
 
 
+def normalize_reference(path_text):
+    value = str(path_text)
+    if value.startswith("./"):
+        value = value[2:]
+    return value
+
+
 def main():
     missing = []
     references = []
@@ -24,7 +31,7 @@ def main():
     for workflow in workflow_files:
         text = workflow.read_text(encoding="utf-8")
         for match in PYTHON_FILE_RE.finditer(text):
-            rel = match.group("path").lstrip("./")
+            rel = normalize_reference(match.group("path"))
             candidate = Path(rel)
             if candidate.is_absolute() or ".." in candidate.parts:
                 missing.append((workflow.relative_to(ROOT), rel, "unsafe path"))
