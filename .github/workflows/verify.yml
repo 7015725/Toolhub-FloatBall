@@ -29,6 +29,23 @@ jobs:
         shell: bash
         run: python3 scripts/verify_workflow_script_references.py
 
+      - name: Build Python maintenance inventory
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/report_python_script_inventory.py --output python-script-inventory.md 2>&1 | tee python-script-inventory-log.txt
+
+      - name: Upload Python maintenance inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-maintenance-inventory
+          path: |
+            python-script-inventory.md
+            python-script-inventory-log.txt
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify module boundaries
         shell: bash
         run: |
