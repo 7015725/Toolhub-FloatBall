@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Temporary repository audit for Markdown/Python classification and similarity."""
 import ast
-import difflib
 import json
 import re
 from collections import defaultdict
@@ -26,15 +25,21 @@ def files_with_suffix(suffix):
     return sorted(result, key=rel)
 
 
-def normalize_text(text):
+def normalized_tokens(text):
     text = re.sub(r"```.*?```", " ", text, flags=re.S)
     text = re.sub(r"https?://\S+", " ", text)
     text = re.sub(r"[^A-Za-z0-9_\u4e00-\u9fff]+", " ", text.lower())
-    return " ".join(text.split())
+    return text.split()
+
+
+def token_shingles(tokens, width=3):
+    if len(tokens) < width:
+        return set(tokens)
+    return {"\x1f".join(tokens[index:index + width]) for index in range(len(tokens) - width + 1)}
 
 
 def headings(text):
-    return [m.group(2).strip() for m in re.finditer(r"^(#{1,6})\s+(.+?)\s*$", text, re.M)]
+    return [match.group(2).strip() for match in re.finditer(r"^(#{1,6})\s+(.+?)\s*$", text, re.M)]
 
 
 def md_category(path):
@@ -104,6 +109,7 @@ def python_info(path):
                 imports.append(node.module)
     except SyntaxError as exc:
         parse_error = "%s:%s" % (exc.lineno, exc.msg)
+    tokens = normalized_tokens(text)
     return {
         "path": rel(path),
         "category": py_category(path),
@@ -111,48 +117,43 @@ def python_info(path):
         "functions": functions,
         "imports": sorted(set(imports)),
         "parse_error": parse_error,
-        "normalized": normalize_text(text),
+        "shingles": token_shingles(tokens),
         "text": text,
     }
 
 
 def markdown_info(path):
     text = path.read_text(encoding="utf-8")
+    tokens = normalized_tokens(text)
     return {
         "path": rel(path),
         "category": md_category(path),
         "lines": len(text.splitlines()),
         "headings": headings(text),
-        "normalized": normalize_text(text),
+        "shingles": token_shingles(tokens),
         "text": text,
     }
 
 
-def ratio(a, b):
-    if not a or not b:
+def jaccard(left, right):
+    left = set(left)
+    right = set(right)
+    if not left or not right:
         return 0.0
-    return difflib.SequenceMatcher(None, a, b, autojunk=False).ratio()
-
-
-def jaccard(a, b):
-    a = set(a)
-    b = set(b)
-    if not a or not b:
-        return 0.0
-    return len(a & b) / float(len(a | b))
+    return len(left & right) / float(len(left | right))
 
 
 def similarity_pairs(items, kind):
     pairs = []
     for index, left in enumerate(items):
         for right in items[index + 1:]:
-            text_score = ratio(left["normalized"], right["normalized"])
+            text_score = jaccard(left["shingles"], right["shingles"])
             structure_score = jaccard(
                 left["headings"] if kind == "md" else left["functions"],
                 right["headings"] if kind == "md" else right["functions"],
             )
-            score = 0.70 * text_score + 0.30 * structure_score
-            if score >= 0.22 or text_score >= 0.35 or structure_score >= 0.45:
+            score = 0.75 * text_score + 0.25 * structure_score
+            if score >= 0.12 or text_score >= 0.18 or structure_score >= 0.45:
                 pairs.append({
                     "left": left["path"],
                     "right": right["path"],
@@ -251,8 +252,8 @@ def main():
     for item, path in zip(py_items, py_paths):
         item["references"] = references_for(path, all_texts)
     report = {
-        "markdown": [{key: value for key, value in item.items() if key not in ("normalized", "text")} for item in md_items],
-        "python": [{key: value for key, value in item.items() if key not in ("normalized", "text")} for item in py_items],
+        "markdown": [{key: value for key, value in item.items() if key not in ("shingles", "text")} for item in md_items],
+        "python": [{key: value for key, value in item.items() if key not in ("shingles", "text")} for item in py_items],
         "markdown_pairs": similarity_pairs(md_items, "md"),
         "python_pairs": similarity_pairs(py_items, "py"),
         "duplicate_functions": duplicate_functions(py_items),
