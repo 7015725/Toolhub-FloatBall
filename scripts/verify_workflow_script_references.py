@@ -9,12 +9,10 @@ PYTHON_COMMAND_RE = re.compile(
     r"^\s*(?:\{\s*)?python(?:3(?:\.\d+)?)?\s+"
     r"(?P<path>(?:\./)?[A-Za-z0-9_.\/-]+\.py)\b"
 )
-TEMPORARY_CROSS_BRANCH_REFERENCES = {
-    (
-        ".github/workflows/oneshot-trigger-organize-docs.yml",
-        "scripts/oneshot_organize_docs_python.py",
-    ),
-}
+TEMPORARY_WORKFLOW = ".github/workflows/oneshot-trigger-organize-docs.yml"
+TEMPORARY_SCRIPT_RE = re.compile(
+    r"^scripts/oneshot_organize_docs_python(?:_[A-Za-z0-9_]+)?\.py$"
+)
 
 
 def fail(message):
@@ -26,6 +24,13 @@ def normalize_reference(path_text):
     if value.startswith("./"):
         value = value[2:]
     return value
+
+
+def is_temporary_cross_branch_reference(workflow_name, relative_path):
+    return (
+        workflow_name == TEMPORARY_WORKFLOW
+        and TEMPORARY_SCRIPT_RE.match(relative_path) is not None
+    )
 
 
 def main():
@@ -48,7 +53,7 @@ def main():
                 missing.append((workflow_name, line_number, rel, "unsafe path"))
                 continue
             references.append((workflow_name, line_number, rel))
-            if (workflow_name, rel) in TEMPORARY_CROSS_BRANCH_REFERENCES:
+            if is_temporary_cross_branch_reference(workflow_name, rel):
                 temporary.append((workflow_name, line_number, rel))
                 continue
             if not (ROOT / candidate).is_file():
