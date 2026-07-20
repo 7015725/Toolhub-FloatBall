@@ -95,37 +95,20 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Verify th_15 standalone audit
+      - name: Verify module symbol audit
         shell: bash
         run: |
           set -o pipefail
-          python3 scripts/report_th15_extra_symbols.py --check TH15_EXTRA_AUDIT.md 2>&1 | tee th15-extra-audit-log.txt
+          python3 scripts/report_module_symbol_audits.py --check MODULE_SYMBOL_AUDIT.md 2>&1 | tee module-symbol-audit-log.txt
 
-      - name: Upload th_15 standalone audit
+      - name: Upload module symbol audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: th15-extra-audit-report
+          name: module-symbol-audit-report
           path: |
-            TH15_EXTRA_AUDIT.md
-            th15-extra-audit-log.txt
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Verify th_09 standalone audit
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/report_th09_animation_symbols.py --check TH09_ANIMATION_AUDIT.md 2>&1 | tee th09-animation-audit-log.txt
-
-      - name: Upload th_09 standalone audit
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: th09-animation-audit-report
-          path: |
-            TH09_ANIMATION_AUDIT.md
-            th09-animation-audit-log.txt
+            MODULE_SYMBOL_AUDIT.md
+            module-symbol-audit-log.txt
           if-no-files-found: error
           retention-days: 7
 
