@@ -58,7 +58,7 @@ jobs:
         timeout-minutes: 15
         run: |
           set -eo pipefail
-          python3 scripts/profile_ci_python_checks.py --output-dir ci-python-timing 2>&1 | tee ci-python-timing-log.txt
+          python3 scripts/profile_ci_python_checks.py --runs 5 --output-dir ci-python-timing 2>&1 | tee ci-python-timing-log.txt
           cat ci-python-timing/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload CI Python timing sample
