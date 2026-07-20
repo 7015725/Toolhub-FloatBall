@@ -1,0 +1,5959 @@
+{
+  "schema": 1,
+  "policy": "initial_usage_only",
+  "description": "第二阶段启用时已经存在的高置信度 API 使用。不得把后续新增 API 写入本文件。",
+  "sourceUsageDigest": "sha256:5a17954f39a8e227d35cb575379725320eb43c20e18aadf66a41339055988ad5",
+  "entries": [
+    {
+      "key": "android|class|android.animation.Animator.AnimatorListener",
+      "files": [
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|class|android.animation.ValueAnimator.AnimatorUpdateListener",
+      "files": [
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|class|android.app.Dialog",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.content.ComponentName",
+      "files": [
+        "code/th_10_shell.js",
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|class|android.content.ContentValues",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|class|android.content.Context.CONTEXT_RESTRICTED",
+      "files": [
+        "code/th_06_icon_parser.js"
+      ]
+    },
+    {
+      "key": "android|class|android.content.Intent",
+      "files": [
+        "ToolHub.js",
+        "code/th_08_content.js",
+        "code/th_10_shell.js",
+        "code/th_11_action.js",
+        "code/th_13_panel_ui.js",
+        "code/th_15_extra.js",
+        "code/th_16_entry.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|class|android.content.IntentFilter",
+      "files": [
+        "code/th_16_entry.js"
+      ]
+    },
+    {
+      "key": "android|class|android.content.pm.LauncherApps.ShortcutQuery",
+      "files": [
+        "code/th_06_icon_parser.js",
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|class|android.content.res.ColorStateList",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.Bitmap.Config.ARGB_8888",
+      "files": [
+        "code/th_03_icon.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.BitmapFactory.Options",
+      "files": [
+        "code/th_03_icon.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.Canvas",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.Color",
+      "files": [
+        "code/th_12_rebuild.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.Color.BLACK",
+      "files": [
+        "code/th_12_rebuild.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.Color.GRAY",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.Color.TRANSPARENT",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.Paint",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.Path",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.PorterDuffColorFilter",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.Rect",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.RectF",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.drawable.BitmapDrawable",
+      "files": [
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.drawable.ColorDrawable",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.drawable.GradientDrawable",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_09_animation.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.graphics.drawable.StateListDrawable",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.icu.text.BreakIterator.DONE",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.os.Build.VERSION.SDK_INT",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.os.Handler",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_10_shell.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_19_position_state.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.os.HandlerThread",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js"
+      ]
+    },
+    {
+      "key": "android|class|android.os.Looper",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.os.ServiceManager",
+      "files": [
+        "code/th_06_icon_parser.js"
+      ]
+    },
+    {
+      "key": "android|class|android.text.SpannableString",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.text.SpannableStringBuilder",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|class|android.text.TextWatcher",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.text.style.RelativeSizeSpan",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.text.style.StyleSpan",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.util.DisplayMetrics",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.util.Size",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|class|android.util.TypedValue",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.GestureDetector",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.Gravity",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.Gravity.CENTER",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.MotionEvent",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.ScaleGestureDetector",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.View",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.View.OnAttachStateChangeListener",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_15_main_panel.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.View.OnClickListener",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.View.OnKeyListener",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.View.OnScrollChangeListener",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.View.OnTouchListener",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.ViewGroup.LayoutParams",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_16_entry.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.ViewTreeObserver.OnGlobalLayoutListener",
+      "files": [
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.ViewTreeObserver.OnPreDrawListener",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.WindowManager.LayoutParams",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_17_pointer.js",
+        "code/th_19_position_state.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS",
+      "files": [
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS",
+      "files": [
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES",
+      "files": [
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.animation.AccelerateDecelerateInterpolator",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.animation.AccelerateInterpolator",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.animation.DecelerateInterpolator",
+      "files": [
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|class|android.view.animation.OvershootInterpolator",
+      "files": [
+        "code/th_09_animation.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.AdapterView.OnItemClickListener",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.BaseAdapter",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.CompoundButton.OnCheckedChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.EditText",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_schema_editor.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.FrameLayout",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.FrameLayout.LayoutParams",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.GridLayout",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.GridLayout.LayoutParams",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.GridLayout.LayoutParams.WRAP_CONTENT",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.HorizontalScrollView",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.ImageView",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.LinearLayout",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.LinearLayout.LayoutParams",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.ListView",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.Magnifier",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.PopupWindow",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.PopupWindow.OnDismissListener",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.RadioButton",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.RadioGroup",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.RadioGroup.LayoutParams",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.RadioGroup.OnCheckedChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.ScrollView",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.SeekBar",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.SeekBar.OnSeekBarChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.Switch",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|class|android.widget.TextView",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_09_animation.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|class|android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|class|android.window.ScreenCapture.CaptureArgs.Builder",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|class|android.window.ScreenCapture.DisplayCaptureArgs.Builder",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.animation.Animator#AnimatorListener",
+      "files": [
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|method|android.animation.ValueAnimator#AnimatorUpdateListener",
+      "files": [
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|method|android.animation.ValueAnimator#ofFloat",
+      "files": [
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|method|android.app#Dialog",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.app.ActivityThread#currentApplication",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.app.ActivityThread#currentProcessName",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "android|method|android.app.Dialog#dismiss",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.app.Dialog#getWindow",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.app.Dialog#requestWindowFeature",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.app.Dialog#setContentView",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.app.Dialog#show",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content#ComponentName",
+      "files": [
+        "code/th_10_shell.js",
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content#ContentValues",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content#Intent",
+      "files": [
+        "ToolHub.js",
+        "code/th_08_content.js",
+        "code/th_10_shell.js",
+        "code/th_11_action.js",
+        "code/th_13_panel_ui.js",
+        "code/th_15_extra.js",
+        "code/th_16_entry.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content#IntentFilter",
+      "files": [
+        "code/th_16_entry.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.ClipData#newPlainText",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.ClipData#newRawUri",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.ContentUris#withAppendedId",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.ContentValues#put",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#createPackageContext",
+      "files": [
+        "code/th_06_icon_parser.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#getApplicationContext",
+      "files": [
+        "code/th_16_entry.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#getClass",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#getContentResolver",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#getDisplay",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#getPackageManager",
+      "files": [
+        "code/th_06_icon_parser.js",
+        "code/th_11_action.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#getPackageName",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#getResources",
+      "files": [
+        "code/th_02_core.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_06_icon_parser.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_16_entry.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#getSystemService",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_06_icon_parser.js",
+        "code/th_08_content.js",
+        "code/th_09_animation.js",
+        "code/th_11_action.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#sendBroadcast",
+      "files": [
+        "ToolHub.js",
+        "code/th_10_shell.js",
+        "code/th_11_action.js",
+        "code/th_16_entry.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#startActivity",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_11_action.js",
+        "code/th_13_panel_ui.js",
+        "code/th_15_extra.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Context#startActivityAsUser",
+      "files": [
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#addCategory",
+      "files": [
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#addFlags",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_11_action.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#createChooser",
+      "files": [
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#getBooleanExtra",
+      "files": [
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#getExtras",
+      "files": [
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#getStringExtra",
+      "files": [
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#hasExtra",
+      "files": [
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#parseUri",
+      "files": [
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#putExtra",
+      "files": [
+        "code/th_10_shell.js",
+        "code/th_11_action.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#removeExtra",
+      "files": [
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#setClipData",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#setComponent",
+      "files": [
+        "code/th_10_shell.js",
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#setData",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#setDataAndType",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#setFlags",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#setPackage",
+      "files": [
+        "code/th_10_shell.js",
+        "code/th_11_action.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.Intent#setType",
+      "files": [
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.IntentFilter#addAction",
+      "files": [
+        "code/th_16_entry.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.pm.LauncherApps#ShortcutQuery",
+      "files": [
+        "code/th_06_icon_parser.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.pm.LauncherApps.ShortcutQuery#setPackage",
+      "files": [
+        "code/th_06_icon_parser.js",
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.pm.LauncherApps.ShortcutQuery#setQueryFlags",
+      "files": [
+        "code/th_06_icon_parser.js",
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.res#ColorStateList",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "android|method|android.content.res.Resources#getSystem",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "android|method|android.database.sqlite.SQLiteDatabase#openOrCreateDatabase",
+      "files": [
+        "code/th_02_core.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics#Canvas",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics#Paint",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics#Path",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics#PorterDuffColorFilter",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics#Rect",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics#RectF",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Bitmap#createBitmap",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Bitmap#createScaledBitmap",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Bitmap#wrapHardwareBuffer",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.BitmapFactory#Options",
+      "files": [
+        "code/th_03_icon.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.BitmapFactory#decodeByteArray",
+      "files": [
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.BitmapFactory#decodeFile",
+      "files": [
+        "code/th_03_icon.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.BitmapFactory#decodeStream",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.BitmapRegionDecoder#newInstance",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Color#argb",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Color#parseColor",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_06_icon_parser.js",
+        "code/th_09_animation.js",
+        "code/th_12_rebuild.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.ColorSpace#get",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#breakText",
+      "files": [
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#clearShadowLayer",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#getColor",
+      "files": [
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#getFontMetrics",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#measureText",
+      "files": [
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setARGB",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setAntiAlias",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setLinearText",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setShader",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setStrokeCap",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setStrokeJoin",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setStrokeWidth",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setStyle",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setSubpixelText",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setTextAlign",
+      "files": [
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setTextSize",
+      "files": [
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Paint#setTypeface",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Path#close",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Path#lineTo",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Path#moveTo",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Path#quadTo",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Rect#height",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.Rect#width",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.RectF#set",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.drawable#BitmapDrawable",
+      "files": [
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.drawable#ColorDrawable",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.drawable#GradientDrawable",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_09_animation.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_15_extra.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.drawable#StateListDrawable",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.drawable.GradientDrawable#setCornerRadius",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.drawable.GradientDrawable#setShape",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_09_animation.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.drawable.StateListDrawable#addState",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.drawable.StateListDrawable#setCornerRadius",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.graphics.drawable.StateListDrawable#setShape",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.icu.text.BreakIterator#getCharacterInstance",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.media.ImageReader#newInstance",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.media.MediaScannerConnection#scanFile",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.net.Uri#fromFile",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.net.Uri#parse",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os#Handler",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_10_shell.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_19_position_state.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os#HandlerThread",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Binder#clearCallingIdentity",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Binder#restoreCallingIdentity",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Environment#getExternalStorageDirectory",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Handler#charAt",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Handler#post",
+      "files": [
+        "code/th_02_core.js",
+        "code/th_13_panel_ui.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Handler#postDelayed",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Handler#removeCallbacks",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Handler#removeCallbacksAndMessages",
+      "files": [
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Handler#replace",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Handler#substring",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.HandlerThread#getLooper",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.HandlerThread#quit",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.HandlerThread#quitSafely",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.HandlerThread#start",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Looper#getMainLooper",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_10_shell.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_panels.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_19_position_state.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Looper#myLooper",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_16_entry.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Process#myPid",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Process#myTid",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Process#myUid",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_17_pointer.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.Process#myUserHandle",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_06_icon_parser.js",
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.ServiceManager#getService",
+      "files": [
+        "code/th_06_icon_parser.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.SystemClock#uptimeMillis",
+      "files": [
+        "code/th_09_animation.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.UserHandle#myUserId",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.UserHandle#of",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_06_icon_parser.js",
+        "code/th_11_action.js",
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.os.VibrationEffect#createOneShot",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "android|method|android.provider.MediaStore.Files#getContentUri",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.provider.Settings#canDrawOverlays",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.provider.Settings.Global#getString",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.provider.Settings.Global#putString",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.provider.Settings.Secure#getString",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.provider.Settings.Secure#putString",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.provider.Settings.System#getString",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.provider.Settings.System#putString",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text#SpannableString",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text#SpannableStringBuilder",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text#TextWatcher",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text.SpannableString#setSpan",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text.SpannableStringBuilder#append",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text.SpannableStringBuilder#length",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text.SpannableStringBuilder#setSpan",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text.method.LinkMovementMethod#getInstance",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text.method.PasswordTransformationMethod#getInstance",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text.style#RelativeSizeSpan",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.text.style#StyleSpan",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.util#DisplayMetrics",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.util#Size",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.util.Base64#decode",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.util.Base64#encode",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "android|method|android.util.Base64#encodeToString",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.util.Log#e",
+      "files": [
+        "ToolHub.js"
+      ]
+    },
+    {
+      "key": "android|method|android.util.TypedValue#applyDimension",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view#GestureDetector",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view#ScaleGestureDetector",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view#View",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.GestureDetector#onTouchEvent",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.ScaleGestureDetector#onTouchEvent",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.SurfaceControl#getInternalDisplayToken",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.SurfaceControl#screenshotToBuffer",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#OnAttachStateChangeListener",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_15_main_panel.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#OnClickListener",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#OnKeyListener",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#OnLongClickListener",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#OnScrollChangeListener",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#OnTouchListener",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#generateViewId",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#requestFocus",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#setBackground",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#setClickable",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#setElevation",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#setFocusable",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#setLayoutParams",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View#setVisibility",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View.MeasureSpec#getSize",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.View.MeasureSpec#makeMeasureSpec",
+      "files": [
+        "code/th_05_persistence.js",
+        "code/th_08_content.js",
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.ViewGroup#LayoutParams",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_16_entry.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.ViewTreeObserver#OnGlobalLayoutListener",
+      "files": [
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.ViewTreeObserver#OnPreDrawListener",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.WindowInsets.Type#displayCutout",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.WindowInsets.Type#navigationBars",
+      "files": [
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.WindowInsets.Type#statusBars",
+      "files": [
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.WindowInsets.Type#systemBars",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.WindowManager#LayoutParams",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_17_pointer.js",
+        "code/th_19_position_state.js",
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.WindowManager.LayoutParams#setTitle",
+      "files": [
+        "code/th_21_result_preview.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.WindowManagerGlobal#getWindowManagerService",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.animation#AccelerateDecelerateInterpolator",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.animation#AccelerateInterpolator",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.animation#DecelerateInterpolator",
+      "files": [
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "android|method|android.view.animation#OvershootInterpolator",
+      "files": [
+        "code/th_09_animation.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#BaseAdapter",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#EditText",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_schema_editor.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#FrameLayout",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#GridLayout",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#HorizontalScrollView",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#ImageView",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#LinearLayout",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#ListView",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#PopupWindow",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#RadioButton",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#RadioGroup",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#ScrollView",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#SeekBar",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#Switch",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget#TextView",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_09_animation.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.AdapterView#OnItemClickListener",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.BaseAdapter#notifyDataSetChanged",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.CompoundButton#OnCheckedChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#addTextChangedListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#getText",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_schema_editor.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#requestFocus",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setBackground",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_schema_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setFocusable",
+      "files": [
+        "code/th_14_icon_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setFocusableInTouchMode",
+      "files": [
+        "code/th_14_icon_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setGravity",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setHint",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_schema_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setInputType",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_schema_editor.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setLayoutParams",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setMaxLines",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setMinLines",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setOnClickListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_icon_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setPadding",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_schema_editor.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setSelection",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setSingleLine",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_schema_editor.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setText",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_schema_editor.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setTextSize",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_schema_editor.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.EditText#setTransformationMethod",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#LayoutParams",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#addOnAttachStateChangeListener",
+      "files": [
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#addView",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#animate",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#bringToFront",
+      "files": [
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#clearAnimation",
+      "files": [
+        "code/th_09_animation.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#exists",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#getCanonicalPath",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#getChildAt",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#getChildCount",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#getTranslationX",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#isDirectory",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#listFiles",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#mkdirs",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#post",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#removeAllViews",
+      "files": [
+        "code/th_15_extra.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#removeView",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#requestFocus",
+      "files": [
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setAlpha",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setBackground",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setClickable",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setClipChildren",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setClipToOutline",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setClipToPadding",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setContentDescription",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setElevation",
+      "files": [
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setFocusable",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setFocusableInTouchMode",
+      "files": [
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setForeground",
+      "files": [
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setLayoutParams",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setOnClickListener",
+      "files": [
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setOnTouchListener",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setPadding",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setScaleX",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setScaleY",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setTranslationX",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setTranslationZ",
+      "files": [
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setVisibility",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout.LayoutParams#setMargins",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout.prototype.onDetachedFromWindow#call",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout.prototype.onWindowFocusChanged#call",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout.prototype.onWindowVisibilityChanged#call",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#LayoutParams",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#addView",
+      "files": [
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#getChildAt",
+      "files": [
+        "code/th_14_color_picker.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#getChildCount",
+      "files": [
+        "code/th_14_color_picker.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#invalidate",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#removeAllViews",
+      "files": [
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#requestLayout",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#setAlignmentMode",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#setColumnCount",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#setOrientation",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#setPadding",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#setRowCount",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#setUseDefaultMargins",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout#spec",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.GridLayout.LayoutParams#setMargins",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.HorizontalScrollView#addView",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.HorizontalScrollView#setHorizontalScrollBarEnabled",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.HorizontalScrollView#setOverScrollMode",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ImageView#clearColorFilter",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ImageView#setImageBitmap",
+      "files": [
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ImageView#setImageDrawable",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ImageView#setImageResource",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ImageView#setLayoutParams",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ImageView#setScaleType",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#LayoutParams",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#addOnAttachStateChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#addView",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#animate",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#bringToFront",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#clearAnimation",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#findOnBackInvokedDispatcher",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#getChildAt",
+      "files": [
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#getChildCount",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#getHeight",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#getLayoutParams",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#getParent",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#getTag",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#getTranslationX",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#getWidth",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#invalidate",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#post",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#removeAllViews",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_14_panels.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#removeView",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#requestFocus",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setAlpha",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setBackground",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setClickable",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setClipToOutline",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setContentDescription",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setElevation",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setFocusable",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setFocusableInTouchMode",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setGravity",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setLayoutParams",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setMinimumHeight",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setOnClickListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setOnKeyListener",
+      "files": [
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setOnLongClickListener",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setOnTouchListener",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setOrientation",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setPadding",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setPivotX",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setPivotY",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setScaleX",
+      "files": [
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setScaleY",
+      "files": [
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setTag",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setTranslationX",
+      "files": [
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setTranslationY",
+      "files": [
+        "code/th_15_extra.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout#setVisibility",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout.LayoutParams#setMargins",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#getWindowToken",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#invalidateViews",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#isAttachedToWindow",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#post",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#postDelayed",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#removeCallbacks",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#requestLayout",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#setAdapter",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#setCacheColorHint",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#setDivider",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#setOnItemClickListener",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#setOnTouchListener",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#setOverScrollMode",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ListView#setVerticalScrollBarEnabled",
+      "files": [
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Magnifier#Builder",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Magnifier#destroy",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Magnifier#dismiss",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Magnifier#show",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#OnDismissListener",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#dismiss",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#isShowing",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#setBackgroundDrawable",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#setClippingEnabled",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#setContentView",
+      "files": [
+        "code/th_14_button_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#setElevation",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#setFocusable",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#setHeight",
+      "files": [
+        "code/th_14_button_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#setOnDismissListener",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#setOutsideTouchable",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#setWidth",
+      "files": [
+        "code/th_14_button_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.PopupWindow#showAsDropDown",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#isChecked",
+      "files": [
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setBackground",
+      "files": [
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setButtonDrawable",
+      "files": [
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setChecked",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setId",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setIncludeFontPadding",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setMinHeight",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setMinimumHeight",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setOnCheckedChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setPadding",
+      "files": [
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setTag",
+      "files": [
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setText",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioButton#setTextSize",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioGroup#LayoutParams",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioGroup#OnCheckedChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioGroup#addView",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioGroup#setGravity",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioGroup#setLayoutParams",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioGroup#setOnCheckedChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioGroup#setOrientation",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.RadioGroup#setPadding",
+      "files": [
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#addView",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#fullScroll",
+      "files": [
+        "code/th_14_schema_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#getHeight",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#getLayoutParams",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#getLocationOnScreen",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#getScrollY",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#getViewTreeObserver",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#invalidate",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#post",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#requestDisallowInterceptTouchEvent",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#scrollBy",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#scrollTo",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#setBackground",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#setClipToPadding",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#setFillViewport",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#setLayoutParams",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#setOnScrollChangeListener",
+      "files": [
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#setOnTouchListener",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#setOverScrollMode",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#setSmoothScrollingEnabled",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.ScrollView#setVerticalScrollBarEnabled",
+      "files": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#OnSeekBarChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#append",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#getProgress",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#getProgressDrawable",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#getThumb",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#length",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#setLayoutParams",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#setMax",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#setOnSeekBarChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#setProgress",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.SeekBar#toString",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Switch#getThumbTintList",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Switch#getTrackTintList",
+      "files": [
+        "code/th_13_panel_ui.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Switch#isChecked",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Switch#setChecked",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Switch#setOnCheckedChangeListener",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Switch#setTextOff",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Switch#setTextOn",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#addView",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#animate",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#append",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#clearAnimation",
+      "files": [
+        "code/th_09_animation.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#getHeight",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#getParent",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#getTag",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#getText",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#getWidth",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#indexOf",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#performHapticFeedback",
+      "files": [
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#post",
+      "files": [
+        "code/th_09_animation.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setAlpha",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_20_pickword.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setBackground",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_09_animation.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setBreakStrategy",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setClickable",
+      "files": [
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setContentDescription",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setElevation",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_09_animation.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_color_picker.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setEllipsize",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setEnabled",
+      "files": [
+        "code/th_20_pickword.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setFocusable",
+      "files": [
+        "code/th_14_color_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setGravity",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_09_animation.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setHorizontallyScrolling",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setHyphenationFrequency",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setIncludeFontPadding",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setLayoutParams",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_14_icon_picker.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setLineSpacing",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setLines",
+      "files": [
+        "code/th_14_button_icon_editor.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setLinksClickable",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setMaxLines",
+      "files": [
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setMaxWidth",
+      "files": [
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setMinHeight",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setMinWidth",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setMinimumHeight",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setMinimumWidth",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setMovementMethod",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setOnClickListener",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setOnLongClickListener",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setOnTouchListener",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setOrientation",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setPadding",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setScaleX",
+      "files": [
+        "code/th_09_animation.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setScaleY",
+      "files": [
+        "code/th_09_animation.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setSingleLine",
+      "files": [
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setTag",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setText",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_09_animation.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setTextIsSelectable",
+      "files": [
+        "code/th_08_content.js",
+        "code/th_15_extra.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setTextSize",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_09_animation.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setTypeface",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_09_animation.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_editor.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#setVisibility",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_09_animation.js",
+        "code/th_14_color_picker.js",
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.TextView#substring",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.Toast#makeText",
+      "files": [
+        "ToolHub.js",
+        "code/th_10_shell.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture#captureDisplay",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture#createSyncCaptureListener",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture.CaptureArgs#Builder",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture.DisplayCaptureArgs#Builder",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture.DisplayCaptureArgs.Builder#build",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture.DisplayCaptureArgs.Builder#setAllowProtected",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture.DisplayCaptureArgs.Builder#setCaptureSecureLayers",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture.DisplayCaptureArgs.Builder#setPixelFormat",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture.DisplayCaptureArgs.Builder#setSize",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.window.ScreenCapture.DisplayCaptureArgs.Builder#setSourceCrop",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.BufferedReader",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.ByteArrayOutputStream",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.File",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_06_icon_parser.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.FileInputStream",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.FileOutputStream",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_17_pointer.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.FileReader",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.FileWriter",
+      "files": [
+        "ToolHub.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.InputStreamReader",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.OutputStreamWriter",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.PrintWriter",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.RandomAccessFile",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|class|java.io.StringWriter",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|class|java.lang.Integer",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.lang.Integer.TYPE",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "java|class|java.lang.Runnable",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_09_animation.js",
+        "code/th_10_shell.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_19_position_state.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|class|java.lang.String",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_08_content.js",
+        "code/th_11_action.js",
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.lang.StringBuilder",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|class|java.lang.Thread",
+      "files": [
+        "ToolHub.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.lang.reflect.Array",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|class|java.net.URL",
+      "files": [
+        "ToolHub.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|class|java.security.spec.X509EncodedKeySpec",
+      "files": [
+        "ToolHub.js"
+      ]
+    },
+    {
+      "key": "java|class|java.text.SimpleDateFormat",
+      "files": [
+        "ToolHub.js",
+        "code/th_04_theme.js",
+        "code/th_11_action.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|class|java.util.Date",
+      "files": [
+        "ToolHub.js",
+        "code/th_04_theme.js",
+        "code/th_11_action.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|class|java.util.Timer",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_02_core.js"
+      ]
+    },
+    {
+      "key": "java|class|java.util.concurrent.CountDownLatch",
+      "files": [
+        "ToolHub.js",
+        "code/th_16_entry.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.util.concurrent.locks.ReentrantLock",
+      "files": [
+        "code/th_02_core.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|class|java.util.zip.ZipFile",
+      "files": [
+        "code/th_06_icon_parser.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#BufferedReader",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#ByteArrayOutputStream",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#File",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_06_icon_parser.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#FileInputStream",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#FileOutputStream",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_17_pointer.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#FileReader",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#FileWriter",
+      "files": [
+        "ToolHub.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#InputStreamReader",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#OutputStreamWriter",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#PrintWriter",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#RandomAccessFile",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io#StringWriter",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.BufferedReader#close",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.BufferedReader#readLine",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.ByteArrayOutputStream#close",
+      "files": [
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.ByteArrayOutputStream#size",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.ByteArrayOutputStream#toByteArray",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.ByteArrayOutputStream#write",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#canWrite",
+      "files": [
+        "ToolHub.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#delete",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_17_pointer.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#exists",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_06_icon_parser.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#getAbsolutePath",
+      "files": [
+        "ToolHub.js",
+        "code/th_17_pointer.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#getCanonicalFile",
+      "files": [
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#getCanonicalPath",
+      "files": [
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#getName",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#getParentFile",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_08_content.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#isDirectory",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#isFile",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_06_icon_parser.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#lastModified",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#length",
+      "files": [
+        "ToolHub.js",
+        "code/th_03_icon.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#listFiles",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_03_icon.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#mkdirs",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.File#renameTo",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileInputStream#close",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileInputStream#read",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileOutputStream#close",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileOutputStream#flush",
+      "files": [
+        "ToolHub.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_17_pointer.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileOutputStream#getFD",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileOutputStream#push",
+      "files": [
+        "ToolHub.js",
+        "code/th_14_button_shortcut.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileOutputStream#write",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileWriter#close",
+      "files": [
+        "ToolHub.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileWriter#flush",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.FileWriter#write",
+      "files": [
+        "ToolHub.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.InputStreamReader#close",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.OutputStreamWriter#close",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.OutputStreamWriter#flush",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.OutputStreamWriter#write",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.PrintWriter#flush",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.RandomAccessFile#close",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.RandomAccessFile#length",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.RandomAccessFile#readFully",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.RandomAccessFile#seek",
+      "files": [
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.io.StringWriter#toString",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang#Integer",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang#Runnable",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_09_animation.js",
+        "code/th_10_shell.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_19_position_state.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang#String",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_08_content.js",
+        "code/th_11_action.js",
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang#StringBuilder",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang#Thread",
+      "files": [
+        "ToolHub.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Boolean#valueOf",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Class#forName",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_09_animation.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Integer#toHexString",
+      "files": [
+        "ToolHub.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Integer#valueOf",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Runnable#run",
+      "files": [
+        "ToolHub.js",
+        "code/th_15_main_panel.js",
+        "code/th_19_position_state.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Runtime#getRuntime",
+      "files": [
+        "ToolHub.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.String#indexOf",
+      "files": [
+        "ToolHub.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.StringBuilder#append",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.StringBuilder#length",
+      "files": [
+        "ToolHub.js",
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.StringBuilder#push",
+      "files": [
+        "code/th_03_icon.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.StringBuilder#toString",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.System#currentTimeMillis",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_panels.js",
+        "code/th_14_schema_editor.js",
+        "code/th_15_main_panel.js",
+        "code/th_19_position_state.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.System#identityHashCode",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.System#nanoTime",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Thread#currentThread",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_08_content.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_16_entry.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Thread#getDefaultUncaughtExceptionHandler",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Thread#interrupt",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Thread#setDefaultUncaughtExceptionHandler",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_08_content.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Thread#sleep",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.Thread#start",
+      "files": [
+        "code/th_13_panel_ui.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.reflect.Array#getLength",
+      "files": [
+        "code/th_03_icon.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.reflect.Array#newInstance",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_08_content.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.lang.reflect.Array#set",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.net#URL",
+      "files": [
+        "ToolHub.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.net.URL#openConnection",
+      "files": [
+        "ToolHub.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.net.URLEncoder#encode",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.security.KeyFactory#getInstance",
+      "files": [
+        "ToolHub.js"
+      ]
+    },
+    {
+      "key": "java|method|java.security.MessageDigest#getInstance",
+      "files": [
+        "ToolHub.js",
+        "code/th_03_icon.js",
+        "code/th_11_action.js",
+        "code/th_14_panels.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.security.Signature#getInstance",
+      "files": [
+        "ToolHub.js"
+      ]
+    },
+    {
+      "key": "java|method|java.security.spec#X509EncodedKeySpec",
+      "files": [
+        "ToolHub.js"
+      ]
+    },
+    {
+      "key": "java|method|java.text#SimpleDateFormat",
+      "files": [
+        "ToolHub.js",
+        "code/th_04_theme.js",
+        "code/th_11_action.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|method|java.text.SimpleDateFormat#format",
+      "files": [
+        "ToolHub.js",
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util#Date",
+      "files": [
+        "ToolHub.js",
+        "code/th_04_theme.js",
+        "code/th_11_action.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util#Timer",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_02_core.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.Locale#getDefault",
+      "files": [
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.Timer#cancel",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_02_core.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.Timer#purge",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_02_core.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.Timer#schedule",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_02_core.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.UUID#randomUUID",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.concurrent#CountDownLatch",
+      "files": [
+        "ToolHub.js",
+        "code/th_16_entry.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.concurrent.CountDownLatch#await",
+      "files": [
+        "code/th_16_entry.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.concurrent.CountDownLatch#countDown",
+      "files": [
+        "ToolHub.js",
+        "code/th_16_entry.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.concurrent.Executors#newFixedThreadPool",
+      "files": [
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.concurrent.Executors#newSingleThreadExecutor",
+      "files": [
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.concurrent.locks#ReentrantLock",
+      "files": [
+        "code/th_02_core.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.zip#ZipFile",
+      "files": [
+        "code/th_06_icon_parser.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.zip.ZipFile#close",
+      "files": [
+        "code/th_06_icon_parser.js"
+      ]
+    },
+    {
+      "key": "java|method|java.util.zip.ZipFile#entries",
+      "files": [
+        "code/th_06_icon_parser.js"
+      ]
+    },
+    {
+      "key": "reflection|class|android.content.Intent",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "reflection|class|android.content.res.ColorStateList",
+      "files": [
+        "code/th_04_theme.js"
+      ]
+    },
+    {
+      "key": "reflection|class|android.media.projection.IMediaProjectionManager$Stub",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "reflection|class|android.media.projection.MediaProjection",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "reflection|class|android.os.SystemProperties",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "reflection|class|android.os.UserHandle",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "reflection|class|android.window.OnBackAnimationCallback",
+      "files": [
+        "code/th_09_animation.js"
+      ]
+    },
+    {
+      "key": "reflection|class|android.window.OnBackInvokedCallback",
+      "files": [
+        "code/th_09_animation.js",
+        "code/th_14_panels.js"
+      ]
+    },
+    {
+      "key": "reflection|class|java.lang.Object",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    },
+    {
+      "key": "reflection|class|java.lang.String",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "reflection|dynamic|Class.forName",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_09_animation.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "reflection|dynamic|getMethod",
+      "files": [
+        "code/th_01_base.js",
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "reflection|method|*#get",
+      "files": [
+        "code/th_20_pickword.js"
+      ]
+    },
+    {
+      "key": "reflection|method|*#of",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "reflection|method|*#parseUri",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "reflection|method|*#startActivityAsUser",
+      "files": [
+        "code/th_01_base.js"
+      ]
+    },
+    {
+      "key": "shortx|method|shortx#executeAction",
+      "files": [
+        "code/th_18_pointer_ocr.js"
+      ]
+    },
+    {
+      "key": "shortx|method|shortx#getShortXDir",
+      "files": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_04_theme.js",
+        "code/th_13_panel_ui.js",
+        "code/th_17_pointer.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "shortx|method|shortx#getUiAutomation",
+      "files": [
+        "code/th_17_pointer.js"
+      ]
+    }
+  ]
+}
