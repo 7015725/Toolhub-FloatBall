@@ -31,6 +31,9 @@ RELEASE_BOUNDARY_WORKFLOWS = {
     "rollback-toolhub",
     "publish-release",
 }
+CONDITIONAL_ALTERNATIVES = {
+    ("sign-toolhub", "scripts/verify_changed_module_versions.py"),
+}
 
 
 def rel(path):
@@ -113,6 +116,7 @@ def render(calls):
 
     cross = []
     repeated = []
+    alternatives = []
     for script, items in sorted(by_script.items()):
         workflows = sorted({item["workflow"] for item in items})
         counts = Counter(item["workflow"] for item in items)
@@ -124,22 +128,29 @@ def render(calls):
                 "classification": classify_cross_workflow(script, workflows),
             })
         for workflow, count in sorted(counts.items()):
-            if count > 1:
-                repeated.append({
-                    "script": script,
-                    "workflow": workflow,
-                    "calls": count,
-                    "classification": (
-                        "保留边界校验"
-                        if script in SECURITY_BOUNDARY
-                        else "候选：同工作流重复"
-                    ),
-                })
+            if count <= 1:
+                continue
+            item = {
+                "script": script,
+                "workflow": workflow,
+                "calls": count,
+            }
+            if (workflow, script) in CONDITIONAL_ALTERNATIVES:
+                item["classification"] = "条件分支替代；单次运行只执行一条"
+                alternatives.append(item)
+            else:
+                item["classification"] = (
+                    "保留边界校验"
+                    if script in SECURITY_BOUNDARY
+                    else "候选：同工作流重复"
+                )
+                repeated.append(item)
 
     unique_scripts = len(by_script)
     total_calls = len(calls)
     cross_scripts = len(cross)
     repeated_pairs = len(repeated)
+    alternative_pairs = len(alternatives)
     security_calls = sum(1 for call in calls if call["security_boundary"])
 
     lines = [
@@ -158,6 +169,7 @@ def render(calls):
         "- 唯一 Python 脚本：`%d`" % unique_scripts,
         "- 跨工作流重复脚本：`%d`" % cross_scripts,
         "- 单工作流内重复组合：`%d`" % repeated_pairs,
+        "- 条件分支替代组合：`%d`" % alternative_pairs,
         "- 安全边界调用：`%d`" % security_calls,
         "",
         "## 跨工作流重复",
@@ -194,6 +206,24 @@ def render(calls):
             ))
     else:
         lines.append("|—|—|—|当前无重复|")
+
+    lines.extend([
+        "",
+        "## 条件分支替代",
+        "",
+        "|脚本|工作流|静态调用位置|结论|",
+        "|---|---|---:|---|",
+    ])
+    if alternatives:
+        for item in alternatives:
+            lines.append("|`%s`|`%s`|%d|%s|" % (
+                item["script"],
+                item["workflow"],
+                item["calls"],
+                item["classification"],
+            ))
+    else:
+        lines.append("|—|—|—|当前无条件替代|")
 
     lines.extend([
         "",
@@ -258,6 +288,7 @@ def render(calls):
         "scripts": unique_scripts,
         "cross": cross_scripts,
         "repeated": repeated_pairs,
+        "alternatives": alternative_pairs,
         "security_calls": security_calls,
     }
 
@@ -276,13 +307,15 @@ def main():
     output.write_text(report, encoding="utf-8")
     print(
         "OK workflows=%d python_calls=%d unique_scripts=%d "
-        "cross_workflow=%d repeated_within_workflow=%d security_calls=%d output=%s"
+        "cross_workflow=%d repeated_within_workflow=%d conditional_alternatives=%d "
+        "security_calls=%d output=%s"
         % (
             summary["workflow_files"],
             summary["calls"],
             summary["scripts"],
             summary["cross"],
             summary["repeated"],
+            summary["alternatives"],
             summary["security_calls"],
             rel(output),
         )
