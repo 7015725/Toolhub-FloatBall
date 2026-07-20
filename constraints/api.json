@@ -1,9 +1,11 @@
 {
-  "schema": 1,
+  "schema": 2,
   "domain": "api",
   "policy": "classified_usage",
-  "migrationState": "phase1_plugin_registry",
-  "unclassifiedPolicy": "error_after_usage_baseline_enabled",
+  "migrationState": "phase2_usage_baseline_enforced",
+  "unclassifiedPolicy": "error",
+  "usageBaseline": "constraints/API_USAGE_BASELINE.json",
+  "legacyUsage": "constraints/API_USAGE_LEGACY.json",
   "classifications": [
     "safe",
     "guarded",
@@ -12,6 +14,27 @@
     "forbidden"
   ],
   "rules": [
+    {
+      "id": "api-usage-scanner-regression",
+      "classification": "plugin_validated",
+      "validator": "api-usage-scanner-regression",
+      "scope": ["scripts/report_api_usage.py", "scripts/verify_api_usage_scanner.py"],
+      "reason": "确保 API 扫描器忽略注释和字符串，并能识别新增调用、反射与使用范围扩张"
+    },
+    {
+      "id": "api-usage-policy",
+      "classification": "plugin_validated",
+      "validator": "api-usage-policy",
+      "scope": ["constraints/api.json", "constraints/API_USAGE_BASELINE.json", "constraints/API_USAGE_LEGACY.json"],
+      "reason": "校验基线摘要、初始遗留范围以及新增 API 显式分类规则"
+    },
+    {
+      "id": "api-usage-baseline-enforcement",
+      "classification": "plugin_validated",
+      "validator": "api-usage-baseline",
+      "scope": ["ToolHub.js", "code/*.js"],
+      "reason": "阻断未写入基线、未分类或未经审核扩大使用范围的高置信度外部 API"
+    },
     {
       "id": "api-rhino-color-safety",
       "classification": "plugin_validated",
@@ -34,7 +57,8 @@
       "reason": "锁定 Android 14 拾字长按相关调用契约"
     }
   ],
-  "newApiReviewRequirements": [
+  "explicitRuleRequirements": [
+    "usageKeysOrPrefixes",
     "source",
     "classOrObject",
     "method",
@@ -45,5 +69,12 @@
     "versionGuardWhenRequired",
     "threadContractWhenRequired",
     "fallbackWhenRequired"
+  ],
+  "newApiWorkflow": [
+    "运行 report_api_usage.py --diff 定位新增键和文件",
+    "在本文件增加精确 usageKeys 或 usageKeyPrefixes 规则",
+    "填写分类、范围、原因和 owner",
+    "更新 API_USAGE_BASELINE.json，但不得更新 API_USAGE_LEGACY.json",
+    "运行统一代码约束与专项回归"
   ]
 }
