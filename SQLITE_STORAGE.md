@@ -160,6 +160,18 @@ items
 
 Schema 根节点是数组，内部对象、选项数组和嵌套分组全部按父子节点恢复。
 
+### `toolhub_button_icons`
+
+按钮本地图片和快捷方式图标按内容 SHA-256 去重后保存为 SQLite BLOB。按钮主表通过 `icon_key` 引用图标记录；ShortX 内置图标和 App 图标不重复写入 BLOB。详细边界见 `BUTTON_ICON_STORAGE.md`。
+
+### `toolhub_pickword_images`
+
+保存 ToolHub 内部拾字截图的路径、来源、尺寸、文件大小、创建时间、访问时间、公共保存副本和逻辑删除状态。内部截图文件仍位于 `ToolHub/screenshots/`，数据库记录不保存图片二进制。
+
+### `toolhub_pickword_image_exports`
+
+记录保存副本和分享临时副本的精确路径、content URI、创建时间、过期时间和删除状态。自动清理只处理 ToolHub 管理的内部截图和分享临时副本，不删除用户选择的其他文件。
+
 ### `toolhub_meta`
 
 保存数据库格式和迁移状态：

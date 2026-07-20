@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """校验核心文档与当前模块、安全和存储架构保持一致。"""
+import ast
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -7,6 +9,8 @@ README = (ROOT / "README.md").read_text(encoding="utf-8")
 ARCH = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
 STRUCTURE = (ROOT / "STRUCTURE.md").read_text(encoding="utf-8")
 SQLITE = (ROOT / "SQLITE_STORAGE.md").read_text(encoding="utf-8")
+ENTRY = (ROOT / "ToolHub.js").read_text(encoding="utf-8")
+SIGN_SCRIPT = ROOT / "scripts" / "generate_signed_manifest.py"
 
 
 def fail(message):
@@ -23,17 +27,41 @@ def forbid(text, fragment, label):
         fail("stale %s: %s" % (label, fragment))
 
 
-for name, text in (("README", README), ("ARCHITECTURE", ARCH), ("STRUCTURE", STRUCTURE)):
-    require(text, "th_19_position_state.js", name + " th_19 module")
-    require(text, "th_20_pickword.js", name + " th_20 module")
-    require(text, "th_21_result_preview.js", name + " th_21 module")
-    require(text, "th_15_main_panel.js", name + " th_15 main panel module")
+def entry_modules():
+    match = re.search(r"var\s+modules\s*=\s*\[(.*?)\]\s*;", ENTRY, re.S)
+    if not match:
+        fail("ToolHub.js modules list missing")
+    return re.findall(r'["\']([^"\']+\.js)["\']', match.group(1))
 
-require(ARCH, "27 个子模块", "architecture module count")
-require(STRUCTURE, "27 个子模块", "structure module count")
-for old_count in ("23 个子模块", "24 个子模块", "25 个子模块", "26 个子模块"):
-    forbid(ARCH, old_count, "architecture old module count")
-    forbid(STRUCTURE, old_count, "structure old module count")
+
+def signing_modules():
+    tree = ast.parse(SIGN_SCRIPT.read_text(encoding="utf-8"), filename=str(SIGN_SCRIPT))
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if any(isinstance(target, ast.Name) and target.id == "MODULES" for target in node.targets):
+            return [str(item) for item in ast.literal_eval(node.value)]
+    fail("generate_signed_manifest.py MODULES missing")
+
+
+modules = entry_modules()
+if modules != signing_modules():
+    fail("ToolHub.js and signing MODULES differ")
+module_count = len(modules)
+if module_count <= 0:
+    fail("module count is empty")
+
+for name, text in (("README", README), ("ARCHITECTURE", ARCH), ("STRUCTURE", STRUCTURE)):
+    for module in modules:
+        require(text, module, name + " module " + module)
+
+expected_count = "%d 个子模块" % module_count
+require(ARCH, expected_count, "architecture module count")
+require(STRUCTURE, expected_count, "structure module count")
+for label, text in (("architecture", ARCH), ("structure", STRUCTURE)):
+    for match in re.finditer(r"(\d+) 个子模块", text):
+        if int(match.group(1)) != module_count:
+            fail("stale %s module count: %s" % (label, match.group(0)))
 
 require(README, "默认启动 `intentUri`", "README shortcut behavior")
 require(ARCH, "intentUri", "architecture shortcut behavior")
@@ -66,16 +94,21 @@ require(STRUCTURE, "position_state", "structure final load stage")
 
 forbid(ARCH, "manifest.version = 20260703110021", "architecture frozen manifest version")
 forbid(STRUCTURE, "version: 20260703110021", "structure frozen manifest version")
-for old_files in ("files: 22 个模块", "files: 24 个模块", "files: 25 个模块", "files: 26 个模块"):
-    forbid(STRUCTURE, old_files, "structure old manifest module count")
-require(STRUCTURE, "files: 27 个模块", "structure manifest module count")
+manifest_count = "files: %d 个模块" % module_count
+require(STRUCTURE, manifest_count, "structure manifest module count")
+for match in re.finditer(r"files:\s*(\d+) 个模块", STRUCTURE):
+    if int(match.group(1)) != module_count:
+        fail("stale structure manifest module count: %s" % match.group(0))
 
 require(SQLITE, "intentUri", "SQLite shortcut intent field")
 require(SQLITE, "shortcutExecMode", "SQLite shortcut mode field")
+require(SQLITE, "toolhub_button_icons", "SQLite button icon table")
+require(SQLITE, "toolhub_pickword_images", "SQLite pickword image table")
+require(SQLITE, "toolhub_pickword_image_exports", "SQLite image export table")
 forbid(SQLITE, "shortcutCode\n", "SQLite obsolete shortcut field")
 
 require(README, "无效配置会强制回退到 `2`", "README secure fallback")
 require(ARCH, "无效值会强制回退到完整验签模式 `2`", "architecture secure fallback")
 require(STRUCTURE, "无效值强制回退到 `2`", "structure secure fallback")
 
-print("Documentation consistency verification passed")
+print("Documentation consistency verification passed modules=%d" % module_count)

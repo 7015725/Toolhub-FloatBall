@@ -2,8 +2,7 @@
 
 更新时间：2026-07-14
 
-本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **27 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
-th_22_image_viewer.js：拾字截图缩略图、同窗原图查看、缩放平移与大图区域解码。
+本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **29 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
 - 主面板尺寸遵循“网格决定面板宽高”：`gridWidth = cols × cellOuterWidth`，`panelWidth = gridWidth + 2 × panelPadding`；完整网格高度、可视高度和页脚共同反推面板高度，WindowManager 使用相同的 `EXACTLY` 宽高。
 
 ---
@@ -26,7 +25,7 @@ ShortX JS 任务入口
 - `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
 - `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
 - `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
-- `code/th_*.js`：入口按顺序加载的子模块，当前为 26 个。
+- `code/th_*.js`：入口按顺序加载的子模块，当前为 29 个。
 
 ---
 
@@ -95,7 +94,7 @@ ballRoot / ballContent Touch
 
 ## 3. 模块分层
 
-当前实际加载 27 个子模块，入口 `modules[]` 顺序如下：
+当前实际加载 29 个子模块，入口 `modules[]` 顺序如下：
 
 ```text
 基础能力层
@@ -136,6 +135,8 @@ UI 基础与页面层
 结果与拾字 UI 层
   th_20_pickword.js
   th_21_result_preview.js
+  th_22_image_viewer.js
+  th_23_screenshot_manager.js
 ```
 
 模块职责：
@@ -225,6 +226,12 @@ th_20_pickword.js
 
 th_21_result_preview.js
   状态栏下方的两行全自绘结果预览、自动消失、连续结果替换和拾字入口。
+
+th_22_image_viewer.js
+  拾字截图缩略图、同窗原图查看、缩放平移、大图区域解码，以及截图保存、分享、删除和图片记录维护。
+
+th_23_screenshot_manager.js
+  截图管理器页面，按内部截图和已保存副本分类展示，并提供查看、分享和边界受控删除。
 ```
 
 说明：

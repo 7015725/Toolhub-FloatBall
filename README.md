@@ -13,9 +13,11 @@ GitHub: https://github.com/7015725/Toolhub-FloatBall
 相关文档：
 
 ```text
-STRUCTURE.md
 ARCHITECTURE.md
+STRUCTURE.md
 SQLITE_STORAGE.md
+BUTTON_ICON_STORAGE.md
+docs/button-types.md
 docs/security-config-clean.md
 ```
 
@@ -121,7 +123,9 @@ shortx.getShortXDir()/
     │   ├── th_18_pointer_ocr.js
     │   ├── th_19_position_state.js
     │   ├── th_20_pickword.js
-    │   └── th_21_result_preview.js
+    │   ├── th_21_result_preview.js
+    │   ├── th_22_image_viewer.js
+    │   └── th_23_screenshot_manager.js
     ├── logs/
     │   ├── init.log
     │   └── ShortX_ToolHub_yyyyMMdd.log
@@ -167,7 +171,10 @@ toolhub.db
 ├── toolhub_settings
 ├── toolhub_buttons
 ├── toolhub_button_values
-└── toolhub_schema_values
+├── toolhub_button_icons
+├── toolhub_schema_values
+├── toolhub_pickword_images
+└── toolhub_pickword_image_exports
 ```
 
 ### 设置
@@ -481,6 +488,8 @@ WindowManager 使用同一精确尺寸
 | `th_19_position_state.js` | 悬浮球固定位置、指针布局与尺寸重建事务回滚 |
 | `th_20_pickword.js` | 拾字文字选择、复制、翻译、钉屏与放大镜 |
 | `th_21_result_preview.js` | 取字和 OCR 顶部两行全自绘结果预览 |
+| `th_22_image_viewer.js` | 拾字截图缩略图、原图查看、缩放平移、保存分享删除与图片记录 |
+| `th_23_screenshot_manager.js` | 截图管理器的内部截图、已保存副本、查看分享和受控删除 |
 
 ---
 
