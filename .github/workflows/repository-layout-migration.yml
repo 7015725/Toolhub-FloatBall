@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  migrate:
+  regenerate-audits:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
@@ -24,23 +24,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Migrate repository layout
-        run: python3 scripts/migrate_repository_layout.py
-
-      - name: Commit migrated layout
-        shell: bash
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git checkout -- .github/workflows/verify.yml
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No migration changes to commit"
-          else
-            git commit -m "整理仓库文档、审计与约束目录"
-            git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
-          fi
-
       - name: Regenerate deterministic audits
         run: |
           python3 scripts/report_dead_module_symbols.py --write docs/audits/DEAD_CODE_AUDIT.md
@@ -48,20 +31,11 @@ jobs:
           python3 scripts/report_module_symbol_audits.py --write docs/audits/MODULE_SYMBOL_AUDIT.md
           python3 scripts/report_protected_wrapper_chains.py --write docs/audits/PROTECTED_WRAPPER_AUDIT.md
 
-      - name: Validate migrated layout
-        run: |
-          python3 scripts/verify_repository_layout.py
-          python3 scripts/verify_constraint_registry.py
-          python3 scripts/verify_documentation_consistency.py
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/report_dead_module_symbols.py --check docs/audits/DEAD_CODE_AUDIT.md
-          python3 scripts/report_entry_symbols.py --check docs/audits/ENTRY_SYMBOL_AUDIT.md
-          python3 scripts/report_module_symbol_audits.py --check docs/audits/MODULE_SYMBOL_AUDIT.md
-          python3 scripts/report_protected_wrapper_chains.py --check docs/audits/PROTECTED_WRAPPER_AUDIT.md
-
       - name: Commit regenerated audits
         shell: bash
         run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add docs/audits
           if git diff --cached --quiet; then
             echo "Audit reports already current"
