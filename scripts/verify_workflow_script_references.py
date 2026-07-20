@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that Python files referenced by GitHub Actions workflows exist."""
+"""校验 GitHub Actions 工作流引用的 Python 文件均真实存在。"""
 import re
 from pathlib import Path
 
