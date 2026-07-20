@@ -16,6 +16,8 @@ GitHub: https://github.com/7015725/Toolhub-FloatBall
 STRUCTURE.md
 ARCHITECTURE.md
 SQLITE_STORAGE.md
+BUTTON_ICON_STORAGE.md
+docs/button-types.md
 docs/security-config-clean.md
 ```
 
@@ -38,6 +40,7 @@ docs/security-config-clean.md
 - 主面板支持实时运行状态、拖动排序、分页吸附、新增和编辑按钮直接保存、单页隐藏分页圆点和关闭闪烁；默认背景透明度为 0.92。
 - 支持按钮搜索、筛选、启停、排序和编辑。
 - 支持悬浮球拖动唤出指针、悬停取字、小框回退和框选 OCR。
+- 支持拾字截图查看、保存、分享、删除、自动清理和截图管理。
 - 支持 Android 返回键、预测性返回和 ToolApp 横向滑动返回。
 - 启动、更新、存储和运行异常写入 `ToolHub/logs/`。
 
@@ -121,7 +124,9 @@ shortx.getShortXDir()/
     │   ├── th_18_pointer_ocr.js
     │   ├── th_19_position_state.js
     │   ├── th_20_pickword.js
-    │   └── th_21_result_preview.js
+    │   ├── th_21_result_preview.js
+    │   ├── th_22_image_viewer.js
+    │   └── th_23_screenshot_manager.js
     ├── logs/
     │   ├── init.log
     │   └── ShortX_ToolHub_yyyyMMdd.log
@@ -167,7 +172,10 @@ toolhub.db
 ├── toolhub_settings
 ├── toolhub_buttons
 ├── toolhub_button_values
-└── toolhub_schema_values
+├── toolhub_schema_values
+├── toolhub_button_icons
+├── toolhub_pickword_images
+└── toolhub_pickword_image_exports
 ```
 
 ### 设置
@@ -481,6 +489,8 @@ WindowManager 使用同一精确尺寸
 | `th_19_position_state.js` | 悬浮球固定位置、指针布局与尺寸重建事务回滚 |
 | `th_20_pickword.js` | 拾字文字选择、复制、翻译、钉屏与放大镜 |
 | `th_21_result_preview.js` | 取字和 OCR 顶部两行全自绘结果预览 |
+| `th_22_image_viewer.js` | 拾字截图缩略图、原图查看、缩放平移、保存分享删除及自动清理 |
+| `th_23_screenshot_manager.js` | 截图管理器列表、内部/已保存分类、缩略图缓存与外部打开 |
 
 ---
 

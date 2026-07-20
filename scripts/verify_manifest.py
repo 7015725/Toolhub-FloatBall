@@ -153,7 +153,7 @@ def main():
     py_files = collect_python_files()
     if py_files:
         subprocess.check_call(
-            [sys.executable, "-m", "py_compile"] + py_files, cwd=str(ROOT)
+            [sys.executable, "-W", "error::SyntaxWarning", "-m", "py_compile"] + py_files, cwd=str(ROOT)
         )
     print(
         "OK manifest_version=%s files=%s history=%s entry_version=%s"
