@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "20260721-beta-update-channel",
+  "type": "feature",
+  "title": "增加 Stable 与 Beta 更新通道",
+  "details": [
+    "同一份 ToolHub.js 根据公共引导状态选择 main 或 beta 分支",
+    "Stable 与 Beta 使用独立代码、SQLite、缓存、日志和截图目录",
+    "设置页更新与版本页面增加更新通道选择与确认流程",
+    "切换采用 pending/commit 事务，目标启动失败时自动恢复原通道",
+    "Manifest schema 5 绑定 channel 与 branch，CI 同时验证 main 和 beta"
+  ],
+  "manifestVersion": 0
+}

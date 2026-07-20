@@ -1,0 +1,9 @@
+ToolHub.js
+code/th_14_panels.js
+scripts/generate_signed_manifest.py
+scripts/verify_manifest.py
+.github/workflows/verify.yml
+.github/workflows/sign-toolhub.yml
+.github/workflows/publish-release.yml
+docs/ARCHITECTURE.md
+updates/records/20260721-beta-update-channel.json
