@@ -92,6 +92,9 @@ def main():
         errors.append("api.json usageBaseline path mismatch")
     if api_doc.get("legacyUsage") != "constraints/API_USAGE_LEGACY.json":
         errors.append("api.json legacyUsage path mismatch")
+    initial_digest = api_doc.get("initialUsageDigest")
+    if not isinstance(initial_digest, str) or not initial_digest.startswith("sha256:"):
+        errors.append("api.json initialUsageDigest must be a sha256 value")
     if set(api_doc.get("classifications") or []) != ALLOWED_CLASSIFICATIONS:
         errors.append("api.json classifications mismatch")
 
@@ -106,13 +109,11 @@ def main():
     if legacy.get("schema") != 1 or legacy.get("policy") != "initial_usage_only":
         errors.append("API legacy usage schema/policy mismatch")
     legacy_entries = validate_entries(legacy, "API legacy usage", errors)
-    if legacy.get("sourceUsageDigest") != baseline.get("usageDigest"):
-        errors.append("API legacy sourceUsageDigest must match initial baseline digest")
+    if legacy.get("sourceUsageDigest") != initial_digest:
+        errors.append("API legacy sourceUsageDigest must match api.json initialUsageDigest")
 
     baseline_keys = {item.get("key") for item in baseline_entries if isinstance(item, dict)}
     legacy_keys = {item.get("key") for item in legacy_entries if isinstance(item, dict)}
-    if not legacy_keys.issubset(baseline_keys):
-        errors.append("API legacy usage contains keys absent from current baseline")
 
     rules = api_doc.get("rules")
     if not isinstance(rules, list):
@@ -181,12 +182,13 @@ def main():
             print("FAIL api-usage-policy: " + item)
         return 1
     print(
-        "OK api-usage-policy baseline=%d legacy=%d explicit_rules=%d digest=%s"
+        "OK api-usage-policy baseline=%d legacy=%d explicit_rules=%d current_digest=%s initial_digest=%s"
         % (
             len(baseline_entries),
             len(legacy_entries),
             len(explicit_rules),
             baseline.get("usageDigest"),
+            initial_digest,
         )
     )
     return 0
