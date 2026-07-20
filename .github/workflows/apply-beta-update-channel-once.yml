@@ -6,12 +6,16 @@ on:
     paths:
       - scripts/apply_beta_update_channel_once.py
       - .github/workflows/apply-beta-update-channel-once.yml
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'agent/beta-update-channel'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout feature branch
