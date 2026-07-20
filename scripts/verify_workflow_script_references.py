@@ -5,8 +5,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
-PYTHON_FILE_RE = re.compile(
-    r"(?:^|[\s;&|({])python(?:3(?:\.\d+)?)?\s+"
+PYTHON_COMMAND_RE = re.compile(
+    r"^\s*(?:\{\s*)?python(?:3(?:\.\d+)?)?\s+"
     r"(?P<path>(?:\./)?[A-Za-z0-9_.\/-]+\.py)\b"
 )
 TEMPORARY_CROSS_BRANCH_REFERENCES = {
@@ -38,20 +38,23 @@ def main():
     for workflow in workflow_files:
         workflow_name = str(workflow.relative_to(ROOT))
         text = workflow.read_text(encoding="utf-8")
-        for match in PYTHON_FILE_RE.finditer(text):
+        for line_number, line in enumerate(text.splitlines(), 1):
+            match = PYTHON_COMMAND_RE.match(line)
+            if not match:
+                continue
             rel = normalize_reference(match.group("path"))
             candidate = Path(rel)
             if candidate.is_absolute() or ".." in candidate.parts:
-                missing.append((workflow_name, rel, "unsafe path"))
+                missing.append((workflow_name, line_number, rel, "unsafe path"))
                 continue
-            references.append((workflow_name, rel))
+            references.append((workflow_name, line_number, rel))
             if (workflow_name, rel) in TEMPORARY_CROSS_BRANCH_REFERENCES:
-                temporary.append((workflow_name, rel))
+                temporary.append((workflow_name, line_number, rel))
                 continue
             if not (ROOT / candidate).is_file():
-                missing.append((workflow_name, rel, "missing"))
+                missing.append((workflow_name, line_number, rel, "missing"))
     if missing:
-        detail = "; ".join("%s -> %s (%s)" % item for item in missing)
+        detail = "; ".join("%s:%d -> %s (%s)" % item for item in missing)
         fail(detail)
     print(
         "Workflow script reference verification passed workflows=%d references=%d temporary=%d"
