@@ -53,6 +53,25 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Profile overlapping Python checks
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -eo pipefail
+          python3 scripts/profile_ci_python_checks.py --output-dir ci-python-timing 2>&1 | tee ci-python-timing-log.txt
+          cat ci-python-timing/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload CI Python timing sample
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-python-timing-sample
+          path: |
+            ci-python-timing/
+            ci-python-timing-log.txt
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Check git whitespace
         shell: bash
         run: git diff --check
