@@ -4,17 +4,19 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "59a135c5dab447c94e710777a0ba12245605ae3044c5b65ef0a2284e1351e5b0",
-      "size": 52531,
-      "version": 20260719202326
+      "sha256": "e66336a58c608bfd64231d6b0df2acc0ea134a66e59f2630fbd42ed0834928be",
+      "size": 53493,
+      "version": 20260720235649
     }
   },
+  "branch": "main",
+  "channel": "stable",
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "ba1f972ece1c7924a013a352f5f975f4f0ae86865840eb511b0d4a178d8b1d3d",
-    "size": 82830,
-    "version": 20260719024500,
+    "sha256": "d190ddd86579eab2b0e2121f7fd39688ab2777d18023b8f917e332cd15e4b6eb",
+    "size": 100280,
+    "version": 20260721193000,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -104,9 +106,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "cb0990d2c12f877b957d9b7f75cac7e2ac684f9c13132d76066618562e704147",
-      "size": 135193,
-      "version": "1.1.10"
+      "sha256": "14bf481778947fdbe4a5e34672408b557dd3296128d7ff21c555ba4405484f33",
+      "size": 143353,
+      "version": "1.1.11"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -167,16 +169,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "缩略图缓存从按文件名永久增长的锁表改为固定 32 条带锁，长期运行时锁对象数量保持有界。",
-      "已保存记录在缩略图锁内重新读取，缓存加载、生成和删除共用同一路径锁，避免删除后旧任务重新写回孤儿缓存。",
-      "移除未被消费的 internalAvailable 实时探测和未使用的 uriReadable22 薄封装，保留完整 URI 错误状态探测。",
-      "已保存缩略图加载失败时同步清除缩略图可用状态并刷新卡片说明，避免可用与受限提示同时出现。",
-      "精简截图管理器 Modal 成功层级诊断，保留 bringToFront、Elevation、TranslationZ 和焦点控制。",
-      "不改变 ShareTemp、未验证旧 URI 回退、MediaStore/Java/Root 证据模型、公共副本删除验证和外部启动关闭链。"
+      "同一份 ToolHub.js 根据公共引导状态选择 main 或 beta 分支",
+      "Stable 与 Beta 使用独立代码、SQLite、缓存、日志和截图目录",
+      "设置页更新与版本页面增加更新通道选择与确认流程",
+      "切换采用 pending/commit 事务，目标启动失败时自动恢复原通道",
+      "Manifest schema 5 绑定 channel 与 branch，CI 同时验证 main 和 beta"
     ],
-    "date": "2026-07-20",
-    "title": "收口截图缩略图缓存并清理冗余状态"
+    "date": "2026-07-21",
+    "title": "增加 Stable 与 Beta 更新通道"
   },
-  "schema": 4,
-  "version": 20260719202326
+  "schema": 5,
+  "version": 20260720235649
 }
