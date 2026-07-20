@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "domain": "api",
+  "policy": "classified_usage",
+  "migrationState": "phase1_plugin_registry",
+  "unclassifiedPolicy": "error_after_usage_baseline_enabled",
+  "classifications": [
+    "safe",
+    "guarded",
+    "wrapped",
+    "plugin_validated",
+    "forbidden"
+  ],
+  "rules": [
+    {
+      "id": "api-rhino-color-safety",
+      "classification": "plugin_validated",
+      "validator": "rhino-color-api",
+      "scope": ["code/*.js"],
+      "reason": "约束 Rhino 下 Android 颜色重载、ColorStateList 和安全包装器调用"
+    },
+    {
+      "id": "api-coloros-rhino-color-safety",
+      "classification": "plugin_validated",
+      "validator": "coloros-rhino-color-api",
+      "scope": ["code/*.js"],
+      "reason": "约束 ColorOS 环境中的颜色 API 兼容调用"
+    },
+    {
+      "id": "api-pickword-long-click-api34",
+      "classification": "plugin_validated",
+      "validator": "pickword-long-click-api34",
+      "scope": ["code/th_20_pickword.js"],
+      "reason": "锁定 Android 14 拾字长按相关调用契约"
+    }
+  ],
+  "newApiReviewRequirements": [
+    "source",
+    "classOrObject",
+    "method",
+    "classification",
+    "scope",
+    "reason",
+    "owner",
+    "versionGuardWhenRequired",
+    "threadContractWhenRequired",
+    "fallbackWhenRequired"
+  ]
+}

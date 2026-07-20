@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "domain": "exceptions",
+  "policy": "exact_scope_only",
+  "requirements": [
+    "rule",
+    "files",
+    "symbols",
+    "reason",
+    "owner"
+  ],
+  "forbiddenScopes": [
+    "code/*.js",
+    "**/*.js",
+    "*"
+  ],
+  "exceptions": []
+}

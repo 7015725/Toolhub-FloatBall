@@ -29,6 +29,31 @@ jobs:
         shell: bash
         run: python3 scripts/verify_workflow_script_references.py
 
+      - name: Verify code constraint registry
+        shell: bash
+        run: python3 scripts/verify_constraint_registry.py
+
+      - name: Verify unified code constraints
+        shell: bash
+        run: |
+          set -eo pipefail
+          python3 scripts/verify_code_constraints.py --output code-constraint-report.json 2>&1 | tee code-constraint-report.txt
+          {
+            echo '## ToolHub code constraints'
+            grep -E '^(DOMAIN_RESULT|CODE_CONSTRAINTS_END)' code-constraint-report.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload code constraint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-constraint-report
+          path: |
+            code-constraint-report.txt
+            code-constraint-report.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Build Python maintenance inventory
         shell: bash
         run: |
