@@ -17,7 +17,7 @@ PICKWORD = ROOT / "code" / "th_20_pickword.js"
 PREVIEW = ROOT / "code" / "th_21_result_preview.js"
 LOADER = ROOT / "ToolHub.js"
 SIGNER = ROOT / "scripts" / "generate_signed_manifest.py"
-BOUNDARIES = ROOT / "MODULE_BOUNDARIES.json"
+BOUNDARIES = ROOT / "constraints/MODULE_BOUNDARIES.json"
 
 
 def read(path: Path) -> str:

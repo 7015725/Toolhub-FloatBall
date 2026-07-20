@@ -10,8 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "ToolHub.js"
 CODE_DIR = ROOT / "code"
-BOUNDARIES = ROOT / "MODULE_BOUNDARIES.json"
-DEFAULT_REPORT = ROOT / "MODULE_SYMBOL_AUDIT.md"
+BOUNDARIES = ROOT / "constraints/MODULE_BOUNDARIES.json"
+DEFAULT_REPORT = ROOT / "docs/audits/MODULE_SYMBOL_AUDIT.md"
 
 MODULE_RE = re.compile(r"['\"]([^'\"]+\.js)['\"]")
 DEF_RE = re.compile(

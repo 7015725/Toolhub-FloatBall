@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY_PATH = ROOT / "ToolHub.js"
 CODE_DIR = ROOT / "code"
-DEFAULT_REPORT = ROOT / "ENTRY_SYMBOL_AUDIT.md"
+DEFAULT_REPORT = ROOT / "docs/audits/ENTRY_SYMBOL_AUDIT.md"
 
 IDENT = r"[A-Za-z_$][A-Za-z0-9_$]*"
 FUNC_RE = re.compile(r"(?m)^[ \t]*function[ \t]+(" + IDENT + r")[ \t]*\(")

@@ -8,9 +8,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CODE_DIR = ROOT / "code"
-BOUNDARIES = ROOT / "MODULE_BOUNDARIES.json"
+BOUNDARIES = ROOT / "constraints/MODULE_BOUNDARIES.json"
 ENTRY = ROOT / "ToolHub.js"
-DEFAULT_REPORT = ROOT / "DEAD_CODE_AUDIT.md"
+DEFAULT_REPORT = ROOT / "docs/audits/DEAD_CODE_AUDIT.md"
 
 DEF_RE = re.compile(
     r"(?:FloatBallAppWM\.prototype|proto)\.([A-Za-z_$][A-Za-z0-9_$]*)"

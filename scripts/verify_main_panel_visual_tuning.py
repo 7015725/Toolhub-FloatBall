@@ -13,8 +13,8 @@ WORKFLOW = WORKFLOW_PATH.read_text(encoding="utf-8")
 ENTRY = ENTRY_PATH.read_text(encoding="utf-8")
 DOC_PATHS = (
     ROOT / "README.md",
-    ROOT / "ARCHITECTURE.md",
-    ROOT / "STRUCTURE.md",
+    ROOT / "docs/ARCHITECTURE.md",
+    ROOT / "docs/STRUCTURE.md",
 )
 
 

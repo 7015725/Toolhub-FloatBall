@@ -87,7 +87,7 @@ for name in (
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_adaptive_layout.py", "workflow")
 require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260719024500;", "entry")
-for doc in ("README.md", "ARCHITECTURE.md", "STRUCTURE.md"):
+for doc in ("README.md", "docs/ARCHITECTURE.md", "docs/STRUCTURE.md"):
     require((ROOT / doc).read_text(encoding="utf-8"), "可配置自适应网格", doc)
 
 

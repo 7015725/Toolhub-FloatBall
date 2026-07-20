@@ -17,7 +17,7 @@ Python 脚本继续平铺在 `scripts/` 下，原因是 GitHub Actions 直接按
 - `generate_api_usage_baseline.py`：生成紧凑的当前 API 使用基线；`--refresh-legacy` 仅允许在初始化阶段使用。
 - `verify_api_usage_scanner.py`：用固定样本验证注释、字符串、别名、反射、新增 API 和范围扩张检测。
 - `verify_api_usage_policy.py`：校验当前基线、初始遗留范围、摘要和新增 API 显式分类规则。
-- 方法归属继续由 `MODULE_BOUNDARIES.json` 提供真实约束；其他领域入口见 `constraints/README.md`。
+- 方法归属由 `constraints/MODULE_BOUNDARIES.json` 提供真实约束；其他领域入口见 `constraints/README.md`。
 
 ## 构建与发布
 
@@ -26,6 +26,8 @@ Python 脚本继续平铺在 `scripts/` 下，原因是 GitHub Actions 直接按
 - `generate_signed_manifest.py`
 
 ## 资产与审计报告
+
+自动生成 Markdown 报告统一保存到 `docs/audits/`。
 
 - `report_api_usage.py`
 - `report_ci_python_execution.py`
@@ -40,6 +42,7 @@ Python 脚本继续平铺在 `scripts/` 下，原因是 GitHub Actions 直接按
 - `generate_api_usage_baseline.py`
 - `profile_ci_python_checks.py`
 - `verify_workflow_script_references.py`
+- `verify_repository_layout.py`：约束根目录只保留项目入口、发布资产和总说明，防止文档、审计报告与方法基线回流。
 
 ## 发布安全校验
 

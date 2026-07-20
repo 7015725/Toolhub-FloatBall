@@ -12,7 +12,7 @@ from typing import Dict, Iterable, List, Tuple
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BOUNDARIES_PATH = ROOT / "MODULE_BOUNDARIES.json"
+BOUNDARIES_PATH = ROOT / "constraints/MODULE_BOUNDARIES.json"
 LOADER_PATH = ROOT / "ToolHub.js"
 
 METHOD_PATTERN = re.compile(

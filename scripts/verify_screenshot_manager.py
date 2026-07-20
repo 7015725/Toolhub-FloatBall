@@ -19,7 +19,7 @@ th22 = read("code/th_22_image_viewer.js")
 th23 = read("code/th_23_screenshot_manager.js")
 entry = read("ToolHub.js")
 generator = read("scripts/generate_signed_manifest.py")
-boundaries = read("MODULE_BOUNDARIES.json")
+boundaries = read("constraints/MODULE_BOUNDARIES.json")
 workflow = read(".github/workflows/verify.yml")
 
 require('// @version 1.3.2' in th22, 'th22 service version')

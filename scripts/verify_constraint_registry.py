@@ -101,7 +101,11 @@ def validate_registry(registry_path=DEFAULT_REGISTRY):
             domain_docs[domain] = data
             check(data.get("schema") in (1, 2), "domain %s schema must be 1 or 2" % domain)
             if domain == "methods":
-                check(data.get("policy") == "constraints_only", "MODULE_BOUNDARIES.json policy must be constraints_only")
+                check(data.get("policy") == "constraints_only", "method boundary policy must be constraints_only")
+                source = data.get("source")
+                check(source == "constraints/MODULE_BOUNDARIES.json", "methods source must be constraints/MODULE_BOUNDARIES.json")
+                if source:
+                    check((ROOT / source).is_file(), "method boundary source missing: %s" % source)
             else:
                 check(data.get("domain") == domain, "domain file %s must declare domain=%s" % (relative, domain))
 
@@ -237,7 +241,7 @@ def validate_registry(registry_path=DEFAULT_REGISTRY):
         errors.append("constraints/README.md missing")
     else:
         text = readme.read_text(encoding="utf-8")
-        for name in ("registry.json", "syntax.json", "api.json", "threading.json", "lifecycle.json", "exceptions.json"):
+        for name in ("registry.json", "syntax.json", "methods.json", "MODULE_BOUNDARIES.json", "api.json", "threading.json", "lifecycle.json", "exceptions.json"):
             if name not in text:
                 errors.append("constraints/README.md missing reference: " + name)
 
