@@ -1,0 +1,45 @@
+name: One-shot trigger docs and Python organization
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/oneshot-trigger-organize-docs.yml
+
+permissions:
+  contents: write
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout maintenance branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/organize-docs-python-boundaries-20260720
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - name: Apply bounded patch
+        run: python3 scripts/oneshot_organize_docs_python.py
+
+      - name: Validate bounded changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_workflow_script_references.py
+          python3 scripts/verify_documentation_consistency.py
+          python3 -W error::SyntaxWarning -m py_compile scripts/*.py .github/scripts/*.py
+          python3 scripts/verify_manifest.py
+          git diff --check
+
+      - name: Commit maintenance changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "整理文档与 Python 验证边界"
+          git push origin HEAD:agent/organize-docs-python-boundaries-20260720
