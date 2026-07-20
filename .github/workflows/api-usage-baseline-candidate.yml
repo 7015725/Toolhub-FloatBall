@@ -1,0 +1,41 @@
+name: api-usage-baseline-candidate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-usage-baseline-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate API usage candidate
+        shell: bash
+        run: |
+          set -eo pipefail
+          python3 scripts/report_api_usage.py \
+            --write api-usage-candidate.json \
+            --write-legacy api-usage-legacy-candidate.json \
+            2>&1 | tee api-usage-candidate-log.txt
+
+      - name: Upload API usage candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-usage-baseline-candidate
+          path: |
+            api-usage-candidate.json
+            api-usage-legacy-candidate.json
+            api-usage-candidate-log.txt
+          if-no-files-found: error
+          retention-days: 7
