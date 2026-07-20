@@ -5,7 +5,7 @@ on:
     types: [opened]
 
 permissions:
-  contents: write
+  contents: read
   issues: write
 
 jobs:
@@ -18,9 +18,8 @@ jobs:
         with:
           ref: agent/organize-docs-python-boundaries-20260720
           fetch-depth: 0
-          token: ${{ github.token }}
 
-      - name: Apply, validate and commit bounded maintenance
+      - name: Apply and validate bounded maintenance
         id: maintenance
         shell: bash
         run: |
@@ -32,12 +31,36 @@ jobs:
             python3 -W error::SyntaxWarning -m py_compile scripts/*.py .github/scripts/*.py
             python3 scripts/verify_manifest.py
             git diff --check
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "整理文档与 Python 验证边界"
-            git push origin HEAD:agent/organize-docs-python-boundaries-20260720
           } 2>&1 | tee maintenance.log
+
+      - name: Build verified maintenance payload
+        if: steps.maintenance.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload="$RUNNER_TEMP/toolhub-maintenance-payload"
+          mkdir -p "$payload/.github/workflows" "$payload/scripts"
+          cp README.md ARCHITECTURE.md STRUCTURE.md SQLITE_STORAGE.md "$payload/"
+          cp .github/workflows/rollback-toolhub.yml .github/workflows/verify.yml "$payload/.github/workflows/"
+          cp scripts/verify_pointer_regressions.py "$payload/scripts/"
+          cp scripts/verify_manifest.py "$payload/scripts/"
+          cp scripts/verify_documentation_consistency.py "$payload/scripts/"
+          cp scripts/verify_workflow_script_references.py "$payload/scripts/"
+          cat > "$payload/DELETE_PATHS.txt" <<'EOF'
+          .github/workflows/cleanup-non-main-branches-once.yml
+          .github/workflows/oneshot-organize-docs-python.yml
+          .github/workflows/oneshot-trigger-organize-docs.yml
+          EOF
+          cp maintenance.log "$payload/VALIDATION.log"
+
+      - name: Upload verified maintenance payload
+        if: steps.maintenance.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolhub-docs-python-maintenance-payload
+          path: ${{ runner.temp }}/toolhub-maintenance-payload
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Report maintenance result
         if: always()
@@ -46,11 +69,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           OUTCOME: ${{ steps.maintenance.outcome }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           {
             echo "## 一次性整理执行结果"
             echo
             echo "状态：\`$OUTCOME\`"
+            echo
+            echo "工作流运行 ID：\`$RUN_ID\`"
             echo
             echo '```text'
             if [ -f maintenance.log ]; then
