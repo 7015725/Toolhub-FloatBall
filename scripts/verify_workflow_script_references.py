@@ -18,18 +18,20 @@ def fail(message):
 def main():
     missing = []
     references = []
-    workflow_files = sorted(WORKFLOWS.glob("*.yml")) + sorted(WORKFLOWS.glob("*.yaml"))
+    workflow_files = sorted(WORKFLOWS.glob("*.yml")) + sorted(
+        WORKFLOWS.glob("*.yaml")
+    )
     for workflow in workflow_files:
         text = workflow.read_text(encoding="utf-8")
         for match in PYTHON_FILE_RE.finditer(text):
-  rel = match.group("path").lstrip("./")
-  candidate = Path(rel)
-  if candidate.is_absolute() or ".." in candidate.parts:
-      missing.append((workflow.relative_to(ROOT), rel, "unsafe path"))
-      continue
-  references.append((workflow.relative_to(ROOT), rel))
-  if not (ROOT / candidate).is_file():
-      missing.append((workflow.relative_to(ROOT), rel, "missing"))
+            rel = match.group("path").lstrip("./")
+            candidate = Path(rel)
+            if candidate.is_absolute() or ".." in candidate.parts:
+                missing.append((workflow.relative_to(ROOT), rel, "unsafe path"))
+                continue
+            references.append((workflow.relative_to(ROOT), rel))
+            if not (ROOT / candidate).is_file():
+                missing.append((workflow.relative_to(ROOT), rel, "missing"))
     if missing:
         detail = "; ".join("%s -> %s (%s)" % item for item in missing)
         fail(detail)
