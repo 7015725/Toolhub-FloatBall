@@ -1,20 +1,23 @@
-name: apply-beta-update-channel-once
+name: cleanup-beta-update-channel-once
 
 on:
   push:
     branches: [agent/beta-update-channel]
     paths:
-      - scripts/apply_beta_update_channel_once.py
       - .github/workflows/apply-beta-update-channel-once.yml
   pull_request:
     branches: [main]
-    types: [opened, reopened, synchronize]
+    types: [synchronize]
 
 permissions:
   contents: read
 
+concurrency:
+  group: cleanup-beta-update-channel-once
+  cancel-in-progress: true
+
 jobs:
-  apply:
+  cleanup:
     if: github.event_name == 'push' || github.event.pull_request.head.ref == 'agent/beta-update-channel'
     runs-on: ubuntu-latest
     steps:
@@ -25,58 +28,23 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Apply repository patch
-        run: python3 scripts/apply_beta_update_channel_once.py
-
-      - name: Validate patched sources
-        run: |
-          python3 -m py_compile scripts/generate_signed_manifest.py scripts/verify_manifest.py
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          git diff --check
-
-      - name: Build verified patch bundle
-        run: |
-          mkdir -p verified-beta-update-channel
-          files=(
-            ToolHub.js
-            code/th_14_panels.js
-            scripts/generate_signed_manifest.py
-            scripts/verify_manifest.py
-            .github/workflows/verify.yml
-            .github/workflows/sign-toolhub.yml
-            .github/workflows/publish-release.yml
-            docs/ARCHITECTURE.md
-            updates/records/20260721-beta-update-channel.json
-          )
-          for file in "${files[@]}"; do
-            mkdir -p "verified-beta-update-channel/$(dirname "$file")"
-            cp "$file" "verified-beta-update-channel/$file"
-          done
-          printf '%s\n' "${files[@]}" > verified-beta-update-channel/FILES.txt
-
-      - name: Upload verified patch bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: verified-beta-update-channel
-          path: verified-beta-update-channel
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 3
-
-      - name: Commit verified implementation
+      - name: Remove temporary files
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
+          rm -rf verified-beta-update-channel
+          rm -f scripts/apply_beta_update_channel_once.py
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No temporary files remain"
+            exit 0
+          fi
           if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
             echo "TOOLHUB_AUTOMATION_TOKEN is empty"
             exit 1
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # 临时工作流由连接器在成功后删除，避免该提交修改自身 workflow 路径。
-          git checkout HEAD -- .github/workflows/apply-beta-update-channel-once.yml
-          git add -A
-          git commit -m "增加 Stable 与 Beta 更新通道"
+          git commit -m "清理 Beta 通道临时产物"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin HEAD:agent/beta-update-channel
