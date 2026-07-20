@@ -23,6 +23,7 @@ jobs:
         with:
           ref: agent/beta-update-channel
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Apply repository patch
         run: python3 scripts/apply_beta_update_channel_once.py
@@ -62,3 +63,20 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 3
+
+      - name: Commit verified implementation
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # 临时工作流由连接器在成功后删除，避免该提交修改自身 workflow 路径。
+          git checkout HEAD -- .github/workflows/apply-beta-update-channel-once.yml
+          git add -A
+          git commit -m "增加 Stable 与 Beta 更新通道"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:agent/beta-update-channel
