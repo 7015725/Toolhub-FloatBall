@@ -17,14 +17,14 @@ REQUIRED_FILES = (
 )
 
 FORBIDDEN_ROOT_FILES = (
-    "docs/ARCHITECTURE.md",
-    "docs/STRUCTURE.md",
-    "docs/SQLITE_STORAGE.md",
-    "docs/audits/DEAD_CODE_AUDIT.md",
-    "docs/audits/ENTRY_SYMBOL_AUDIT.md",
-    "docs/audits/MODULE_SYMBOL_AUDIT.md",
-    "docs/audits/PROTECTED_WRAPPER_AUDIT.md",
-    "constraints/MODULE_BOUNDARIES.json",
+    "ARCHITECTURE.md",
+    "STRUCTURE.md",
+    "SQLITE_STORAGE.md",
+    "DEAD_CODE_AUDIT.md",
+    "ENTRY_SYMBOL_AUDIT.md",
+    "MODULE_SYMBOL_AUDIT.md",
+    "PROTECTED_WRAPPER_AUDIT.md",
+    "MODULE_BOUNDARIES.json",
 )
 
 ALLOWED_ROOT_JSON = {"manifest.json", "update_history.json"}
