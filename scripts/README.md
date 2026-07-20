@@ -12,9 +12,12 @@ Python 脚本继续平铺在 `scripts/` 下，原因是 GitHub Actions 直接按
 ## 统一代码约束
 
 - `verify_constraint_registry.py`：校验 `constraints/registry.json`、领域文件、验证器引用、精确例外和独立发布安全边界。
-- `verify_code_constraints.py`：按语法、方法、API、线程和生命周期领域执行注册的现有验证器，输出统一文本与 JSON 报告。
+- `verify_code_constraints.py`：按语法、方法、API、线程和生命周期领域执行注册验证器，输出统一文本与 JSON 报告。
+- `report_api_usage.py`：扫描高置信度 Android、Java、Javax、ShortX 与反射 API，并检查新增键、基线偏差和范围扩张。
+- `generate_api_usage_baseline.py`：生成紧凑的当前 API 使用基线；`--refresh-legacy` 仅允许在初始化阶段使用。
+- `verify_api_usage_scanner.py`：用固定样本验证注释、字符串、别名、反射、新增 API 和范围扩张检测。
+- `verify_api_usage_policy.py`：校验当前基线、初始遗留范围、摘要和新增 API 显式分类规则。
 - 方法归属继续由 `MODULE_BOUNDARIES.json` 提供真实约束；其他领域入口见 `constraints/README.md`。
-- 第一阶段与原有专项校验并行运行，不改变判定逻辑，也不删除旧入口。
 
 ## 构建与发布
 
@@ -24,6 +27,7 @@ Python 脚本继续平铺在 `scripts/` 下，原因是 GitHub Actions 直接按
 
 ## 资产与审计报告
 
+- `report_api_usage.py`
 - `report_ci_python_execution.py`
 - `report_dead_module_symbols.py`
 - `report_entry_symbols.py`
@@ -33,6 +37,7 @@ Python 脚本继续平铺在 `scripts/` 下，原因是 GitHub Actions 直接按
 
 ## CI 性能与引用维护
 
+- `generate_api_usage_baseline.py`
 - `profile_ci_python_checks.py`
 - `verify_workflow_script_references.py`
 
@@ -51,6 +56,8 @@ Python 脚本继续平铺在 `scripts/` 下，原因是 GitHub Actions 直接按
 ## 运行时与功能回归
 
 - `verify_animation_callback_safety.py`
+- `verify_api_usage_policy.py`
+- `verify_api_usage_scanner.py`
 - `verify_ball_position_state.py`
 - `verify_ball_rebuild_rollback.py`
 - `verify_button_editor_direct_save.py`
