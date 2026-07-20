@@ -17,14 +17,14 @@ REQUIRED_FILES = (
 )
 
 FORBIDDEN_ROOT_FILES = (
-    "docs/ARCHITECTURE.md",
-    "docs/STRUCTURE.md",
-    "docs/SQLITE_STORAGE.md",
-    "docs/audits/DEAD_CODE_AUDIT.md",
-    "docs/audits/ENTRY_SYMBOL_AUDIT.md",
-    "docs/audits/MODULE_SYMBOL_AUDIT.md",
-    "docs/audits/PROTECTED_WRAPPER_AUDIT.md",
-    "constraints/MODULE_BOUNDARIES.json",
+    "ARCHITECTURE.md",
+    "STRUCTURE.md",
+    "SQLITE_STORAGE.md",
+    "DEAD_CODE_AUDIT.md",
+    "ENTRY_SYMBOL_AUDIT.md",
+    "MODULE_SYMBOL_AUDIT.md",
+    "PROTECTED_WRAPPER_AUDIT.md",
+    "MODULE_BOUNDARIES.json",
 )
 
 ALLOWED_ROOT_JSON = {"manifest.json", "update_history.json"}
@@ -64,10 +64,7 @@ if methods.get("source") != "constraints/MODULE_BOUNDARIES.json":
     fail("constraints/methods.json source must be constraints/MODULE_BOUNDARIES.json")
 
 audit_dir = ROOT / "docs" / "audits"
-unexpected_audit_dirs = [
-    path for path in audit_dir.iterdir()
-    if path.is_dir()
-]
+unexpected_audit_dirs = [path for path in audit_dir.iterdir() if path.is_dir()]
 if unexpected_audit_dirs:
     fail("docs/audits must stay flat")
 
