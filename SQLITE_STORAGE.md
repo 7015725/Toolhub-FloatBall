@@ -160,6 +160,64 @@ items
 
 Schema 根节点是数组，内部对象、选项数组和嵌套分组全部按父子节点恢复。
 
+### `toolhub_button_icons`
+
+按钮使用本地图片或快捷方式图片时，图片内容以去重后的 SHA-256 为键保存到 BLOB 表：
+
+```sql
+CREATE TABLE toolhub_button_icons (
+  icon_key TEXT PRIMARY KEY NOT NULL,
+  mime_type TEXT NOT NULL,
+  image_data BLOB NOT NULL,
+  byte_size INTEGER NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  sha256 TEXT NOT NULL,
+  original_name TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+```
+
+详细导入限制、去重和孤立图标清理规则见 `BUTTON_ICON_STORAGE.md`。
+
+### `toolhub_pickword_images`
+
+记录 ToolHub 内部拾字截图及其公共保存状态：
+
+```sql
+CREATE TABLE toolhub_pickword_images (
+  internal_path TEXT PRIMARY KEY NOT NULL,
+  created_at INTEGER NOT NULL,
+  source_type TEXT NOT NULL,
+  width INTEGER NOT NULL DEFAULT 0,
+  height INTEGER NOT NULL DEFAULT 0,
+  file_size INTEGER NOT NULL DEFAULT 0,
+  saved_public_path TEXT NOT NULL DEFAULT '',
+  saved_content_uri TEXT NOT NULL DEFAULT '',
+  saved_at INTEGER NOT NULL DEFAULT 0,
+  deleted_at INTEGER NOT NULL DEFAULT 0,
+  last_access_at INTEGER NOT NULL DEFAULT 0
+);
+```
+
+### `toolhub_pickword_image_exports`
+
+记录保存副本和有过期时间的分享临时副本：
+
+```sql
+CREATE TABLE toolhub_pickword_image_exports (
+  export_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  internal_path TEXT NOT NULL,
+  export_kind TEXT NOT NULL,
+  public_path TEXT NOT NULL DEFAULT '',
+  content_uri TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL DEFAULT 0,
+  deleted_at INTEGER NOT NULL DEFAULT 0
+);
+```
+
 ### `toolhub_meta`
 
 保存数据库格式和迁移状态：

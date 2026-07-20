@@ -81,8 +81,8 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_manifest.py
           python3 scripts/verify_update_version_page.py
-          python3 scripts/verify_toolapp_single_root.py
-          python3 scripts/verify_toolapp_adaptive_size.py
+          python3 scripts/verify_toolapp_layout.py
+          python3 scripts/verify_toolapp_main_thread_affinity.py
           python3 scripts/verify_button_editor_layout.py
           python3 scripts/verify_schema_validator.py
           python3 .github/scripts/verify_manifest_signature.py

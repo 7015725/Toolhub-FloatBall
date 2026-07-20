@@ -218,7 +218,7 @@ def verify_issue_85(result, pointer, ocr, position, animation):
         group,
         "N9 screenshot directory is ShortX ToolHub/screenshots",
         "shortx.getShortXDir()" in screenshot_dir
-        and '.replace(/\/+$/g, "")' in screenshot_dir
+        and r'.replace(/\/+$/g, "")' in screenshot_dir
         and 'new java.io.File(base, "ToolHub/screenshots")' in screenshot_dir
         and "dir.mkdirs() !== true" in screenshot_dir
         and "getToolHubAndroidContext" not in screenshot_dir
