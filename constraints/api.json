@@ -6,6 +6,7 @@
   "unclassifiedPolicy": "error",
   "usageBaseline": "constraints/API_USAGE_BASELINE.json",
   "legacyUsage": "constraints/API_USAGE_LEGACY.json",
+  "initialUsageDigest": "sha256:5a17954f39a8e227d35cb575379725320eb43c20e18aadf66a41339055988ad5",
   "classifications": [
     "safe",
     "guarded",
