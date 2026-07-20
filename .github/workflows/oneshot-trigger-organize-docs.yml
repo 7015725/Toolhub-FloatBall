@@ -1,17 +1,16 @@
 name: One-shot trigger docs and Python organization
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/oneshot-trigger-organize-docs.yml
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   trigger:
+    if: github.event.issue.title == '[ToolHub Maintenance] Organize docs and Python'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout maintenance branch
@@ -21,25 +20,44 @@ jobs:
           fetch-depth: 0
           token: ${{ github.token }}
 
-      - name: Apply bounded patch
-        run: python3 scripts/oneshot_organize_docs_python.py
-
-      - name: Validate bounded changes
+      - name: Apply, validate and commit bounded maintenance
+        id: maintenance
         shell: bash
         run: |
-          set -euo pipefail
-          python3 scripts/verify_workflow_script_references.py
-          python3 scripts/verify_documentation_consistency.py
-          python3 -W error::SyntaxWarning -m py_compile scripts/*.py .github/scripts/*.py
-          python3 scripts/verify_manifest.py
-          git diff --check
+          set -o pipefail
+          {
+            python3 scripts/oneshot_organize_docs_python.py
+            python3 scripts/verify_workflow_script_references.py
+            python3 scripts/verify_documentation_consistency.py
+            python3 -W error::SyntaxWarning -m py_compile scripts/*.py .github/scripts/*.py
+            python3 scripts/verify_manifest.py
+            git diff --check
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "整理文档与 Python 验证边界"
+            git push origin HEAD:agent/organize-docs-python-boundaries-20260720
+          } 2>&1 | tee maintenance.log
 
-      - name: Commit maintenance changes
+      - name: Report maintenance result
+        if: always()
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.maintenance.outcome }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "整理文档与 Python 验证边界"
-          git push origin HEAD:agent/organize-docs-python-boundaries-20260720
+          {
+            echo "## 一次性整理执行结果"
+            echo
+            echo "状态：\`$OUTCOME\`"
+            echo
+            echo '```text'
+            if [ -f maintenance.log ]; then
+              tail -n 120 maintenance.log
+            else
+              echo "maintenance.log unavailable"
+            fi
+            echo '```'
+          } > maintenance-report.md
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file maintenance-report.md
