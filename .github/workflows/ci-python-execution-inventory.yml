@@ -100,13 +100,13 @@ jobs:
             --exclude=md-py-organization-audit.md \
             --exclude=md-py-organization-audit.json \
             --exclude=ci-python-execution-inventory-log.txt \
-            -czf repository-maintenance-snapshot.tar.gz .
+            -czf "$RUNNER_TEMP/repository-maintenance-snapshot.tar.gz" .
 
       - name: Upload repository maintenance snapshot
         uses: actions/upload-artifact@v4
         with:
           name: repository-maintenance-snapshot
-          path: repository-maintenance-snapshot.tar.gz
+          path: ${{ runner.temp }}/repository-maintenance-snapshot.tar.gz
           if-no-files-found: error
           retention-days: 1
 
