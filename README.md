@@ -13,14 +13,14 @@ GitHub: https://github.com/7015725/Toolhub-FloatBall
 相关文档：
 
 ```text
-docs/docs/STRUCTURE.md
-docs/docs/ARCHITECTURE.md
-docs/docs/SQLITE_STORAGE.md
+docs/docs/docs/STRUCTURE.md
+docs/docs/docs/ARCHITECTURE.md
+docs/docs/docs/SQLITE_STORAGE.md
 docs/README.md
 scripts/README.md
 docs/features/button-types.md
 docs/security/security-config-clean.md
-docs/audits/docs/audits/MODULE_SYMBOL_AUDIT.md
+docs/audits/docs/audits/docs/audits/MODULE_SYMBOL_AUDIT.md
 ```
 
 
@@ -378,7 +378,7 @@ lastError
 storage engine=sqlite format=structured backend=sqlite-structured path=... exists=true healthy=true pending=0 error=
 ```
 
-详细说明见 [`docs/docs/SQLITE_STORAGE.md`](docs/docs/SQLITE_STORAGE.md)，按钮图标 BLOB、去重、迁移和清理规则已统一收录在该文档。
+详细说明见 [`docs/docs/docs/SQLITE_STORAGE.md`](docs/docs/docs/SQLITE_STORAGE.md)，按钮图标 BLOB、去重、迁移和清理规则已统一收录在该文档。
 
 ---
 
