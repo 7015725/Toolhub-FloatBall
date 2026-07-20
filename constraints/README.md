@@ -1,6 +1,6 @@
 # ToolHub 代码约束
 
-本目录统一登记语法、Android/Rhino API、线程、生命周期和例外规则。方法归属继续由仓库根目录的 `MODULE_BOUNDARIES.json` 维护。
+本目录统一登记语法、Android/Rhino API、线程、生命周期和例外规则。方法归属由同目录的 `MODULE_BOUNDARIES.json` 维护。
 
 第二阶段已经启用高置信度 API 使用基线。新增外部 API、已有 API 扩大到新文件，或者基线与代码不一致时，统一约束会阻断 CI。
 
@@ -8,6 +8,8 @@
 
 - `registry.json`：统一注册表、运行环境和验证器清单。
 - `syntax.json`：Rhino ES5 语法契约。
+- `methods.json`：方法约束注册入口。
+- `MODULE_BOUNDARIES.json`：方法直接所有者、覆盖链和最终有效实现的真实约束源。
 - `api.json`：Android、Java、ShortX 与反射 API 的分类规则。
 - `API_USAGE_BASELINE.json`：当前高置信度 API 键及实际使用文件，由脚本确定性生成。
 - `API_USAGE_LEGACY.json`：第二阶段启用时的初始使用范围；后续不得刷新。

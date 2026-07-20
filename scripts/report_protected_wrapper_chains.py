@@ -8,8 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "ToolHub.js"
 CODE_DIR = ROOT / "code"
-BOUNDARIES = ROOT / "MODULE_BOUNDARIES.json"
-DEFAULT_REPORT = ROOT / "PROTECTED_WRAPPER_AUDIT.md"
+BOUNDARIES = ROOT / "constraints/MODULE_BOUNDARIES.json"
+DEFAULT_REPORT = ROOT / "docs/audits/PROTECTED_WRAPPER_AUDIT.md"
 MODULE_RE = re.compile(r"['\"]([^'\"]+\.js)['\"]")
 
 CATEGORY_ORDER = {

@@ -9,8 +9,8 @@ MODULE_PATH = ROOT / "code" / "th_15_main_panel.js"
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "verify.yml"
 DOC_PATHS = (
     ROOT / "README.md",
-    ROOT / "ARCHITECTURE.md",
-    ROOT / "STRUCTURE.md",
+    ROOT / "docs/ARCHITECTURE.md",
+    ROOT / "docs/STRUCTURE.md",
 )
 
 SOURCE = MODULE_PATH.read_text(encoding="utf-8")

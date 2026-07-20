@@ -237,7 +237,7 @@ def validate_registry(registry_path=DEFAULT_REGISTRY):
         errors.append("constraints/README.md missing")
     else:
         text = readme.read_text(encoding="utf-8")
-        for name in ("registry.json", "syntax.json", "api.json", "threading.json", "lifecycle.json", "exceptions.json"):
+        for name in ("registry.json", "syntax.json", "methods.json", "MODULE_BOUNDARIES.json", "api.json", "threading.json", "lifecycle.json", "exceptions.json"):
             if name not in text:
                 errors.append("constraints/README.md missing reference: " + name)
 

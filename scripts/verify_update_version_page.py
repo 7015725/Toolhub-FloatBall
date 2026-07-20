@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TH03 = (ROOT / "code" / "th_03_icon.js").read_text(encoding="utf-8")
 TH14 = (ROOT / "code" / "th_14_panels.js").read_text(encoding="utf-8")
-BOUNDARIES = (ROOT / "MODULE_BOUNDARIES.json").read_text(encoding="utf-8")
+BOUNDARIES = (ROOT / "constraints/MODULE_BOUNDARIES.json").read_text(encoding="utf-8")
 UPDATE_ENTRY_SECTION = TH14.split("FloatBallAppWM.prototype.createToolHubUpdateHomeEntry", 1)[1].split("FloatBallAppWM.prototype.buildToolHubUpdateVersionPanelView", 1)[0]
 
 checks = {

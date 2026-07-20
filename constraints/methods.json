@@ -2,7 +2,7 @@
   "schema": 1,
   "domain": "methods",
   "policy": "constraints_only",
-  "source": "MODULE_BOUNDARIES.json",
+  "source": "constraints/MODULE_BOUNDARIES.json",
   "validator": "module-boundaries",
-  "description": "统一注册入口；实际方法归属、重复定义和最终所有者仍以 MODULE_BOUNDARIES.json 为真实约束源。"
+  "description": "统一注册入口；实际方法归属、重复定义和最终所有者以 constraints/MODULE_BOUNDARIES.json 为真实约束源。"
 }

@@ -6,9 +6,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 README = (ROOT / "README.md").read_text(encoding="utf-8")
-ARCH = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
-STRUCTURE = (ROOT / "STRUCTURE.md").read_text(encoding="utf-8")
-SQLITE = (ROOT / "SQLITE_STORAGE.md").read_text(encoding="utf-8")
+ARCH = (ROOT / "docs/ARCHITECTURE.md").read_text(encoding="utf-8")
+STRUCTURE = (ROOT / "docs/STRUCTURE.md").read_text(encoding="utf-8")
+SQLITE = (ROOT / "docs/SQLITE_STORAGE.md").read_text(encoding="utf-8")
 ENTRY = (ROOT / "ToolHub.js").read_text(encoding="utf-8")
 SIGN_SCRIPT = ROOT / "scripts" / "generate_signed_manifest.py"
 
@@ -78,12 +78,12 @@ for document_name, document_text in (
         if int(match.group(1)) != module_count:
             fail("%s stale module count: %s" % (document_name, match.group(0)))
 
-require(README, "SQLITE_STORAGE.md", "README SQLite document")
+require(README, "docs/SQLITE_STORAGE.md", "README SQLite document")
 require(README, "docs/README.md", "README documentation index")
 require(README, "scripts/README.md", "README Python index")
 require(README, "docs/features/button-types.md", "README button type document")
 require(README, "docs/security/security-config-clean.md", "README security document")
-require(README, "MODULE_SYMBOL_AUDIT.md", "README module audit")
+require(README, "docs/audits/MODULE_SYMBOL_AUDIT.md", "README module audit")
 forbid(README, "BUTTON_ICON_STORAGE.md", "README split button icon document")
 forbid(README, "docs/button-types.md", "README old button type path")
 forbid(README, "docs/security-config-clean.md", "README old security path")

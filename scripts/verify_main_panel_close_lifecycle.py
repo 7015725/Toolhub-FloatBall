@@ -11,7 +11,7 @@ EXTRA_PATH = ROOT / "code" / "th_15_extra.js"
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "verify.yml"
 ENTRY_PATH = ROOT / "ToolHub.js"
 README_PATH = ROOT / "README.md"
-ARCH_PATH = ROOT / "ARCHITECTURE.md"
+ARCH_PATH = ROOT / "docs/ARCHITECTURE.md"
 
 SOURCE = MODULE_PATH.read_text(encoding="utf-8")
 MAIN_PANEL = MAIN_PANEL_PATH.read_text(encoding="utf-8")

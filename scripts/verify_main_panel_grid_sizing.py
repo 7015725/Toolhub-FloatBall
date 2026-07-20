@@ -87,7 +87,7 @@ require(show, "android.view.View.MeasureSpec.AT_MOST", "other panel measure")
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_grid_sizing.py", "workflow")
 require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260719024500;", "entry")
-for doc in ("README.md", "ARCHITECTURE.md", "STRUCTURE.md"):
+for doc in ("README.md", "docs/ARCHITECTURE.md", "docs/STRUCTURE.md"):
     require((ROOT / doc).read_text(encoding="utf-8"), "网格决定面板宽高", doc)
 
 cols = 4

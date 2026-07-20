@@ -5,8 +5,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = (ROOT / "ToolHub.js").read_text(encoding="utf-8")
 README = (ROOT / "README.md").read_text(encoding="utf-8")
-ARCH = (ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8")
-STRUCTURE = (ROOT / "STRUCTURE.md").read_text(encoding="utf-8")
+ARCH = (ROOT / "docs/ARCHITECTURE.md").read_text(encoding="utf-8")
+STRUCTURE = (ROOT / "docs/STRUCTURE.md").read_text(encoding="utf-8")
 PUBLISH = (ROOT / ".github/workflows/publish-release.yml").read_text(encoding="utf-8")
 
 

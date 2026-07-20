@@ -12,8 +12,8 @@ DRAG_VERIFY_PATH = ROOT / "scripts" / "verify_main_panel_drag_sort.py"
 ENTRY_PATH = ROOT / "ToolHub.js"
 DOC_PATHS = (
     ROOT / "README.md",
-    ROOT / "ARCHITECTURE.md",
-    ROOT / "STRUCTURE.md",
+    ROOT / "docs/ARCHITECTURE.md",
+    ROOT / "docs/STRUCTURE.md",
 )
 
 SOURCE = MODULE_PATH.read_text(encoding="utf-8")

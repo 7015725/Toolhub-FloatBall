@@ -11,7 +11,7 @@ WORKFLOW_PATH = ROOT / ".github" / "workflows" / "verify.yml"
 ENTRY_PATH = ROOT / "ToolHub.js"
 LAYOUT_VERIFY_PATH = ROOT / "scripts" / "verify_button_editor_layout.py"
 README_PATH = ROOT / "README.md"
-ARCH_PATH = ROOT / "ARCHITECTURE.md"
+ARCH_PATH = ROOT / "docs/ARCHITECTURE.md"
 
 SOURCE = MODULE_PATH.read_text(encoding="utf-8")
 ACTION = ACTION_PATH.read_text(encoding="utf-8")
