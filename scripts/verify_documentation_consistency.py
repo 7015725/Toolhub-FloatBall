@@ -31,9 +31,12 @@ def parse_signing_modules():
     tree = ast.parse(SIGN_SCRIPT.read_text(encoding="utf-8"), filename=str(SIGN_SCRIPT))
     for node in tree.body:
         if not isinstance(node, ast.Assign):
-  continue
-        if any(isinstance(target, ast.Name) and target.id == "MODULES" for target in node.targets):
-  return [str(item) for item in ast.literal_eval(node.value)]
+            continue
+        if any(
+            isinstance(target, ast.Name) and target.id == "MODULES"
+            for target in node.targets
+        ):
+            return [str(item) for item in ast.literal_eval(node.value)]
     fail("generate_signed_manifest.py MODULES missing")
 
 
@@ -41,7 +44,7 @@ def parse_entry_modules():
     match = re.search(r"var\s+modules\s*=\s*\[(.*?)\]\s*;", ENTRY, re.S)
     if not match:
         fail("ToolHub.js modules list missing")
-    pairs = re.findall(r'"([^"]+\.js)"|\'([^\']+\.js)\'', match.group(1))
+    pairs = re.findall(r'"([^\"]+\.js)"|\'([^\']+\.js)\'', match.group(1))
     return [left or right for left, right in pairs]
 
 
@@ -52,17 +55,28 @@ if modules != entry_modules:
 module_count = len(modules)
 expected_count = "%d 个子模块" % module_count
 
-for name, text in (("README", README), ("ARCHITECTURE", ARCH), ("STRUCTURE", STRUCTURE)):
+for document_name, document_text in (
+    ("README", README),
+    ("ARCHITECTURE", ARCH),
+    ("STRUCTURE", STRUCTURE),
+):
     for module in modules:
-        require(text, module, name + " module " + module)
+        require(document_text, module, document_name + " module " + module)
 
 require(ARCH, expected_count, "architecture module count")
 require(STRUCTURE, expected_count, "structure module count")
-require(STRUCTURE, "files: %d 个模块" % module_count, "structure manifest module count")
-for name, text in (("ARCHITECTURE", ARCH), ("STRUCTURE", STRUCTURE)):
-    for match in re.finditer(r"(\d+) 个子模块", text):
+require(
+    STRUCTURE,
+    "files: %d 个模块" % module_count,
+    "structure manifest module count",
+)
+for document_name, document_text in (
+    ("ARCHITECTURE", ARCH),
+    ("STRUCTURE", STRUCTURE),
+):
+    for match in re.finditer(r"(\d+) 个子模块", document_text):
         if int(match.group(1)) != module_count:
-  fail("%s stale module count: %s" % (name, match.group(0)))
+            fail("%s stale module count: %s" % (document_name, match.group(0)))
 
 require(README, "BUTTON_ICON_STORAGE.md", "README button icon document")
 require(README, "docs/button-types.md", "README button type document")
@@ -79,12 +93,24 @@ require(README, "默认启动 `intentUri`", "README shortcut behavior")
 require(ARCH, "intentUri", "architecture shortcut behavior")
 require(STRUCTURE, "intentUri", "structure shortcut behavior")
 forbid(README, "执行 ShortX 快捷方式代码", "README legacy shortcut default")
-forbid(STRUCTURE, "通过 shell 广播桥发送 base64 命令，默认 root", "structure root default")
+forbid(
+    STRUCTURE,
+    "通过 shell 广播桥发送 base64 命令，默认 root",
+    "structure root default",
+)
 
-for text, label in ((ARCH, "architecture"), (STRUCTURE, "structure")):
-    require(text, ".module_update_transaction.json", label + " transaction marker")
-    require(text, ".module_update_transaction.committed", label + " commit marker")
-    require(text, "toolhub.db", label + " structured storage")
+for document_text, label in ((ARCH, "architecture"), (STRUCTURE, "structure")):
+    require(
+        document_text,
+        ".module_update_transaction.json",
+        label + " transaction marker",
+    )
+    require(
+        document_text,
+        ".module_update_transaction.committed",
+        label + " commit marker",
+    )
+    require(document_text, "toolhub.db", label + " structured storage")
 
 critical_modules = (
     "th_01_base.js",
@@ -93,10 +119,14 @@ critical_modules = (
     "th_16_entry.js",
     "th_19_position_state.js",
 )
-for name in critical_modules:
-    require(ARCH, name, "architecture critical module " + name)
-    require(STRUCTURE, name, "structure critical module " + name)
-forbid(STRUCTURE, "这两个模块失败会导致入口中断", "structure obsolete critical count")
+for module_name in critical_modules:
+    require(ARCH, module_name, "architecture critical module " + module_name)
+    require(STRUCTURE, module_name, "structure critical module " + module_name)
+forbid(
+    STRUCTURE,
+    "这两个模块失败会导致入口中断",
+    "structure obsolete critical count",
+)
 require(STRUCTURE, "任一加载失败都会中断启动", "structure critical failure behavior")
 require(STRUCTURE, "healthy / degraded / failed", "structure startup tri-state")
 
