@@ -36,7 +36,7 @@ def security(mode, action, uri, read_allow, write_allow, check_error=False):
 def main():
     content = (ROOT / "code" / "th_08_content.js").read_text(encoding="utf-8")
     rebuild = (ROOT / "code" / "th_12_rebuild.js").read_text(encoding="utf-8")
-    docs = (ROOT / "docs" / "security-config-clean.md").read_text(encoding="utf-8")
+    docs = (ROOT / "docs" / "security" / "security-config-clean.md").read_text(encoding="utf-8")
 
     checks = [
         ("content module version advanced", "// @version 1.0.8" in content),

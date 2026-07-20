@@ -78,9 +78,19 @@ for document_name, document_text in (
         if int(match.group(1)) != module_count:
             fail("%s stale module count: %s" % (document_name, match.group(0)))
 
-require(README, "BUTTON_ICON_STORAGE.md", "README button icon document")
-require(README, "docs/button-types.md", "README button type document")
-require(README, "docs/security-config-clean.md", "README security document")
+require(README, "SQLITE_STORAGE.md", "README SQLite document")
+require(README, "docs/README.md", "README documentation index")
+require(README, "scripts/README.md", "README Python index")
+require(README, "docs/features/button-types.md", "README button type document")
+require(README, "docs/security/security-config-clean.md", "README security document")
+require(README, "MODULE_SYMBOL_AUDIT.md", "README module audit")
+forbid(README, "BUTTON_ICON_STORAGE.md", "README split button icon document")
+forbid(README, "docs/button-types.md", "README old button type path")
+forbid(README, "docs/security-config-clean.md", "README old security path")
+require(SQLITE, "按钮图标 BLOB 存储细则", "SQLite integrated button icon details")
+require(SQLITE, "sqlite-icon:<SHA-256>", "SQLite icon runtime URI")
+require(SQLITE, "button_icon_storage_version=1", "SQLite icon migration version")
+
 for table_name in (
     "toolhub_button_icons",
     "toolhub_pickword_images",

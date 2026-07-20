@@ -72,44 +72,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Audit Markdown and Python organization
-        shell: bash
-        run: |
-          set -eo pipefail
-          python3 scripts/audit_md_py_organization.py
-          cat md-py-organization-audit.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload Markdown and Python organization audit
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: md-py-organization-audit
-          path: |
-            md-py-organization-audit.md
-            md-py-organization-audit.json
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Build repository maintenance snapshot
-        shell: bash
-        run: |
-          tar \
-            --exclude=.git \
-            --exclude=ci-python-timing \
-            --exclude=ci-python-timing-log.txt \
-            --exclude=md-py-organization-audit.md \
-            --exclude=md-py-organization-audit.json \
-            --exclude=ci-python-execution-inventory-log.txt \
-            -czf "$RUNNER_TEMP/repository-maintenance-snapshot.tar.gz" .
-
-      - name: Upload repository maintenance snapshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: repository-maintenance-snapshot
-          path: ${{ runner.temp }}/repository-maintenance-snapshot.tar.gz
-          if-no-files-found: error
-          retention-days: 1
-
       - name: Check git whitespace
         shell: bash
         run: git diff --check
