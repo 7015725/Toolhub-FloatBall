@@ -1,0 +1,70 @@
+name: Run one-shot docs and Python cleanup
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/oneshot-docs-python-cleanup-pr.yml'
+      - '.github/workflows/oneshot-docs-python-cleanup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Execute focused cleanup
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import textwrap
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/oneshot-docs-python-cleanup.yml')
+          text = workflow.read_text(encoding='utf-8')
+          start_marker = "          python3 - <<'PY'\n"
+          end_marker = "\n          PY\n\n      - name: Validate cleanup"
+          start = text.find(start_marker)
+          end = text.find(end_marker, start + len(start_marker))
+          if start < 0 or end < 0:
+              raise SystemExit('one-shot Python block not found')
+          source = textwrap.dedent(text[start + len(start_marker):end])
+          exec(compile(source, str(workflow), 'exec'), {'__name__': '__main__'})
+          PY
+
+      - name: Validate cleanup
+        shell: bash
+        run: |
+          python3 scripts/verify_workflow_script_references.py
+          python3 scripts/verify_documentation_consistency.py
+          python3 -W error::SyntaxWarning -m py_compile $(find scripts .github/scripts -name '*.py' -print)
+          python3 scripts/verify_manifest.py
+          python3 scripts/verify_pointer_regressions.py
+          git diff --check
+
+      - name: Commit cleanup
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          rm -f .github/workflows/oneshot-docs-python-cleanup-pr.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "整理文档、Python 校验与工作流"
+          git push origin "HEAD:$HEAD_BRANCH"
