@@ -9,6 +9,13 @@ Python 脚本继续平铺在 `scripts/` 下，原因是 GitHub Actions 直接按
 - `build_*` / `create_*` / `generate_*`：构建发布数据或签名产物。
 - `.github/scripts/`：仅供 GitHub Actions 使用的辅助脚本。
 
+## 统一代码约束
+
+- `verify_constraint_registry.py`：校验 `constraints/registry.json`、领域文件、验证器引用、精确例外和独立发布安全边界。
+- `verify_code_constraints.py`：按语法、方法、API、线程和生命周期领域执行注册的现有验证器，输出统一文本与 JSON 报告。
+- 方法归属继续由 `MODULE_BOUNDARIES.json` 提供真实约束；其他领域入口见 `constraints/README.md`。
+- 第一阶段与原有专项校验并行运行，不改变判定逻辑，也不删除旧入口。
+
 ## 构建与发布
 
 - `build_update_history.py`

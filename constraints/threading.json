@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "domain": "threading",
+  "policy": "plugin_contracts",
+  "contracts": [
+    {
+      "id": "thread-button-shortcut-picker",
+      "validator": "button-shortcut-thread-affinity",
+      "scope": ["code/th_14_button_shortcut.js"],
+      "requirement": "后台扫描完成后必须回到选择器所属线程更新界面"
+    },
+    {
+      "id": "thread-toolapp-main-owner",
+      "validator": "toolapp-main-thread-affinity",
+      "scope": ["code/th_13_panel_ui.js", "code/th_14_panels.js", "code/th_15_extra.js"],
+      "requirement": "ToolApp 视图和 WindowManager 操作必须保持所属线程一致"
+    }
+  ]
+}

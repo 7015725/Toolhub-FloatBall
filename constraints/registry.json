@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "policy": "constraints_only",
+  "description": "统一登记语法、方法、API、线程与生命周期约束；第一阶段复用现有验证器。",
+  "environment": {
+    "javascriptEngine": "Rhino",
+    "ecmascriptVersion": "ES5",
+    "androidMinApi": 33,
+    "androidPrimaryApi": 34
+  },
+  "domains": {
+    "syntax": {"file": "constraints/syntax.json", "enforcement": "hybrid"},
+    "methods": {"file": "constraints/methods.json", "enforcement": "declarative"},
+    "api": {"file": "constraints/api.json", "enforcement": "hybrid"},
+    "threading": {"file": "constraints/threading.json", "enforcement": "plugin"},
+    "lifecycle": {"file": "constraints/lifecycle.json", "enforcement": "hybrid"},
+    "exceptions": {"file": "constraints/exceptions.json", "enforcement": "declarative"}
+  },
+  "plugins": [
+    {"id": "js-syntax", "domain": "syntax", "script": "scripts/verify_js_syntax.py", "args": [], "blocking": true, "timeoutSeconds": 120},
+    {"id": "rhino-es5", "domain": "syntax", "script": ".github/scripts/es5_scan.py", "args": [], "blocking": true, "timeoutSeconds": 120},
+    {"id": "module-boundaries", "domain": "methods", "script": "scripts/verify_module_boundaries.py", "args": [], "blocking": true, "timeoutSeconds": 180},
+    {"id": "rhino-color-api", "domain": "api", "script": "scripts/verify_rhino_color_api_safety.py", "args": [], "blocking": true, "timeoutSeconds": 120},
+    {"id": "coloros-rhino-color-api", "domain": "api", "script": "scripts/verify_coloros_rhino_color_safety.py", "args": [], "blocking": true, "timeoutSeconds": 120},
+    {"id": "pickword-long-click-api34", "domain": "api", "script": "scripts/verify_pickword_long_click_api34.py", "args": [], "blocking": true, "timeoutSeconds": 120},
+    {"id": "button-shortcut-thread-affinity", "domain": "threading", "script": "scripts/verify_button_shortcut_thread_affinity.py", "args": [], "blocking": true, "timeoutSeconds": 120},
+    {"id": "toolapp-main-thread-affinity", "domain": "threading", "script": "scripts/verify_toolapp_main_thread_affinity.py", "args": [], "blocking": true, "timeoutSeconds": 120},
+    {"id": "animation-callback-safety", "domain": "lifecycle", "script": "scripts/verify_animation_callback_safety.py", "args": [], "blocking": true, "timeoutSeconds": 120},
+    {"id": "entry-lifecycle", "domain": "lifecycle", "script": "scripts/verify_entry_lifecycle.py", "args": [], "blocking": true, "timeoutSeconds": 120}
+  ],
+  "independentReleaseSecurityValidators": [
+    "scripts/verify_atomic_update.py",
+    "scripts/verify_changed_module_versions.py",
+    "scripts/verify_manifest.py",
+    "scripts/verify_module_versions.py",
+    "scripts/verify_release_transaction.py",
+    "scripts/verify_update_security_mode.py",
+    ".github/scripts/verify_manifest_signature.py"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "domain": "lifecycle",
+  "policy": "hybrid",
+  "contracts": [
+    {
+      "id": "lifecycle-animation-callback",
+      "validator": "animation-callback-safety",
+      "scope": ["code/*.js"],
+      "requirement": "动画取消、结束回调和延迟任务不得重复清理或访问失效实例"
+    },
+    {
+      "id": "lifecycle-entry-close",
+      "validator": "entry-lifecycle",
+      "scope": ["ToolHub.js", "code/th_16_entry.js"],
+      "requirement": "入口关闭链必须清理窗口、监听器、回调和模块资源"
+    }
+  ],
+  "futureDeclarativePairs": [
+    "registerDisplayListener/unregisterDisplayListener",
+    "postDelayed/removeCallbacks",
+    "addView/removeView",
+    "start/cancel"
+  ]
+}
