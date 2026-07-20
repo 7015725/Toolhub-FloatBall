@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that Python file references in GitHub Actions workflows exist."""
+"""Verify real Python command references in GitHub Actions workflows."""
 import re
 from pathlib import Path
 
