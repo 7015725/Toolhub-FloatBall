@@ -190,7 +190,7 @@ jobs:
         run: |
           set -o pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch --no-tags origin "${{ github.base_ref }}" --depth=1
+            git fetch --no-tags origin "${{ github.base_ref }}"
             git diff --check "origin/${{ github.base_ref }}...HEAD" 2>&1 | tee whitespace-report.txt
           else
             git show --check --pretty=oneline --summary HEAD 2>&1 | tee whitespace-report.txt
