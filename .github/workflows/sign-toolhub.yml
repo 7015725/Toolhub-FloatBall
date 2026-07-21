@@ -78,7 +78,6 @@ jobs:
         with:
           python-version: '3.x'
 
-
       - name: Verify changed module versions
         shell: bash
         run: |
