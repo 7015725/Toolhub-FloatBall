@@ -5982,9 +5982,7 @@
         "code/th_01_base.js",
         "code/th_04_theme.js",
         "code/th_13_panel_ui.js",
-        "code/th_17_pointer.js",
-        "code/th_20_pickword.js",
-        "code/th_22_image_viewer.js"
+        "code/th_20_pickword.js"
       ]
     },
     {
@@ -5994,5 +5992,5 @@
       ]
     }
   ],
-  "usageDigest": "sha256:5a17954f39a8e227d35cb575379725320eb43c20e18aadf66a41339055988ad5"
+  "usageDigest": "sha256:a4d38be0f8c42e78d51241c2f585fc86ed677febb33210c9e2266a268ac43b7f"
 }

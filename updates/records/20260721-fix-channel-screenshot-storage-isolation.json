@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "20260721-fix-channel-screenshot-storage-isolation",
+  "type": "fix",
+  "title": "修复 Stable/Beta 截图数据隔离",
+  "details": [
+    "内部截图创建、扫描和拾字路径校验统一使用当前通道 APP_ROOT_DIR",
+    "Shell 桥结果与截图缩略图缓存分别写入 Stable 或 Beta 私有缓存目录",
+    "公共相册目录保持不变，但截图管理记录继续由各通道独立 SQLite 保存"
+  ],
+  "manifestVersion": 0
+}

@@ -11,7 +11,7 @@ def require(value, message):
         raise SystemExit("FAIL pickword-image-meta-handoff: " + message)
 
 
-require(SOURCE.startswith("// @version 1.0.19\n"), "th_20 version must be 1.0.19")
+require(SOURCE.startswith("// @version 1.0.20\n"), "th_20 version must be 1.0.20")
 match = re.search(
     r"function normalizePickwordImageMeta20\(meta\) \{(?P<body>.*?)\n    \}\n\n    function releasePickwordImageController20",
     SOURCE,
@@ -23,6 +23,8 @@ require('if (meta.internalPath)' in body, "normalized internalPath is not accept
 require('meta.screenshotPath' in body, "raw screenshotPath fallback missing")
 require(body.index('if (meta.internalPath)') < body.index('meta.screenshotPath'), "internalPath must be preferred")
 require('internalPath: String(canonical)' in body, "canonical internalPath output missing")
+require('APP_ROOT_DIR' in body and 'new java.io.File(rootText).getCanonicalFile(), "screenshots"' in body, "active-channel screenshot boundary missing")
+require('ToolHub/screenshots' not in body and 'shortx.getShortXDir()' not in body, "stable screenshot root must not be accepted")
 require('meta.deleted === true || meta.available === false' in body, "deleted/unavailable meta guard missing")
 require('meta.imageOnly === true || meta.allowEmptyText === true' in body, "imageOnly state is not preserved")
 require('sourceField = "internalPath"' in body and 'sourceField = "screenshotPath"' in body, "source-field classification missing")

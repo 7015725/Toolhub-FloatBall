@@ -1,4 +1,4 @@
-// @version 1.0.19
+// @version 1.0.20
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -261,9 +261,9 @@
         try {
             var target = new java.io.File(rawPath);
             if (!target.exists() || !target.isFile() || target.length() <= 0) return null;
-            var base = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
-            if (!base) return null;
-            var root = new java.io.File(base, "ToolHub/screenshots").getCanonicalPath();
+            var rootText = String(APP_ROOT_DIR || "").replace(/\/+$/g, "");
+            if (!rootText) return null;
+            var root = new java.io.File(new java.io.File(rootText).getCanonicalFile(), "screenshots").getCanonicalPath();
             var canonical = target.getCanonicalPath();
             if (canonical.indexOf(root + java.io.File.separator) !== 0) return null;
             var normalized = {

@@ -216,14 +216,13 @@ def verify_issue_85(result, pointer, ocr, position, animation):
     )
     result.require(
         group,
-        "N9 screenshot directory is ShortX ToolHub/screenshots",
-        "shortx.getShortXDir()" in screenshot_dir
-        and r'.replace(/\/+$/g, "")' in screenshot_dir
-        and 'new java.io.File(base, "ToolHub/screenshots")' in screenshot_dir
+        "N9 screenshot directory follows active channel root",
+        "APP_ROOT_DIR" in screenshot_dir
+        and 'new java.io.File(root, "screenshots")' in screenshot_dir
         and "dir.mkdirs() !== true" in screenshot_dir
-        and "getToolHubAndroidContext" not in screenshot_dir
-        and '"/data/screenshots"' not in screenshot_dir,
-        "pointer screenshots must use shortx.getShortXDir()/ToolHub/screenshots without app-private fallback",
+        and '"ToolHub/screenshots"' not in screenshot_dir
+        and "shortx.getShortXDir()" not in screenshot_dir,
+        "pointer screenshots must use APP_ROOT_DIR/screenshots for the active Stable/Beta channel",
     )
 
     save_bitmap = section(
