@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "id": "20260721-beta-channel-switch-observability",
+  "type": "optimize",
+  "title": "Beta 补齐通道切换诊断日志",
+  "details": [
+    "同步 Stable 已验证的 TH_CHANNEL 结构化日志",
+    "记录目标通道、实际通道、检查结果、更新数量、错误和耗时",
+    "更新页显示最近一次切换后检查耗时",
+    "保持 Beta 自己的 Manifest、RSA 签名和更新历史"
+  ],
+  "manifestVersion": 0
+}

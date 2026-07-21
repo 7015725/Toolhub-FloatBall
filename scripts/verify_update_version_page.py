@@ -20,6 +20,8 @@ checks = {
     "通道切换后自动检查": "scheduleToolHubPostChannelSwitchCheck14" in TH14 and "checkToolHubModuleUpdatesNow()" in TH14 and "__toolHubChannelSwitchRunning === true" in TH14,
     "通道检查状态进入更新模型": all(marker in TH14 for marker in ["channelCheckStatus", "channelCheckMessage", "channelCheckAvailableCount", "recordToolHubChannelCheckResult"]),
     "通道检查结果展示与提醒": "切换后自动检查：正在获取当前通道更新" in TH14 and "切换后发现 " in TH14 and "自动检查失败" in TH14,
+    "通道切换结构化日志存在": all(marker in TH14 for marker in ["TH_CHANNEL event=", "POST_SWITCH_CHECK_SCHEDULED", "POST_SWITCH_CHECK_BEGIN", "POST_SWITCH_CHECK_DONE", "POST_SWITCH_CHECK_ABORTED", "POST_SWITCH_CHECK_FAILED", "POST_SWITCH_CHECK_THREAD_FAILED", "SWITCH_UI_ACCEPTED", "SWITCH_UI_REJECTED"]),
+    "通道检查记录耗时": all(marker in TH14 for marker in ["channelCheckStartedAt", "channelCheckDurationMs", "durationMs: snapshot.durationMs", "checkDuration + \"ms\""]),
     "确认切换启动检查监视": "scheduleToolHubPostChannelSwitchCheck14(self, confirmTarget)" in TH14,
     "更新页面刷新合并存在": "toolHubUpdateRefreshPending" in TH14 and "UPDATE_SURFACE_REFRESH_DELAY_MS = 48" in TH14,
     "设置首页更新状态局部刷新": "refreshToolHubUpdateHomeEntry" in TH14 and "toolHubUpdateHomeSummaryView" in TH14 and "toolHubUpdateHomeRedDotView" in TH14,
