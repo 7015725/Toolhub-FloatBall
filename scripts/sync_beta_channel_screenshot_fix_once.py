@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import json
-import re
 import subprocess
 from pathlib import Path
 
@@ -45,17 +44,6 @@ def main():
         "manifestVersion": 0
     }
     record_path.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-    workflow_path = ROOT / ".github/workflows/sign-toolhub.yml"
-    workflow = workflow_path.read_text(encoding="utf-8")
-    pattern = re.compile(
-        r"\n      - name: Sync Beta channel screenshot isolation fix\n.*?(?=\n      - name: Verify changed module versions\n)",
-        re.S,
-    )
-    workflow, count = pattern.subn("", workflow)
-    if count != 1:
-        raise SystemExit("temporary Beta sync workflow hook count=%d" % count)
-    workflow_path.write_text(workflow, encoding="utf-8")
 
     Path(__file__).unlink()
     print("Synced channel screenshot storage isolation fix from main to Beta")
