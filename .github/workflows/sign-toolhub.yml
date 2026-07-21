@@ -86,64 +86,7 @@ jobs:
         run: |
           set -o pipefail
           python3 scripts/apply_channel_screenshot_storage_isolation_once.py 2>&1 | tee channel-screenshot-patch.log
-          python3 - <<'PY' 2>&1 | tee -a channel-screenshot-patch.log
-          from pathlib import Path
-
-          viewer_verifier = Path('scripts/verify_pickword_image_viewer.py')
-          viewer_verifier.write_text(viewer_verifier.read_text(encoding='utf-8').replace('1.3.2', '1.3.3'), encoding='utf-8')
-
-          viewer = Path('code/th_22_image_viewer.js')
-          viewer.write_text(viewer.read_text(encoding='utf-8').replace('只处理 ToolHub/screenshots 内部截图', '只处理当前通道 APP_ROOT_DIR/screenshots 内部截图'), encoding='utf-8')
-
-          pointer = Path('code/th_17_pointer.js')
-          pointer_text = pointer.read_text(encoding='utf-8')
-          old_pointer = '''FloatBallAppWM.prototype.getPointerScreenshotDir = function() {
-  var rootText = "";
-  try { rootText = String(APP_ROOT_DIR || "").replace(/\\/+$/g, ""); } catch (e0) { rootText = ""; }
-  if (!rootText) throw new Error("当前 ToolHub 通道根目录为空");
-
-  var root = new java.io.File(rootText).getCanonicalFile();
-  var dir = new java.io.File(root, "screenshots").getCanonicalFile();
-  var rootPath = String(root.getCanonicalPath());
-  var dirPath = String(dir.getCanonicalPath());
-  if (dirPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("截图目录越界");
-  if (!dir.exists() && dir.mkdirs() !== true && !dir.exists()) {
-    throw new Error("无法创建截图目录：" + String(dir.getAbsolutePath()));
-  }
-  if (!dir.isDirectory()) throw new Error("截图路径不是目录");
-  return dir;
-};'''
-          new_pointer = '''FloatBallAppWM.prototype.getPointerScreenshotDir = function() {
-  var rootText = "";
-  try { rootText = String(APP_ROOT_DIR || "").replace(/\\/+$/g, ""); } catch (e0) { rootText = ""; }
-  if (!rootText) throw new Error("当前 ToolHub 通道根目录为空");
-
-  var root = new java.io.File(rootText);
-  var dir = new java.io.File(root, "screenshots");
-  if (!dir.exists() && dir.mkdirs() !== true && !dir.exists()) {
-    throw new Error("无法创建截图目录：" + String(dir.getAbsolutePath()));
-  }
-  return dir;
-};'''
-          if pointer_text.count(old_pointer) != 1:
-              raise SystemExit('unexpected generated pointer screenshot block')
-          pointer.write_text(pointer_text.replace(old_pointer, new_pointer, 1), encoding='utf-8')
-
-          pointer_verifier = Path('scripts/verify_pointer_regressions.py')
-          pointer_verify_text = pointer_verifier.read_text(encoding='utf-8')
-          pointer_verify_text = pointer_verify_text.replace('        and "getCanonicalFile()" in screenshot_dir\n        and "截图目录越界" in screenshot_dir\n', '')
-          pointer_verifier.write_text(pointer_verify_text, encoding='utf-8')
-
-          for name in (
-              'scripts/verify_pickword_long_click_api34.py',
-              'scripts/verify_pickword_emoji_grapheme.py',
-              'scripts/verify_pickword_unified_cleanup.py',
-              'scripts/verify_pickword_image_meta_handoff.py',
-          ):
-              path = Path(name)
-              path.write_text(path.read_text(encoding='utf-8').replace('1.0.19', '1.0.20'), encoding='utf-8')
-          PY
-          python3 scripts/generate_api_usage_baseline.py 2>&1 | tee -a channel-screenshot-patch.log
+          python3 scripts/finalize_channel_screenshot_storage_patch_once.py 2>&1 | tee -a channel-screenshot-patch.log
           python3 .github/scripts/es5_scan.py 2>&1 | tee -a channel-screenshot-patch.log
           python3 scripts/verify_js_syntax.py 2>&1 | tee -a channel-screenshot-patch.log
           python3 scripts/verify_pickword_image_viewer.py 2>&1 | tee -a channel-screenshot-patch.log
