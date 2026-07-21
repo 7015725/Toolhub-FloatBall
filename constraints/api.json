@@ -19,43 +19,83 @@
       "id": "api-usage-scanner-regression",
       "classification": "plugin_validated",
       "validator": "api-usage-scanner-regression",
-      "scope": ["scripts/report_api_usage.py", "scripts/verify_api_usage_scanner.py"],
+      "scope": [
+        "scripts/report_api_usage.py",
+        "scripts/verify_api_usage_scanner.py"
+      ],
       "reason": "确保 API 扫描器忽略注释和字符串，并能识别新增调用、反射与使用范围扩张"
     },
     {
       "id": "api-usage-policy",
       "classification": "plugin_validated",
       "validator": "api-usage-policy",
-      "scope": ["constraints/api.json", "constraints/API_USAGE_BASELINE.json", "constraints/API_USAGE_LEGACY.json"],
+      "scope": [
+        "constraints/api.json",
+        "constraints/API_USAGE_BASELINE.json",
+        "constraints/API_USAGE_LEGACY.json"
+      ],
       "reason": "校验基线摘要、初始遗留范围以及新增 API 显式分类规则"
     },
     {
       "id": "api-usage-baseline-enforcement",
       "classification": "plugin_validated",
       "validator": "api-usage-baseline",
-      "scope": ["ToolHub.js", "code/*.js"],
+      "scope": [
+        "ToolHub.js",
+        "code/*.js"
+      ],
       "reason": "阻断未写入基线、未分类或未经审核扩大使用范围的高置信度外部 API"
     },
     {
       "id": "api-rhino-color-safety",
       "classification": "plugin_validated",
       "validator": "rhino-color-api",
-      "scope": ["code/*.js"],
+      "scope": [
+        "code/*.js"
+      ],
       "reason": "约束 Rhino 下 Android 颜色重载、ColorStateList 和安全包装器调用"
     },
     {
       "id": "api-coloros-rhino-color-safety",
       "classification": "plugin_validated",
       "validator": "coloros-rhino-color-api",
-      "scope": ["code/*.js"],
+      "scope": [
+        "code/*.js"
+      ],
       "reason": "约束 ColorOS 环境中的颜色 API 兼容调用"
     },
     {
       "id": "api-pickword-long-click-api34",
       "classification": "plugin_validated",
       "validator": "pickword-long-click-api34",
-      "scope": ["code/th_20_pickword.js"],
+      "scope": [
+        "code/th_20_pickword.js"
+      ],
       "reason": "锁定 Android 14 拾字长按相关调用契约"
+    },
+    {
+      "id": "api-channel-switch-background-sleep",
+      "usageKeys": [
+        "java|method|java.lang.Thread#sleep"
+      ],
+      "source": "java",
+      "classOrObject": "java.lang.Thread",
+      "method": "sleep",
+      "classification": "safe",
+      "scope": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_14_panels.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js"
+      ],
+      "allowScopeExpansion": true,
+      "owner": "ToolHub update runtime",
+      "threadContract": "仅用于后台工作线程等待切换锁、更新锁或异步任务节流，不得在 UI 线程调用",
+      "fallback": "超时或异常时停止自动检查并保留手动重新检查入口",
+      "reason": "复用项目既有 Thread.sleep，在通道切换后的后台监视线程中等待运行锁释放"
     }
   ],
   "explicitRuleRequirements": [
