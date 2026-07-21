@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "e9725545f29d57511916c2846b8a1fa27f4422e36716b87fef1e947a0eab4ced",
-      "size": 55790,
-      "version": 20260721025117
+      "sha256": "9f009342807dd0215d9bea421b5e671b96baf467615d26c30b20d9e2f251e8ee",
+      "size": 56650,
+      "version": 20260721044134
     }
   },
   "branch": "main",
@@ -106,9 +106,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "e02a7cebb25cb567a81420511dbe02ec3ebb2324bb628bfba31b64d15ed7bc16",
-      "size": 143239,
-      "version": "1.1.13"
+      "sha256": "a78043623b68776a1738e68c427d84110c9771cb0ff93890fd368e4afd830acd",
+      "size": 153478,
+      "version": "1.1.14"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -169,13 +169,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "颜色安全与设置交互诊断结果改为写入当前通道 APP_ROOT_DIR",
-      "拾字号文件和 SharedPreferences 按 Stable/Beta 分区，避免首次启动继承另一通道状态",
-      "Stable 仅首次复制旧公共字号数据且不删除旧文件，Beta 不读取旧公共状态"
+      "切换 Stable/Beta 完成后自动等待新通道启动并执行无缓存更新检查",
+      "自动检查结果同步到更新页、设置首页摘要和红点，避免切换后误显示为最新",
+      "检查失败或发现更新时给出明确提示，手动重新检查可刷新同一状态"
     ],
     "date": "2026-07-21",
-    "title": "隔离 Stable/Beta 私有诊断与拾字状态"
+    "title": "增强通道切换后的更新发现提示"
   },
   "schema": 5,
-  "version": 20260721025117
+  "version": 20260721044134
 }

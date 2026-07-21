@@ -1,8 +1,34 @@
 {
   "schema": 1,
-  "historyVersion": 20260721025117,
-  "generatedAt": "2026-07-21T10:51:17+08:00",
+  "historyVersion": 20260721044134,
+  "generatedAt": "2026-07-21T12:41:34+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260721-channel-switch-update-discovery",
+      "type": "fix",
+      "title": "增强通道切换后的更新发现提示",
+      "details": [
+        "切换 Stable/Beta 完成后自动等待新通道启动并执行无缓存更新检查",
+        "自动检查结果同步到更新页、设置首页摘要和红点，避免切换后误显示为最新",
+        "检查失败或发现更新时给出明确提示，手动重新检查可刷新同一状态"
+      ],
+      "manifestVersion": 20260721044134,
+      "date": "2026-07-21",
+      "modules": [
+        {
+          "name": "th_14_panels.js",
+          "from": "1.1.13",
+          "to": "1.1.14",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260721201500,
+        "to": 20260721201500
+      }
+    },
     {
       "schema": 1,
       "id": "20260721-fix-channel-private-storage-isolation",

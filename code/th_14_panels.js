@@ -1,4 +1,4 @@
-// @version 1.1.13
+// @version 1.1.14
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -2049,16 +2049,61 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         base.entrySize = numberValue(raw.entrySize);
         base.entryManualUpdate = raw.entryManualUpdate !== false;
         base.entryMessage = textValue(raw.entryMessage);
+        base.channelCheckStatus = textValue(raw.channelCheckStatus);
+        base.channelCheckMessage = textValue(raw.channelCheckMessage);
+        base.channelCheckChannel = textValue(raw.channelCheckChannel);
+        base.channelCheckOrigin = textValue(raw.channelCheckOrigin);
+        base.channelCheckAvailableCount = numberValue(raw.channelCheckAvailableCount);
+        base.channelCheckAt = numberValue(raw.channelCheckAt);
       }
     } catch (eRaw) {}
     return base;
+  };
+
+  FloatBallAppWM.prototype.recordToolHubChannelCheckResult = function(ret, origin, channel) {
+    var snapshot = { status: "error", count: 0, message: "", channel: "stable", at: 0 };
+    try {
+      var raw = (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) ? TOOLHUB_UPDATE_STATE : null;
+      var count = numberValue(ret && ret.count);
+      var running = !!(ret && ret.running === true);
+      var ok = !!ret && ret.ok !== false && !running;
+      var entryAvailable = !!(raw && raw.entryUpdateAvailable === true);
+      var status = running ? "checking" : (!ok ? "error" : ((count > 0 || entryAvailable) ? "available" : "latest"));
+      var activeChannel = "stable";
+      try { activeChannel = normalizeToolHubUpdateChannel(channel || TOOLHUB_UPDATE_CHANNEL); } catch (eChannel) {}
+      var message = textValue(ret && (ret.msg || ret.error));
+      if (!message) {
+        if (status === "checking") message = "更新检查正在进行";
+        else if (status === "available") message = count > 0 ? ("发现 " + count + " 个可更新子模块") : "入口文件需要更新";
+        else if (status === "latest") message = "当前通道已是最新";
+        else message = "自动检查失败";
+      }
+      var checkedAt = numberValue(java.lang.System.currentTimeMillis());
+      if (raw) {
+        raw.channelCheckStatus = status;
+        raw.channelCheckMessage = message;
+        raw.channelCheckChannel = activeChannel;
+        raw.channelCheckOrigin = textValue(origin || "manual") || "manual";
+        raw.channelCheckAvailableCount = count;
+        raw.channelCheckAt = checkedAt;
+      }
+      snapshot.status = status;
+      snapshot.count = count;
+      snapshot.message = message;
+      snapshot.channel = activeChannel;
+      snapshot.at = checkedAt;
+    } catch (eRecord) {
+      snapshot.message = String(eRecord);
+    }
+    return snapshot;
   };
 
   FloatBallAppWM.prototype.hasToolHubUpdateAttention = function() {
     this.ensureToolHubUpdateUiState();
     var st = this.getToolHubUpdateStateExtended();
     var status = textValue(st.status);
-    var live = numberValue(st.availableCount) > 0 || st.entryUpdateAvailable === true || st.needRestart === true;
+    var channelCheckStatus = textValue(st.channelCheckStatus);
+    var live = numberValue(st.availableCount) > 0 || st.entryUpdateAvailable === true || st.needRestart === true || channelCheckStatus === "available" || channelCheckStatus === "error";
     if (status !== "error" && status !== "checking") this.state.toolHubLastKnownAttention = live;
     if (status === "error") return this.state.toolHubLastKnownAttention === true;
     return live;
@@ -2068,6 +2113,11 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     var st = this.getToolHubUpdateStateExtended();
     var status = textValue(st.status);
     var count = numberValue(st.availableCount);
+    var channelCheckStatus = textValue(st.channelCheckStatus);
+    if (channelCheckStatus === "waiting" || channelCheckStatus === "checking") return "已切换通道，正在自动检查更新";
+    if (channelCheckStatus === "available" && numberValue(st.channelCheckAvailableCount) > 0) return "切换后发现 " + numberValue(st.channelCheckAvailableCount) + " 个模块可更新";
+    if (channelCheckStatus === "available" && st.entryUpdateAvailable === true) return "切换后发现入口文件更新";
+    if (channelCheckStatus === "error") return "已切换通道，自动检查失败";
     if (status === "checking") return "正在检查最新版本";
     if (status === "installing") return "正在更新子模块";
     if (status === "restarting") return "正在重启 ToolHub";
@@ -2163,6 +2213,17 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         var ret = null;
         try { ret = checkToolHubModuleUpdatesNow(); }
         catch (eRun) { ret = { ok: false, error: String(eRun), msg: "检查失败：" + String(eRun) }; }
+        try {
+          var checkOrigin = "manual";
+          var checkChannel = "stable";
+          try { checkChannel = normalizeToolHubUpdateChannel(TOOLHUB_UPDATE_CHANNEL); } catch (eChannel) {}
+          try {
+            if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE &&
+                textValue(TOOLHUB_UPDATE_STATE.channelCheckOrigin) === "switch" &&
+                textValue(TOOLHUB_UPDATE_STATE.channelCheckChannel) === checkChannel) checkOrigin = "switch";
+          } catch (eOrigin) {}
+          if (self.recordToolHubChannelCheckResult) self.recordToolHubChannelCheckResult(ret, checkOrigin, checkChannel);
+        } catch (eRecord) {}
         try { self.state.toolHubSettingsCheckRunning = false; } catch (eFlag) {}
         try {
           self.runOnUiThreadSafe(function() {
@@ -2638,6 +2699,99 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     try { return String(value === undefined || value === null ? "" : value); } catch (e) { return ""; }
   }
 
+  function channelNumber(value) {
+    var n = Number(value || 0);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function setToolHubChannelCheckPending14(target, status, message) {
+    try {
+      if (typeof TOOLHUB_UPDATE_STATE !== "object" || !TOOLHUB_UPDATE_STATE) return;
+      TOOLHUB_UPDATE_STATE.channelCheckStatus = channelText(status || "waiting");
+      TOOLHUB_UPDATE_STATE.channelCheckMessage = channelText(message || "");
+      TOOLHUB_UPDATE_STATE.channelCheckChannel = normalizeToolHubUpdateChannel(target);
+      TOOLHUB_UPDATE_STATE.channelCheckOrigin = "switch";
+      TOOLHUB_UPDATE_STATE.channelCheckAvailableCount = 0;
+      TOOLHUB_UPDATE_STATE.channelCheckAt = channelNumber(java.lang.System.currentTimeMillis());
+    } catch (eState) {}
+  }
+
+  function scheduleToolHubPostChannelSwitchCheck14(owner, target) {
+    var normalized = "stable";
+    try { normalized = normalizeToolHubUpdateChannel(target); } catch (eTarget) {}
+    setToolHubChannelCheckPending14(normalized, "waiting", "等待目标通道完成启动");
+    try {
+      new java.lang.Thread(new java.lang.Runnable({ run: function() {
+        var deadline = channelNumber(java.lang.System.currentTimeMillis()) + 20000;
+        try {
+          while (channelNumber(java.lang.System.currentTimeMillis()) < deadline) {
+            var switching = false;
+            try { switching = (__toolHubChannelSwitchRunning === true || __toolHubRestartRunning === true); } catch (eSwitching) { switching = false; }
+            if (!switching) break;
+            java.lang.Thread.sleep(250);
+          }
+          var active = "stable";
+          try { active = normalizeToolHubUpdateChannel(TOOLHUB_UPDATE_CHANNEL); } catch (eActive) {}
+          if (active !== normalized) {
+            setToolHubChannelCheckPending14(normalized, "error", "目标通道未保持活动，可能已自动回退");
+            return;
+          }
+          while (channelNumber(java.lang.System.currentTimeMillis()) < deadline) {
+            var checking = false;
+            try { checking = __runtimeUpdateCheckRunning === true; } catch (eChecking) { checking = false; }
+            if (!checking) break;
+            java.lang.Thread.sleep(250);
+          }
+          java.lang.Thread.sleep(600);
+          var activeApp = null;
+          try { activeApp = TOOLHUB_ACTIVE_APP; } catch (eApp) { activeApp = null; }
+          if (!activeApp) activeApp = owner;
+          setToolHubChannelCheckPending14(normalized, "checking", "正在检查目标通道更新");
+          try {
+            if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
+              TOOLHUB_UPDATE_STATE.status = "checking";
+              TOOLHUB_UPDATE_STATE.error = "";
+            }
+          } catch (eRaw) {}
+          var ret = null;
+          try {
+            if (typeof checkToolHubModuleUpdatesNow !== "function") throw "检查模块未加载";
+            ret = checkToolHubModuleUpdatesNow();
+            if (ret && ret.running === true) {
+              java.lang.Thread.sleep(500);
+              ret = checkToolHubModuleUpdatesNow();
+            }
+          } catch (eCheck) {
+            ret = { ok: false, error: String(eCheck), msg: "检查失败：" + String(eCheck) };
+          }
+          var snapshot = activeApp && activeApp.recordToolHubChannelCheckResult
+            ? activeApp.recordToolHubChannelCheckResult(ret, "switch", normalized)
+            : { status: (ret && ret.ok !== false) ? (channelNumber(ret.count) > 0 ? "available" : "latest") : "error", count: channelNumber(ret && ret.count) };
+          var spec = null;
+          try { spec = getToolHubChannelSpec(normalized); } catch (eSpec) {}
+          var label = spec ? channelText(spec.label) : normalized;
+          var toastText = "";
+          if (snapshot.status === "available") toastText = snapshot.count > 0 ? ("已切换到" + label + "，发现 " + snapshot.count + " 个更新") : ("已切换到" + label + "，入口文件需要更新");
+          else if (snapshot.status === "latest") toastText = "已切换到" + label + "，当前已是最新";
+          else toastText = "已切换到" + label + "，但自动检查失败";
+          try { showToolHubChannelSwitchToast(toastText); } catch (eToast) {}
+          try {
+            if (activeApp && activeApp.runOnUiThreadSafe) activeApp.runOnUiThreadSafe(function() {
+              try { if (activeApp.refreshToolHubUpdateSurface) activeApp.refreshToolHubUpdateSurface("channel_post_check"); } catch (eRefresh) {}
+            });
+          } catch (eUi) {}
+        } catch (eMonitor) {
+          setToolHubChannelCheckPending14(normalized, "error", "切换后自动检查异常：" + String(eMonitor));
+          try { showToolHubChannelSwitchToast("通道已切换，但自动检查异常"); } catch (eToastFail) {}
+        }
+      }})).start();
+      return true;
+    } catch (eThread) {
+      setToolHubChannelCheckPending14(normalized, "error", "无法启动切换后检查线程");
+      return false;
+    }
+  }
+
   FloatBallAppWM.prototype.getToolHubUpdateChannelUiState = function() {
     var channel = "stable";
     var label = "正式版 Stable";
@@ -2724,6 +2878,21 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     addChoice("stable", "正式版 Stable", "main · 日常稳定使用 · /ToolHub");
     addChoice("beta", "测试版 Beta", "beta · 提前测试新功能 · /ToolHub-Beta");
     addText(channelCardRoot, "当前运行：" + current.label + "  ·  GitHub/" + current.branch, 11, T.onSurface2, false).setPadding(0, this.dp(8), 0, 0);
+    try {
+      var rawCheck = (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) ? TOOLHUB_UPDATE_STATE : null;
+      var checkStatus = rawCheck ? channelText(rawCheck.channelCheckStatus) : "";
+      var checkChannel = rawCheck ? channelText(rawCheck.channelCheckChannel) : "";
+      var checkOrigin = rawCheck ? channelText(rawCheck.channelCheckOrigin) : "";
+      if (checkOrigin === "switch" && checkChannel === current.channel && checkStatus) {
+        var checkLine = "";
+        var checkColor = T.onSurface2;
+        if (checkStatus === "waiting" || checkStatus === "checking") { checkLine = "切换后自动检查：正在获取当前通道更新"; checkColor = T.primary; }
+        else if (checkStatus === "available") { checkLine = "切换后自动检查：发现 " + channelNumber(rawCheck.channelCheckAvailableCount) + " 个更新，请在下方安装"; checkColor = T.primary; }
+        else if (checkStatus === "latest") checkLine = "切换后自动检查：当前通道已是最新";
+        else if (checkStatus === "error") { checkLine = "切换后自动检查失败，请点击下方“重新检查”"; checkColor = T.danger || T.primary; }
+        if (checkLine) addText(channelCardRoot, checkLine, 11, checkColor, checkStatus === "available" || checkStatus === "error").setPadding(0, this.dp(5), 0, 0);
+      }
+    } catch (eCheckLine) {}
 
     if (current.switching) {
       addText(channelCardRoot, "正在切换更新通道，请勿重复操作。", 12, T.primary, true).setPadding(0, this.dp(8), 0, 0);
@@ -2757,6 +2926,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         var ret = null;
         try { ret = switchToolHubUpdateChannel(confirmTarget); }
         catch (eSwitch) { ret = { ok: false, msg: "切换失败：" + String(eSwitch) }; }
+        if (ret && ret.ok === true && ret.unchanged !== true) scheduleToolHubPostChannelSwitchCheck14(self, confirmTarget);
         try { self.toast(ret && ret.msg ? ret.msg : "正在切换更新通道"); } catch (eToast2) {}
         self.refreshToolHubUpdateSurface("channel_switch_start");
       });
