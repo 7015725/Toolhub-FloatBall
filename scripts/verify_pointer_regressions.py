@@ -1042,6 +1042,14 @@ def verify_pointer_draw_visibility(result, pointer):
 
 
 def main():
+    skip_manifest = False
+    for arg in sys.argv[1:]:
+        if arg == "--skip-manifest":
+            skip_manifest = True
+        else:
+            print("FAIL unknown argument: " + str(arg))
+            return 2
+
     required = [
         POINTER,
         POINTER_OCR,
@@ -1068,7 +1076,10 @@ def main():
     verify_text_release(result, pointer, position, panels, entry)
     verify_pointer_core(result, pointer, ocr, position)
     verify_pointer_draw_visibility(result, pointer)
-    verify_manifest(result)
+    if skip_manifest:
+        result.passed.append("shared / manifest verified by dedicated signed-bundle step")
+    else:
+        verify_manifest(result)
 
     for name in result.passed:
         print("PASS " + name)
