@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "20260721-fix-channel-private-storage-isolation",
+  "type": "fix",
+  "title": "隔离 Stable/Beta 私有诊断与拾字状态",
+  "details": [
+    "颜色安全与设置交互诊断结果改为写入当前通道 APP_ROOT_DIR",
+    "拾字号文件和 SharedPreferences 按 Stable/Beta 分区，避免首次启动继承另一通道状态",
+    "Stable 仅首次复制旧公共字号数据且不删除旧文件，Beta 不读取旧公共状态"
+  ],
+  "manifestVersion": 0
+}
