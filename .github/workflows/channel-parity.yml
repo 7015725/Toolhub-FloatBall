@@ -1,0 +1,76 @@
+name: channel-parity
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 18 * * *'
+  pull_request:
+    paths:
+      - '.github/workflows/channel-parity.yml'
+      - '.github/workflows/verify.yml'
+      - 'scripts/verify_channel_branch_parity.py'
+      - 'docs/CHANNEL_RELEASE_WORKFLOW.md'
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: compare-main-beta-content
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Fetch Stable and Beta
+        shell: bash
+        run: |
+          git fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            +refs/heads/beta:refs/remotes/origin/beta
+
+      - name: Compare branch content
+        id: parity
+        continue-on-error: true
+        shell: bash
+        run: |
+          python3 scripts/verify_channel_branch_parity.py \
+            --base-ref origin/main \
+            --head-ref origin/beta \
+            --output channel-parity-report.md \
+            --json-output channel-parity-report.json
+
+      - name: Publish summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f channel-parity-report.md ]; then
+            cat channel-parity-report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Channel parity report was not generated.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: channel-parity-report
+          path: |
+            channel-parity-report.md
+            channel-parity-report.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Fail scheduled or manual drift check
+        if: github.event_name != 'pull_request' && steps.parity.outcome == 'failure'
+        shell: bash
+        run: |
+          echo 'Stable/Beta shared content drift detected.' >&2
+          exit 1
