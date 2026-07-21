@@ -32,6 +32,25 @@ jobs:
         shell: bash
         run: |
           python3 scripts/report_entry_symbols.py --write docs/audits/ENTRY_SYMBOL_AUDIT.md
+          python3 - <<'PY'
+          from pathlib import Path
+
+          current = 'var TOOLHUB_ENTRY_VERSION = 20260721201500;'
+          obsolete = (
+              'var TOOLHUB_ENTRY_VERSION = 20260719024500;',
+              'var TOOLHUB_ENTRY_VERSION = 20260721193000;',
+          )
+          changed = []
+          for path in sorted(Path('scripts').glob('*.py')):
+              text = path.read_text(encoding='utf-8')
+              updated = text
+              for old in obsolete:
+                  updated = updated.replace(old, current)
+              if updated != text:
+                  path.write_text(updated, encoding='utf-8')
+                  changed.append(str(path))
+          print('updated entry-version assertions: ' + (', '.join(changed) if changed else 'none'))
+          PY
           rm -f .github/workflows/finalize-entry-symbol-audit-once.yml
 
       - name: Run complete ToolHub verification chain
