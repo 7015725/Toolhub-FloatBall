@@ -10,5 +10,19 @@
     "切换采用 pending/commit 事务，目标启动失败时自动恢复原通道",
     "Manifest schema 5 绑定 channel 与 branch，CI 同时验证 main 和 beta"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260721000938,
+  "date": "2026-07-21",
+  "modules": [
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.10",
+      "to": "1.1.12",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": true,
+    "from": 20260719024500,
+    "to": 20260721201500
+  }
 }

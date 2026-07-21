@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "e66336a58c608bfd64231d6b0df2acc0ea134a66e59f2630fbd42ed0834928be",
+      "sha256": "469d079d83b56c0b3431b91b8292d9e86e4207a3eb62f7cbb2471a4b9e188a95",
       "size": 53493,
-      "version": 20260720235649
+      "version": 20260721000938
     }
   },
   "branch": "main",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "d190ddd86579eab2b0e2121f7fd39688ab2777d18023b8f917e332cd15e4b6eb",
-    "size": 100280,
-    "version": 20260721193000,
+    "sha256": "48a8ed1fccc0070eaf47cbcd73f7779b80c1a8ba6e10fe895ea7f82d735eb386",
+    "size": 99993,
+    "version": 20260721201500,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -106,9 +106,9 @@
       "version": "1.0.3"
     },
     "th_14_panels.js": {
-      "sha256": "14bf481778947fdbe4a5e34672408b557dd3296128d7ff21c555ba4405484f33",
-      "size": 143353,
-      "version": "1.1.11"
+      "sha256": "9ed3c79740d8e92e5876c9030e9cb70c6e89b0c75ba730d2fdf8ee8f1000a0c6",
+      "size": 142659,
+      "version": "1.1.12"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -179,5 +179,5 @@
     "title": "增加 Stable 与 Beta 更新通道"
   },
   "schema": 5,
-  "version": 20260720235649
+  "version": 20260721000938
 }
