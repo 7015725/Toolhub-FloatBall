@@ -586,3 +586,7 @@ ToolHub/toolhub.db
 ## 截图管理器读取边界
 
 截图管理器只读取 `toolhub_pickword_images` 与 `toolhub_pickword_image_exports`。内部标签会合并数据库记录和 `ToolHub/screenshots/` 实际文件；已保存标签只使用数据库中由 ToolHub 写入的公共副本记录。删除公共副本时，以数据库中保存的精确 URI/路径为准，并限制在 MediaStore 或主存储范围内。
+
+## 更新通道数据边界
+
+Stable 与 Beta 的 `APP_ROOT_DIR` 不同，因此 `toolhub.db`、内部截图和私有缓存均物理隔离。截图管理器只扫描当前通道的 `APP_ROOT_DIR/screenshots`。公共相册文件不按通道拆分目录，但其 `internal_path`、`saved_public_path` 与 `content_uri` 关系记录保存在当前通道数据库中。

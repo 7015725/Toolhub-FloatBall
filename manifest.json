@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "e489eda7ad0cc96fd186875a4833454ae7646f8ad65f28e828171be643f8a585",
-      "size": 54165,
-      "version": 20260721010251
+      "sha256": "c191de098e427ce90165ccc57d97b9252190c0fcd42e422a49b69093fef494a4",
+      "size": 55301,
+      "version": 20260721020705
     }
   },
   "branch": "beta",
@@ -131,9 +131,9 @@
       "version": "1.0.17"
     },
     "th_17_pointer.js": {
-      "sha256": "44752f1f2a856e82260728724cea49ba85df939e6d0e5c9a349e9420063ab0a1",
-      "size": 186424,
-      "version": "1.2.13"
+      "sha256": "84492391435fa07220c29cca6f8f761f9b15bc306245786efe4116fd4a993680",
+      "size": 186377,
+      "version": "1.2.14"
     },
     "th_18_pointer_ocr.js": {
       "sha256": "70112b5098852b54e55ded3a3d05f6723ca29a22e8e09d1f093bf60def0aae85",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "df1fd85bac98b998c45ecf07701354b67616b78107167459342448ee6997e9b1",
-      "size": 263595,
-      "version": "1.0.19"
+      "sha256": "f2b57b971444b85a7fb9149d199ad1428c60f8c3522738386e5c9ca5b5b52e02",
+      "size": 263627,
+      "version": "1.0.20"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -156,9 +156,9 @@
       "version": "1.3.3"
     },
     "th_22_image_viewer.js": {
-      "sha256": "83493e002044620f15116b2e351ec5b8a554ce83a8a5f776387510b0482b542a",
-      "size": 123952,
-      "version": "1.3.2"
+      "sha256": "8001c6e684e9fa953f044acc35cafd8987446b47eb7a2792985cc997669d1704",
+      "size": 124296,
+      "version": "1.3.3"
     },
     "th_23_screenshot_manager.js": {
       "sha256": "fe47a98de21344b31c6447eb2759906fb119e7f129caa31effa57689e1bccd89",
@@ -169,13 +169,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "为长期 beta 分支生成首份 channel=beta、branch=beta 的 RSA 签名 Manifest",
-      "Beta 与 Stable 继续使用相同 ToolHub.js 入口，但分别读取 beta 与 main 分支",
-      "本次仅初始化 Beta 发布基线，不修改运行时代码和正式版数据"
+      "Beta 内部截图创建、扫描和拾字路径校验统一使用 ToolHub-Beta 根目录",
+      "Beta Shell 桥结果与截图缩略图缓存写入 ToolHub-Beta 私有缓存目录",
+      "公共相册目录保持共享，但 Beta 截图管理记录继续使用独立 SQLite"
     ],
     "date": "2026-07-21",
-    "title": "初始化 Beta 更新通道"
+    "title": "Beta 修复截图数据通道隔离"
   },
   "schema": 5,
-  "version": 20260721010251
+  "version": 20260721020705
 }
