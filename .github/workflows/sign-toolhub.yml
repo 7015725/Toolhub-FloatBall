@@ -84,15 +84,17 @@ jobs:
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
-          python3 scripts/apply_channel_screenshot_storage_isolation_once.py
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_pointer_regressions.py
-          python3 scripts/verify_pickword_image_viewer.py
-          python3 scripts/verify_pickword_image_meta_handoff.py
-          python3 scripts/verify_channel_screenshot_storage_isolation.py
-          python3 scripts/verify_code_constraints.py --output /tmp/channel-screenshot-constraints.json
-          git diff --check
+          set -o pipefail
+          python3 scripts/apply_channel_screenshot_storage_isolation_once.py 2>&1 | tee channel-screenshot-patch.log
+          python3 .github/scripts/es5_scan.py 2>&1 | tee -a channel-screenshot-patch.log
+          python3 scripts/verify_js_syntax.py 2>&1 | tee -a channel-screenshot-patch.log
+          python3 scripts/verify_pointer_regressions.py 2>&1 | tee -a channel-screenshot-patch.log
+          python3 scripts/verify_pickword_image_viewer.py 2>&1 | tee -a channel-screenshot-patch.log
+          python3 scripts/verify_pickword_image_meta_handoff.py 2>&1 | tee -a channel-screenshot-patch.log
+          python3 scripts/verify_channel_screenshot_storage_isolation.py 2>&1 | tee -a channel-screenshot-patch.log
+          python3 scripts/verify_code_constraints.py --output /tmp/channel-screenshot-constraints.json 2>&1 | tee -a channel-screenshot-patch.log
+          git diff --check 2>&1 | tee -a channel-screenshot-patch.log
+          rm -f channel-screenshot-patch.log
           if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
             echo "TOOLHUB_AUTOMATION_TOKEN is empty"
             exit 1
@@ -103,6 +105,15 @@ jobs:
           git commit -m "修复 Stable 与 Beta 截图数据隔离"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:$TARGET_BRANCH"
+
+      - name: Upload channel screenshot patch diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: channel-screenshot-patch-diagnostics
+          path: channel-screenshot-patch.log
+          if-no-files-found: warn
+          retention-days: 3
 
       - name: Verify changed module versions
         shell: bash
