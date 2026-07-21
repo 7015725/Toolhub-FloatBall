@@ -1244,3 +1244,11 @@ PopupOverlayBase
 - Stable 使用 `ToolHub/screenshots` 与 `ToolHub/cache/...`；Beta 使用 `ToolHub-Beta/screenshots` 与 `ToolHub-Beta/cache/...`。
 - 公共保存目录仍由 `PICKWORD_IMAGE_PUBLIC_DIR` 控制，默认 `/storage/emulated/0/Pictures/ToolHub`；公共文件可以共用系统相册位置，但保存记录由各通道独立 SQLite 管理。
 - 通道切换不迁移、删除或自动认领另一通道已有的内部截图。
+
+
+## Stable / Beta 私有诊断与拾字状态隔离
+
+- ColorOS 颜色安全结果和设置交互压力测试结果写入当前通道 `APP_ROOT_DIR/diagnostics/`。
+- 拾字号文件写入当前通道 `APP_ROOT_DIR/data/pickword_font_size.txt`，Android SharedPreferences 名称也附加 `stable` 或 `beta` 后缀。
+- Stable 在新路径缺失时可以只读旧公共字号文件和旧 SharedPreferences，并复制到 Stable 私有路径；Beta 不读取旧公共状态。
+- 旧公共字号文件不会被删除，避免升级失败或回滚时丢失用户数据。

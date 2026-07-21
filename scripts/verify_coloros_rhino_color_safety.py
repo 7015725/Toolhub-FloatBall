@@ -92,7 +92,7 @@ for token in (
     "FloatBallAppWM.prototype.saveColorSafetyRuntimeSelfTestResult = function",
     "FloatBallAppWM.prototype.loadColorSafetyRuntimeSelfTestResult = function",
     "FloatBallAppWM.prototype.formatColorSafetyRuntimeSelfTestSummary = function",
-    "ToolHub/diagnostics/color-safety-last.json",
+    "diagnostics/color-safety-last.json",
     "result.completedAt = Number(java.lang.System.currentTimeMillis())",
 ):
     if token not in THEME:
@@ -136,7 +136,7 @@ for token in (
     "new android.widget.SeekBar(context)",
     "createTransparentPressedStateDrawable(rowPressedColor",
     'createSolidButton(this, "压力测试"',
-    "ToolHub/diagnostics/settings-interaction-last.json",
+    "diagnostics/settings-interaction-last.json",
     "settings interaction stress start",
     "settings interaction stress pass",
     "settings interaction stress fail",
