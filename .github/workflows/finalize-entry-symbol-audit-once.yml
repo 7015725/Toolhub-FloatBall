@@ -1,0 +1,110 @@
+name: finalize-entry-symbol-audit-once
+
+on:
+  push:
+    branches: [agent/beta-update-channel]
+    paths:
+      - .github/workflows/finalize-entry-symbol-audit-once.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: finalize-entry-symbol-audit-once
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/beta-update-channel
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Regenerate entry symbol audit
+        shell: bash
+        run: |
+          python3 scripts/report_entry_symbols.py --write docs/audits/ENTRY_SYMBOL_AUDIT.md
+          rm -f .github/workflows/finalize-entry-symbol-audit-once.yml
+
+      - name: Run complete ToolHub verification chain
+        shell: bash
+        run: |
+          set -eo pipefail
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/report_entry_symbols.py --check docs/audits/ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/verify_entry_redundancy_cleanup.py
+          python3 scripts/verify_entry_writable_probe.py
+          python3 scripts/verify_sqlite_storage.py
+          python3 scripts/verify_sqlite_debounce_race.py
+          python3 scripts/verify_ball_position_state.py
+          python3 scripts/verify_animation_callback_safety.py
+          python3 scripts/verify_ball_rebuild_rollback.py
+          python3 scripts/verify_toolapp_layout.py
+          python3 scripts/verify_toolapp_main_thread_affinity.py
+          python3 scripts/verify_settings_color_scheme.py
+          python3 scripts/verify_legacy_theme_cleanup.py
+          python3 scripts/verify_settings_color_roles.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/verify_button_editor_layout.py
+          python3 scripts/verify_button_editor_direct_save.py
+          python3 scripts/verify_button_shortcut_thread_affinity.py
+          python3 scripts/verify_schema_validator.py
+          python3 scripts/verify_pickword_translate_settings.py
+          python3 scripts/verify_pickword_long_click_api34.py
+          python3 scripts/verify_pickword_share_close_cleanup.py
+          python3 scripts/verify_pickword_unified_cleanup.py
+          python3 scripts/verify_pickword_emoji_grapheme.py
+          python3 scripts/verify_entry_lifecycle.py
+          python3 scripts/verify_atomic_update.py
+          python3 scripts/verify_release_transaction.py
+          python3 scripts/verify_startup_status.py
+          python3 scripts/verify_main_panel_runtime_status.py
+          python3 scripts/verify_main_panel_drag_sort.py
+          python3 scripts/verify_main_panel_more_menu.py
+          python3 scripts/verify_main_panel_paging.py
+          python3 scripts/verify_main_panel_adaptive_layout.py
+          python3 scripts/verify_panel_layout_settings_cleanup.py
+          python3 scripts/verify_legacy_main_panel_cleanup.py
+          python3 scripts/verify_main_panel_grid_sizing.py
+          python3 scripts/verify_main_panel_visual_tuning.py
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_update_security_mode.py
+          python3 scripts/verify_shell_bridge_security.py
+          python3 scripts/verify_shell_log_redaction.py
+          python3 scripts/verify_shortcut_security.py
+          python3 scripts/verify_content_security.py
+          python3 scripts/verify_major_event_logging.py
+          python3 scripts/verify_manifest.py
+          python3 scripts/verify_module_versions.py
+          python3 scripts/verify_changed_module_versions.py
+          python3 scripts/verify_documentation_consistency.py
+          python3 scripts/verify_github_only_source.py
+          python3 scripts/verify_pointer_regressions.py
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_pickword_image_viewer.py
+          python3 scripts/verify_pickword_image_meta_handoff.py
+          python3 scripts/verify_screenshot_manager.py
+          python3 .github/scripts/verify_manifest_signature.py
+          git diff --check
+
+      - name: Commit finalized audit
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "同步 Beta 更新通道入口符号审计"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:agent/beta-update-channel
