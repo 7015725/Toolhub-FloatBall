@@ -194,6 +194,7 @@ jobs:
             python3 scripts/verify_shortcut_security.py
             python3 scripts/verify_content_security.py
             python3 scripts/verify_major_event_logging.py
+            python3 scripts/verify_channel_health_diagnostics.py
             python3 scripts/verify_manifest.py
             python3 scripts/verify_module_versions.py
             python3 scripts/verify_update_version_page.py
