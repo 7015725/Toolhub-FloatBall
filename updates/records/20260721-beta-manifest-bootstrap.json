@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "20260721-beta-manifest-bootstrap",
+  "type": "feature",
+  "title": "初始化 Beta 更新通道",
+  "details": [
+    "为长期 beta 分支生成首份 channel=beta、branch=beta 的 RSA 签名 Manifest",
+    "Beta 与 Stable 继续使用相同 ToolHub.js 入口，但分别读取 beta 与 main 分支",
+    "本次仅初始化 Beta 发布基线，不修改运行时代码和正式版数据"
+  ],
+  "manifestVersion": 0
+}
