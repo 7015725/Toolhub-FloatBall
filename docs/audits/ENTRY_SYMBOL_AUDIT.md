@@ -13,7 +13,7 @@
 - 子模块文件：`29`
 - 普通函数定义：`113`
 - 顶层变量：`37`
-- 跨模块引用函数：`14`
+- 跨模块引用函数：`17`
 - 动态引用待确认函数：`0`
 - 高置信度零引用函数候选：`0`
 - 高置信度零引用变量候选：`0`
@@ -48,13 +48,13 @@
 
 |函数|定义行|行数|状态|入口调用|入口标识符|子模块调用|子模块标识符|动态引用|
 |---|---:|---:|---|---:|---:|---:|---:|---:|
-|`normalizeToolHubUpdateChannel`|14|5|跨模块引用|14|14|7|7|0|
-|`getToolHubChannelSpec`|20|3|跨模块引用|3|3|3|3|0|
+|`normalizeToolHubUpdateChannel`|14|5|跨模块引用|14|14|8|8|0|
+|`getToolHubChannelSpec`|20|3|跨模块引用|3|3|4|4|0|
 |`getToolHubShortXBaseDirForChannel`|24|7|入口内使用|1|1|0|0|0|
 |`getToolHubChannelStatePath`|32|3|入口内使用|2|2|0|0|0|
 |`toolHubChannelCloseQuietly`|36|3|入口内使用|3|3|0|0|0|
 |`defaultToolHubChannelState`|40|10|入口内使用|1|1|0|0|0|
-|`readToolHubChannelState`|51|25|入口内使用|4|4|0|0|0|
+|`readToolHubChannelState`|51|25|跨模块引用|4|4|1|2|0|
 |`writeToolHubChannelStateAtomic`|77|42|入口内使用|4|4|0|0|0|
 |`buildNoCacheUrl`|188|4|入口内使用|2|2|0|0|0|
 |`closeQuietly`|193|3|入口内使用|11|11|0|0|0|
@@ -62,7 +62,7 @@
 |`syncFileOutput`|201|7|入口内使用|3|3|0|0|0|
 |`canWriteDirPath`|211|8|入口内使用|1|1|0|0|0|
 |`assertWritableDirPath`|220|23|入口内使用|2|2|0|0|0|
-|`getToolHubRootDir`|244|18|跨模块引用|6|6|2|4|0|
+|`getToolHubRootDir`|244|18|跨模块引用|6|6|3|5|0|
 |`getLogPath`|268|1|入口内使用|1|1|0|0|0|
 |`getCodeDirPath`|269|1|入口内使用|8|8|0|0|0|
 |`getTrustedShaPath`|270|1|入口内使用|3|3|0|0|0|
@@ -80,7 +80,7 @@
 |`setDirPerms`|384|6|入口内使用|2|2|0|0|0|
 |`ensureCodeDir`|391|16|入口内使用|9|9|0|0|0|
 |`readTextFile`|408|16|入口内使用|7|7|0|0|0|
-|`writeTextFile`|425|20|跨模块引用|7|7|1|2|0|
+|`writeTextFile`|425|20|跨模块引用|7|7|2|4|0|
 |`readFirstLine`|446|6|跨模块引用|3|3|1|2|0|
 |`sha256File`|453|23|入口内使用|17|17|0|0|0|
 |`saveTrustedSha`|477|1|入口内使用|7|7|0|0|0|
@@ -88,7 +88,7 @@
 |`getTrustedVersion`|479|5|跨模块引用|3|3|1|2|0|
 |`saveTrustedVersion`|484|1|入口内使用|2|2|0|0|0|
 |`getEmptyInstalledManifest`|486|3|入口内使用|3|3|0|0|0|
-|`readInstalledManifest`|490|21|入口内使用|1|1|0|0|0|
+|`readInstalledManifest`|490|21|跨模块引用|1|1|1|2|0|
 |`getInstalledFileInfo`|512|7|入口内使用|1|1|0|0|0|
 |`getInstalledSha`|520|5|入口内使用|3|3|0|0|0|
 |`saveInstalledManifestFromLocal`|526|29|入口内使用|3|3|0|0|0|
@@ -105,7 +105,7 @@
 |`runtimeOptString`|792|3|入口内使用|17|17|0|0|0|
 |`copyRuntimeStringList`|796|8|入口内使用|6|6|0|0|0|
 |`getUpdateModeText`|805|5|入口内使用|2|2|0|0|0|
-|`getTrustedManifestVersionNumber`|811|7|入口内使用|2|2|0|0|0|
+|`getTrustedManifestVersionNumber`|811|7|跨模块引用|2|2|1|2|0|
 |`buildToolHubSecurityText`|819|6|入口内使用|2|2|0|0|0|
 |`applyRuntimeUpdateState`|826|38|入口内使用|3|3|0|0|0|
 |`hashesEqual`|865|4|入口内使用|14|14|0|0|0|
