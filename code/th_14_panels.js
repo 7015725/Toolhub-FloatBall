@@ -1,4 +1,4 @@
-// @version 1.1.14
+// @version 1.1.15
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -2054,6 +2054,8 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         base.channelCheckChannel = textValue(raw.channelCheckChannel);
         base.channelCheckOrigin = textValue(raw.channelCheckOrigin);
         base.channelCheckAvailableCount = numberValue(raw.channelCheckAvailableCount);
+        base.channelCheckStartedAt = numberValue(raw.channelCheckStartedAt);
+        base.channelCheckDurationMs = numberValue(raw.channelCheckDurationMs);
         base.channelCheckAt = numberValue(raw.channelCheckAt);
       }
     } catch (eRaw) {}
@@ -2061,7 +2063,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   };
 
   FloatBallAppWM.prototype.recordToolHubChannelCheckResult = function(ret, origin, channel) {
-    var snapshot = { status: "error", count: 0, message: "", channel: "stable", at: 0 };
+    var snapshot = { status: "error", count: 0, message: "", channel: "stable", at: 0, durationMs: 0 };
     try {
       var raw = (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) ? TOOLHUB_UPDATE_STATE : null;
       var count = numberValue(ret && ret.count);
@@ -2079,12 +2081,15 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         else message = "自动检查失败";
       }
       var checkedAt = numberValue(java.lang.System.currentTimeMillis());
+      var startedAt = raw ? numberValue(raw.channelCheckStartedAt) : 0;
+      var durationMs = startedAt > 0 ? Math.max(0, checkedAt - startedAt) : 0;
       if (raw) {
         raw.channelCheckStatus = status;
         raw.channelCheckMessage = message;
         raw.channelCheckChannel = activeChannel;
         raw.channelCheckOrigin = textValue(origin || "manual") || "manual";
         raw.channelCheckAvailableCount = count;
+        raw.channelCheckDurationMs = durationMs;
         raw.channelCheckAt = checkedAt;
       }
       snapshot.status = status;
@@ -2092,6 +2097,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
       snapshot.message = message;
       snapshot.channel = activeChannel;
       snapshot.at = checkedAt;
+      snapshot.durationMs = durationMs;
     } catch (eRecord) {
       snapshot.message = String(eRecord);
     }
@@ -2222,7 +2228,8 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
                 textValue(TOOLHUB_UPDATE_STATE.channelCheckOrigin) === "switch" &&
                 textValue(TOOLHUB_UPDATE_STATE.channelCheckChannel) === checkChannel) checkOrigin = "switch";
           } catch (eOrigin) {}
-          if (self.recordToolHubChannelCheckResult) self.recordToolHubChannelCheckResult(ret, checkOrigin, checkChannel);
+          var recorded = self.recordToolHubChannelCheckResult ? self.recordToolHubChannelCheckResult(ret, checkOrigin, checkChannel) : null;
+          if (checkOrigin === "manual" && recorded) logToolHubChannelEvent14(self, "MANUAL_CHECK_DONE", { origin: "manual", target: checkChannel, active: checkChannel, status: recorded.status, count: recorded.count, durationMs: recorded.durationMs, message: recorded.message });
         } catch (eRecord) {}
         try { self.state.toolHubSettingsCheckRunning = false; } catch (eFlag) {}
         try {
@@ -2704,6 +2711,25 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     return isNaN(n) ? 0 : n;
   }
 
+  function channelLogValue14(value) {
+    var text = channelText(value).replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ");
+    return text.length > 240 ? text.substring(0, 240) : text;
+  }
+
+  function logToolHubChannelEvent14(owner, eventName, fields) {
+    try {
+      var line = "TH_CHANNEL event=" + channelLogValue14(eventName || "UNKNOWN");
+      var keys = ["origin", "target", "active", "status", "count", "durationMs", "message", "error"];
+      var data = fields || {};
+      for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        if (data[key] === undefined || data[key] === null || channelText(data[key]) === "") continue;
+        line += " " + key + "=" + channelLogValue14(data[key]);
+      }
+      safeLog(owner && owner.L, "i", line);
+    } catch (eLog) {}
+  }
+
   function setToolHubChannelCheckPending14(target, status, message) {
     try {
       if (typeof TOOLHUB_UPDATE_STATE !== "object" || !TOOLHUB_UPDATE_STATE) return;
@@ -2711,18 +2737,25 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
       TOOLHUB_UPDATE_STATE.channelCheckMessage = channelText(message || "");
       TOOLHUB_UPDATE_STATE.channelCheckChannel = normalizeToolHubUpdateChannel(target);
       TOOLHUB_UPDATE_STATE.channelCheckOrigin = "switch";
+      var now = channelNumber(java.lang.System.currentTimeMillis());
       TOOLHUB_UPDATE_STATE.channelCheckAvailableCount = 0;
-      TOOLHUB_UPDATE_STATE.channelCheckAt = channelNumber(java.lang.System.currentTimeMillis());
+      if (channelText(status) === "waiting" || channelNumber(TOOLHUB_UPDATE_STATE.channelCheckStartedAt) <= 0) {
+        TOOLHUB_UPDATE_STATE.channelCheckStartedAt = now;
+      }
+      TOOLHUB_UPDATE_STATE.channelCheckDurationMs = 0;
+      TOOLHUB_UPDATE_STATE.channelCheckAt = now;
     } catch (eState) {}
   }
 
   function scheduleToolHubPostChannelSwitchCheck14(owner, target) {
     var normalized = "stable";
     try { normalized = normalizeToolHubUpdateChannel(target); } catch (eTarget) {}
+    var scheduledAt = channelNumber(java.lang.System.currentTimeMillis());
     setToolHubChannelCheckPending14(normalized, "waiting", "等待目标通道完成启动");
+    logToolHubChannelEvent14(owner, "POST_SWITCH_CHECK_SCHEDULED", { origin: "switch", target: normalized, active: TOOLHUB_UPDATE_CHANNEL, status: "waiting" });
     try {
       new java.lang.Thread(new java.lang.Runnable({ run: function() {
-        var deadline = channelNumber(java.lang.System.currentTimeMillis()) + 20000;
+        var deadline = scheduledAt + 20000;
         try {
           while (channelNumber(java.lang.System.currentTimeMillis()) < deadline) {
             var switching = false;
@@ -2734,6 +2767,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
           try { active = normalizeToolHubUpdateChannel(TOOLHUB_UPDATE_CHANNEL); } catch (eActive) {}
           if (active !== normalized) {
             setToolHubChannelCheckPending14(normalized, "error", "目标通道未保持活动，可能已自动回退");
+            logToolHubChannelEvent14(owner, "POST_SWITCH_CHECK_ABORTED", { origin: "switch", target: normalized, active: active, status: "rollback_detected", durationMs: channelNumber(java.lang.System.currentTimeMillis()) - scheduledAt });
             return;
           }
           while (channelNumber(java.lang.System.currentTimeMillis()) < deadline) {
@@ -2747,6 +2781,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
           try { activeApp = TOOLHUB_ACTIVE_APP; } catch (eApp) { activeApp = null; }
           if (!activeApp) activeApp = owner;
           setToolHubChannelCheckPending14(normalized, "checking", "正在检查目标通道更新");
+          logToolHubChannelEvent14(activeApp, "POST_SWITCH_CHECK_BEGIN", { origin: "switch", target: normalized, active: active, status: "checking" });
           try {
             if (typeof TOOLHUB_UPDATE_STATE === "object" && TOOLHUB_UPDATE_STATE) {
               TOOLHUB_UPDATE_STATE.status = "checking";
@@ -2767,6 +2802,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
           var snapshot = activeApp && activeApp.recordToolHubChannelCheckResult
             ? activeApp.recordToolHubChannelCheckResult(ret, "switch", normalized)
             : { status: (ret && ret.ok !== false) ? (channelNumber(ret.count) > 0 ? "available" : "latest") : "error", count: channelNumber(ret && ret.count) };
+          logToolHubChannelEvent14(activeApp, "POST_SWITCH_CHECK_DONE", { origin: "switch", target: normalized, active: active, status: snapshot.status, count: snapshot.count, durationMs: snapshot.durationMs, message: snapshot.message });
           var spec = null;
           try { spec = getToolHubChannelSpec(normalized); } catch (eSpec) {}
           var label = spec ? channelText(spec.label) : normalized;
@@ -2782,12 +2818,14 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
           } catch (eUi) {}
         } catch (eMonitor) {
           setToolHubChannelCheckPending14(normalized, "error", "切换后自动检查异常：" + String(eMonitor));
+          logToolHubChannelEvent14(owner, "POST_SWITCH_CHECK_FAILED", { origin: "switch", target: normalized, active: TOOLHUB_UPDATE_CHANNEL, status: "error", durationMs: channelNumber(java.lang.System.currentTimeMillis()) - scheduledAt, error: String(eMonitor) });
           try { showToolHubChannelSwitchToast("通道已切换，但自动检查异常"); } catch (eToastFail) {}
         }
       }})).start();
       return true;
     } catch (eThread) {
       setToolHubChannelCheckPending14(normalized, "error", "无法启动切换后检查线程");
+      logToolHubChannelEvent14(owner, "POST_SWITCH_CHECK_THREAD_FAILED", { origin: "switch", target: normalized, active: TOOLHUB_UPDATE_CHANNEL, status: "error", error: String(eThread) });
       return false;
     }
   }
@@ -2890,6 +2928,8 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         else if (checkStatus === "available") { checkLine = "切换后自动检查：发现 " + channelNumber(rawCheck.channelCheckAvailableCount) + " 个更新，请在下方安装"; checkColor = T.primary; }
         else if (checkStatus === "latest") checkLine = "切换后自动检查：当前通道已是最新";
         else if (checkStatus === "error") { checkLine = "切换后自动检查失败，请点击下方“重新检查”"; checkColor = T.danger || T.primary; }
+        var checkDuration = rawCheck ? channelNumber(rawCheck.channelCheckDurationMs) : 0;
+        if (checkLine && checkDuration > 0 && checkStatus !== "waiting" && checkStatus !== "checking") checkLine += " · " + checkDuration + "ms";
         if (checkLine) addText(channelCardRoot, checkLine, 11, checkColor, checkStatus === "available" || checkStatus === "error").setPadding(0, this.dp(5), 0, 0);
       }
     } catch (eCheckLine) {}
@@ -2926,6 +2966,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         var ret = null;
         try { ret = switchToolHubUpdateChannel(confirmTarget); }
         catch (eSwitch) { ret = { ok: false, msg: "切换失败：" + String(eSwitch) }; }
+        logToolHubChannelEvent14(self, ret && ret.ok === true ? "SWITCH_UI_ACCEPTED" : "SWITCH_UI_REJECTED", { origin: "settings", target: confirmTarget, active: TOOLHUB_UPDATE_CHANNEL, status: ret && ret.ok === true ? "accepted" : "rejected", message: ret && ret.msg ? ret.msg : "" });
         if (ret && ret.ok === true && ret.unchanged !== true) scheduleToolHubPostChannelSwitchCheck14(self, confirmTarget);
         try { self.toast(ret && ret.msg ? ret.msg : "正在切换更新通道"); } catch (eToast2) {}
         self.refreshToolHubUpdateSurface("channel_switch_start");

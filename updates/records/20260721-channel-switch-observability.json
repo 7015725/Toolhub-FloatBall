@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "id": "20260721-channel-switch-observability",
+  "type": "optimize",
+  "title": "补齐通道切换诊断日志",
+  "details": [
+    "为通道切换后的自动更新检查增加统一 TH_CHANNEL 结构化日志",
+    "记录目标通道、实际通道、检查结果、更新数量、错误和耗时",
+    "更新页显示最近一次切换后检查耗时，便于定位慢请求与回滚",
+    "不修改 ToolHub.js、数据目录、签名机制或自动安装行为"
+  ],
+  "manifestVersion": 20260721055433,
+  "date": "2026-07-21",
+  "modules": [
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.14",
+      "to": "1.1.15",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260721201500,
+    "to": 20260721201500
+  }
+}
