@@ -5632,6 +5632,7 @@
       "files": [
         "ToolHub.js",
         "code/th_01_base.js",
+        "code/th_14_panels.js",
         "code/th_17_pointer.js",
         "code/th_18_pointer_ocr.js",
         "code/th_20_pickword.js",
@@ -5989,5 +5990,5 @@
       ]
     }
   ],
-  "usageDigest": "sha256:cec07335c25987a59e3f34de0bc62da9092c7024d11c95c6bcb03e8ee97e67f7"
+  "usageDigest": "sha256:66dfc8630ff4beed5edaca5cf09b3577faf9224ca0b9f79132a25f8057cb6c40"
 }

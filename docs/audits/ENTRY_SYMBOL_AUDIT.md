@@ -13,7 +13,7 @@
 - 子模块文件：`29`
 - 普通函数定义：`113`
 - 顶层变量：`37`
-- 跨模块引用函数：`13`
+- 跨模块引用函数：`14`
 - 动态引用待确认函数：`0`
 - 高置信度零引用函数候选：`0`
 - 高置信度零引用变量候选：`0`
@@ -48,8 +48,8 @@
 
 |函数|定义行|行数|状态|入口调用|入口标识符|子模块调用|子模块标识符|动态引用|
 |---|---:|---:|---|---:|---:|---:|---:|---:|
-|`normalizeToolHubUpdateChannel`|14|5|跨模块引用|14|14|2|2|0|
-|`getToolHubChannelSpec`|20|3|跨模块引用|3|3|2|2|0|
+|`normalizeToolHubUpdateChannel`|14|5|跨模块引用|14|14|7|7|0|
+|`getToolHubChannelSpec`|20|3|跨模块引用|3|3|3|3|0|
 |`getToolHubShortXBaseDirForChannel`|24|7|入口内使用|1|1|0|0|0|
 |`getToolHubChannelStatePath`|32|3|入口内使用|2|2|0|0|0|
 |`toolHubChannelCloseQuietly`|36|3|入口内使用|3|3|0|0|0|
@@ -138,7 +138,7 @@
 |`recoverPendingModuleTransaction`|1308|33|入口内使用|3|3|0|0|0|
 |`executeStagedModuleTransaction`|1342|50|入口内使用|1|1|0|0|0|
 |`installPendingModuleUpdates`|1394|90|跨模块引用|0|0|1|2|0|
-|`checkToolHubModuleUpdatesNow`|1486|78|跨模块引用|0|0|1|6|0|
+|`checkToolHubModuleUpdatesNow`|1486|78|跨模块引用|0|0|3|9|0|
 |`checkModuleManifestConsistency`|1566|51|入口内使用|3|3|0|0|0|
 |`verifyLocalModuleBeforeEval`|1618|21|入口内使用|2|2|0|0|0|
 |`loadScript`|1640|29|入口内使用|3|3|0|0|0|
@@ -151,7 +151,7 @@
 |`closeToolHubAppsForRestart`|1850|29|入口内使用|4|4|0|0|0|
 |`reloadLocalToolHubModulesForRestart`|1880|29|入口内使用|1|1|0|0|0|
 |`restartToolHubFromSettings`|1910|44|跨模块引用|0|0|1|2|0|
-|`showToolHubChannelSwitchToast`|1957|8|入口内使用|3|3|0|0|0|
+|`showToolHubChannelSwitchToast`|1957|8|跨模块引用|3|3|2|2|0|
 |`flushToolHubStateBeforeChannelSwitch`|1966|9|入口内使用|1|1|0|0|0|
 |`loadTargetToolHubChannelModules`|1976|16|入口内使用|1|1|0|0|0|
 |`reloadKnownGoodToolHubChannelModules`|1993|14|入口内使用|1|1|0|0|0|
