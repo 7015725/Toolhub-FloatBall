@@ -1,4 +1,4 @@
-// @version 1.0.11
+// @version 1.0.12
 // =======================【工具：屏幕/旋转】======================
 FloatBallAppWM.prototype.getScreenSizePx = function() {
   var m = new android.util.DisplayMetrics();
@@ -1116,9 +1116,10 @@ FloatBallAppWM.prototype.getColorSafetyRuntimeContext = function() {
 
 FloatBallAppWM.prototype.getColorSafetyRuntimeResultFile = function() {
   try {
-    var baseDir = String(shortx.getShortXDir());
-    if (!baseDir) return null;
-    return new java.io.File(baseDir + "/ToolHub/diagnostics/color-safety-last.json");
+    var rootText = "";
+    try { rootText = String(APP_ROOT_DIR || "").replace(/\/+$/g, ""); } catch(eRoot) { rootText = ""; }
+    if (!rootText) return null;
+    return new java.io.File(rootText + "/diagnostics/color-safety-last.json");
   } catch(ePath) {
     safeLog(this.L, "w", "resolve color safety result path fail error=" + String(ePath));
   }

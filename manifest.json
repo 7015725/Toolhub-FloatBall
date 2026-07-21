@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "d1777d1b3bce23e81e91ef13c4e0358f2ab53ea1b671192219501d775e4ad5e2",
-      "size": 54634,
-      "version": 20260721020033
+      "sha256": "e9725545f29d57511916c2846b8a1fa27f4422e36716b87fef1e947a0eab4ced",
+      "size": 55790,
+      "version": 20260721025117
     }
   },
   "branch": "main",
@@ -36,9 +36,9 @@
       "version": "2.0.2"
     },
     "th_04_theme.js": {
-      "sha256": "c8cb18b27d456c13132b6a1409b65ff696795238124c5d34128b18f366a80be8",
-      "size": 62690,
-      "version": "1.0.11"
+      "sha256": "92ffa50b761391bd1d27cd793cadb96229555ed984f3c9b43adf3fc651882986",
+      "size": 62762,
+      "version": "1.0.12"
     },
     "th_05_persistence.js": {
       "sha256": "ba6a38f23a57863586e3f86615ef2d57285e23c5ab102794b4027b543e5044a9",
@@ -76,9 +76,9 @@
       "version": "1.2.4"
     },
     "th_13_panel_ui.js": {
-      "sha256": "b0172f749f2c71c772166e75c4041cdaf4b81822a1c42a17d0799dfc9ffd8947",
-      "size": 66178,
-      "version": "1.0.15"
+      "sha256": "14928b30bc6f266443f5fa3d7237f0c8468252d8f9cf335163aaba6526d7d090",
+      "size": 66250,
+      "version": "1.0.16"
     },
     "th_14_button_editor.js": {
       "sha256": "e816a603df53d4514f363e9e3bfb37b94b17e03e5fb36aca58d93de92c16de79",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "f2b57b971444b85a7fb9149d199ad1428c60f8c3522738386e5c9ca5b5b52e02",
-      "size": 263627,
-      "version": "1.0.20"
+      "sha256": "03adfc0d055cceefedfb6ccaf89574fefa13d9c81db210218c1082a2ad47eb97",
+      "size": 266276,
+      "version": "1.0.21"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -169,13 +169,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "内部截图创建、扫描和拾字路径校验统一使用当前通道 APP_ROOT_DIR",
-      "Shell 桥结果与截图缩略图缓存分别写入 Stable 或 Beta 私有缓存目录",
-      "公共相册目录保持不变，但截图管理记录继续由各通道独立 SQLite 保存"
+      "颜色安全与设置交互诊断结果改为写入当前通道 APP_ROOT_DIR",
+      "拾字号文件和 SharedPreferences 按 Stable/Beta 分区，避免首次启动继承另一通道状态",
+      "Stable 仅首次复制旧公共字号数据且不删除旧文件，Beta 不读取旧公共状态"
     ],
     "date": "2026-07-21",
-    "title": "修复 Stable/Beta 截图数据隔离"
+    "title": "隔离 Stable/Beta 私有诊断与拾字状态"
   },
   "schema": 5,
-  "version": 20260721020033
+  "version": 20260721025117
 }
