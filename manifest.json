@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "c191de098e427ce90165ccc57d97b9252190c0fcd42e422a49b69093fef494a4",
-      "size": 55301,
-      "version": 20260721020705
+      "sha256": "8f45d3f5bdb5b4577a7a82409d8e71902b0253feab249cfd8ae98f6f56b6db59",
+      "size": 56721,
+      "version": 20260721025631
     }
   },
   "branch": "beta",
@@ -36,9 +36,9 @@
       "version": "2.0.2"
     },
     "th_04_theme.js": {
-      "sha256": "c8cb18b27d456c13132b6a1409b65ff696795238124c5d34128b18f366a80be8",
-      "size": 62690,
-      "version": "1.0.11"
+      "sha256": "92ffa50b761391bd1d27cd793cadb96229555ed984f3c9b43adf3fc651882986",
+      "size": 62762,
+      "version": "1.0.12"
     },
     "th_05_persistence.js": {
       "sha256": "ba6a38f23a57863586e3f86615ef2d57285e23c5ab102794b4027b543e5044a9",
@@ -76,9 +76,9 @@
       "version": "1.2.4"
     },
     "th_13_panel_ui.js": {
-      "sha256": "b0172f749f2c71c772166e75c4041cdaf4b81822a1c42a17d0799dfc9ffd8947",
-      "size": 66178,
-      "version": "1.0.15"
+      "sha256": "14928b30bc6f266443f5fa3d7237f0c8468252d8f9cf335163aaba6526d7d090",
+      "size": 66250,
+      "version": "1.0.16"
     },
     "th_14_button_editor.js": {
       "sha256": "e816a603df53d4514f363e9e3bfb37b94b17e03e5fb36aca58d93de92c16de79",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "f2b57b971444b85a7fb9149d199ad1428c60f8c3522738386e5c9ca5b5b52e02",
-      "size": 263627,
-      "version": "1.0.20"
+      "sha256": "03adfc0d055cceefedfb6ccaf89574fefa13d9c81db210218c1082a2ad47eb97",
+      "size": 266276,
+      "version": "1.0.21"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -169,13 +169,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Beta 内部截图创建、扫描和拾字路径校验统一使用 ToolHub-Beta 根目录",
-      "Beta Shell 桥结果与截图缩略图缓存写入 ToolHub-Beta 私有缓存目录",
-      "公共相册目录保持共享，但 Beta 截图管理记录继续使用独立 SQLite"
+      "Beta 颜色安全与设置交互诊断结果改为写入 ToolHub-Beta/diagnostics",
+      "Beta 拾字号文件与 SharedPreferences 使用独立通道状态，不继承 Stable 字号",
+      "Stable 旧字号迁移逻辑保留为只读复制，Beta 不读取旧公共状态"
     ],
     "date": "2026-07-21",
-    "title": "Beta 修复截图数据通道隔离"
+    "title": "Beta 隔离私有诊断与拾字状态"
   },
   "schema": 5,
-  "version": 20260721020705
+  "version": 20260721025631
 }
