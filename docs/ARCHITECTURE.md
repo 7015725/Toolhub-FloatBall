@@ -1237,3 +1237,10 @@ PopupOverlayBase
 - 两个通道分别保存代码、SQLite、缓存、日志、截图和可信清单版本，禁止共享可变业务数据。
 - 通道切换先写 `pendingChannel`，目标 Manifest 验签、模块加载和应用启动成功后才提交 `activeChannel`；失败自动恢复最近成功通道。
 - Manifest schema 5 必须声明 `channel` 与 `branch`，入口会在验签后继续校验二者。
+
+## Stable / Beta 截图与缓存隔离
+
+- 内部截图、截图管理器扫描目录、Shell 桥结果和截图缩略图缓存全部基于当前 `APP_ROOT_DIR`。
+- Stable 使用 `ToolHub/screenshots` 与 `ToolHub/cache/...`；Beta 使用 `ToolHub-Beta/screenshots` 与 `ToolHub-Beta/cache/...`。
+- 公共保存目录仍由 `PICKWORD_IMAGE_PUBLIC_DIR` 控制，默认 `/storage/emulated/0/Pictures/ToolHub`；公共文件可以共用系统相册位置，但保存记录由各通道独立 SQLite 管理。
+- 通道切换不迁移、删除或自动认领另一通道已有的内部截图。

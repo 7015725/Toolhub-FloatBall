@@ -1,6 +1,6 @@
-// @version 1.3.2
+// @version 1.3.3
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
-// 只处理 ToolHub/screenshots 内部截图；公共保存副本不会被自动清理。
+// 只处理当前通道 APP_ROOT_DIR/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
   function now22() {
     try { return java.lang.System.currentTimeMillis(); } catch (e0) {}
@@ -279,10 +279,20 @@
     }, false);
   }
 
+  function appRoot22() {
+    var value = "";
+    try { value = String(APP_ROOT_DIR || "").replace(/\/+$/g, ""); } catch (e0) { value = ""; }
+    if (!value) throw new Error("当前 ToolHub 通道根目录为空");
+    return new java.io.File(value).getCanonicalFile();
+  }
+
   function internalRoot22() {
-    var base = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
-    if (!base) throw new Error("ShortX 目录为空");
-    return new java.io.File(base, "ToolHub/screenshots").getCanonicalFile();
+    var base = appRoot22();
+    var root = new java.io.File(base, "screenshots").getCanonicalFile();
+    var basePath = String(base.getCanonicalPath());
+    var rootPath = String(root.getCanonicalPath());
+    if (rootPath.indexOf(basePath + java.io.File.separator) !== 0) throw new Error("截图目录越界");
+    return root;
   }
 
   function normalizeInternalFile22(rawPath) {
@@ -435,9 +445,11 @@
   }
 
   function shellBridgeMarkerDir22() {
-    var base = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
-    if (!base) throw new Error("ShortX 目录为空");
-    var dir = new java.io.File(base, "ToolHub/cache/shell_bridge").getCanonicalFile();
+    var base = appRoot22();
+    var dir = new java.io.File(base, "cache/shell_bridge").getCanonicalFile();
+    var basePath = String(base.getCanonicalPath());
+    var dirPath = String(dir.getCanonicalPath());
+    if (dirPath.indexOf(basePath + java.io.File.separator) !== 0) throw new Error("Shell 桥结果目录越界");
     if (!dir.exists() && !dir.mkdirs() && !dir.exists()) throw new Error("无法创建 Shell 桥结果目录");
     if (!dir.isDirectory()) throw new Error("Shell 桥结果路径不是目录");
     return dir;
@@ -1098,10 +1110,8 @@
   }
 
   function thumbnailCacheRoot22() {
-    var basePath = String(shortx.getShortXDir() || "").replace(/\/+$/g, "");
-    if (!basePath) throw new Error("ShortX 目录为空");
-    var base = new java.io.File(basePath).getCanonicalFile();
-    var root = new java.io.File(base, "ToolHub/cache/screenshot_thumbnails").getCanonicalFile();
+    var base = appRoot22();
+    var root = new java.io.File(base, "cache/screenshot_thumbnails").getCanonicalFile();
     var baseCanonical = String(base.getCanonicalPath());
     var rootCanonical = String(root.getCanonicalPath());
     if (rootCanonical.indexOf(baseCanonical + java.io.File.separator) !== 0) throw new Error("缩略图缓存目录越界");
@@ -2042,7 +2052,7 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.3.2") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.3.3") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -2867,7 +2877,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.3.2";
+      proto.__toolHubPickwordImageViewerVersion = "1.3.3";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}
