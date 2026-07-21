@@ -1,0 +1,179 @@
+{
+  "schema": 1,
+  "registry": "constraints/registry.json",
+  "environment": {
+    "javascriptEngine": "Rhino",
+    "ecmascriptVersion": "ES5",
+    "androidMinApi": 33,
+    "androidPrimaryApi": 34
+  },
+  "selectedDomains": [],
+  "domains": {
+    "syntax": {
+      "status": "pass",
+      "plugins": 2,
+      "elapsedMs": 1419.51
+    },
+    "methods": {
+      "status": "pass",
+      "plugins": 1,
+      "elapsedMs": 79.845
+    },
+    "api": {
+      "status": "pass",
+      "plugins": 6,
+      "elapsedMs": 3745.665
+    },
+    "threading": {
+      "status": "pass",
+      "plugins": 2,
+      "elapsedMs": 52.458
+    },
+    "lifecycle": {
+      "status": "pass",
+      "plugins": 2,
+      "elapsedMs": 65.914
+    }
+  },
+  "results": [
+    {
+      "id": "js-syntax",
+      "domain": "syntax",
+      "script": "scripts/verify_js_syntax.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 904.475,
+      "output": "OK: JavaScript syntax valid for 29 modules"
+    },
+    {
+      "id": "rhino-es5",
+      "domain": "syntax",
+      "script": ".github/scripts/es5_scan.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 515.035,
+      "output": "ES5_ERRORS 0"
+    },
+    {
+      "id": "module-boundaries",
+      "domain": "methods",
+      "script": "scripts/verify_module_boundaries.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 79.845,
+      "output": "OK: module boundaries verified; modules=29 methods=503 duplicates=10 wrappers=9 cleanup_candidates=0"
+    },
+    {
+      "id": "api-usage-scanner-regression",
+      "domain": "api",
+      "script": "scripts/verify_api_usage_scanner.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 42.222,
+      "output": "OK api-usage-scanner keys=9"
+    },
+    {
+      "id": "api-usage-policy",
+      "domain": "api",
+      "script": "scripts/verify_api_usage_policy.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 35.224,
+      "output": "OK api-usage-policy baseline=747 legacy=747 explicit_rules=0 current_digest=sha256:5a17954f39a8e227d35cb575379725320eb43c20e18aadf66a41339055988ad5 initial_digest=sha256:5a17954f39a8e227d35cb575379725320eb43c20e18aadf66a41339055988ad5"
+    },
+    {
+      "id": "api-usage-baseline",
+      "domain": "api",
+      "script": "scripts/report_api_usage.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 3240.855,
+      "output": "OK api-usage usages=747 legacy=747 explicit_rules=0 digest=sha256:29e08c385671b9930576810f22ca46d3f0c71fe89e88533a5d7a3f7caf77c71c"
+    },
+    {
+      "id": "rhino-color-api",
+      "domain": "api",
+      "script": "scripts/verify_rhino_color_api_safety.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 360.034,
+      "output": "OK rhino_color_api_safety modules=29 helpers=22 direct_color_calls=0"
+    },
+    {
+      "id": "coloros-rhino-color-api",
+      "domain": "api",
+      "script": "scripts/verify_coloros_rhino_color_safety.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 40.648,
+      "output": "OK coloros_rhino_color_safety framework_ripple=0 safe_helpers=8 runtime_records_scroll=1 diagnostics_ui=0"
+    },
+    {
+      "id": "pickword-long-click-api34",
+      "domain": "api",
+      "script": "scripts/verify_pickword_long_click_api34.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 26.682,
+      "output": "OK pickword_long_click_api34 listeners=2 callback=false manual_haptic=preserved"
+    },
+    {
+      "id": "button-shortcut-thread-affinity",
+      "domain": "threading",
+      "script": "scripts/verify_button_shortcut_thread_affinity.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 25.893,
+      "output": "OK shortcut_picker_thread_affinity owner_view_post=1 generation=1 lifecycle=1 search_debounce=1 logging=1"
+    },
+    {
+      "id": "toolapp-main-thread-affinity",
+      "domain": "threading",
+      "script": "scripts/verify_toolapp_main_thread_affinity.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 26.565,
+      "output": "ToolApp main-thread affinity verification OK checks=21"
+    },
+    {
+      "id": "animation-callback-safety",
+      "domain": "lifecycle",
+      "script": "scripts/verify_animation_callback_safety.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 40.703,
+      "output": "OK animation_callback_safety callback_once=1 method_preflight=1 stage_logging=1 mask_rollback=1 system_server_global_handler=skipped es5=1"
+    },
+    {
+      "id": "entry-lifecycle",
+      "domain": "lifecycle",
+      "script": "scripts/verify_entry_lifecycle.py",
+      "blocking": true,
+      "status": "pass",
+      "returnCode": 0,
+      "elapsedMs": 25.211,
+      "output": "PASS: 主线程同步任务支持迟到清理\nPASS: 迟到接收器会主动注销\nPASS: Android 13 以上明确设置接收器导出标志\nPASS: 关闭广播保持外部兼容\nPASS: 启动任务使用 generation token\nPASS: addView 前后均校验启动 token\nPASS: 启动确认超时会取消迟到启动\nPASS: 启动结果暴露超时状态\nPASS: 关闭步骤相互隔离\nPASS: 面板关闭失败存在逐项回退\nPASS: 配置刷新失败可观测\nPASS: 关闭最终状态必达\nPASS: 旧的不确定超时日志已移除\n\nEntry lifecycle verification passed."
+    }
+  ],
+  "summary": {
+    "plugins": 13,
+    "passed": 13,
+    "failed": 0,
+    "timeouts": 0,
+    "blockingFailures": 0,
+    "warnings": 0,
+    "elapsedMs": 5363.392
+  }
+}
