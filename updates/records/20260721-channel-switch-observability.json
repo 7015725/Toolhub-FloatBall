@@ -9,5 +9,19 @@
     "更新页显示最近一次切换后检查耗时，便于定位慢请求与回滚",
     "不修改 ToolHub.js、数据目录、签名机制或自动安装行为"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260721055433,
+  "date": "2026-07-21",
+  "modules": [
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.14",
+      "to": "1.1.15",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260721201500,
+    "to": 20260721201500
+  }
 }
