@@ -8,5 +8,31 @@
     "拾字号文件和 SharedPreferences 按 Stable/Beta 分区，避免首次启动继承另一通道状态",
     "Stable 仅首次复制旧公共字号数据且不删除旧文件，Beta 不读取旧公共状态"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260721025117,
+  "date": "2026-07-21",
+  "modules": [
+    {
+      "name": "th_04_theme.js",
+      "from": "1.0.11",
+      "to": "1.0.12",
+      "change": "updated"
+    },
+    {
+      "name": "th_13_panel_ui.js",
+      "from": "1.0.15",
+      "to": "1.0.16",
+      "change": "updated"
+    },
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.20",
+      "to": "1.0.21",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260721201500,
+    "to": 20260721201500
+  }
 }
