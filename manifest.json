@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "a7c1862dfaef857266d4123a7b39f2747a33cd5c8a3b595ce0322db06bf2a519",
-      "size": 59862,
-      "version": 20260721055952
+      "sha256": "3e1b1fca2e781b3681ade07904b28c6f051a46b440d491ef67f1cfceed6d128c",
+      "size": 61716,
+      "version": 20260721063154
     }
   },
   "branch": "beta",
@@ -51,9 +51,9 @@
       "version": "1.0.1"
     },
     "th_08_content.js": {
-      "sha256": "e80d83019d16e789d2642f3ab255e7229637b9dca65e3927804a914f11c1f27d",
-      "size": 63803,
-      "version": "1.0.8"
+      "sha256": "1025fddb2158e4dc062e6a785fa7082190dc6987f318a197d176df8af189cee4",
+      "size": 77913,
+      "version": "1.0.9"
     },
     "th_09_animation.js": {
       "sha256": "c60bed71cf00e8fe52c193ff51ca59a93c462c4745f7d5e3d885e0d1eb072520",
@@ -169,14 +169,14 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "同步 Stable 已验证的 TH_CHANNEL 结构化日志",
-      "记录目标通道、实际通道、检查结果、更新数量、错误和耗时",
-      "更新页显示最近一次切换后检查耗时",
-      "保持 Beta 自己的 Manifest、RSA 签名和更新历史"
+      "在 Beta 运行记录中增加通道健康自检，核对活动通道、分支、根目录、启动状态、签名清单与 SQLite 存储",
+      "诊断结果保存到 ToolHub-Beta/diagnostics/channel-health-last.txt，不读取或覆盖 Stable 诊断结果",
+      "支持一键复制诊断报告，报告不包含翻译密钥、按钮内容或其他敏感配置",
+      "不修改 ToolHub.js，不联网、不自动修复"
     ],
     "date": "2026-07-21",
-    "title": "Beta 补齐通道切换诊断日志"
+    "title": "Beta 新增通道健康自检与诊断报告"
   },
   "schema": 5,
-  "version": 20260721055952
+  "version": 20260721063154
 }
