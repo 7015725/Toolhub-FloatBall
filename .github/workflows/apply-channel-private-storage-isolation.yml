@@ -1,0 +1,58 @@
+name: apply-channel-private-storage-isolation
+
+on:
+  push:
+    branches: [fix/channel-private-storage-isolation]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: signing
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/channel-private-storage-isolation
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply and verify fix
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          if [ ! -f scripts/apply_channel_private_storage_isolation_once.py ]; then
+            echo "Private storage isolation patch already applied"
+            exit 0
+          fi
+          python3 scripts/apply_channel_private_storage_isolation_once.py
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_channel_private_storage_isolation.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_pickword_emoji_grapheme.py
+          python3 scripts/verify_pickword_long_click_api34.py
+          python3 scripts/verify_pickword_image_meta_handoff.py
+          python3 scripts/verify_pickword_unified_cleanup.py
+          python3 scripts/verify_code_constraints.py --output /tmp/channel-private-storage-constraints.json
+          git diff --check
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "隔离 Stable/Beta 私有诊断与拾字状态"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:fix/channel-private-storage-isolation
