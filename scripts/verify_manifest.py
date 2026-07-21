@@ -2,6 +2,7 @@
 import ast
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -14,6 +15,7 @@ ENTRY = ROOT / "ToolHub.js"
 ENTRY_SHA = ROOT / "ToolHub.js.sha256"
 HISTORY = ROOT / "update_history.json"
 SIGN_SCRIPT = ROOT / "scripts" / "generate_signed_manifest.py"
+CHANNEL_BRANCHES = {"stable": "main", "beta": "beta"}
 
 
 def fail(message):
@@ -75,8 +77,17 @@ def main():
         if not path.exists():
             fail(str(path.relative_to(ROOT)) + " missing")
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    if int(manifest.get("schema", 0) or 0) < 4:
-        fail("manifest schema must be at least 4")
+    if int(manifest.get("schema", 0) or 0) < 5:
+        fail("manifest schema must be at least 5")
+    channel = str(manifest.get("channel", "")).strip().lower()
+    branch = str(manifest.get("branch", "")).strip()
+    if channel not in CHANNEL_BRANCHES:
+        fail("manifest channel must be stable or beta")
+    if branch != CHANNEL_BRANCHES[channel]:
+        fail("manifest branch does not match channel")
+    expected_channel = str(os.environ.get("TOOLHUB_UPDATE_CHANNEL", "")).strip().lower()
+    if expected_channel and channel != expected_channel:
+        fail("manifest channel %s does not match expected %s" % (channel, expected_channel))
     files = manifest.get("files") or {}
     py_modules = parse_python_modules()
     entry_modules = parse_entry_modules()
@@ -156,8 +167,8 @@ def main():
             [sys.executable, "-W", "error::SyntaxWarning", "-m", "py_compile"] + py_files, cwd=str(ROOT)
         )
     print(
-        "OK manifest_version=%s files=%s history=%s entry_version=%s"
-        % (manifest.get("version"), len(py_modules), len(records), entry_version)
+        "OK manifest_version=%s channel=%s branch=%s files=%s history=%s entry_version=%s"
+        % (manifest.get("version"), channel, branch, len(py_modules), len(records), entry_version)
     )
 
 

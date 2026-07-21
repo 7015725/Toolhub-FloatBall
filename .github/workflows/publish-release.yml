@@ -50,6 +50,8 @@ jobs:
           from pathlib import Path
 
           manifest = json.loads(Path('manifest.json').read_text(encoding='utf-8'))
+          if str(manifest.get('channel', '')).strip() != 'stable' or str(manifest.get('branch', '')).strip() != 'main':
+              raise SystemExit('publish-release only accepts stable/main manifests')
           version = int(manifest.get('version', 0) or 0)
           release = manifest.get('release') or {}
           title = str(release.get('title', '')).strip()

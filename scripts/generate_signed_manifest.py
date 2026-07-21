@@ -19,6 +19,7 @@ ENTRY = ROOT / "ToolHub.js"
 ENTRY_SHA = ROOT / "ToolHub.js.sha256"
 HISTORY = ROOT / "update_history.json"
 DEFAULT_KEY_ID = "toolhub-targets-20260703-rsa3072"
+CHANNEL_BRANCHES = {"stable": "main", "beta": "beta"}
 
 MODULES = [
     "th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.js",
@@ -94,6 +95,7 @@ def main():
     ap.add_argument("--version", type=int, default=0)
     ap.add_argument("--date", default="")
     ap.add_argument("--base-ref", default="")
+    ap.add_argument("--channel", choices=sorted(CHANNEL_BRANCHES), default="")
     args = ap.parse_args()
 
     if not PRIVATE_KEY.exists():
@@ -107,6 +109,12 @@ def main():
 
     version = args.version or int(time.strftime("%Y%m%d%H%M%S", time.gmtime()))
     base_ref = str(args.base_ref or os.environ.get("GITHUB_BASE_REF", "")).strip()
+    channel = str(args.channel or os.environ.get("TOOLHUB_UPDATE_CHANNEL", "")).strip().lower()
+    if not channel:
+        channel = "beta" if base_ref == "beta" or base_ref.endswith("/beta") else "stable"
+    if channel not in CHANNEL_BRANCHES:
+        raise SystemExit("Unsupported update channel: %s" % channel)
+    branch = CHANNEL_BRANCHES[channel]
 
     from build_update_history import finalize_history
 
@@ -143,7 +151,9 @@ def main():
         "changes": release_changes,
     }
     manifest = {
-        "schema": 4,
+        "schema": 5,
+        "channel": channel,
+        "branch": branch,
         "version": version,
         "keyId": args.key_id,
         "alg": "SHA256withRSA",
@@ -181,6 +191,8 @@ def main():
 
     print("== signed manifest ==")
     print("manifest_version=%s" % manifest["version"])
+    print("update_channel=%s" % channel)
+    print("update_branch=%s" % branch)
     print("record_id=%s" % record.get("id"))
     print("signed_files=%s" % len(files))
     print("history_records=%s" % len(history.get("records") or []))

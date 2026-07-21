@@ -1,4 +1,4 @@
-// @version 1.1.10
+// @version 1.1.13
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -2463,6 +2463,10 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     root.setOrientation(android.widget.LinearLayout.VERTICAL);
     scroll.addView(root, new android.widget.FrameLayout.LayoutParams(-1, -2));
     panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+    var channelCard = this.buildToolHubUpdateChannelCard();
+    var channelCardLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+    channelCardLp.setMargins(0, 0, 0, this.dp(10));
+    root.addView(channelCard, channelCardLp);
 
     function addText(parent, value, size, color, bold) {
       var tv = new android.widget.TextView(context);
@@ -2623,4 +2627,142 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     }
     return panel;
   };
+})();
+
+// =======================【更新通道：Stable / Beta】=======================
+(function installToolHubUpdateChannelPanel() {
+  if (FloatBallAppWM.prototype.__toolHubUpdateChannelPanelInstalled === true) return;
+  FloatBallAppWM.prototype.__toolHubUpdateChannelPanelInstalled = true;
+
+  function channelText(value) {
+    try { return String(value === undefined || value === null ? "" : value); } catch (e) { return ""; }
+  }
+
+  FloatBallAppWM.prototype.getToolHubUpdateChannelUiState = function() {
+    var channel = "stable";
+    var label = "正式版 Stable";
+    var branch = "main";
+    var rootName = "ToolHub";
+    try { channel = normalizeToolHubUpdateChannel(TOOLHUB_UPDATE_CHANNEL); } catch (e0) {}
+    try {
+      var spec = getToolHubChannelSpec(channel);
+      label = channelText(spec.label);
+      branch = channelText(spec.branch);
+      rootName = channelText(spec.rootName);
+    } catch (e1) {}
+    return {
+      channel: channel,
+      label: label,
+      branch: branch,
+      rootName: rootName,
+      switching: (typeof __toolHubChannelSwitchRunning !== "undefined" && __toolHubChannelSwitchRunning === true)
+    };
+  };
+
+  FloatBallAppWM.prototype.requestToolHubUpdateChannel = function(target) {
+    var normalized = "stable";
+    try { normalized = normalizeToolHubUpdateChannel(target); } catch (e0) {}
+    var current = this.getToolHubUpdateChannelUiState();
+    if (current.switching) { try { this.toast("更新通道正在切换"); } catch (eToast0) {} return false; }
+    if (normalized === current.channel) { try { this.toast("当前已是" + current.label); } catch (eToast1) {} return false; }
+    this.state.toolHubChannelConfirmTarget = normalized;
+    try { this.refreshToolHubUpdateSurface("channel_confirm"); } catch (eRefresh) {}
+    return true;
+  };
+
+  FloatBallAppWM.prototype.buildToolHubUpdateChannelCard = function() {
+    var self = this;
+    var T = this.getSettingsColorScheme();
+    var isDark = this.isDarkTheme();
+    var current = this.getToolHubUpdateChannelUiState();
+    var channelCardRoot = new android.widget.LinearLayout(context);
+    channelCardRoot.setOrientation(android.widget.LinearLayout.VERTICAL);
+    channelCardRoot.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
+    channelCardRoot.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.outlineVariant, isDark ? 0.24 : 0.20), this.dp(1), this.dp(18)));
+
+    function addText(parent, value, size, color, bold) {
+      var tv = new android.widget.TextView(context);
+      tv.setText(channelText(value));
+      toolhubSafeSetTextColor(tv, color || T.onSurface);
+      tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, size || 12);
+      if (bold) tv.setTypeface(null, android.graphics.Typeface.BOLD);
+      parent.addView(tv, new android.widget.LinearLayout.LayoutParams(-1, -2));
+      return tv;
+    }
+
+    function addChoice(channel, title, desc) {
+      var selected = current.channel === channel;
+      var channelChoiceRow = new android.widget.LinearLayout(context);
+      channelChoiceRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      channelChoiceRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+      channelChoiceRow.setPadding(self.dp(10), self.dp(9), self.dp(10), self.dp(9));
+      channelChoiceRow.setBackground(self.ui.createPressedStateDrawable(T.surface2, self.withAlpha(T.primary, isDark ? 0.15 : 0.08), self.dp(14)));
+      var lp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+      lp.setMargins(0, self.dp(7), 0, 0);
+      channelCardRoot.addView(channelChoiceRow, lp);
+
+      var channelChoiceMark = new android.widget.TextView(context);
+      channelChoiceMark.setText(selected ? "●" : "○");
+      channelChoiceMark.setGravity(android.view.Gravity.CENTER);
+      channelChoiceMark.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+      toolhubSafeSetTextColor(channelChoiceMark, selected ? T.primary : T.onSurface2);
+      channelChoiceRow.addView(channelChoiceMark, new android.widget.LinearLayout.LayoutParams(self.dp(34), self.dp(42)));
+
+      var channelChoiceBody = new android.widget.LinearLayout(context);
+      channelChoiceBody.setOrientation(android.widget.LinearLayout.VERTICAL);
+      channelChoiceRow.addView(channelChoiceBody, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
+      addText(channelChoiceBody, title, 13, T.onSurface, true);
+      addText(channelChoiceBody, desc, 11, T.onSurface2, false);
+      channelChoiceRow.setAlpha(current.switching ? 0.55 : 1.0);
+      channelChoiceRow.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
+        if (!current.switching) self.requestToolHubUpdateChannel(channel);
+      }}));
+    }
+
+    addText(channelCardRoot, "更新通道", 14, T.onSurface, true);
+    addText(channelCardRoot, "入口保持同一份 ToolHub.js；不同通道使用独立代码、数据库、缓存和日志目录。", 11, T.onSurface2, false);
+    addChoice("stable", "正式版 Stable", "main · 日常稳定使用 · /ToolHub");
+    addChoice("beta", "测试版 Beta", "beta · 提前测试新功能 · /ToolHub-Beta");
+    addText(channelCardRoot, "当前运行：" + current.label + "  ·  GitHub/" + current.branch, 11, T.onSurface2, false).setPadding(0, this.dp(8), 0, 0);
+
+    if (current.switching) {
+      addText(channelCardRoot, "正在切换更新通道，请勿重复操作。", 12, T.primary, true).setPadding(0, this.dp(8), 0, 0);
+      return channelCardRoot;
+    }
+
+    var confirmTarget = channelText(this.state && this.state.toolHubChannelConfirmTarget);
+    if (confirmTarget && confirmTarget !== current.channel) {
+      var targetSpec = null;
+      try { targetSpec = getToolHubChannelSpec(confirmTarget); } catch (eSpec) {}
+      var targetLabel = targetSpec ? channelText(targetSpec.label) : confirmTarget;
+      var warning = confirmTarget === "beta"
+        ? "Beta 使用独立数据目录；验证或启动失败时会自动恢复正式版。"
+        : "将恢复 main 分支及原有正式版数据；Beta 数据会继续保留。";
+      addText(channelCardRoot, "确认切换到" + targetLabel + "？", 12, T.onSurface, true).setPadding(0, this.dp(9), 0, 0);
+      addText(channelCardRoot, warning, 11, T.onSurface2, false);
+      var channelActionRow = new android.widget.LinearLayout(context);
+      channelActionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      var channelActionLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+      channelActionLp.setMargins(0, this.dp(8), 0, 0);
+      channelCardRoot.addView(channelActionRow, channelActionLp);
+      var channelCancelButton = this.ui.createFlatButton(this, "取消", T.onSurface2, function() {
+        self.state.toolHubChannelConfirmTarget = "";
+        self.refreshToolHubUpdateSurface("channel_cancel");
+      });
+      channelActionRow.addView(channelCancelButton, new android.widget.LinearLayout.LayoutParams(0, this.dp(44), 1));
+      var channelActionGap = new android.view.View(context);
+      channelActionRow.addView(channelActionGap, new android.widget.LinearLayout.LayoutParams(this.dp(8), 1));
+      var channelConfirmButton = this.ui.createFlatButton(this, "确认切换", T.primary, function() {
+        self.state.toolHubChannelConfirmTarget = "";
+        var ret = null;
+        try { ret = switchToolHubUpdateChannel(confirmTarget); }
+        catch (eSwitch) { ret = { ok: false, msg: "切换失败：" + String(eSwitch) }; }
+        try { self.toast(ret && ret.msg ? ret.msg : "正在切换更新通道"); } catch (eToast2) {}
+        self.refreshToolHubUpdateSurface("channel_switch_start");
+      });
+      channelActionRow.addView(channelConfirmButton, new android.widget.LinearLayout.LayoutParams(0, this.dp(44), 1));
+    }
+    return channelCardRoot;
+  };
+
 })();

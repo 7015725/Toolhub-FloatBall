@@ -1228,3 +1228,12 @@ PopupOverlayBase
 - 图片状态记录在 `toolhub.db` 的独立关系表中；删除截图后保留拾字文字与当前选择状态。
 
 - `th_23_screenshot_manager.js`：截图管理器 ToolApp 路由；负责内部截图/已保存列表、缩略图与用户操作编排，文件边界和 SQLite 操作继续由 `th_22_image_viewer.js` 提供。
+
+## Stable / Beta 更新通道
+
+- ShortX 中只保留一份 `ToolHub.js`；入口从公共引导文件读取 `stable` 或 `beta`。
+- `stable` 固定映射 `main` 与 `shortx.getShortXDir()/ToolHub`。
+- `beta` 固定映射 `beta` 与 `shortx.getShortXDir()/ToolHub-Beta`。
+- 两个通道分别保存代码、SQLite、缓存、日志、截图和可信清单版本，禁止共享可变业务数据。
+- 通道切换先写 `pendingChannel`，目标 Manifest 验签、模块加载和应用启动成功后才提交 `activeChannel`；失败自动恢复最近成功通道。
+- Manifest schema 5 必须声明 `channel` 与 `branch`，入口会在验签后继续校验二者。

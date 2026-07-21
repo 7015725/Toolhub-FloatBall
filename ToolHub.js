@@ -4,8 +4,133 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260719024500; // 入口文件版本，仅在 ToolHub.js 变化时提升
-var GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/main/";
+var TOOLHUB_ENTRY_VERSION = 20260721201500; // 入口文件版本，仅在 ToolHub.js 变化时提升
+
+var TOOLHUB_CHANNEL_SPECS = {
+    stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
+    beta: { id: "beta", label: "测试版 Beta", branch: "beta", rootName: "ToolHub-Beta" }
+};
+
+function normalizeToolHubUpdateChannel(value) {
+    var text = "";
+    try { text = String(value || "").replace(/^\s+|\s+$/g, "").toLowerCase(); } catch (eText) { text = ""; }
+    return TOOLHUB_CHANNEL_SPECS.hasOwnProperty(text) ? text : "stable";
+}
+
+function getToolHubChannelSpec(channel) {
+    return TOOLHUB_CHANNEL_SPECS[normalizeToolHubUpdateChannel(channel)] || TOOLHUB_CHANNEL_SPECS.stable;
+}
+
+function getToolHubShortXBaseDirForChannel() {
+    if (typeof shortx === "undefined" || !shortx) throw "shortx is undefined";
+    if (typeof shortx.getShortXDir !== "function") throw "shortx.getShortXDir is not function";
+    var base = String(shortx.getShortXDir() || "");
+    if (!base) throw "shortx.getShortXDir() 返回空";
+    return base;
+}
+
+function getToolHubChannelStatePath() {
+    return getToolHubShortXBaseDirForChannel() + "/ToolHub/bootstrap/update_channel.json";
+}
+
+function toolHubChannelCloseQuietly(resource) {
+    try { if (resource) resource.close(); } catch (eClose) {}
+}
+
+function defaultToolHubChannelState() {
+    return {
+        schema: 1,
+        activeChannel: "stable",
+        pendingChannel: "",
+        lastGoodChannel: "stable",
+        generation: 0,
+        updatedAt: 0
+    };
+}
+
+function readToolHubChannelState() {
+    var state = defaultToolHubChannelState();
+    var reader = null;
+    try {
+        var file = new java.io.File(getToolHubChannelStatePath());
+        if (!file.exists()) return state;
+        reader = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(file), "UTF-8"));
+        var sb = new java.lang.StringBuilder();
+        var line;
+        while ((line = reader.readLine()) !== null) sb.append(line).append("\n");
+        var parsed = JSON.parse(String(sb.toString()));
+        if (!parsed || Number(parsed.schema || 0) !== 1) return state;
+        state.activeChannel = normalizeToolHubUpdateChannel(parsed.activeChannel);
+        state.lastGoodChannel = normalizeToolHubUpdateChannel(parsed.lastGoodChannel || state.activeChannel);
+        var pending = String(parsed.pendingChannel || "").replace(/^\s+|\s+$/g, "").toLowerCase();
+        state.pendingChannel = TOOLHUB_CHANNEL_SPECS.hasOwnProperty(pending) && pending !== state.activeChannel ? pending : "";
+        state.generation = Math.max(0, Number(parsed.generation || 0));
+        state.updatedAt = Math.max(0, Number(parsed.updatedAt || 0));
+        return state;
+    } catch (eReadChannel) {
+        return state;
+    } finally {
+        toolHubChannelCloseQuietly(reader);
+    }
+}
+
+function writeToolHubChannelStateAtomic(state) {
+    var out = null;
+    var target = new java.io.File(getToolHubChannelStatePath());
+    var parent = target.getParentFile();
+    var tmp = new java.io.File(target.getAbsolutePath() + ".tmp");
+    var bak = new java.io.File(target.getAbsolutePath() + ".bak");
+    var hadTarget = false;
+    try {
+        if (parent && !parent.exists() && !parent.mkdirs()) throw "channel bootstrap mkdirs failed";
+        if (tmp.exists() && !tmp.delete()) throw "delete stale channel tmp failed";
+        var clean = {
+            schema: 1,
+            activeChannel: normalizeToolHubUpdateChannel(state && state.activeChannel),
+            pendingChannel: "",
+            lastGoodChannel: normalizeToolHubUpdateChannel(state && state.lastGoodChannel),
+            generation: Math.max(0, Number(state && state.generation || 0)),
+            updatedAt: Math.max(0, Number(state && state.updatedAt || java.lang.System.currentTimeMillis()))
+        };
+        var pending = String(state && state.pendingChannel || "").replace(/^\s+|\s+$/g, "").toLowerCase();
+        if (TOOLHUB_CHANNEL_SPECS.hasOwnProperty(pending) && pending !== clean.activeChannel) clean.pendingChannel = pending;
+        var content = JSON.stringify(clean, null, 2) + "\n";
+        out = new java.io.FileOutputStream(tmp, false);
+        out.write(new java.lang.String(content).getBytes("UTF-8"));
+        syncFileOutput(out);
+        toolHubChannelCloseQuietly(out);
+        out = null;
+        if (bak.exists() && !bak.delete()) throw "delete stale channel backup failed";
+        hadTarget = target.exists();
+        if (hadTarget && !target.renameTo(bak)) throw "backup channel state failed";
+        if (!tmp.renameTo(target)) throw "install channel state failed";
+        if (bak.exists() && !bak.delete()) throw "delete channel backup failed";
+        return clean;
+    } catch (eWriteChannel) {
+        try {
+            if (!target.exists() && bak.exists()) bak.renameTo(target);
+        } catch (eRestoreChannel) {}
+        throw String(eWriteChannel);
+    } finally {
+        toolHubChannelCloseQuietly(out);
+        try { if (tmp.exists()) tmp.delete(); } catch (eDeleteTmp) {}
+    }
+}
+
+var TOOLHUB_CHANNEL_STATE = readToolHubChannelState();
+if (TOOLHUB_CHANNEL_STATE.pendingChannel) {
+    TOOLHUB_CHANNEL_STATE.pendingChannel = "";
+    TOOLHUB_CHANNEL_STATE.activeChannel = normalizeToolHubUpdateChannel(TOOLHUB_CHANNEL_STATE.lastGoodChannel || TOOLHUB_CHANNEL_STATE.activeChannel);
+    TOOLHUB_CHANNEL_STATE.generation = Number(TOOLHUB_CHANNEL_STATE.generation || 0) + 1;
+    TOOLHUB_CHANNEL_STATE.updatedAt = Number(java.lang.System.currentTimeMillis());
+    try { TOOLHUB_CHANNEL_STATE = writeToolHubChannelStateAtomic(TOOLHUB_CHANNEL_STATE); } catch (eRecoverChannelState) {}
+}
+
+var TOOLHUB_UPDATE_CHANNEL = normalizeToolHubUpdateChannel(TOOLHUB_CHANNEL_STATE.activeChannel);
+var TOOLHUB_CHANNEL_SPEC = getToolHubChannelSpec(TOOLHUB_UPDATE_CHANNEL);
+var TOOLHUB_UPDATE_BRANCH = String(TOOLHUB_CHANNEL_SPEC.branch);
+var TOOLHUB_CHANNEL_LABEL = String(TOOLHUB_CHANNEL_SPEC.label);
+var GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + TOOLHUB_UPDATE_BRANCH + "/";
 var __updateSecurityModeText = "";
 var __updateSecurityModeFallback = false;
 try { __updateSecurityModeText = String(UPDATE_SECURITY_MODE).replace(/^\s+|\s+$/g, ""); } catch (eUpdateSecurityModeText) { __updateSecurityModeText = ""; }
@@ -34,6 +159,13 @@ var TOOLHUB_UPDATE_STATE = {
     ok: true,
     status: "unknown",
     source: "",
+    channel: TOOLHUB_UPDATE_CHANNEL,
+    channelLabel: TOOLHUB_CHANNEL_LABEL,
+    branch: TOOLHUB_UPDATE_BRANCH,
+    rootDir: "",
+    channelSwitching: false,
+    channelSwitchTarget: "",
+    channelSwitchError: "",
     mode: 0,
     modeText: "",
     version: 0,
@@ -123,7 +255,7 @@ function getToolHubRootDir() {
 
     if (!base || base.length <= 0) throw "shortx.getShortXDir() 返回空";
 
-    __toolHubRootDir = base + "/ToolHub";
+    __toolHubRootDir = base + "/" + String(TOOLHUB_CHANNEL_SPEC && TOOLHUB_CHANNEL_SPEC.rootName || "ToolHub");
     assertWritableDirPath(__toolHubRootDir, "ToolHub root");
     return __toolHubRootDir;
 }
@@ -140,6 +272,78 @@ function getTrustedVersionPath() { return getCodeDirPath() + ".trusted_manifest_
 function getInstalledManifestPath() { return getCodeDirPath() + ".installed_manifest.json"; }
 function getModuleTxnMarkerPath() { return getCodeDirPath() + ".module_update_transaction.json"; }
 function getModuleTxnCommitPath() { return getCodeDirPath() + ".module_update_transaction.committed"; }
+
+// ToolHub update-channel runtime state. This must remain in the entry because the
+// selected branch and root directory are needed before any child module is loaded.
+function resetToolHubChannelRuntimeCaches() {
+    __dirChecked = false;
+    __trustedManifest = null;
+    __installedManifest = null;
+    __securityStatus = { ok: false, msg: "安全清单尚未校验" };
+    try { __pendingModuleUpdates = []; } catch (ePending) {}
+    try { __moduleUpdates = []; } catch (eUpdates) {}
+    try { loadErrors = []; } catch (eLoadErrors) {}
+}
+
+function applyToolHubChannelRuntime(channel) {
+    var normalized = normalizeToolHubUpdateChannel(channel);
+    var spec = getToolHubChannelSpec(normalized);
+    TOOLHUB_UPDATE_CHANNEL = normalized;
+    TOOLHUB_CHANNEL_SPEC = spec;
+    TOOLHUB_UPDATE_BRANCH = String(spec.branch);
+    TOOLHUB_CHANNEL_LABEL = String(spec.label);
+    GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + TOOLHUB_UPDATE_BRANCH + "/";
+    GIT_BASE = GIT_ROOT + "code/";
+    __toolHubRootDir = null;
+    resetToolHubChannelRuntimeCaches();
+    TOOLHUB_BOOT_ROOT_DIR = getToolHubRootDir();
+    try {
+        if (TOOLHUB_UPDATE_STATE) {
+            TOOLHUB_UPDATE_STATE.channel = TOOLHUB_UPDATE_CHANNEL;
+            TOOLHUB_UPDATE_STATE.channelLabel = TOOLHUB_CHANNEL_LABEL;
+            TOOLHUB_UPDATE_STATE.branch = TOOLHUB_UPDATE_BRANCH;
+            TOOLHUB_UPDATE_STATE.rootDir = TOOLHUB_BOOT_ROOT_DIR;
+            TOOLHUB_UPDATE_STATE.source = "GitHub/" + TOOLHUB_UPDATE_BRANCH;
+        }
+    } catch (eUpdateState) {}
+    return spec;
+}
+
+function beginToolHubChannelSwitch(targetChannel) {
+    var target = normalizeToolHubUpdateChannel(targetChannel);
+    var state = readToolHubChannelState();
+    state.activeChannel = normalizeToolHubUpdateChannel(TOOLHUB_UPDATE_CHANNEL);
+    state.lastGoodChannel = state.activeChannel;
+    state.pendingChannel = target === state.activeChannel ? "" : target;
+    state.generation = Number(state.generation || 0) + 1;
+    state.updatedAt = Number(java.lang.System.currentTimeMillis());
+    TOOLHUB_CHANNEL_STATE = writeToolHubChannelStateAtomic(state);
+    return TOOLHUB_CHANNEL_STATE;
+}
+
+function commitToolHubActiveChannel(channel) {
+    var active = normalizeToolHubUpdateChannel(channel);
+    var state = readToolHubChannelState();
+    state.activeChannel = active;
+    state.lastGoodChannel = active;
+    state.pendingChannel = "";
+    state.generation = Number(state.generation || 0) + 1;
+    state.updatedAt = Number(java.lang.System.currentTimeMillis());
+    TOOLHUB_CHANNEL_STATE = writeToolHubChannelStateAtomic(state);
+    return TOOLHUB_CHANNEL_STATE;
+}
+
+function cancelToolHubPendingChannel(fallbackChannel) {
+    var active = normalizeToolHubUpdateChannel(fallbackChannel);
+    var state = readToolHubChannelState();
+    state.activeChannel = active;
+    state.lastGoodChannel = active;
+    state.pendingChannel = "";
+    state.generation = Number(state.generation || 0) + 1;
+    state.updatedAt = Number(java.lang.System.currentTimeMillis());
+    TOOLHUB_CHANNEL_STATE = writeToolHubChannelStateAtomic(state);
+    return TOOLHUB_CHANNEL_STATE;
+}
 
 function writeLog(msg) {
     var writer = null;
@@ -477,6 +681,14 @@ function fetchTrustedManifest() {
         var manifestText = downloadText(GIT_ROOT + "manifest.json");
         var manifest = JSON.parse(String(manifestText));
         if (!manifest || !manifest.files) throw "manifest files missing";
+        var manifestSchema = Number(manifest.schema || 0);
+        if (manifestSchema < 5) throw "manifest schema must be at least 5";
+        if (String(manifest.channel || "") !== String(TOOLHUB_UPDATE_CHANNEL)) {
+            throw "manifest channel mismatch: expected=" + TOOLHUB_UPDATE_CHANNEL + ", actual=" + String(manifest.channel || "");
+        }
+        if (String(manifest.branch || "") !== String(TOOLHUB_UPDATE_BRANCH)) {
+            throw "manifest branch mismatch: expected=" + TOOLHUB_UPDATE_BRANCH + ", actual=" + String(manifest.branch || "");
+        }
 
         var version = parseInt(String(manifest.version || "0"), 10);
         if (isNaN(version) || version <= 0) throw "invalid manifest version";
@@ -623,7 +835,11 @@ function applyRuntimeUpdateState(availableNames, errText) {
         else if (oldNeedRestart) TOOLHUB_UPDATE_STATE.status = "updated";
         else if (UPDATE_SECURITY_MODE === 0) TOOLHUB_UPDATE_STATE.status = "plain";
         else TOOLHUB_UPDATE_STATE.status = names.length > 0 ? "available" : "latest";
-        TOOLHUB_UPDATE_STATE.source = "GitHub";
+        TOOLHUB_UPDATE_STATE.source = "GitHub/" + TOOLHUB_UPDATE_BRANCH;
+        TOOLHUB_UPDATE_STATE.channel = TOOLHUB_UPDATE_CHANNEL;
+        TOOLHUB_UPDATE_STATE.channelLabel = TOOLHUB_CHANNEL_LABEL;
+        TOOLHUB_UPDATE_STATE.branch = TOOLHUB_UPDATE_BRANCH;
+        TOOLHUB_UPDATE_STATE.rootDir = getToolHubRootDir();
         TOOLHUB_UPDATE_STATE.mode = UPDATE_SECURITY_MODE;
         TOOLHUB_UPDATE_STATE.modeText = getUpdateModeText();
         TOOLHUB_UPDATE_STATE.version = versionNum;
@@ -1736,6 +1952,148 @@ function restartToolHubFromSettings() {
   return { ok: true, msg: "正在重启 ToolHub" };
 }
 
+var __toolHubChannelSwitchRunning = (typeof __toolHubChannelSwitchRunning !== "undefined") ? __toolHubChannelSwitchRunning : false;
+
+function showToolHubChannelSwitchToast(message) {
+  try {
+    var text = String(message || "");
+    new android.os.Handler(android.os.Looper.getMainLooper()).post(new java.lang.Runnable({ run: function() {
+      try { android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show(); } catch (eToast) {}
+    }}));
+  } catch (ePostToast) {}
+}
+
+function flushToolHubStateBeforeChannelSwitch() {
+  try {
+    if (typeof FileIO !== "undefined" && FileIO && typeof FileIO.flushDebouncedWrites === "function") {
+      FileIO.flushDebouncedWrites();
+    }
+  } catch (eFlush) {
+    try { writeLog("Channel switch flush warning: " + String(eFlush)); } catch (eLogFlush) {}
+  }
+}
+
+function loadTargetToolHubChannelModules() {
+  recoverPendingModuleTransaction();
+  fetchTrustedManifest();
+  if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) {
+    throw (__securityStatus && __securityStatus.msg ? __securityStatus.msg : "目标通道安全清单不可用");
+  }
+  var checkRet = checkModuleManifestConsistency();
+  if (!checkRet.ok) throw "目标通道模块清单自检失败: " + String(checkRet.error || "");
+  __moduleUpdates = [];
+  __pendingModuleUpdates = [];
+  loadErrors = [];
+  for (var i = 0; i < modules.length; i++) loadScript(String(modules[i]));
+  if (loadErrors.length > 0) throw "目标通道模块加载失败";
+  if (__trustedManifest && __pendingModuleUpdates.length === 0) saveInstalledManifestFromLocal();
+  if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && __pendingModuleUpdates.length === 0) saveTrustedVersion(__trustedManifest.version);
+}
+
+function reloadKnownGoodToolHubChannelModules() {
+  try { fetchTrustedManifest(); } catch (eManifest) {}
+  var dir = ensureCodeDir();
+  for (var i = 0; i < modules.length; i++) {
+    var relPath = String(modules[i]);
+    var file = new java.io.File(dir, relPath);
+    if (!file.exists()) throw "回退通道本地模块不存在: " + relPath;
+    verifyLocalModuleBeforeEval(relPath, file);
+    var code = readTextFile(file.getAbsolutePath());
+    if (code === null) throw "读取回退通道模块失败: " + relPath;
+    var geval = eval;
+    geval(String(code));
+  }
+}
+
+function startToolHubAppAfterChannelLoad(reason) {
+  TOOLHUB_APP_REGISTRY = [];
+  TOOLHUB_ACTIVE_APP = null;
+  var entryInfo = getProcessInfo(String(reason || "channel_switch"));
+  var logger = new ToolHubLogger(entryInfo);
+  installCrashHandler(logger);
+  var app = new FloatBallAppWM(logger);
+  registerToolHubAppInstance(app);
+  var closeRule = String(app.config.ACTION_CLOSE_ALL_RULE || "shortx.wm.floatball.CLOSE");
+  var startRet = app.startAsync(entryInfo, closeRule);
+  if (!startRet || !startRet.ok) {
+    unregisterToolHubAppInstance(app);
+    throw "ToolHub 启动失败: " + String(startRet && startRet.err || "unknown");
+  }
+  return { app: app, startRet: startRet };
+}
+
+function switchToolHubUpdateChannel(targetChannel) {
+  var target = normalizeToolHubUpdateChannel(targetChannel);
+  var previous = normalizeToolHubUpdateChannel(TOOLHUB_UPDATE_CHANNEL);
+  if (target === previous) return { ok: true, unchanged: true, msg: "当前已是" + TOOLHUB_CHANNEL_LABEL };
+  if (__toolHubChannelSwitchRunning || __toolHubRestartRunning) return { ok: false, running: true, msg: "ToolHub 正在切换或重启" };
+  if (__manualUpdateRunning || __runtimeUpdateCheckRunning) return { ok: false, running: true, msg: "请等待当前更新任务完成" };
+
+  __toolHubChannelSwitchRunning = true;
+  __toolHubRestartRunning = true;
+  beginToolHubChannelSwitch(target);
+  try {
+    TOOLHUB_UPDATE_STATE.status = "switching";
+    TOOLHUB_UPDATE_STATE.channelSwitching = true;
+    TOOLHUB_UPDATE_STATE.channelSwitchTarget = target;
+    TOOLHUB_UPDATE_STATE.channelSwitchError = "";
+  } catch (eStateBegin) {}
+  try { writeLog("Channel switch requested from=" + previous + " to=" + target); } catch (eLogBegin) {}
+
+  new java.lang.Thread(new java.lang.Runnable({ run: function() {
+    var targetStarted = false;
+    try {
+      flushToolHubStateBeforeChannelSwitch();
+      var oldApp = null;
+      try { oldApp = TOOLHUB_ACTIVE_APP; } catch (eOldApp) { oldApp = null; }
+      closeToolHubAppsForRestart(oldApp);
+      try { java.lang.Thread.sleep(200); } catch (eSleep) {}
+
+      applyToolHubChannelRuntime(target);
+      loadTargetToolHubChannelModules();
+      startToolHubAppAfterChannelLoad("channel_switch_" + target);
+      targetStarted = true;
+      commitToolHubActiveChannel(target);
+      try {
+        TOOLHUB_UPDATE_STATE.status = "latest";
+        TOOLHUB_UPDATE_STATE.channelSwitching = false;
+        TOOLHUB_UPDATE_STATE.channelSwitchTarget = "";
+        TOOLHUB_UPDATE_STATE.channelSwitchError = "";
+      } catch (eStateSuccess) {}
+      try { writeLog("Channel switch committed from=" + previous + " to=" + target); } catch (eLogSuccess) {}
+      showToolHubChannelSwitchToast("已切换到" + TOOLHUB_CHANNEL_LABEL);
+    } catch (eSwitch) {
+      var switchError = String(eSwitch);
+      try { writeLog("Channel switch failed target=" + target + " error=" + switchError); } catch (eLogFail) {}
+      try {
+        if (targetStarted || TOOLHUB_ACTIVE_APP) closeToolHubAppsForRestart(TOOLHUB_ACTIVE_APP);
+      } catch (eCloseTarget) {}
+      try {
+        applyToolHubChannelRuntime(previous);
+        reloadKnownGoodToolHubChannelModules();
+        startToolHubAppAfterChannelLoad("channel_rollback_" + previous);
+        cancelToolHubPendingChannel(previous);
+        try {
+          TOOLHUB_UPDATE_STATE.status = "latest";
+          TOOLHUB_UPDATE_STATE.channelSwitching = false;
+          TOOLHUB_UPDATE_STATE.channelSwitchTarget = "";
+          TOOLHUB_UPDATE_STATE.channelSwitchError = switchError;
+        } catch (eStateRollback) {}
+        try { writeLog("Channel switch rolled back to=" + previous); } catch (eLogRollback) {}
+        showToolHubChannelSwitchToast("通道切换失败，已恢复" + TOOLHUB_CHANNEL_LABEL + "：" + switchError);
+      } catch (eRollback) {
+        try { cancelToolHubPendingChannel(previous); } catch (eCancel) {}
+        try { writeLog("Channel rollback failed channel=" + previous + " error=" + String(eRollback)); } catch (eLogRollbackFail) {}
+        showToolHubChannelSwitchToast("通道切换与自动恢复均失败，请重新运行 ToolHub.js");
+      }
+    } finally {
+      __toolHubChannelSwitchRunning = false;
+      __toolHubRestartRunning = false;
+    }
+  }})).start();
+  return { ok: true, target: target, msg: "正在切换到" + getToolHubChannelSpec(target).label };
+}
+
 var __out = (function() {
   if (typeof getProcessInfo !== "function") {
     return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心函数 getProcessInfo 未定义，请检查 th_01_base.js 是否加载成功" };
@@ -1800,7 +2158,14 @@ var __out = (function() {
     return {
       ok: statusName !== "error",
       status: statusName,
-      source: "GitHub",
+      source: "GitHub/" + TOOLHUB_UPDATE_BRANCH,
+      channel: TOOLHUB_UPDATE_CHANNEL,
+      channelLabel: TOOLHUB_CHANNEL_LABEL,
+      branch: TOOLHUB_UPDATE_BRANCH,
+      rootDir: getToolHubRootDir(),
+      channelSwitching: false,
+      channelSwitchTarget: "",
+      channelSwitchError: "",
       mode: UPDATE_SECURITY_MODE,
       modeText: modeText,
       version: versionNum,
@@ -1867,6 +2232,7 @@ var __out = (function() {
     安全: securityText,
     同步: syncText,
     更新状态: TOOLHUB_UPDATE_STATE.status,
+    更新通道: TOOLHUB_CHANNEL_LABEL + " / " + TOOLHUB_UPDATE_BRANCH,
     布局: layoutText,
     关闭广播: runtimeOptString(startRet && startRet.closeAction)
   };

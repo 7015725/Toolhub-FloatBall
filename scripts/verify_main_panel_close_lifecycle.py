@@ -202,7 +202,7 @@ if 'version.group(1) != "1.5.8"' not in (
 
 require(MAIN_PANEL, "// @version 1.5.8", "unchanged main panel module version")
 require(WORKFLOW, "python3 scripts/verify_main_panel_close_lifecycle.py", "workflow close verification")
-require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260719024500;", "current entry version")
+require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260721201500;", "current entry version")
 require(README, "关闭闪烁", "README close lifecycle note")
 require(ARCH, "退出动画", "architecture close lifecycle note")
 

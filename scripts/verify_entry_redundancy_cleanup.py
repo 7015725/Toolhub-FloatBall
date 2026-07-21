@@ -24,8 +24,16 @@ def forbid(fragment, label):
 forbid("function getAndroidContext()", "unused context resolver")
 forbid("function getUpdateSourceText()", "constant source wrapper")
 forbid("getUpdateSourceText()", "source wrapper call")
-require('TOOLHUB_UPDATE_STATE.source = "GitHub";', "runtime GitHub source")
-require('source: "GitHub",', "startup GitHub source")
+forbid('TOOLHUB_UPDATE_STATE.source = "GitHub";', "constant runtime source")
+forbid('source: "GitHub",', "constant startup source")
+require(
+    'TOOLHUB_UPDATE_STATE.source = "GitHub/" + TOOLHUB_UPDATE_BRANCH;',
+    "runtime channel-aware GitHub source",
+)
+require(
+    'source: "GitHub/" + TOOLHUB_UPDATE_BRANCH,',
+    "startup channel-aware GitHub source",
+)
 require("var versionNum = getTrustedManifestVersionNumber();", "shared trusted manifest version parser")
 
 # 入口中版本解析只能保留在 getTrustedManifestVersionNumber() 内，避免状态构建重复实现。
