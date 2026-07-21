@@ -32,6 +32,7 @@ jobs:
         run: |
           set -o pipefail
           {
+            python3 scripts/fix_channel_private_storage_validator_template_once.py
             python3 scripts/fix_channel_private_storage_patch_once.py
             python3 scripts/apply_channel_private_storage_isolation_once.py
             python3 .github/scripts/es5_scan.py
