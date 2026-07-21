@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "id": "20260721-channel-health-diagnostics",
+  "type": "feature",
+  "title": "新增通道健康自检与诊断报告",
+  "details": [
+    "在运行记录中增加通道健康自检，核对活动通道、分支、根目录、启动状态、签名清单与 SQLite 存储",
+    "自检结果保存到当前通道 diagnostics/channel-health-last.txt，Stable 与 Beta 独立存储",
+    "支持一键复制诊断报告，报告不包含翻译密钥、按钮内容或其他敏感配置",
+    "仅执行本地只读检查，不联网、不自动修复、不修改 ToolHub.js"
+  ],
+  "manifestVersion": 0
+}
