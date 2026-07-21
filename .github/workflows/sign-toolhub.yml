@@ -84,6 +84,7 @@ jobs:
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
+          python3 scripts/fix_channel_private_storage_patch_once.py
           python3 scripts/apply_channel_private_storage_isolation_once.py
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
@@ -93,7 +94,8 @@ jobs:
           python3 scripts/verify_pickword_long_click_api34.py
           python3 scripts/verify_pickword_image_meta_handoff.py
           python3 scripts/verify_pickword_unified_cleanup.py
-          python3 scripts/verify_code_constraints.py --output /tmp/channel-private-storage-constraints.json
+          python3 scripts/verify_code_constraints.py --output channel-private-storage-constraints.json
+          rm -f channel-private-storage-constraints.json
           git diff --check
           if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
             echo "TOOLHUB_AUTOMATION_TOKEN is empty"
