@@ -23,4 +23,12 @@ jobs:
 
       - name: Report channel storage paths
         shell: bash
-        run: python3 scripts/report_channel_storage_paths.py
+        run: python3 scripts/report_channel_storage_paths.py > channel-storage-audit.txt
+
+      - name: Upload channel storage audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: channel-storage-audit
+          path: channel-storage-audit.txt
+          if-no-files-found: error
+          retention-days: 3
