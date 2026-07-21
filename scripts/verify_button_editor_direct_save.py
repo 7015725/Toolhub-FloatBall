@@ -170,7 +170,7 @@ require(
 )
 require(
     ENTRY,
-    "var TOOLHUB_ENTRY_VERSION = 20260719024500;",
+    "var TOOLHUB_ENTRY_VERSION = 20260721201500;",
     "current entry version",
 )
 require(README, "新增和编辑按钮直接保存", "README direct-save note")
