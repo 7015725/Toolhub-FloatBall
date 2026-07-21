@@ -39,7 +39,7 @@ def main():
     docs = (ROOT / "docs" / "security" / "security-config-clean.md").read_text(encoding="utf-8")
 
     checks = [
-        ("content module version advanced", "// @version 1.0.8" in content),
+        ("content module version advanced", "// @version 1.0.9" in content),
         ("content defaults to strict", 'var mode = "strict"' in content),
         ("old audit is not accepted as allow mode", 'mode !== "compat_audit" && mode !== "off"' in content),
         ("read allowlist remains separate", "getContentUriAllowlist" in content),
