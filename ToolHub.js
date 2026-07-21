@@ -4,7 +4,7 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260721193000; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260721201500; // 入口文件版本，仅在 ToolHub.js 变化时提升
 
 var TOOLHUB_CHANNEL_SPECS = {
     stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
@@ -76,7 +76,6 @@ function readToolHubChannelState() {
 
 function writeToolHubChannelStateAtomic(state) {
     var out = null;
-    var writer = null;
     var target = new java.io.File(getToolHubChannelStatePath());
     var parent = target.getParentFile();
     var tmp = new java.io.File(target.getAbsolutePath() + ".tmp");
@@ -95,15 +94,10 @@ function writeToolHubChannelStateAtomic(state) {
         };
         var pending = String(state && state.pendingChannel || "").replace(/^\s+|\s+$/g, "").toLowerCase();
         if (TOOLHUB_CHANNEL_SPECS.hasOwnProperty(pending) && pending !== clean.activeChannel) clean.pendingChannel = pending;
+        var content = JSON.stringify(clean, null, 2) + "\n";
         out = new java.io.FileOutputStream(tmp, false);
-        writer = new java.io.OutputStreamWriter(out, "UTF-8");
-        writer.write(JSON.stringify(clean, null, 2));
-        writer.write("\n");
-        writer.flush();
-        out.flush();
-        try { out.getFD().sync(); } catch (eSyncChannel) { throw "channel state sync failed: " + String(eSyncChannel); }
-        toolHubChannelCloseQuietly(writer);
-        writer = null;
+        out.write(new java.lang.String(content).getBytes("UTF-8"));
+        syncFileOutput(out);
         toolHubChannelCloseQuietly(out);
         out = null;
         if (bak.exists() && !bak.delete()) throw "delete stale channel backup failed";
@@ -118,7 +112,6 @@ function writeToolHubChannelStateAtomic(state) {
         } catch (eRestoreChannel) {}
         throw String(eWriteChannel);
     } finally {
-        toolHubChannelCloseQuietly(writer);
         toolHubChannelCloseQuietly(out);
         try { if (tmp.exists()) tmp.delete(); } catch (eDeleteTmp) {}
     }

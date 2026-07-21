@@ -1,4 +1,4 @@
-// @version 1.1.11
+// @version 1.1.12
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -2463,6 +2463,10 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     root.setOrientation(android.widget.LinearLayout.VERTICAL);
     scroll.addView(root, new android.widget.FrameLayout.LayoutParams(-1, -2));
     panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+    var channelCard = this.buildToolHubUpdateChannelCard();
+    var channelCardLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+    channelCardLp.setMargins(0, 0, 0, this.dp(10));
+    root.addView(channelCard, channelCardLp);
 
     function addText(parent, value, size, color, bold) {
       var tv = new android.widget.TextView(context);
@@ -2709,7 +2713,6 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
       row.addView(body, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
       addText(body, title, 13, T.onSurface, true);
       addText(body, desc, 11, T.onSurface2, false);
-      row.setEnabled(!current.switching);
       row.setAlpha(current.switching ? 0.55 : 1.0);
       row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
         if (!current.switching) self.requestToolHubUpdateChannel(channel);
@@ -2762,21 +2765,4 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     return card;
   };
 
-  var oldBuildToolHubUpdateVersionPanelView = FloatBallAppWM.prototype.buildToolHubUpdateVersionPanelView;
-  FloatBallAppWM.prototype.buildToolHubUpdateVersionPanelView = function() {
-    var panel = oldBuildToolHubUpdateVersionPanelView.call(this);
-    try {
-      var scroll = panel && panel.getChildCount && panel.getChildCount() > 0 ? panel.getChildAt(0) : null;
-      var root = scroll && scroll.getChildCount && scroll.getChildCount() > 0 ? scroll.getChildAt(0) : null;
-      if (root && root.addView) {
-        var card = this.buildToolHubUpdateChannelCard();
-        var lp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-        lp.setMargins(0, 0, 0, this.dp(10));
-        root.addView(card, 0, lp);
-      }
-    } catch (eInsert) {
-      try { safeLog(this.L, "w", "update channel card insert failed: " + String(eInsert)); } catch (eLog) {}
-    }
-    return panel;
-  };
 })();
