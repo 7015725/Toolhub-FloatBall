@@ -5979,10 +5979,7 @@
       "key": "shortx|method|shortx#getShortXDir",
       "files": [
         "ToolHub.js",
-        "code/th_01_base.js",
-        "code/th_04_theme.js",
-        "code/th_13_panel_ui.js",
-        "code/th_20_pickword.js"
+        "code/th_01_base.js"
       ]
     },
     {
@@ -5992,5 +5989,5 @@
       ]
     }
   ],
-  "usageDigest": "sha256:a4d38be0f8c42e78d51241c2f585fc86ed677febb33210c9e2266a268ac43b7f"
+  "usageDigest": "sha256:cec07335c25987a59e3f34de0bc62da9092c7024d11c95c6bcb03e8ee97e67f7"
 }

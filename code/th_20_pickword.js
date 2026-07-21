@@ -1,4 +1,4 @@
-// @version 1.0.20
+// @version 1.0.21
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -1995,54 +1995,117 @@
         mainHandler.post(new java.lang.Runnable({ run: action }));
     }
 
-    function getSharedPrefs() {
-        return appContext.getSharedPreferences(PREFS_NAME, appContext.MODE_PRIVATE);
+    function getStorageChannel20() {
+        var channel = "";
+        try { channel = String(TOOLHUB_UPDATE_CHANNEL || "").toLowerCase(); } catch (e0) { channel = ""; }
+        if (channel !== "beta") channel = "stable";
+        return channel;
     }
 
-    function getFontSizeStoreFile() {
-        try {
-            if (typeof shortx !== 'undefined' && shortx && shortx.getShortXDir) {
-                return new java.io.File(shortx.getShortXDir() + "/data/pickword_font_size.txt");
-            }
-        } catch (e) {}
+    function getSharedPrefs() {
+        return appContext.getSharedPreferences(PREFS_NAME + "_" + getStorageChannel20(), appContext.MODE_PRIVATE);
+    }
+
+    function getLegacySharedPrefs20() {
+        if (getStorageChannel20() !== "stable") return null;
+        try { return appContext.getSharedPreferences(PREFS_NAME, appContext.MODE_PRIVATE); } catch (e0) {}
         return null;
     }
 
-    function readFontSizeFromFile() {
-        var file = getFontSizeStoreFile();
-        if (!file || !file.exists()) return -1;
+    function getToolHubRootText20() {
+        var rootText = "";
+        try { rootText = String(APP_ROOT_DIR || "").replace(/\/+$/g, ""); } catch (e0) { rootText = ""; }
+        return rootText;
+    }
+
+    function getFontSizeStoreFile() {
+        var rootText = getToolHubRootText20();
+        if (!rootText) return null;
+        try { return new java.io.File(rootText + "/data/pickword_font_size.txt"); } catch (e0) {}
+        return null;
+    }
+
+    function getLegacyFontSizeStoreFile20() {
+        if (getStorageChannel20() !== "stable") return null;
+        var rootText = getToolHubRootText20();
+        var stableSuffix = "/ToolHub";
+        if (!rootText || rootText.length <= stableSuffix.length) return null;
+        if (rootText.substring(rootText.length - stableSuffix.length) !== stableSuffix) return null;
+        var baseText = rootText.substring(0, rootText.length - stableSuffix.length);
+        if (!baseText) return null;
+        try { return new java.io.File(baseText + "/data/pickword_font_size.txt"); } catch (e0) {}
+        return null;
+    }
+
+    function readFontSizeFile20(file) {
+        if (!file || !file.exists() || !file.isFile()) return -1;
+        var reader = null;
         try {
-            var reader = new java.io.BufferedReader(new java.io.FileReader(file));
+            reader = new java.io.BufferedReader(new java.io.FileReader(file));
             var line = reader.readLine();
             reader.close();
+            reader = null;
             if (!line) return -1;
             var size = parseInt(String(line).replace(/\s+/g, ""), 10);
             return isNaN(size) ? -1 : size;
         } catch (e) {
             return -1;
+        } finally {
+            try { if (reader) reader.close(); } catch (eClose) {}
         }
+    }
+
+    function readFontSizeFromFile() {
+        return readFontSizeFile20(getFontSizeStoreFile());
     }
 
     function writeFontSizeToFile(size) {
         var file = getFontSizeStoreFile();
         if (!file) return false;
+        var writer = null;
         try {
             var parent = file.getParentFile();
-            if (parent && !parent.exists()) { parent.mkdirs(); }
-            var writer = new java.io.FileWriter(file, false);
+            if (parent && !parent.exists() && !parent.mkdirs() && !parent.exists()) return false;
+            writer = new java.io.FileWriter(file, false);
             writer.write(String(size));
             writer.flush();
             writer.close();
+            writer = null;
             return true;
         } catch (e) {
             return false;
+        } finally {
+            try { if (writer) writer.close(); } catch (eClose) {}
         }
+    }
+
+    function migrateLegacyFontSize20() {
+        if (getStorageChannel20() !== "stable") return -1;
+        var current = getFontSizeStoreFile();
+        if (current && current.exists()) return readFontSizeFile20(current);
+        var size = readFontSizeFile20(getLegacyFontSizeStoreFile20());
+        if (size < MIN_FONT_SIZE || size > MAX_FONT_SIZE) {
+            try {
+                var legacyPrefs = getLegacySharedPrefs20();
+                if (legacyPrefs) size = legacyPrefs.getInt(KEY_FONT_SIZE, -1);
+            } catch (ePrefs) { size = -1; }
+        }
+        if (size < MIN_FONT_SIZE || size > MAX_FONT_SIZE) return -1;
+        writeFontSizeToFile(size);
+        try {
+            var prefs = getSharedPrefs();
+            var editor = prefs.edit();
+            editor.putInt(KEY_FONT_SIZE, size);
+            editor.apply();
+        } catch (eWritePrefs) {}
+        return size;
     }
 
     function loadFontSize() {
         try {
             var defaultSize = getAdaptiveDefaultFontSize();
             var savedSize = readFontSizeFromFile();
+            if (savedSize < 0) savedSize = migrateLegacyFontSize20();
             if (savedSize < 0) {
                 try {
                     var prefs = getSharedPrefs();

@@ -1,4 +1,4 @@
-// @version 1.0.15
+// @version 1.0.16
 // =======================【设置面板：UI（右上角确认）】======================
 FloatBallAppWM.prototype.createSectionHeader = function(item, parent) {
   var isDark = this.isDarkTheme();
@@ -86,9 +86,10 @@ FloatBallAppWM.prototype.refreshSettingColorPreviewView = function(v, hex, strok
 
 FloatBallAppWM.prototype.getSettingsInteractionStressResultFile = function() {
   try {
-    var baseDir = String(shortx.getShortXDir());
-    if (!baseDir) return null;
-    return new java.io.File(baseDir + "/ToolHub/diagnostics/settings-interaction-last.json");
+    var rootText = "";
+    try { rootText = String(APP_ROOT_DIR || "").replace(/\/+$/g, ""); } catch(eRoot) { rootText = ""; }
+    if (!rootText) return null;
+    return new java.io.File(rootText + "/diagnostics/settings-interaction-last.json");
   } catch(ePath) {
     safeLog(this.L, "w", "resolve settings interaction result path fail error=" + String(ePath));
   }

@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "20260721-beta-fix-channel-private-storage-isolation",
+  "type": "fix",
+  "title": "Beta 隔离私有诊断与拾字状态",
+  "details": [
+    "Beta 颜色安全与设置交互诊断结果改为写入 ToolHub-Beta/diagnostics",
+    "Beta 拾字号文件与 SharedPreferences 使用独立通道状态，不继承 Stable 字号",
+    "Stable 旧字号迁移逻辑保留为只读复制，Beta 不读取旧公共状态"
+  ],
+  "manifestVersion": 0
+}
