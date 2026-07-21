@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "20260721-beta-fix-channel-screenshot-storage-isolation",
+  "type": "fix",
+  "title": "Beta 修复截图数据通道隔离",
+  "details": [
+    "Beta 内部截图创建、扫描和拾字路径校验统一使用 ToolHub-Beta 根目录",
+    "Beta Shell 桥结果与截图缩略图缓存写入 ToolHub-Beta 私有缓存目录",
+    "公共相册目录保持共享，但 Beta 截图管理记录继续使用独立 SQLite"
+  ],
+  "manifestVersion": 0
+}
