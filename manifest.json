@@ -4,13 +4,13 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "c32ed31c1639b2afb4643ef4e0bd907ba90c639ff8a03f69c1ca54ded7c24cd0",
-      "size": 53493,
-      "version": 20260721001216
+      "sha256": "e489eda7ad0cc96fd186875a4833454ae7646f8ad65f28e828171be643f8a585",
+      "size": 54165,
+      "version": 20260721010251
     }
   },
-  "branch": "main",
-  "channel": "stable",
+  "branch": "beta",
+  "channel": "beta",
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
@@ -169,15 +169,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "同一份 ToolHub.js 根据公共引导状态选择 main 或 beta 分支",
-      "Stable 与 Beta 使用独立代码、SQLite、缓存、日志和截图目录",
-      "设置页更新与版本页面增加更新通道选择与确认流程",
-      "切换采用 pending/commit 事务，目标启动失败时自动恢复原通道",
-      "Manifest schema 5 绑定 channel 与 branch，CI 同时验证 main 和 beta"
+      "为长期 beta 分支生成首份 channel=beta、branch=beta 的 RSA 签名 Manifest",
+      "Beta 与 Stable 继续使用相同 ToolHub.js 入口，但分别读取 beta 与 main 分支",
+      "本次仅初始化 Beta 发布基线，不修改运行时代码和正式版数据"
     ],
     "date": "2026-07-21",
-    "title": "增加 Stable 与 Beta 更新通道"
+    "title": "初始化 Beta 更新通道"
   },
   "schema": 5,
-  "version": 20260721001216
+  "version": 20260721010251
 }
