@@ -78,27 +78,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Refresh channel switch entry symbol audit
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/channel-switch-update-discovery'
-        shell: bash
-        env:
-          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
-        run: |
-          set -eo pipefail
-          python3 scripts/refresh_channel_switch_entry_audit_once.py
-          git diff --check
-          git checkout origin/main -- .github/workflows/sign-toolhub.yml
-          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
-            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
-            exit 1
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "刷新通道切换入口符号审计"
-          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push origin "HEAD:$TARGET_BRANCH"
-
       - name: Verify changed module versions
         shell: bash
         run: |
