@@ -1,4 +1,4 @@
-// @version 1.1.12
+// @version 1.1.13
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -2675,10 +2675,10 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
     var T = this.getSettingsColorScheme();
     var isDark = this.isDarkTheme();
     var current = this.getToolHubUpdateChannelUiState();
-    var card = new android.widget.LinearLayout(context);
-    card.setOrientation(android.widget.LinearLayout.VERTICAL);
-    card.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
-    card.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.outlineVariant, isDark ? 0.24 : 0.20), this.dp(1), this.dp(18)));
+    var channelCardRoot = new android.widget.LinearLayout(context);
+    channelCardRoot.setOrientation(android.widget.LinearLayout.VERTICAL);
+    channelCardRoot.setPadding(this.dp(12), this.dp(10), this.dp(12), this.dp(10));
+    channelCardRoot.setBackground(this.ui.createStrokeDrawable(T.surface, this.withAlpha(T.outlineVariant, isDark ? 0.24 : 0.20), this.dp(1), this.dp(18)));
 
     function addText(parent, value, size, color, bold) {
       var tv = new android.widget.TextView(context);
@@ -2692,42 +2692,42 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
 
     function addChoice(channel, title, desc) {
       var selected = current.channel === channel;
-      var row = new android.widget.LinearLayout(context);
-      row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-      row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-      row.setPadding(self.dp(10), self.dp(9), self.dp(10), self.dp(9));
-      row.setBackground(self.ui.createPressedStateDrawable(T.surface2, self.withAlpha(T.primary, isDark ? 0.15 : 0.08), self.dp(14)));
+      var channelChoiceRow = new android.widget.LinearLayout(context);
+      channelChoiceRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      channelChoiceRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+      channelChoiceRow.setPadding(self.dp(10), self.dp(9), self.dp(10), self.dp(9));
+      channelChoiceRow.setBackground(self.ui.createPressedStateDrawable(T.surface2, self.withAlpha(T.primary, isDark ? 0.15 : 0.08), self.dp(14)));
       var lp = new android.widget.LinearLayout.LayoutParams(-1, -2);
       lp.setMargins(0, self.dp(7), 0, 0);
-      card.addView(row, lp);
+      channelCardRoot.addView(channelChoiceRow, lp);
 
-      var mark = new android.widget.TextView(context);
-      mark.setText(selected ? "●" : "○");
-      mark.setGravity(android.view.Gravity.CENTER);
-      mark.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
-      toolhubSafeSetTextColor(mark, selected ? T.primary : T.onSurface2);
-      row.addView(mark, new android.widget.LinearLayout.LayoutParams(self.dp(34), self.dp(42)));
+      var channelChoiceMark = new android.widget.TextView(context);
+      channelChoiceMark.setText(selected ? "●" : "○");
+      channelChoiceMark.setGravity(android.view.Gravity.CENTER);
+      channelChoiceMark.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+      toolhubSafeSetTextColor(channelChoiceMark, selected ? T.primary : T.onSurface2);
+      channelChoiceRow.addView(channelChoiceMark, new android.widget.LinearLayout.LayoutParams(self.dp(34), self.dp(42)));
 
-      var body = new android.widget.LinearLayout(context);
-      body.setOrientation(android.widget.LinearLayout.VERTICAL);
-      row.addView(body, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
-      addText(body, title, 13, T.onSurface, true);
-      addText(body, desc, 11, T.onSurface2, false);
-      row.setAlpha(current.switching ? 0.55 : 1.0);
-      row.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
+      var channelChoiceBody = new android.widget.LinearLayout(context);
+      channelChoiceBody.setOrientation(android.widget.LinearLayout.VERTICAL);
+      channelChoiceRow.addView(channelChoiceBody, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
+      addText(channelChoiceBody, title, 13, T.onSurface, true);
+      addText(channelChoiceBody, desc, 11, T.onSurface2, false);
+      channelChoiceRow.setAlpha(current.switching ? 0.55 : 1.0);
+      channelChoiceRow.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() {
         if (!current.switching) self.requestToolHubUpdateChannel(channel);
       }}));
     }
 
-    addText(card, "更新通道", 14, T.onSurface, true);
-    addText(card, "入口保持同一份 ToolHub.js；不同通道使用独立代码、数据库、缓存和日志目录。", 11, T.onSurface2, false);
+    addText(channelCardRoot, "更新通道", 14, T.onSurface, true);
+    addText(channelCardRoot, "入口保持同一份 ToolHub.js；不同通道使用独立代码、数据库、缓存和日志目录。", 11, T.onSurface2, false);
     addChoice("stable", "正式版 Stable", "main · 日常稳定使用 · /ToolHub");
     addChoice("beta", "测试版 Beta", "beta · 提前测试新功能 · /ToolHub-Beta");
-    addText(card, "当前运行：" + current.label + "  ·  GitHub/" + current.branch, 11, T.onSurface2, false).setPadding(0, this.dp(8), 0, 0);
+    addText(channelCardRoot, "当前运行：" + current.label + "  ·  GitHub/" + current.branch, 11, T.onSurface2, false).setPadding(0, this.dp(8), 0, 0);
 
     if (current.switching) {
-      addText(card, "正在切换更新通道，请勿重复操作。", 12, T.primary, true).setPadding(0, this.dp(8), 0, 0);
-      return card;
+      addText(channelCardRoot, "正在切换更新通道，请勿重复操作。", 12, T.primary, true).setPadding(0, this.dp(8), 0, 0);
+      return channelCardRoot;
     }
 
     var confirmTarget = channelText(this.state && this.state.toolHubChannelConfirmTarget);
@@ -2738,21 +2738,21 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
       var warning = confirmTarget === "beta"
         ? "Beta 使用独立数据目录；验证或启动失败时会自动恢复正式版。"
         : "将恢复 main 分支及原有正式版数据；Beta 数据会继续保留。";
-      addText(card, "确认切换到" + targetLabel + "？", 12, T.onSurface, true).setPadding(0, this.dp(9), 0, 0);
-      addText(card, warning, 11, T.onSurface2, false);
-      var actions = new android.widget.LinearLayout(context);
-      actions.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-      var actionLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-      actionLp.setMargins(0, this.dp(8), 0, 0);
-      card.addView(actions, actionLp);
-      var cancel = this.ui.createFlatButton(this, "取消", T.onSurface2, function() {
+      addText(channelCardRoot, "确认切换到" + targetLabel + "？", 12, T.onSurface, true).setPadding(0, this.dp(9), 0, 0);
+      addText(channelCardRoot, warning, 11, T.onSurface2, false);
+      var channelActionRow = new android.widget.LinearLayout(context);
+      channelActionRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+      var channelActionLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+      channelActionLp.setMargins(0, this.dp(8), 0, 0);
+      channelCardRoot.addView(channelActionRow, channelActionLp);
+      var channelCancelButton = this.ui.createFlatButton(this, "取消", T.onSurface2, function() {
         self.state.toolHubChannelConfirmTarget = "";
         self.refreshToolHubUpdateSurface("channel_cancel");
       });
-      actions.addView(cancel, new android.widget.LinearLayout.LayoutParams(0, this.dp(44), 1));
-      var gap = new android.view.View(context);
-      actions.addView(gap, new android.widget.LinearLayout.LayoutParams(this.dp(8), 1));
-      var confirm = this.ui.createFlatButton(this, "确认切换", T.primary, function() {
+      channelActionRow.addView(channelCancelButton, new android.widget.LinearLayout.LayoutParams(0, this.dp(44), 1));
+      var channelActionGap = new android.view.View(context);
+      channelActionRow.addView(channelActionGap, new android.widget.LinearLayout.LayoutParams(this.dp(8), 1));
+      var channelConfirmButton = this.ui.createFlatButton(this, "确认切换", T.primary, function() {
         self.state.toolHubChannelConfirmTarget = "";
         var ret = null;
         try { ret = switchToolHubUpdateChannel(confirmTarget); }
@@ -2760,9 +2760,9 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         try { self.toast(ret && ret.msg ? ret.msg : "正在切换更新通道"); } catch (eToast2) {}
         self.refreshToolHubUpdateSurface("channel_switch_start");
       });
-      actions.addView(confirm, new android.widget.LinearLayout.LayoutParams(0, this.dp(44), 1));
+      channelActionRow.addView(channelConfirmButton, new android.widget.LinearLayout.LayoutParams(0, this.dp(44), 1));
     }
-    return card;
+    return channelCardRoot;
   };
 
 })();
