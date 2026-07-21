@@ -38,64 +38,81 @@ jobs:
         shell: bash
         run: |
           set -eo pipefail
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/report_entry_symbols.py --check docs/audits/ENTRY_SYMBOL_AUDIT.md
-          python3 scripts/verify_entry_redundancy_cleanup.py
-          python3 scripts/verify_entry_writable_probe.py
-          python3 scripts/verify_sqlite_storage.py
-          python3 scripts/verify_sqlite_debounce_race.py
-          python3 scripts/verify_ball_position_state.py
-          python3 scripts/verify_animation_callback_safety.py
-          python3 scripts/verify_ball_rebuild_rollback.py
-          python3 scripts/verify_toolapp_layout.py
-          python3 scripts/verify_toolapp_main_thread_affinity.py
-          python3 scripts/verify_settings_color_scheme.py
-          python3 scripts/verify_legacy_theme_cleanup.py
-          python3 scripts/verify_settings_color_roles.py
-          python3 scripts/verify_coloros_rhino_color_safety.py
-          python3 scripts/verify_rhino_color_api_safety.py
-          python3 scripts/verify_button_editor_layout.py
-          python3 scripts/verify_button_editor_direct_save.py
-          python3 scripts/verify_button_shortcut_thread_affinity.py
-          python3 scripts/verify_schema_validator.py
-          python3 scripts/verify_pickword_translate_settings.py
-          python3 scripts/verify_pickword_long_click_api34.py
-          python3 scripts/verify_pickword_share_close_cleanup.py
-          python3 scripts/verify_pickword_unified_cleanup.py
-          python3 scripts/verify_pickword_emoji_grapheme.py
-          python3 scripts/verify_entry_lifecycle.py
-          python3 scripts/verify_atomic_update.py
-          python3 scripts/verify_release_transaction.py
-          python3 scripts/verify_startup_status.py
-          python3 scripts/verify_main_panel_runtime_status.py
-          python3 scripts/verify_main_panel_drag_sort.py
-          python3 scripts/verify_main_panel_more_menu.py
-          python3 scripts/verify_main_panel_paging.py
-          python3 scripts/verify_main_panel_adaptive_layout.py
-          python3 scripts/verify_panel_layout_settings_cleanup.py
-          python3 scripts/verify_legacy_main_panel_cleanup.py
-          python3 scripts/verify_main_panel_grid_sizing.py
-          python3 scripts/verify_main_panel_visual_tuning.py
-          python3 scripts/verify_main_panel_close_lifecycle.py
-          python3 scripts/verify_update_security_mode.py
-          python3 scripts/verify_shell_bridge_security.py
-          python3 scripts/verify_shell_log_redaction.py
-          python3 scripts/verify_shortcut_security.py
-          python3 scripts/verify_content_security.py
-          python3 scripts/verify_major_event_logging.py
-          python3 scripts/verify_manifest.py
-          python3 scripts/verify_module_versions.py
-          python3 scripts/verify_changed_module_versions.py
-          python3 scripts/verify_documentation_consistency.py
-          python3 scripts/verify_github_only_source.py
-          python3 scripts/verify_pointer_regressions.py
-          python3 scripts/verify_result_preview.py
-          python3 scripts/verify_pickword_image_viewer.py
-          python3 scripts/verify_pickword_image_meta_handoff.py
-          python3 scripts/verify_screenshot_manager.py
-          python3 .github/scripts/verify_manifest_signature.py
-          git diff --check
+          stage_file="entry-symbol-verification-stage.txt"
+          run_check() {
+            printf '%s\n' "$*" > "$stage_file"
+            "$@"
+          }
+          run_check python3 .github/scripts/es5_scan.py
+          run_check python3 scripts/verify_js_syntax.py
+          run_check python3 scripts/report_entry_symbols.py --check docs/audits/ENTRY_SYMBOL_AUDIT.md
+          run_check python3 scripts/verify_entry_redundancy_cleanup.py
+          run_check python3 scripts/verify_entry_writable_probe.py
+          run_check python3 scripts/verify_sqlite_storage.py
+          run_check python3 scripts/verify_sqlite_debounce_race.py
+          run_check python3 scripts/verify_ball_position_state.py
+          run_check python3 scripts/verify_animation_callback_safety.py
+          run_check python3 scripts/verify_ball_rebuild_rollback.py
+          run_check python3 scripts/verify_toolapp_layout.py
+          run_check python3 scripts/verify_toolapp_main_thread_affinity.py
+          run_check python3 scripts/verify_settings_color_scheme.py
+          run_check python3 scripts/verify_legacy_theme_cleanup.py
+          run_check python3 scripts/verify_settings_color_roles.py
+          run_check python3 scripts/verify_coloros_rhino_color_safety.py
+          run_check python3 scripts/verify_rhino_color_api_safety.py
+          run_check python3 scripts/verify_button_editor_layout.py
+          run_check python3 scripts/verify_button_editor_direct_save.py
+          run_check python3 scripts/verify_button_shortcut_thread_affinity.py
+          run_check python3 scripts/verify_schema_validator.py
+          run_check python3 scripts/verify_pickword_translate_settings.py
+          run_check python3 scripts/verify_pickword_long_click_api34.py
+          run_check python3 scripts/verify_pickword_share_close_cleanup.py
+          run_check python3 scripts/verify_pickword_unified_cleanup.py
+          run_check python3 scripts/verify_pickword_emoji_grapheme.py
+          run_check python3 scripts/verify_entry_lifecycle.py
+          run_check python3 scripts/verify_atomic_update.py
+          run_check python3 scripts/verify_release_transaction.py
+          run_check python3 scripts/verify_startup_status.py
+          run_check python3 scripts/verify_main_panel_runtime_status.py
+          run_check python3 scripts/verify_main_panel_drag_sort.py
+          run_check python3 scripts/verify_main_panel_more_menu.py
+          run_check python3 scripts/verify_main_panel_paging.py
+          run_check python3 scripts/verify_main_panel_adaptive_layout.py
+          run_check python3 scripts/verify_panel_layout_settings_cleanup.py
+          run_check python3 scripts/verify_legacy_main_panel_cleanup.py
+          run_check python3 scripts/verify_main_panel_grid_sizing.py
+          run_check python3 scripts/verify_main_panel_visual_tuning.py
+          run_check python3 scripts/verify_main_panel_close_lifecycle.py
+          run_check python3 scripts/verify_update_security_mode.py
+          run_check python3 scripts/verify_shell_bridge_security.py
+          run_check python3 scripts/verify_shell_log_redaction.py
+          run_check python3 scripts/verify_shortcut_security.py
+          run_check python3 scripts/verify_content_security.py
+          run_check python3 scripts/verify_major_event_logging.py
+          run_check python3 scripts/verify_manifest.py
+          run_check python3 scripts/verify_module_versions.py
+          run_check python3 scripts/verify_changed_module_versions.py
+          run_check python3 scripts/verify_documentation_consistency.py
+          run_check python3 scripts/verify_github_only_source.py
+          run_check python3 scripts/verify_pointer_regressions.py
+          run_check python3 scripts/verify_result_preview.py
+          run_check python3 scripts/verify_pickword_image_viewer.py
+          run_check python3 scripts/verify_pickword_image_meta_handoff.py
+          run_check python3 scripts/verify_screenshot_manager.py
+          run_check python3 .github/scripts/verify_manifest_signature.py
+          run_check git diff --check
+          printf '%s\n' PASS > "$stage_file"
+
+      - name: Upload verification stage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-symbol-verification-stage
+          path: |
+            entry-symbol-verification-stage.txt
+            docs/audits/ENTRY_SYMBOL_AUDIT.md
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Commit finalized audit
         env:
@@ -106,6 +123,7 @@ jobs:
             echo "TOOLHUB_AUTOMATION_TOKEN is empty"
             exit 1
           fi
+          rm -f entry-symbol-verification-stage.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
