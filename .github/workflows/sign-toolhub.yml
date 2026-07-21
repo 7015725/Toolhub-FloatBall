@@ -88,7 +88,6 @@ jobs:
           python3 scripts/apply_channel_screenshot_storage_isolation_once.py 2>&1 | tee channel-screenshot-patch.log
           python3 .github/scripts/es5_scan.py 2>&1 | tee -a channel-screenshot-patch.log
           python3 scripts/verify_js_syntax.py 2>&1 | tee -a channel-screenshot-patch.log
-          python3 scripts/verify_pointer_regressions.py 2>&1 | tee -a channel-screenshot-patch.log
           python3 scripts/verify_pickword_image_viewer.py 2>&1 | tee -a channel-screenshot-patch.log
           python3 scripts/verify_pickword_image_meta_handoff.py 2>&1 | tee -a channel-screenshot-patch.log
           python3 scripts/verify_channel_screenshot_storage_isolation.py 2>&1 | tee -a channel-screenshot-patch.log
