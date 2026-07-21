@@ -1,0 +1,140 @@
+name: fix-beta-update-channel-review-once
+
+on:
+  push:
+    branches: [agent/beta-update-channel]
+    paths:
+      - .github/workflows/fix-beta-update-channel-review-once.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/beta-update-channel
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Apply review fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          entry_path = Path('ToolHub.js')
+          entry = entry_path.read_text(encoding='utf-8')
+          entry = entry.replace(
+              'var TOOLHUB_ENTRY_VERSION = 20260721193000;',
+              'var TOOLHUB_ENTRY_VERSION = 20260721201500;',
+              1,
+          )
+          start = entry.index('function writeToolHubChannelStateAtomic(state) {')
+          end = entry.index('\nvar TOOLHUB_CHANNEL_STATE = readToolHubChannelState();', start)
+          replacement = r'''function writeToolHubChannelStateAtomic(state) {
+    var out = null;
+    var target = new java.io.File(getToolHubChannelStatePath());
+    var parent = target.getParentFile();
+    var tmp = new java.io.File(target.getAbsolutePath() + ".tmp");
+    var bak = new java.io.File(target.getAbsolutePath() + ".bak");
+    var hadTarget = false;
+    try {
+        if (parent && !parent.exists() && !parent.mkdirs()) throw "channel bootstrap mkdirs failed";
+        if (tmp.exists() && !tmp.delete()) throw "delete stale channel tmp failed";
+        var clean = {
+            schema: 1,
+            activeChannel: normalizeToolHubUpdateChannel(state && state.activeChannel),
+            pendingChannel: "",
+            lastGoodChannel: normalizeToolHubUpdateChannel(state && state.lastGoodChannel),
+            generation: Math.max(0, Number(state && state.generation || 0)),
+            updatedAt: Math.max(0, Number(state && state.updatedAt || java.lang.System.currentTimeMillis()))
+        };
+        var pending = String(state && state.pendingChannel || "").replace(/^\s+|\s+$/g, "").toLowerCase();
+        if (TOOLHUB_CHANNEL_SPECS.hasOwnProperty(pending) && pending !== clean.activeChannel) clean.pendingChannel = pending;
+        var content = JSON.stringify(clean, null, 2) + "\n";
+        out = new java.io.FileOutputStream(tmp, false);
+        out.write(new java.lang.String(content).getBytes("UTF-8"));
+        syncFileOutput(out);
+        toolHubChannelCloseQuietly(out);
+        out = null;
+        if (bak.exists() && !bak.delete()) throw "delete stale channel backup failed";
+        hadTarget = target.exists();
+        if (hadTarget && !target.renameTo(bak)) throw "backup channel state failed";
+        if (!tmp.renameTo(target)) throw "install channel state failed";
+        if (bak.exists() && !bak.delete()) throw "delete channel backup failed";
+        return clean;
+    } catch (eWriteChannel) {
+        try {
+            if (!target.exists() && bak.exists()) bak.renameTo(target);
+        } catch (eRestoreChannel) {}
+        throw String(eWriteChannel);
+    } finally {
+        toolHubChannelCloseQuietly(out);
+        try { if (tmp.exists()) tmp.delete(); } catch (eDeleteTmp) {}
+    }
+}
+'''
+          entry = entry[:start] + replacement + entry[end:]
+          entry_path.write_text(entry, encoding='utf-8')
+
+          panel_path = Path('code/th_14_panels.js')
+          panel = panel_path.read_text(encoding='utf-8')
+          panel = panel.replace('// @version 1.1.11', '// @version 1.1.12', 1)
+          panel = panel.replace('      row.setEnabled(!current.switching);\n', '', 1)
+          insert_after = '    panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));\n'
+          insert_text = '''    panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
+    var channelCard = this.buildToolHubUpdateChannelCard();
+    var channelCardLp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+    channelCardLp.setMargins(0, 0, 0, this.dp(10));
+    root.addView(channelCard, channelCardLp);
+'''
+          if panel.count(insert_after) != 1:
+              raise SystemExit('unexpected update panel insertion count')
+          panel = panel.replace(insert_after, insert_text, 1)
+          pattern = re.compile(
+              r'\n  var oldBuildToolHubUpdateVersionPanelView = FloatBallAppWM\.prototype\.buildToolHubUpdateVersionPanelView;.*?\n  };\n\}\)\(\);\s*$',
+              re.S,
+          )
+          panel, count = pattern.subn('\n})();\n', panel)
+          if count != 1:
+              raise SystemExit('update panel wrapper removal failed')
+          panel_path.write_text(panel, encoding='utf-8')
+
+          record_path = Path('updates/records/20260721-beta-update-channel.json')
+          record = json.loads(record_path.read_text(encoding='utf-8'))
+          record['manifestVersion'] = 0
+          for key in ('date', 'modules', 'entry'):
+              record.pop(key, None)
+          record_path.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Validate review fixes
+        shell: bash
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_code_constraints.py --output beta-channel-constraint-report.json
+          git diff --check
+
+      - name: Commit review fixes
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ToolHub.js code/th_14_panels.js updates/records/20260721-beta-update-channel.json
+          git commit -m "修正 Beta 通道方法与 API 边界"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:agent/beta-update-channel
