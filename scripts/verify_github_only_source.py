@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""验证入口和仓库发布链只保留 GitHub 更新源。"""
+"""验证入口和仓库发布链只保留固定 GitHub 仓库的 Stable/Beta 更新源。"""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,8 +26,23 @@ def forbid(text, fragment, label):
 
 require(
     ENTRY,
-    'var GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/main/";',
-    "fixed GitHub update root",
+    'stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" }',
+    "Stable main branch mapping",
+)
+require(
+    ENTRY,
+    'beta: { id: "beta", label: "测试版 Beta", branch: "beta", rootName: "ToolHub-Beta" }',
+    "Beta branch mapping",
+)
+require(
+    ENTRY,
+    'var GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + TOOLHUB_UPDATE_BRANCH + "/";',
+    "fixed GitHub repository with channel branch",
+)
+require(
+    ENTRY,
+    "return TOOLHUB_CHANNEL_SPECS.hasOwnProperty(text) ? text : \"stable\";",
+    "closed update channel allowlist",
 )
 
 for fragment in (
@@ -60,4 +75,4 @@ for removed_path in (
     if removed_path.exists():
         fail("legacy Gitea file still exists: %s" % removed_path.relative_to(ROOT))
 
-print("GitHub-only update source verification passed")
+print("GitHub-only Stable/Beta update source verification passed")
