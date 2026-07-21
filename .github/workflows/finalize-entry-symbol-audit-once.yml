@@ -5,20 +5,16 @@ on:
     branches: [agent/beta-update-channel]
     paths:
       - .github/workflows/finalize-entry-symbol-audit-once.yml
-  pull_request:
-    branches: [main]
-    types: [synchronize]
 
 permissions:
   contents: read
 
 concurrency:
   group: finalize-entry-symbol-audit-once
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   finalize:
-    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'agent/beta-update-channel'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout feature branch
