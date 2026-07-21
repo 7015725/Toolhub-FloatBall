@@ -78,6 +78,34 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Sync Beta channel switch update discovery
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/beta-channel-switch-update-discovery'
+        shell: bash
+        env:
+          TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        run: |
+          set -eo pipefail
+          git fetch --no-tags origin main
+          python3 scripts/sync_beta_channel_switch_update_discovery_once.py
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_update_version_page.py
+          python3 scripts/verify_update_history.py --require-one-pending
+          python3 scripts/verify_code_constraints.py --output beta-channel-switch-constraints.json
+          rm -f beta-channel-switch-constraints.json
+          git diff --check
+          git checkout origin/beta -- .github/workflows/sign-toolhub.yml
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo "TOOLHUB_AUTOMATION_TOKEN is empty"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Beta 同步通道切换后的更新发现提示"
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:$TARGET_BRANCH"
+
       - name: Verify changed module versions
         shell: bash
         run: |
