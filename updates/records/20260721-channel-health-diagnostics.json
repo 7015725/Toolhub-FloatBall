@@ -9,5 +9,19 @@
     "支持一键复制诊断报告，报告不包含翻译密钥、按钮内容或其他敏感配置",
     "仅执行本地只读检查，不联网、不自动修复、不修改 ToolHub.js"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260721062327,
+  "date": "2026-07-21",
+  "modules": [
+    {
+      "name": "th_08_content.js",
+      "from": "1.0.8",
+      "to": "1.0.9",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260721201500,
+    "to": 20260721201500
+  }
 }
