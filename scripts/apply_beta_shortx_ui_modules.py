@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Idempotently add the beta-only ShortXUI modules to ToolHub.js."""
+"""Idempotently add the beta-only ShortXUI modules to entry and signing lists."""
 from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "ToolHub.js"
+GENERATOR = ROOT / "scripts" / "generate_signed_manifest.py"
 TARGET_ENTRY_VERSION = 20260727234500
 RUNTIME = '"th_24_shortx_ui_runtime.js"'
 LAB = '"th_34_shortx_ui_lab.js"'
@@ -18,7 +19,7 @@ def insert_after(text, anchor, item):
     return text.replace(anchor, anchor + ", " + item, 1)
 
 
-def main():
+def patch_entry():
     text = ENTRY.read_text(encoding="utf-8")
     original = text
     text = insert_after(text, '"th_02_core.js"', RUNTIME)
@@ -38,9 +39,31 @@ def main():
 
     if text != original:
         ENTRY.write_text(text, encoding="utf-8")
-        print("updated ToolHub.js for beta ShortXUI phase 1")
+        return True
+    return False
+
+
+def patch_generator():
+    text = GENERATOR.read_text(encoding="utf-8")
+    original = text
+    text = insert_after(text, '"th_02_core.js"', RUNTIME)
+    text = insert_after(text, '"th_15_extra.js"', LAB)
+    if text != original:
+        GENERATOR.write_text(text, encoding="utf-8")
+        return True
+    return False
+
+
+def main():
+    entry_changed = patch_entry()
+    generator_changed = patch_generator()
+    if entry_changed or generator_changed:
+        print(
+            "updated beta ShortXUI module lists entry=%s generator=%s"
+            % (entry_changed, generator_changed)
+        )
     else:
-        print("ToolHub.js already contains beta ShortXUI phase 1")
+        print("beta ShortXUI module lists already current")
 
 
 if __name__ == "__main__":
