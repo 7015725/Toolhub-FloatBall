@@ -235,7 +235,7 @@ FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
       self.state.mainPanelExitAnimating = false;
       // 延后一轮清理共享遮罩：主面板点击“设置”等入口会在当前回调末尾增加
       // toolAppUiGeneration，届时保留原 mask 给 ToolApp 复用，避免 remove/add 竞态。
-      var maskCleanup = new java.lang.Runnable({ run: function() {
+      function performMaskCleanup() {
         try {
           if (!self.state) return;
           if (Number(self.state.toolAppUiGeneration || 0) !== toolAppGenerationAtHide) {
@@ -249,12 +249,15 @@ FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
         } catch (eMaskCleanup) {
           safeLog(self.L, 'w', "main panel deferred mask cleanup fail: " + String(eMaskCleanup));
         }
+      }
+      var maskCleanup = new java.lang.Runnable({ run: function() {
+        performMaskCleanup();
       }});
       var maskCleanupPosted = false;
       try {
         if (self.state.h) maskCleanupPosted = self.state.h.post(maskCleanup) === true;
       } catch (eMaskPost) {}
-      if (!maskCleanupPosted) maskCleanup.run();
+      if (!maskCleanupPosted) performMaskCleanup();
       self.touchActivity();
       self._clearHeavyCachesIfAllHidden("hideMainPanel");
     }
