@@ -1,4 +1,4 @@
-// @version 0.1.2
+// @version 0.1.3
 // ShortX UI Runtime Phase 1: Core / Dispatcher / Scope / Color / Metrics / Display / Shape / Diagnostics.
 // Beta-only experimental module. It does not replace ToolHub production UI paths.
 (function (global) {
@@ -132,7 +132,7 @@
   }
 
   var SXUI = {
-    VERSION: "0.1.2",
+    VERSION: "0.1.3",
     MODULE_VERSION: 1,
     __runtimeInstalled: true
   };
@@ -463,7 +463,7 @@
 
   SXUI.Display = {
     snapshot: function (ctx, wm) {
-      var metrics = new DisplayMetrics();
+      var platformMetrics = new DisplayMetrics();
       var bounds = { left: 0, top: 0, right: 0, bottom: 0 };
       var insets = { left: 0, top: 0, right: 0, bottom: 0 };
       var source = "resources";
@@ -483,10 +483,10 @@
       } catch (ignoredWindowMetrics) {}
       if (bounds.right <= bounds.left || bounds.bottom <= bounds.top) {
         try {
-          if (wm && wm.getDefaultDisplay) wm.getDefaultDisplay().getRealMetrics(metrics);
-          else metrics = ctx.getResources().getDisplayMetrics();
-        } catch (ignoredReal) { metrics = ctx.getResources().getDisplayMetrics(); }
-        bounds = { left: 0, top: 0, right: Number(metrics.widthPixels || 0), bottom: Number(metrics.heightPixels || 0) };
+          if (wm && wm.getDefaultDisplay) wm.getDefaultDisplay().getRealMetrics(platformMetrics);
+          else platformMetrics = ctx.getResources().getDisplayMetrics();
+        } catch (ignoredReal) { platformMetrics = ctx.getResources().getDisplayMetrics(); }
+        bounds = { left: 0, top: 0, right: Number(platformMetrics.widthPixels || 0), bottom: Number(platformMetrics.heightPixels || 0) };
       }
       var safe = {
         left: bounds.left + insets.left,
@@ -510,22 +510,28 @@
 
   SXUI.Shape = {
     roundRect: function (fillColor, radiusPx) {
-      var drawable = new GradientDrawable();
-      drawable.setShape(GradientDrawable.RECTANGLE);
-      sxuiSafeSetGradientColor(drawable, fillColor);
-      drawable.setCornerRadius(Math.max(0, sxuiNumber(radiusPx, 0)));
-      return drawable;
+      var gradient = new GradientDrawable();
+      gradient.setShape(GradientDrawable.RECTANGLE);
+      sxuiSafeSetGradientColor(gradient, fillColor);
+      gradient.setCornerRadius(Math.max(0, sxuiNumber(radiusPx, 0)));
+      return gradient;
     },
     strokeRect: function (fillColor, strokeColor, strokeWidthPx, radiusPx) {
-      var drawable = SXUI.Shape.roundRect(fillColor, radiusPx);
-      sxuiSafeSetGradientStroke(drawable, strokeWidthPx, strokeColor);
-      return drawable;
+      var gradient = SXUI.Shape.roundRect(fillColor, radiusPx);
+      sxuiSafeSetGradientStroke(gradient, strokeWidthPx, strokeColor);
+      return gradient;
     },
     pressed: function (normalColor, pressedColor, radiusPx) {
-      var drawable = new StateListDrawable();
-      drawable.addState(sxuiJintArray([Packages.android.R.attr.state_pressed]), SXUI.Shape.roundRect(pressedColor, radiusPx));
-      drawable.addState(sxuiJintArray([]), SXUI.Shape.roundRect(normalColor, radiusPx));
-      return drawable;
+      var stateDrawable = new StateListDrawable();
+      stateDrawable.addState(
+        sxuiJintArray([Packages.android.R.attr.state_pressed]),
+        SXUI.Shape.roundRect(pressedColor, radiusPx)
+      );
+      stateDrawable.addState(
+        sxuiJintArray([]),
+        SXUI.Shape.roundRect(normalColor, radiusPx)
+      );
+      return stateDrawable;
     },
     transparentPressed: function (pressedColor, radiusPx) {
       return SXUI.Shape.pressed(Color.TRANSPARENT, pressedColor, radiusPx);
