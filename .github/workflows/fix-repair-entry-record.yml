@@ -1,0 +1,90 @@
+name: fix-repair-entry-record
+
+on:
+  pull_request:
+    branches: [beta]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-repair-entry-record
+  cancel-in-progress: true
+
+jobs:
+  fix:
+    if: github.head_ref == 'agent/beta-fix-wm-remove-view-crash-20260726'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/beta-fix-wm-remove-view-crash-20260726
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Correct structured update record
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          path = Path('updates/records/20260726-beta-system-server-window-remove-crash.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          old = '不修改主面板布局、按钮数据、SQLite、Stable/Beta 通道、入口文件和现有线程归属。'
+          new = '不修改主面板布局、按钮数据、SQLite、Stable/Beta 通道映射和现有线程归属；仅为本修复分支增加测试入口 fetch ref 锁定。'
+          details = [str(item) for item in (data.get('details') or [])]
+          if details.count(old) != 1:
+              raise SystemExit('stale entry-boundary detail count=%d' % details.count(old))
+          data['details'] = [new if item == old else item for item in details]
+          data['manifestVersion'] = 0
+          data.pop('date', None)
+          data.pop('modules', None)
+          data.pop('entry', None)
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Install signing key
+        shell: bash
+        env:
+          TOOLHUB_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.TOOLHUB_SIGNING_PRIVATE_KEY_PEM }}
+        run: |
+          test -n "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM"
+          mkdir -p "$HOME/.hermes/toolhub_signing"
+          printf '%s\n' "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" > "$HOME/.hermes/toolhub_signing/private_key.pem"
+          chmod 600 "$HOME/.hermes/toolhub_signing/private_key.pem"
+
+      - name: Regenerate Beta-relative signed artifacts
+        run: |
+          git fetch --no-tags origin beta
+          python3 scripts/generate_signed_manifest.py --yes --channel beta --base-ref origin/beta
+
+      - name: Verify final bundle
+        run: |
+          set -eo pipefail
+          python3 scripts/verify_update_history.py
+          python3 scripts/verify_manifest.py
+          python3 scripts/verify_update_version_page.py
+          python3 .github/scripts/verify_manifest_signature.py
+          python3 scripts/verify_github_only_source.py
+          python3 scripts/verify_entry_redundancy_cleanup.py
+          python3 scripts/report_entry_symbols.py --check docs/audits/ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          git diff --check
+
+      - name: Commit corrected record and remove workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-repair-entry-record.yml
+          git add manifest.json manifest.sig ToolHub.js.sha256 update_history.json \
+            updates/records/20260726-beta-system-server-window-remove-crash.json
+          git commit -m "修正修复分支入口更新记录"
+          git push origin HEAD:agent/beta-fix-wm-remove-view-crash-20260726
