@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Idempotently add the beta-only ShortXUI modules to entry and signing lists."""
+"""Idempotently prepare the beta-only ShortXUI runtime release."""
 from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "ToolHub.js"
 GENERATOR = ROOT / "scripts" / "generate_signed_manifest.py"
+RUNTIME_FILE = ROOT / "code" / "th_24_shortx_ui_runtime.js"
 TARGET_ENTRY_VERSION = 20260727234500
 RUNTIME = '"th_24_shortx_ui_runtime.js"'
 LAB = '"th_34_shortx_ui_lab.js"'
@@ -54,16 +55,37 @@ def patch_generator():
     return False
 
 
+def patch_runtime():
+    text = RUNTIME_FILE.read_text(encoding="utf-8")
+    original = text
+    text = text.replace("// @version 0.1.0", "// @version 0.1.1", 1)
+    text = text.replace('VERSION: "0.1.0"', 'VERSION: "0.1.1"', 1)
+    text = text.replace(
+        "return ColorStateList.valueOf(JInteger.valueOf(sxuiColorInt(value, 0)));",
+        "return sxuiStateList([[]], [sxuiColorInt(value, 0)]);",
+        1,
+    )
+    if "ColorStateList.valueOf(" in text:
+        raise SystemExit("forbidden ColorStateList.valueOf remains in ShortXUI runtime")
+    if "// @version 0.1.1" not in text or 'VERSION: "0.1.1"' not in text:
+        raise SystemExit("ShortXUI runtime version patch incomplete")
+    if text != original:
+        RUNTIME_FILE.write_text(text, encoding="utf-8")
+        return True
+    return False
+
+
 def main():
     entry_changed = patch_entry()
     generator_changed = patch_generator()
-    if entry_changed or generator_changed:
+    runtime_changed = patch_runtime()
+    if entry_changed or generator_changed or runtime_changed:
         print(
-            "updated beta ShortXUI module lists entry=%s generator=%s"
-            % (entry_changed, generator_changed)
+            "updated beta ShortXUI release entry=%s generator=%s runtime=%s"
+            % (entry_changed, generator_changed, runtime_changed)
         )
     else:
-        print("beta ShortXUI module lists already current")
+        print("beta ShortXUI release already current")
 
 
 if __name__ == "__main__":
