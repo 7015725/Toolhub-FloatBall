@@ -1,4 +1,4 @@
-// @version 0.1.1
+// @version 0.1.2
 // ShortX UI Runtime Phase 1: Core / Dispatcher / Scope / Color / Metrics / Display / Shape / Diagnostics.
 // Beta-only experimental module. It does not replace ToolHub production UI paths.
 (function (global) {
@@ -12,11 +12,11 @@
   var JInteger = Packages.java.lang.Integer;
   var JArray = Packages.java.lang.reflect.Array;
   var Color = Packages.android.graphics.Color;
-  var ColorStateList = Packages.android.content.res.ColorStateList;
   var GradientDrawable = Packages.android.graphics.drawable.GradientDrawable;
   var StateListDrawable = Packages.android.graphics.drawable.StateListDrawable;
   var DisplayMetrics = Packages.android.util.DisplayMetrics;
   var WindowInsets = Packages.android.view.WindowInsets;
+  var sxuiColorBridge = null;
 
   function sxuiErrorText(error) {
     try {
@@ -87,77 +87,37 @@
   }
 
   function sxuiColorStateList(value) {
-    try {
-      if (value && value.getDefaultColor && value.getColorForState) return value;
-    } catch (ignoredExisting) {}
-    return sxuiStateList([[]], [sxuiColorInt(value, 0)]);
+    if (!sxuiColorBridge || typeof sxuiColorBridge.colorStateList !== "function") {
+      throw new Error("ShortXUI color bridge is not installed");
+    }
+    return sxuiColorBridge.colorStateList(value);
   }
 
   function sxuiStateList(states, colors) {
-    var stateSource = states || [];
-    var colorSource = colors || [];
-    var colorInts = [];
-    var index;
-    for (index = 0; index < colorSource.length; index += 1) {
-      colorInts.push(sxuiColorInt(colorSource[index], 0));
+    if (!sxuiColorBridge || typeof sxuiColorBridge.stateList !== "function") {
+      throw new Error("ShortXUI color bridge is not installed");
     }
-    return new ColorStateList(
-      sxuiJint2Array(stateSource),
-      sxuiJintArray(colorInts)
-    );
+    return sxuiColorBridge.stateList(states || [], colors || []);
   }
 
   function sxuiSafeSetTextColor(view, value) {
-    if (!view) return false;
-    try {
-      view.setTextColor(JInteger.valueOf(sxuiColorInt(value, 0)));
-      return true;
-    } catch (ignoredInteger) {}
-    try {
-      view.setTextColor(sxuiColorStateList(value));
-      return true;
-    } catch (ignoredState) {}
-    return false;
+    if (!sxuiColorBridge || typeof sxuiColorBridge.applyText !== "function") return false;
+    return sxuiColorBridge.applyText(view, value) === true;
   }
 
   function sxuiSafeSetHintColor(view, value) {
-    if (!view) return false;
-    try {
-      view.setHintTextColor(JInteger.valueOf(sxuiColorInt(value, 0)));
-      return true;
-    } catch (ignoredInteger) {}
-    try {
-      view.setHintTextColor(sxuiColorStateList(value));
-      return true;
-    } catch (ignoredState) {}
-    return false;
+    if (!sxuiColorBridge || typeof sxuiColorBridge.applyHint !== "function") return false;
+    return sxuiColorBridge.applyHint(view, value) === true;
   }
 
   function sxuiSafeSetGradientColor(drawable, value) {
-    if (!drawable) return false;
-    try {
-      drawable.setColor(sxuiColorStateList(value));
-      return true;
-    } catch (ignoredState) {}
-    try {
-      drawable.setColor(JInteger.valueOf(sxuiColorInt(value, 0)));
-      return true;
-    } catch (ignoredInteger) {}
-    return false;
+    if (!sxuiColorBridge || typeof sxuiColorBridge.applyGradient !== "function") return false;
+    return sxuiColorBridge.applyGradient(drawable, value) === true;
   }
 
   function sxuiSafeSetGradientStroke(drawable, widthPx, value) {
-    if (!drawable) return false;
-    var width = Math.max(0, Math.round(sxuiNumber(widthPx, 0)));
-    try {
-      drawable.setStroke(width, sxuiColorStateList(value));
-      return true;
-    } catch (ignoredState) {}
-    try {
-      drawable.setStroke(width, JInteger.valueOf(sxuiColorInt(value, 0)));
-      return true;
-    } catch (ignoredInteger) {}
-    return false;
+    if (!sxuiColorBridge || typeof sxuiColorBridge.applyStroke !== "function") return false;
+    return sxuiColorBridge.applyStroke(drawable, widthPx, value) === true;
   }
 
   function sxuiMakeRunnable(callback, onError) {
@@ -172,7 +132,7 @@
   }
 
   var SXUI = {
-    VERSION: "0.1.1",
+    VERSION: "0.1.2",
     MODULE_VERSION: 1,
     __runtimeInstalled: true
   };
@@ -431,6 +391,20 @@
   };
 
   SXUI.Color = {
+    installBridge: function (bridge) {
+      var required = ["colorStateList", "stateList", "applyText", "applyHint",
+        "applyPaint", "applyBackground", "applyGradient", "applyStroke"];
+      var index;
+      if (!bridge) throw new Error("ShortXUI color bridge is required");
+      for (index = 0; index < required.length; index += 1) {
+        if (typeof bridge[required[index]] !== "function") {
+          throw new Error("ShortXUI color bridge method missing: " + required[index]);
+        }
+      }
+      sxuiColorBridge = bridge;
+      return true;
+    },
+    hasBridge: function () { return sxuiColorBridge !== null; },
     int: sxuiColorInt,
     jintArray: sxuiJintArray,
     jint2Array: sxuiJint2Array,
@@ -447,25 +421,18 @@
     },
     luminance: function (value) {
       var color = sxuiColorInt(value, 0);
-      return ((((color >>> 16) & 255) * 0.299) + (((color >>> 8) & 255) * 0.587) + ((color & 255) * 0.114)) / 255;
+      return ((((color >>> 16) & 255) * 0.299) +
+        (((color >>> 8) & 255) * 0.587) + ((color & 255) * 0.114)) / 255;
     },
     applyText: sxuiSafeSetTextColor,
     applyHint: sxuiSafeSetHintColor,
     applyPaint: function (paint, value) {
-      if (!paint) return false;
-      try { paint.setColor(JInteger.valueOf(sxuiColorInt(value, 0))); return true; }
-      catch (ignoredInteger) {}
-      try {
-        var color = sxuiColorInt(value, 0);
-        paint.setARGB((color >>> 24) & 255, (color >>> 16) & 255, (color >>> 8) & 255, color & 255);
-        return true;
-      } catch (ignoredArgb) {}
-      return false;
+      if (!sxuiColorBridge || typeof sxuiColorBridge.applyPaint !== "function") return false;
+      return sxuiColorBridge.applyPaint(paint, value) === true;
     },
     applyBackground: function (view, value) {
-      if (!view) return false;
-      try { view.setBackgroundColor(JInteger.valueOf(sxuiColorInt(value, 0))); return true; }
-      catch (ignored) { return false; }
+      if (!sxuiColorBridge || typeof sxuiColorBridge.applyBackground !== "function") return false;
+      return sxuiColorBridge.applyBackground(view, value) === true;
     },
     applyGradient: sxuiSafeSetGradientColor,
     applyStroke: sxuiSafeSetGradientStroke

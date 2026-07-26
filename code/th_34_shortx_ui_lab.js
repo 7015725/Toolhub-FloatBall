@@ -1,4 +1,4 @@
-// @version 0.1.0
+// @version 0.1.1
 // ToolHub Beta adapter and ToolApp page for ShortXUI Phase 1.
 (function (global) {
   if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return;
@@ -6,6 +6,33 @@
 
   var proto = FloatBallAppWM.prototype;
   if (proto.__shortXUiLabInstalled === true) return;
+
+  global.ShortXUI.Color.installBridge({
+    colorStateList: function (value) {
+      return toolhubSafeColorStateList(value);
+    },
+    stateList: function (states, colors) {
+      return toolhubSafeColorStateListFromStates(states, colors);
+    },
+    applyText: function (view, value) {
+      return toolhubSafeSetTextColor(view, value);
+    },
+    applyHint: function (view, value) {
+      return toolhubSafeSetHintTextColor(view, value);
+    },
+    applyPaint: function (paint, value) {
+      return toolhubSafeSetPaintColor(paint, value);
+    },
+    applyBackground: function (view, value) {
+      return toolhubSafeSetBackgroundColor(view, value);
+    },
+    applyGradient: function (drawable, value) {
+      return toolhubSafeSetGradientColor(drawable, value);
+    },
+    applyStroke: function (drawable, widthPx, value) {
+      return toolhubSafeSetGradientStroke(drawable, widthPx, value);
+    }
+  });
 
   function shortXUiLabWriteAtomic(app, value) {
     var out = null;
