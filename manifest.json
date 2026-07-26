@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "3e1b1fca2e781b3681ade07904b28c6f051a46b440d491ef67f1cfceed6d128c",
-      "size": 61716,
-      "version": 20260721063154
+      "sha256": "3c1492261b777c1728fc0cf25d08d7529e6ee337c5ce47dd47e0295ecad8a898",
+      "size": 64289,
+      "version": 20260726154514
     }
   },
   "branch": "beta",
@@ -56,9 +56,9 @@
       "version": "1.0.9"
     },
     "th_09_animation.js": {
-      "sha256": "c60bed71cf00e8fe52c193ff51ca59a93c462c4745f7d5e3d885e0d1eb072520",
-      "size": 42862,
-      "version": "1.0.12"
+      "sha256": "317c717ed4a281bdb0b2148f7d14c8667abe2ca93a504f8c2e25027c29651d29",
+      "size": 44067,
+      "version": "1.0.13"
     },
     "th_10_shell.js": {
       "sha256": "36427d7146a4589cbcf0512804acd90f4210a3d512cde6e03f2cb40c42d86d2d",
@@ -126,9 +126,9 @@
       "version": "1.5.8"
     },
     "th_16_entry.js": {
-      "sha256": "9ecbd2720717836044dbef15bb777a4e01745c94f650b838dbf8a34e7264705d",
-      "size": 34769,
-      "version": "1.0.17"
+      "sha256": "7c48ecfe918644ae49e33302e6486ad7c11691aa7fbe8a46f1875732b0496276",
+      "size": 35070,
+      "version": "1.0.18"
     },
     "th_17_pointer.js": {
       "sha256": "84492391435fa07220c29cca6f8f761f9b15bc306245786efe4116fd4a993680",
@@ -169,14 +169,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "在 Beta 运行记录中增加通道健康自检，核对活动通道、分支、根目录、启动状态、签名清单与 SQLite 存储",
-      "诊断结果保存到 ToolHub-Beta/diagnostics/channel-health-last.txt，不读取或覆盖 Stable 诊断结果",
-      "支持一键复制诊断报告，报告不包含翻译密钥、按钮内容或其他敏感配置",
-      "不修改 ToolHub.js，不联网、不自动修复"
+      "主面板和共享遮罩保持 INVISIBLE、alpha=0、返回回调注销及 generation/identity 保护，但统一改为普通 removeView，让 ViewRoot 和 Surface 销毁跨越当前 Rhino 点击消息边界。",
+      "主面板关闭后的遮罩清理由同一 WM HandlerThread 延后一轮执行；检测到 ToolApp UI generation 已变化时复用原遮罩，避免设置切页中的 remove/add 竞态。",
+      "ToolApp 在 Android 主线程关闭时先隐藏、清除焦点和输入法，再使用普通 removeView；删除全局关闭和异常回退中的 removeViewImmediate。",
+      "ToolApp 创建失败时回投 WM HandlerThread 清理无所有者遮罩，避免 generation 保护造成遮罩残留。",
+      "不修改主面板布局、按钮数据、SQLite、Stable/Beta 通道、入口文件和现有线程归属。"
     ],
-    "date": "2026-07-21",
-    "title": "Beta 新增通道健康自检与诊断报告"
+    "date": "2026-07-26",
+    "title": "修复 WindowManager 同步移除导致的 system_server 重启"
   },
   "schema": 5,
-  "version": 20260721063154
+  "version": 20260726154514
 }
