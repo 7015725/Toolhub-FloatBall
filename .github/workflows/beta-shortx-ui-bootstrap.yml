@@ -26,26 +26,28 @@ jobs:
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
           persist-credentials: false
 
-      - name: Apply beta module lists
+      - name: Apply beta ShortXUI release patch
         run: python3 scripts/apply_beta_shortx_ui_modules.py
 
-      - name: Verify module-list patch
+      - name: Verify generated release patch
         shell: bash
         run: |
           grep -q 'th_24_shortx_ui_runtime.js' ToolHub.js
           grep -q 'th_34_shortx_ui_lab.js' ToolHub.js
           grep -q 'th_24_shortx_ui_runtime.js' scripts/generate_signed_manifest.py
           grep -q 'th_34_shortx_ui_lab.js' scripts/generate_signed_manifest.py
+          grep -q '^// @version 0.1.1$' code/th_24_shortx_ui_runtime.js
+          ! grep -q 'ColorStateList.valueOf(' code/th_24_shortx_ui_runtime.js
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
 
-      - name: Commit generated module lists
+      - name: Commit generated release patch
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
-          if git diff --quiet -- ToolHub.js scripts/generate_signed_manifest.py; then
-            echo "Beta module lists already patched"
+          if git diff --quiet -- ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js; then
+            echo "Beta ShortXUI release already patched"
             exit 0
           fi
           if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
@@ -54,7 +56,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ToolHub.js scripts/generate_signed_manifest.py
-          git commit -m "Beta：同步 ShortXUI 模块清单"
+          git add ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js
+          git commit -m "Beta：修复 ShortXUI 颜色安全桥"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
