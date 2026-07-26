@@ -27,12 +27,12 @@ forbid("getUpdateSourceText()", "source wrapper call")
 forbid('TOOLHUB_UPDATE_STATE.source = "GitHub";', "constant runtime source")
 forbid('source: "GitHub",', "constant startup source")
 require(
-    'TOOLHUB_UPDATE_STATE.source = "GitHub/" + TOOLHUB_UPDATE_BRANCH;',
-    "runtime channel-aware GitHub source",
+    'TOOLHUB_UPDATE_STATE.source = "GitHub/" + TOOLHUB_FETCH_REF;',
+    "runtime GitHub fetch ref source",
 )
 require(
-    'source: "GitHub/" + TOOLHUB_UPDATE_BRANCH,',
-    "startup channel-aware GitHub source",
+    "sourceRef: TOOLHUB_FETCH_REF,",
+    "startup fetch ref state",
 )
 require("var versionNum = getTrustedManifestVersionNumber();", "shared trusted manifest version parser")
 
