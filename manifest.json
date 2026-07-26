@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "3e1b1fca2e781b3681ade07904b28c6f051a46b440d491ef67f1cfceed6d128c",
-      "size": 61716,
-      "version": 20260721063154
+      "sha256": "819eef697d4e1ae3b01cc0af0f86d519f34f0c4244cddcfc61925a7d5d1e9510",
+      "size": 63821,
+      "version": 20260726234919
     }
   },
   "branch": "beta",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "48a8ed1fccc0070eaf47cbcd73f7779b80c1a8ba6e10fe895ea7f82d735eb386",
-    "size": 99993,
-    "version": 20260721201500,
+    "sha256": "ca3c03a1f7931012f65503be8d0d7f7510c3cc305bd5f93b475cf3a0a366b811",
+    "size": 100049,
+    "version": 20260727234500,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -164,19 +164,28 @@
       "sha256": "fe47a98de21344b31c6447eb2759906fb119e7f129caa31effa57689e1bccd89",
       "size": 33007,
       "version": "1.0.7"
+    },
+    "th_24_shortx_ui_runtime.js": {
+      "sha256": "d22de14c65dcdb34d5ebeda1dd854ccc888671faef3f4fa1c073a95f1616ad15",
+      "size": 21938,
+      "version": "0.1.2"
+    },
+    "th_34_shortx_ui_lab.js": {
+      "sha256": "a608749afe8d1d11462bf1c3f3a6483fe7dc8d87d2aeff9ff967c72472b867de",
+      "size": 15535,
+      "version": "0.1.1"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "在 Beta 运行记录中增加通道健康自检，核对活动通道、分支、根目录、启动状态、签名清单与 SQLite 存储",
-      "诊断结果保存到 ToolHub-Beta/diagnostics/channel-health-last.txt，不读取或覆盖 Stable 诊断结果",
-      "支持一键复制诊断报告，报告不包含翻译密钥、按钮内容或其他敏感配置",
-      "不修改 ToolHub.js，不联网、不自动修复"
+      "新增 Beta 专用 ShortXUI 基础运行时，首阶段提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics。",
+      "新增 ShortX UI 实验室 ToolApp 页面，用于颜色、Shape、显示参数和线程归属自检；默认不替换任何正式 UI 路径。",
+      "实验数据仅写入 ToolHub-Beta/diagnostics/shortx-ui，Stable 与 ClipHub 均不受影响。"
     ],
-    "date": "2026-07-21",
-    "title": "Beta 新增通道健康自检与诊断报告"
+    "date": "2026-07-27",
+    "title": "Beta：加入 ShortX UI 基础运行时实验室"
   },
   "schema": 5,
-  "version": 20260721063154
+  "version": 20260726234919
 }
