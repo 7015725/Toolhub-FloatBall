@@ -27,7 +27,9 @@ jobs:
           persist-credentials: false
 
       - name: Apply beta ShortXUI release patch
-        run: python3 scripts/apply_beta_shortx_ui_modules.py
+        run: |
+          python3 scripts/apply_beta_shortx_ui_modules.py
+          python3 scripts/prepare_shortx_ui_constraints.py
 
       - name: Verify generated release patch
         shell: bash
@@ -36,12 +38,15 @@ jobs:
           grep -q 'th_34_shortx_ui_lab.js' ToolHub.js
           grep -q 'th_24_shortx_ui_runtime.js' scripts/generate_signed_manifest.py
           grep -q 'th_34_shortx_ui_lab.js' scripts/generate_signed_manifest.py
-          grep -q '^// @version 0.1.2$' code/th_24_shortx_ui_runtime.js
+          grep -q '^// @version 0.1.3$' code/th_24_shortx_ui_runtime.js
           grep -q '^// @version 0.1.1$' code/th_34_shortx_ui_lab.js
           ! grep -q 'ColorStateList.valueOf(' code/th_24_shortx_ui_runtime.js
           ! grep -q 'new ColorStateList(' code/th_24_shortx_ui_runtime.js
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_api_usage_policy.py
+          python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
           python3 scripts/verify_coloros_rhino_color_safety.py
           python3 scripts/verify_rhino_color_api_safety.py
 
@@ -50,7 +55,7 @@ jobs:
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
-          if git diff --quiet -- ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js; then
+          if git diff --quiet -- ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json; then
             echo "Beta ShortXUI release already patched"
             exit 0
           fi
@@ -60,7 +65,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js
-          git commit -m "Beta：注入 ShortXUI 颜色安全桥"
+          git add ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json
+          git commit -m "Beta：登记 ShortXUI 模块边界与 API 约束"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
