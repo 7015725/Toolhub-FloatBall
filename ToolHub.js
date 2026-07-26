@@ -4,7 +4,9 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260721201500; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260727010000; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_FORCED_UPDATE_CHANNEL = "beta"; // 修复分支测试入口：保持 Beta 发布清单与私有目录
+var TOOLHUB_ENTRY_FETCH_REF = "agent/beta-fix-wm-remove-view-crash-20260726"; // 修复分支测试入口：实际 GitHub 下载 ref
 
 var TOOLHUB_CHANNEL_SPECS = {
     stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
@@ -19,6 +21,28 @@ function normalizeToolHubUpdateChannel(value) {
 
 function getToolHubChannelSpec(channel) {
     return TOOLHUB_CHANNEL_SPECS[normalizeToolHubUpdateChannel(channel)] || TOOLHUB_CHANNEL_SPECS.stable;
+}
+
+function getToolHubEntryUpdateChannel(value) {
+    var forced = "";
+    try { forced = String(TOOLHUB_ENTRY_FORCED_UPDATE_CHANNEL || "").replace(/^\s+|\s+$/g, "").toLowerCase(); } catch (eForcedChannel) { forced = ""; }
+    if (forced && TOOLHUB_CHANNEL_SPECS.hasOwnProperty(forced)) return forced;
+    return normalizeToolHubUpdateChannel(value);
+}
+
+function getToolHubEntryUpdateSourceRef(branch) {
+    var ref = "";
+    try { ref = String(TOOLHUB_ENTRY_FETCH_REF || "").replace(/^\s+|\s+$/g, ""); } catch (eSourceRef) { ref = ""; }
+    if (!ref) return String(branch || "");
+    if (!/^[A-Za-z0-9._\/-]+$/.test(ref) || ref.indexOf("..") >= 0 || ref.charAt(0) === "/" || ref.charAt(ref.length - 1) === "/") {
+        throw "invalid ToolHub update source ref: " + ref;
+    }
+    return ref;
+}
+
+function isToolHubEntryUpdateSourceLocked() {
+    try { return String(TOOLHUB_ENTRY_FETCH_REF || "").replace(/^\s+|\s+$/g, "").length > 0; } catch (eLocked) {}
+    return false;
 }
 
 function getToolHubShortXBaseDirForChannel() {
@@ -126,11 +150,12 @@ if (TOOLHUB_CHANNEL_STATE.pendingChannel) {
     try { TOOLHUB_CHANNEL_STATE = writeToolHubChannelStateAtomic(TOOLHUB_CHANNEL_STATE); } catch (eRecoverChannelState) {}
 }
 
-var TOOLHUB_UPDATE_CHANNEL = normalizeToolHubUpdateChannel(TOOLHUB_CHANNEL_STATE.activeChannel);
+var TOOLHUB_UPDATE_CHANNEL = getToolHubEntryUpdateChannel(TOOLHUB_CHANNEL_STATE.activeChannel);
 var TOOLHUB_CHANNEL_SPEC = getToolHubChannelSpec(TOOLHUB_UPDATE_CHANNEL);
 var TOOLHUB_UPDATE_BRANCH = String(TOOLHUB_CHANNEL_SPEC.branch);
+var TOOLHUB_FETCH_REF = getToolHubEntryUpdateSourceRef(TOOLHUB_UPDATE_BRANCH);
 var TOOLHUB_CHANNEL_LABEL = String(TOOLHUB_CHANNEL_SPEC.label);
-var GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + TOOLHUB_UPDATE_BRANCH + "/";
+var GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + TOOLHUB_FETCH_REF + "/";
 var __updateSecurityModeText = "";
 var __updateSecurityModeFallback = false;
 try { __updateSecurityModeText = String(UPDATE_SECURITY_MODE).replace(/^\s+|\s+$/g, ""); } catch (eUpdateSecurityModeText) { __updateSecurityModeText = ""; }
@@ -162,6 +187,8 @@ var TOOLHUB_UPDATE_STATE = {
     channel: TOOLHUB_UPDATE_CHANNEL,
     channelLabel: TOOLHUB_CHANNEL_LABEL,
     branch: TOOLHUB_UPDATE_BRANCH,
+    sourceRef: TOOLHUB_FETCH_REF,
+    sourceLocked: isToolHubEntryUpdateSourceLocked(),
     rootDir: "",
     channelSwitching: false,
     channelSwitchTarget: "",
@@ -286,13 +313,14 @@ function resetToolHubChannelRuntimeCaches() {
 }
 
 function applyToolHubChannelRuntime(channel) {
-    var normalized = normalizeToolHubUpdateChannel(channel);
+    var normalized = getToolHubEntryUpdateChannel(channel);
     var spec = getToolHubChannelSpec(normalized);
     TOOLHUB_UPDATE_CHANNEL = normalized;
     TOOLHUB_CHANNEL_SPEC = spec;
     TOOLHUB_UPDATE_BRANCH = String(spec.branch);
+    TOOLHUB_FETCH_REF = getToolHubEntryUpdateSourceRef(TOOLHUB_UPDATE_BRANCH);
     TOOLHUB_CHANNEL_LABEL = String(spec.label);
-    GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + TOOLHUB_UPDATE_BRANCH + "/";
+    GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + TOOLHUB_FETCH_REF + "/";
     GIT_BASE = GIT_ROOT + "code/";
     __toolHubRootDir = null;
     resetToolHubChannelRuntimeCaches();
@@ -302,8 +330,10 @@ function applyToolHubChannelRuntime(channel) {
             TOOLHUB_UPDATE_STATE.channel = TOOLHUB_UPDATE_CHANNEL;
             TOOLHUB_UPDATE_STATE.channelLabel = TOOLHUB_CHANNEL_LABEL;
             TOOLHUB_UPDATE_STATE.branch = TOOLHUB_UPDATE_BRANCH;
+            TOOLHUB_UPDATE_STATE.sourceRef = TOOLHUB_FETCH_REF;
+            TOOLHUB_UPDATE_STATE.sourceLocked = isToolHubEntryUpdateSourceLocked();
             TOOLHUB_UPDATE_STATE.rootDir = TOOLHUB_BOOT_ROOT_DIR;
-            TOOLHUB_UPDATE_STATE.source = "GitHub/" + TOOLHUB_UPDATE_BRANCH;
+            TOOLHUB_UPDATE_STATE.source = "GitHub/" + TOOLHUB_FETCH_REF;
         }
     } catch (eUpdateState) {}
     return spec;
@@ -835,10 +865,12 @@ function applyRuntimeUpdateState(availableNames, errText) {
         else if (oldNeedRestart) TOOLHUB_UPDATE_STATE.status = "updated";
         else if (UPDATE_SECURITY_MODE === 0) TOOLHUB_UPDATE_STATE.status = "plain";
         else TOOLHUB_UPDATE_STATE.status = names.length > 0 ? "available" : "latest";
-        TOOLHUB_UPDATE_STATE.source = "GitHub/" + TOOLHUB_UPDATE_BRANCH;
+        TOOLHUB_UPDATE_STATE.source = "GitHub/" + TOOLHUB_FETCH_REF;
         TOOLHUB_UPDATE_STATE.channel = TOOLHUB_UPDATE_CHANNEL;
         TOOLHUB_UPDATE_STATE.channelLabel = TOOLHUB_CHANNEL_LABEL;
         TOOLHUB_UPDATE_STATE.branch = TOOLHUB_UPDATE_BRANCH;
+        TOOLHUB_UPDATE_STATE.sourceRef = TOOLHUB_FETCH_REF;
+        TOOLHUB_UPDATE_STATE.sourceLocked = isToolHubEntryUpdateSourceLocked();
         TOOLHUB_UPDATE_STATE.rootDir = getToolHubRootDir();
         TOOLHUB_UPDATE_STATE.mode = UPDATE_SECURITY_MODE;
         TOOLHUB_UPDATE_STATE.modeText = getUpdateModeText();
@@ -2023,6 +2055,9 @@ function startToolHubAppAfterChannelLoad(reason) {
 }
 
 function switchToolHubUpdateChannel(targetChannel) {
+  if (isToolHubEntryUpdateSourceLocked()) {
+    return { ok: false, locked: true, msg: "当前测试入口已锁定更新源：" + TOOLHUB_FETCH_REF };
+  }
   var target = normalizeToolHubUpdateChannel(targetChannel);
   var previous = normalizeToolHubUpdateChannel(TOOLHUB_UPDATE_CHANNEL);
   if (target === previous) return { ok: true, unchanged: true, msg: "当前已是" + TOOLHUB_CHANNEL_LABEL };
@@ -2233,6 +2268,8 @@ var __out = (function() {
     同步: syncText,
     更新状态: TOOLHUB_UPDATE_STATE.status,
     更新通道: TOOLHUB_CHANNEL_LABEL + " / " + TOOLHUB_UPDATE_BRANCH,
+    更新源: "GitHub/" + TOOLHUB_FETCH_REF,
+    更新源锁定: isToolHubEntryUpdateSourceLocked(),
     布局: layoutText,
     关闭广播: runtimeOptString(startRet && startRet.closeAction)
   };

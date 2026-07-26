@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "historyVersion": 20260726155232,
-  "generatedAt": "2026-07-26T23:52:32+08:00",
+  "historyVersion": 20260726161319,
+  "generatedAt": "2026-07-27T00:13:19+08:00",
   "records": [
     {
       "schema": 1,
@@ -13,10 +13,11 @@
         "主面板关闭后的遮罩清理由同一 WM HandlerThread 延后一轮执行；检测到 ToolApp UI generation 已变化时复用原遮罩，避免设置切页中的 remove/add 竞态。",
         "ToolApp 在 Android 主线程关闭时先隐藏、清除焦点和输入法，再使用普通 removeView；删除全局关闭和异常回退中的 removeViewImmediate。",
         "ToolApp 创建失败时回投 WM HandlerThread 清理无所有者遮罩，避免 generation 保护造成遮罩残留。",
-        "不修改主面板布局、按钮数据、SQLite、Stable/Beta 通道、入口文件和现有线程归属。"
+        "不修改主面板布局、按钮数据、SQLite、Stable/Beta 通道、入口文件和现有线程归属。",
+        "测试入口固定使用 Beta 发布清单与 ToolHub-Beta 私有目录，但实际 GitHub 下载 ref 指向 agent/beta-fix-wm-remove-view-crash-20260726；入口内禁用通道切换，避免测试状态污染 Stable。"
       ],
-      "manifestVersion": 20260726155232,
-      "date": "2026-07-26",
+      "manifestVersion": 20260726161319,
+      "date": "2026-07-27",
       "modules": [
         {
           "name": "th_09_animation.js",
@@ -32,9 +33,9 @@
         }
       ],
       "entry": {
-        "changed": false,
+        "changed": true,
         "from": 20260721201500,
-        "to": 20260721201500
+        "to": 20260727010000
       }
     },
     {

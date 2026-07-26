@@ -36,9 +36,22 @@ require(
 )
 require(
     ENTRY,
-    'var GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + TOOLHUB_UPDATE_BRANCH + "/";',
-    "fixed GitHub repository with channel branch",
+    'var TOOLHUB_ENTRY_FORCED_UPDATE_CHANNEL = "beta";',
+    "repair entry forced Beta channel",
 )
+require(
+    ENTRY,
+    'var TOOLHUB_ENTRY_FETCH_REF = "agent/beta-fix-wm-remove-view-crash-20260726";',
+    "repair entry source ref",
+)
+require(
+    ENTRY,
+    'var GIT_ROOT = "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + TOOLHUB_FETCH_REF + "/";',
+    "fixed GitHub repository with validated source ref",
+)
+require(ENTRY, r'if (!/^[A-Za-z0-9._\/-]+$/.test(ref)', "source ref allowlist")
+require(ENTRY, 'manifest branch mismatch: expected=" + TOOLHUB_UPDATE_BRANCH', "signed logical branch validation")
+require(ENTRY, '当前测试入口已锁定更新源：', "channel switch lock")
 require(
     ENTRY,
     "return TOOLHUB_CHANNEL_SPECS.hasOwnProperty(text) ? text : \"stable\";",

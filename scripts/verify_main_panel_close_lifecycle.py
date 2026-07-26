@@ -97,7 +97,7 @@ for marker in (
 
 if "python3 scripts/verify_main_panel_close_lifecycle.py" not in WORKFLOW:
     fail("workflow verification missing")
-if "var TOOLHUB_ENTRY_VERSION = 20260721201500;" not in (ROOT / "ToolHub.js").read_text(encoding="utf-8"):
+if "var TOOLHUB_ENTRY_VERSION = 20260727010000;" not in (ROOT / "ToolHub.js").read_text(encoding="utf-8"):
     fail("entry version changed unexpectedly")
 
 for path in (ANIMATION_PATH, ENTRY_PATH, verifier if False else ANIMATION_PATH):
