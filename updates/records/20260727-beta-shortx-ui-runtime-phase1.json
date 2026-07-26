@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "beta-shortx-ui-runtime-phase1",
+  "manifestVersion": 0,
+  "type": "feature",
+  "title": "Beta：加入 ShortX UI 基础运行时实验室",
+  "details": [
+    "新增 Beta 专用 ShortXUI 基础运行时，首阶段提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics。",
+    "新增 ShortX UI 实验室 ToolApp 页面，用于颜色、Shape、显示参数和线程归属自检；默认不替换任何正式 UI 路径。",
+    "实验数据仅写入 ToolHub-Beta/diagnostics/shortx-ui，Stable 与 ClipHub 均不受影响。"
+  ]
+}
