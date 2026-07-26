@@ -37,6 +37,11 @@ jobs:
           begin = source.index(begin_marker)
           end = source.index(end_marker, begin) + len(end_marker)
           block = source[begin:end]
+          bad = "          ''').read_text(encoding=\"utf-8\").replace(\"\\n          \", \"\\n\").lstrip(), encoding=\"utf-8\")"
+          good = "          '''.replace(\"\\n          \", \"\\n\").lstrip(), encoding=\"utf-8\")"
+          if block.count(bad) != 1:
+              raise SystemExit('verifier generator repair count=' + str(block.count(bad)))
+          block = block.replace(bad, good, 1)
           lines = []
           for line in block.splitlines():
               if line == '':
