@@ -1,0 +1,101 @@
+name: fix-beta-wm-api-baseline
+
+on:
+  pull_request:
+    branches:
+      - beta
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-beta-wm-api-baseline
+  cancel-in-progress: true
+
+jobs:
+  fix:
+    if: github.head_ref == 'agent/beta-fix-wm-remove-view-crash-20260726'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/beta-fix-wm-remove-view-crash-20260726
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+
+      - name: Replace direct Runnable run call
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('code/th_09_animation.js')
+          text = path.read_text(encoding='utf-8')
+          old = '''      var maskCleanup = new java.lang.Runnable({ run: function() {
+                try {
+                  if (!self.state) return;
+                  if (Number(self.state.toolAppUiGeneration || 0) !== toolAppGenerationAtHide) {
+                    safeLog(self.L, 'd', "main panel mask cleanup skipped for toolapp transition");
+                    return;
+                  }
+                  if (self.hideMaskIfNoPanelVisible) self.hideMaskIfNoPanelVisible("main_panel_exit");
+                  else if (!self.state.addedPanel &&
+                           !self.state.addedSettings &&
+                           !self.state.addedViewer) self.hideMask();
+                } catch (eMaskCleanup) {
+                  safeLog(self.L, 'w', "main panel deferred mask cleanup fail: " + String(eMaskCleanup));
+                }
+              }});
+              var maskCleanupPosted = false;
+              try {
+                if (self.state.h) maskCleanupPosted = self.state.h.post(maskCleanup) === true;
+              } catch (eMaskPost) {}
+              if (!maskCleanupPosted) maskCleanup.run();'''
+          new = '''      function performMaskCleanup() {
+                try {
+                  if (!self.state) return;
+                  if (Number(self.state.toolAppUiGeneration || 0) !== toolAppGenerationAtHide) {
+                    safeLog(self.L, 'd', "main panel mask cleanup skipped for toolapp transition");
+                    return;
+                  }
+                  if (self.hideMaskIfNoPanelVisible) self.hideMaskIfNoPanelVisible("main_panel_exit");
+                  else if (!self.state.addedPanel &&
+                           !self.state.addedSettings &&
+                           !self.state.addedViewer) self.hideMask();
+                } catch (eMaskCleanup) {
+                  safeLog(self.L, 'w', "main panel deferred mask cleanup fail: " + String(eMaskCleanup));
+                }
+              }
+              var maskCleanup = new java.lang.Runnable({ run: function() {
+                performMaskCleanup();
+              }});
+              var maskCleanupPosted = false;
+              try {
+                if (self.state.h) maskCleanupPosted = self.state.h.post(maskCleanup) === true;
+              } catch (eMaskPost) {}
+              if (!maskCleanupPosted) performMaskCleanup();'''
+          if text.count(old) != 1:
+              raise SystemExit('mask cleanup replacement count=' + str(text.count(old)))
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Verify API and lifecycle constraints
+        shell: bash
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_code_constraints.py --output code-constraint-report.json
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          git diff --check
+
+      - name: Commit correction and remove workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-beta-wm-api-baseline.yml
+          git add code/th_09_animation.js
+          git commit -m "修复 WindowManager 延迟清理 API 基线"
+          git push origin HEAD:agent/beta-fix-wm-remove-view-crash-20260726
