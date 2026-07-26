@@ -1,4 +1,4 @@
-// @version 0.1.0
+// @version 0.1.1
 // ShortX UI Runtime Phase 1: Core / Dispatcher / Scope / Color / Metrics / Display / Shape / Diagnostics.
 // Beta-only experimental module. It does not replace ToolHub production UI paths.
 (function (global) {
@@ -90,7 +90,7 @@
     try {
       if (value && value.getDefaultColor && value.getColorForState) return value;
     } catch (ignoredExisting) {}
-    return ColorStateList.valueOf(JInteger.valueOf(sxuiColorInt(value, 0)));
+    return sxuiStateList([[]], [sxuiColorInt(value, 0)]);
   }
 
   function sxuiStateList(states, colors) {
@@ -172,7 +172,7 @@
   }
 
   var SXUI = {
-    VERSION: "0.1.0",
+    VERSION: "0.1.1",
     MODULE_VERSION: 1,
     __runtimeInstalled: true
   };
