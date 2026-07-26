@@ -26,24 +26,26 @@ jobs:
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
           persist-credentials: false
 
-      - name: Apply beta module list
+      - name: Apply beta module lists
         run: python3 scripts/apply_beta_shortx_ui_modules.py
 
-      - name: Verify entry patch
+      - name: Verify module-list patch
         shell: bash
         run: |
           grep -q 'th_24_shortx_ui_runtime.js' ToolHub.js
           grep -q 'th_34_shortx_ui_lab.js' ToolHub.js
+          grep -q 'th_24_shortx_ui_runtime.js' scripts/generate_signed_manifest.py
+          grep -q 'th_34_shortx_ui_lab.js' scripts/generate_signed_manifest.py
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
 
-      - name: Commit entry patch
+      - name: Commit generated module lists
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
-          if git diff --quiet -- ToolHub.js; then
-            echo "ToolHub.js already patched"
+          if git diff --quiet -- ToolHub.js scripts/generate_signed_manifest.py; then
+            echo "Beta module lists already patched"
             exit 0
           fi
           if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
@@ -52,7 +54,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ToolHub.js
-          git commit -m "Beta：接入 ShortXUI 实验模块"
+          git add ToolHub.js scripts/generate_signed_manifest.py
+          git commit -m "Beta：同步 ShortXUI 模块清单"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
