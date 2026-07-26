@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "3c1492261b777c1728fc0cf25d08d7529e6ee337c5ce47dd47e0295ecad8a898",
-      "size": 64289,
-      "version": 20260726154514
+      "sha256": "f29d98b9cd8dd11406f073b221d56f9e2f46bcc993d40334f521e02cce767192",
+      "size": 63288,
+      "version": 20260726155232
     }
   },
   "branch": "beta",
@@ -56,8 +56,8 @@
       "version": "1.0.9"
     },
     "th_09_animation.js": {
-      "sha256": "317c717ed4a281bdb0b2148f7d14c8667abe2ca93a504f8c2e25027c29651d29",
-      "size": 44067,
+      "sha256": "175cb11c4e5fa60ede9b4eaa555aacd7db9164cbd45b82940ed78cbf2c444154",
+      "size": 44146,
       "version": "1.0.13"
     },
     "th_10_shell.js": {
@@ -179,5 +179,5 @@
     "title": "修复 WindowManager 同步移除导致的 system_server 重启"
   },
   "schema": 5,
-  "version": 20260726154514
+  "version": 20260726155232
 }

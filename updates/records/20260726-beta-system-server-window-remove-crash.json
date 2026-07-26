@@ -10,21 +10,9 @@
     "ToolApp 创建失败时回投 WM HandlerThread 清理无所有者遮罩，避免 generation 保护造成遮罩残留。",
     "不修改主面板布局、按钮数据、SQLite、Stable/Beta 通道、入口文件和现有线程归属。"
   ],
-  "manifestVersion": 20260726154514,
+  "manifestVersion": 20260726155232,
   "date": "2026-07-26",
   "modules": [
-    {
-      "name": "th_04_theme.js",
-      "from": "1.0.11",
-      "to": "1.0.12",
-      "change": "updated"
-    },
-    {
-      "name": "th_08_content.js",
-      "from": "1.0.8",
-      "to": "1.0.9",
-      "change": "updated"
-    },
     {
       "name": "th_09_animation.js",
       "from": "1.0.12",
@@ -32,39 +20,9 @@
       "change": "updated"
     },
     {
-      "name": "th_13_panel_ui.js",
-      "from": "1.0.15",
-      "to": "1.0.16",
-      "change": "updated"
-    },
-    {
-      "name": "th_14_panels.js",
-      "from": "1.1.13",
-      "to": "1.1.15",
-      "change": "updated"
-    },
-    {
       "name": "th_16_entry.js",
       "from": "1.0.17",
       "to": "1.0.18",
-      "change": "updated"
-    },
-    {
-      "name": "th_17_pointer.js",
-      "from": "1.2.13",
-      "to": "1.2.14",
-      "change": "updated"
-    },
-    {
-      "name": "th_20_pickword.js",
-      "from": "1.0.19",
-      "to": "1.0.21",
-      "change": "updated"
-    },
-    {
-      "name": "th_22_image_viewer.js",
-      "from": "1.3.2",
-      "to": "1.3.3",
       "change": "updated"
     }
   ],
