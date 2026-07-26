@@ -71,8 +71,8 @@ def patch_generator():
 def patch_runtime():
     text = RUNTIME_FILE.read_text(encoding="utf-8")
     original = text
-    text = re.sub(r"(?m)^// @version 0\.1\.[01]$", "// @version 0.1.2", text, count=1)
-    text = re.sub(r'VERSION: "0\.1\.[01]"', 'VERSION: "0.1.2"', text, count=1)
+    text = re.sub(r"(?m)^// @version 0\.1\.[012]$", "// @version 0.1.3", text, count=1)
+    text = re.sub(r'VERSION: "0\.1\.[012]"', 'VERSION: "0.1.3"', text, count=1)
     text = text.replace(
         "  var ColorStateList = Packages.android.content.res.ColorStateList;\n",
         "",
@@ -213,7 +213,7 @@ def patch_runtime():
     for token in forbidden:
         if token in text:
             raise SystemExit("forbidden direct color token remains: %s" % token)
-    if "// @version 0.1.2" not in text or 'VERSION: "0.1.2"' not in text:
+    if "// @version 0.1.3" not in text or 'VERSION: "0.1.3"' not in text:
         raise SystemExit("ShortXUI runtime version patch incomplete")
     if text != original:
         RUNTIME_FILE.write_text(text, encoding="utf-8")
