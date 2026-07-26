@@ -33,52 +33,29 @@ jobs:
 
           path = Path('code/th_09_animation.js')
           text = path.read_text(encoding='utf-8')
-          old = '''      var maskCleanup = new java.lang.Runnable({ run: function() {
-                try {
-                  if (!self.state) return;
-                  if (Number(self.state.toolAppUiGeneration || 0) !== toolAppGenerationAtHide) {
-                    safeLog(self.L, 'd', "main panel mask cleanup skipped for toolapp transition");
-                    return;
-                  }
-                  if (self.hideMaskIfNoPanelVisible) self.hideMaskIfNoPanelVisible("main_panel_exit");
-                  else if (!self.state.addedPanel &&
-                           !self.state.addedSettings &&
-                           !self.state.addedViewer) self.hideMask();
-                } catch (eMaskCleanup) {
-                  safeLog(self.L, 'w', "main panel deferred mask cleanup fail: " + String(eMaskCleanup));
-                }
-              }});
-              var maskCleanupPosted = false;
-              try {
-                if (self.state.h) maskCleanupPosted = self.state.h.post(maskCleanup) === true;
-              } catch (eMaskPost) {}
-              if (!maskCleanupPosted) maskCleanup.run();'''
-          new = '''      function performMaskCleanup() {
-                try {
-                  if (!self.state) return;
-                  if (Number(self.state.toolAppUiGeneration || 0) !== toolAppGenerationAtHide) {
-                    safeLog(self.L, 'd', "main panel mask cleanup skipped for toolapp transition");
-                    return;
-                  }
-                  if (self.hideMaskIfNoPanelVisible) self.hideMaskIfNoPanelVisible("main_panel_exit");
-                  else if (!self.state.addedPanel &&
-                           !self.state.addedSettings &&
-                           !self.state.addedViewer) self.hideMask();
-                } catch (eMaskCleanup) {
-                  safeLog(self.L, 'w', "main panel deferred mask cleanup fail: " + String(eMaskCleanup));
-                }
-              }
-              var maskCleanup = new java.lang.Runnable({ run: function() {
-                performMaskCleanup();
-              }});
-              var maskCleanupPosted = false;
-              try {
-                if (self.state.h) maskCleanupPosted = self.state.h.post(maskCleanup) === true;
-              } catch (eMaskPost) {}
-              if (!maskCleanupPosted) performMaskCleanup();'''
-          if text.count(old) != 1:
-              raise SystemExit('mask cleanup replacement count=' + str(text.count(old)))
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          start_marker = '      var maskCleanup = new java.lang.Runnable({ run: function() {\n'
+          end_marker = '      }});\n      var maskCleanupPosted = false;'
+          start = text.find(start_marker)
+          end = text.find(end_marker, start + len(start_marker))
+          if start < 0 or end < 0:
+              raise SystemExit('mask cleanup markers missing')
+          body = text[start + len(start_marker):end]
+          replacement = (
+              '      function performMaskCleanup() {\n' +
+              body +
+              '      }\n'
+              '      var maskCleanup = new java.lang.Runnable({ run: function() {\n'
+              '        performMaskCleanup();\n'
+              '      }});\n'
+              '      var maskCleanupPosted = false;'
+          )
+          text = text[:start] + replacement + text[end + len(end_marker):]
+          old_fallback = '      if (!maskCleanupPosted) maskCleanup.run();'
+          new_fallback = '      if (!maskCleanupPosted) performMaskCleanup();'
+          if text.count(old_fallback) != 1:
+              raise SystemExit('mask cleanup fallback count=' + str(text.count(old_fallback)))
+          text = text.replace(old_fallback, new_fallback, 1)
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Verify API and lifecycle constraints
