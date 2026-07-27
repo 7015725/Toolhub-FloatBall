@@ -1,32 +1,12 @@
 {
   "schema": 1,
   "id": "beta-shortx-ui-windowhost-phase2",
-  "manifestVersion": 20260727020000,
+  "manifestVersion": 0,
   "type": "feature",
   "title": "Beta：加入 ShortXUI WindowHost 生命周期实验",
   "details": [
     "ShortXUI 运行时提升到 0.2.0，新增独立 WindowHost 状态机和 attach/detach 确认。",
     "实验室提升到 0.2.0，加入打开、移动、普通移除、立即移除和 10 次循环测试。",
     "WindowHost 只管理 Beta 实验窗口，不覆盖悬浮球、主面板、设置页或现有 safeRemoveView。"
-  ],
-  "date": "2026-07-27",
-  "modules": [
-    {
-      "name": "th_24_shortx_ui_runtime.js",
-      "from": "0.1.3",
-      "to": "0.2.0",
-      "change": "updated"
-    },
-    {
-      "name": "th_34_shortx_ui_lab.js",
-      "from": "0.1.1",
-      "to": "0.2.0",
-      "change": "updated"
-    }
-  ],
-  "entry": {
-    "changed": false,
-    "from": 20260727234500,
-    "to": 20260727234500
-  }
+  ]
 }
