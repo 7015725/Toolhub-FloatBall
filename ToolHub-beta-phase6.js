@@ -1,9 +1,9 @@
-// ToolHub Beta phase-6 DEX Bridge + reflection boundary test entry.
-// Loads verified Phase 5, then the verified guarded DEX/reflection bridge lab.
+// ToolHub Beta phase-6 DEX Bridge test entry r6.
+// Loads verified Phase 5, the verified original Phase 6 bridge, then the verified DEX header repair patch.
 // Rhino ES5 / ShortX.
 (function () {
-  var ENTRY_VERSION = "0.7.3-phase6-entry-r5";
-  var SNAPSHOT = "3bc92a4254f34a559246a7fed08713bf9e5c81b1";
+  var ENTRY_VERSION = "0.7.5-phase6-entry-r6";
+  var SNAPSHOT = "36adfdaf4580432bc31cd105fa5b2c60838c3d87";
   var FILES = [
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/ToolHub-beta-phase5.js",
@@ -16,6 +16,12 @@
       sha256: "a0156fc34709db77e867306bb47293f757ab6ac31b950810e8384592f184a7e0",
       maxBytes: 131072,
       name: "dex-bridge-lab"
+    },
+    {
+      url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase6/dex_header_repair_patch.js",
+      sha256: "3e2e2b8870de973b681ded0de6015157d983f85131adeadb50490eebb05d5d33",
+      maxBytes: 65536,
+      name: "dex-header-repair"
     }
   ];
 
@@ -25,7 +31,8 @@
 
   function toHex(bytes) {
     var out = "";
-    for (var i = 0; i < bytes.length; i++) {
+    var i;
+    for (i = 0; i < bytes.length; i += 1) {
       var value = Number(bytes[i]);
       if (value < 0) value += 256;
       var part = value.toString(16);
@@ -45,7 +52,7 @@
       conn.setReadTimeout(25000);
       conn.setUseCaches(false);
       conn.setRequestProperty("Accept", "text/plain");
-      conn.setRequestProperty("User-Agent", "ShortX-ToolHub-Beta-Phase6");
+      conn.setRequestProperty("User-Agent", "ShortX-ToolHub-Beta-Phase6-R6");
       input = conn.getInputStream();
       output = new java.io.ByteArrayOutputStream();
       var digest = java.security.MessageDigest.getInstance("SHA-256");
@@ -72,41 +79,23 @@
   }
 
   var globalEval = eval;
+  var root = this;
   var phase5Text = downloadVerified(FILES[0]);
   var baseResult = globalEval(String(phase5Text));
   try { writeLog("ToolHub Beta phase6 bootstrap reached entry=" + ENTRY_VERSION); } catch (ePhase5Log) {}
 
   var dexText = downloadVerified(FILES[1]);
-  try { writeLog("ToolHub Beta phase6 DEX bridge payload verified"); } catch (eDexVerifyLog) {}
-
-  var oldVersionMarker = 'VERSION:"0.7.1-beta-dex-payload"';
-  var newVersionMarker = 'VERSION:"0.7.3-beta-dex-actual"';
-  var oldDigestCall = "md.update(bytes);";
-  var newDigestCall = "md.update(bytes,0,bytes.length);";
-  var oldDexHash = "7c869a47eb0b4744d5da25202d1152102ff00e4a9c1939dedab1c32a5d26a8c3";
-  var actualDexHash = "b95a397e049c217db51b0e7e0897ff37d54511d758b6ed80d1830ab0ce6ab811";
-  if (String(dexText).indexOf(oldVersionMarker) < 0) {
-    throw "DEX bridge version patch marker missing";
+  try { writeLog("ToolHub Beta phase6 original bridge payload verified"); } catch (eDexVerifyLog) {}
+  var match = /var TEST_DEX_B64="([A-Za-z0-9+\/=]+)";/.exec(String(dexText));
+  if (!match || !match[1] || match[1].length < 1000) {
+    throw "ToolHub Beta phase6 verified DEX payload extraction failed";
   }
-  if (String(dexText).indexOf(oldDigestCall) < 0) {
-    throw "DEX bridge digest patch marker missing";
-  }
-  if (String(dexText).indexOf(oldDexHash) < 0) {
-    throw "DEX bridge embedded payload hash marker missing";
-  }
-  dexText = String(dexText).replace(oldVersionMarker, newVersionMarker);
-  dexText = String(dexText).replace(oldDigestCall, newDigestCall);
-  dexText = String(dexText).replace(oldDexHash, actualDexHash);
-  if (String(dexText).indexOf(oldVersionMarker) >= 0 ||
-      String(dexText).indexOf(oldDigestCall) >= 0 ||
-      String(dexText).indexOf(oldDexHash) >= 0) {
-    throw "DEX bridge controlled patch incomplete";
-  }
-  try {
-    writeLog("ToolHub Beta phase6 embedded payload hash verified by decoded bytes sha256=" + actualDexHash);
-    writeLog("ToolHub Beta phase6 digest overload patch applied version=0.7.3-beta-dex-actual");
-  } catch (eDexPatchLog) {}
+  root.ToolHubBetaPhase6OriginalDexB64 = String(match[1]);
   globalEval(String(dexText));
+
+  var repairText = downloadVerified(FILES[2]);
+  try { writeLog("ToolHub Beta phase6 DEX header repair payload verified"); } catch (eRepairVerifyLog) {}
+  globalEval(String(repairText));
 
   try {
     if (typeof ToolHubBetaPhase5 === "undefined" ||
@@ -114,12 +103,14 @@
       throw "ShortXUI Canvas phase5 baseline verification failed";
     }
     if (typeof ToolHubBetaPhase6 === "undefined" ||
-        String(ToolHubBetaPhase6.VERSION || "") !== "0.7.3-beta-dex-actual") {
-      throw "ShortXUI DEX bridge phase6 install verification failed";
+        String(ToolHubBetaPhase6.VERSION || "") !== "0.7.5-beta-dex-header-repair" ||
+        String(ToolHubBetaPhase6.REPAIR_VERSION || "") !== "0.7.5-beta-dex-header-repair") {
+      throw "ShortXUI DEX header repair install verification failed";
     }
     writeLog(
       "ToolHub Beta phase6 entry ready version=" + String(ToolHubBetaPhase6.VERSION) +
       " phase5=" + String(ToolHubBetaPhase5.VERSION) +
+      " snapshot=" + SNAPSHOT +
       " entry=" + ENTRY_VERSION
     );
   } catch (eVerify) {
