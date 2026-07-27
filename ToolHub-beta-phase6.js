@@ -1,9 +1,9 @@
-// ToolHub Beta phase-6 DEX Bridge test entry r6.
-// Loads verified Phase 5, the verified original Phase 6 bridge, then the verified DEX header repair patch.
+// ToolHub Beta phase-6 clean minimal DEX test entry r7.
+// Loads verified Phase 5, verified reflection bridge UI, then verified fresh minimal DEX replacement.
 // Rhino ES5 / ShortX.
 (function () {
-  var ENTRY_VERSION = "0.7.5-phase6-entry-r6";
-  var SNAPSHOT = "36adfdaf4580432bc31cd105fa5b2c60838c3d87";
+  var ENTRY_VERSION = "0.7.6-phase6-entry-r7";
+  var SNAPSHOT = "dd75f1ca9dd7f53c8da95a41927f718dc5d4b9a4";
   var FILES = [
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/ToolHub-beta-phase5.js",
@@ -15,13 +15,13 @@
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase6/dex_bridge_lab.js",
       sha256: "a0156fc34709db77e867306bb47293f757ab6ac31b950810e8384592f184a7e0",
       maxBytes: 131072,
-      name: "dex-bridge-lab"
+      name: "reflection-bridge-ui"
     },
     {
-      url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase6/dex_header_repair_patch.js",
-      sha256: "3e2e2b8870de973b681ded0de6015157d983f85131adeadb50490eebb05d5d33",
+      url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase6/dex_minimal_replacement.js",
+      sha256: "420e79755b3af36ea9b310bdb8d05fdc48eb6d7fd17d9f8dcf81f4d85cf8550c",
       maxBytes: 65536,
-      name: "dex-header-repair"
+      name: "minimal-dex-replacement"
     }
   ];
 
@@ -52,7 +52,7 @@
       conn.setReadTimeout(25000);
       conn.setUseCaches(false);
       conn.setRequestProperty("Accept", "text/plain");
-      conn.setRequestProperty("User-Agent", "ShortX-ToolHub-Beta-Phase6-R6");
+      conn.setRequestProperty("User-Agent", "ShortX-ToolHub-Beta-Phase6-R7");
       input = conn.getInputStream();
       output = new java.io.ByteArrayOutputStream();
       var digest = java.security.MessageDigest.getInstance("SHA-256");
@@ -79,23 +79,17 @@
   }
 
   var globalEval = eval;
-  var root = this;
   var phase5Text = downloadVerified(FILES[0]);
   var baseResult = globalEval(String(phase5Text));
   try { writeLog("ToolHub Beta phase6 bootstrap reached entry=" + ENTRY_VERSION); } catch (ePhase5Log) {}
 
-  var dexText = downloadVerified(FILES[1]);
-  try { writeLog("ToolHub Beta phase6 original bridge payload verified"); } catch (eDexVerifyLog) {}
-  var match = /var TEST_DEX_B64="([A-Za-z0-9+\/=]+)";/.exec(String(dexText));
-  if (!match || !match[1] || match[1].length < 1000) {
-    throw "ToolHub Beta phase6 verified DEX payload extraction failed";
-  }
-  root.ToolHubBetaPhase6OriginalDexB64 = String(match[1]);
-  globalEval(String(dexText));
+  var bridgeText = downloadVerified(FILES[1]);
+  try { writeLog("ToolHub Beta phase6 reflection bridge UI verified"); } catch (eBridgeLog) {}
+  globalEval(String(bridgeText));
 
-  var repairText = downloadVerified(FILES[2]);
-  try { writeLog("ToolHub Beta phase6 DEX header repair payload verified"); } catch (eRepairVerifyLog) {}
-  globalEval(String(repairText));
+  var minimalText = downloadVerified(FILES[2]);
+  try { writeLog("ToolHub Beta phase6 fresh minimal DEX payload verified"); } catch (eMinimalLog) {}
+  globalEval(String(minimalText));
 
   try {
     if (typeof ToolHubBetaPhase5 === "undefined" ||
@@ -103,12 +97,15 @@
       throw "ShortXUI Canvas phase5 baseline verification failed";
     }
     if (typeof ToolHubBetaPhase6 === "undefined" ||
-        String(ToolHubBetaPhase6.VERSION || "") !== "0.7.5-beta-dex-header-repair" ||
-        String(ToolHubBetaPhase6.REPAIR_VERSION || "") !== "0.7.5-beta-dex-header-repair") {
-      throw "ShortXUI DEX header repair install verification failed";
+        String(ToolHubBetaPhase6.VERSION || "") !== "0.7.6-beta-dex-minimal" ||
+        String(ToolHubBetaPhase6.MINIMAL_VERSION || "") !== "0.7.6-beta-dex-minimal" ||
+        Number(ToolHubBetaPhase6.MINIMAL_DEX_BYTES || 0) !== 428 ||
+        String(ToolHubBetaPhase6.MINIMAL_DEX_SHA256 || "") !== "bb69a0f675d7577f7f4a7f8d2162adfc22226f2c2889be740d166e6a645fb110") {
+      throw "ShortXUI fresh minimal DEX install verification failed";
     }
     writeLog(
       "ToolHub Beta phase6 entry ready version=" + String(ToolHubBetaPhase6.VERSION) +
+      " dexBytes=" + String(ToolHubBetaPhase6.MINIMAL_DEX_BYTES) +
       " phase5=" + String(ToolHubBetaPhase5.VERSION) +
       " snapshot=" + SNAPSHOT +
       " entry=" + ENTRY_VERSION
