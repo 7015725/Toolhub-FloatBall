@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "0aa0f09130238aa10231e917816eafe114ab01acf08e7620187d8d4f97d8bd43",
-      "size": 68025,
-      "version": 20260727015552
+      "sha256": "355824b2593b1c537bd423183579a32d850ecfce65f5e8684dc161b16ce36f13",
+      "size": 70104,
+      "version": 20260727064755
     }
   },
   "branch": "beta",
@@ -179,13 +179,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "ShortXUI 运行时提升到 0.2.0，新增独立 WindowHost 状态机和 attach/detach 确认。",
-      "实验室提升到 0.2.0，加入打开、移动、普通移除、立即移除和 10 次循环测试。",
-      "WindowHost 只管理 Beta 实验窗口，不覆盖悬浮球、主面板、设置页或现有 safeRemoveView。"
+      "Beta 入口仅在当前活动更新通道为 beta 时加载 ShortXUI Runtime 与实验室模块。",
+      "使用 Beta 入口但本地活动通道仍为 stable 时，入口会自动过滤 Beta 专用模块，并与 main Manifest 保持一致。",
+      "Beta 通道仍完整加载 th_24_shortx_ui_runtime.js 和 th_34_shortx_ui_lab.js；main 与 ClipHub 不做修改。"
     ],
     "date": "2026-07-27",
-    "title": "Beta：加入 ShortXUI WindowHost 生命周期实验"
+    "title": "修复 Beta 入口跨通道模块清单自检"
   },
   "schema": 5,
-  "version": 20260727015552
+  "version": 20260727064755
 }
