@@ -9,9 +9,22 @@ import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 PART_DIR = ROOT / "scripts" / "bootstrap"
-PARTS = [PART_DIR / ("windowhost_phase2_patch.part%02d" % i) for i in range(1, 11)]
+PART_NAMES = [
+    "windowhost_phase2_patch.part01",
+    "windowhost_phase2_patch.part02",
+    "windowhost_phase2_patch.part03",
+    "windowhost_phase2_patch.part04",
+    "windowhost_phase2_patch.part05",
+    "windowhost_phase2_patch.part06a",
+    "windowhost_phase2_patch.part06b",
+    "windowhost_phase2_patch.part07",
+    "windowhost_phase2_patch.part08",
+    "windowhost_phase2_patch.part09",
+    "windowhost_phase2_patch.part10",
+]
+PARTS = [PART_DIR / name for name in PART_NAMES]
 EXPECTED_SHA256 = "25408356a38754c9f85810307c345773cbb45f697259c9eebd909220e7acac6d"
-EXPECTED_LENGTHS = [1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 64]
+EXPECTED_LENGTHS = [1800, 1800, 1800, 1800, 1800, 900, 900, 1800, 1800, 1800, 64]
 
 values = [path.read_text(encoding="utf-8").strip() for path in PARTS]
 lengths = [len(value) for value in values]
