@@ -1,9 +1,9 @@
 // ToolHub Beta phase-4 Gesture + system back test entry.
-// Loads verified Phase 3, then the verified isolated Gesture/Back lab.
+// Loads verified Phase 3, Gesture/Back lab, then system-dialog close patch.
 // Rhino ES5 / ShortX.
 (function () {
-  var ENTRY_VERSION = "0.5.0-phase4-entry-r3";
-  var SNAPSHOT = "b3cde8fa7b86a1fc0d382eab073eb9e47381db20";
+  var ENTRY_VERSION = "0.5.1-phase4-entry-r4";
+  var SNAPSHOT = "2923d5f7e32bc5eb52da8ddf508895bf8ea7232c";
   var FILES = [
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/ToolHub-beta-phase3.js",
@@ -16,6 +16,12 @@
       sha256: "a84dc2c4d03be5f26ea77ffe7abf168651eaaabb730e7c04c690b532093e83f0",
       maxBytes: 65536,
       name: "gesture-back-lab"
+    },
+    {
+      url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase4/gesture_system_close_patch.js",
+      sha256: "870f7c5bcc05355c7c4cd3e2269e8a268160fa255fda8a6667eaf101c1defaf4",
+      maxBytes: 32768,
+      name: "gesture-system-close-patch"
     }
   ];
 
@@ -75,16 +81,23 @@
   var phase3Text = downloadVerified(FILES[0]);
   var baseResult = globalEval(String(phase3Text));
   try { writeLog("ToolHub Beta phase4 bootstrap reached entry=" + ENTRY_VERSION); } catch (ePhase3Log) {}
+
   var gestureText = downloadVerified(FILES[1]);
-  try { writeLog("ToolHub Beta phase4 gesture payload verified"); } catch (eGestureVerifyLog) {}
   globalEval(String(gestureText));
+  try { writeLog("ToolHub Beta phase4 gesture payload verified"); } catch (eGestureVerifyLog) {}
+
+  var systemClosePatchText = downloadVerified(FILES[2]);
+  globalEval(String(systemClosePatchText));
+  try { writeLog("ToolHub Beta phase4 system close patch verified"); } catch (ePatchVerifyLog) {}
 
   try {
     if (typeof ToolHubBetaPhase4 === "undefined" ||
-        String(ToolHubBetaPhase4.VERSION || "") !== "0.5.0-beta-gesture") {
+        String(ToolHubBetaPhase4.VERSION || "") !== "0.5.0-beta-gesture" ||
+        String(ToolHubBetaPhase4.PATCH_VERSION || "") !== "0.5.1-beta-system-close") {
       throw "ShortXUI Gesture phase4 install verification failed";
     }
-    writeLog("ToolHub Beta phase4 entry ready version=" + String(ToolHubBetaPhase4.VERSION) + " entry=" + ENTRY_VERSION);
+    writeLog("ToolHub Beta phase4 entry ready version=" + String(ToolHubBetaPhase4.VERSION) +
+      " patch=" + String(ToolHubBetaPhase4.PATCH_VERSION) + " entry=" + ENTRY_VERSION);
   } catch (eVerify) {
     throw "ToolHub Beta phase4 bootstrap failed: " + String(eVerify);
   }
