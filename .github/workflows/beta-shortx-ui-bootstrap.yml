@@ -3,7 +3,7 @@ name: beta-shortx-ui-bootstrap
 on:
   pull_request:
     branches: [beta]
-    types: [opened, reopened, synchronize]
+    types: [synchronize]
 
 permissions:
   contents: write
@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  patch-windowhost:
+  cleanup-windowhost-bootstrap:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/beta-shortx-ui-windowhost-phase2'
     runs-on: ubuntu-latest
     steps:
@@ -26,58 +26,18 @@ jobs:
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
           persist-credentials: false
 
-      - name: Apply reviewed WindowHost phase 2 patch
-        shell: bash
-        run: |
-          set -o pipefail
-          {
-            python3 scripts/apply_beta_shortx_ui_windowhost_patch.py
-            python3 scripts/report_dead_module_symbols.py --write docs/audits/DEAD_CODE_AUDIT.md
-            python3 scripts/report_protected_wrapper_chains.py --write docs/audits/PROTECTED_WRAPPER_AUDIT.md
-            python3 scripts/report_module_symbol_audits.py --write docs/audits/MODULE_SYMBOL_AUDIT.md
-            python3 scripts/report_entry_symbols.py --write docs/audits/ENTRY_SYMBOL_AUDIT.md
-          } 2>&1 | tee windowhost-generator.log
-
-      - name: Upload WindowHost patch log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: shortx-ui-windowhost-generator-log
-          path: windowhost-generator.log
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Verify generated WindowHost phase 2
-        shell: bash
-        run: |
-          grep -q '^// @version 0.2.0$' code/th_24_shortx_ui_runtime.js
-          grep -q '^// @version 0.2.0$' code/th_34_shortx_ui_lab.js
-          ! grep -q 'ColorStateList.valueOf(' code/th_24_shortx_ui_runtime.js
-          ! grep -q 'new ColorStateList(' code/th_24_shortx_ui_runtime.js
-          grep -q 'python3 scripts/verify_shortx_ui_windowhost.py' .github/workflows/verify.yml
-          grep -q 'python3 scripts/verify_shortx_ui_windowhost.py' .github/workflows/sign-toolhub.yml
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/verify_api_usage_policy.py
-          python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
-          python3 scripts/verify_coloros_rhino_color_safety.py
-          python3 scripts/verify_rhino_color_api_safety.py
-          python3 scripts/verify_documentation_consistency.py
-          python3 scripts/verify_shortx_ui_windowhost.py
-          python3 scripts/report_dead_module_symbols.py --check docs/audits/DEAD_CODE_AUDIT.md
-          python3 scripts/report_protected_wrapper_chains.py --check docs/audits/PROTECTED_WRAPPER_AUDIT.md
-          python3 scripts/report_module_symbol_audits.py --check docs/audits/MODULE_SYMBOL_AUDIT.md
-          python3 scripts/report_entry_symbols.py --check docs/audits/ENTRY_SYMBOL_AUDIT.md
-
-      - name: Commit generated WindowHost phase 2
+      - name: Remove phase-2 bootstrap files
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
-          TRACKED_FILES="code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js constraints/api.json constraints/API_USAGE_BASELINE.json README.md docs/ARCHITECTURE.md docs/STRUCTURE.md .github/workflows/verify.yml .github/workflows/sign-toolhub.yml docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md docs/audits/ENTRY_SYMBOL_AUDIT.md"
-          if git diff --quiet -- $TRACKED_FILES; then
-            echo "Beta ShortXUI WindowHost phase 2 already generated"
+          rm -f scripts/apply_beta_shortx_ui_windowhost_patch.py
+          rm -f scripts/apply_beta_shortx_ui_windowhost_phase2.py
+          rm -f scripts/bootstrap/shortx_ui_windowhost_phase2.part*
+          rm -f scripts/bootstrap/windowhost_phase2_patch.part*
+          rm -f .github/workflows/beta-shortx-ui-bootstrap.yml
+          if git diff --quiet; then
+            echo "No phase-2 bootstrap files remain"
             exit 0
           fi
           if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
@@ -86,7 +46,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add $TRACKED_FILES
-          git commit -m "Beta：生成 ShortXUI WindowHost 阶段二实现"
+          git add -A
+          git commit -m "Beta：清理 ShortXUI WindowHost 阶段性生成文件"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
