@@ -31,6 +31,7 @@ jobs:
           python3 scripts/apply_beta_shortx_ui_modules.py
           python3 scripts/prepare_shortx_ui_constraints.py
           python3 scripts/patch_entry_version_verifiers.py
+          python3 scripts/patch_shortx_ui_documentation.py
           python3 scripts/report_dead_module_symbols.py --write docs/audits/DEAD_CODE_AUDIT.md
           python3 scripts/report_protected_wrapper_chains.py --write docs/audits/PROTECTED_WRAPPER_AUDIT.md
           python3 scripts/report_module_symbol_audits.py --write docs/audits/MODULE_SYMBOL_AUDIT.md
@@ -48,6 +49,10 @@ jobs:
           ! grep -q 'ColorStateList.valueOf(' code/th_24_shortx_ui_runtime.js
           ! grep -q 'new ColorStateList(' code/th_24_shortx_ui_runtime.js
           ! grep -q 'require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260721201500;' scripts/verify_main_panel_*.py
+          grep -q 'th_24_shortx_ui_runtime.js' README.md docs/ARCHITECTURE.md docs/STRUCTURE.md
+          grep -q 'th_34_shortx_ui_lab.js' README.md docs/ARCHITECTURE.md docs/STRUCTURE.md
+          grep -q '31 个子模块' docs/ARCHITECTURE.md docs/STRUCTURE.md
+          grep -q 'files: 31 个模块' docs/STRUCTURE.md
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
           python3 scripts/verify_module_boundaries.py
@@ -55,6 +60,7 @@ jobs:
           python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
           python3 scripts/verify_coloros_rhino_color_safety.py
           python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/verify_documentation_consistency.py
           python3 scripts/report_dead_module_symbols.py --check docs/audits/DEAD_CODE_AUDIT.md
           python3 scripts/report_protected_wrapper_chains.py --check docs/audits/PROTECTED_WRAPPER_AUDIT.md
           python3 scripts/report_module_symbol_audits.py --check docs/audits/MODULE_SYMBOL_AUDIT.md
@@ -65,7 +71,7 @@ jobs:
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
-          TRACKED_FILES="ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json scripts/report_protected_wrapper_chains.py scripts/verify_main_panel_drag_sort.py scripts/verify_main_panel_paging.py scripts/verify_main_panel_adaptive_layout.py scripts/verify_main_panel_grid_sizing.py scripts/verify_main_panel_close_lifecycle.py scripts/verify_main_panel_visual_tuning.py docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md docs/audits/ENTRY_SYMBOL_AUDIT.md"
+          TRACKED_FILES="ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json scripts/report_protected_wrapper_chains.py scripts/verify_main_panel_drag_sort.py scripts/verify_main_panel_paging.py scripts/verify_main_panel_adaptive_layout.py scripts/verify_main_panel_grid_sizing.py scripts/verify_main_panel_close_lifecycle.py scripts/verify_main_panel_visual_tuning.py README.md docs/ARCHITECTURE.md docs/STRUCTURE.md docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md docs/audits/ENTRY_SYMBOL_AUDIT.md"
           if git diff --quiet -- $TRACKED_FILES; then
             echo "Beta ShortXUI release already patched"
             exit 0
@@ -77,6 +83,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add $TRACKED_FILES
-          git commit -m "Beta：移除入口版本固定值校验"
+          git commit -m "Beta：同步 ShortXUI 核心文档"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
