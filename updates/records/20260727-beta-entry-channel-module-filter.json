@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "20260727-beta-entry-channel-module-filter",
+  "manifestVersion": 0,
+  "type": "fix",
+  "title": "修复 Beta 入口跨通道模块清单自检",
+  "details": [
+    "Beta 入口仅在当前活动更新通道为 beta 时加载 ShortXUI Runtime 与实验室模块。",
+    "使用 Beta 入口但本地活动通道仍为 stable 时，入口会自动过滤 Beta 专用模块，并与 main Manifest 保持一致。",
+    "Beta 通道仍完整加载 th_24_shortx_ui_runtime.js 和 th_34_shortx_ui_lab.js；main 与 ClipHub 不做修改。"
+  ]
+}
