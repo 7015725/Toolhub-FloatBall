@@ -30,6 +30,10 @@ jobs:
         run: |
           python3 scripts/apply_beta_shortx_ui_modules.py
           python3 scripts/prepare_shortx_ui_constraints.py
+          python3 scripts/report_dead_module_symbols.py --write docs/audits/DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write docs/audits/PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_module_symbol_audits.py --write docs/audits/MODULE_SYMBOL_AUDIT.md
+          python3 scripts/report_entry_symbols.py --write docs/audits/ENTRY_SYMBOL_AUDIT.md
 
       - name: Verify generated release patch
         shell: bash
@@ -49,13 +53,18 @@ jobs:
           python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
           python3 scripts/verify_coloros_rhino_color_safety.py
           python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/report_dead_module_symbols.py --check docs/audits/DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --check docs/audits/PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_module_symbol_audits.py --check docs/audits/MODULE_SYMBOL_AUDIT.md
+          python3 scripts/report_entry_symbols.py --check docs/audits/ENTRY_SYMBOL_AUDIT.md
 
       - name: Commit generated release patch
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
         run: |
-          if git diff --quiet -- ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json; then
+          TRACKED_FILES="ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md docs/audits/ENTRY_SYMBOL_AUDIT.md"
+          if git diff --quiet -- $TRACKED_FILES; then
             echo "Beta ShortXUI release already patched"
             exit 0
           fi
@@ -65,7 +74,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ToolHub.js scripts/generate_signed_manifest.py code/th_24_shortx_ui_runtime.js code/th_34_shortx_ui_lab.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json
-          git commit -m "Beta：登记 ShortXUI 模块边界与 API 约束"
+          git add $TRACKED_FILES
+          git commit -m "Beta：更新 ShortXUI 约束审计基线"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
