@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "4245248f4c9b880e3af058388881d49ecd6f90cf3c38c91f33a29bf32e984833",
+      "sha256": "0aa0f09130238aa10231e917816eafe114ab01acf08e7620187d8d4f97d8bd43",
       "size": 68025,
-      "version": 20260727010731
+      "version": 20260727015552
     }
   },
   "branch": "beta",
@@ -166,14 +166,14 @@
       "version": "1.0.7"
     },
     "th_24_shortx_ui_runtime.js": {
-      "sha256": "87305344486227ded6a35504dbacd45ccebc54759b0ef6fd42851e47e325a822",
-      "size": 22054,
-      "version": "0.1.3"
+      "sha256": "f0718092e479cb089d3567d353e8031cbd52d569551bfb51c06a524e97127b48",
+      "size": 32630,
+      "version": "0.2.0"
     },
     "th_34_shortx_ui_lab.js": {
-      "sha256": "a608749afe8d1d11462bf1c3f3a6483fe7dc8d87d2aeff9ff967c72472b867de",
-      "size": 15535,
-      "version": "0.1.1"
+      "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
+      "size": 29693,
+      "version": "0.2.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
@@ -187,5 +187,5 @@
     "title": "Beta：加入 ShortXUI WindowHost 生命周期实验"
   },
   "schema": 5,
-  "version": 20260727010731
+  "version": 20260727015552
 }
