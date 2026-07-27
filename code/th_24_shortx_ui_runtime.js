@@ -1,5 +1,5 @@
-// @version 0.1.3
-// ShortX UI Runtime Phase 1: Core / Dispatcher / Scope / Color / Metrics / Display / Shape / Diagnostics.
+// @version 0.2.0
+// ShortX UI Runtime Phase 2: Core / Dispatcher / Scope / Color / Metrics / Display / Shape / WindowHost / Diagnostics.
 // Beta-only experimental module. It does not replace ToolHub production UI paths.
 (function (global) {
   if (global.ShortXUI && global.ShortXUI.__runtimeInstalled === true) return;
@@ -132,8 +132,8 @@
   }
 
   var SXUI = {
-    VERSION: "0.1.3",
-    MODULE_VERSION: 1,
+    VERSION: "0.2.0",
+    MODULE_VERSION: 2,
     __runtimeInstalled: true
   };
 
@@ -537,6 +537,272 @@
       return SXUI.Shape.pressed(Color.TRANSPARENT, pressedColor, radiusPx);
     }
   };
+
+
+  SXUI.WindowHost = (function () {
+    var STATES = {
+      NEW: "NEW",
+      PREPARED: "PREPARED",
+      ATTACHING: "ATTACHING",
+      ATTACHED: "ATTACHED",
+      CLOSING: "CLOSING",
+      DETACHED: "DETACHED",
+      DISPOSED: "DISPOSED"
+    };
+    var ALLOWED = {
+      NEW: { PREPARED: true, DETACHED: true },
+      PREPARED: { ATTACHING: true, DETACHED: true },
+      ATTACHING: { ATTACHED: true, CLOSING: true, DETACHED: true },
+      ATTACHED: { CLOSING: true, DETACHED: true },
+      CLOSING: { DETACHED: true },
+      DETACHED: { DISPOSED: true },
+      DISPOSED: {}
+    };
+
+    function create(options) {
+      var opts = options || {};
+      var name = String(opts.name || "window-host");
+      var dispatcher = opts.dispatcher;
+      var wm = opts.windowManager;
+      var defaultTimeoutMs = Math.max(100, Number(opts.timeoutMs || 1800));
+      var state = STATES.NEW;
+      var view = null;
+      var params = null;
+      var listener = null;
+      var attachLatch = new CountDownLatch(1);
+      var detachLatch = new CountDownLatch(1);
+      var detachTimedOut = false;
+      var transitions = [];
+      var stats = {
+        prepared: 0,
+        attachCalls: 0,
+        attached: 0,
+        updateCalls: 0,
+        removeCalls: 0,
+        detached: 0,
+        detachTimeouts: 0,
+        lateDetach: 0,
+        errors: 0
+      };
+
+      function now() { return SXUI.Core.now(); }
+      function errorText(error) { return SXUI.Core.errorText(error); }
+      function result(ok, code, extra) {
+        var output = { ok: ok === true, code: String(code || ""), state: state };
+        var key;
+        if (extra) for (key in extra) if (extra.hasOwnProperty(key)) output[key] = extra[key];
+        return output;
+      }
+      function transition(next, reason) {
+        var target = String(next || "");
+        if (state === target) return true;
+        if (!ALLOWED[state] || ALLOWED[state][target] !== true) {
+          stats.errors += 1;
+          return false;
+        }
+        transitions.push({ from: state, to: target, reason: String(reason || ""), at: now() });
+        state = target;
+        return true;
+      }
+      function attachedNow() {
+        try { return !!(view && view.isAttachedToWindow && view.isAttachedToWindow()); }
+        catch (ignored) { return false; }
+      }
+      function markAttached(reason) {
+        if (state === STATES.ATTACHING && transition(STATES.ATTACHED, reason || "attach-callback")) {
+          stats.attached += 1;
+        }
+        try { attachLatch.countDown(); } catch (ignoredLatch) {}
+      }
+      function markDetached(reason) {
+        if (state !== STATES.DETACHED && state !== STATES.DISPOSED) {
+          if (transition(STATES.DETACHED, reason || "detach-callback")) stats.detached += 1;
+        }
+        if (detachTimedOut) {
+          detachTimedOut = false;
+          stats.lateDetach += 1;
+        }
+        try { detachLatch.countDown(); } catch (ignoredLatch) {}
+      }
+      function installListener(target) {
+        if (listener || !target) return;
+        listener = new Packages.android.view.View.OnAttachStateChangeListener({
+          onViewAttachedToWindow: function () { markAttached("listener-attached"); },
+          onViewDetachedFromWindow: function () { markDetached("listener-detached"); }
+        });
+        target.addOnAttachStateChangeListener(listener);
+      }
+      function removeListener() {
+        try { if (view && listener) view.removeOnAttachStateChangeListener(listener); }
+        catch (ignoredRemoveListener) {}
+        listener = null;
+      }
+      function awaitLatch(latch, timeoutMs) {
+        var timeout = Math.max(1, Number(timeoutMs || defaultTimeoutMs));
+        if (dispatcher && dispatcher.isOwnerThread && dispatcher.isOwnerThread()) return false;
+        try { return latch.await(timeout, TimeUnit.MILLISECONDS) === true; }
+        catch (error) { stats.errors += 1; return false; }
+      }
+      function ownerSync(callback, timeoutMs) {
+        if (!dispatcher || typeof dispatcher.runSync !== "function") {
+          return { ok: false, error: "dispatcher-unavailable" };
+        }
+        return dispatcher.runSync(callback, Math.max(100, Number(timeoutMs || defaultTimeoutMs)));
+      }
+
+      function prepare(factory) {
+        if (state === STATES.DISPOSED) return result(false, "DISPOSED");
+        if (state !== STATES.NEW) return result(state === STATES.PREPARED, "ALREADY_PREPARED");
+        if (typeof factory !== "function") return result(false, "FACTORY_REQUIRED");
+        var prepared = ownerSync(function () {
+          var bundle = factory() || {};
+          if (!bundle.view || !bundle.params) throw new Error("WindowHost factory must return view and params");
+          view = bundle.view;
+          params = bundle.params;
+          installListener(view);
+          return true;
+        });
+        if (!prepared.ok) {
+          stats.errors += 1;
+          return result(false, "PREPARE_FAILED", { error: errorText(prepared.error) });
+        }
+        transition(STATES.PREPARED, "prepare");
+        stats.prepared += 1;
+        return result(true, "PREPARED");
+      }
+
+      function attach(timeoutMs) {
+        if (state === STATES.ATTACHED) return result(true, "ALREADY_ATTACHED");
+        if (state !== STATES.PREPARED) return result(false, "NOT_PREPARED");
+        if (!wm) return result(false, "WINDOW_MANAGER_REQUIRED");
+        transition(STATES.ATTACHING, "attach-request");
+        stats.attachCalls += 1;
+        var added = ownerSync(function () {
+          wm.addView(view, params);
+          if (attachedNow()) markAttached("attached-after-add");
+          return true;
+        }, timeoutMs);
+        if (!added.ok) {
+          stats.errors += 1;
+          markDetached("add-failed");
+          return result(false, "ADD_FAILED", { error: errorText(added.error) });
+        }
+        if (state === STATES.ATTACHED) return result(true, "ATTACHED");
+        if (awaitLatch(attachLatch, timeoutMs) && state === STATES.ATTACHED) return result(true, "ATTACHED");
+        if (attachedNow()) {
+          markAttached("attached-poll");
+          return result(true, "ATTACHED");
+        }
+        return result(false, "ATTACH_TIMEOUT");
+      }
+
+      function update(mutator, timeoutMs) {
+        if (state !== STATES.ATTACHED || !view || !params) return result(false, "NOT_ATTACHED");
+        var updated = ownerSync(function () {
+          if (typeof mutator === "function") mutator(params, view);
+          wm.updateViewLayout(view, params);
+          return { x: Number(params.x || 0), y: Number(params.y || 0), width: Number(params.width || 0), height: Number(params.height || 0) };
+        }, timeoutMs);
+        stats.updateCalls += 1;
+        if (!updated.ok) {
+          stats.errors += 1;
+          return result(false, "UPDATE_FAILED", { error: errorText(updated.error) });
+        }
+        return result(true, "UPDATED", { geometry: updated.value });
+      }
+
+      function awaitDetached(timeoutMs) {
+        if (state === STATES.DETACHED || state === STATES.DISPOSED) return true;
+        if (awaitLatch(detachLatch, timeoutMs)) return state === STATES.DETACHED || state === STATES.DISPOSED;
+        if (!attachedNow()) {
+          markDetached("detached-poll");
+          return true;
+        }
+        return false;
+      }
+
+      function remove(immediate, timeoutMs) {
+        if (state === STATES.DISPOSED) return result(true, "ALREADY_DISPOSED");
+        if (state === STATES.DETACHED) return result(true, "ALREADY_DETACHED");
+        if (state === STATES.NEW || state === STATES.PREPARED) {
+          markDetached("remove-before-attach");
+          return result(true, "DETACHED_WITHOUT_ATTACH");
+        }
+        if (state !== STATES.CLOSING) transition(STATES.CLOSING, immediate === true ? "remove-immediate" : "remove-normal");
+        stats.removeCalls += 1;
+        var removed = ownerSync(function () {
+          if (!attachedNow()) {
+            markDetached("already-not-attached");
+            return true;
+          }
+          if (immediate === true && wm.removeViewImmediate) wm.removeViewImmediate(view);
+          else wm.removeView(view);
+          if (!attachedNow()) markDetached("detached-after-remove");
+          return true;
+        }, timeoutMs);
+        if (!removed.ok) {
+          stats.errors += 1;
+          return result(false, "REMOVE_FAILED", { error: errorText(removed.error) });
+        }
+        if (awaitDetached(timeoutMs)) return result(true, "DETACHED", { immediate: immediate === true });
+        detachTimedOut = true;
+        stats.detachTimeouts += 1;
+        return result(false, "DETACH_TIMEOUT", { immediate: immediate === true, referencesRetained: true });
+      }
+
+      function dispose(timeoutMs) {
+        if (state === STATES.DISPOSED) return result(true, "ALREADY_DISPOSED");
+        var removeResult = result(true, "NO_REMOVE_NEEDED");
+        if (state !== STATES.DETACHED) removeResult = remove(true, timeoutMs);
+        if (!removeResult.ok && state !== STATES.DETACHED) {
+          return result(false, "DISPOSE_WAITING_FOR_DETACH", { remove: removeResult, referencesRetained: true });
+        }
+        if (state !== STATES.DETACHED) return result(false, "DISPOSE_NOT_DETACHED");
+        var cleaned = ownerSync(function () {
+          removeListener();
+          view = null;
+          params = null;
+          return true;
+        }, timeoutMs);
+        if (!cleaned.ok) {
+          stats.errors += 1;
+          return result(false, "DISPOSE_CLEANUP_FAILED", { error: errorText(cleaned.error) });
+        }
+        transition(STATES.DISPOSED, "dispose");
+        return result(true, "DISPOSED");
+      }
+
+      return {
+        name: name,
+        states: STATES,
+        prepare: prepare,
+        attach: attach,
+        update: update,
+        remove: remove,
+        awaitDetached: awaitDetached,
+        dispose: dispose,
+        isAttached: attachedNow,
+        getState: function () { return state; },
+        getView: function () { return view; },
+        getParams: function () { return params; },
+        snapshot: function () {
+          return {
+            name: name,
+            state: state,
+            attached: attachedNow(),
+            hasView: view !== null,
+            hasParams: params !== null,
+            hasListener: listener !== null,
+            detachTimedOut: detachTimedOut,
+            stats: JSON.parse(JSON.stringify(stats)),
+            transitions: JSON.parse(JSON.stringify(transitions))
+          };
+        }
+      };
+    }
+
+    return { STATES: STATES, create: create };
+  }());
 
   SXUI.Diagnostics = {
     runBasic: function (ctx, wm) {

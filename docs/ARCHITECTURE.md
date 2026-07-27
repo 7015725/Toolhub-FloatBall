@@ -1260,3 +1260,7 @@ PopupOverlayBase
 - 拾字号文件写入当前通道 `APP_ROOT_DIR/data/pickword_font_size.txt`，Android SharedPreferences 名称也附加 `stable` 或 `beta` 后缀。
 - Stable 在新路径缺失时可以只读旧公共字号文件和旧 SharedPreferences，并复制到 Stable 私有路径；Beta 不读取旧公共状态。
 - 旧公共字号文件不会被删除，避免升级失败或回滚时丢失用户数据。
+
+## Beta ShortXUI WindowHost 第二阶段
+
+Beta 实验运行时增加 `NEW → PREPARED → ATTACHING → ATTACHED → CLOSING → DETACHED → DISPOSED` 生命周期。所有 WindowManager 调用由注入的 owner `Dispatcher` 执行；移除后通过 `OnAttachStateChangeListener`、`isAttachedToWindow()` 与有限超时共同确认 detach。超时时保留 View、`LayoutParams` 和监听器引用，不提前进入 `DISPOSED`。该路径只管理实验室独立窗口。
