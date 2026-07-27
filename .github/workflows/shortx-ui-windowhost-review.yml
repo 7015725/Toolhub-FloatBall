@@ -1,0 +1,31 @@
+name: shortx-ui-windowhost-review
+
+on:
+  pull_request:
+    branches: [beta]
+    types: [synchronize]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  snapshot:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/beta-shortx-ui-windowhost-phase2'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout reviewed branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Build snapshot
+        shell: bash
+        run: tar --exclude=.git -C "$GITHUB_WORKSPACE" -czf /tmp/windowhost-review-source.tar.gz .
+      - name: Upload snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: windowhost-review-source
+          path: /tmp/windowhost-review-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7
