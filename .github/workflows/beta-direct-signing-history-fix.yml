@@ -9,8 +9,6 @@ on:
 permissions:
   contents: write
 
-environment: signing
-
 jobs:
   apply:
     runs-on: ubuntu-latest
