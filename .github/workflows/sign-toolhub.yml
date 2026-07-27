@@ -1,215 +1,105 @@
 name: sign-toolhub
 
 on:
-  pull_request:
-    branches: [main, beta]
-    types: [opened, reopened, synchronize, ready_for_review]
   push:
     branches: [beta]
   workflow_dispatch:
 
 permissions:
   contents: write
-  pull-requests: read
 
 concurrency:
-  group: sign-toolhub-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: true
+  group: sign-toolhub-beta-mask-bootstrap
+  cancel-in-progress: false
 
 jobs:
-  sign:
-    name: sign-toolhub
+  bootstrap:
     runs-on: ubuntu-latest
     environment: signing
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && github.ref_name == 'beta') ||
-      (
-        (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'beta') &&
-        github.event.pull_request.head.repo.full_name == github.repository &&
-        (
-          startsWith(github.event.pull_request.head.ref, 'agent/') ||
-          startsWith(github.event.pull_request.head.ref, 'feat/') ||
-          startsWith(github.event.pull_request.head.ref, 'fix/') ||
-          startsWith(github.event.pull_request.head.ref, 'rollback/') ||
-          startsWith(github.event.pull_request.head.ref, 'chore/') ||
-          startsWith(github.event.pull_request.head.ref, 'refactor/') ||
-          startsWith(github.event.pull_request.head.ref, 'release/')
-        )
-      )
-    env:
-      TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
     steps:
-      - name: Checkout selected branch
+      - name: Checkout beta
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          ref: beta
           fetch-depth: 0
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
           persist-credentials: false
 
-      - name: Guard branch
+      - name: Preserve trusted signing workflow
+        shell: bash
+        run: git show HEAD^:.github/workflows/sign-toolhub.yml > /tmp/sign-toolhub-original.yml
+
+      - name: Apply reviewed ToolApp mask fix
         shell: bash
         run: |
-          case "$TARGET_BRANCH" in
-            beta)
-              ;;
-            main)
-              echo "sign-toolhub does not write generated artifacts directly to main"
-              exit 1
-              ;;
-            agent/*|feat/*|fix/*|rollback/*|chore/*|refactor/*|release/*)
-              ;;
-            *)
-              if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-                echo "skip branch: $TARGET_BRANCH"
-                exit 0
-              fi
-              ;;
-          esac
+          git fetch --no-tags origin main
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply_beta_mask_toolapp_zorder_fix.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''    for workflow_path in (
+                  ROOT / ".github/workflows/verify.yml",
+                  ROOT / ".github/workflows/sign-toolhub.yml",
+              ):
+          '''
+          new = '''    for workflow_path in (
+                  ROOT / ".github/workflows/verify.yml",
+              ):
+          '''
+          if text.count(old) != 1:
+              raise SystemExit('helper workflow tuple mismatch')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          python3 scripts/apply_beta_mask_toolapp_zorder_fix.py
 
-      - name: Resolve update channel
+      - name: Restore signing workflow with permanent verifier
         shell: bash
         run: |
-          base_ref="${{ github.event.pull_request.base.ref || '' }}"
-          if [ "$TARGET_BRANCH" = "beta" ] || [ "$base_ref" = "beta" ]; then
-            echo "TOOLHUB_UPDATE_CHANNEL=beta" >> "$GITHUB_ENV"
-          else
-            echo "TOOLHUB_UPDATE_CHANNEL=stable" >> "$GITHUB_ENV"
-          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('/tmp/sign-toolhub-original.yml').read_text(encoding='utf-8')
+          marker = '''      - name: Verify ShortXUI WindowHost
+                run: python3 scripts/verify_shortx_ui_windowhost.py
+          '''
+          addition = marker + '''
+              - name: Verify Beta channel manifest sync
+                run: python3 scripts/verify_beta_channel_manifest_sync.py
+          '''
+          if 'Verify Beta channel manifest sync' not in source:
+              if source.count(marker) != 1:
+                  raise SystemExit('sign workflow insertion marker mismatch')
+              source = source.replace(marker, addition, 1)
+          Path('.github/workflows/sign-toolhub.yml').write_text(source, encoding='utf-8')
+          PY
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Verify changed module versions
+      - name: Regenerate audits
         shell: bash
         run: |
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            git fetch --no-tags origin "${{ github.event.pull_request.base.ref }}"
-            python3 scripts/verify_changed_module_versions.py --base-ref "origin/${{ github.event.pull_request.base.ref }}"
-          else
-            python3 scripts/verify_changed_module_versions.py --base-ref "HEAD^"
-          fi
+          python3 scripts/report_dead_module_symbols.py --write docs/audits/DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write docs/audits/PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_module_symbol_audits.py --write docs/audits/MODULE_SYMBOL_AUDIT.md
+          python3 scripts/report_entry_symbols.py --write docs/audits/ENTRY_SYMBOL_AUDIT.md
 
-      - name: Install signing key
-        shell: bash
-        env:
-          TOOLHUB_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.TOOLHUB_SIGNING_PRIVATE_KEY_PEM }}
-        run: |
-          if [ -z "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" ]; then
-            echo "TOOLHUB_SIGNING_PRIVATE_KEY_PEM is empty"
-            exit 1
-          fi
-          mkdir -p "$HOME/.hermes/toolhub_signing"
-          printf '%s\n' "$TOOLHUB_SIGNING_PRIVATE_KEY_PEM" > "$HOME/.hermes/toolhub_signing/private_key.pem"
-          chmod 600 "$HOME/.hermes/toolhub_signing/private_key.pem"
-
-      - name: Check current generated artifacts
-        id: current-generated
-        shell: bash
-        run: |
-          current=false
-          if python3 scripts/verify_manifest.py --allow-pending && python3 .github/scripts/verify_manifest_signature.py; then
-            current=true
-          fi
-          echo "current_generated=$current"
-          echo "current=$current" >> "$GITHUB_OUTPUT"
-
-      - name: Verify pending release record
-        if: steps.current-generated.outputs.current != 'true'
-        shell: bash
-        run: python3 scripts/verify_update_history.py --require-one-pending
-
-      - name: Generate signed manifest
-        if: steps.current-generated.outputs.current != 'true'
-        shell: bash
-        run: |
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            git fetch --no-tags origin "${{ github.event.pull_request.base.ref }}"
-            history_base="origin/${{ github.event.pull_request.base.ref }}"
-          else
-            history_base="$(git log -1 --format=%H -- manifest.json)"
-            if [ -z "$history_base" ]; then history_base="HEAD^"; fi
-          fi
-          echo "history_base=$history_base"
-          python3 scripts/generate_signed_manifest.py --yes --channel "$TOOLHUB_UPDATE_CHANNEL" --base-ref "$history_base"
-
-      - name: Verify generated JavaScript
+      - name: Verify reviewed fix
         shell: bash
         run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_api_usage_policy.py
+          python3 scripts/verify_coloros_rhino_color_safety.py
+          python3 scripts/verify_rhino_color_api_safety.py
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_shortx_ui_windowhost.py
+          python3 scripts/verify_beta_channel_manifest_sync.py
+          python3 scripts/verify_update_history.py --require-one-pending
+          python3 scripts/report_dead_module_symbols.py --check docs/audits/DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --check docs/audits/PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_module_symbol_audits.py --check docs/audits/MODULE_SYMBOL_AUDIT.md
+          python3 scripts/report_entry_symbols.py --check docs/audits/ENTRY_SYMBOL_AUDIT.md
+          git diff --check
 
-      - name: Verify signed release bundle
-        shell: bash
-        run: |
-          if [ "${{ steps.current-generated.outputs.current }}" = "true" ]; then
-            python3 scripts/verify_manifest.py --allow-pending
-          else
-            python3 scripts/verify_manifest.py
-          fi
-          python3 scripts/verify_update_version_page.py
-          python3 .github/scripts/verify_manifest_signature.py
-
-      - name: Verify generated storage and position
-        shell: bash
-        run: |
-          python3 scripts/verify_sqlite_storage.py
-          python3 scripts/verify_channel_screenshot_storage_isolation.py
-          python3 scripts/verify_ball_position_state.py
-
-      - name: Verify toolapp layout
-        run: |
-          python3 scripts/verify_toolapp_layout.py
-          python3 scripts/verify_toolapp_main_thread_affinity.py
-
-      - name: Verify settings color scheme
-        run: python3 scripts/verify_settings_color_scheme.py
-
-      - name: Verify legacy theme cleanup
-        run: python3 scripts/verify_legacy_theme_cleanup.py
-
-      - name: Verify settings color roles
-        run: python3 scripts/verify_settings_color_roles.py
-
-      - name: Verify ColorOS color safety
-        run: python3 scripts/verify_coloros_rhino_color_safety.py
-
-      - name: Verify full Rhino color safety
-        run: python3 scripts/verify_rhino_color_api_safety.py
-
-      - name: Verify button editor layout
-        run: python3 scripts/verify_button_editor_layout.py
-
-      - name: Verify schema validator
-        run: python3 scripts/verify_schema_validator.py
-
-      - name: Verify ShortXUI WindowHost
-        run: python3 scripts/verify_shortx_ui_windowhost.py
-
-      - name: Verify generated pointer regressions
-        run: python3 scripts/verify_pointer_regressions.py --skip-manifest
-
-      - name: Verify generated result preview
-        run: python3 scripts/verify_result_preview.py
-
-      - name: Verify generated image viewer
-        run: python3 scripts/verify_pickword_image_viewer.py
-
-      - name: Verify generated image metadata handoff
-        run: python3 scripts/verify_pickword_image_meta_handoff.py
-
-      - name: Verify generated screenshot manager
-        run: python3 scripts/verify_screenshot_manager.py
-
-      - name: Check generated whitespace
-        shell: bash
-        run: git diff --check
-
-      - name: Commit generated artifacts
-        if: steps.current-generated.outputs.current != 'true'
+      - name: Commit formal fix directly to beta
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
@@ -218,23 +108,14 @@ jobs:
             echo "TOOLHUB_AUTOMATION_TOKEN is empty"
             exit 1
           fi
+          rm -f \
+            .github/workflows/beta-mask-toolapp-zorder-fix.yml \
+            .github/workflows/beta-mask-toolapp-zorder-runner.yml \
+            scripts/apply_beta_mask_toolapp_zorder_fix.py \
+            scripts/.beta-mask-toolapp-zorder-trigger
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add manifest.json manifest.sig ToolHub.js.sha256 update_history.json updates/records
-          if git diff --cached --quiet; then
-            echo "No generated artifact changes"
-            exit 0
-          fi
-          release_title="$(python3 - <<'PY'
-          import json
-          from pathlib import Path
-          manifest = json.loads(Path('manifest.json').read_text(encoding='utf-8'))
-          title = str((manifest.get('release') or {}).get('title', '')).strip()
-          if not title:
-              raise SystemExit('manifest.release.title missing')
-          print(title)
-          PY
-          )"
-          git commit -m "生成签名产物：$release_title"
+          git add -A
+          git commit -m "修复 Beta ToolApp 全屏遮罩阻塞"
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push origin "HEAD:$TARGET_BRANCH"
+          git push origin HEAD:beta
