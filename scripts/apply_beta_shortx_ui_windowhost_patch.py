@@ -16,7 +16,8 @@ PART_NAMES = [
     "windowhost_phase2_patch.part04",
     "windowhost_phase2_patch.part05",
     "windowhost_phase2_patch.part06a",
-    "windowhost_phase2_patch.part06b",
+    "windowhost_phase2_patch.part06b1",
+    "windowhost_phase2_patch.part06b2",
     "windowhost_phase2_patch.part07",
     "windowhost_phase2_patch.part08",
     "windowhost_phase2_patch.part09",
@@ -24,7 +25,7 @@ PART_NAMES = [
 ]
 PARTS = [PART_DIR / name for name in PART_NAMES]
 EXPECTED_SHA256 = "25408356a38754c9f85810307c345773cbb45f697259c9eebd909220e7acac6d"
-EXPECTED_LENGTHS = [1800, 1800, 1800, 1800, 1800, 900, 900, 1800, 1800, 1800, 64]
+EXPECTED_LENGTHS = [1800, 1800, 1800, 1800, 1800, 900, 450, 450, 1800, 1800, 1800, 64]
 
 values = [path.read_text(encoding="utf-8").strip() for path in PARTS]
 lengths = [len(value) for value in values]
