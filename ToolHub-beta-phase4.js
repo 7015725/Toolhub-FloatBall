@@ -2,7 +2,7 @@
 // Loads verified Phase 3, then the verified isolated Gesture/Back lab.
 // Rhino ES5 / ShortX.
 (function () {
-  var ENTRY_VERSION = "0.5.0-phase4-entry-r2";
+  var ENTRY_VERSION = "0.5.0-phase4-entry-r3";
   var SNAPSHOT = "b3cde8fa7b86a1fc0d382eab073eb9e47381db20";
   var FILES = [
     {
@@ -13,7 +13,7 @@
     },
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase4/gesture_back_lab.js",
-      sha256: "c2f04076270577c93f3753864d72747ab0eb955535078b0100f4b80779e3107b",
+      sha256: "a84dc2c4d03be5f26ea77ffe7abf168651eaaabb730e7c04c690b532093e83f0",
       maxBytes: 65536,
       name: "gesture-back-lab"
     }
