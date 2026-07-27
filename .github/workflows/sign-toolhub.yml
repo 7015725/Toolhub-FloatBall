@@ -168,6 +168,9 @@ jobs:
       - name: Verify schema validator
         run: python3 scripts/verify_schema_validator.py
 
+      - name: Verify ShortXUI WindowHost
+        run: python3 scripts/verify_shortx_ui_windowhost.py
+
       - name: Verify generated pointer regressions
         run: python3 scripts/verify_pointer_regressions.py --skip-manifest
 

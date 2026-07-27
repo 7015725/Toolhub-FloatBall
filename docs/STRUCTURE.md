@@ -699,3 +699,7 @@ GitHub Release 固定附带 `ToolHub.js`、入口哈希、manifest、RSA 签名�
 ## 维护文件布局
 
 仓库根目录只保留 `README.md`、`ToolHub.js`、入口摘要、Manifest、签名和更新历史。核心文档位于 `docs/`，自动审计位于 `docs/audits/`，机器约束位于 `constraints/`。
+
+## Beta ShortXUI WindowHost 隔离边界
+
+`th_24_shortx_ui_runtime.js` 提供通用 `ShortXUI.WindowHost`；`th_34_shortx_ui_lab.js` 负责 ToolHub Beta 适配和真机操作入口。实验窗口使用独立状态、Dispatcher 与诊断文件，不调用或覆盖 `FloatBallAppWM.prototype.safeRemoveView`，不修改正式面板的引用清理顺序。

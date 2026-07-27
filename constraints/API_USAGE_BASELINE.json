@@ -42,7 +42,7 @@
     "code/th_24_shortx_ui_runtime.js",
     "code/th_34_shortx_ui_lab.js"
   ],
-  "usageCount": 750,
+  "usageCount": 753,
   "entries": [
     {
       "key": "android|class|android.animation.Animator.AnimatorListener",
@@ -738,6 +738,24 @@
         }
       ],
       "occurrenceCount": 10
+    },
+    {
+      "key": "android|class|android.graphics.PixelFormat.TRANSLUCENT",
+      "source": "android",
+      "kind": "class",
+      "classOrObject": "android.graphics.PixelFormat.TRANSLUCENT",
+      "method": null,
+      "files": [
+        "code/th_34_shortx_ui_lab.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_34_shortx_ui_lab.js",
+          "line": 207,
+          "form": "class_alias"
+        }
+      ],
+      "occurrenceCount": 1
     },
     {
       "key": "android|class|android.graphics.PorterDuffColorFilter",
@@ -1800,7 +1818,8 @@
         "code/th_13_panel_ui.js",
         "code/th_14_button_shortcut.js",
         "code/th_15_main_panel.js",
-        "code/th_23_screenshot_manager.js"
+        "code/th_23_screenshot_manager.js",
+        "code/th_24_shortx_ui_runtime.js"
       ],
       "locations": [
         {
@@ -1827,9 +1846,19 @@
           "file": "code/th_23_screenshot_manager.js",
           "line": 620,
           "form": "direct_constructor"
+        },
+        {
+          "file": "code/th_24_shortx_ui_runtime.js",
+          "line": 629,
+          "form": "direct_constructor"
+        },
+        {
+          "file": "code/th_24_shortx_ui_runtime.js",
+          "line": 629,
+          "form": "direct_constructor_assignment"
         }
       ],
-      "occurrenceCount": 5
+      "occurrenceCount": 7
     },
     {
       "key": "android|class|android.view.View.OnClickListener",
@@ -1850,7 +1879,8 @@
         "code/th_14_schema_editor.js",
         "code/th_15_main_panel.js",
         "code/th_22_image_viewer.js",
-        "code/th_23_screenshot_manager.js"
+        "code/th_23_screenshot_manager.js",
+        "code/th_34_shortx_ui_lab.js"
       ],
       "locations": [
         {
@@ -1914,7 +1944,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 47
+      "occurrenceCount": 48
     },
     {
       "key": "android|class|android.view.View.OnKeyListener",
@@ -2137,7 +2167,8 @@
         "code/th_17_pointer.js",
         "code/th_19_position_state.js",
         "code/th_20_pickword.js",
-        "code/th_21_result_preview.js"
+        "code/th_21_result_preview.js",
+        "code/th_34_shortx_ui_lab.js"
       ],
       "locations": [
         {
@@ -2201,7 +2232,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 19
+      "occurrenceCount": 21
     },
     {
       "key": "android|class|android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND",
@@ -2298,6 +2329,24 @@
         }
       ],
       "occurrenceCount": 2
+    },
+    {
+      "key": "android|class|android.view.WindowManager.LayoutParams.WRAP_CONTENT",
+      "source": "android",
+      "kind": "class",
+      "classOrObject": "android.view.WindowManager.LayoutParams.WRAP_CONTENT",
+      "method": null,
+      "files": [
+        "code/th_34_shortx_ui_lab.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_34_shortx_ui_lab.js",
+          "line": 202,
+          "form": "class_alias"
+        }
+      ],
+      "occurrenceCount": 1
     },
     {
       "key": "android|class|android.view.animation.AccelerateDecelerateInterpolator",
@@ -3101,7 +3150,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 302
+      "occurrenceCount": 306
     },
     {
       "key": "android|class|android.widget.LinearLayout.LayoutParams",
@@ -3188,7 +3237,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 438
+      "occurrenceCount": 446
     },
     {
       "key": "android|class|android.widget.ListView",
@@ -3797,7 +3846,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 307
+      "occurrenceCount": 313
     },
     {
       "key": "android|class|android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT",
@@ -6149,7 +6198,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 172
+      "occurrenceCount": 174
     },
     {
       "key": "android|method|android.graphics.ColorSpace#get",
@@ -9514,7 +9563,8 @@
         "code/th_13_panel_ui.js",
         "code/th_14_button_shortcut.js",
         "code/th_15_main_panel.js",
-        "code/th_23_screenshot_manager.js"
+        "code/th_23_screenshot_manager.js",
+        "code/th_24_shortx_ui_runtime.js"
       ],
       "locations": [
         {
@@ -9541,9 +9591,14 @@
           "file": "code/th_23_screenshot_manager.js",
           "line": 620,
           "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_24_shortx_ui_runtime.js",
+          "line": 629,
+          "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 5
+      "occurrenceCount": 6
     },
     {
       "key": "android|method|android.view.View#OnClickListener",
@@ -9565,7 +9620,8 @@
         "code/th_15_main_panel.js",
         "code/th_20_pickword.js",
         "code/th_22_image_viewer.js",
-        "code/th_23_screenshot_manager.js"
+        "code/th_23_screenshot_manager.js",
+        "code/th_34_shortx_ui_lab.js"
       ],
       "locations": [
         {
@@ -9629,7 +9685,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 56
+      "occurrenceCount": 57
     },
     {
       "key": "android|method|android.view.View#OnKeyListener",
@@ -10334,7 +10390,8 @@
         "code/th_15_extra.js",
         "code/th_17_pointer.js",
         "code/th_19_position_state.js",
-        "code/th_21_result_preview.js"
+        "code/th_21_result_preview.js",
+        "code/th_34_shortx_ui_lab.js"
       ],
       "locations": [
         {
@@ -10381,9 +10438,14 @@
           "file": "code/th_21_result_preview.js",
           "line": 1195,
           "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_34_shortx_ui_lab.js",
+          "line": 200,
+          "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 9
+      "occurrenceCount": 10
     },
     {
       "key": "android|method|android.view.WindowManager.LayoutParams#setTitle",
@@ -10893,7 +10955,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 153
+      "occurrenceCount": 155
     },
     {
       "key": "android|method|android.widget#ListView",
@@ -11251,7 +11313,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 153
+      "occurrenceCount": 156
     },
     {
       "key": "android|method|android.widget.AdapterView#OnItemClickListener",
@@ -14238,7 +14300,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 339
+      "occurrenceCount": 345
     },
     {
       "key": "android|method|android.widget.LinearLayout#addOnAttachStateChangeListener",
@@ -14355,7 +14417,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 390
+      "occurrenceCount": 395
     },
     {
       "key": "android|method|android.widget.LinearLayout#animate",
@@ -14936,7 +14998,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 60
+      "occurrenceCount": 61
     },
     {
       "key": "android|method|android.widget.LinearLayout#setClickable",
@@ -15672,7 +15734,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 169
+      "occurrenceCount": 171
     },
     {
       "key": "android|method|android.widget.LinearLayout#setPadding",
@@ -15759,7 +15821,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 109
+      "occurrenceCount": 110
     },
     {
       "key": "android|method|android.widget.LinearLayout#setPivotX",
@@ -16152,6 +16214,24 @@
         }
       ],
       "occurrenceCount": 83
+    },
+    {
+      "key": "android|method|android.widget.LinearLayout.LayoutParams#setTitle",
+      "source": "android",
+      "kind": "method",
+      "classOrObject": "android.widget.LinearLayout.LayoutParams",
+      "method": "setTitle",
+      "files": [
+        "code/th_34_shortx_ui_lab.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_34_shortx_ui_lab.js",
+          "line": 211,
+          "form": "instance_call"
+        }
+      ],
+      "occurrenceCount": 1
     },
     {
       "key": "android|method|android.widget.ListView#getWindowToken",
@@ -17896,7 +17976,7 @@
         },
         {
           "file": "code/th_34_shortx_ui_lab.js",
-          "line": 212,
+          "line": 436,
           "form": "instance_call"
         }
       ],
@@ -19035,7 +19115,8 @@
         "code/th_14_schema_editor.js",
         "code/th_15_main_panel.js",
         "code/th_20_pickword.js",
-        "code/th_23_screenshot_manager.js"
+        "code/th_23_screenshot_manager.js",
+        "code/th_34_shortx_ui_lab.js"
       ],
       "locations": [
         {
@@ -19099,7 +19180,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 41
+      "occurrenceCount": 42
     },
     {
       "key": "android|method|android.widget.TextView#setBreakStrategy",
@@ -19459,7 +19540,8 @@
         "code/th_15_main_panel.js",
         "code/th_20_pickword.js",
         "code/th_22_image_viewer.js",
-        "code/th_23_screenshot_manager.js"
+        "code/th_23_screenshot_manager.js",
+        "code/th_34_shortx_ui_lab.js"
       ],
       "locations": [
         {
@@ -19523,7 +19605,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 67
+      "occurrenceCount": 68
     },
     {
       "key": "android|method|android.widget.TextView#setHorizontallyScrolling",
@@ -20218,7 +20300,8 @@
         "code/th_15_main_panel.js",
         "code/th_20_pickword.js",
         "code/th_22_image_viewer.js",
-        "code/th_23_screenshot_manager.js"
+        "code/th_23_screenshot_manager.js",
+        "code/th_34_shortx_ui_lab.js"
       ],
       "locations": [
         {
@@ -20282,7 +20365,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 30
+      "occurrenceCount": 31
     },
     {
       "key": "android|method|android.widget.TextView#setOnLongClickListener",
@@ -20365,7 +20448,8 @@
         "code/th_15_main_panel.js",
         "code/th_20_pickword.js",
         "code/th_22_image_viewer.js",
-        "code/th_23_screenshot_manager.js"
+        "code/th_23_screenshot_manager.js",
+        "code/th_34_shortx_ui_lab.js"
       ],
       "locations": [
         {
@@ -20429,7 +20513,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 71
+      "occurrenceCount": 73
     },
     {
       "key": "android|method|android.widget.TextView#setScaleX",
@@ -20653,7 +20737,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 227
+      "occurrenceCount": 230
     },
     {
       "key": "android|method|android.widget.TextView#setTextIsSelectable",
@@ -20772,7 +20856,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 171
+      "occurrenceCount": 173
     },
     {
       "key": "android|method|android.widget.TextView#setTypeface",
@@ -20859,7 +20943,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 63
+      "occurrenceCount": 64
     },
     {
       "key": "android|method|android.widget.TextView#setVisibility",
@@ -26194,7 +26278,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 58
+      "occurrenceCount": 61
     },
     {
       "key": "java|method|java.lang.System#identityHashCode",
@@ -26312,12 +26396,12 @@
         },
         {
           "file": "code/th_34_shortx_ui_lab.js",
-          "line": 124,
+          "line": 345,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_34_shortx_ui_lab.js",
-          "line": 131,
+          "line": 352,
           "form": "direct_static_call"
         }
       ],
@@ -27211,9 +27295,14 @@
           "file": "code/th_24_shortx_ui_runtime.js",
           "line": 287,
           "form": "instance_call"
+        },
+        {
+          "file": "code/th_24_shortx_ui_runtime.js",
+          "line": 643,
+          "form": "instance_call"
         }
       ],
-      "occurrenceCount": 4
+      "occurrenceCount": 5
     },
     {
       "key": "java|method|java.util.concurrent.CountDownLatch#countDown",
@@ -27263,9 +27352,19 @@
           "file": "code/th_24_shortx_ui_runtime.js",
           "line": 277,
           "form": "instance_call"
+        },
+        {
+          "file": "code/th_24_shortx_ui_runtime.js",
+          "line": 615,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_24_shortx_ui_runtime.js",
+          "line": 625,
+          "form": "instance_call"
         }
       ],
-      "occurrenceCount": 7
+      "occurrenceCount": 9
     },
     {
       "key": "java|method|java.util.concurrent.Executors#newFixedThreadPool",
@@ -27883,5 +27982,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:f7367c90a4d47ab0be071761efe04b93e3787b43cb83954b41f7d1b253cbca3e"
+  "usageDigest": "sha256:66d973c946fda9af06d6f92771f9f470c3ebbbad0459d01777e74ce664a3e6d2"
 }

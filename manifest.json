@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "b1a281f302c5c5e8892c13980963a9efb0da98ff2b2669026dcacf8b4a1709ed",
-      "size": 65985,
-      "version": 20260726235732
+      "sha256": "0aa0f09130238aa10231e917816eafe114ab01acf08e7620187d8d4f97d8bd43",
+      "size": 68025,
+      "version": 20260727015552
     }
   },
   "branch": "beta",
@@ -166,26 +166,26 @@
       "version": "1.0.7"
     },
     "th_24_shortx_ui_runtime.js": {
-      "sha256": "87305344486227ded6a35504dbacd45ccebc54759b0ef6fd42851e47e325a822",
-      "size": 22054,
-      "version": "0.1.3"
+      "sha256": "f0718092e479cb089d3567d353e8031cbd52d569551bfb51c06a524e97127b48",
+      "size": 32630,
+      "version": "0.2.0"
     },
     "th_34_shortx_ui_lab.js": {
-      "sha256": "a608749afe8d1d11462bf1c3f3a6483fe7dc8d87d2aeff9ff967c72472b867de",
-      "size": 15535,
-      "version": "0.1.1"
+      "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
+      "size": 29693,
+      "version": "0.2.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "将 ShortXUI 运行时提升到 0.1.3，消除 API 扫描器中的 DisplayMetrics 和 Drawable 局部变量别名误判。",
-      "登记实验室对 ToolApp 路由、标题、面板构建和设置分类的四条包装关系，锁定原实现委托与最终有效所有者。",
-      "按当前源码重新生成 API 使用基线，并为 ShortXUI Beta 第一阶段使用的精确 Android/Java API 增加受审查范围规则；Legacy 基线保持不变。"
+      "ShortXUI 运行时提升到 0.2.0，新增独立 WindowHost 状态机和 attach/detach 确认。",
+      "实验室提升到 0.2.0，加入打开、移动、普通移除、立即移除和 10 次循环测试。",
+      "WindowHost 只管理 Beta 实验窗口，不覆盖悬浮球、主面板、设置页或现有 safeRemoveView。"
     ],
     "date": "2026-07-27",
-    "title": "Beta：补齐 ShortXUI 模块边界与 API 约束"
+    "title": "Beta：加入 ShortXUI WindowHost 生命周期实验"
   },
   "schema": 5,
-  "version": 20260726235732
+  "version": 20260727015552
 }

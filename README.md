@@ -627,3 +627,7 @@ update_history.json
 ## 截图管理器
 
 主面板提供“截图管理”入口，包含“内部截图”和“已保存”两个标签。内部截图支持查看原图、保存、分享和删除；已保存标签管理系统相册或公共目录副本，删除公共副本时会显示额外的永久删除警告。公共副本不会被内部截图保留策略自动清理。
+
+## Beta ShortXUI WindowHost 实验
+
+`beta` 通道的 `th_24_shortx_ui_runtime.js` 与 `th_34_shortx_ui_lab.js` 已进入第二阶段，新增独立 `WindowHost` 生命周期实验。它在 ToolHub WM HandlerThread 上验证 `addView`、`updateViewLayout`、普通/立即移除以及 attach/detach 确认。实验窗口使用独立状态和 `LayoutParams`，不覆盖悬浮球、主面板、设置页或正式 `safeRemoveView()`。
