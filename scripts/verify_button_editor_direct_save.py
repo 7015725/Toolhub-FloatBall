@@ -168,11 +168,14 @@ require(
     "python3 scripts/verify_button_editor_direct_save.py",
     "workflow direct-save verification",
 )
-require(
+entry_version = re.search(
+    r"(?m)^var TOOLHUB_ENTRY_VERSION = ([0-9]+);",
     ENTRY,
-    "var TOOLHUB_ENTRY_VERSION = 20260721201500;",
-    "current entry version",
 )
+if not entry_version:
+    fail("TOOLHUB_ENTRY_VERSION declaration missing")
+if int(entry_version.group(1)) < 20260721201500:
+    fail("entry version regressed below direct-save baseline")
 require(README, "新增和编辑按钮直接保存", "README direct-save note")
 require(ARCH, "按钮编辑页", "architecture direct-save note")
 
