@@ -2,7 +2,7 @@
 // Loads verified Phase 5, then the verified guarded DEX/reflection bridge lab.
 // Rhino ES5 / ShortX.
 (function () {
-  var ENTRY_VERSION = "0.7.1-phase6-entry-r2";
+  var ENTRY_VERSION = "0.7.1-phase6-entry-r3";
   var SNAPSHOT = "3bc92a4254f34a559246a7fed08713bf9e5c81b1";
   var FILES = [
     {
@@ -13,7 +13,7 @@
     },
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase6/dex_bridge_lab.js",
-      sha256: "f6adef80702896820ccffb7f6b8cc2e847bfa08f97eacd4ece790027f721382a",
+      sha256: "a0156fc34709db77e867306bb47293f757ab6ac31b950810e8384592f184a7e0",
       maxBytes: 131072,
       name: "dex-bridge-lab"
     }
