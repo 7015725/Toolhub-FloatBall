@@ -2,8 +2,8 @@
 // Loads verified Phase 5, then the verified guarded DEX/reflection bridge lab.
 // Rhino ES5 / ShortX.
 (function () {
-  var ENTRY_VERSION = "0.7.0-phase6-entry-r1";
-  var SNAPSHOT = "67c804a27c3d5f53a17e05897441635e3458df61";
+  var ENTRY_VERSION = "0.7.1-phase6-entry-r2";
+  var SNAPSHOT = "3bc92a4254f34a559246a7fed08713bf9e5c81b1";
   var FILES = [
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/ToolHub-beta-phase5.js",
@@ -13,7 +13,7 @@
     },
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase6/dex_bridge_lab.js",
-      sha256: "6ccd0a8bc8cd63d680552736623fefc928b9b88d186ddd3a5094aad60d90cf5d",
+      sha256: "f6adef80702896820ccffb7f6b8cc2e847bfa08f97eacd4ece790027f721382a",
       maxBytes: 131072,
       name: "dex-bridge-lab"
     }
@@ -86,7 +86,7 @@
       throw "ShortXUI Canvas phase5 baseline verification failed";
     }
     if (typeof ToolHubBetaPhase6 === "undefined" ||
-        String(ToolHubBetaPhase6.VERSION || "") !== "0.7.0-beta-dex-bridge") {
+        String(ToolHubBetaPhase6.VERSION || "") !== "0.7.1-beta-dex-payload") {
       throw "ShortXUI DEX bridge phase6 install verification failed";
     }
     writeLog(
