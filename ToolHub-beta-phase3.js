@@ -12,7 +12,7 @@
     },
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase3/ime_focus_lab.js",
-      sha256: "2d8cc6cf5e6683003b4c2c371019e26eff69748011998d8c0273d8ec42c61bfa",
+      sha256: "b9de7a3394e99d7d97e748ba93eea9305f69b9c428fd7790de7df2e36cd63aa8",
       maxBytes: 65536,
       name: "ime-focus-lab"
     }
@@ -86,4 +86,4 @@
     throw "ToolHub Beta phase3 bootstrap failed: " + String(eVerify);
   }
   return baseResult;
-})();
+}());
