@@ -1,12 +1,19 @@
 {
   "schema": 1,
   "id": "20260727-beta-direct-signing-history-baseline",
-  "manifestVersion": 0,
+  "manifestVersion": 20260727070258,
   "type": "fix",
   "title": "修正 Beta 直推签名与发布历史基线",
   "details": [
     "Beta 直接提交时，待发布记录不再单独触发提前签名，只有受签名资产发生变化后才生成新 Manifest。",
     "Beta 直推发布差异改为以上一次修改 manifest.json 的提交为基线，避免错误纳入 main 与历史 Beta 模块变化。",
     "重新生成发布历史和签名资产，使入口通道模块过滤修复只记录实际入口变化。"
-  ]
+  ],
+  "date": "2026-07-27",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260728000100,
+    "to": 20260728000100
+  }
 }
