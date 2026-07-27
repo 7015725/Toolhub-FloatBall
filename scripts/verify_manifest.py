@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import ast
 import hashlib
 import json
@@ -73,6 +74,10 @@ def collect_python_files():
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--allow-pending", action="store_true")
+    args = ap.parse_args()
+
     for path in (CODE_DIR, MANIFEST, ENTRY, ENTRY_SHA, HISTORY, SIGN_SCRIPT):
         if not path.exists():
             fail(str(path.relative_to(ROOT)) + " missing")
@@ -155,9 +160,10 @@ def main():
     ]:
         fail("manifest release changes differ from current history record")
 
-    subprocess.check_call(
-        [sys.executable, "scripts/verify_update_history.py"], cwd=str(ROOT)
-    )
+    history_args = [sys.executable, "scripts/verify_update_history.py"]
+    if args.allow_pending:
+        history_args.append("--require-one-pending")
+    subprocess.check_call(history_args, cwd=str(ROOT))
     subprocess.check_call(
         [sys.executable, "scripts/verify_release_record_flow.py"], cwd=str(ROOT)
     )
