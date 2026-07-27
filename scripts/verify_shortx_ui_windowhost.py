@@ -12,6 +12,7 @@ SIGN = (ROOT / ".github/workflows/sign-toolhub.yml").read_text(encoding="utf-8")
 README = (ROOT / "README.md").read_text(encoding="utf-8")
 ARCH = (ROOT / "docs/ARCHITECTURE.md").read_text(encoding="utf-8")
 STRUCTURE = (ROOT / "docs/STRUCTURE.md").read_text(encoding="utf-8")
+ENTRY = (ROOT / "ToolHub.js").read_text(encoding="utf-8")
 
 
 def fail(message):
@@ -96,6 +97,10 @@ require(ANIMATION, "// @version 1.0.12", "unchanged animation module version")
 require(ANIMATION, "FloatBallAppWM.prototype.safeRemoveView = function", "production safeRemoveView retained")
 for workflow, label in ((VERIFY, "verify"), (SIGN, "sign")):
     require(workflow, "python3 scripts/verify_shortx_ui_windowhost.py", label + " workflow")
+
+require(ENTRY, 'if (TOOLHUB_UPDATE_CHANNEL !== "beta")', "stable channel module filter")
+require(ENTRY, '__toolHubModuleName === "th_24_shortx_ui_runtime.js"', "runtime channel filter")
+require(ENTRY, '__toolHubModuleName === "th_34_shortx_ui_lab.js"', "lab channel filter")
 
 for doc, label in (
     (README, "README"),
