@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main, beta]
     types: [opened, reopened, synchronize, ready_for_review]
+  push:
+    branches: [beta]
   workflow_dispatch:
 
 permissions:
@@ -21,6 +23,7 @@ jobs:
     environment: signing
     if: >
       github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref_name == 'beta') ||
       (
         (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'beta') &&
         github.event.pull_request.head.repo.full_name == github.repository &&
@@ -49,8 +52,10 @@ jobs:
         shell: bash
         run: |
           case "$TARGET_BRANCH" in
+            beta)
+              ;;
             main)
-              echo "sign-toolhub runs on feature branches only"
+              echo "sign-toolhub does not write generated artifacts directly to main"
               exit 1
               ;;
             agent/*|feat/*|fix/*|rollback/*|chore/*|refactor/*|release/*)
@@ -67,7 +72,7 @@ jobs:
         shell: bash
         run: |
           base_ref="${{ github.event.pull_request.base.ref || '' }}"
-          if [ "$base_ref" = "beta" ]; then
+          if [ "$TARGET_BRANCH" = "beta" ] || [ "$base_ref" = "beta" ]; then
             echo "TOOLHUB_UPDATE_CHANNEL=beta" >> "$GITHUB_ENV"
           else
             echo "TOOLHUB_UPDATE_CHANNEL=stable" >> "$GITHUB_ENV"
