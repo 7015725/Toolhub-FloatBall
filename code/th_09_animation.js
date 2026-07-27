@@ -1,4 +1,4 @@
-// @version 1.0.12
+// @version 1.0.13
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -67,7 +67,10 @@ FloatBallAppWM.prototype.safeRemoveView = function(v, whichName, options) {
 
     var keepInvisible = opts.keepInvisible === true;
     var resetVisual = opts.resetVisual !== false;
-    var immediate = opts.immediate === true || !!(this.state && this.state.closing);
+    var requestedImmediate = opts.immediate === true || !!(this.state && this.state.closing);
+    // ToolHub 运行在 system_server；同步销毁 ViewRoot 会把 ColorOS/Xposed Hook 嵌套在 Rhino 回调栈中。
+    // 所有窗口统一提交普通 removeView，让真正的 Surface 销毁跨越当前消息边界。
+    var immediate = false;
 
     try { v.animate().cancel(); } catch (eAnimCancel) {}
     try { v.clearAnimation(); } catch (eClearAnim) {}
@@ -89,15 +92,12 @@ FloatBallAppWM.prototype.safeRemoveView = function(v, whichName, options) {
       return { ok: false, err: "WindowManager missing", where: whichName || "" };
     }
 
-    if (immediate && this.state.wm.removeViewImmediate) {
-      this.state.wm.removeViewImmediate(v);
-    } else {
-      this.state.wm.removeView(v);
-    }
+    this.state.wm.removeView(v);
 
     return {
       ok: true,
       immediate: immediate,
+      requestedImmediate: requestedImmediate,
       resetVisual: resetVisual,
       keepInvisible: keepInvisible
     };
@@ -148,7 +148,7 @@ FloatBallAppWM.prototype.hideMask = function(reason, expectedMask, expectedGener
   try { mask.setVisibility(android.view.View.INVISIBLE); } catch (eVisibility) {}
 
   var removeResult = this.safeRemoveView(mask, "mask", {
-    immediate: true,
+    immediate: false,
     keepInvisible: true,
     resetVisual: false
   });
@@ -188,6 +188,7 @@ FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
 
   var self = this;
   var panel = this.state.panel;
+  var toolAppGenerationAtHide = Number(this.state.toolAppUiGeneration || 0);
   var shouldAnimate = !(
     immediate === true ||
     this.state.closing ||
@@ -216,9 +217,9 @@ FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
     } catch (eIdentity) {}
 
     // 捕获到的旧 View 无论是否仍是当前面板，都必须移除。
-    // 先保持不可见，跳过预测性返回视觉复位，并立即提交 WindowManager 移除。
+    // 先保持不可见，跳过预测性返回视觉复位，再提交普通移除并跨消息边界销毁 ViewRoot。
     var removeResult = self.safeRemoveView(panel, "panel", {
-      immediate: true,
+      immediate: false,
       resetVisual: false,
       keepInvisible: true
     });
@@ -232,10 +233,31 @@ FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
 
     if (isLatest) {
       self.state.mainPanelExitAnimating = false;
-      if (self.hideMaskIfNoPanelVisible) self.hideMaskIfNoPanelVisible("main_panel_exit");
-      else if (!self.state.addedPanel &&
-               !self.state.addedSettings &&
-               !self.state.addedViewer) self.hideMask();
+      // 延后一轮清理共享遮罩：主面板点击“设置”等入口会在当前回调末尾增加
+      // toolAppUiGeneration，届时保留原 mask 给 ToolApp 复用，避免 remove/add 竞态。
+      function performMaskCleanup() {
+        try {
+          if (!self.state) return;
+          if (Number(self.state.toolAppUiGeneration || 0) !== toolAppGenerationAtHide) {
+            safeLog(self.L, 'd', "main panel mask cleanup skipped for toolapp transition");
+            return;
+          }
+          if (self.hideMaskIfNoPanelVisible) self.hideMaskIfNoPanelVisible("main_panel_exit");
+          else if (!self.state.addedPanel &&
+                   !self.state.addedSettings &&
+                   !self.state.addedViewer) self.hideMask();
+        } catch (eMaskCleanup) {
+          safeLog(self.L, 'w', "main panel deferred mask cleanup fail: " + String(eMaskCleanup));
+        }
+      }
+      var maskCleanup = new java.lang.Runnable({ run: function() {
+        performMaskCleanup();
+      }});
+      var maskCleanupPosted = false;
+      try {
+        if (self.state.h) maskCleanupPosted = self.state.h.post(maskCleanup) === true;
+      } catch (eMaskPost) {}
+      if (!maskCleanupPosted) performMaskCleanup();
       self.touchActivity();
       self._clearHeavyCachesIfAllHidden("hideMainPanel");
     }
