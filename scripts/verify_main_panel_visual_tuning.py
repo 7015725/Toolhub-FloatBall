@@ -113,7 +113,14 @@ for name in (
     forbid(source, "1.4.0", name + " stale version")
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_visual_tuning.py", "workflow verification")
-require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260721201500;", "current entry version")
+entry_version = re.search(
+    r"(?m)^var TOOLHUB_ENTRY_VERSION = ([0-9]+);",
+    ENTRY,
+)
+if not entry_version:
+    fail("TOOLHUB_ENTRY_VERSION declaration missing")
+if int(entry_version.group(1)) < 20260721201500:
+    fail("entry version regressed below current baseline")
 for path in DOC_PATHS:
     text = path.read_text(encoding="utf-8")
     require(text, "单页隐藏分页圆点", path.name + " single-page documentation")

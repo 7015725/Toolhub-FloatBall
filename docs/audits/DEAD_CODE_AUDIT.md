@@ -9,12 +9,12 @@
 
 ## 扫描摘要
 
-- 加载模块：`29`
-- 原型方法定义：`511`
-- 唯一原型方法：`501`
-- 已登记重复方法：`10`
+- 加载模块：`31`
+- 原型方法定义：`519`
+- 唯一原型方法：`505`
+- 已登记重复方法：`14`
 - 最终覆盖型候选节点：`0`
-- 受保护覆盖/包装链：`10`
+- 受保护覆盖/包装链：`14`
 - 第一批清理候选：`0`
 
 ## 候选节点
@@ -29,10 +29,14 @@
 
 |方法|类型|最终所有者|原因|
 |---|---|---|---|
+|`buildPanelView`|`wrapper`|`th_34_shortx_ui_lab.js`|Beta 实验室新增独立 ToolApp 页面路由，其他面板继续委托原实现|
 |`createPointerFrameView`|`intentional_override`|`th_18_pointer_ocr.js`|OCR 扩展统一补充文字、框选和处理状态边框绘制|
 |`createPointerLayoutParams`|`wrapper`|`th_19_position_state.js`|补充屏幕边缘和刘海区域布局参数|
 |`execPointerAction`|`wrapper`|`th_18_pointer_ocr.js`|增加 area_ocr 指针动作模式|
 |`finishPointerAreaCapture`|`wrapper`|`th_18_pointer_ocr.js`|框选截图完成后异步衔接 OCR|
+|`getSettingsHomeCategoryDefs`|`wrapper`|`th_34_shortx_ui_lab.js`|Beta 设置首页追加 ShortX UI 实验室入口，保留原分类生成结果|
+|`getToolAppTitle`|`wrapper`|`th_34_shortx_ui_lab.js`|为 ShortX UI 实验室提供标题，其他路由继续委托原实现|
+|`isToolAppRoute`|`wrapper`|`th_34_shortx_ui_lab.js`|登记 ShortX UI 实验室为 Beta ToolApp 路由，其他路由继续委托原实现|
 |`popToolAppPage`|`wrapper`|`th_16_entry.js`|保存按钮后保留临时编辑状态|
 |`removePointerCallbacks`|`wrapper`|`th_19_position_state.js`|关闭指针时同步取消语义调度|
 |`resetPointerToolState`|`wrapper`|`th_19_position_state.js`|重置指针时同步重建语义调度会话|
@@ -43,7 +47,7 @@
 ## 建议顺序
 
 1. 后续覆盖候选、Shell 诊断和设置类型包装收敛已完成。
-2. 当前剩余 10 条受保护包装链均承担明确功能或生命周期职责。
+2. 当前剩余 14 条受保护包装链均承担明确功能或生命周期职责。
 3. 后续只在新增重复定义、失效包装或明确回归证据时重新开启专项审查。
 
 ## 使用方式

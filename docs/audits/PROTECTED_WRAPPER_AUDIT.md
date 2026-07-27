@@ -2,10 +2,10 @@
 
 ## 结论
 
-- 已登记受保护覆盖/包装链：`10`。
+- 已登记受保护覆盖/包装链：`14`。
 - 定义链、有效所有者、旧方法捕获变量和调用关系均与 `MODULE_BOUNDARIES.json` 一致。
 - 下一轮专项审查：无。
-- 继续保留：`10` 条；这些链承担指针/OCR、生命周期或页面状态职责。
+- 继续保留：`14` 条；这些链承担指针/OCR、生命周期或页面状态职责。
 - 本报告不自动修改运行时代码；剩余包装均承担明确功能或生命周期职责。
 
 ## 分类摘要
@@ -15,6 +15,7 @@
 |指针与 OCR 扩展|6|继续保留，属于功能完成链|
 |指针布局与生命周期|3|继续保留，属于资源和竞态保护|
 |ToolApp 状态保持|1|继续保留，属于页面状态契约|
+|Beta 实验扩展|4|继续保留，仅在 Beta 实验室路由生效|
 
 ## 包装链明细
 
@@ -30,6 +31,10 @@
 |指针布局与生命周期|`removePointerCallbacks`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|1|5|0|1|继续保留|
 |指针布局与生命周期|`resetPointerToolState`|`th_17_pointer.js → th_19_position_state.js`|`th_19_position_state.js`|`wrapper`|1|5|0|1|继续保留|
 |ToolApp 状态保持|`popToolAppPage`|`th_15_extra.js → th_16_entry.js`|`th_16_entry.js`|`wrapper`|6|14|0|1|继续保留|
+|Beta 实验扩展|`buildPanelView`|`th_15_extra.js → th_34_shortx_ui_lab.js`|`th_34_shortx_ui_lab.js`|`wrapper`|6|10|0|7|继续保留|
+|Beta 实验扩展|`getSettingsHomeCategoryDefs`|`th_14_panels.js → th_34_shortx_ui_lab.js`|`th_34_shortx_ui_lab.js`|`wrapper`|1|4|0|2|继续保留|
+|Beta 实验扩展|`getToolAppTitle`|`th_15_extra.js → th_34_shortx_ui_lab.js`|`th_34_shortx_ui_lab.js`|`wrapper`|3|6|0|1|继续保留|
+|Beta 实验扩展|`isToolAppRoute`|`th_15_extra.js → th_34_shortx_ui_lab.js`|`th_34_shortx_ui_lab.js`|`wrapper`|11|15|0|7|继续保留|
 
 ## 判定说明
 
@@ -43,11 +48,15 @@
 - **`removePointerCallbacks` / 指针布局与生命周期**：关闭指针时取消语义调度，防止旧 Runnable 回写。 原登记原因：关闭指针时同步取消语义调度
 - **`resetPointerToolState` / 指针布局与生命周期**：重置时重建语义会话和 token。 原登记原因：重置指针时同步重建语义调度会话
 - **`popToolAppPage` / ToolApp 状态保持**：保存按钮后保留临时编辑状态，属于页面栈状态契约。 原登记原因：保存按钮后保留临时编辑状态
+- **`buildPanelView` / Beta 实验扩展**：仅为 ShortX UI 实验室路由返回独立页面，其他面板完整委托原构建器。 原登记原因：Beta 实验室新增独立 ToolApp 页面路由，其他面板继续委托原实现
+- **`getSettingsHomeCategoryDefs` / Beta 实验扩展**：只在原设置分类结果中追加 Beta 实验入口，不替换既有分类。 原登记原因：Beta 设置首页追加 ShortX UI 实验室入口，保留原分类生成结果
+- **`getToolAppTitle` / Beta 实验扩展**：只补充实验室标题，其他 ToolApp 路由继续委托原实现。 原登记原因：为 ShortX UI 实验室提供标题，其他路由继续委托原实现
+- **`isToolAppRoute` / Beta 实验扩展**：只登记实验室路由，其他路由识别继续委托原实现。 原登记原因：登记 ShortX UI 实验室为 Beta ToolApp 路由，其他路由继续委托原实现
 
 ## 下一轮顺序
 
 1. 设置与类型包装已并回 `th_05_persistence.js`。
-2. 当前剩余 10 条包装链全部继续保留，不进入批量收敛流程。
+2. 当前剩余 14 条包装链全部继续保留，不进入批量收敛流程。
 3. 指针/OCR 与 ToolApp 包装仅在明确回归证据下重新审查。
 
 ## 使用方式

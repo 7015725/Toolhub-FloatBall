@@ -116,7 +116,14 @@ forbid(SOURCE, "new java.lang.Thread", "dedicated drag thread")
 
 require(RUNTIME_VERIFY, 'version.group(1) != "1.5.8"', "runtime verifier current version")
 require(WORKFLOW, "python3 scripts/verify_main_panel_drag_sort.py", "workflow drag-sort verification")
-require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260721201500;", "current entry version")
+entry_version = re.search(
+    r"(?m)^var TOOLHUB_ENTRY_VERSION = ([0-9]+);",
+    ENTRY,
+)
+if not entry_version:
+    fail("TOOLHUB_ENTRY_VERSION declaration missing")
+if int(entry_version.group(1)) < 20260721201500:
+    fail("entry version regressed below current baseline")
 
 for path in DOC_PATHS:
     text = path.read_text(encoding="utf-8")

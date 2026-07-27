@@ -18,6 +18,7 @@ CATEGORY_ORDER = {
     "指针与 OCR 扩展": 2,
     "指针布局与生命周期": 3,
     "ToolApp 状态保持": 4,
+    "Beta 实验扩展": 5,
 }
 
 CLASSIFICATIONS = {
@@ -70,6 +71,26 @@ CLASSIFICATIONS = {
         "ToolApp 状态保持",
         "继续保留",
         "保存按钮后保留临时编辑状态，属于页面栈状态契约。",
+    ),
+    "buildPanelView": (
+        "Beta 实验扩展",
+        "继续保留",
+        "仅为 ShortX UI 实验室路由返回独立页面，其他面板完整委托原构建器。",
+    ),
+    "getSettingsHomeCategoryDefs": (
+        "Beta 实验扩展",
+        "继续保留",
+        "只在原设置分类结果中追加 Beta 实验入口，不替换既有分类。",
+    ),
+    "getToolAppTitle": (
+        "Beta 实验扩展",
+        "继续保留",
+        "只补充实验室标题，其他 ToolApp 路由继续委托原实现。",
+    ),
+    "isToolAppRoute": (
+        "Beta 实验扩展",
+        "继续保留",
+        "只登记实验室路由，其他路由识别继续委托原实现。",
     ),
 }
 
@@ -286,6 +307,7 @@ def render_report(rows):
         "指针与 OCR 扩展": "继续保留，属于功能完成链",
         "指针布局与生命周期": "继续保留，属于资源和竞态保护",
         "ToolApp 状态保持": "继续保留，属于页面状态契约",
+        "Beta 实验扩展": "继续保留，仅在 Beta 实验室路由生效",
     }
     for category in sorted(category_counts, key=lambda item: CATEGORY_ORDER[item]):
         lines.append("|%s|%d|%s|" % (category, category_counts[category], category_decisions[category]))
