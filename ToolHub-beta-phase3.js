@@ -2,7 +2,7 @@
 // Loads verified Phase 2, then the verified isolated IME/Focus lab.
 // Rhino ES5 / ShortX.
 (function () {
-  var SNAPSHOT = "ca967369e23b4a196f1094b6203a1847b4be4e75";
+  var SNAPSHOT = "aa665b4174795738b5411b4f47d0c4d6245d0e73";
   var FILES = [
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/ToolHub-beta-phase2.js",
@@ -15,6 +15,12 @@
       sha256: "b9de7a3394e99d7d97e748ba93eea9305f69b9c428fd7790de7df2e36cd63aa8",
       maxBytes: 65536,
       name: "ime-focus-lab"
+    },
+    {
+      url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/phase3/ime_focus_rearm_patch.js",
+      sha256: "2ac82a9ac19dfa0b95c7813b86d523e28eb62366e4fe3f104bc6d4491192e86c",
+      maxBytes: 32768,
+      name: "ime-focus-rearm-patch"
     }
   ];
 
@@ -75,10 +81,13 @@
   var baseResult = globalEval(String(phase2Text));
   var imeText = downloadVerified(FILES[1]);
   globalEval(String(imeText));
+  var rearmText = downloadVerified(FILES[2]);
+  globalEval(String(rearmText));
 
   try {
     if (typeof ToolHubBetaPhase3 === "undefined" ||
-        String(ToolHubBetaPhase3.VERSION || "") !== "0.4.0-beta-ime") {
+        String(ToolHubBetaPhase3.VERSION || "") !== "0.4.0-beta-ime" ||
+        String(ToolHubBetaPhase3.PATCH_VERSION || "") !== "0.4.1-beta-ime-rearm") {
       throw "ShortXUI IME phase3 install verification failed";
     }
     writeLog("ToolHub Beta phase3 entry ready version=" + String(ToolHubBetaPhase3.VERSION));
