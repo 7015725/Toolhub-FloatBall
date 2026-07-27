@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "355824b2593b1c537bd423183579a32d850ecfce65f5e8684dc161b16ce36f13",
+      "sha256": "151a79811e205ce6c08c809ad6ee88b9814445d0de5bdde9e59f6522248132a5",
       "size": 70104,
-      "version": 20260727064755
+      "version": 20260727065120
     }
   },
   "branch": "beta",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "ca3c03a1f7931012f65503be8d0d7f7510c3cc305bd5f93b475cf3a0a366b811",
-    "size": 100049,
-    "version": 20260727234500,
+    "sha256": "7c20204c63e7ac6699f8067a7710c8c05a2147c3d7cbe313e887ee44857bd981",
+    "size": 100712,
+    "version": 20260728000100,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -187,5 +187,5 @@
     "title": "修复 Beta 入口跨通道模块清单自检"
   },
   "schema": 5,
-  "version": 20260727064755
+  "version": 20260727065120
 }

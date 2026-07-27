@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "historyVersion": 20260727064755,
-  "generatedAt": "2026-07-27T14:47:55+08:00",
+  "historyVersion": 20260727065120,
+  "generatedAt": "2026-07-27T14:51:20+08:00",
   "records": [
     {
       "schema": 1,
       "id": "20260727-beta-entry-channel-module-filter",
-      "manifestVersion": 20260727064755,
+      "manifestVersion": 20260727065120,
       "type": "fix",
       "title": "修复 Beta 入口跨通道模块清单自检",
       "details": [
@@ -74,7 +74,7 @@
       "entry": {
         "changed": true,
         "from": 20260721201500,
-        "to": 20260727234500
+        "to": 20260728000100
       }
     },
     {
