@@ -38,6 +38,7 @@ docs/audits/docs/audits/docs/audits/MODULE_SYMBOL_AUDIT.md
 - Schema 使用递归关系节点保存数组、对象和选项。
 - 旧 JSON 文档表和配置文件会在迁移成功后删除。
 - ToolApp 设置页支持手机、横屏和平板宽屏布局。
+- Beta 通道内置隔离的 ShortXUI 第一阶段实验：`th_24_shortx_ui_runtime.js` 提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics；`th_34_shortx_ui_lab.js` 只增加实验室页面，默认不替换正式 UI。
 - 主按钮面板采用可配置自适应网格：宽度占比只用于确定列数预算，网格根据卡片尺寸、精确间距和可视行数计算，面板与 WindowManager 使用同一精确宽高，避免右侧额外空白。
 - 主面板支持实时运行状态、拖动排序、分页吸附、新增和编辑按钮直接保存、单页隐藏分页圆点和关闭闪烁；默认背景透明度为 0.92。
 - 支持按钮搜索、筛选、启停、排序和编辑。
@@ -102,6 +103,7 @@ shortx.getShortXDir()/
     ├── code/
     │   ├── th_01_base.js
     │   ├── th_02_core.js
+    │   ├── th_24_shortx_ui_runtime.js
     │   ├── th_03_icon.js
     │   ├── th_04_theme.js
     │   ├── th_05_persistence.js
@@ -120,6 +122,7 @@ shortx.getShortXDir()/
     │   ├── th_14_icon_picker.js
     │   ├── th_14_schema_editor.js
     │   ├── th_15_extra.js
+    │   ├── th_34_shortx_ui_lab.js
     │   ├── th_15_main_panel.js
     │   ├── th_16_entry.js
     │   ├── th_17_pointer.js

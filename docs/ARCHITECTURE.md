@@ -1,8 +1,8 @@
 # ToolHub 技术架构
 
-更新时间：2026-07-20
+更新时间：2026-07-27
 
-本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **29 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载，拾字截图查看与生命周期由 `th_22_image_viewer.js` 承载，截图管理列表由 `th_23_screenshot_manager.js` 承载。
+本文基于当前 `beta` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **31 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载，拾字截图查看与生命周期由 `th_22_image_viewer.js` 承载，截图管理列表由 `th_23_screenshot_manager.js` 承载。
 - 主面板尺寸遵循“网格决定面板宽高”：`gridWidth = cols × cellOuterWidth`，`panelWidth = gridWidth + 2 × panelPadding`；完整网格高度、可视高度和页脚共同反推面板高度，WindowManager 使用相同的 `EXACTLY` 宽高。
 
 ---
@@ -25,7 +25,7 @@ ShortX JS 任务入口
 - `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
 - `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
 - `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
-- `code/th_*.js`：入口按顺序加载的子模块，当前为 29 个。
+- `code/th_*.js`：入口按顺序加载的子模块，当前为 31 个。
 
 ---
 
@@ -94,12 +94,13 @@ ballRoot / ballContent Touch
 
 ## 3. 模块分层
 
-当前实际加载 29 个子模块，入口 `modules[]` 顺序如下：
+当前实际加载 31 个子模块，入口 `modules[]` 顺序如下：
 
 ```text
 基础能力层
   th_01_base.js
   th_02_core.js
+  th_24_shortx_ui_runtime.js
   th_03_icon.js
   th_04_theme.js
   th_05_persistence.js
@@ -122,6 +123,7 @@ UI 基础与页面层
   th_14_icon_picker.js
   th_14_schema_editor.js
   th_15_extra.js
+  th_34_shortx_ui_lab.js
   th_15_main_panel.js
 
 生命周期入口层
@@ -149,6 +151,9 @@ th_01_base.js
 
 th_02_core.js
   完全结构化 SQLite、旧配置迁移、防抖并发写入，以及 FloatBallAppWM 核心状态和基础方法。
+
+th_24_shortx_ui_runtime.js
+  Beta 隔离的 ShortXUI 第一阶段基础运行时，提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics；颜色操作通过已验证的 ToolHub 安全桥注入，不接管正式 UI。
 
 th_03_icon.js
   图标加载、图标缓存、Drawable / Bitmap 处理、悬浮球图标解析。
@@ -204,6 +209,9 @@ th_14_schema_editor.js
 
 th_15_extra.js
   查看器面板、通用面板定位与显示、ToolApp Shell、页面栈、响应式布局、左右滑返回预览。
+
+th_34_shortx_ui_lab.js
+  Beta 专用 ShortX UI 实验室 ToolApp 页面，提供基础环境、颜色、Shape 与 Android Main/ToolHub WM Dispatcher 自检；实验异常不替换悬浮球、主面板、WindowManager、IME、Canvas、指针或 OCR 路径。
 
 th_15_main_panel.js
   主按钮面板顶部工具栏、可配置自适应网格、安全区域避让、分页吸附与圆点导航、方向展开/退出动画、实时运行状态和显式编辑模式拖动排序。
