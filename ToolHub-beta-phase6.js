@@ -2,7 +2,7 @@
 // Loads verified Phase 5, then the verified guarded DEX/reflection bridge lab.
 // Rhino ES5 / ShortX.
 (function () {
-  var ENTRY_VERSION = "0.7.1-phase6-entry-r3";
+  var ENTRY_VERSION = "0.7.2-phase6-entry-r4";
   var SNAPSHOT = "3bc92a4254f34a559246a7fed08713bf9e5c81b1";
   var FILES = [
     {
@@ -78,6 +78,26 @@
 
   var dexText = downloadVerified(FILES[1]);
   try { writeLog("ToolHub Beta phase6 DEX bridge payload verified"); } catch (eDexVerifyLog) {}
+
+  var oldVersionMarker = 'VERSION:"0.7.1-beta-dex-payload"';
+  var newVersionMarker = 'VERSION:"0.7.2-beta-dex-digest"';
+  var oldDigestCall = "md.update(bytes);";
+  var newDigestCall = "md.update(bytes,0,bytes.length);";
+  if (String(dexText).indexOf(oldVersionMarker) < 0) {
+    throw "DEX bridge version patch marker missing";
+  }
+  if (String(dexText).indexOf(oldDigestCall) < 0) {
+    throw "DEX bridge digest patch marker missing";
+  }
+  dexText = String(dexText).replace(oldVersionMarker, newVersionMarker);
+  dexText = String(dexText).replace(oldDigestCall, newDigestCall);
+  if (String(dexText).indexOf(oldVersionMarker) >= 0 ||
+      String(dexText).indexOf(oldDigestCall) >= 0) {
+    throw "DEX bridge controlled patch incomplete";
+  }
+  try {
+    writeLog("ToolHub Beta phase6 digest overload patch applied version=0.7.2-beta-dex-digest");
+  } catch (eDexPatchLog) {}
   globalEval(String(dexText));
 
   try {
@@ -86,7 +106,7 @@
       throw "ShortXUI Canvas phase5 baseline verification failed";
     }
     if (typeof ToolHubBetaPhase6 === "undefined" ||
-        String(ToolHubBetaPhase6.VERSION || "") !== "0.7.1-beta-dex-payload") {
+        String(ToolHubBetaPhase6.VERSION || "") !== "0.7.2-beta-dex-digest") {
       throw "ShortXUI DEX bridge phase6 install verification failed";
     }
     writeLog(
