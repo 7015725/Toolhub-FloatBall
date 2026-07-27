@@ -2,6 +2,7 @@
 // Loads verified Phase 3, then the verified isolated Gesture/Back lab.
 // Rhino ES5 / ShortX.
 (function () {
+  var ENTRY_VERSION = "0.5.0-phase4-entry-r2";
   var SNAPSHOT = "b3cde8fa7b86a1fc0d382eab073eb9e47381db20";
   var FILES = [
     {
@@ -73,7 +74,9 @@
   var globalEval = eval;
   var phase3Text = downloadVerified(FILES[0]);
   var baseResult = globalEval(String(phase3Text));
+  try { writeLog("ToolHub Beta phase4 bootstrap reached entry=" + ENTRY_VERSION); } catch (ePhase3Log) {}
   var gestureText = downloadVerified(FILES[1]);
+  try { writeLog("ToolHub Beta phase4 gesture payload verified"); } catch (eGestureVerifyLog) {}
   globalEval(String(gestureText));
 
   try {
@@ -81,7 +84,7 @@
         String(ToolHubBetaPhase4.VERSION || "") !== "0.5.0-beta-gesture") {
       throw "ShortXUI Gesture phase4 install verification failed";
     }
-    writeLog("ToolHub Beta phase4 entry ready version=" + String(ToolHubBetaPhase4.VERSION));
+    writeLog("ToolHub Beta phase4 entry ready version=" + String(ToolHubBetaPhase4.VERSION) + " entry=" + ENTRY_VERSION);
   } catch (eVerify) {
     throw "ToolHub Beta phase4 bootstrap failed: " + String(eVerify);
   }
