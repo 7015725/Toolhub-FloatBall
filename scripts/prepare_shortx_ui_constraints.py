@@ -11,6 +11,7 @@ BOUNDARIES = ROOT / "constraints" / "MODULE_BOUNDARIES.json"
 API_RULES = ROOT / "constraints" / "api.json"
 API_BASELINE = ROOT / "constraints" / "API_USAGE_BASELINE.json"
 SCANNER = ROOT / "scripts" / "report_api_usage.py"
+PROTECTED_REPORTER = ROOT / "scripts" / "report_protected_wrapper_chains.py"
 PHASE_FILES = {
     "code/th_24_shortx_ui_runtime.js",
     "code/th_34_shortx_ui_lab.js",
@@ -97,16 +98,17 @@ def patch_runtime_scanner_aliases():
 
 
 def wrapper_record(method, old_variable, reason):
+    owner = "th_14_panels.js" if method == "getSettingsHomeCategoryDefs" else "th_15_extra.js"
     return {
         "method": method,
-        "definitions": ["th_15_extra.js" if method != "getSettingsHomeCategoryDefs" else "th_14_panels.js", "th_34_shortx_ui_lab.js"],
+        "definitions": [owner, "th_34_shortx_ui_lab.js"],
         "effectiveOwner": "th_34_shortx_ui_lab.js",
         "type": "wrapper",
         "reason": reason,
         "wrappers": [
             {
                 "module": "th_34_shortx_ui_lab.js",
-                "owner": "th_15_extra.js" if method != "getSettingsHomeCategoryDefs" else "th_14_panels.js",
+                "owner": owner,
                 "oldVariable": old_variable,
             }
         ],
@@ -138,6 +140,58 @@ def patch_boundaries():
     kept.extend(additions[key] for key in sorted(additions))
     data["duplicateDefinitions"] = kept
     return write_json(BOUNDARIES, data)
+
+
+def patch_protected_reporter():
+    text = PROTECTED_REPORTER.read_text(encoding="utf-8")
+    original = text
+    if '    "Beta 实验扩展": 5,' not in text:
+        anchor = '    "ToolApp 状态保持": 4,\n'
+        if anchor not in text:
+            raise SystemExit("protected wrapper category anchor missing")
+        text = text.replace(anchor, anchor + '    "Beta 实验扩展": 5,\n', 1)
+
+    if '    "buildPanelView": (' not in text:
+        entries = '''    "buildPanelView": (
+        "Beta 实验扩展",
+        "继续保留",
+        "仅为 ShortX UI 实验室路由返回独立页面，其他面板完整委托原构建器。",
+    ),
+    "getSettingsHomeCategoryDefs": (
+        "Beta 实验扩展",
+        "继续保留",
+        "只在原设置分类结果中追加 Beta 实验入口，不替换既有分类。",
+    ),
+    "getToolAppTitle": (
+        "Beta 实验扩展",
+        "继续保留",
+        "只补充实验室标题，其他 ToolApp 路由继续委托原实现。",
+    ),
+    "isToolAppRoute": (
+        "Beta 实验扩展",
+        "继续保留",
+        "只登记实验室路由，其他路由识别继续委托原实现。",
+    ),
+'''
+        marker = "}\n\n\ndef fail(message):"
+        if marker not in text:
+            raise SystemExit("protected wrapper classification anchor missing")
+        text = text.replace(marker, entries + "}\n\n\ndef fail(message):", 1)
+
+    if '        "Beta 实验扩展": "继续保留，仅在 Beta 实验室路由生效",' not in text:
+        anchor = '        "ToolApp 状态保持": "继续保留，属于页面状态契约",\n'
+        if anchor not in text:
+            raise SystemExit("protected wrapper decision anchor missing")
+        text = text.replace(
+            anchor,
+            anchor + '        "Beta 实验扩展": "继续保留，仅在 Beta 实验室路由生效",\n',
+            1,
+        )
+
+    if text == original:
+        return False
+    PROTECTED_REPORTER.write_text(text, encoding="utf-8")
+    return True
 
 
 def load_scanner():
@@ -196,10 +250,11 @@ def patch_api_constraints():
 def main():
     runtime_changed = patch_runtime_scanner_aliases()
     boundaries_changed = patch_boundaries()
+    reporter_changed = patch_protected_reporter()
     api_changed = patch_api_constraints()
     print(
-        "ShortXUI constraints prepared runtime=%s boundaries=%s api=%s"
-        % (runtime_changed, boundaries_changed, api_changed)
+        "ShortXUI constraints prepared runtime=%s boundaries=%s reporter=%s api=%s"
+        % (runtime_changed, boundaries_changed, reporter_changed, api_changed)
     )
 
 
