@@ -28,13 +28,13 @@ jobs:
 
       - name: Build source snapshot
         shell: bash
-        run: tar --exclude=.git --exclude=shortx-ui-windowhost-source.tar.gz -czf shortx-ui-windowhost-source.tar.gz .
+        run: tar --exclude=.git -C "$GITHUB_WORKSPACE" -czf /tmp/shortx-ui-windowhost-source.tar.gz .
 
       - name: Upload source snapshot
         uses: actions/upload-artifact@v4
         with:
           name: shortx-ui-windowhost-source
-          path: shortx-ui-windowhost-source.tar.gz
+          path: /tmp/shortx-ui-windowhost-source.tar.gz
           if-no-files-found: error
           retention-days: 7
 
