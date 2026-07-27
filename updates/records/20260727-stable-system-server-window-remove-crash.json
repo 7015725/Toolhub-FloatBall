@@ -10,5 +10,25 @@
     "ToolApp 创建失败时回投 WindowManager HandlerThread 清理无所有者遮罩，避免透明遮罩残留和触摸阻塞。",
     "Stable 正式发布保持 ToolHub.js 入口版本和 Stable/main 更新源不变，仅更新运行模块、验证器、审计及独立签名发布产物。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260727013657,
+  "date": "2026-07-27",
+  "modules": [
+    {
+      "name": "th_09_animation.js",
+      "from": "1.0.12",
+      "to": "1.0.13",
+      "change": "updated"
+    },
+    {
+      "name": "th_16_entry.js",
+      "from": "1.0.17",
+      "to": "1.0.18",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260721201500,
+    "to": 20260721201500
+  }
 }

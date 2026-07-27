@@ -1,8 +1,42 @@
 {
   "schema": 1,
-  "historyVersion": 20260721062327,
-  "generatedAt": "2026-07-21T14:23:27+08:00",
+  "historyVersion": 20260727013657,
+  "generatedAt": "2026-07-27T09:36:57+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260727-stable-system-server-window-remove-crash",
+      "type": "fix",
+      "title": "修复 WindowManager 同步移除导致的 system_server 重启",
+      "details": [
+        "主面板和共享遮罩保留 INVISIBLE、alpha=0、返回回调注销及 generation/identity 保护，但统一改为普通 removeView，让 ViewRoot 和 Surface 销毁跨越当前 Rhino 点击消息边界。",
+        "主面板关闭后的遮罩清理由同一 WindowManager HandlerThread 延后一轮执行；检测到 ToolApp UI generation 已变化时复用原遮罩，避免设置切页中的 remove/add 竞态。",
+        "ToolApp 在 Android 主线程关闭时先隐藏、清除焦点和输入法，再使用普通 removeView；删除全局关闭和异常回退中的 removeViewImmediate。",
+        "ToolApp 创建失败时回投 WindowManager HandlerThread 清理无所有者遮罩，避免透明遮罩残留和触摸阻塞。",
+        "Stable 正式发布保持 ToolHub.js 入口版本和 Stable/main 更新源不变，仅更新运行模块、验证器、审计及独立签名发布产物。"
+      ],
+      "manifestVersion": 20260727013657,
+      "date": "2026-07-27",
+      "modules": [
+        {
+          "name": "th_09_animation.js",
+          "from": "1.0.12",
+          "to": "1.0.13",
+          "change": "updated"
+        },
+        {
+          "name": "th_16_entry.js",
+          "from": "1.0.17",
+          "to": "1.0.18",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260721201500,
+        "to": 20260721201500
+      }
+    },
     {
       "schema": 1,
       "id": "20260721-channel-health-diagnostics",
