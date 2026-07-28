@@ -1,0 +1,65 @@
+name: finalize-shortx-ui-runtime
+
+on:
+  push:
+    branches: [agent/finalize-shortx-ui-runtime]
+    paths:
+      - scripts/finalize_shortx_ui_runtime.py
+      - updates/records/20260728-beta-shortx-ui-final-package.json
+      - .github/workflows/finalize-shortx-ui-runtime.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-shortx-ui-runtime
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout closure branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/finalize-shortx-ui-runtime
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate final package and integration changes
+        run: |
+          python3 scripts/finalize_shortx_ui_runtime.py
+          python3 scripts/generate_api_usage_baseline.py
+          python3 scripts/report_dead_module_symbols.py --write docs/audits/DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write docs/audits/PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_module_symbol_audits.py --write docs/audits/MODULE_SYMBOL_AUDIT.md
+          python3 scripts/report_entry_symbols.py --write docs/audits/ENTRY_SYMBOL_AUDIT.md
+
+      - name: Verify generated closure
+        run: |
+          python3 scripts/finalize_shortx_ui_runtime.py --check
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_api_usage_policy.py
+          python3 scripts/verify_documentation_consistency.py
+          git diff --check
+
+      - name: Commit generated closure
+        shell: bash
+        run: |
+          rm -f .github/workflows/finalize-shortx-ui-runtime.yml
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No generated changes"
+            exit 0
+          fi
+          git config user.name "toolhub-automation"
+          git config user.email "toolhub-automation@users.noreply.github.com"
+          git add -A
+          git commit -m "封装 ShortXUI 最终 R3 运行时"
+          git push origin HEAD:agent/finalize-shortx-ui-runtime
