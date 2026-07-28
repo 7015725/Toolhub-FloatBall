@@ -398,6 +398,14 @@ def patch_protected_reporter(text: str) -> str:
             '    ),\n'
         )
         text = replace_once(text, anchor, addition, "protected startAsync classification")
+    if '        "ShortXUI 最终封装": "继续保留，属于验收封装与失败回滚边界",' not in text:
+        text = replace_once(
+            text,
+            '        "Beta 实验扩展": "继续保留，仅在 Beta 实验室路由生效",\n',
+            '        "Beta 实验扩展": "继续保留，仅在 Beta 实验室路由生效",\n'
+            '        "ShortXUI 最终封装": "继续保留，属于验收封装与失败回滚边界",\n',
+            "protected category decision",
+        )
     return text
 
 
