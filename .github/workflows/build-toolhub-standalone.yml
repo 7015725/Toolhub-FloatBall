@@ -81,6 +81,19 @@ jobs:
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
 
+      - name: Write checksum
+        run: sha256sum ToolHub-Beta-Standalone.js > ToolHub-Beta-Standalone.js.sha256
+
+      - name: Upload standalone artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ToolHub-Beta-Standalone-20260728.1
+          path: |
+            ToolHub-Beta-Standalone.js
+            ToolHub-Beta-Standalone.js.sha256
+          if-no-files-found: error
+          compression-level: 0
+
       - name: Check whitespace
         run: git diff --check
 
