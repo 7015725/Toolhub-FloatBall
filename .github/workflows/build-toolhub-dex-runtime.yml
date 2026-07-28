@@ -112,8 +112,13 @@ jobs:
             zip -q -0 -r "$OUT/ToolHubRuntime-0.9.2-beta-dex-1.jar" .
           )
           cp runtime-dex/ToolHubRuntimeLoader.js "$OUT/ToolHubRuntimeLoader.js"
-          sha256sum "$OUT/ToolHubRuntime-0.9.2-beta-dex-1.jar" > "$OUT/ToolHubRuntime-0.9.2-beta-dex-1.jar.sha256"
-          sha256sum "$OUT/ToolHubRuntimeLoader.js" > "$OUT/ToolHubRuntimeLoader.js.sha256"
+          cp runtime-dex/ToolHubRuntimeCall.js "$OUT/ToolHubRuntimeCall.js"
+          (
+            cd "$OUT"
+            sha256sum ToolHubRuntime-0.9.2-beta-dex-1.jar > ToolHubRuntime-0.9.2-beta-dex-1.jar.sha256
+            sha256sum ToolHubRuntimeLoader.js > ToolHubRuntimeLoader.js.sha256
+            sha256sum ToolHubRuntimeCall.js > ToolHubRuntimeCall.js.sha256
+          )
 
       - name: Build report
         shell: bash
@@ -129,6 +134,8 @@ jobs:
             echo "jarSha256=$(sha256sum "$JAR" | awk '{print $1}')"
             echo "loaderBytes=$(stat -c %s "$OUT/ToolHubRuntimeLoader.js")"
             echo "loaderSha256=$(sha256sum "$OUT/ToolHubRuntimeLoader.js" | awk '{print $1}')"
+            echo "callerBytes=$(stat -c %s "$OUT/ToolHubRuntimeCall.js")"
+            echo "callerSha256=$(sha256sum "$OUT/ToolHubRuntimeCall.js" | awk '{print $1}')"
             echo "runtimeBundleSha256=$(sha256sum ToolHub-Beta-Standalone.js | awk '{print $1}')"
           } | tee "$OUT/build-report.txt"
 
@@ -165,11 +172,22 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "DexClassLoader" runtime-dex/ToolHubRuntimeLoader.js
-          grep -q "com.xin.toolhub.runtime.ToolHubRuntime" runtime-dex/ToolHubRuntimeLoader.js
+          grep -q "toolhub.dex.runtime.class.v1" runtime-dex/ToolHubRuntimeLoader.js
+          grep -q "toolhub.dex.runtime.class.v1" runtime-dex/ToolHubRuntimeCall.js
           grep -q "function invoke" runtime-dex/resources/toolhub-dex-api.js
           node --check runtime-dex/ToolHubRuntimeLoader.js
+          node --check runtime-dex/ToolHubRuntimeCall.js
           node --check runtime-dex/resources/toolhub-dex-api.js
           python3 .github/scripts/es5_scan.py
+
+      - name: Verify distributable checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd runtime-dex/dist
+          sha256sum -c ToolHubRuntime-0.9.2-beta-dex-1.jar.sha256
+          sha256sum -c ToolHubRuntimeLoader.js.sha256
+          sha256sum -c ToolHubRuntimeCall.js.sha256
 
       - name: Upload DEX runtime artifact
         if: always()
