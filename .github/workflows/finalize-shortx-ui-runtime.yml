@@ -101,6 +101,19 @@ jobs:
               raise SystemExit("startAsync wrapper source anchor missing")
           text = text.replace(start_old, start_new, 1)
 
+          capture_old = '''  var currentStartAsync = proto.startAsync;
+            if (typeof currentStartAsync !== "function") throw "ShortXUI package requires startAsync";
+            if (currentStartAsync.__toolHubShortXUiPackageWrapped !== true) {
+              var oldStartAsyncShortXUiPackage = currentStartAsync;
+          '''
+          capture_new = '''  var oldStartAsyncShortXUiPackage = proto.startAsync;
+            if (typeof oldStartAsyncShortXUiPackage !== "function") throw "ShortXUI package requires startAsync";
+            if (oldStartAsyncShortXUiPackage.__toolHubShortXUiPackageWrapped !== true) {
+          '''
+          if capture_old not in text:
+              raise SystemExit("startAsync direct capture anchor missing")
+          text = text.replace(capture_old, capture_new, 1)
+
           architecture_old = '''def patch_architecture(text: str) -> str:
               text = text.replace("更新时间：2026-07-27", "更新时间：2026-07-28", 1)
               text = text.replace("31 个子模块", "32 个子模块")
