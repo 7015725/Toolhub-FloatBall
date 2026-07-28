@@ -120,7 +120,7 @@ jobs:
         run: python3 scripts/report_entry_symbols.py --write docs/audits/ENTRY_SYMBOL_AUDIT.md
 
       - name: Verify generated package
-        id: package-check
+        id: package_check
         continue-on-error: true
         shell: bash
         run: |
@@ -137,7 +137,7 @@ jobs:
           retention-days: 2
 
       - name: Stop on package drift
-        if: steps.package-check.outcome == 'failure'
+        if: steps.package_check.outcome == 'failure'
         run: exit 1
 
       - name: Verify generated closure
