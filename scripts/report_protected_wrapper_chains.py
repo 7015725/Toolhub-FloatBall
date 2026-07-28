@@ -19,6 +19,7 @@ CATEGORY_ORDER = {
     "指针布局与生命周期": 3,
     "ToolApp 状态保持": 4,
     "Beta 实验扩展": 5,
+    "ShortXUI 最终封装": 6,
 }
 
 CLASSIFICATIONS = {
@@ -91,6 +92,11 @@ CLASSIFICATIONS = {
         "Beta 实验扩展",
         "继续保留",
         "只登记实验室路由，其他路由识别继续委托原实现。",
+    ),
+    "startAsync": (
+        "ShortXUI 最终封装",
+        "继续保留",
+        "原启动成功后再安装已验收 R3 能力；封装失败会关闭实例并返回启动失败。",
     ),
 }
 
@@ -308,6 +314,7 @@ def render_report(rows):
         "指针布局与生命周期": "继续保留，属于资源和竞态保护",
         "ToolApp 状态保持": "继续保留，属于页面状态契约",
         "Beta 实验扩展": "继续保留，仅在 Beta 实验室路由生效",
+        "ShortXUI 最终封装": "继续保留，属于验收封装与失败回滚边界",
     }
     for category in sorted(category_counts, key=lambda item: CATEGORY_ORDER[item]):
         lines.append("|%s|%d|%s|" % (category, category_counts[category], category_decisions[category]))

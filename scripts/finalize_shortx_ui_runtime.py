@@ -271,11 +271,10 @@ __PAYLOAD_ROWS__
     }
   }
 
-  var currentStartAsync = proto.startAsync;
-  if (typeof currentStartAsync !== "function") throw "ShortXUI package requires startAsync";
-  if (currentStartAsync.__toolHubShortXUiPackageWrapped !== true) {
-    var oldStartAsyncShortXUiPackage = currentStartAsync;
-    var wrappedStartAsyncShortXUiPackage = function (entryInfo, closeRule) {
+  var oldStartAsyncShortXUiPackage = proto.startAsync;
+  if (typeof oldStartAsyncShortXUiPackage !== "function") throw "ShortXUI package requires startAsync";
+  if (oldStartAsyncShortXUiPackage.__toolHubShortXUiPackageWrapped !== true) {
+    proto.startAsync = function (entryInfo, closeRule) {
       var result = oldStartAsyncShortXUiPackage.call(this, entryInfo, closeRule);
       if (!result || result.ok !== true) return result;
       try {
@@ -296,8 +295,7 @@ __PAYLOAD_ROWS__
         };
       }
     };
-    wrappedStartAsyncShortXUiPackage.__toolHubShortXUiPackageWrapped = true;
-    proto.startAsync = wrappedStartAsyncShortXUiPackage;
+    proto.startAsync.__toolHubShortXUiPackageWrapped = true;
   }
 
   global.ToolHubShortXUiPackage = {
@@ -465,20 +463,19 @@ def patch_architecture(text: str) -> str:
         "  th_25_shortx_ui_package.js\n```"
     )
     text = replace_once(text, source, target, "architecture module list")
-    if "\nth_25_shortx_ui_package.js\n" not in text:
-        insertion_anchor = "th_23_screenshot_manager.js\n"
-        idx = text.find(insertion_anchor)
-        if idx < 0:
-            fail("architecture th_23 description missing")
-        end = text.find("\n\n", idx)
-        if end < 0:
-            fail("architecture th_23 paragraph terminator missing")
-        addition = (
-            "\n\nth_25_shortx_ui_package.js\n"
-            "  Beta 最终 ShortXUI 封装模块。保存 Phase 2 至 Final R3 的确定性压缩源码和逐项 SHA-256，"
-            "仅在 `startAsync()` 成功后按已验收顺序安装；安装失败立即关闭当前实例并返回启动失败。"
-        )
-        text = text[:end] + addition + text[end:]
+    responsibility_source = (
+        "th_24_shortx_ui_runtime.js\n"
+        "  Beta 隔离的 ShortXUI 第一阶段基础运行时，提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics；颜色操作通过已验证的 ToolHub 安全桥注入，不接管正式 UI。\n\n"
+        "th_03_icon.js"
+    )
+    responsibility_target = (
+        "th_24_shortx_ui_runtime.js\n"
+        "  Beta 隔离的 ShortXUI 第一阶段基础运行时，提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics；颜色操作通过已验证的 ToolHub 安全桥注入，不接管正式 UI。\n\n"
+        "th_25_shortx_ui_package.js\n"
+        "  Beta 最终 ShortXUI 封装模块。保存 Phase 2 至 Final R3 的确定性压缩源码和逐项 SHA-256，仅在 `startAsync()` 成功后按已验收顺序安装；安装失败立即关闭当前实例并返回启动失败。\n\n"
+        "th_03_icon.js"
+    )
+    text = replace_once(text, responsibility_source, responsibility_target, "architecture package responsibility")
     boundary = (
         "th_34_shortx_ui_lab.js\n"
         "  Beta 专用 ShortX UI 实验室 ToolApp 页面，提供基础环境、颜色、Shape 与 Android Main/ToolHub WM Dispatcher 自检；"
@@ -498,6 +495,7 @@ def patch_architecture(text: str) -> str:
 def patch_structure(text: str) -> str:
     text = text.replace("更新时间：2026-07-27", "更新时间：2026-07-28", 1)
     text = text.replace("31 个子模块", "32 个子模块")
+    text = text.replace("files: 31 个模块", "files: 32 个模块")
     source = "│   └── th_23_screenshot_manager.js"
     target = "│   ├── th_23_screenshot_manager.js\n│   └── th_25_shortx_ui_package.js"
     text = replace_once(text, source, target, "structure tree")

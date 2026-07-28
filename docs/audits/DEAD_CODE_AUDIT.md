@@ -9,12 +9,12 @@
 
 ## 扫描摘要
 
-- 加载模块：`31`
-- 原型方法定义：`524`
+- 加载模块：`32`
+- 原型方法定义：`525`
 - 唯一原型方法：`510`
-- 已登记重复方法：`14`
+- 已登记重复方法：`15`
 - 最终覆盖型候选节点：`0`
-- 受保护覆盖/包装链：`14`
+- 受保护覆盖/包装链：`15`
 - 第一批清理候选：`0`
 
 ## 候选节点
@@ -42,12 +42,13 @@
 |`resetPointerToolState`|`wrapper`|`th_19_position_state.js`|重置指针时同步重建语义调度会话|
 |`scheduleDraggingInspect`|`wrapper`|`th_18_pointer_ocr.js`|限制拖动期间无障碍扫描频率|
 |`showPointerAreaFrame`|`wrapper`|`th_18_pointer_ocr.js`|增加指针边框刷新节流和状态颜色|
+|`startAsync`|`wrapper`|`th_25_shortx_ui_package.js`|在悬浮球启动成功后安装经真机验收的 ShortXUI 最终 R3 封装，保持原测试时序并将失败回传为启动失败|
 |`startPointerTool`|`wrapper`|`th_18_pointer_ocr.js`|启动新指针前取消旧 OCR 并支持 area_ocr 模式|
 
 ## 建议顺序
 
 1. 后续覆盖候选、Shell 诊断和设置类型包装收敛已完成。
-2. 当前剩余 14 条受保护包装链均承担明确功能或生命周期职责。
+2. 当前剩余 15 条受保护包装链均承担明确功能或生命周期职责。
 3. 后续只在新增重复定义、失效包装或明确回归证据时重新开启专项审查。
 
 ## 使用方式

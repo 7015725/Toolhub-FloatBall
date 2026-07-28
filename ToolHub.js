@@ -4,7 +4,7 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260728000100; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260728160000; // 入口文件版本，仅在 ToolHub.js 变化时提升
 
 var TOOLHUB_CHANNEL_SPECS = {
     stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
@@ -1671,14 +1671,14 @@ var modules = ["th_01_base.js", "th_02_core.js", "th_24_shortx_ui_runtime.js", "
                "th_06_icon_parser.js", "th_08_content.js", "th_09_animation.js",
                "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
                "th_14_panels.js", "th_14_button_shortcut.js", "th_14_button_icon_editor.js", "th_14_button_editor.js",
-               "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_34_shortx_ui_lab.js", "th_15_main_panel.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_23_screenshot_manager.js"];
+               "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_34_shortx_ui_lab.js", "th_15_main_panel.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_23_screenshot_manager.js", "th_25_shortx_ui_package.js"];
 // Beta 入口文件也允许当前活动通道仍为 Stable。此时必须使用 Stable 模块集合，
 // 不能拿 Beta 专用实验模块去对照 main/manifest.json。
 if (TOOLHUB_UPDATE_CHANNEL !== "beta") {
     var __toolHubChannelModules = [];
     for (var __toolHubModuleIndex = 0; __toolHubModuleIndex < modules.length; __toolHubModuleIndex++) {
         var __toolHubModuleName = String(modules[__toolHubModuleIndex]);
-        if (__toolHubModuleName === "th_24_shortx_ui_runtime.js" || __toolHubModuleName === "th_34_shortx_ui_lab.js") continue;
+        if (__toolHubModuleName === "th_24_shortx_ui_runtime.js" || __toolHubModuleName === "th_34_shortx_ui_lab.js" || __toolHubModuleName === "th_25_shortx_ui_package.js") continue;
         __toolHubChannelModules.push(__toolHubModuleName);
     }
     modules = __toolHubChannelModules;
@@ -1687,6 +1687,7 @@ var __moduleUpdates = [];
 var __pendingModuleUpdates = [];
 var loadErrors = [];
 var criticalModules = { "th_01_base.js": true, "th_02_core.js": true, "th_05_persistence.js": true, "th_16_entry.js": true, "th_19_position_state.js": true };
+if (TOOLHUB_UPDATE_CHANNEL === "beta") criticalModules["th_25_shortx_ui_package.js"] = true;
 recoverPendingModuleTransaction();
 fetchTrustedManifest();
 

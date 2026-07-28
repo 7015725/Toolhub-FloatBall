@@ -1,6 +1,6 @@
 # ToolHub-FloatBall 整体结构说明
 
-更新时间：2026-07-27
+更新时间：2026-07-28
 
 本文档用于整理 `7015725/Toolhub-FloatBall` 当前代码结构、启动链路、模块职责和主要状态流。项目运行环境为 **ShortX / Rhino ES5 JavaScript**，入口文件负责安全更新和模块加载，核心业务集中挂载到 `FloatBallAppWM.prototype`。
 
@@ -72,7 +72,8 @@ Toolhub-FloatBall/
 │   ├── th_20_pickword.js
 │   ├── th_21_result_preview.js
 │   ├── th_22_image_viewer.js
-│   └── th_23_screenshot_manager.js
+│   ├── th_23_screenshot_manager.js
+│   └── th_25_shortx_ui_package.js
 └── scripts/
     ├── generate_signed_manifest.py
     ├── verify_module_versions.py
@@ -82,8 +83,8 @@ Toolhub-FloatBall/
     └── ... 其他专项回归脚本
 ```
 
-当前实际加载 **31 个子模块**。
-Beta 第一阶段额外加载 `th_24_shortx_ui_runtime.js` 与 `th_34_shortx_ui_lab.js`。两者运行在 `ToolHub-Beta` 隔离根目录，实验诊断写入 `diagnostics/shortx-ui/`；Stable 和 ClipHub 不读取这些实验状态。
+当前实际加载 **32 个子模块**。
+Beta 通道额外加载 `th_24_shortx_ui_runtime.js`、`th_34_shortx_ui_lab.js` 与 `th_25_shortx_ui_package.js`。前两者提供基础运行时和诊断入口，最终封装模块在 `startAsync()` 成功后安装 Phase 2 至 Final R3 的已验收能力；全部状态位于 `ToolHub-Beta` 隔离根目录，Stable 和 ClipHub 不读取这些实验状态。
 `th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
 
 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而保留的历史编号；本仓库延续现有文件名，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
@@ -161,6 +162,7 @@ shortx.getShortXDir()/ToolHub/
 │   ├── th_21_result_preview.js
 │   ├── th_22_image_viewer.js
 │   ├── th_23_screenshot_manager.js
+│   ├── th_25_shortx_ui_package.js
 │   ├── .installed_manifest.json
 │   ├── .trusted_manifest_version
 │   └── .trusted_sha_<module>
@@ -223,6 +225,7 @@ th_19_position_state.js
 | `th_01_base.js` | 基础工具、配置校验、路径常量、文件 IO、原子写、防抖写、日志基础、默认配置与设置 schema、旧 schema 自动刷新 |
 | `th_02_core.js` | 完全结构化 SQLite、旧配置迁移、防抖并发写入、核心 state 与基础方法 |
 | `th_24_shortx_ui_runtime.js` | Beta 隔离的 ShortXUI 第一阶段运行时：Core、Dispatcher、Scope、Color、Metrics、Display、Shape、Diagnostics；颜色写入只通过注入的安全桥 |
+| `th_25_shortx_ui_package.js` | Beta 最终 ShortXUI 封装：启动成功后按真机验收顺序安装 Phase 2 至 Final R3，逐项校验压缩源码 SHA-256，失败时关闭实例并返回启动失败 |
 | `th_03_icon.js` | 图标加载、图标缓存、Drawable / Bitmap 处理、悬浮球图标解析 |
 | `th_04_theme.js` | 屏幕尺寸、旋转、Toast、振动、动物岛主题、Monet 颜色、Drawable 工具 |
 | `th_05_persistence.js` | 悬浮球位置保存、设置保存、临时编辑缓存、实时预览刷新 |
@@ -580,7 +583,7 @@ version: 以当前 manifest.json 为准
 alg: SHA256withRSA
 keyId: toolhub-targets-20260703-rsa3072
 entry: ToolHub.js 入口版本、哈希、大小和手动更新标记
-files: 31 个模块
+files: 32 个模块
 assets.updateHistory: 更新历史名称、schema、版本、哈希和大小
 release: 结构化记录生成的标题、日期和 changes
 ```
