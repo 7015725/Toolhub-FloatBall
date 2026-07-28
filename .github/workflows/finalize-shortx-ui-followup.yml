@@ -56,22 +56,22 @@ jobs:
           from pathlib import Path
           path = Path(".github/workflows/sign-toolhub.yml")
           text = path.read_text(encoding="utf-8")
-          anchor = '''      - name: Guard branch
-          '''
-          insertion = '''      - name: Detect generated signing commit
-                id: generated-signing-commit
-                shell: bash
-                run: |
-                  subject="$(git log -1 --pretty=%s)"
-                  generated=false
-                  case "$subject" in
-                    生成签名产物：*) generated=true ;;
-                  esac
-                  echo "generated=$generated" >> "$GITHUB_OUTPUT"
-                  echo "generated signing commit=$generated subject=$subject"
-
-              - name: Guard branch
-          '''
+          anchor = "      - name: Guard branch\n"
+          insertion = (
+              "      - name: Detect generated signing commit\n"
+              "        id: generated-signing-commit\n"
+              "        shell: bash\n"
+              "        run: |\n"
+              "          subject=\"$(git log -1 --pretty=%s)\"\n"
+              "          generated=false\n"
+              "          case \"$subject\" in\n"
+              "            生成签名产物：*) generated=true ;;\n"
+              "          esac\n"
+              "          echo \"generated=$generated\" >> \"$GITHUB_OUTPUT\"\n"
+              "          echo \"generated signing commit=$generated subject=$subject\"\n"
+              "\n"
+              "      - name: Guard branch\n"
+          )
           if "      - name: Detect generated signing commit\n" not in text:
               if anchor not in text:
                   raise SystemExit("sign workflow guard anchor missing")
