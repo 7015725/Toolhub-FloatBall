@@ -48,6 +48,18 @@ jobs:
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
           persist-credentials: false
 
+      - name: Detect generated signing commit
+        id: generated_signing_commit
+        shell: bash
+        run: |
+          subject="$(git log -1 --pretty=%s)"
+          generated=false
+          case "$subject" in
+            生成签名产物：*) generated=true ;;
+          esac
+          echo "generated=$generated" >> "$GITHUB_OUTPUT"
+          echo "generated signing commit=$generated subject=$subject"
+
       - name: Guard branch
         shell: bash
         run: |
@@ -118,12 +130,12 @@ jobs:
           echo "current=$current" >> "$GITHUB_OUTPUT"
 
       - name: Verify pending release record
-        if: steps.current-generated.outputs.current != 'true'
+        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true'
         shell: bash
         run: python3 scripts/verify_update_history.py --require-one-pending
 
       - name: Generate signed manifest
-        if: steps.current-generated.outputs.current != 'true'
+        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true'
         shell: bash
         run: |
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
@@ -211,7 +223,7 @@ jobs:
         run: git diff --check
 
       - name: Commit generated artifacts
-        if: steps.current-generated.outputs.current != 'true'
+        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true'
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
