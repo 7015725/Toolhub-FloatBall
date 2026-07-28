@@ -1,21 +1,21 @@
-// ToolHub Beta final one-pass acceptance entry r1.
-// Loads verified Phase 7C r2, then public IME/Back controllers and final acceptance UI.
+// ToolHub Beta final one-pass acceptance entry r2.
+// Loads verified final r1, then fixes physical back for the manual IME overlay and restores frozen diagnostics.
 // Rhino ES5 / ShortX.
 (function () {
-  var ENTRY_VERSION = "0.9.0-beta-final-entry-r1";
-  var SNAPSHOT = "a29c5fd801e98f75629fa18102df8b281b25ece0";
+  var ENTRY_VERSION = "0.9.1-beta-final-entry-r2";
+  var SNAPSHOT = "c4e2d5831d20225863af4f83e908e5236c4e7c28";
   var FILES = [
     {
-      url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/ToolHub-beta-phase7c.js",
-      sha256: "a3b4e885169f5a7d07558bf99bc7a113c3d752ccda618196543ed1b90b67e55b",
+      url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/ToolHub-beta-final.js",
+      sha256: "264a0c67103e6db280e35f662419a7fbad85b5f1f4e96e00f452071f02b4f61e",
       maxBytes: 65536,
-      name: "phase7c-r2-entry"
+      name: "final-r1-entry"
     },
     {
-      url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/final/shortxui_final_acceptance.js",
-      sha256: "30464789de843f43542559ea91e1dd6c5708b13deb1b57c43203ada79247e4f5",
-      maxBytes: 131072,
-      name: "final-acceptance"
+      url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/final/final_acceptance_r2_patch.js",
+      sha256: "fa789136e3a0d1ac5534d5efab56f26dfdcf072b4a99f973d86ba18e4b242742",
+      maxBytes: 65536,
+      name: "final-r2-back-fix"
     }
   ];
 
@@ -46,7 +46,7 @@
       conn.setReadTimeout(30000);
       conn.setUseCaches(false);
       conn.setRequestProperty("Accept", "text/plain");
-      conn.setRequestProperty("User-Agent", "ShortX-ToolHub-Beta-Final-R1");
+      conn.setRequestProperty("User-Agent", "ShortX-ToolHub-Beta-Final-R2");
       input = conn.getInputStream();
       output = new java.io.ByteArrayOutputStream();
       var digest = java.security.MessageDigest.getInstance("SHA-256");
@@ -73,51 +73,54 @@
   var globalEval = eval;
   var baseText = downloadVerified(FILES[0]);
   var baseResult = globalEval(String(baseText));
-  try { writeLog("ToolHub Beta final bootstrap reached entry=" + ENTRY_VERSION); } catch (eBaseLog) {}
+  try { writeLog("ToolHub Beta final r2 bootstrap reached entry=" + ENTRY_VERSION); } catch (eBaseLog) {}
 
-  var finalText = downloadVerified(FILES[1]);
-  try { writeLog("ToolHub Beta final acceptance payload verified"); } catch (eFinalLog) {}
-  globalEval(String(finalText));
+  var patchText = downloadVerified(FILES[1]);
+  try { writeLog("ToolHub Beta final r2 back-fix payload verified"); } catch (ePatchLog) {}
+  globalEval(String(patchText));
 
   try {
-    if (typeof ToolHubBetaPhase7CR2 === "undefined" ||
-        String(ToolHubBetaPhase7CR2.VERSION || "") !== "0.8.4-beta-route-lifecycle" ||
-        ToolHubBetaPhase7CR2.STRICT_FRESH_WINDOW_CYCLES !== true) {
-      throw "ShortXUI Phase7C r2 verification failed";
-    }
     if (typeof ToolHubBetaFinalAcceptance === "undefined" ||
         String(ToolHubBetaFinalAcceptance.VERSION || "") !== "0.9.0-beta-final-acceptance" ||
-        String(ToolHubBetaFinalAcceptance.API_VERSION || "") !== "0.4.0-beta" ||
-        String(ToolHubBetaFinalAcceptance.IME_CONTROLLER_VERSION || "") !== "1.0.0-beta" ||
-        String(ToolHubBetaFinalAcceptance.BACK_CONTROLLER_VERSION || "") !== "1.0.0-beta" ||
-        ToolHubBetaFinalAcceptance.SINGLE_AUTOMATED_RUN !== true ||
-        ToolHubBetaFinalAcceptance.SINGLE_MANUAL_ROUND !== true ||
-        ToolHubBetaFinalAcceptance.EXTERNAL_DEX_PAYLOAD_ENABLED !== false) {
-      throw "ShortXUI final acceptance verification failed";
+        String(ToolHubBetaFinalAcceptance.BACK_FIX_VERSION || "") !== "0.9.1-beta-final-back-fix" ||
+        ToolHubBetaFinalAcceptance.MANUAL_IME_PHYSICAL_BACK !== true ||
+        ToolHubBetaFinalAcceptance.TOOLAPP_BACK_REARM !== true ||
+        ToolHubBetaFinalAcceptance.FROZEN_EVIDENCE_RECOVERY !== true) {
+      throw "ShortXUI final r2 base/patch verification failed";
+    }
+    if (typeof ToolHubBetaFinalR2 === "undefined" ||
+        String(ToolHubBetaFinalR2.VERSION || "") !== "0.9.1-beta-final-back-fix" ||
+        String(ToolHubBetaFinalR2.BASE_VERSION || "") !== "0.9.0-beta-final-acceptance" ||
+        ToolHubBetaFinalR2.MANUAL_IME_PHYSICAL_BACK !== true ||
+        ToolHubBetaFinalR2.TOOLAPP_BACK_REARM !== true ||
+        ToolHubBetaFinalR2.FROZEN_EVIDENCE_RECOVERY !== true ||
+        ToolHubBetaFinalR2.EXTERNAL_DEX_PAYLOAD_ENABLED !== false) {
+      throw "ShortXUI final r2 verification failed";
     }
     if (typeof ShortXUI === "undefined" ||
         String(ShortXUI.VERSION || "") !== "0.2.0" ||
         String(ShortXUI.API_VERSION || "") !== "0.4.0-beta" ||
-        !ShortXUI.API || !ShortXUI.ImeController || !ShortXUI.BackController ||
-        typeof ShortXUI.API.createImeController !== "function" ||
-        typeof ShortXUI.API.createBackController !== "function") {
-      throw "ShortXUI final public API verification failed";
+        !ShortXUI.API || !ShortXUI.ImeController || !ShortXUI.BackController) {
+      throw "ShortXUI final r2 public API verification failed";
     }
     var dexCheck = ShortXUI.API.createDexBridge({});
     if (!dexCheck || dexCheck.ok !== false || String(dexCheck.code || "") !== "EXTERNAL_DEX_DISABLED") {
       throw "ShortXUI external DEX boundary verification failed";
     }
     writeLog(
-      "ToolHub Beta final entry ready version=" + String(ToolHubBetaFinalAcceptance.VERSION) +
+      "ToolHub Beta final r2 entry ready version=" + String(ToolHubBetaFinalR2.VERSION) +
+      " base=" + String(ToolHubBetaFinalR2.BASE_VERSION) +
       " api=" + String(ShortXUI.API_VERSION) +
       " runtime=" + String(ShortXUI.VERSION) +
-      " ime=" + String(ToolHubBetaFinalAcceptance.IME_CONTROLLER_VERSION) +
-      " back=" + String(ToolHubBetaFinalAcceptance.BACK_CONTROLLER_VERSION) +
-      " singleAutomatedRun=true singleManualRound=true dexExternal=false" +
+      " manualImePhysicalBack=true" +
+      " toolAppBackRearm=true" +
+      " frozenEvidenceRecovery=true" +
+      " imeBackPriority=" + String(ToolHubBetaFinalR2.IME_BACK_PRIORITY) +
+      " dexExternal=false" +
       " entry=" + ENTRY_VERSION
     );
   } catch (eVerify) {
-    throw "ToolHub Beta final bootstrap failed: " + String(eVerify);
+    throw "ToolHub Beta final r2 bootstrap failed: " + String(eVerify);
   }
   return baseResult;
 }());
