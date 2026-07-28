@@ -40,6 +40,67 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Normalize startAsync wrapper shape
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("scripts/finalize_shortx_ui_runtime.py")
+          text = path.read_text(encoding="utf-8")
+          old = '''    var oldStartAsyncShortXUiPackage = currentStartAsync;
+              var wrappedStartAsyncShortXUiPackage = function (entryInfo, closeRule) {
+                var result = oldStartAsyncShortXUiPackage.call(this, entryInfo, closeRule);
+                if (!result || result.ok !== true) return result;
+                try {
+                  var packageResult = install(this);
+                  result.shortXUiPackage = packageResult;
+                  return result;
+                } catch (error) {
+                  try { if (this && typeof this.close === "function") this.close(); } catch (eClose) {}
+                  return {
+                    ok: false,
+                    started: false,
+                    err: "ShortXUI package install failed: " + String(error),
+                    shortXUiPackage: {
+                      ok: false,
+                      version: PACKAGE_VERSION,
+                      error: String(error)
+                    }
+                  };
+                }
+              };
+              wrappedStartAsyncShortXUiPackage.__toolHubShortXUiPackageWrapped = true;
+              proto.startAsync = wrappedStartAsyncShortXUiPackage;
+          '''
+          new = '''    var oldStartAsyncShortXUiPackage = currentStartAsync;
+              proto.startAsync = function (entryInfo, closeRule) {
+                var result = oldStartAsyncShortXUiPackage.call(this, entryInfo, closeRule);
+                if (!result || result.ok !== true) return result;
+                try {
+                  var packageResult = install(this);
+                  result.shortXUiPackage = packageResult;
+                  return result;
+                } catch (error) {
+                  try { if (this && typeof this.close === "function") this.close(); } catch (eClose) {}
+                  return {
+                    ok: false,
+                    started: false,
+                    err: "ShortXUI package install failed: " + String(error),
+                    shortXUiPackage: {
+                      ok: false,
+                      version: PACKAGE_VERSION,
+                      error: String(error)
+                    }
+                  };
+                }
+              };
+              proto.startAsync.__toolHubShortXUiPackageWrapped = true;
+          '''
+          if old not in text:
+              raise SystemExit("startAsync wrapper source anchor missing")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          PY
+
       - name: Generate final package
         run: python3 scripts/finalize_shortx_ui_runtime.py
 
