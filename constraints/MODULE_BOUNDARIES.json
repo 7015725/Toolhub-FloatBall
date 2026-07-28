@@ -43,6 +43,23 @@
   },
   "duplicateDefinitions": [
     {
+      "method": "buildPanelView",
+      "definitions": [
+        "th_15_extra.js",
+        "th_34_shortx_ui_lab.js"
+      ],
+      "effectiveOwner": "th_34_shortx_ui_lab.js",
+      "type": "wrapper",
+      "reason": "Beta 实验室新增独立 ToolApp 页面路由，其他面板继续委托原实现",
+      "wrappers": [
+        {
+          "module": "th_34_shortx_ui_lab.js",
+          "owner": "th_15_extra.js",
+          "oldVariable": "oldBuildPanelView"
+        }
+      ]
+    },
+    {
       "method": "createPointerFrameView",
       "definitions": [
         "th_17_pointer.js",
@@ -100,6 +117,57 @@
           "module": "th_18_pointer_ocr.js",
           "owner": "th_17_pointer.js",
           "oldVariable": "oldFinishPointerAreaCapture"
+        }
+      ]
+    },
+    {
+      "method": "getSettingsHomeCategoryDefs",
+      "definitions": [
+        "th_14_panels.js",
+        "th_34_shortx_ui_lab.js"
+      ],
+      "effectiveOwner": "th_34_shortx_ui_lab.js",
+      "type": "wrapper",
+      "reason": "Beta 设置首页追加 ShortX UI 实验室入口，保留原分类生成结果",
+      "wrappers": [
+        {
+          "module": "th_34_shortx_ui_lab.js",
+          "owner": "th_14_panels.js",
+          "oldVariable": "oldGetSettingsHomeCategoryDefs"
+        }
+      ]
+    },
+    {
+      "method": "getToolAppTitle",
+      "definitions": [
+        "th_15_extra.js",
+        "th_34_shortx_ui_lab.js"
+      ],
+      "effectiveOwner": "th_34_shortx_ui_lab.js",
+      "type": "wrapper",
+      "reason": "为 ShortX UI 实验室提供标题，其他路由继续委托原实现",
+      "wrappers": [
+        {
+          "module": "th_34_shortx_ui_lab.js",
+          "owner": "th_15_extra.js",
+          "oldVariable": "oldGetToolAppTitle"
+        }
+      ]
+    },
+    {
+      "method": "isToolAppRoute",
+      "definitions": [
+        "th_15_extra.js",
+        "th_34_shortx_ui_lab.js"
+      ],
+      "effectiveOwner": "th_34_shortx_ui_lab.js",
+      "type": "wrapper",
+      "reason": "登记 ShortX UI 实验室为 Beta ToolApp 路由，其他路由继续委托原实现",
+      "wrappers": [
+        {
+          "module": "th_34_shortx_ui_lab.js",
+          "owner": "th_15_extra.js",
+          "oldVariable": "oldIsToolAppRoute"
         }
       ]
     },
@@ -189,6 +257,23 @@
       ]
     },
     {
+      "method": "startAsync",
+      "definitions": [
+        "th_16_entry.js",
+        "th_25_shortx_ui_package.js"
+      ],
+      "effectiveOwner": "th_25_shortx_ui_package.js",
+      "type": "wrapper",
+      "reason": "在悬浮球启动成功后安装经真机验收的 ShortXUI 最终 R3 封装，保持原测试时序并将失败回传为启动失败",
+      "wrappers": [
+        {
+          "module": "th_25_shortx_ui_package.js",
+          "owner": "th_16_entry.js",
+          "oldVariable": "oldStartAsyncShortXUiPackage"
+        }
+      ]
+    },
+    {
       "method": "startPointerTool",
       "definitions": [
         "th_17_pointer.js",
@@ -202,74 +287,6 @@
           "module": "th_18_pointer_ocr.js",
           "owner": "th_17_pointer.js",
           "oldVariable": "oldStartPointerTool"
-        }
-      ]
-    },
-    {
-      "method": "buildPanelView",
-      "definitions": [
-        "th_15_extra.js",
-        "th_34_shortx_ui_lab.js"
-      ],
-      "effectiveOwner": "th_34_shortx_ui_lab.js",
-      "type": "wrapper",
-      "reason": "Beta 实验室新增独立 ToolApp 页面路由，其他面板继续委托原实现",
-      "wrappers": [
-        {
-          "module": "th_34_shortx_ui_lab.js",
-          "owner": "th_15_extra.js",
-          "oldVariable": "oldBuildPanelView"
-        }
-      ]
-    },
-    {
-      "method": "getSettingsHomeCategoryDefs",
-      "definitions": [
-        "th_14_panels.js",
-        "th_34_shortx_ui_lab.js"
-      ],
-      "effectiveOwner": "th_34_shortx_ui_lab.js",
-      "type": "wrapper",
-      "reason": "Beta 设置首页追加 ShortX UI 实验室入口，保留原分类生成结果",
-      "wrappers": [
-        {
-          "module": "th_34_shortx_ui_lab.js",
-          "owner": "th_14_panels.js",
-          "oldVariable": "oldGetSettingsHomeCategoryDefs"
-        }
-      ]
-    },
-    {
-      "method": "getToolAppTitle",
-      "definitions": [
-        "th_15_extra.js",
-        "th_34_shortx_ui_lab.js"
-      ],
-      "effectiveOwner": "th_34_shortx_ui_lab.js",
-      "type": "wrapper",
-      "reason": "为 ShortX UI 实验室提供标题，其他路由继续委托原实现",
-      "wrappers": [
-        {
-          "module": "th_34_shortx_ui_lab.js",
-          "owner": "th_15_extra.js",
-          "oldVariable": "oldGetToolAppTitle"
-        }
-      ]
-    },
-    {
-      "method": "isToolAppRoute",
-      "definitions": [
-        "th_15_extra.js",
-        "th_34_shortx_ui_lab.js"
-      ],
-      "effectiveOwner": "th_34_shortx_ui_lab.js",
-      "type": "wrapper",
-      "reason": "登记 ShortX UI 实验室为 Beta ToolApp 路由，其他路由继续委托原实现",
-      "wrappers": [
-        {
-          "module": "th_34_shortx_ui_lab.js",
-          "owner": "th_15_extra.js",
-          "oldVariable": "oldIsToolAppRoute"
         }
       ]
     }

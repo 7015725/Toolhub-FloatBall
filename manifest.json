@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "6182788891110a7387240ed89d7633f0c29f41ea587f99306aa2e366fca3bac4",
-      "size": 69629,
-      "version": 20260727070258
+      "sha256": "059387f37335a7a531677a0d834ca0cd951a4d40bdf96a5b6942d468673b6b57",
+      "size": 70826,
+      "version": 20260728112735
     }
   },
   "branch": "beta",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "7c20204c63e7ac6699f8067a7710c8c05a2147c3d7cbe313e887ee44857bd981",
-    "size": 100712,
-    "version": 20260728000100,
+    "sha256": "db3b05682d2b84783429bac81309ea4e9db9ed7f50285a46894ff44297d37f00",
+    "size": 100891,
+    "version": 20260728160000,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -170,6 +170,11 @@
       "size": 32630,
       "version": "0.2.0"
     },
+    "th_25_shortx_ui_package.js": {
+      "sha256": "0c4562aff828d6cee0ba7b33364360ad9a40a93a6fadb1ca789bb91a1da4bfd6",
+      "size": 165464,
+      "version": "0.9.2"
+    },
     "th_34_shortx_ui_lab.js": {
       "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
       "size": 29693,
@@ -179,13 +184,14 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Beta 直接提交时，待发布记录不再单独触发提前签名，只有受签名资产发生变化后才生成新 Manifest。",
-      "Beta 直推发布差异改为以上一次修改 manifest.json 的提交为基线，避免错误纳入 main 与历史 Beta 模块变化。",
-      "重新生成发布历史和签名资产，使入口通道模块过滤修复只记录实际入口变化。"
+      "将 Phase 2 至 Final R3 的 17 个已验收源码按固定顺序封装为单一 th_25_shortx_ui_package.js，并为每个解包源码保留独立 SHA-256 校验。",
+      "封装模块仅在原 startAsync 成功后安装，保持真机验收时序；任何安装或最终状态校验失败都会关闭当前实例并返回启动失败。",
+      "将最终封装纳入 Beta 模块列表、关键模块边界、签名 Manifest、API 使用约束和保护包装审计；Stable 通道继续排除全部 ShortXUI Beta 模块。",
+      "修正旧最终验收入口中的 R3 SHA-256，并保留实验室诊断入口用于后续回归。"
     ],
-    "date": "2026-07-27",
-    "title": "修正 Beta 直推签名与发布历史基线"
+    "date": "2026-07-28",
+    "title": "Beta：收口封装 ShortXUI 最终 R3 运行时"
   },
   "schema": 5,
-  "version": 20260727070258
+  "version": 20260728112735
 }

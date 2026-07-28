@@ -13,7 +13,7 @@
     },
     {
       url: "https://raw.githubusercontent.com/7015725/Toolhub-FloatBall/" + SNAPSHOT + "/beta/final/final_acceptance_r3_dismiss_patch.js",
-      sha256: "3d7aba0f09ebdbf5ba6d5d7b21a8d20d0097685e1a8637b21d8d3e6cb254aa1f",
+      sha256: "4b2b3930f50e59066453e53303451495c198386d5539a1b4fa86aa1685f34722",
       maxBytes: 65536,
       name: "final-r3-dismiss-fix"
     }

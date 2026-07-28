@@ -15,6 +15,7 @@ PROTECTED_REPORTER = ROOT / "scripts" / "report_protected_wrapper_chains.py"
 PHASE_FILES = {
     "code/th_24_shortx_ui_runtime.js",
     "code/th_34_shortx_ui_lab.js",
+    "code/th_25_shortx_ui_package.js",
 }
 
 

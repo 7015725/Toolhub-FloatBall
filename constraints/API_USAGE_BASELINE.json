@@ -40,9 +40,10 @@
     "code/th_22_image_viewer.js",
     "code/th_23_screenshot_manager.js",
     "code/th_24_shortx_ui_runtime.js",
+    "code/th_25_shortx_ui_package.js",
     "code/th_34_shortx_ui_lab.js"
   ],
-  "usageCount": 753,
+  "usageCount": 758,
   "entries": [
     {
       "key": "android|class|android.animation.Animator.AnimatorListener",
@@ -219,7 +220,7 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1770,
+          "line": 1782,
           "form": "direct_constructor"
         },
         {
@@ -1214,12 +1215,12 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1709,
+          "line": 1721,
           "form": "direct_constructor"
         },
         {
           "file": "ToolHub.js",
-          "line": 1960,
+          "line": 1972,
           "form": "direct_constructor"
         },
         {
@@ -4220,7 +4221,7 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1770,
+          "line": 1782,
           "form": "direct_static_call"
         },
         {
@@ -4857,7 +4858,7 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1770,
+          "line": 1782,
           "form": "instance_call"
         },
         {
@@ -7695,12 +7696,12 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1709,
+          "line": 1721,
           "form": "direct_static_call"
         },
         {
           "file": "ToolHub.js",
-          "line": 1960,
+          "line": 1972,
           "form": "direct_static_call"
         },
         {
@@ -8424,12 +8425,12 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1709,
+          "line": 1721,
           "form": "direct_static_call"
         },
         {
           "file": "ToolHub.js",
-          "line": 1960,
+          "line": 1972,
           "form": "direct_static_call"
         },
         {
@@ -9255,7 +9256,8 @@
       "files": [
         "ToolHub.js",
         "code/th_01_base.js",
-        "code/th_22_image_viewer.js"
+        "code/th_22_image_viewer.js",
+        "code/th_25_shortx_ui_package.js"
       ],
       "locations": [
         {
@@ -9277,9 +9279,14 @@
           "file": "code/th_22_image_viewer.js",
           "line": 387,
           "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1339,
+          "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 4
+      "occurrenceCount": 5
     },
     {
       "key": "android|method|android.util.Base64#encode",
@@ -9334,7 +9341,7 @@
         },
         {
           "file": "ToolHub.js",
-          "line": 1693,
+          "line": 1705,
           "form": "direct_static_call"
         }
       ],
@@ -21055,12 +21062,12 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1706,
+          "line": 1718,
           "form": "direct_static_call"
         },
         {
           "file": "ToolHub.js",
-          "line": 1961,
+          "line": 1973,
           "form": "direct_static_call"
         },
         {
@@ -21361,6 +21368,29 @@
       "occurrenceCount": 20
     },
     {
+      "key": "java|class|java.io.ByteArrayInputStream",
+      "source": "java",
+      "kind": "class",
+      "classOrObject": "java.io.ByteArrayInputStream",
+      "method": null,
+      "files": [
+        "code/th_25_shortx_ui_package.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1340,
+          "form": "direct_constructor"
+        },
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1340,
+          "form": "direct_constructor_assignment"
+        }
+      ],
+      "occurrenceCount": 2
+    },
+    {
       "key": "java|class|java.io.ByteArrayOutputStream",
       "source": "java",
       "kind": "class",
@@ -21368,7 +21398,8 @@
       "method": null,
       "files": [
         "code/th_01_base.js",
-        "code/th_03_icon.js"
+        "code/th_03_icon.js",
+        "code/th_25_shortx_ui_package.js"
       ],
       "locations": [
         {
@@ -21390,9 +21421,19 @@
           "file": "code/th_03_icon.js",
           "line": 104,
           "form": "direct_constructor_assignment"
+        },
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1342,
+          "form": "direct_constructor"
+        },
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1342,
+          "form": "direct_constructor_assignment"
         }
       ],
-      "occurrenceCount": 4
+      "occurrenceCount": 6
     },
     {
       "key": "java|class|java.io.File",
@@ -22083,27 +22124,27 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1705,
+          "line": 1717,
           "form": "direct_constructor"
         },
         {
           "file": "ToolHub.js",
-          "line": 1705,
+          "line": 1717,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "ToolHub.js",
-          "line": 1914,
+          "line": 1926,
           "form": "direct_constructor"
         },
         {
           "file": "ToolHub.js",
-          "line": 1960,
+          "line": 1972,
           "form": "direct_constructor"
         },
         {
           "file": "ToolHub.js",
-          "line": 2043,
+          "line": 2055,
           "form": "direct_constructor"
         },
         {
@@ -22158,7 +22199,8 @@
         "code/th_14_panels.js",
         "code/th_20_pickword.js",
         "code/th_21_result_preview.js",
-        "code/th_22_image_viewer.js"
+        "code/th_22_image_viewer.js",
+        "code/th_25_shortx_ui_package.js"
       ],
       "locations": [
         {
@@ -22222,7 +22264,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 35
+      "occurrenceCount": 36
     },
     {
       "key": "java|class|java.lang.StringBuilder",
@@ -22322,12 +22364,12 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1914,
+          "line": 1926,
           "form": "direct_constructor"
         },
         {
           "file": "ToolHub.js",
-          "line": 2043,
+          "line": 2055,
           "form": "direct_constructor"
         },
         {
@@ -22667,12 +22709,12 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1806,
+          "line": 1818,
           "form": "direct_constructor"
         },
         {
           "file": "ToolHub.js",
-          "line": 1806,
+          "line": 1818,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22771,6 +22813,29 @@
       "occurrenceCount": 3
     },
     {
+      "key": "java|class|java.util.zip.GZIPInputStream",
+      "source": "java",
+      "kind": "class",
+      "classOrObject": "java.util.zip.GZIPInputStream",
+      "method": null,
+      "files": [
+        "code/th_25_shortx_ui_package.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1341,
+          "form": "direct_constructor"
+        },
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1341,
+          "form": "direct_constructor_assignment"
+        }
+      ],
+      "occurrenceCount": 2
+    },
+    {
       "key": "java|class|java.util.zip.ZipFile",
       "source": "java",
       "kind": "class",
@@ -22863,6 +22928,24 @@
       "occurrenceCount": 10
     },
     {
+      "key": "java|method|java.io#ByteArrayInputStream",
+      "source": "java",
+      "kind": "method",
+      "classOrObject": "java.io",
+      "method": "ByteArrayInputStream",
+      "files": [
+        "code/th_25_shortx_ui_package.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1340,
+          "form": "direct_static_call"
+        }
+      ],
+      "occurrenceCount": 1
+    },
+    {
       "key": "java|method|java.io#ByteArrayOutputStream",
       "source": "java",
       "kind": "method",
@@ -22870,7 +22953,8 @@
       "method": "ByteArrayOutputStream",
       "files": [
         "code/th_01_base.js",
-        "code/th_03_icon.js"
+        "code/th_03_icon.js",
+        "code/th_25_shortx_ui_package.js"
       ],
       "locations": [
         {
@@ -22882,9 +22966,14 @@
           "file": "code/th_03_icon.js",
           "line": 104,
           "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1342,
+          "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 2
+      "occurrenceCount": 3
     },
     {
       "key": "java|method|java.io#File",
@@ -23571,7 +23660,8 @@
       "method": "toByteArray",
       "files": [
         "code/th_01_base.js",
-        "code/th_03_icon.js"
+        "code/th_03_icon.js",
+        "code/th_25_shortx_ui_package.js"
       ],
       "locations": [
         {
@@ -23583,9 +23673,14 @@
           "file": "code/th_03_icon.js",
           "line": 115,
           "form": "instance_call"
+        },
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1358,
+          "form": "instance_call"
         }
       ],
-      "occurrenceCount": 2
+      "occurrenceCount": 3
     },
     {
       "key": "java|method|java.io.ByteArrayOutputStream#write",
@@ -23595,7 +23690,8 @@
       "method": "write",
       "files": [
         "code/th_01_base.js",
-        "code/th_03_icon.js"
+        "code/th_03_icon.js",
+        "code/th_25_shortx_ui_package.js"
       ],
       "locations": [
         {
@@ -23607,9 +23703,14 @@
           "file": "code/th_03_icon.js",
           "line": 113,
           "form": "instance_call"
+        },
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1351,
+          "form": "instance_call"
         }
       ],
-      "occurrenceCount": 2
+      "occurrenceCount": 3
     },
     {
       "key": "java|method|java.io.File#canWrite",
@@ -25410,22 +25511,22 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1705,
+          "line": 1717,
           "form": "direct_static_call"
         },
         {
           "file": "ToolHub.js",
-          "line": 1914,
+          "line": 1926,
           "form": "direct_static_call"
         },
         {
           "file": "ToolHub.js",
-          "line": 1960,
+          "line": 1972,
           "form": "direct_static_call"
         },
         {
           "file": "ToolHub.js",
-          "line": 2043,
+          "line": 2055,
           "form": "direct_static_call"
         },
         {
@@ -25485,7 +25586,8 @@
         "code/th_14_panels.js",
         "code/th_20_pickword.js",
         "code/th_21_result_preview.js",
-        "code/th_22_image_viewer.js"
+        "code/th_22_image_viewer.js",
+        "code/th_25_shortx_ui_package.js"
       ],
       "locations": [
         {
@@ -25549,7 +25651,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 31
+      "occurrenceCount": 32
     },
     {
       "key": "java|method|java.lang#StringBuilder",
@@ -25644,12 +25746,12 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1914,
+          "line": 1926,
           "form": "direct_static_call"
         },
         {
           "file": "ToolHub.js",
-          "line": 2043,
+          "line": 2055,
           "form": "direct_static_call"
         },
         {
@@ -25932,7 +26034,7 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1710,
+          "line": 1722,
           "form": "instance_call"
         },
         {
@@ -26214,6 +26316,7 @@
         "code/th_21_result_preview.js",
         "code/th_22_image_viewer.js",
         "code/th_24_shortx_ui_runtime.js",
+        "code/th_25_shortx_ui_package.js",
         "code/th_34_shortx_ui_lab.js"
       ],
       "locations": [
@@ -26278,7 +26381,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 61
+      "occurrenceCount": 62
     },
     {
       "key": "java|method|java.lang.System#identityHashCode",
@@ -26496,17 +26599,17 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1852,
+          "line": 1864,
           "form": "direct_static_call"
         },
         {
           "file": "ToolHub.js",
-          "line": 1920,
+          "line": 1932,
           "form": "direct_static_call"
         },
         {
           "file": "ToolHub.js",
-          "line": 2050,
+          "line": 2062,
           "form": "direct_static_call"
         },
         {
@@ -26646,7 +26749,8 @@
         "code/th_20_pickword.js",
         "code/th_21_result_preview.js",
         "code/th_22_image_viewer.js",
-        "code/th_24_shortx_ui_runtime.js"
+        "code/th_24_shortx_ui_runtime.js",
+        "code/th_25_shortx_ui_package.js"
       ],
       "locations": [
         {
@@ -26710,7 +26814,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 23
+      "occurrenceCount": 24
     },
     {
       "key": "java|method|java.lang.reflect.Array#set",
@@ -26836,7 +26940,8 @@
         "code/th_11_action.js",
         "code/th_14_panels.js",
         "code/th_20_pickword.js",
-        "code/th_22_image_viewer.js"
+        "code/th_22_image_viewer.js",
+        "code/th_25_shortx_ui_package.js"
       ],
       "locations": [
         {
@@ -26873,9 +26978,14 @@
           "file": "code/th_22_image_viewer.js",
           "line": 1124,
           "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1343,
+          "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 7
+      "occurrenceCount": 8
     },
     {
       "key": "java|method|java.security.Signature#getInstance",
@@ -27238,7 +27348,7 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1806,
+          "line": 1818,
           "form": "direct_static_call"
         },
         {
@@ -27320,7 +27430,7 @@
       "locations": [
         {
           "file": "ToolHub.js",
-          "line": 1818,
+          "line": 1830,
           "form": "instance_call"
         },
         {
@@ -27443,6 +27553,24 @@
       "occurrenceCount": 3
     },
     {
+      "key": "java|method|java.util.zip#GZIPInputStream",
+      "source": "java",
+      "kind": "method",
+      "classOrObject": "java.util.zip",
+      "method": "GZIPInputStream",
+      "files": [
+        "code/th_25_shortx_ui_package.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1341,
+          "form": "direct_static_call"
+        }
+      ],
+      "occurrenceCount": 1
+    },
+    {
       "key": "java|method|java.util.zip#ZipFile",
       "source": "java",
       "kind": "method",
@@ -27456,6 +27584,24 @@
           "file": "code/th_06_icon_parser.js",
           "line": 352,
           "form": "direct_static_call"
+        }
+      ],
+      "occurrenceCount": 1
+    },
+    {
+      "key": "java|method|java.util.zip.GZIPInputStream#read",
+      "source": "java",
+      "kind": "method",
+      "classOrObject": "java.util.zip.GZIPInputStream",
+      "method": "read",
+      "files": [
+        "code/th_25_shortx_ui_package.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_25_shortx_ui_package.js",
+          "line": 1347,
+          "form": "instance_call"
         }
       ],
       "occurrenceCount": 1
@@ -27982,5 +28128,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:66d973c946fda9af06d6f92771f9f470c3ebbbad0459d01777e74ce664a3e6d2"
+  "usageDigest": "sha256:6ca94e7d85c6146c535822452e150ad6a7c42580111071269135dc1f87b6164a"
 }

@@ -9,8 +9,8 @@
 
 ## 扫描摘要
 
-- 入口行数：`2255`
-- 子模块文件：`31`
+- 入口行数：`2267`
+- 子模块文件：`32`
 - 普通函数定义：`113`
 - 顶层变量：`37`
 - 跨模块引用函数：`18`
@@ -57,7 +57,7 @@
 |`readToolHubChannelState`|51|25|跨模块引用|4|4|1|2|0|
 |`writeToolHubChannelStateAtomic`|77|42|入口内使用|4|4|0|0|0|
 |`buildNoCacheUrl`|188|4|入口内使用|2|2|0|0|0|
-|`closeQuietly`|193|3|跨模块引用|11|11|0|1|0|
+|`closeQuietly`|193|3|跨模块引用|11|11|4|5|0|
 |`disconnectQuietly`|197|3|入口内使用|2|2|0|0|0|
 |`syncFileOutput`|201|7|入口内使用|3|3|0|0|0|
 |`canWriteDirPath`|211|8|入口内使用|1|1|0|0|0|
@@ -75,7 +75,7 @@
 |`beginToolHubChannelSwitch`|312|11|入口内使用|1|1|0|0|0|
 |`commitToolHubActiveChannel`|324|11|入口内使用|1|1|0|0|0|
 |`cancelToolHubPendingChannel`|336|11|入口内使用|2|2|0|0|0|
-|`writeLog`|348|27|跨模块引用|54|54|2|2|0|
+|`writeLog`|348|27|跨模块引用|54|54|5|5|0|
 |`runShell`|376|7|入口内使用|1|1|0|0|0|
 |`setDirPerms`|384|6|入口内使用|2|2|0|0|0|
 |`ensureCodeDir`|391|16|入口内使用|9|9|0|0|0|
@@ -142,22 +142,22 @@
 |`checkModuleManifestConsistency`|1566|51|入口内使用|3|3|0|0|0|
 |`verifyLocalModuleBeforeEval`|1618|21|入口内使用|2|2|0|0|0|
 |`loadScript`|1640|29|入口内使用|3|3|0|0|0|
-|`notifyToolHubModulesLoaded`|1699|15|入口内使用|1|1|0|0|0|
-|`registerToolHubAppInstance`|1723|16|入口内使用|3|3|0|0|0|
-|`unregisterToolHubAppInstance`|1740|15|跨模块引用|4|4|2|4|0|
-|`getToolHubCloseActionForRestart`|1756|9|入口内使用|1|1|0|0|0|
-|`sendToolHubCloseBroadcastForRestart`|1766|24|入口内使用|1|1|0|0|0|
-|`closeToolHubAppForRestart`|1791|58|入口内使用|1|1|0|0|0|
-|`closeToolHubAppsForRestart`|1850|29|入口内使用|4|4|0|0|0|
-|`reloadLocalToolHubModulesForRestart`|1880|29|入口内使用|1|1|0|0|0|
-|`restartToolHubFromSettings`|1910|44|跨模块引用|0|0|1|2|0|
-|`showToolHubChannelSwitchToast`|1957|8|跨模块引用|3|3|2|2|0|
-|`flushToolHubStateBeforeChannelSwitch`|1966|9|入口内使用|1|1|0|0|0|
-|`loadTargetToolHubChannelModules`|1976|16|入口内使用|1|1|0|0|0|
-|`reloadKnownGoodToolHubChannelModules`|1993|14|入口内使用|1|1|0|0|0|
-|`startToolHubAppAfterChannelLoad`|2008|16|入口内使用|2|2|0|0|0|
-|`switchToolHubUpdateChannel`|2025|71|跨模块引用|0|0|1|1|0|
-|`summarizeModuleUpdates`|2107|14|入口内使用|1|1|0|0|0|
-|`summarizePendingModuleUpdates`|2121|10|入口内使用|1|1|0|0|0|
-|`summarizeLoadErrors`|2131|10|入口内使用|1|1|0|0|0|
-|`buildToolHubUpdateState`|2141|47|入口内使用|1|1|0|0|0|
+|`notifyToolHubModulesLoaded`|1711|15|入口内使用|1|1|0|0|0|
+|`registerToolHubAppInstance`|1735|16|入口内使用|3|3|0|0|0|
+|`unregisterToolHubAppInstance`|1752|15|跨模块引用|4|4|2|4|0|
+|`getToolHubCloseActionForRestart`|1768|9|入口内使用|1|1|0|0|0|
+|`sendToolHubCloseBroadcastForRestart`|1778|24|入口内使用|1|1|0|0|0|
+|`closeToolHubAppForRestart`|1803|58|入口内使用|1|1|0|0|0|
+|`closeToolHubAppsForRestart`|1862|29|入口内使用|4|4|0|0|0|
+|`reloadLocalToolHubModulesForRestart`|1892|29|入口内使用|1|1|0|0|0|
+|`restartToolHubFromSettings`|1922|44|跨模块引用|0|0|1|2|0|
+|`showToolHubChannelSwitchToast`|1969|8|跨模块引用|3|3|2|2|0|
+|`flushToolHubStateBeforeChannelSwitch`|1978|9|入口内使用|1|1|0|0|0|
+|`loadTargetToolHubChannelModules`|1988|16|入口内使用|1|1|0|0|0|
+|`reloadKnownGoodToolHubChannelModules`|2005|14|入口内使用|1|1|0|0|0|
+|`startToolHubAppAfterChannelLoad`|2020|16|入口内使用|2|2|0|0|0|
+|`switchToolHubUpdateChannel`|2037|71|跨模块引用|0|0|1|1|0|
+|`summarizeModuleUpdates`|2119|14|入口内使用|1|1|0|0|0|
+|`summarizePendingModuleUpdates`|2133|10|入口内使用|1|1|0|0|0|
+|`summarizeLoadErrors`|2143|10|入口内使用|1|1|0|0|0|
+|`buildToolHubUpdateState`|2153|47|入口内使用|1|1|0|0|0|
