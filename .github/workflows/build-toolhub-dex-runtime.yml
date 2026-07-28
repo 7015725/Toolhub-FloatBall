@@ -142,9 +142,9 @@ jobs:
           for entry in classes.dex toolhub-runtime.js toolhub-runtime.js.sha256 toolhub-dex-api.js META-INF/MANIFEST.MF; do
             grep -Fxq "$entry" "$OUT/jar-entries.txt" || { echo "Missing JAR entry: $entry"; cat "$OUT/jar-entries.txt"; exit 1; }
           done
-          unzip -p "$JAR" toolhub-runtime.js > "$OUT/runtime-check.js"
-          unzip -p "$JAR" toolhub-runtime.js.sha256 > "$OUT/runtime-check.sha256"
-          (cd "$OUT" && sha256sum -c runtime-check.sha256)
+          unzip -p "$JAR" toolhub-runtime.js > "$OUT/toolhub-runtime.js"
+          unzip -p "$JAR" toolhub-runtime.js.sha256 > "$OUT/toolhub-runtime.js.sha256"
+          (cd "$OUT" && sha256sum -c toolhub-runtime.js.sha256)
 
       - name: Verify DEX entry class
         shell: bash
