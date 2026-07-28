@@ -40,14 +40,15 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Normalize startAsync wrapper shape
+      - name: Normalize finalizer contracts
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           path = Path("scripts/finalize_shortx_ui_runtime.py")
           text = path.read_text(encoding="utf-8")
-          old = '''    var oldStartAsyncShortXUiPackage = currentStartAsync;
+
+          start_old = '''    var oldStartAsyncShortXUiPackage = currentStartAsync;
               var wrappedStartAsyncShortXUiPackage = function (entryInfo, closeRule) {
                 var result = oldStartAsyncShortXUiPackage.call(this, entryInfo, closeRule);
                 if (!result || result.ok !== true) return result;
@@ -72,7 +73,7 @@ jobs:
               wrappedStartAsyncShortXUiPackage.__toolHubShortXUiPackageWrapped = true;
               proto.startAsync = wrappedStartAsyncShortXUiPackage;
           '''
-          new = '''    var oldStartAsyncShortXUiPackage = currentStartAsync;
+          start_new = '''    var oldStartAsyncShortXUiPackage = currentStartAsync;
               proto.startAsync = function (entryInfo, closeRule) {
                 var result = oldStartAsyncShortXUiPackage.call(this, entryInfo, closeRule);
                 if (!result || result.ok !== true) return result;
@@ -96,9 +97,91 @@ jobs:
               };
               proto.startAsync.__toolHubShortXUiPackageWrapped = true;
           '''
-          if old not in text:
+          if start_old not in text:
               raise SystemExit("startAsync wrapper source anchor missing")
-          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          text = text.replace(start_old, start_new, 1)
+
+          architecture_old = '''def patch_architecture(text: str) -> str:
+              text = text.replace("更新时间：2026-07-27", "更新时间：2026-07-28", 1)
+              text = text.replace("31 个子模块", "32 个子模块")
+              source = "  th_23_screenshot_manager.js\\n```"
+              target = (
+                  "  th_23_screenshot_manager.js\\n\\n"
+                  "最终封装层\\n"
+                  "  th_25_shortx_ui_package.js\\n```"
+              )
+              text = replace_once(text, source, target, "architecture module list")
+              if "\\nth_25_shortx_ui_package.js\\n" not in text:
+                  insertion_anchor = "th_23_screenshot_manager.js\\n"
+                  idx = text.find(insertion_anchor)
+                  if idx < 0:
+                      fail("architecture th_23 description missing")
+                  end = text.find("\\n\\n", idx)
+                  if end < 0:
+                      fail("architecture th_23 paragraph terminator missing")
+                  addition = (
+                      "\\n\\nth_25_shortx_ui_package.js\\n"
+                      "  Beta 最终 ShortXUI 封装模块。保存 Phase 2 至 Final R3 的确定性压缩源码和逐项 SHA-256，"
+                      "仅在 `startAsync()` 成功后按已验收顺序安装；安装失败立即关闭当前实例并返回启动失败。"
+                  )
+                  text = text[:end] + addition + text[end:]
+              boundary = (
+                  "th_34_shortx_ui_lab.js\\n"
+                  "  Beta 专用 ShortX UI 实验室 ToolApp 页面，提供基础环境、颜色、Shape 与 Android Main/ToolHub WM Dispatcher 自检；"
+                  "实验异常不替换悬浮球、主面板、WindowManager、IME、Canvas、指针或 OCR 路径。"
+              )
+              if boundary in text:
+                  text = text.replace(
+                      boundary,
+                      "th_34_shortx_ui_lab.js\\n"
+                      "  Beta 专用 ShortX UI 实验室 ToolApp 页面，保留基础环境、线程、WindowHost 和最终验收诊断入口；"
+                      "正式 IME、返回、Canvas、API 与生命周期能力由 `th_25_shortx_ui_package.js` 在启动成功后统一安装。",
+                      1,
+                  )
+              return text
+          '''
+          architecture_new = '''def patch_architecture(text: str) -> str:
+              text = text.replace("更新时间：2026-07-27", "更新时间：2026-07-28", 1)
+              text = text.replace("31 个子模块", "32 个子模块")
+              source = "  th_23_screenshot_manager.js\\n```"
+              target = (
+                  "  th_23_screenshot_manager.js\\n\\n"
+                  "最终封装层\\n"
+                  "  th_25_shortx_ui_package.js\\n```"
+              )
+              text = replace_once(text, source, target, "architecture module list")
+              responsibility_source = (
+                  "th_24_shortx_ui_runtime.js\\n"
+                  "  Beta 隔离的 ShortXUI 第一阶段基础运行时，提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics；颜色操作通过已验证的 ToolHub 安全桥注入，不接管正式 UI。\\n\\n"
+                  "th_03_icon.js"
+              )
+              responsibility_target = (
+                  "th_24_shortx_ui_runtime.js\\n"
+                  "  Beta 隔离的 ShortXUI 第一阶段基础运行时，提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics；颜色操作通过已验证的 ToolHub 安全桥注入，不接管正式 UI。\\n\\n"
+                  "th_25_shortx_ui_package.js\\n"
+                  "  Beta 最终 ShortXUI 封装模块。保存 Phase 2 至 Final R3 的确定性压缩源码和逐项 SHA-256，仅在 `startAsync()` 成功后按已验收顺序安装；安装失败立即关闭当前实例并返回启动失败。\\n\\n"
+                  "th_03_icon.js"
+              )
+              text = replace_once(text, responsibility_source, responsibility_target, "architecture package responsibility")
+              boundary = (
+                  "th_34_shortx_ui_lab.js\\n"
+                  "  Beta 专用 ShortX UI 实验室 ToolApp 页面，提供基础环境、颜色、Shape 与 Android Main/ToolHub WM Dispatcher 自检；"
+                  "实验异常不替换悬浮球、主面板、WindowManager、IME、Canvas、指针或 OCR 路径。"
+              )
+              if boundary in text:
+                  text = text.replace(
+                      boundary,
+                      "th_34_shortx_ui_lab.js\\n"
+                      "  Beta 专用 ShortX UI 实验室 ToolApp 页面，保留基础环境、线程、WindowHost 和最终验收诊断入口；"
+                      "正式 IME、返回、Canvas、API 与生命周期能力由 `th_25_shortx_ui_package.js` 在启动成功后统一安装。",
+                      1,
+                  )
+              return text
+          '''
+          if architecture_old not in text:
+              raise SystemExit("architecture finalizer source anchor missing")
+          text = text.replace(architecture_old, architecture_new, 1)
+          path.write_text(text, encoding="utf-8")
           PY
 
       - name: Generate final package
@@ -120,25 +203,7 @@ jobs:
         run: python3 scripts/report_entry_symbols.py --write docs/audits/ENTRY_SYMBOL_AUDIT.md
 
       - name: Verify generated package
-        id: package_check
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/finalize_shortx_ui_runtime.py --check 2>&1 | tee package-check.txt
-
-      - name: Upload package check diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: shortx-ui-package-check
-          path: package-check.txt
-          if-no-files-found: error
-          retention-days: 2
-
-      - name: Stop on package drift
-        if: steps.package_check.outcome == 'failure'
-        run: exit 1
+        run: python3 scripts/finalize_shortx_ui_runtime.py --check
 
       - name: Verify generated closure
         run: |
