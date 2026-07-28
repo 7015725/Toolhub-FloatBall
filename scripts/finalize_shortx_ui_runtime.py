@@ -15,6 +15,7 @@ ENTRY = ROOT / "ToolHub.js"
 MANIFEST_GENERATOR = ROOT / "scripts" / "generate_signed_manifest.py"
 PREPARE_CONSTRAINTS = ROOT / "scripts" / "prepare_shortx_ui_constraints.py"
 BOUNDARIES = ROOT / "constraints" / "MODULE_BOUNDARIES.json"
+API_RULES = ROOT / "constraints" / "api.json"
 PROTECTED_REPORTER = ROOT / "scripts" / "report_protected_wrapper_chains.py"
 ARCHITECTURE = ROOT / "docs" / "ARCHITECTURE.md"
 STRUCTURE = ROOT / "docs" / "STRUCTURE.md"
@@ -356,6 +357,51 @@ def patch_prepare_constraints(text: str) -> str:
     return replace_once(text, source, target, "ShortXUI constraint scope")
 
 
+def patch_api_rules(text: str) -> str:
+    from report_api_usage import scan_repository
+
+    phase_files = {
+        "code/th_24_shortx_ui_runtime.js",
+        "code/th_34_shortx_ui_lab.js",
+        "code/th_25_shortx_ui_package.js",
+    }
+    unused_files, entries = scan_repository(ROOT)
+    phase_entries = [
+        item for item in entries
+        if phase_files.intersection(set(item.get("files") or []))
+    ]
+    if not phase_entries:
+        fail("ShortXUI packaged API usage was not detected")
+    usage_keys = sorted({str(item.get("key", "")) for item in phase_entries if str(item.get("key", ""))})
+    scope = sorted({
+        str(file_name)
+        for item in phase_entries
+        for file_name in (item.get("files") or [])
+        if str(file_name)
+    })
+
+    data = json.loads(text)
+    rules = list(data.get("rules") or [])
+    found = False
+    for rule in rules:
+        if str(rule.get("id", "")) != "api-shortx-ui-beta-phase1":
+            continue
+        rule["usageKeys"] = usage_keys
+        rule["scope"] = scope
+        rule["classOrObject"] = "ShortXUI final package dependency set"
+        rule["owner"] = "ShortXUI Beta runtime, final package and ToolHub adapter"
+        rule["guard"] = "ToolHub runtime minimum API is 33; WindowMetrics and WindowInsets retain platform guards; the final package installs only after startAsync succeeds"
+        rule["threadContract"] = "WindowHost work stays on the supplied Dispatcher; final package decoding runs on the ShortX task thread after startup confirmation; View operations keep their existing Android Main/ToolHub WM ownership"
+        rule["fallback"] = "Any packaged source hash, install or final-state verification failure closes the current ToolHub instance and returns startup failure; Stable excludes all ShortXUI Beta modules"
+        rule["reason"] = "登记 Beta 最终封装及基础运行时实际使用的精确 Android/Java API，锁定 Phase 2 至 Final R3 的启动后安装边界"
+        found = True
+        break
+    if not found:
+        fail("ShortXUI API classification rule missing")
+    data["rules"] = rules
+    return json.dumps(data, ensure_ascii=False, indent=2) + "\n"
+
+
 def patch_boundaries(text: str) -> str:
     data = json.loads(text)
     records = list(data.get("duplicateDefinitions") or [])
@@ -526,11 +572,15 @@ def main() -> int:
     args = parser.parse_args()
     changed = []
 
+    package_expected = build_package()
+    if write_or_check(OUTPUT, package_expected, args.check):
+        changed.append(str(OUTPUT.relative_to(ROOT)))
+
     targets = [
-        (OUTPUT, build_package()),
         (ENTRY, patch_entry(read_text(ENTRY))),
         (MANIFEST_GENERATOR, patch_manifest_generator(read_text(MANIFEST_GENERATOR))),
         (PREPARE_CONSTRAINTS, patch_prepare_constraints(read_text(PREPARE_CONSTRAINTS))),
+        (API_RULES, patch_api_rules(read_text(API_RULES))),
         (BOUNDARIES, patch_boundaries(read_text(BOUNDARIES))),
         (PROTECTED_REPORTER, patch_protected_reporter(read_text(PROTECTED_REPORTER))),
         (ARCHITECTURE, patch_architecture(read_text(ARCHITECTURE))),
