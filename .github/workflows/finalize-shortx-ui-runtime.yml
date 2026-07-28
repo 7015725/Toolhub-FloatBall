@@ -205,14 +205,23 @@ jobs:
       - name: Verify generated package
         run: python3 scripts/finalize_shortx_ui_runtime.py --check
 
-      - name: Verify generated closure
-        run: |
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_module_boundaries.py
-          python3 scripts/verify_api_usage_policy.py
-          python3 scripts/verify_documentation_consistency.py
-          git diff --check
+      - name: Verify ES5
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: Verify JavaScript syntax
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: Verify module boundaries
+        run: python3 scripts/verify_module_boundaries.py
+
+      - name: Verify API policy
+        run: python3 scripts/verify_api_usage_policy.py
+
+      - name: Verify documentation
+        run: python3 scripts/verify_documentation_consistency.py
+
+      - name: Verify whitespace
+        run: git diff --check
 
       - name: Commit generated closure
         shell: bash
