@@ -16,7 +16,7 @@ import java.security.MessageDigest;
  * runtime already used by ShortX through the parent class loader.</p>
  */
 public final class ToolHubRuntime {
-    public static final String VERSION = "0.9.2-beta-dex-1";
+    public static final String VERSION = "0.9.2-beta-dex-2";
     public static final int API_VERSION = 1;
 
     private static final Object LOCK = new Object();
