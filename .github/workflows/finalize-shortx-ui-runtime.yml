@@ -7,9 +7,17 @@ on:
       - scripts/finalize_shortx_ui_runtime.py
       - updates/records/20260728-beta-shortx-ui-final-package.json
       - .github/workflows/finalize-shortx-ui-runtime.yml
+  pull_request:
+    branches: [beta]
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - scripts/finalize_shortx_ui_runtime.py
+      - updates/records/20260728-beta-shortx-ui-final-package.json
+      - .github/workflows/finalize-shortx-ui-runtime.yml
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
   group: finalize-shortx-ui-runtime
@@ -17,6 +25,7 @@ concurrency:
 
 jobs:
   finalize:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout closure branch
