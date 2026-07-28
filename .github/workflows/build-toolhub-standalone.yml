@@ -1,0 +1,95 @@
+name: build-toolhub-standalone
+
+on:
+  push:
+    branches: [agent/build-toolhub-standalone-beta]
+    paths:
+      - scripts/generate_toolhub_standalone.py
+      - .github/workflows/build-toolhub-standalone.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-toolhub-standalone-beta
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout standalone branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/build-toolhub-standalone-beta
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate standalone file
+        run: python3 scripts/generate_toolhub_standalone.py
+
+      - name: Verify deterministic output
+        run: python3 scripts/generate_toolhub_standalone.py --check
+
+      - name: Verify standalone contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import hashlib
+          path = Path('ToolHub-Beta-Standalone.js')
+          text = path.read_text(encoding='utf-8')
+          required = [
+              'ToolHub Beta Standalone - ShortX / Rhino ES5',
+              'var TOOLHUB_UPDATE_CHANNEL = "beta";',
+              'rootName: "ToolHub-Beta"',
+              'externalDownloads: false',
+              'function __toolHubStandaloneLoadEmbeddedModules',
+              'ToolHub standalone runtime active',
+              'ShortXUI package ready version=',
+          ]
+          for item in required:
+              if item not in text:
+                  raise SystemExit('missing standalone marker: ' + item)
+          forbidden = [
+              'loadScript(modules[i]);',
+              'recoverPendingModuleTransaction();\nfetchTrustedManifest();',
+          ]
+          for item in forbidden:
+              if item in text:
+                  raise SystemExit('standalone boot still uses modular loader: ' + item)
+          if re.search(r'(^|[^A-Za-z0-9_$])(let|const)\s+[A-Za-z_$]', text):
+              raise SystemExit('modern JavaScript declaration found')
+          print('standalone contract passed bytes=%d sha256=%s' % (
+              len(text.encode('utf-8')),
+              hashlib.sha256(text.encode('utf-8')).hexdigest(),
+          ))
+          PY
+
+      - name: Verify JavaScript syntax
+        run: |
+          node --check ToolHub-Beta-Standalone.js
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+
+      - name: Check whitespace
+        run: git diff --check
+
+      - name: Commit generated standalone
+        shell: bash
+        run: |
+          git config user.name "toolhub-automation"
+          git config user.email "toolhub-automation@users.noreply.github.com"
+          git add ToolHub-Beta-Standalone.js
+          if git diff --cached --quiet; then
+            echo "Standalone file already current"
+            exit 0
+          fi
+          git commit -m "生成 ToolHub Beta 可直接运行的离线单文件"
+          git push origin HEAD:agent/build-toolhub-standalone-beta
