@@ -55,7 +55,7 @@ jobs:
               'externalDownloads: false',
               'function __toolHubStandaloneLoadEmbeddedModules',
               'ToolHub standalone runtime active',
-              'ShortXUI package ready version=',
+              'th_25_shortx_ui_package.js',
           ]
           for item in required:
               if item not in text:
