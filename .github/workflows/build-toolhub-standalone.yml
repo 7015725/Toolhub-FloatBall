@@ -85,7 +85,6 @@ jobs:
         run: git diff --check
 
       - name: Commit generated standalone
-        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           git config user.name "toolhub-automation"
