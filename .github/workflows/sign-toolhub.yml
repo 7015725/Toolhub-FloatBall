@@ -60,6 +60,27 @@ jobs:
           echo "generated=$generated" >> "$GITHUB_OUTPUT"
           echo "generated signing commit=$generated subject=$subject"
 
+      - name: Detect signed input change
+        id: signed_input_change
+        shell: bash
+        run: |
+          changed=false
+          if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            while IFS= read -r path; do
+              case "$path" in
+                ToolHub.js|code/*.js)
+                  changed=true
+                  echo "signed input changed: $path"
+                  ;;
+              esac
+            done < <(git diff --name-only HEAD^ HEAD)
+          else
+            changed=true
+            echo "no parent commit; require signing"
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "signed input change=$changed"
+
       - name: Guard branch
         shell: bash
         run: |
@@ -130,12 +151,12 @@ jobs:
           echo "current=$current" >> "$GITHUB_OUTPUT"
 
       - name: Verify pending release record
-        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true'
+        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true' && steps.signed_input_change.outputs.changed == 'true'
         shell: bash
         run: python3 scripts/verify_update_history.py --require-one-pending
 
       - name: Generate signed manifest
-        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true'
+        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true' && steps.signed_input_change.outputs.changed == 'true'
         shell: bash
         run: |
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
@@ -223,7 +244,7 @@ jobs:
         run: git diff --check
 
       - name: Commit generated artifacts
-        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true'
+        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true' && steps.signed_input_change.outputs.changed == 'true'
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
