@@ -194,6 +194,19 @@ jobs:
           if architecture_old not in text:
               raise SystemExit("architecture finalizer source anchor missing")
           text = text.replace(architecture_old, architecture_new, 1)
+
+          structure_old = '''def patch_structure(text: str) -> str:
+              text = text.replace("更新时间：2026-07-27", "更新时间：2026-07-28", 1)
+              text = text.replace("31 个子模块", "32 个子模块")
+          '''
+          structure_new = '''def patch_structure(text: str) -> str:
+              text = text.replace("更新时间：2026-07-27", "更新时间：2026-07-28", 1)
+              text = text.replace("31 个子模块", "32 个子模块")
+              text = text.replace("files: 31 个模块", "files: 32 个模块")
+          '''
+          if structure_old not in text:
+              raise SystemExit("structure module count anchor missing")
+          text = text.replace(structure_old, structure_new, 1)
           path.write_text(text, encoding="utf-8")
           PY
 
@@ -217,6 +230,28 @@ jobs:
 
       - name: Verify generated package
         run: python3 scripts/finalize_shortx_ui_runtime.py --check
+
+      - name: Patch README final package documentation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("README.md")
+          text = path.read_text(encoding="utf-8")
+          source = "- Beta 通道内置隔离的 ShortXUI 第一阶段实验：`th_24_shortx_ui_runtime.js` 提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics；`th_34_shortx_ui_lab.js` 只增加实验室页面，默认不替换正式 UI。"
+          target = "- Beta 通道加载 `th_24_shortx_ui_runtime.js`、`th_34_shortx_ui_lab.js` 与最终封装模块 `th_25_shortx_ui_package.js`；最终模块仅在启动成功后安装已验收的 Phase 2 至 Final R3 能力，并逐项校验内置源码 SHA-256。"
+          if target not in text:
+              if source not in text:
+                  raise SystemExit("README ShortXUI summary anchor missing")
+              text = text.replace(source, target, 1)
+          tree_source = "    │   ├── th_22_image_viewer.js\n    │   └── th_23_screenshot_manager.js"
+          tree_target = "    │   ├── th_22_image_viewer.js\n    │   ├── th_23_screenshot_manager.js\n    │   └── th_25_shortx_ui_package.js"
+          if tree_target not in text:
+              if tree_source not in text:
+                  raise SystemExit("README module tree anchor missing")
+              text = text.replace(tree_source, tree_target, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
 
       - name: Verify ES5
         run: python3 .github/scripts/es5_scan.py
