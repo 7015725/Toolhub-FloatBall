@@ -1,0 +1,437 @@
+name: apply-beta-restart-wm-lease
+
+on:
+  push:
+    branches: [beta]
+    paths:
+      - '.github/workflows/apply-beta-restart-wm-lease.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout beta
+        uses: actions/checkout@v4
+        with:
+          ref: beta
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply restart lifecycle patch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          entry_path = root / 'ToolHub.js'
+          major_path = root / 'code' / 'th_08_content.js'
+          entry = entry_path.read_text(encoding='utf-8')
+          major = major_path.read_text(encoding='utf-8')
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit('%s anchor count=%d' % (label, count))
+              return text.replace(old, new, 1)
+
+          def replace_between(text, start_marker, end_marker, replacement, label):
+              start = text.find(start_marker)
+              if start < 0:
+                  raise SystemExit('%s start marker missing' % label)
+              end = text.find(end_marker, start)
+              if end < 0:
+                  raise SystemExit('%s end marker missing' % label)
+              return text[:start] + replacement + text[end:]
+
+          entry = replace_once(
+              entry,
+              'var TOOLHUB_ENTRY_VERSION = 20260810005000; // 入口文件版本，仅在 ToolHub.js 变化时提升',
+              'var TOOLHUB_ENTRY_VERSION = 20260810053500; // 入口文件版本，仅在 ToolHub.js 变化时提升',
+              'entry version',
+          )
+
+          quarantine_anchor = 'var TOOLHUB_WINDOW_DETACH_QUARANTINE = (typeof TOOLHUB_WINDOW_DETACH_QUARANTINE !== "undefined" && TOOLHUB_WINDOW_DETACH_QUARANTINE) ? TOOLHUB_WINDOW_DETACH_QUARANTINE : [];'
+          quarantine_replacement = quarantine_anchor + '\n' + 'var TOOLHUB_WM_THREAD_LEASE_QUARANTINE = (typeof TOOLHUB_WM_THREAD_LEASE_QUARANTINE !== "undefined" && TOOLHUB_WM_THREAD_LEASE_QUARANTINE) ? TOOLHUB_WM_THREAD_LEASE_QUARANTINE : [];'
+          entry = replace_once(entry, quarantine_anchor, quarantine_replacement, 'wm lease global')
+
+          helpers = r'''function appendToolHubWmThreadLease(output, lease) {
+  if (!lease || !lease.thread) return;
+  for (var i = 0; i < output.length; i++) {
+    try {
+      if (output[i] && output[i].thread === lease.thread) return;
+    } catch(eCompareLease) {}
+  }
+  output.push(lease);
+}
+
+function captureToolHubWmThreadLeaseForRestart(appObj, label) {
+  try {
+    var stateRef = appObj && appObj.state ? appObj.state : null;
+    if (!stateRef || !stateRef.ht) return null;
+    var lease = {
+      thread: stateRef.ht,
+      handler: stateRef.h || null,
+      label: String(label || "app"),
+      capturedAt: Number(java.lang.System.currentTimeMillis()),
+      released: false
+    };
+    // restart/channel-switch 专用：旧版 close() 不能再拥有 WM HandlerThread 的最终退出权。
+    // 这里只摘掉 ht；h 继续保留，让已经存在的 removeView/deferred cleanup 可以正常入队。
+    if (stateRef.ht === lease.thread) stateRef.ht = null;
+    try { writeLog("Restart WM lease captured label=" + lease.label + " handler=" + String(!!lease.handler)); } catch(eLogLease) {}
+    return lease;
+  } catch(eLease) {
+    try { writeLog("Restart WM lease capture failed label=" + String(label || "") + " err=" + String(eLease)); } catch(eLogLeaseFail) {}
+  }
+  return null;
+}
+
+function releaseToolHubWmThreadLeases(leases, reason) {
+  var released = 0;
+  var seen = [];
+  for (var i = 0; i < (leases ? leases.length : 0); i++) {
+    var lease = leases[i];
+    if (!lease || !lease.thread || lease.released === true) continue;
+    var duplicate = false;
+    for (var j = 0; j < seen.length; j++) {
+      try { if (seen[j] === lease.thread) duplicate = true; } catch(eCompare) {}
+      if (duplicate) break;
+    }
+    if (duplicate) continue;
+    seen.push(lease.thread);
+    try {
+      if (android.os.Build.VERSION.SDK_INT >= 18 && lease.thread.quitSafely) lease.thread.quitSafely();
+      else if (lease.thread.quit) lease.thread.quit();
+      lease.released = true;
+      released++;
+      try { writeLog("Restart WM lease released label=" + String(lease.label || "") + " reason=" + String(reason || "")); } catch(eLogRelease) {}
+    } catch(eQuitLease) {
+      try { writeLog("Restart WM lease release failed label=" + String(lease.label || "") + " err=" + String(eQuitLease)); } catch(eLogQuitLease) {}
+    }
+  }
+  return released;
+}
+
+function quarantineToolHubWmThreadLeases(leases) {
+  var next = [];
+  for (var i = 0; i < (leases ? leases.length : 0); i++) appendToolHubWmThreadLease(next, leases[i]);
+  TOOLHUB_WM_THREAD_LEASE_QUARANTINE = next;
+  return next.length;
+}
+
+function finalizeToolHubRestartSessions(apps, detachResult) {
+  var detached = !!(detachResult && detachResult.detached);
+  var remaining = [];
+  try {
+    var raw = detachResult && detachResult.remaining ? detachResult.remaining : [];
+    for (var ri = 0; ri < raw.length; ri++) remaining.push(String(raw[ri] && raw[ri].label || "window"));
+  } catch(eRemaining) {}
+  for (var i = 0; i < (apps ? apps.length : 0); i++) {
+    var appObj = apps[i];
+    try {
+      if (!appObj || !appObj.L) continue;
+      if (!detached && appObj.L.incident) {
+        appObj.L.incident("WINDOW_DETACH_TIMEOUT", {
+          reason: "planned_reload",
+          remainingWindows: remaining.join(","),
+          waitedMs: Number(detachResult && detachResult.waitedMs || 0)
+        });
+      }
+      if (appObj.L.sessionEnded !== true && appObj.L.endSession) {
+        appObj.L.endSession("planned_reload", detached ? "clean" : "detach_failed");
+      }
+    } catch(eFinalizeSession) {
+      try { writeLog("Restart session finalize failed err=" + String(eFinalizeSession)); } catch(eLogFinalizeSession) {}
+    }
+  }
+}
+
+'''
+          entry = replace_once(
+              entry,
+              'function closeToolHubAppForRestart(appObj) {',
+              helpers + 'function closeToolHubAppForRestart(appObj, appLabel) {',
+              'restart helper insertion',
+          )
+
+          new_close_one = r'''function closeToolHubAppForRestart(appObj, appLabel) {
+  var ret = { ok: false, skipped: false, timedOut: false, err: "", wmLease: null };
+  try {
+    if (!appObj) {
+      ret.ok = true;
+      ret.skipped = true;
+      return ret;
+    }
+    if (appObj.state && appObj.state.closed) {
+      unregisterToolHubAppInstance(appObj);
+      ret.ok = true;
+      ret.skipped = true;
+      return ret;
+    }
+
+    var lease = captureToolHubWmThreadLeaseForRestart(appObj, appLabel || "app");
+    ret.wmLease = lease;
+    var wmHandler = null;
+    try { wmHandler = lease && lease.handler ? lease.handler : (appObj.state ? appObj.state.h : null); } catch(eHandler) { wmHandler = null; }
+
+    if (wmHandler) {
+      var latch = new java.util.concurrent.CountDownLatch(1);
+      var posted = false;
+      try {
+        posted = wmHandler.post(new JavaAdapter(java.lang.Runnable, {
+          run: function() {
+            try {
+              if (typeof appObj.close === "function") appObj.close();
+              ret.ok = !!(appObj.state && appObj.state.closed === true);
+              if (!ret.ok && !ret.err) ret.err = "close returned without closed state";
+            } catch(eClosePost) {
+              ret.err = String(eClosePost);
+              try { writeLog("Restart close post failed: " + String(eClosePost)); } catch(eLogClosePost) {}
+            } finally {
+              try { latch.countDown(); } catch(eLatchDown) {}
+            }
+          }
+        }));
+      } catch(ePostClose) {
+        ret.err = String(ePostClose);
+        posted = false;
+      }
+      if (posted) {
+        var done = false;
+        try { done = latch["await"](2800, java.util.concurrent.TimeUnit.MILLISECONDS); } catch(eAwaitClose) { ret.err = String(eAwaitClose); }
+        if (!done) {
+          ret.timedOut = true;
+          if (!ret.err) ret.err = "close wait timeout";
+        }
+        return ret;
+      }
+      // Handler 已存在却无法入队时不跨线程直接 close；保留 lease，交给广播和 detach 检查 fail-closed。
+      if (!ret.err) ret.err = "close post failed";
+      return ret;
+    }
+
+    if (typeof appObj.close === "function") {
+      appObj.close();
+      ret.ok = !!(appObj.state && appObj.state.closed === true);
+      if (!ret.ok) ret.err = "close returned without closed state";
+      return ret;
+    }
+    ret.ok = true;
+    ret.skipped = true;
+  } catch(eClose) {
+    ret.err = String(eClose);
+    try { writeLog("Restart close failed: " + String(eClose)); } catch(eLogClose) {}
+  }
+  return ret;
+}
+'''
+          entry = replace_between(
+              entry,
+              'function closeToolHubAppForRestart(appObj, appLabel) {',
+              '\nfunction closeToolHubAppsForRestart(primaryApp) {',
+              new_close_one,
+              'close one',
+          )
+
+          new_close_all = r'''function closeToolHubAppsForRestart(primaryApp) {
+  var list = [];
+  var i;
+  try {
+    if (TOOLHUB_APP_REGISTRY) {
+      for (i = 0; i < TOOLHUB_APP_REGISTRY.length; i++) {
+        if (TOOLHUB_APP_REGISTRY[i]) list.push(TOOLHUB_APP_REGISTRY[i]);
+      }
+    }
+  } catch(eListRegistry) {}
+  if (primaryApp) {
+    var exists = false;
+    for (i = 0; i < list.length; i++) {
+      if (list[i] === primaryApp) exists = true;
+    }
+    if (!exists) list.push(primaryApp);
+  }
+
+  var windowSnapshots = snapshotToolHubAppWindows(list);
+  var wmLeases = [];
+  try {
+    if (TOOLHUB_WM_THREAD_LEASE_QUARANTINE) {
+      for (i = 0; i < TOOLHUB_WM_THREAD_LEASE_QUARANTINE.length; i++) {
+        appendToolHubWmThreadLease(wmLeases, TOOLHUB_WM_THREAD_LEASE_QUARANTINE[i]);
+      }
+    }
+  } catch(eOldLeases) {}
+
+  var closed = 0;
+  var timedOut = 0;
+  for (i = 0; i < list.length; i++) {
+    var one = closeToolHubAppForRestart(list[i], "app" + String(i));
+    if (one && one.ok) closed++;
+    if (one && one.timedOut) timedOut++;
+    if (one && one.wmLease) appendToolHubWmThreadLease(wmLeases, one.wmLease);
+  }
+
+  // 已知实例先在自己的 WM Handler 上提交 close；广播仅兜底未进入注册表的历史实例。
+  // lease 已把旧 close() 的 HandlerThread 退出权拿走，因此广播回调也不能提前杀掉已排队的 detach。
+  var broadcastRet = sendToolHubCloseBroadcastForRestart(primaryApp);
+  try { java.lang.Thread.sleep(broadcastRet.ok ? 250 : 80); } catch(eSleepCloseBroadcast) {}
+
+  var detachResult = waitForToolHubWindowsDetached(windowSnapshots, 4200);
+  TOOLHUB_WINDOW_DETACH_QUARANTINE = detachResult.remaining;
+  var remainingLabels = [];
+  for (i = 0; i < detachResult.remaining.length; i++) remainingLabels.push(String(detachResult.remaining[i].label || "window"));
+
+  var releasedLeases = 0;
+  var quarantinedLeases = 0;
+  if (detachResult.detached) {
+    releasedLeases = releaseToolHubWmThreadLeases(wmLeases, "windows_detached");
+    TOOLHUB_WM_THREAD_LEASE_QUARANTINE = [];
+  } else {
+    quarantinedLeases = quarantineToolHubWmThreadLeases(wmLeases);
+  }
+
+  finalizeToolHubRestartSessions(list, detachResult);
+
+  try { writeLog("Restart close sweep action=" + String(broadcastRet.action || "") + " broadcast=" + String(broadcastRet.ok) + " apps=" + String(list.length) + " closed=" + String(closed) + " timeout=" + String(timedOut) + " windows=" + String(detachResult.total) + " detached=" + String(detachResult.detached) + " waitedMs=" + String(detachResult.waitedMs) + " remaining=" + remainingLabels.join(",") + " wmLeases=" + String(wmLeases.length) + " releasedLeases=" + String(releasedLeases) + " quarantinedLeases=" + String(quarantinedLeases)); } catch(eLogSweep) {}
+  return {
+    broadcast: broadcastRet,
+    count: list.length,
+    closed: closed,
+    timedOut: timedOut,
+    detached: detachResult.detached,
+    windowCount: detachResult.total,
+    remainingWindows: remainingLabels,
+    waitedMs: detachResult.waitedMs,
+    wmLeaseCount: wmLeases.length,
+    releasedWmLeases: releasedLeases,
+    quarantinedWmLeases: quarantinedLeases
+  };
+}
+'''
+          entry = replace_between(
+              entry,
+              'function closeToolHubAppsForRestart(primaryApp) {',
+              '\nfunction reloadLocalToolHubModulesForRestart() {',
+              new_close_all,
+              'close all',
+          )
+
+          major = replace_once(major, '// @version 1.0.9', '// @version 1.0.10', 'major module version')
+
+          old_end = r'''  ToolHubLogger.prototype.endSession = function(reason, status) {
+    if (this.sessionEnded) return false;
+    this.sessionEnded = true;
+    this.sessionOpen = false;
+    return this.major("SESSION_END", {
+      reason: reason || "normal_close",
+      status: status || "clean",
+      clean: true,
+      durationMs: Math.max(0, M.now() - this.sessionStartedAt)
+    }, true);
+  };'''
+          new_end = r'''  ToolHubLogger.prototype.endSession = function(reason, status) {
+    if (this.sessionEnded) return false;
+    this.sessionEnded = true;
+    this.sessionOpen = false;
+    var finalStatus = String(status || "clean");
+    return this.major("SESSION_END", {
+      reason: reason || "normal_close",
+      status: finalStatus,
+      clean: finalStatus === "clean",
+      durationMs: Math.max(0, M.now() - this.sessionStartedAt)
+    }, true);
+  };'''
+          major = replace_once(major, old_end, new_end, 'endSession clean status')
+
+          old_close_end = '          if (this.L && this.state && this.state.closed) this.L.endSession(why, "clean");'
+          new_close_end = r'''          if (this.L && this.state && this.state.closed) {
+            if (why === "planned_reload") {
+              this.L.checkpoint("SESSION_CLOSE_LOGICAL_DONE", fields(this, { reason: why }), true);
+            } else {
+              this.L.endSession(why, "clean");
+            }
+          }'''
+          major = replace_once(major, old_close_end, new_close_end, 'planned reload session defer')
+
+          required_entry = [
+              'TOOLHUB_WM_THREAD_LEASE_QUARANTINE',
+              'captureToolHubWmThreadLeaseForRestart',
+              'releaseToolHubWmThreadLeases',
+              'finalizeToolHubRestartSessions',
+              'quarantinedWmLeases',
+          ]
+          for needle in required_entry:
+              if needle not in entry:
+                  raise SystemExit('entry postcondition missing: ' + needle)
+          if 'removeViewImmediate' in entry[entry.find('function closeToolHubAppForRestart'):entry.find('function reloadLocalToolHubModulesForRestart')]:
+              raise SystemExit('restart coordinator must not introduce removeViewImmediate')
+          if 'clean: finalStatus === "clean"' not in major:
+              raise SystemExit('major logger clean postcondition missing')
+          if 'SESSION_CLOSE_LOGICAL_DONE' not in major:
+              raise SystemExit('planned reload defer postcondition missing')
+
+          entry_path.write_text(entry, encoding='utf-8')
+          major_path.write_text(major, encoding='utf-8')
+
+          record_path = root / 'updates' / 'records' / '20260810-beta-restart-wm-thread-lease.json'
+          if record_path.exists():
+              existing = json.loads(record_path.read_text(encoding='utf-8'))
+              if int(existing.get('manifestVersion', 0) or 0) > 0:
+                  raise SystemExit('release record already finalized unexpectedly')
+          record = {
+              'schema': 1,
+              'id': '20260810-beta-restart-wm-thread-lease',
+              'type': 'fix',
+              'title': 'Beta：托管更新重启 WM 线程直到窗口真实分离',
+              'details': [
+                  '更新重启与 Stable/Beta 通道切换在调用旧实例 close 前捕获 WM HandlerThread lease，并暂时移除旧实例对 ht 的最终退出权，解决旧版 close 在 removeView detach 前 quitSafely 的自更新死锁。',
+                  '继续使用普通 WindowManager.removeView，不恢复 removeViewImmediate；ToolApp 继续保持 Android main thread 归属，IME 避让、回退和焦点逻辑不改。',
+                  '只有 snapshot 中全部旧窗口确认 isAttachedToWindow=false 后才释放捕获的 WM HandlerThread；detach 超时则 fail-closed、保留窗口和线程 lease quarantine，禁止启动新实例。',
+                  '修正重大事件 SESSION_END 的 clean 判定，并将 planned_reload 的会话结束延迟到 restart coordinator 完成真实 detach 后，detach 超时记录 WINDOW_DETACH_TIMEOUT。'
+              ],
+              'manifestVersion': 0,
+          }
+          record_path.parent.mkdir(parents=True, exist_ok=True)
+          record_path.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print('patched ToolHub.js, th_08_content.js and pending release record')
+          PY
+
+      - name: Verify focused lifecycle boundaries
+        shell: bash
+        run: |
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_entry_lifecycle.py
+          python3 scripts/verify_main_panel_close_lifecycle.py
+          python3 scripts/verify_major_event_logging.py
+          python3 scripts/verify_toolapp_main_thread_affinity.py
+          python3 scripts/verify_panel_ime_restore.py
+          python3 scripts/verify_update_history.py --require-one-pending
+          git diff --check
+
+      - name: Commit beta lifecycle fix
+        shell: bash
+        env:
+          PUSH_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ToolHub.js code/th_08_content.js updates/records/20260810-beta-restart-wm-thread-lease.json
+          if git diff --cached --quiet; then
+            echo "No patch changes"
+            exit 0
+          fi
+          git diff --cached --check
+          git commit -m "修复更新重启 WM 窗口分离生命周期"
+          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:beta
