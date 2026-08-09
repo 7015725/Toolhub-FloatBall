@@ -170,6 +170,38 @@
       "reason": "精确批准现有显示与窗口 API 扩展到 th_15_extra.js 的统一 IME 避让实现"
     },
     {
+      "id": "api-panel-ime-restore-back-handoff",
+      "usageKeys": [
+        "android|class|android.view.View.OnKeyListener",
+        "android|class|android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT",
+        "android|method|android.content.Context#getSystemService",
+        "android|method|android.view.View#OnKeyListener",
+        "android|method|android.widget.FrameLayout#findOnBackInvokedDispatcher",
+        "android|method|android.widget.FrameLayout#post",
+        "android|method|android.widget.FrameLayout#requestFocus",
+        "android|method|android.widget.FrameLayout#setFocusable",
+        "android|method|android.widget.FrameLayout#setFocusableInTouchMode",
+        "android|method|android.widget.FrameLayout#setOnKeyListener",
+        "java|method|java.lang.Class#forName",
+        "reflection|class|android.window.OnBackInvokedCallback",
+        "reflection|dynamic|Class.forName"
+      ],
+      "source": "android/java",
+      "classOrObject": "View, FrameLayout, InputMethodManager and OnBackInvokedCallback",
+      "method": "IME hide, focus handoff and legacy/predictive Back interception",
+      "classification": "guarded",
+      "scope": [
+        "code/*.js"
+      ],
+      "allowScopeExpansion": true,
+      "minApi": 33,
+      "guard": "Predictive Back registration is guarded by SDK_INT >= 33; legacy OnKeyListener remains available on all supported ToolHub runtimes",
+      "owner": "ToolHub panel IME restore",
+      "threadContract": "IME hide, focus transfer and WindowManager geometry restore execute on the existing overlay owner thread",
+      "fallback": "If predictive Back registration or IME service lookup fails, legacy Back and focus/layout observers continue to restore the panel",
+      "reason": "允许统一 IME 回退在设置面板、全屏弹窗和图标选择器中消费第一次返回并把第二次返回交给页面关闭链路"
+    },
+    {
       "id": "api-shortx-ui-beta-phase1",
       "usageKeys": [
         "android|class|android.graphics.Color",

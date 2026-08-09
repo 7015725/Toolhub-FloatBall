@@ -1,4 +1,4 @@
-// @version 1.1.16
+// @version 1.1.17
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -1711,6 +1711,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
       onKey: function(v, keyCode, event) {
         try {
           if (keyCode === android.view.KeyEvent.KEYCODE_BACK && event && event.getAction && event.getAction() === android.view.KeyEvent.ACTION_UP) {
+            if (self.handlePanelImeBack && self.handlePanelImeBack(root, "back_key")) return true;
             closePopup();
             return true;
           }
@@ -1915,7 +1916,10 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         try { dispatcher = root.findOnBackInvokedDispatcher(); } catch(eFindBack) { dispatcher = null; }
         if (!dispatcher) return;
         var cbCls = java.lang.Class.forName("android.window.OnBackInvokedCallback");
-        var cb = new JavaAdapter(cbCls, { onBackInvoked: function() { closePopup(); } });
+        var cb = new JavaAdapter(cbCls, { onBackInvoked: function() {
+          if (self.handlePanelImeBack && self.handlePanelImeBack(root, "on_back_invoked")) return;
+          closePopup();
+        }});
         var priority = 0;
         try { priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT; } catch(ePri) { priority = 0; }
         dispatcher.registerOnBackInvokedCallback(priority, cb);

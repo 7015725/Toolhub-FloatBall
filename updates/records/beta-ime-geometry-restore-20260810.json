@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "beta-ime-geometry-restore-20260810",
+  "type": "fix",
+  "title": "Beta：补全 IME 收起后的窗口几何回退",
+  "details": [
+    "键盘隐藏或输入框失焦时按首次避让前快照恢复窗口 width、height、gravity、x、y，回退成功后才清空快照，避免多次开合产生位置漂移。",
+    "第一次返回键只收起输入法、恢复窗口并将焦点交还面板根视图，第二次返回键再执行页面返回或关闭；同时覆盖旧式按键和 Android 13+ 预测性返回。",
+    "设置页、按钮编辑、Schema 编辑、颜色弹窗与 ShortX 图标选择器共用同一回退契约，输入框之间切换不会误回退。",
+    "窗口关闭或 detach 时归一化 LayoutParams，并注销布局监听、焦点监听和全部轮询回调，避免残留触摸层或旧快照污染下一次打开。"
+  ],
+  "manifestVersion": 0,
+  "date": "2026-08-10",
+  "modules": [
+    {
+      "name": "th_09_animation.js",
+      "from": "1.0.14",
+      "to": "1.0.15",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_icon_picker.js",
+      "from": "1.0.4",
+      "to": "1.0.5",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.16",
+      "to": "1.1.17",
+      "change": "updated"
+    },
+    {
+      "name": "th_15_extra.js",
+      "from": "1.1.23",
+      "to": "1.1.24",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260810005000,
+    "to": 20260810005000
+  }
+}

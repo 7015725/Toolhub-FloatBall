@@ -1,4 +1,4 @@
-// @version 1.0.14
+// @version 1.0.15
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -638,13 +638,16 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
     var usedAnimation = false;
 
     function finishBack(reason) {
+      self.resetPanelPredictiveBackVisual(panel);
+      if (self.handlePanelImeBack && self.handlePanelImeBack(panel, reason || "predictive_back")) {
+        return;
+      }
       if (String(which || "") === "tool_app" && self.finishToolAppBackPreview && self.hasToolAppBackTarget && self.hasToolAppBackTarget()) {
         var edge = 0;
         try { edge = Number(self.state.toolAppBackEdge || 0); } catch (eEdge) { edge = 0; }
         self.finishToolAppBackPreview(edge, true);
         return;
       }
-      self.resetPanelPredictiveBackVisual(panel);
       self.handlePanelBack(which, reason || "predictive_back");
     }
 
@@ -712,7 +715,10 @@ FloatBallAppWM.prototype.attachPanelSystemKeyHandler = function(panel, which) {
         try {
           if (!event) return false;
           if (event.getAction() !== android.view.KeyEvent.ACTION_UP) return false;
-          if (keyCode === android.view.KeyEvent.KEYCODE_BACK) return self.handlePanelBack(which, "back_key");
+          if (keyCode === android.view.KeyEvent.KEYCODE_BACK) {
+            if (self.handlePanelImeBack && self.handlePanelImeBack(panel, "back_key")) return true;
+            return self.handlePanelBack(which, "back_key");
+          }
           if (keyCode === android.view.KeyEvent.KEYCODE_ESCAPE) return self.handlePanelBack(which, "escape_key");
         } catch (e) { safeLog(self.L, 'e', "panel key handler fail: " + String(e)); }
         return false;

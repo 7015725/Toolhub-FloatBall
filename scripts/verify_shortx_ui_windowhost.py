@@ -93,7 +93,7 @@ for fragment, label in (
 ):
     forbid(LAB, fragment, label)
 
-require(ANIMATION, "// @version 1.0.14", "animation module version")
+require(ANIMATION, "// @version 1.0.15", "animation module version")
 require(ANIMATION, "FloatBallAppWM.prototype.safeRemoveView = function", "production safeRemoveView retained")
 for workflow, label in ((VERIFY, "verify"), (SIGN, "sign")):
     require(workflow, "python3 scripts/verify_shortx_ui_windowhost.py", label + " workflow")

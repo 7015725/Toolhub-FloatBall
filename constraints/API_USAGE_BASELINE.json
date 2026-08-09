@@ -43,7 +43,7 @@
     "code/th_25_shortx_ui_package.js",
     "code/th_34_shortx_ui_lab.js"
   ],
-  "usageCount": 763,
+  "usageCount": 765,
   "entries": [
     {
       "key": "android|class|android.animation.Animator.AnimatorListener",
@@ -449,6 +449,7 @@
       "key": "android|class|android.view.View.OnKeyListener",
       "files": [
         "code/th_09_animation.js",
+        "code/th_14_icon_picker.js",
         "code/th_14_panels.js"
       ]
     },
@@ -833,6 +834,7 @@
       "key": "android|class|android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT",
       "files": [
         "code/th_09_animation.js",
+        "code/th_14_icon_picker.js",
         "code/th_14_panels.js"
       ]
     },
@@ -1052,6 +1054,7 @@
         "code/th_13_panel_ui.js",
         "code/th_14_button_shortcut.js",
         "code/th_14_icon_picker.js",
+        "code/th_15_extra.js",
         "code/th_16_entry.js",
         "code/th_17_pointer.js",
         "code/th_21_result_preview.js"
@@ -2138,6 +2141,7 @@
       "key": "android|method|android.view.View#OnKeyListener",
       "files": [
         "code/th_09_animation.js",
+        "code/th_14_icon_picker.js",
         "code/th_14_panels.js"
       ]
     },
@@ -2743,6 +2747,12 @@
       ]
     },
     {
+      "key": "android|method|android.widget.FrameLayout#findOnBackInvokedDispatcher",
+      "files": [
+        "code/th_14_icon_picker.js"
+      ]
+    },
+    {
       "key": "android|method|android.widget.FrameLayout#getCanonicalPath",
       "files": [
         "code/th_22_image_viewer.js"
@@ -2805,6 +2815,7 @@
     {
       "key": "android|method|android.widget.FrameLayout#post",
       "files": [
+        "code/th_14_icon_picker.js",
         "code/th_15_extra.js"
       ]
     },
@@ -2824,6 +2835,7 @@
     {
       "key": "android|method|android.widget.FrameLayout#requestFocus",
       "files": [
+        "code/th_14_icon_picker.js",
         "code/th_23_screenshot_manager.js"
       ]
     },
@@ -2893,6 +2905,7 @@
     {
       "key": "android|method|android.widget.FrameLayout#setFocusable",
       "files": [
+        "code/th_14_icon_picker.js",
         "code/th_15_main_panel.js",
         "code/th_23_screenshot_manager.js"
       ]
@@ -2900,6 +2913,7 @@
     {
       "key": "android|method|android.widget.FrameLayout#setFocusableInTouchMode",
       "files": [
+        "code/th_14_icon_picker.js",
         "code/th_23_screenshot_manager.js"
       ]
     },
@@ -2926,6 +2940,12 @@
         "code/th_14_icon_picker.js",
         "code/th_15_main_panel.js",
         "code/th_22_image_viewer.js"
+      ]
+    },
+    {
+      "key": "android|method|android.widget.FrameLayout#setOnKeyListener",
+      "files": [
+        "code/th_14_icon_picker.js"
       ]
     },
     {
@@ -4943,6 +4963,7 @@
         "code/th_13_panel_ui.js",
         "code/th_14_button_icon_editor.js",
         "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
         "code/th_14_panels.js",
         "code/th_15_extra.js",
         "code/th_15_main_panel.js",
@@ -5590,6 +5611,7 @@
         "code/th_13_panel_ui.js",
         "code/th_14_button_icon_editor.js",
         "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
         "code/th_14_panels.js",
         "code/th_15_extra.js",
         "code/th_15_main_panel.js",
@@ -5655,6 +5677,7 @@
         "code/th_01_base.js",
         "code/th_04_theme.js",
         "code/th_09_animation.js",
+        "code/th_14_icon_picker.js",
         "code/th_14_panels.js",
         "code/th_17_pointer.js",
         "code/th_20_pickword.js"
@@ -6104,6 +6127,7 @@
       "key": "reflection|class|android.window.OnBackInvokedCallback",
       "files": [
         "code/th_09_animation.js",
+        "code/th_14_icon_picker.js",
         "code/th_14_panels.js"
       ]
     },
@@ -6125,6 +6149,7 @@
         "code/th_01_base.js",
         "code/th_04_theme.js",
         "code/th_09_animation.js",
+        "code/th_14_icon_picker.js",
         "code/th_14_panels.js",
         "code/th_17_pointer.js",
         "code/th_20_pickword.js"
@@ -6181,5 +6206,5 @@
       ]
     }
   ],
-  "usageDigest": "sha256:4f56c5b3cbad4855ac74295b3629b27b20f19933c7082fc559c9b9e25f02eb9a"
+  "usageDigest": "sha256:e96d7339c9a1d9afeaf108744df67b54b8ecf697440783a9ed7fa1b481dc8af8"
 }
