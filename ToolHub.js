@@ -4,7 +4,7 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260810053500; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260810005000; // 入口文件版本，仅在 ToolHub.js 变化时提升
 
 var TOOLHUB_CHANNEL_SPECS = {
     stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
@@ -383,6 +383,9 @@ function runShell(cmdArr) {
 }
 
 function setDirPerms(path) {
+    // 只尝试 chmod，不再强制 chown 1000:1000。
+    // 在部分 ColorOS/ShortX 环境中，shortx.getShortXDir() 位于 /data/system/shortx_*，
+    // 强制改 owner 反而会让当前 JS 进程失去写权限，导致 Dir not writable。
     runShell(["chmod", "700", path]);
 }
 
@@ -785,6 +788,7 @@ function getManifestRelease() {
     } catch (eRel) {}
     return out;
 }
+
 
 function runtimeOptString(v) {
     return (v === undefined || v === null) ? "" : String(v);
@@ -1387,6 +1391,7 @@ function executeStagedModuleTransaction(entries, installedManifest) {
     }
 }
 
+
 function installPendingModuleUpdates() {
     if (__manualUpdateRunning) return { ok: false, running: true, msg: "更新正在进行" };
     __manualUpdateRunning = true;
@@ -1478,6 +1483,7 @@ function installPendingModuleUpdates() {
     }
 }
 
+
 function checkToolHubModuleUpdatesNow() {
     if (__runtimeUpdateCheckRunning) return { ok: false, running: true, msg: "检查正在进行" };
     __runtimeUpdateCheckRunning = true;
@@ -1557,6 +1563,7 @@ function checkToolHubModuleUpdatesNow() {
     }
 }
 
+
 function checkLocalTrustedModuleSet() {
     var ret = {
         ok: true,
@@ -1565,17 +1572,25 @@ function checkLocalTrustedModuleSet() {
         untrusted: [],
         error: ""
     };
+
     try {
         var dir = ensureCodeDir();
         for (var i = 0; i < modules.length; i++) {
             var relPath = String(modules[i]);
             var file = new java.io.File(dir, relPath);
-            if (!file.exists()) { ret.missing.push(relPath); continue; }
+            if (!file.exists()) {
+                ret.missing.push(relPath);
+                continue;
+            }
             var trustedHash = getTrustedSha(relPath);
             var actualHash = sha256File(file.getAbsolutePath());
-            if (!trustedHash || !actualHash || !hashesEqual(actualHash, trustedHash)) { ret.untrusted.push(relPath); continue; }
+            if (!trustedHash || !actualHash || !hashesEqual(actualHash, trustedHash)) {
+                ret.untrusted.push(relPath);
+                continue;
+            }
             ret.count++;
         }
+
         if (ret.missing.length > 0 || ret.untrusted.length > 0) {
             ret.ok = false;
             ret.error = "missing=" + ret.missing.join(",") + "; untrusted=" + ret.untrusted.join(",");
@@ -1589,7 +1604,14 @@ function checkLocalTrustedModuleSet() {
 }
 
 function checkModuleManifestConsistency() {
-    var ret = { ok: true, missingInManifest: [], unusedInManifest: [], localTrustedFallback: false, error: "" };
+    var ret = {
+        ok: true,
+        missingInManifest: [],
+        unusedInManifest: [],
+        localTrustedFallback: false,
+        error: ""
+    };
+
     try {
         if (UPDATE_SECURITY_MODE === 0) return ret;
         if (!__trustedManifest || !__trustedManifest.files) {
@@ -1603,13 +1625,18 @@ function checkModuleManifestConsistency() {
             ret.error = "trusted manifest missing; local trusted module set invalid: " + String(localTrusted.error || "unknown");
             return ret;
         }
+
         var moduleMap = {};
         var i;
-        for (i = 0; i < modules.length; i++) moduleMap[String(modules[i])] = true;
+        for (i = 0; i < modules.length; i++) {
+            moduleMap[String(modules[i])] = true;
+        }
+
         for (i = 0; i < modules.length; i++) {
             var rel = String(modules[i]);
             if (!__trustedManifest.files[rel]) ret.missingInManifest.push(rel);
         }
+
         for (var k in __trustedManifest.files) {
             if (!__trustedManifest.files.hasOwnProperty(k)) continue;
             var ks = String(k);
@@ -1617,11 +1644,16 @@ function checkModuleManifestConsistency() {
                 if (!moduleMap[ks]) ret.unusedInManifest.push(ks);
             }
         }
+
         if (ret.missingInManifest.length > 0) {
             ret.ok = false;
             ret.error = "modules not in manifest: " + ret.missingInManifest.join(",");
         }
-        if (ret.unusedInManifest.length > 0) writeLog("WARN manifest has unused modules: " + ret.unusedInManifest.join(","));
+
+        if (ret.unusedInManifest.length > 0) {
+            writeLog("WARN manifest has unused modules: " + ret.unusedInManifest.join(","));
+        }
+
         return ret;
     } catch (e) {
         ret.ok = false;
@@ -1633,17 +1665,22 @@ function checkModuleManifestConsistency() {
 function verifyLocalModuleBeforeEval(relPath, fileObj) {
     if (!fileObj || !fileObj.exists()) throw "本地模块不存在: " + relPath;
     if (UPDATE_SECURITY_MODE === 0) return true;
+
     var actualHash = sha256File(fileObj.getAbsolutePath());
     if (!actualHash) throw "无法计算模块 SHA256: " + relPath;
+
     var info = getManifestInfo(relPath);
     if (info && info.sha256) {
         var expectedHash = String(info.sha256).toLowerCase();
         if (hashesEqual(actualHash, expectedHash)) return true;
     }
+
     var trustedHash = getTrustedSha(relPath);
     if (trustedHash && hashesEqual(actualHash, trustedHash)) return true;
+
     var installedHash = getInstalledSha(relPath);
     if (installedHash && hashesEqual(actualHash, installedHash)) return true;
+
     throw "本地模块未通过安全校验: " + relPath;
 }
 
@@ -1657,12 +1694,15 @@ function loadScript(relPath) {
         else if (UPDATE_SECURITY_MODE === 2) result = ensureLocalTrustedModule(relPath, f);
         else if (f.exists()) result = { updated: false, localFallback: true, size: f.length(), hash: sha256File(f.getAbsolutePath()) };
         else throw "manifest不可用且本地模块不存在: " + relPath;
+
         if (result.updated) {
             __moduleUpdates.push({ module: relPath, isNew: !!result.isNew, size: result.size, bootFixed: !!result.bootFixed });
             writeLog((UPDATE_SECURITY_MODE === 0 ? "Plain boot repair " : "Verified boot repair ") + relPath + " (" + result.size + " bytes, sha256=" + result.hash + ")");
         }
+
         var fileSize = f.length();
         if (fileSize > 200 * 1024) writeLog("WARN: " + relPath + " is " + (fileSize / 1024) + "KB, consider splitting");
+
         var code = readTextFile(f.getAbsolutePath());
         if (code === null) throw "read failed: " + f.getAbsolutePath();
         var geval = eval;
@@ -1711,7 +1751,9 @@ recoverPendingModuleTransaction();
 fetchTrustedManifest();
 
 var __manifestCheck = checkModuleManifestConsistency();
-if (!__manifestCheck.ok) throw "模块清单自检失败: " + String(__manifestCheck.error || "");
+if (!__manifestCheck.ok) {
+    throw "模块清单自检失败: " + String(__manifestCheck.error || "");
+}
 
 for (var i = 0; i < modules.length; i++) {
     try {
@@ -1728,7 +1770,9 @@ for (var i = 0; i < modules.length; i++) {
 function notifyToolHubModulesLoaded() {
     if (loadErrors && loadErrors.length > 0) return false;
     var moduleCount = modules ? Number(modules.length || 0) : 0;
-    var text = moduleCount > 0 ? "ToolHub 子模块加载完成（" + String(moduleCount) + " 个）" : "ToolHub 子模块加载完成";
+    var text = moduleCount > 0
+        ? "ToolHub 子模块加载完成（" + String(moduleCount) + " 个）"
+        : "ToolHub 子模块加载完成";
     var task = new java.lang.Runnable({ run: function() {
         try { android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show(); }
         catch (eToast) { try { writeLog("Submodules loaded toast failed: " + String(eToast)); } catch (eLog) {} }
@@ -1747,14 +1791,16 @@ var TOOLHUB_ACTIVE_APP = (typeof TOOLHUB_ACTIVE_APP !== "undefined") ? TOOLHUB_A
 var __toolHubRestartRunning = (typeof __toolHubRestartRunning !== "undefined") ? __toolHubRestartRunning : false;
 var TOOLHUB_APP_REGISTRY = (typeof TOOLHUB_APP_REGISTRY !== "undefined" && TOOLHUB_APP_REGISTRY) ? TOOLHUB_APP_REGISTRY : [];
 var TOOLHUB_WINDOW_DETACH_QUARANTINE = (typeof TOOLHUB_WINDOW_DETACH_QUARANTINE !== "undefined" && TOOLHUB_WINDOW_DETACH_QUARANTINE) ? TOOLHUB_WINDOW_DETACH_QUARANTINE : [];
-var TOOLHUB_WM_THREAD_LEASE_QUARANTINE = (typeof TOOLHUB_WM_THREAD_LEASE_QUARANTINE !== "undefined" && TOOLHUB_WM_THREAD_LEASE_QUARANTINE) ? TOOLHUB_WM_THREAD_LEASE_QUARANTINE : [];
 
 function registerToolHubAppInstance(appObj) {
   try {
     if (!appObj) return;
     if (!TOOLHUB_APP_REGISTRY) TOOLHUB_APP_REGISTRY = [];
     for (var i = 0; i < TOOLHUB_APP_REGISTRY.length; i++) {
-      if (TOOLHUB_APP_REGISTRY[i] === appObj) { TOOLHUB_ACTIVE_APP = appObj; return; }
+      if (TOOLHUB_APP_REGISTRY[i] === appObj) {
+        TOOLHUB_ACTIVE_APP = appObj;
+        return;
+      }
     }
     TOOLHUB_APP_REGISTRY.push(appObj);
     TOOLHUB_ACTIVE_APP = appObj;
@@ -1780,8 +1826,12 @@ function unregisterToolHubAppInstance(appObj) {
 }
 
 function getToolHubCloseActionForRestart(appObj) {
-  try { if (appObj && appObj.config && appObj.config.ACTION_CLOSE_ALL) return String(appObj.config.ACTION_CLOSE_ALL); } catch(eAction0) {}
-  try { if (typeof CONST_ACTION_CLOSE_ALL_RULE !== "undefined" && CONST_ACTION_CLOSE_ALL_RULE) return String(CONST_ACTION_CLOSE_ALL_RULE); } catch(eAction1) {}
+  try {
+    if (appObj && appObj.config && appObj.config.ACTION_CLOSE_ALL) return String(appObj.config.ACTION_CLOSE_ALL);
+  } catch(eAction0) {}
+  try {
+    if (typeof CONST_ACTION_CLOSE_ALL_RULE !== "undefined" && CONST_ACTION_CLOSE_ALL_RULE) return String(CONST_ACTION_CLOSE_ALL_RULE);
+  } catch(eAction1) {}
   return "shortx.wm.floatball.CLOSE";
 }
 
@@ -1793,7 +1843,9 @@ function sendToolHubCloseBroadcastForRestart(appObj) {
     ret.ok = true;
     ret.via = "context";
     return ret;
-  } catch(eCtx) { ret.error = String(eCtx); }
+  } catch(eCtx) {
+    ret.error = String(eCtx);
+  }
   try {
     if (typeof shell === "function") {
       shell("am broadcast -a " + String(action));
@@ -1801,7 +1853,9 @@ function sendToolHubCloseBroadcastForRestart(appObj) {
       ret.via = "shell";
       return ret;
     }
-  } catch(eShell) { ret.error = String(ret.error || "") + "; shell=" + String(eShell); }
+  } catch(eShell) {
+    ret.error = String(ret.error || "") + "; shell=" + String(eShell);
+  }
   try { writeLog("Restart close broadcast failed action=" + String(action) + " err=" + String(ret.error || "")); } catch(eLogBroadcast) {}
   return ret;
 }
@@ -1810,7 +1864,9 @@ function appendToolHubWindowSnapshot(output, appObj, viewKey, label) {
   var view = null;
   try { view = appObj && appObj.state ? appObj.state[viewKey] : null; } catch(eView) { view = null; }
   if (!view) return;
-  for (var i = 0; i < output.length; i++) if (output[i] && output[i].view === view) return;
+  for (var i = 0; i < output.length; i++) {
+    if (output[i] && output[i].view === view) return;
+  }
   output.push({ view: view, label: String(label || viewKey) });
 }
 
@@ -1828,14 +1884,18 @@ function snapshotToolHubAppWindows(apps) {
   var keys = ["ballRoot", "panel", "settingsPanel", "viewerPanel", "mask", "toolAppRoot"];
   for (i = 0; i < apps.length; i++) {
     var appObj = apps[i];
-    for (var k = 0; k < keys.length; k++) appendToolHubWindowSnapshot(output, appObj, keys[k], "app" + String(i) + "." + keys[k]);
+    for (var k = 0; k < keys.length; k++) {
+      appendToolHubWindowSnapshot(output, appObj, keys[k], "app" + String(i) + "." + keys[k]);
+    }
   }
   return output;
 }
 
 function isToolHubWindowAttached(view) {
   if (!view) return false;
-  try { if (typeof view.isAttachedToWindow === "function") return view.isAttachedToWindow() === true; } catch(eAttached) {}
+  try {
+    if (typeof view.isAttachedToWindow === "function") return view.isAttachedToWindow() === true;
+  } catch(eAttached) {}
   try { return view.getWindowToken() !== null; } catch(eToken) {}
   return true;
 }
@@ -1854,90 +1914,38 @@ function waitForToolHubWindowsDetached(snapshots, timeoutMs) {
     if (Number(java.lang.System.currentTimeMillis()) >= deadline) break;
     try { java.lang.Thread.sleep(40); } catch(eSleepDetach) { break; }
   }
-  return { ok: remaining.length <= 0, detached: remaining.length <= 0, total: snapshots.length, remaining: remaining, waitedMs: Number(java.lang.System.currentTimeMillis()) - startedAt };
+  return {
+    ok: remaining.length <= 0,
+    detached: remaining.length <= 0,
+    total: snapshots.length,
+    remaining: remaining,
+    waitedMs: Number(java.lang.System.currentTimeMillis()) - startedAt
+  };
 }
 
-function appendToolHubWmThreadLease(output, lease) {
-  if (!lease || !lease.thread) return;
-  for (var i = 0; i < output.length; i++) {
-    try { if (output[i] && output[i].thread === lease.thread) return; } catch(eCompareLease) {}
-  }
-  output.push(lease);
-}
-
-function captureToolHubWmThreadLeaseForRestart(appObj, label) {
+function closeToolHubAppForRestart(appObj) {
+  var ret = { ok: false, skipped: false, timedOut: false, err: "" };
   try {
-    var stateRef = appObj && appObj.state ? appObj.state : null;
-    if (!stateRef || !stateRef.ht) return null;
-    var lease = { thread: stateRef.ht, handler: stateRef.h || null, label: String(label || "app"), capturedAt: Number(java.lang.System.currentTimeMillis()), released: false };
-    // restart/channel-switch 专用：旧版 close() 不再拥有 WM HandlerThread 的最终退出权。
-    // 只摘掉 ht，保留 h；removeView 与 deferred cleanup 仍可继续在原 Looper 上执行。
-    if (stateRef.ht === lease.thread) stateRef.ht = null;
-    try { writeLog("Restart WM lease captured label=" + lease.label + " handler=" + String(!!lease.handler)); } catch(eLogLease) {}
-    return lease;
-  } catch(eLease) {
-    try { writeLog("Restart WM lease capture failed label=" + String(label || "") + " err=" + String(eLease)); } catch(eLogLeaseFail) {}
-  }
-  return null;
-}
-
-function releaseToolHubWmThreadLeases(leases, reason) {
-  var released = 0;
-  var seen = [];
-  for (var i = 0; i < (leases ? leases.length : 0); i++) {
-    var lease = leases[i];
-    if (!lease || !lease.thread || lease.released === true) continue;
-    var duplicate = false;
-    for (var j = 0; j < seen.length; j++) {
-      try { if (seen[j] === lease.thread) duplicate = true; } catch(eCompare) {}
-      if (duplicate) break;
+    if (!appObj) {
+      ret.ok = true;
+      ret.skipped = true;
+      return ret;
     }
-    if (duplicate) continue;
-    seen.push(lease.thread);
-    try {
-      if (android.os.Build.VERSION.SDK_INT >= 18 && lease.thread.quitSafely) lease.thread.quitSafely();
-      else if (lease.thread.quit) lease.thread.quit();
-      lease.released = true;
-      released++;
-      try { writeLog("Restart WM lease released label=" + String(lease.label || "") + " reason=" + String(reason || "")); } catch(eLogRelease) {}
-    } catch(eQuitLease) {
-      try { writeLog("Restart WM lease release failed label=" + String(lease.label || "") + " err=" + String(eQuitLease)); } catch(eLogQuitLease) {}
-    }
-  }
-  return released;
-}
-
-function quarantineToolHubWmThreadLeases(leases) {
-  var next = [];
-  for (var i = 0; i < (leases ? leases.length : 0); i++) appendToolHubWmThreadLease(next, leases[i]);
-  TOOLHUB_WM_THREAD_LEASE_QUARANTINE = next;
-  return next.length;
-}
-
-function closeToolHubAppForRestart(appObj, appLabel) {
-  var ret = { ok: false, skipped: false, timedOut: false, err: "", wmLease: null };
-  try {
-    if (!appObj) { ret.ok = true; ret.skipped = true; return ret; }
     if (appObj.state && appObj.state.closed) {
       unregisterToolHubAppInstance(appObj);
       ret.ok = true;
       ret.skipped = true;
       return ret;
     }
-    var lease = captureToolHubWmThreadLeaseForRestart(appObj, appLabel || "app");
-    ret.wmLease = lease;
-    var wmHandler = null;
-    try { wmHandler = lease && lease.handler ? lease.handler : (appObj.state ? appObj.state.h : null); } catch(eHandler) { wmHandler = null; }
-    if (wmHandler) {
+    if (appObj.state && appObj.state.h) {
       var latch = new java.util.concurrent.CountDownLatch(1);
       var posted = false;
       try {
-        posted = wmHandler.post(new JavaAdapter(java.lang.Runnable, {
+        posted = appObj.state.h.post(new JavaAdapter(java.lang.Runnable, {
           run: function() {
             try {
               if (typeof appObj.close === "function") appObj.close();
-              ret.ok = !!(appObj.state && appObj.state.closed === true);
-              if (!ret.ok && !ret.err) ret.err = "close returned without closed state";
+              ret.ok = true;
             } catch(eClosePost) {
               ret.err = String(eClosePost);
               try { writeLog("Restart close post failed: " + String(eClosePost)); } catch(eLogClosePost) {}
@@ -1953,16 +1961,16 @@ function closeToolHubAppForRestart(appObj, appLabel) {
       if (posted) {
         var done = false;
         try { done = latch["await"](2800, java.util.concurrent.TimeUnit.MILLISECONDS); } catch(eAwaitClose) { ret.err = String(eAwaitClose); }
-        if (!done) { ret.timedOut = true; if (!ret.err) ret.err = "close wait timeout"; }
+        if (!done) {
+          ret.timedOut = true;
+          if (!ret.err) ret.err = "close wait timeout";
+        }
         return ret;
       }
-      if (!ret.err) ret.err = "close post failed";
-      return ret;
     }
     if (typeof appObj.close === "function") {
       appObj.close();
-      ret.ok = !!(appObj.state && appObj.state.closed === true);
-      if (!ret.ok) ret.err = "close returned without closed state";
+      ret.ok = true;
       return ret;
     }
     ret.ok = true;
@@ -1978,45 +1986,36 @@ function closeToolHubAppsForRestart(primaryApp) {
   var list = [];
   var i;
   try {
-    if (TOOLHUB_APP_REGISTRY) for (i = 0; i < TOOLHUB_APP_REGISTRY.length; i++) if (TOOLHUB_APP_REGISTRY[i]) list.push(TOOLHUB_APP_REGISTRY[i]);
+    if (TOOLHUB_APP_REGISTRY) {
+      for (i = 0; i < TOOLHUB_APP_REGISTRY.length; i++) {
+        if (TOOLHUB_APP_REGISTRY[i]) list.push(TOOLHUB_APP_REGISTRY[i]);
+      }
+    }
   } catch(eListRegistry) {}
   if (primaryApp) {
     var exists = false;
-    for (i = 0; i < list.length; i++) if (list[i] === primaryApp) exists = true;
+    for (i = 0; i < list.length; i++) {
+      if (list[i] === primaryApp) exists = true;
+    }
     if (!exists) list.push(primaryApp);
   }
   var windowSnapshots = snapshotToolHubAppWindows(list);
-  var wmLeases = [];
-  try {
-    if (TOOLHUB_WM_THREAD_LEASE_QUARANTINE) {
-      for (i = 0; i < TOOLHUB_WM_THREAD_LEASE_QUARANTINE.length; i++) appendToolHubWmThreadLease(wmLeases, TOOLHUB_WM_THREAD_LEASE_QUARANTINE[i]);
-    }
-  } catch(eOldLeases) {}
   var closed = 0;
   var timedOut = 0;
   for (i = 0; i < list.length; i++) {
-    var one = closeToolHubAppForRestart(list[i], "app" + String(i));
+    var one = closeToolHubAppForRestart(list[i]);
     if (one && one.ok) closed++;
     if (one && one.timedOut) timedOut++;
-    if (one && one.wmLease) appendToolHubWmThreadLease(wmLeases, one.wmLease);
   }
-  // 已知实例先提交 close；广播只兜底未进入注册表的历史实例。
-  // captured lease 阻止旧 close() 在 removeView 的真实 detach 之前终止 WM Looper。
+  // 已知实例必须先在各自的 WindowManager HandlerThread 上关闭；随后再发广播，
+  // 只用于清理未进入当前注册表的历史实例，避免主线程接收器抢先清空旧实例引用。
   var broadcastRet = sendToolHubCloseBroadcastForRestart(primaryApp);
   try { java.lang.Thread.sleep(broadcastRet.ok ? 250 : 80); } catch(eSleepCloseBroadcast) {}
   var detachResult = waitForToolHubWindowsDetached(windowSnapshots, 4200);
   TOOLHUB_WINDOW_DETACH_QUARANTINE = detachResult.remaining;
   var remainingLabels = [];
   for (i = 0; i < detachResult.remaining.length; i++) remainingLabels.push(String(detachResult.remaining[i].label || "window"));
-  var releasedLeases = 0;
-  var quarantinedLeases = 0;
-  if (detachResult.detached) {
-    releasedLeases = releaseToolHubWmThreadLeases(wmLeases, "windows_detached");
-    TOOLHUB_WM_THREAD_LEASE_QUARANTINE = [];
-  } else {
-    quarantinedLeases = quarantineToolHubWmThreadLeases(wmLeases);
-  }
-  try { writeLog("Restart close sweep action=" + String(broadcastRet.action || "") + " broadcast=" + String(broadcastRet.ok) + " apps=" + String(list.length) + " closed=" + String(closed) + " timeout=" + String(timedOut) + " windows=" + String(detachResult.total) + " detached=" + String(detachResult.detached) + " waitedMs=" + String(detachResult.waitedMs) + " remaining=" + remainingLabels.join(",") + " wmLeases=" + String(wmLeases.length) + " releasedLeases=" + String(releasedLeases) + " quarantinedLeases=" + String(quarantinedLeases)); } catch(eLogSweep) {}
+  try { writeLog("Restart close sweep action=" + String(broadcastRet.action || "") + " broadcast=" + String(broadcastRet.ok) + " apps=" + String(list.length) + " closed=" + String(closed) + " timeout=" + String(timedOut) + " windows=" + String(detachResult.total) + " detached=" + String(detachResult.detached) + " waitedMs=" + String(detachResult.waitedMs) + " remaining=" + remainingLabels.join(",")); } catch(eLogSweep) {}
   return {
     broadcast: broadcastRet,
     count: list.length,
@@ -2025,23 +2024,29 @@ function closeToolHubAppsForRestart(primaryApp) {
     detached: detachResult.detached,
     windowCount: detachResult.total,
     remainingWindows: remainingLabels,
-    waitedMs: detachResult.waitedMs,
-    wmLeaseCount: wmLeases.length,
-    releasedWmLeases: releasedLeases,
-    quarantinedWmLeases: quarantinedLeases
+    waitedMs: detachResult.waitedMs
   };
 }
 
 function reloadLocalToolHubModulesForRestart() {
   var dir = ensureCodeDir();
-  if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) fetchTrustedManifest();
+
+  if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) {
+    fetchTrustedManifest();
+  }
+
   var checkRet = checkModuleManifestConsistency();
-  if (!checkRet.ok) throw "模块清单自检失败: " + String(checkRet.error || "");
+  if (!checkRet.ok) {
+    throw "模块清单自检失败: " + String(checkRet.error || "");
+  }
+
   for (var i = 0; i < modules.length; i++) {
     var relPath = String(modules[i]);
     var f = new java.io.File(dir, relPath);
     if (!f.exists()) throw "本地模块不存在: " + relPath;
+
     verifyLocalModuleBeforeEval(relPath, f);
+
     var code = readTextFile(f.getAbsolutePath());
     if (code === null) throw "读取模块失败: " + relPath;
     var geval = eval;
@@ -2107,7 +2112,9 @@ function showToolHubChannelSwitchToast(message) {
 
 function flushToolHubStateBeforeChannelSwitch() {
   try {
-    if (typeof FileIO !== "undefined" && FileIO && typeof FileIO.flushDebouncedWrites === "function") FileIO.flushDebouncedWrites();
+    if (typeof FileIO !== "undefined" && FileIO && typeof FileIO.flushDebouncedWrites === "function") {
+      FileIO.flushDebouncedWrites();
+    }
   } catch (eFlush) {
     try { writeLog("Channel switch flush warning: " + String(eFlush)); } catch (eLogFlush) {}
   }
@@ -2156,7 +2163,9 @@ function startToolHubAppAfterChannelLoad(reason) {
   var startRet = app.startAsync(entryInfo, closeRule);
   if (!startRet || !startRet.ok) {
     var failedClose = closeToolHubAppsForRestart(app);
-    if (!failedClose.detached) throw "ToolHub 启动失败且残留窗口未完成清理: " + String(startRet && startRet.err || "unknown");
+    if (!failedClose.detached) {
+      throw "ToolHub 启动失败且残留窗口未完成清理: " + String(startRet && startRet.err || "unknown");
+    }
     throw "ToolHub 启动失败: " + String(startRet && startRet.err || "unknown");
   }
   return { app: app, startRet: startRet };
@@ -2192,6 +2201,7 @@ function switchToolHubUpdateChannel(targetChannel) {
         previousCloseIncomplete = true;
         throw "旧通道窗口关闭未完成：" + previousClose.remainingWindows.join(",");
       }
+
       applyToolHubChannelRuntime(target);
       loadTargetToolHubChannelModules();
       startToolHubAppAfterChannelLoad("channel_switch_" + target);
@@ -2252,10 +2262,15 @@ function switchToolHubUpdateChannel(targetChannel) {
 }
 
 var __out = (function() {
-  if (typeof getProcessInfo !== "function") return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心函数 getProcessInfo 未定义，请检查 th_01_base.js 是否加载成功" };
-  if (typeof ToolHubLogger !== "function") return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心类 ToolHubLogger 未定义，请检查 th_01_base.js 是否加载成功" };
-  if (typeof FloatBallAppWM !== "function") return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心类 FloatBallAppWM 未定义，请检查 th_02_core.js / th_16_entry.js 是否加载成功" };
-
+  if (typeof getProcessInfo !== "function") {
+    return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心函数 getProcessInfo 未定义，请检查 th_01_base.js 是否加载成功" };
+  }
+  if (typeof ToolHubLogger !== "function") {
+    return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心类 ToolHubLogger 未定义，请检查 th_01_base.js 是否加载成功" };
+  }
+  if (typeof FloatBallAppWM !== "function") {
+    return { ok: false, started: false, msg: "ToolHub 启动失败", securityMsg: __securityStatus.msg, err: "核心类 FloatBallAppWM 未定义，请检查 th_02_core.js / th_16_entry.js 是否加载成功" };
+  }
   function summarizeModuleUpdates(list) {
     var names = [];
     var created = 0;
@@ -2299,8 +2314,14 @@ var __out = (function() {
     if (UPDATE_SECURITY_MODE === 0) statusName = "plain";
     if (syncInfo && syncInfo.count > 0) statusName = "updated";
     if (pendingInfo && pendingInfo.count > 0) statusName = "available";
-    if (!__securityStatus || !__securityStatus.ok) { statusName = "error"; errText = runtimeOptString(__securityStatus && __securityStatus.msg); }
-    if (loadInfo && loadInfo.count > 0) { statusName = "error"; errText = errText ? (errText + "；" + loadInfo.msg) : loadInfo.msg; }
+    if (!__securityStatus || !__securityStatus.ok) {
+      statusName = "error";
+      errText = runtimeOptString(__securityStatus && __securityStatus.msg);
+    }
+    if (loadInfo && loadInfo.count > 0) {
+      statusName = "error";
+      errText = errText ? (errText + "；" + loadInfo.msg) : loadInfo.msg;
+    }
     return {
       ok: statusName !== "error",
       status: statusName,
@@ -2340,11 +2361,16 @@ var __out = (function() {
 
   var existingApp = null;
   try { existingApp = TOOLHUB_ACTIVE_APP; } catch(eExistingApp) { existingApp = null; }
-  if (existingApp || (TOOLHUB_WINDOW_DETACH_QUARANTINE && TOOLHUB_WINDOW_DETACH_QUARANTINE.length > 0) || (TOOLHUB_WM_THREAD_LEASE_QUARANTINE && TOOLHUB_WM_THREAD_LEASE_QUARANTINE.length > 0)) {
+  if (existingApp || (TOOLHUB_WINDOW_DETACH_QUARANTINE && TOOLHUB_WINDOW_DETACH_QUARANTINE.length > 0)) {
     try { writeLog("Entry found existing ToolHub app, closing before start"); } catch(eLogExisting) {}
     var existingClose = closeToolHubAppsForRestart(existingApp);
     if (!existingClose.detached) {
-      return { ok: false, started: false, msg: "旧 ToolHub 窗口尚未完全关闭，已阻止重复启动", err: "remaining windows: " + existingClose.remainingWindows.join(",") };
+      return {
+        ok: false,
+        started: false,
+        msg: "旧 ToolHub 窗口尚未完全关闭，已阻止重复启动",
+        err: "remaining windows: " + existingClose.remainingWindows.join(",")
+      };
     }
   }
 
@@ -2366,7 +2392,9 @@ var __out = (function() {
   if (!started) unregisterToolHubAppInstance(app);
   var layoutObj = startRet && startRet.layout || null;
   var layoutText = layoutObj ? (String(layoutObj.cols || "?") + "×" + String(layoutObj.rows || "?")) : "未知";
-  var syncText = syncInfo.count > 0 ? ("✓ 启动已补全/修复 " + syncInfo.count + " 个模块：" + syncInfo.modules.join("、")) : (pendingInfo.count > 0 ? ("↻ 有 " + pendingInfo.count + " 个子模块可更新") : "✓ 子模块已是最新");
+  var syncText = syncInfo.count > 0
+    ? ("✓ 启动已补全/修复 " + syncInfo.count + " 个模块：" + syncInfo.modules.join("、"))
+    : (pendingInfo.count > 0 ? ("↻ 有 " + pendingInfo.count + " 个子模块可更新") : "✓ 子模块已是最新");
   var startupStatus = !started ? "failed" : (degraded ? "degraded" : "healthy");
   var startupText = !started ? "ToolHub 启动失败" : (degraded ? "ToolHub 降级启动" : "ToolHub 启动成功");
 
@@ -2388,9 +2416,15 @@ var __out = (function() {
   if (syncInfo.count > 0) out.启动修复模块 = syncInfo.modules;
   if (pendingInfo.count > 0) out.可更新模块 = pendingInfo.modules;
   if (loadInfo.count > 0) out.加载异常 = loadInfo.modules;
-  if (!started) out.错误 = runtimeOptString(startRet && startRet.err) || (loadInfo.count > 0 ? loadInfo.msg : "未知错误");
-  else if (degraded) { out.降级原因 = loadInfo.msg; out.错误 = loadInfo.msg; }
-  try { writeLog("Startup result status=" + startupStatus + " started=" + String(started) + " degraded=" + String(degraded) + " loadErrors=" + String(loadInfo.count || 0)); } catch (eStartupStatusLog) {}
+  if (!started) {
+    out.错误 = runtimeOptString(startRet && startRet.err) || (loadInfo.count > 0 ? loadInfo.msg : "未知错误");
+  } else if (degraded) {
+    out.降级原因 = loadInfo.msg;
+    out.错误 = loadInfo.msg;
+  }
+  try {
+    writeLog("Startup result status=" + startupStatus + " started=" + String(started) + " degraded=" + String(degraded) + " loadErrors=" + String(loadInfo.count || 0));
+  } catch (eStartupStatusLog) {}
   return out;
 })();
 JSON.stringify(__out, null, 2);
