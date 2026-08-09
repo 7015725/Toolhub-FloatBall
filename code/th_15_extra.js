@@ -1,4 +1,4 @@
-// @version 1.1.25
+// @version 1.1.26
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -181,7 +181,9 @@ FloatBallAppWM.prototype.readPanelImeState = function(root) {
     topInsetPx: this.dp(24),
     screenHeightPx: screenH,
     screenWidthPx: screenW,
-    source: "none"
+    source: "none",
+    insetsAvailable: false,
+    insetsVisible: false
   };
 
   try {
@@ -200,9 +202,13 @@ FloatBallAppWM.prototype.readPanelImeState = function(root) {
         var barsMask = android.view.WindowInsets.Type.systemBars();
         var imeInsets = insets.getInsets(imeMask);
         var barInsets = insets.getInsets(barsMask);
-        out.bottomPx = Math.max(0, Number(imeInsets.bottom));
+        out.insetsAvailable = true;
+        out.insetsVisible = insets.isVisible(imeMask) === true;
+        out.bottomPx = out.insetsVisible ? Math.max(0, Number(imeInsets.bottom)) : 0;
         out.topInsetPx = Math.max(out.topInsetPx, Number(barInsets.top));
-        out.visible = insets.isVisible(imeMask) === true || out.bottomPx >= this.dp(120);
+        // API 30+ 以官方 isVisible(Type.ime()) 为显示状态真值。
+        // ColorOS 退场动画结束后 visible frame/旧 bottom 可能仍保留一帧，不能反向覆盖隐藏状态。
+        out.visible = out.insetsVisible;
         out.source = "root_window_insets";
       }
     } catch(eInsets) {}
@@ -213,10 +219,16 @@ FloatBallAppWM.prototype.readPanelImeState = function(root) {
     root.getWindowVisibleDisplayFrame(frame);
     var gap = Math.max(0, screenH - Number(frame.bottom));
     out.topInsetPx = Math.max(out.topInsetPx, Number(frame.top));
-    if (gap > out.bottomPx && gap >= this.dp(120)) {
-      out.bottomPx = gap;
-      out.visible = true;
-      out.source = "visible_display_frame";
+    if (gap >= this.dp(120)) {
+      if (!out.insetsAvailable) {
+        out.bottomPx = gap;
+        out.visible = true;
+        out.source = "visible_display_frame";
+      } else if (out.insetsVisible && gap > out.bottomPx) {
+        // Insets 已确认 IME 可见时，visible frame 只补充键盘高度，不再决定显示状态。
+        out.bottomPx = gap;
+        out.source = "root_window_insets+visible_display_frame";
+      }
     }
   } catch(eFrame) {}
 
@@ -295,6 +307,11 @@ FloatBallAppWM.prototype.restorePanelImeGeometry = function(binding, reason, rel
   binding.applied = false;
   binding.lastImeVisible = false;
   binding.lastRestoreReason = String(reason || "hidden");
+  if (shouldApply) {
+    safeLog(this.L, 'd', "IME geometry restored owner=" + String(binding.owner || "") +
+      " reason=" + String(reason || "hidden") +
+      " source=" + String(binding.lastImeSource || "none"));
+  }
   if (releaseFocus === true) this.releasePanelImeFocus(binding, reason);
   return true;
 };

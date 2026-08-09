@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "id": "beta-ime-insets-hidden-restore-20260810",
+  "type": "fix",
+  "title": "Beta：修复 ColorOS 键盘收起后窗口不回位",
+  "details": [
+    "Android 11 及以上改为以 WindowInsets.isVisible(Type.ime()) 作为 IME 显示状态真值，键盘隐藏后立即恢复避让前窗口几何。",
+    "修复 ColorOS 在窗口临时缩短后仍返回旧 visible frame 间隙、导致程序误判键盘持续显示而无法回退的问题。",
+    "可见区域回退仅在 WindowInsets 不可用时决定 IME 状态；Insets 已确认键盘可见时只允许它补充键盘高度。",
+    "新增成功回退日志，记录 owner、reason 与检测来源，便于真机区分 ime_hidden、input_blur 和返回键回退。"
+  ],
+  "manifestVersion": 0
+}

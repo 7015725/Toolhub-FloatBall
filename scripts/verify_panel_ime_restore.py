@@ -29,7 +29,7 @@ def isolate(text, start_marker, end_marker):
     return text[start:end]
 
 
-version_at_least(EXTRA, (1, 1, 25), "th_15_extra.js")
+version_at_least(EXTRA, (1, 1, 26), "th_15_extra.js")
 version_at_least(ANIMATION, (1, 0, 15), "th_09_animation.js")
 version_at_least(PANELS, (1, 1, 17), "th_14_panels.js")
 version_at_least(ICON_PICKER, (1, 0, 5), "th_14_icon_picker.js")
@@ -38,6 +38,11 @@ capture = isolate(
     EXTRA,
     "FloatBallAppWM.prototype.capturePanelImeGeometry = function",
     "FloatBallAppWM.prototype.findPanelFocusedImeInput = function",
+)
+read_state = isolate(
+    EXTRA,
+    "FloatBallAppWM.prototype.readPanelImeState = function",
+    "FloatBallAppWM.prototype.capturePanelImeGeometry = function",
 )
 restore = isolate(
     EXTRA,
@@ -67,11 +72,26 @@ for field in ("width", "height", "gravity", "x", "y"):
         fail("restore missing exact %s" % field)
 
 for marker in (
+    "insetsAvailable: false",
+    "insetsVisible: false",
+    "out.insetsAvailable = true",
+    "out.insetsVisible = insets.isVisible(imeMask) === true",
+    "out.visible = out.insetsVisible",
+    "if (!out.insetsAvailable)",
+    "else if (out.insetsVisible && gap > out.bottomPx)",
+):
+    if marker not in read_state:
+        fail("authoritative WindowInsets state missing: %s" % marker)
+if "insets.isVisible(imeMask) === true ||" in read_state:
+    fail("stale IME bottom must not override WindowInsets hidden state")
+
+for marker in (
     "this.state.wm.updateViewLayout(binding.root, lp)",
     "binding.restore = null",
     "binding.applied = false",
     "binding.lastImeVisible = false",
     "if (releaseFocus === true) this.releasePanelImeFocus(binding, reason)",
+    '"IME geometry restored owner="',
 ):
     if marker not in restore:
         fail("restore contract missing: %s" % marker)
@@ -146,7 +166,17 @@ for _ in range(12):
     if layout != original:
         fail("repeated IME cycles accumulated geometry drift")
 
+# ColorOS can keep the manually shortened visible frame after the IME has already hidden.
+# WindowInsets hidden must win over that stale frame gap, otherwise restore never runs.
+insets_available = True
+insets_visible = False
+stale_frame_gap = 820
+visible = insets_visible if insets_available else stale_frame_gap >= 120
+if visible:
+    fail("stale visible frame overrode authoritative WindowInsets hidden state")
+
 print(
     "OK panel_ime_restore exact_geometry=width,height,gravity,x,y "
-    "triggers=hidden,blur,back,detach focus_handoff=1 drift=0 owners=6"
+    "triggers=hidden,blur,back,detach insets_hidden_authoritative=1 "
+    "focus_handoff=1 drift=0 owners=6"
 )
