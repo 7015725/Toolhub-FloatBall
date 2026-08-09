@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "e3a1147769bdc694f79eba9018673dba72aff808907b9115a44c975a6cf43616",
-      "size": 73766,
-      "version": 20260809164639
+      "sha256": "5681dc785f03085af9ed29c46def6449c66edbbd0f82263a6eca4f00e9dbbece",
+      "size": 75480,
+      "version": 20260809171508
     }
   },
   "branch": "beta",
@@ -56,9 +56,9 @@
       "version": "1.0.9"
     },
     "th_09_animation.js": {
-      "sha256": "f05b9b3a62748121f5d22774b49ce93accb7d0afad7951ec9dc072ef50c4a436",
-      "size": 44195,
-      "version": "1.0.14"
+      "sha256": "e769055314111646d1499fe932f4a7fc2bebbe26f8782cf051d0b523574d7b85",
+      "size": 44445,
+      "version": "1.0.15"
     },
     "th_10_shell.js": {
       "sha256": "36427d7146a4589cbcf0512804acd90f4210a3d512cde6e03f2cb40c42d86d2d",
@@ -101,14 +101,14 @@
       "version": "0.0.4"
     },
     "th_14_icon_picker.js": {
-      "sha256": "3162e777d71ddcd8ce481c720d0ad4e8e63711ecfc1781b9ffcfcb4246e95a48",
-      "size": 25492,
-      "version": "1.0.4"
+      "sha256": "7abb83c4509503c81b19cf040c425481865229ef47bed78302c7e6cd8c975f5b",
+      "size": 27561,
+      "version": "1.0.5"
     },
     "th_14_panels.js": {
-      "sha256": "71f9e703e9a24029a8629b259d83387067a41c5c733496e8b99e17eb5e30937b",
-      "size": 157384,
-      "version": "1.1.16"
+      "sha256": "f41f23f6b215e1ed3d0cb9f74372270f772c896518a2f4b9a937b61541d9dd7a",
+      "size": 157599,
+      "version": "1.1.17"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -116,9 +116,9 @@
       "version": "1.0.4"
     },
     "th_15_extra.js": {
-      "sha256": "933c8bbf7dbc11a6ba1fe28aa64fa45da09ca1e9be67e443a63535050ad47560",
-      "size": 130631,
-      "version": "1.1.23"
+      "sha256": "e843c25e7ba7e755e16fdd6dd9fb987c69d7f9158978666004f794aac60f9c99",
+      "size": 134796,
+      "version": "1.1.25"
     },
     "th_15_main_panel.js": {
       "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
@@ -184,13 +184,14 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复入口在远程 manifest 暂时获取失败时，清单一致性检查提前终止、导致既有本地可信模块无法进入离线安全回退的问题。",
-      "启动、设置内重启、通道切换和切换失败回退统一执行本地可信模块集预检；仅当目标通道全部模块存在且实际 SHA-256 与已保存可信 SHA-256 完全一致时允许加载。",
-      "缺失模块、缺少可信哈希或内容哈希不一致仍会失败关闭；检查更新与安装更新继续强制要求远程 manifest 验签成功。"
+      "键盘隐藏或输入框失焦时按首次避让前快照恢复窗口 width、height、gravity、x、y，回退成功后才清空快照，避免多次开合产生位置漂移。",
+      "第一次返回键只收起输入法、恢复窗口并将焦点交还面板根视图，第二次返回键再执行页面返回或关闭；同时覆盖旧式按键和 Android 13+ 预测性返回。",
+      "设置页、按钮编辑、Schema 编辑、颜色弹窗与 ShortX 图标选择器共用同一回退契约，输入框之间切换不会误回退。",
+      "窗口关闭或 detach 时归一化 LayoutParams，并注销布局监听、焦点监听和全部轮询回调，避免残留触摸层或旧快照污染下一次打开。"
     ],
     "date": "2026-08-10",
-    "title": "Beta：修复可信清单暂时不可用时无法启动"
+    "title": "Beta：补全 IME 收起后的窗口几何回退"
   },
   "schema": 5,
-  "version": 20260809164639
+  "version": 20260809171508
 }

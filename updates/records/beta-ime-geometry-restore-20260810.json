@@ -9,5 +9,37 @@
     "设置页、按钮编辑、Schema 编辑、颜色弹窗与 ShortX 图标选择器共用同一回退契约，输入框之间切换不会误回退。",
     "窗口关闭或 detach 时归一化 LayoutParams，并注销布局监听、焦点监听和全部轮询回调，避免残留触摸层或旧快照污染下一次打开。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260809171508,
+  "date": "2026-08-10",
+  "modules": [
+    {
+      "name": "th_09_animation.js",
+      "from": "1.0.14",
+      "to": "1.0.15",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_icon_picker.js",
+      "from": "1.0.4",
+      "to": "1.0.5",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.16",
+      "to": "1.1.17",
+      "change": "updated"
+    },
+    {
+      "name": "th_15_extra.js",
+      "from": "1.1.23",
+      "to": "1.1.25",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260810005000,
+    "to": 20260810005000
+  }
 }
