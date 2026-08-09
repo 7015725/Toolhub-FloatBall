@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "f566cf947688b4d0070c561e3e14b2e22842e9e1e08eb1ced05b135fdb505592",
-      "size": 77844,
-      "version": 20260809210624
+      "sha256": "506c16ca252f6bc31baf5b467ad67b78688bd21d4674d86a3c36abd2a7d114d3",
+      "size": 79187,
+      "version": 20260809220348
     }
   },
   "branch": "beta",
@@ -126,9 +126,9 @@
       "version": "1.5.8"
     },
     "th_16_entry.js": {
-      "sha256": "c42198d201ed2415e13346a3bc1d810b53cad81700b5cde9c69c72e9611e7cf8",
-      "size": 36300,
-      "version": "1.0.20"
+      "sha256": "beff1667a542e7ffbcfec887e3231bfd449b581cfad1753d1c6918e67ce4aeaa",
+      "size": 39530,
+      "version": "1.0.21"
     },
     "th_17_pointer.js": {
       "sha256": "84492391435fa07220c29cca6f8f761f9b15bc306245786efe4116fd4a993680",
@@ -184,14 +184,14 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复设置页完成模块更新并自动重启时，WM HandlerThread 在普通 removeView 的 ViewRoot detach 消息执行前退出，导致旧 mask 与 ballRoot 残留。",
-      "关闭流程改为先提交 panel、mask、ballRoot 的普通 removeView，再在同一 WM 消息队列尾部延迟退出 HandlerThread，保证已排队的 detach 先执行。",
-      "保留 system_server 下普通 removeView 的安全语义，不切换为 removeViewImmediate，避免同步销毁重新进入 ColorOS/Xposed 调用栈。",
-      "不修改 IME 避让、IME 回退和焦点逻辑；本次只收口更新重启与通道切换共用的关闭生命周期。"
+      "将 th_16_entry.js 升级到 1.0.21；关闭流程在清空逻辑状态前保存 WM 线程所属窗口引用，并使用 isAttachedToWindow/getWindowToken 确认真实 detach。",
+      "WM HandlerThread 不再仅依赖 removeView 请求后的队列顺序退出；全部受监控窗口真实 detach 后才调用 quitSafely，避免 mask 与 ballRoot 的 ViewRoot 销毁消息被提前截断。",
+      "4.2 秒未完成 detach 时只记录超时并保持 Looper 存活，15 秒硬超时仍不强制同步销毁或提前退出线程，避免重新引入 system_server/ColorOS Hook 调用栈风险。",
+      "保持普通 WindowManager.removeView、ToolApp Android main thread 归属、IME 避让/回退、mask generation/identity 和通道切换 fail-closed 逻辑不变。"
     ],
     "date": "2026-08-10",
-    "title": "Beta：修复更新重启后遮罩残留"
+    "title": "Beta：WM HandlerThread 仅在窗口真实分离后退出"
   },
   "schema": 5,
-  "version": 20260809210624
+  "version": 20260809220348
 }

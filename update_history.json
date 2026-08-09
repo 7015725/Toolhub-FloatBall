@@ -1,8 +1,35 @@
 {
   "schema": 1,
-  "historyVersion": 20260809210624,
-  "generatedAt": "2026-08-10T05:06:24+08:00",
+  "historyVersion": 20260809220348,
+  "generatedAt": "2026-08-10T06:03:48+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260810-beta-wm-detach-confirm",
+      "type": "fix",
+      "title": "Beta：WM HandlerThread 仅在窗口真实分离后退出",
+      "details": [
+        "将 th_16_entry.js 升级到 1.0.21；关闭流程在清空逻辑状态前保存 WM 线程所属窗口引用，并使用 isAttachedToWindow/getWindowToken 确认真实 detach。",
+        "WM HandlerThread 不再仅依赖 removeView 请求后的队列顺序退出；全部受监控窗口真实 detach 后才调用 quitSafely，避免 mask 与 ballRoot 的 ViewRoot 销毁消息被提前截断。",
+        "4.2 秒未完成 detach 时只记录超时并保持 Looper 存活，15 秒硬超时仍不强制同步销毁或提前退出线程，避免重新引入 system_server/ColorOS Hook 调用栈风险。",
+        "保持普通 WindowManager.removeView、ToolApp Android main thread 归属、IME 避让/回退、mask generation/identity 和通道切换 fail-closed 逻辑不变。"
+      ],
+      "manifestVersion": 20260809220348,
+      "date": "2026-08-10",
+      "modules": [
+        {
+          "name": "th_16_entry.js",
+          "from": "1.0.20",
+          "to": "1.0.21",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260810005000,
+        "to": 20260810005000
+      }
+    },
     {
       "schema": 1,
       "id": "beta-restart-mask-detach-20260810",
