@@ -4,7 +4,7 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260721201500; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260810005000; // 入口文件版本，仅在 ToolHub.js 变化时提升
 
 var TOOLHUB_CHANNEL_SPECS = {
     stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
@@ -296,6 +296,7 @@ function applyToolHubChannelRuntime(channel) {
     GIT_BASE = GIT_ROOT + "code/";
     __toolHubRootDir = null;
     resetToolHubChannelRuntimeCaches();
+    refreshToolHubChannelModuleSet(normalized);
     TOOLHUB_BOOT_ROOT_DIR = getToolHubRootDir();
     try {
         if (TOOLHUB_UPDATE_STATE) {
@@ -1563,19 +1564,65 @@ function checkToolHubModuleUpdatesNow() {
 }
 
 
+function checkLocalTrustedModuleSet() {
+    var ret = {
+        ok: true,
+        count: 0,
+        missing: [],
+        untrusted: [],
+        error: ""
+    };
+
+    try {
+        var dir = ensureCodeDir();
+        for (var i = 0; i < modules.length; i++) {
+            var relPath = String(modules[i]);
+            var file = new java.io.File(dir, relPath);
+            if (!file.exists()) {
+                ret.missing.push(relPath);
+                continue;
+            }
+            var trustedHash = getTrustedSha(relPath);
+            var actualHash = sha256File(file.getAbsolutePath());
+            if (!trustedHash || !actualHash || !hashesEqual(actualHash, trustedHash)) {
+                ret.untrusted.push(relPath);
+                continue;
+            }
+            ret.count++;
+        }
+
+        if (ret.missing.length > 0 || ret.untrusted.length > 0) {
+            ret.ok = false;
+            ret.error = "missing=" + ret.missing.join(",") + "; untrusted=" + ret.untrusted.join(",");
+        }
+        return ret;
+    } catch (e) {
+        ret.ok = false;
+        ret.error = String(e);
+        return ret;
+    }
+}
+
 function checkModuleManifestConsistency() {
     var ret = {
         ok: true,
         missingInManifest: [],
         unusedInManifest: [],
+        localTrustedFallback: false,
         error: ""
     };
 
     try {
         if (UPDATE_SECURITY_MODE === 0) return ret;
         if (!__trustedManifest || !__trustedManifest.files) {
+            var localTrusted = checkLocalTrustedModuleSet();
+            if (localTrusted.ok) {
+                ret.localTrustedFallback = true;
+                writeLog("Trusted manifest unavailable at boot; verified locally trusted module set, count=" + localTrusted.count);
+                return ret;
+            }
             ret.ok = false;
-            ret.error = "trusted manifest missing";
+            ret.error = "trusted manifest missing; local trusted module set invalid: " + String(localTrusted.error || "unknown");
             return ret;
         }
 
@@ -1667,15 +1714,39 @@ function loadScript(relPath) {
     }
 }
 
-var modules = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.js", "th_05_persistence.js",
+var TOOLHUB_STABLE_MODULES = ["th_01_base.js", "th_02_core.js", "th_03_icon.js", "th_04_theme.js", "th_05_persistence.js",
+                              "th_06_icon_parser.js", "th_08_content.js", "th_09_animation.js",
+                              "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
+                              "th_14_panels.js", "th_14_button_shortcut.js", "th_14_button_icon_editor.js", "th_14_button_editor.js",
+                              "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_15_main_panel.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_23_screenshot_manager.js"];
+var modules = ["th_01_base.js", "th_02_core.js", "th_24_shortx_ui_runtime.js", "th_03_icon.js", "th_04_theme.js", "th_05_persistence.js",
                "th_06_icon_parser.js", "th_08_content.js", "th_09_animation.js",
                "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
                "th_14_panels.js", "th_14_button_shortcut.js", "th_14_button_icon_editor.js", "th_14_button_editor.js",
-               "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_15_main_panel.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_23_screenshot_manager.js"];
+               "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_34_shortx_ui_lab.js", "th_15_main_panel.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_23_screenshot_manager.js", "th_25_shortx_ui_package.js"];
+
+function copyToolHubModuleList(source) {
+    var copied = [];
+    for (var moduleIndex = 0; moduleIndex < source.length; moduleIndex++) copied.push(String(source[moduleIndex]));
+    return copied;
+}
+
+var TOOLHUB_BETA_MODULES = copyToolHubModuleList(modules);
+
+function refreshToolHubChannelModuleSet(channel) {
+    var normalized = normalizeToolHubUpdateChannel(channel);
+    var source = normalized === "beta" ? TOOLHUB_BETA_MODULES : TOOLHUB_STABLE_MODULES;
+    modules = copyToolHubModuleList(source);
+    criticalModules = { "th_01_base.js": true, "th_02_core.js": true, "th_05_persistence.js": true, "th_16_entry.js": true, "th_19_position_state.js": true };
+    if (normalized === "beta") criticalModules["th_25_shortx_ui_package.js"] = true;
+    return modules;
+}
+
 var __moduleUpdates = [];
 var __pendingModuleUpdates = [];
 var loadErrors = [];
-var criticalModules = { "th_01_base.js": true, "th_02_core.js": true, "th_05_persistence.js": true, "th_16_entry.js": true, "th_19_position_state.js": true };
+var criticalModules = {};
+refreshToolHubChannelModuleSet(TOOLHUB_UPDATE_CHANNEL);
 recoverPendingModuleTransaction();
 fetchTrustedManifest();
 
@@ -1719,6 +1790,7 @@ if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0 &
 var TOOLHUB_ACTIVE_APP = (typeof TOOLHUB_ACTIVE_APP !== "undefined") ? TOOLHUB_ACTIVE_APP : null;
 var __toolHubRestartRunning = (typeof __toolHubRestartRunning !== "undefined") ? __toolHubRestartRunning : false;
 var TOOLHUB_APP_REGISTRY = (typeof TOOLHUB_APP_REGISTRY !== "undefined" && TOOLHUB_APP_REGISTRY) ? TOOLHUB_APP_REGISTRY : [];
+var TOOLHUB_WINDOW_DETACH_QUARANTINE = (typeof TOOLHUB_WINDOW_DETACH_QUARANTINE !== "undefined" && TOOLHUB_WINDOW_DETACH_QUARANTINE) ? TOOLHUB_WINDOW_DETACH_QUARANTINE : [];
 
 function registerToolHubAppInstance(appObj) {
   try {
@@ -1788,6 +1860,69 @@ function sendToolHubCloseBroadcastForRestart(appObj) {
   return ret;
 }
 
+function appendToolHubWindowSnapshot(output, appObj, viewKey, label) {
+  var view = null;
+  try { view = appObj && appObj.state ? appObj.state[viewKey] : null; } catch(eView) { view = null; }
+  if (!view) return;
+  for (var i = 0; i < output.length; i++) {
+    if (output[i] && output[i].view === view) return;
+  }
+  output.push({ view: view, label: String(label || viewKey) });
+}
+
+function snapshotToolHubAppWindows(apps) {
+  var output = [];
+  var i;
+  try {
+    if (TOOLHUB_WINDOW_DETACH_QUARANTINE) {
+      for (i = 0; i < TOOLHUB_WINDOW_DETACH_QUARANTINE.length; i++) {
+        var oldItem = TOOLHUB_WINDOW_DETACH_QUARANTINE[i];
+        if (oldItem && oldItem.view) output.push(oldItem);
+      }
+    }
+  } catch(eOldSnapshots) {}
+  var keys = ["ballRoot", "panel", "settingsPanel", "viewerPanel", "mask", "toolAppRoot"];
+  for (i = 0; i < apps.length; i++) {
+    var appObj = apps[i];
+    for (var k = 0; k < keys.length; k++) {
+      appendToolHubWindowSnapshot(output, appObj, keys[k], "app" + String(i) + "." + keys[k]);
+    }
+  }
+  return output;
+}
+
+function isToolHubWindowAttached(view) {
+  if (!view) return false;
+  try {
+    if (typeof view.isAttachedToWindow === "function") return view.isAttachedToWindow() === true;
+  } catch(eAttached) {}
+  try { return view.getWindowToken() !== null; } catch(eToken) {}
+  return true;
+}
+
+function waitForToolHubWindowsDetached(snapshots, timeoutMs) {
+  var startedAt = Number(java.lang.System.currentTimeMillis());
+  var deadline = startedAt + Math.max(200, Number(timeoutMs || 4200));
+  var remaining = [];
+  while (true) {
+    remaining = [];
+    for (var i = 0; i < snapshots.length; i++) {
+      var item = snapshots[i];
+      if (item && item.view && isToolHubWindowAttached(item.view)) remaining.push(item);
+    }
+    if (remaining.length <= 0) break;
+    if (Number(java.lang.System.currentTimeMillis()) >= deadline) break;
+    try { java.lang.Thread.sleep(40); } catch(eSleepDetach) { break; }
+  }
+  return {
+    ok: remaining.length <= 0,
+    detached: remaining.length <= 0,
+    total: snapshots.length,
+    remaining: remaining,
+    waitedMs: Number(java.lang.System.currentTimeMillis()) - startedAt
+  };
+}
+
 function closeToolHubAppForRestart(appObj) {
   var ret = { ok: false, skipped: false, timedOut: false, err: "" };
   try {
@@ -1848,8 +1983,6 @@ function closeToolHubAppForRestart(appObj) {
 }
 
 function closeToolHubAppsForRestart(primaryApp) {
-  var broadcastRet = sendToolHubCloseBroadcastForRestart(primaryApp);
-  try { java.lang.Thread.sleep(broadcastRet.ok ? 250 : 80); } catch(eSleepCloseBroadcast) {}
   var list = [];
   var i;
   try {
@@ -1866,6 +1999,7 @@ function closeToolHubAppsForRestart(primaryApp) {
     }
     if (!exists) list.push(primaryApp);
   }
+  var windowSnapshots = snapshotToolHubAppWindows(list);
   var closed = 0;
   var timedOut = 0;
   for (i = 0; i < list.length; i++) {
@@ -1873,8 +2007,25 @@ function closeToolHubAppsForRestart(primaryApp) {
     if (one && one.ok) closed++;
     if (one && one.timedOut) timedOut++;
   }
-  try { writeLog("Restart close sweep action=" + String(broadcastRet.action || "") + " broadcast=" + String(broadcastRet.ok) + " apps=" + String(list.length) + " closed=" + String(closed) + " timeout=" + String(timedOut)); } catch(eLogSweep) {}
-  return { broadcast: broadcastRet, count: list.length, closed: closed, timedOut: timedOut };
+  // 已知实例必须先在各自的 WindowManager HandlerThread 上关闭；随后再发广播，
+  // 只用于清理未进入当前注册表的历史实例，避免主线程接收器抢先清空旧实例引用。
+  var broadcastRet = sendToolHubCloseBroadcastForRestart(primaryApp);
+  try { java.lang.Thread.sleep(broadcastRet.ok ? 250 : 80); } catch(eSleepCloseBroadcast) {}
+  var detachResult = waitForToolHubWindowsDetached(windowSnapshots, 4200);
+  TOOLHUB_WINDOW_DETACH_QUARANTINE = detachResult.remaining;
+  var remainingLabels = [];
+  for (i = 0; i < detachResult.remaining.length; i++) remainingLabels.push(String(detachResult.remaining[i].label || "window"));
+  try { writeLog("Restart close sweep action=" + String(broadcastRet.action || "") + " broadcast=" + String(broadcastRet.ok) + " apps=" + String(list.length) + " closed=" + String(closed) + " timeout=" + String(timedOut) + " windows=" + String(detachResult.total) + " detached=" + String(detachResult.detached) + " waitedMs=" + String(detachResult.waitedMs) + " remaining=" + remainingLabels.join(",")); } catch(eLogSweep) {}
+  return {
+    broadcast: broadcastRet,
+    count: list.length,
+    closed: closed,
+    timedOut: timedOut,
+    detached: detachResult.detached,
+    windowCount: detachResult.total,
+    remainingWindows: remainingLabels,
+    waitedMs: detachResult.waitedMs
+  };
 }
 
 function reloadLocalToolHubModulesForRestart() {
@@ -1882,10 +2033,6 @@ function reloadLocalToolHubModulesForRestart() {
 
   if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) {
     fetchTrustedManifest();
-  }
-
-  if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) {
-    throw (__securityStatus && __securityStatus.msg ? __securityStatus.msg : "更新清单不可用");
   }
 
   var checkRet = checkModuleManifestConsistency();
@@ -1916,8 +2063,8 @@ function restartToolHubFromSettings() {
       try {
         var oldApp = null;
         try { oldApp = TOOLHUB_ACTIVE_APP; } catch(eOld) { oldApp = null; }
-        closeToolHubAppsForRestart(oldApp);
-        try { java.lang.Thread.sleep(200); } catch(eSleep) {}
+        var closeResult = closeToolHubAppsForRestart(oldApp);
+        if (!closeResult.detached) throw "旧窗口关闭未完成：" + closeResult.remainingWindows.join(",");
         reloadLocalToolHubModulesForRestart();
         var entryInfo = getProcessInfo("restart");
         var logger = new ToolHubLogger(entryInfo);
@@ -1976,9 +2123,6 @@ function flushToolHubStateBeforeChannelSwitch() {
 function loadTargetToolHubChannelModules() {
   recoverPendingModuleTransaction();
   fetchTrustedManifest();
-  if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) {
-    throw (__securityStatus && __securityStatus.msg ? __securityStatus.msg : "目标通道安全清单不可用");
-  }
   var checkRet = checkModuleManifestConsistency();
   if (!checkRet.ok) throw "目标通道模块清单自检失败: " + String(checkRet.error || "");
   __moduleUpdates = [];
@@ -1992,6 +2136,8 @@ function loadTargetToolHubChannelModules() {
 
 function reloadKnownGoodToolHubChannelModules() {
   try { fetchTrustedManifest(); } catch (eManifest) {}
+  var checkRet = checkModuleManifestConsistency();
+  if (!checkRet.ok) throw "回退通道模块清单自检失败: " + String(checkRet.error || "");
   var dir = ensureCodeDir();
   for (var i = 0; i < modules.length; i++) {
     var relPath = String(modules[i]);
@@ -2016,7 +2162,10 @@ function startToolHubAppAfterChannelLoad(reason) {
   var closeRule = String(app.config.ACTION_CLOSE_ALL_RULE || "shortx.wm.floatball.CLOSE");
   var startRet = app.startAsync(entryInfo, closeRule);
   if (!startRet || !startRet.ok) {
-    unregisterToolHubAppInstance(app);
+    var failedClose = closeToolHubAppsForRestart(app);
+    if (!failedClose.detached) {
+      throw "ToolHub 启动失败且残留窗口未完成清理: " + String(startRet && startRet.err || "unknown");
+    }
     throw "ToolHub 启动失败: " + String(startRet && startRet.err || "unknown");
   }
   return { app: app, startRet: startRet };
@@ -2042,12 +2191,16 @@ function switchToolHubUpdateChannel(targetChannel) {
 
   new java.lang.Thread(new java.lang.Runnable({ run: function() {
     var targetStarted = false;
+    var previousCloseIncomplete = false;
     try {
       flushToolHubStateBeforeChannelSwitch();
       var oldApp = null;
       try { oldApp = TOOLHUB_ACTIVE_APP; } catch (eOldApp) { oldApp = null; }
-      closeToolHubAppsForRestart(oldApp);
-      try { java.lang.Thread.sleep(200); } catch (eSleep) {}
+      var previousClose = closeToolHubAppsForRestart(oldApp);
+      if (!previousClose.detached) {
+        previousCloseIncomplete = true;
+        throw "旧通道窗口关闭未完成：" + previousClose.remainingWindows.join(",");
+      }
 
       applyToolHubChannelRuntime(target);
       loadTargetToolHubChannelModules();
@@ -2065,8 +2218,22 @@ function switchToolHubUpdateChannel(targetChannel) {
     } catch (eSwitch) {
       var switchError = String(eSwitch);
       try { writeLog("Channel switch failed target=" + target + " error=" + switchError); } catch (eLogFail) {}
+      if (previousCloseIncomplete) {
+        try { cancelToolHubPendingChannel(previous); } catch (eCancelPrevious) {}
+        try {
+          TOOLHUB_UPDATE_STATE.status = "error";
+          TOOLHUB_UPDATE_STATE.channelSwitching = false;
+          TOOLHUB_UPDATE_STATE.channelSwitchTarget = "";
+          TOOLHUB_UPDATE_STATE.channelSwitchError = switchError;
+        } catch (eStateCloseFail) {}
+        showToolHubChannelSwitchToast("旧窗口尚未完全关闭，已停止切换；请重新运行 ToolHub.js");
+        return;
+      }
       try {
-        if (targetStarted || TOOLHUB_ACTIVE_APP) closeToolHubAppsForRestart(TOOLHUB_ACTIVE_APP);
+        if (targetStarted || TOOLHUB_ACTIVE_APP) {
+          var targetClose = closeToolHubAppsForRestart(TOOLHUB_ACTIVE_APP);
+          if (!targetClose.detached) throw "目标通道残留窗口未关闭：" + targetClose.remainingWindows.join(",");
+        }
       } catch (eCloseTarget) {}
       try {
         applyToolHubChannelRuntime(previous);
@@ -2194,9 +2361,17 @@ var __out = (function() {
 
   var existingApp = null;
   try { existingApp = TOOLHUB_ACTIVE_APP; } catch(eExistingApp) { existingApp = null; }
-  if (existingApp) {
+  if (existingApp || (TOOLHUB_WINDOW_DETACH_QUARANTINE && TOOLHUB_WINDOW_DETACH_QUARANTINE.length > 0)) {
     try { writeLog("Entry found existing ToolHub app, closing before start"); } catch(eLogExisting) {}
-    closeToolHubAppsForRestart(existingApp);
+    var existingClose = closeToolHubAppsForRestart(existingApp);
+    if (!existingClose.detached) {
+      return {
+        ok: false,
+        started: false,
+        msg: "旧 ToolHub 窗口尚未完全关闭，已阻止重复启动",
+        err: "remaining windows: " + existingClose.remainingWindows.join(",")
+      };
+    }
   }
 
   var entryInfo = getProcessInfo("entry");
