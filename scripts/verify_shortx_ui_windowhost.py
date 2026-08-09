@@ -93,14 +93,21 @@ for fragment, label in (
 ):
     forbid(LAB, fragment, label)
 
-require(ANIMATION, "// @version 1.0.12", "unchanged animation module version")
+require(ANIMATION, "// @version 1.0.14", "animation module version")
 require(ANIMATION, "FloatBallAppWM.prototype.safeRemoveView = function", "production safeRemoveView retained")
 for workflow, label in ((VERIFY, "verify"), (SIGN, "sign")):
     require(workflow, "python3 scripts/verify_shortx_ui_windowhost.py", label + " workflow")
 
-require(ENTRY, 'if (TOOLHUB_UPDATE_CHANNEL !== "beta")', "stable channel module filter")
-require(ENTRY, '__toolHubModuleName === "th_24_shortx_ui_runtime.js"', "runtime channel filter")
-require(ENTRY, '__toolHubModuleName === "th_34_shortx_ui_lab.js"', "lab channel filter")
+require(ENTRY, "var TOOLHUB_STABLE_MODULES = [", "stable channel module set")
+require(ENTRY, "var TOOLHUB_BETA_MODULES = copyToolHubModuleList(modules);", "beta channel module set")
+require(
+    ENTRY,
+    'var source = normalized === "beta" ? TOOLHUB_BETA_MODULES : TOOLHUB_STABLE_MODULES;',
+    "active channel module selection",
+)
+require(ENTRY, '"th_24_shortx_ui_runtime.js"', "runtime beta module")
+require(ENTRY, '"th_34_shortx_ui_lab.js"', "lab beta module")
+require(ENTRY, '"th_25_shortx_ui_package.js"', "package beta module")
 
 for doc, label in (
     (README, "README"),
