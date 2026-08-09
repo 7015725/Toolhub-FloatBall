@@ -9,5 +9,19 @@
     "可见区域回退仅在 WindowInsets 不可用时决定 IME 状态；Insets 已确认键盘可见时只允许它补充键盘高度。",
     "新增成功回退日志，记录 owner、reason 与检测来源，便于真机区分 ime_hidden、input_blur 和返回键回退。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260809204938,
+  "date": "2026-08-10",
+  "modules": [
+    {
+      "name": "th_15_extra.js",
+      "from": "1.1.25",
+      "to": "1.1.26",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260810005000,
+    "to": 20260810005000
+  }
 }

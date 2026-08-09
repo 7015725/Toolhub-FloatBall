@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "5681dc785f03085af9ed29c46def6449c66edbbd0f82263a6eca4f00e9dbbece",
-      "size": 75480,
-      "version": 20260809171508
+      "sha256": "8ec322e91757949bdcbdb53df9982d5672c92f4e0d9c6485db8ca924e0a79919",
+      "size": 76634,
+      "version": 20260809204938
     }
   },
   "branch": "beta",
@@ -116,9 +116,9 @@
       "version": "1.0.4"
     },
     "th_15_extra.js": {
-      "sha256": "e843c25e7ba7e755e16fdd6dd9fb987c69d7f9158978666004f794aac60f9c99",
-      "size": 134796,
-      "version": "1.1.25"
+      "sha256": "3ae08e40327113933a3a25a3e4b26c7b999cb38526bd768c4987a83b32dc57ae",
+      "size": 135636,
+      "version": "1.1.26"
     },
     "th_15_main_panel.js": {
       "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
@@ -184,14 +184,14 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "键盘隐藏或输入框失焦时按首次避让前快照恢复窗口 width、height、gravity、x、y，回退成功后才清空快照，避免多次开合产生位置漂移。",
-      "第一次返回键只收起输入法、恢复窗口并将焦点交还面板根视图，第二次返回键再执行页面返回或关闭；同时覆盖旧式按键和 Android 13+ 预测性返回。",
-      "设置页、按钮编辑、Schema 编辑、颜色弹窗与 ShortX 图标选择器共用同一回退契约，输入框之间切换不会误回退。",
-      "窗口关闭或 detach 时归一化 LayoutParams，并注销布局监听、焦点监听和全部轮询回调，避免残留触摸层或旧快照污染下一次打开。"
+      "Android 11 及以上改为以 WindowInsets.isVisible(Type.ime()) 作为 IME 显示状态真值，键盘隐藏后立即恢复避让前窗口几何。",
+      "修复 ColorOS 在窗口临时缩短后仍返回旧 visible frame 间隙、导致程序误判键盘持续显示而无法回退的问题。",
+      "可见区域回退仅在 WindowInsets 不可用时决定 IME 状态；Insets 已确认键盘可见时只允许它补充键盘高度。",
+      "新增成功回退日志，记录 owner、reason 与检测来源，便于真机区分 ime_hidden、input_blur 和返回键回退。"
     ],
     "date": "2026-08-10",
-    "title": "Beta：补全 IME 收起后的窗口几何回退"
+    "title": "Beta：修复 ColorOS 键盘收起后窗口不回位"
   },
   "schema": 5,
-  "version": 20260809171508
+  "version": 20260809204938
 }
