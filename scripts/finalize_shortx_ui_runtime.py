@@ -27,7 +27,7 @@ OUTPUT = ROOT / "code" / "th_25_shortx_ui_package.js"
 
 PACKAGE_MODULE = "th_25_shortx_ui_package.js"
 PACKAGE_VERSION = "0.9.2"
-ENTRY_VERSION = 20260728160000
+ENTRY_VERSION = 20260809210000
 
 PAYLOADS = [
     "beta/phase2/shortxui_guard.js",
@@ -94,7 +94,10 @@ def build_package() -> str:
         path = ROOT / rel
         raw = path.read_bytes()
         digest = hashlib.sha256(raw).hexdigest()
-        packed = gzip.compress(raw, compresslevel=9, mtime=0)
+        packed_bytes = bytearray(gzip.compress(raw, compresslevel=9, mtime=0))
+        if len(packed_bytes) > 9:
+            packed_bytes[9] = 255
+        packed = bytes(packed_bytes)
         encoded = base64.b64encode(packed).decode("ascii")
         chunks = ",\n        ".join(js_string(chunk) for chunk in chunk_text(encoded))
         payload_rows.append(
@@ -320,26 +323,16 @@ def patch_entry(text: str) -> str:
         text,
         count=1,
     )
-    anchor = '"th_23_screenshot_manager.js"];'
-    target = '"th_23_screenshot_manager.js", "th_25_shortx_ui_package.js"];'
-    text = replace_once(text, anchor, target, "ToolHub modules")
-    source = (
-        'if (__toolHubModuleName === "th_24_shortx_ui_runtime.js" || '
-        '__toolHubModuleName === "th_34_shortx_ui_lab.js") continue;'
+    required = (
+        ("var TOOLHUB_STABLE_MODULES = [", "stable module set"),
+        ('"th_25_shortx_ui_package.js"];', "beta package module"),
+        ("function refreshToolHubChannelModuleSet(channel)", "channel module selector"),
+        ("refreshToolHubChannelModuleSet(normalized);", "runtime channel refresh"),
+        ('criticalModules["th_25_shortx_ui_package.js"] = true;', "beta critical module"),
     )
-    target_filter = (
-        'if (__toolHubModuleName === "th_24_shortx_ui_runtime.js" || '
-        '__toolHubModuleName === "th_34_shortx_ui_lab.js" || '
-        '__toolHubModuleName === "th_25_shortx_ui_package.js") continue;'
-    )
-    text = replace_once(text, source, target_filter, "stable module filter")
-    critical = (
-        'var criticalModules = { "th_01_base.js": true, "th_02_core.js": true, '
-        '"th_05_persistence.js": true, "th_16_entry.js": true, '
-        '"th_19_position_state.js": true };'
-    )
-    critical_target = critical + '\nif (TOOLHUB_UPDATE_CHANNEL === "beta") criticalModules["th_25_shortx_ui_package.js"] = true;'
-    text = replace_once(text, critical, critical_target, "critical module")
+    for marker, label in required:
+        if marker not in text:
+            fail(label + " missing from ToolHub.js")
     return text
 
 
