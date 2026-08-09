@@ -1,4 +1,4 @@
-// @version 1.0.17
+// @version 1.0.18
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -811,6 +811,12 @@ FloatBallAppWM.prototype.showToolAppOnMain = function(route, resetStack, generat
   } catch (eShow) {
     this.state.toolAppActive = false;
     safeLog(this.L, 'e', "showToolAppOnMain fail route=" + r + " err=" + String(eShow));
+    var selfBuildFail = this;
+    try {
+      this.postToToolHubWm(function() {
+        try { selfBuildFail.hideMaskIfNoPanelVisible("toolapp_build_fail"); } catch (eMaskRollback) {}
+      });
+    } catch (ePostRollback) {}
     try { this.toast("设置页面显示失败: " + String(eShow)); } catch (eToast) {}
   }
   return false;
@@ -879,21 +885,20 @@ FloatBallAppWM.prototype.removeToolAppOnMain = function(reason, immediate) {
     } catch (eIme) {}
     try { root.animate().cancel(); } catch (eAnim) {}
     try { root.clearAnimation(); } catch (eClear) {}
+    try { root.setVisibility(android.view.View.INVISIBLE); } catch (eInvisible) {}
+    try { root.setAlpha(0); } catch (eAlpha) {}
     try {
       if (this.unregisterPanelPredictiveBack) this.unregisterPanelPredictiveBack(root, false);
     } catch (eBack) {}
     try {
-      if ((immediate === true || s.closing) && s.wm.removeViewImmediate) {
-        s.wm.removeViewImmediate(root);
-      } else {
-        s.wm.removeView(root);
-      }
+      if (this.detachPanelImeAvoidance) this.detachPanelImeAvoidance(root);
+    } catch (eImeDetach) {}
+    try {
+      // 即使是 ToolHub 全局关闭也只提交普通移除；Android 主线程继续存活，
+      // ViewRoot 会在主消息队列中完成 detach，不再嵌套进当前 Rhino/Xposed 调用栈。
+      s.wm.removeView(root);
     } catch (eRemove) {
-      try { s.wm.removeViewImmediate(root); }
-      catch (eFallback) {
-        safeLog(this.L, 'w', "toolapp remove fail: " + String(eRemove) +
-          "; fallback=" + String(eFallback));
-      }
+      safeLog(this.L, 'w', "toolapp deferred remove fail: " + String(eRemove));
     }
   }
 

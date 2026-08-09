@@ -4,7 +4,7 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260809210000; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260809223000; // 入口文件版本，仅在 ToolHub.js 变化时提升
 
 var TOOLHUB_CHANNEL_SPECS = {
     stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
@@ -1744,6 +1744,7 @@ if (UPDATE_SECURITY_MODE === 2 && __trustedManifest && loadErrors.length === 0 &
 var TOOLHUB_ACTIVE_APP = (typeof TOOLHUB_ACTIVE_APP !== "undefined") ? TOOLHUB_ACTIVE_APP : null;
 var __toolHubRestartRunning = (typeof __toolHubRestartRunning !== "undefined") ? __toolHubRestartRunning : false;
 var TOOLHUB_APP_REGISTRY = (typeof TOOLHUB_APP_REGISTRY !== "undefined" && TOOLHUB_APP_REGISTRY) ? TOOLHUB_APP_REGISTRY : [];
+var TOOLHUB_WINDOW_DETACH_QUARANTINE = (typeof TOOLHUB_WINDOW_DETACH_QUARANTINE !== "undefined" && TOOLHUB_WINDOW_DETACH_QUARANTINE) ? TOOLHUB_WINDOW_DETACH_QUARANTINE : [];
 
 function registerToolHubAppInstance(appObj) {
   try {
@@ -1813,6 +1814,69 @@ function sendToolHubCloseBroadcastForRestart(appObj) {
   return ret;
 }
 
+function appendToolHubWindowSnapshot(output, appObj, viewKey, label) {
+  var view = null;
+  try { view = appObj && appObj.state ? appObj.state[viewKey] : null; } catch(eView) { view = null; }
+  if (!view) return;
+  for (var i = 0; i < output.length; i++) {
+    if (output[i] && output[i].view === view) return;
+  }
+  output.push({ view: view, label: String(label || viewKey) });
+}
+
+function snapshotToolHubAppWindows(apps) {
+  var output = [];
+  var i;
+  try {
+    if (TOOLHUB_WINDOW_DETACH_QUARANTINE) {
+      for (i = 0; i < TOOLHUB_WINDOW_DETACH_QUARANTINE.length; i++) {
+        var oldItem = TOOLHUB_WINDOW_DETACH_QUARANTINE[i];
+        if (oldItem && oldItem.view) output.push(oldItem);
+      }
+    }
+  } catch(eOldSnapshots) {}
+  var keys = ["ballRoot", "panel", "settingsPanel", "viewerPanel", "mask", "toolAppRoot"];
+  for (i = 0; i < apps.length; i++) {
+    var appObj = apps[i];
+    for (var k = 0; k < keys.length; k++) {
+      appendToolHubWindowSnapshot(output, appObj, keys[k], "app" + String(i) + "." + keys[k]);
+    }
+  }
+  return output;
+}
+
+function isToolHubWindowAttached(view) {
+  if (!view) return false;
+  try {
+    if (typeof view.isAttachedToWindow === "function") return view.isAttachedToWindow() === true;
+  } catch(eAttached) {}
+  try { return view.getWindowToken() !== null; } catch(eToken) {}
+  return true;
+}
+
+function waitForToolHubWindowsDetached(snapshots, timeoutMs) {
+  var startedAt = Number(java.lang.System.currentTimeMillis());
+  var deadline = startedAt + Math.max(200, Number(timeoutMs || 4200));
+  var remaining = [];
+  while (true) {
+    remaining = [];
+    for (var i = 0; i < snapshots.length; i++) {
+      var item = snapshots[i];
+      if (item && item.view && isToolHubWindowAttached(item.view)) remaining.push(item);
+    }
+    if (remaining.length <= 0) break;
+    if (Number(java.lang.System.currentTimeMillis()) >= deadline) break;
+    try { java.lang.Thread.sleep(40); } catch(eSleepDetach) { break; }
+  }
+  return {
+    ok: remaining.length <= 0,
+    detached: remaining.length <= 0,
+    total: snapshots.length,
+    remaining: remaining,
+    waitedMs: Number(java.lang.System.currentTimeMillis()) - startedAt
+  };
+}
+
 function closeToolHubAppForRestart(appObj) {
   var ret = { ok: false, skipped: false, timedOut: false, err: "" };
   try {
@@ -1873,8 +1937,6 @@ function closeToolHubAppForRestart(appObj) {
 }
 
 function closeToolHubAppsForRestart(primaryApp) {
-  var broadcastRet = sendToolHubCloseBroadcastForRestart(primaryApp);
-  try { java.lang.Thread.sleep(broadcastRet.ok ? 250 : 80); } catch(eSleepCloseBroadcast) {}
   var list = [];
   var i;
   try {
@@ -1891,6 +1953,7 @@ function closeToolHubAppsForRestart(primaryApp) {
     }
     if (!exists) list.push(primaryApp);
   }
+  var windowSnapshots = snapshotToolHubAppWindows(list);
   var closed = 0;
   var timedOut = 0;
   for (i = 0; i < list.length; i++) {
@@ -1898,8 +1961,25 @@ function closeToolHubAppsForRestart(primaryApp) {
     if (one && one.ok) closed++;
     if (one && one.timedOut) timedOut++;
   }
-  try { writeLog("Restart close sweep action=" + String(broadcastRet.action || "") + " broadcast=" + String(broadcastRet.ok) + " apps=" + String(list.length) + " closed=" + String(closed) + " timeout=" + String(timedOut)); } catch(eLogSweep) {}
-  return { broadcast: broadcastRet, count: list.length, closed: closed, timedOut: timedOut };
+  // 已知实例必须先在各自的 WindowManager HandlerThread 上关闭；随后再发广播，
+  // 只用于清理未进入当前注册表的历史实例，避免主线程接收器抢先清空旧实例引用。
+  var broadcastRet = sendToolHubCloseBroadcastForRestart(primaryApp);
+  try { java.lang.Thread.sleep(broadcastRet.ok ? 250 : 80); } catch(eSleepCloseBroadcast) {}
+  var detachResult = waitForToolHubWindowsDetached(windowSnapshots, 4200);
+  TOOLHUB_WINDOW_DETACH_QUARANTINE = detachResult.remaining;
+  var remainingLabels = [];
+  for (i = 0; i < detachResult.remaining.length; i++) remainingLabels.push(String(detachResult.remaining[i].label || "window"));
+  try { writeLog("Restart close sweep action=" + String(broadcastRet.action || "") + " broadcast=" + String(broadcastRet.ok) + " apps=" + String(list.length) + " closed=" + String(closed) + " timeout=" + String(timedOut) + " windows=" + String(detachResult.total) + " detached=" + String(detachResult.detached) + " waitedMs=" + String(detachResult.waitedMs) + " remaining=" + remainingLabels.join(",")); } catch(eLogSweep) {}
+  return {
+    broadcast: broadcastRet,
+    count: list.length,
+    closed: closed,
+    timedOut: timedOut,
+    detached: detachResult.detached,
+    windowCount: detachResult.total,
+    remainingWindows: remainingLabels,
+    waitedMs: detachResult.waitedMs
+  };
 }
 
 function reloadLocalToolHubModulesForRestart() {
@@ -1941,8 +2021,8 @@ function restartToolHubFromSettings() {
       try {
         var oldApp = null;
         try { oldApp = TOOLHUB_ACTIVE_APP; } catch(eOld) { oldApp = null; }
-        closeToolHubAppsForRestart(oldApp);
-        try { java.lang.Thread.sleep(200); } catch(eSleep) {}
+        var closeResult = closeToolHubAppsForRestart(oldApp);
+        if (!closeResult.detached) throw "旧窗口关闭未完成：" + closeResult.remainingWindows.join(",");
         reloadLocalToolHubModulesForRestart();
         var entryInfo = getProcessInfo("restart");
         var logger = new ToolHubLogger(entryInfo);
@@ -2041,7 +2121,10 @@ function startToolHubAppAfterChannelLoad(reason) {
   var closeRule = String(app.config.ACTION_CLOSE_ALL_RULE || "shortx.wm.floatball.CLOSE");
   var startRet = app.startAsync(entryInfo, closeRule);
   if (!startRet || !startRet.ok) {
-    unregisterToolHubAppInstance(app);
+    var failedClose = closeToolHubAppsForRestart(app);
+    if (!failedClose.detached) {
+      throw "ToolHub 启动失败且残留窗口未完成清理: " + String(startRet && startRet.err || "unknown");
+    }
     throw "ToolHub 启动失败: " + String(startRet && startRet.err || "unknown");
   }
   return { app: app, startRet: startRet };
@@ -2067,12 +2150,16 @@ function switchToolHubUpdateChannel(targetChannel) {
 
   new java.lang.Thread(new java.lang.Runnable({ run: function() {
     var targetStarted = false;
+    var previousCloseIncomplete = false;
     try {
       flushToolHubStateBeforeChannelSwitch();
       var oldApp = null;
       try { oldApp = TOOLHUB_ACTIVE_APP; } catch (eOldApp) { oldApp = null; }
-      closeToolHubAppsForRestart(oldApp);
-      try { java.lang.Thread.sleep(200); } catch (eSleep) {}
+      var previousClose = closeToolHubAppsForRestart(oldApp);
+      if (!previousClose.detached) {
+        previousCloseIncomplete = true;
+        throw "旧通道窗口关闭未完成：" + previousClose.remainingWindows.join(",");
+      }
 
       applyToolHubChannelRuntime(target);
       loadTargetToolHubChannelModules();
@@ -2090,8 +2177,22 @@ function switchToolHubUpdateChannel(targetChannel) {
     } catch (eSwitch) {
       var switchError = String(eSwitch);
       try { writeLog("Channel switch failed target=" + target + " error=" + switchError); } catch (eLogFail) {}
+      if (previousCloseIncomplete) {
+        try { cancelToolHubPendingChannel(previous); } catch (eCancelPrevious) {}
+        try {
+          TOOLHUB_UPDATE_STATE.status = "error";
+          TOOLHUB_UPDATE_STATE.channelSwitching = false;
+          TOOLHUB_UPDATE_STATE.channelSwitchTarget = "";
+          TOOLHUB_UPDATE_STATE.channelSwitchError = switchError;
+        } catch (eStateCloseFail) {}
+        showToolHubChannelSwitchToast("旧窗口尚未完全关闭，已停止切换；请重新运行 ToolHub.js");
+        return;
+      }
       try {
-        if (targetStarted || TOOLHUB_ACTIVE_APP) closeToolHubAppsForRestart(TOOLHUB_ACTIVE_APP);
+        if (targetStarted || TOOLHUB_ACTIVE_APP) {
+          var targetClose = closeToolHubAppsForRestart(TOOLHUB_ACTIVE_APP);
+          if (!targetClose.detached) throw "目标通道残留窗口未关闭：" + targetClose.remainingWindows.join(",");
+        }
       } catch (eCloseTarget) {}
       try {
         applyToolHubChannelRuntime(previous);
@@ -2219,9 +2320,17 @@ var __out = (function() {
 
   var existingApp = null;
   try { existingApp = TOOLHUB_ACTIVE_APP; } catch(eExistingApp) { existingApp = null; }
-  if (existingApp) {
+  if (existingApp || (TOOLHUB_WINDOW_DETACH_QUARANTINE && TOOLHUB_WINDOW_DETACH_QUARANTINE.length > 0)) {
     try { writeLog("Entry found existing ToolHub app, closing before start"); } catch(eLogExisting) {}
-    closeToolHubAppsForRestart(existingApp);
+    var existingClose = closeToolHubAppsForRestart(existingApp);
+    if (!existingClose.detached) {
+      return {
+        ok: false,
+        started: false,
+        msg: "旧 ToolHub 窗口尚未完全关闭，已阻止重复启动",
+        err: "remaining windows: " + existingClose.remainingWindows.join(",")
+      };
+    }
   }
 
   var entryInfo = getProcessInfo("entry");
