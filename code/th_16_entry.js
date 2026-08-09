@@ -1,4 +1,4 @@
-// @version 1.0.20
+// @version 1.0.21
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -207,6 +207,24 @@ FloatBallAppWM.prototype.close = function() {
   stateRef.closing = true;
   safeLog(this.L, 'i', "close begin");
 
+  var wmDetachWatch = [];
+  function rememberWmDetachView(view, label) {
+    if (!view) return;
+    for (var iWatch = 0; iWatch < wmDetachWatch.length; iWatch++) {
+      if (wmDetachWatch[iWatch] && wmDetachWatch[iWatch].view === view) return;
+    }
+    wmDetachWatch.push({ view: view, label: String(label || "view") });
+  }
+  try { rememberWmDetachView(stateRef.ballRoot, "ballRoot"); } catch (eWatchBall) {}
+  try { rememberWmDetachView(stateRef.panel, "panel"); } catch (eWatchPanel) {}
+  try { rememberWmDetachView(stateRef.settingsPanel, "settingsPanel"); } catch (eWatchSettings) {}
+  try {
+    if (String(stateRef.viewerPanelType || "") !== "tool_app") {
+      rememberWmDetachView(stateRef.viewerPanel, "viewerPanel");
+    }
+  } catch (eWatchViewer) {}
+  try { rememberWmDetachView(stateRef.mask, "mask"); } catch (eWatchMask) {}
+
   function closeStep(name, fn) {
     try {
       if (fn) fn();
@@ -285,33 +303,98 @@ FloatBallAppWM.prototype.close = function() {
       var wmHandler = stateRef.h;
       if (!wmThread) return;
 
-      var quitTask = new JavaAdapter(java.lang.Runnable, {
+      function isViewStillAttached(view) {
+        if (!view) return false;
+        try {
+          if (typeof view.isAttachedToWindow === "function") {
+            return view.isAttachedToWindow() === true;
+          }
+        } catch (eAttached) {}
+        try { return view.getWindowToken() !== null; } catch (eToken) {}
+        return true;
+      }
+
+      function collectAttachedLabels() {
+        var labels = [];
+        for (var iAttached = 0; iAttached < wmDetachWatch.length; iAttached++) {
+          var item = wmDetachWatch[iAttached];
+          if (item && item.view && isViewStillAttached(item.view)) {
+            labels.push(String(item.label || "view"));
+          }
+        }
+        return labels;
+      }
+
+      function quitConfirmedWmThread(reason) {
+        try {
+          if (android.os.Build.VERSION.SDK_INT >= 18) wmThread.quitSafely();
+          else wmThread.quit();
+          try { safeLog(self.L, 'd', "wm handler detach confirmed; quit reason=" + String(reason || "")); } catch (eLogQuit) {}
+          return true;
+        } catch (eQuitConfirmed) {
+          try { safeLog(self.L, 'w', "wm handler confirmed quit fail: " + String(eQuitConfirmed)); } catch (eLogQuitFail) {}
+        }
+        return false;
+      }
+
+      if (!wmHandler) {
+        try { safeLog(self.L, 'w', "wm handler missing; thread retained to avoid unsafe early quit"); } catch (eLogMissingHandler) {}
+        return;
+      }
+
+      var detachStartedAt = Date.now();
+      var detachSoftTimeoutMs = 4200;
+      var detachHardTimeoutMs = 15000;
+      var detachTimeoutLogged = false;
+      var detachCheckTask = null;
+      detachCheckTask = new JavaAdapter(java.lang.Runnable, {
         run: function() {
-          try {
-            if (android.os.Build.VERSION.SDK_INT >= 18) wmThread.quitSafely();
-            else wmThread.quit();
-            try { safeLog(self.L, 'd', "wm handler quit after deferred window detach"); } catch (eLogQuit) {}
-          } catch (eQuitDeferred) {
-            try { safeLog(self.L, 'w', "deferred wm handler quit fail: " + String(eQuitDeferred)); } catch (eLogQuitFail) {}
+          var attachedLabels = collectAttachedLabels();
+          if (attachedLabels.length <= 0) {
+            quitConfirmedWmThread("all_windows_detached");
+            return;
+          }
+
+          var elapsed = Date.now() - detachStartedAt;
+          if (!detachTimeoutLogged && elapsed >= detachSoftTimeoutMs) {
+            detachTimeoutLogged = true;
+            try {
+              safeLog(self.L, 'w', "wm window detach timeout; keep looper alive elapsedMs=" +
+                String(elapsed) + " remaining=" + attachedLabels.join(","));
+            } catch (eLogDetachTimeout) {}
+          }
+
+          if (elapsed >= detachHardTimeoutMs) {
+            try {
+              safeLog(self.L, 'w', "wm window detach hard timeout; thread retained elapsedMs=" +
+                String(elapsed) + " remaining=" + attachedLabels.join(","));
+            } catch (eLogHardTimeout) {}
+            return;
+          }
+
+          var delayMs = detachTimeoutLogged ? 250 : 40;
+          var reposted = false;
+          try { reposted = wmHandler.postDelayed(detachCheckTask, delayMs) === true; } catch (eRepost) {}
+          if (!reposted) {
+            try {
+              safeLog(self.L, 'w', "wm detach recheck post failed; thread retained remaining=" +
+                attachedLabels.join(","));
+            } catch (eLogRepostFail) {}
           }
         }
       });
 
-      var postedQuit = false;
-      try {
-        if (wmHandler) postedQuit = wmHandler.post(quitTask) === true;
-      } catch (ePostQuit) {
-        try { safeLog(self.L, 'w', "defer wm handler quit post fail: " + String(ePostQuit)); } catch (eLogPostQuit) {}
-      }
-
-      if (!postedQuit) {
-        if (android.os.Build.VERSION.SDK_INT >= 18) wmThread.quitSafely();
-        else wmThread.quit();
-        try { safeLog(self.L, 'w', "wm handler quit fallback used"); } catch (eLogFallbackQuit) {}
+      var postedCheck = false;
+      try { postedCheck = wmHandler.post(detachCheckTask) === true; } catch (ePostCheck) {}
+      if (!postedCheck) {
+        try { safeLog(self.L, 'w', "wm detach check post failed; thread retained"); } catch (eLogPostCheckFail) {}
         return;
       }
 
-      try { safeLog(self.L, 'd', "wm handler quit deferred behind removeView queue"); } catch (eLogDeferredQuit) {}
+      try {
+        safeLog(self.L, 'd', "wm handler quit deferred until detach confirmation views=" +
+          String(wmDetachWatch.length));
+      } catch (eLogDeferredQuit) {}
     });
     closeStep("quitIconLoader", function() {
       if (!self._iconLoader || !self._iconLoader.ht) return;
