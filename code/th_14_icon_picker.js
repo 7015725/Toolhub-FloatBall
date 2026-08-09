@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // ToolHub - ShortX 图标选择器模块
 //
 // 阶段 1：承载 showShortXIconPickerPopup。
@@ -174,18 +174,26 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
     android.graphics.PixelFormat.TRANSLUCENT
   );
-  overlayLp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+  overlayLp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
     | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 
   try { wm.addView(rootOverlay, overlayLp); } catch(eAdd) {
     safeLog(self.L, 'e', "icon picker addView fail: " + String(eAdd));
     return null;
   }
+  try {
+    if (self.attachPanelImeAvoidance) {
+      self.attachPanelImeAvoidance(rootOverlay, overlayLp, "shortx_icon_picker");
+    }
+  } catch(eImeAttach) {
+    safeLog(self.L, 'w', "icon picker IME avoidance attach fail: " + String(eImeAttach));
+  }
 
   var isDismissed = false;
   function dismiss() {
     if (isDismissed) return;
     isDismissed = true;
+    try { if (self.detachPanelImeAvoidance) self.detachPanelImeAvoidance(rootOverlay); } catch(eImeDetach) {}
     try { wm.removeView(rootOverlay);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     if (typeof onDismissCb === "function") {
       try { onDismissCb();  } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }

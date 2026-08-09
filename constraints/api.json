@@ -98,6 +98,78 @@
       "reason": "复用项目既有 Thread.sleep，在通道切换后的后台监视线程中等待运行锁释放"
     },
     {
+      "id": "api-panel-ime-avoidance",
+      "usageKeys": [
+        "android|class|android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE",
+        "android|method|android.view.WindowInsets.Type#ime",
+        "android|method|android.widget.FrameLayout#findFocus",
+        "android|method|android.widget.FrameLayout#getRootWindowInsets",
+        "android|method|android.widget.FrameLayout#getViewTreeObserver",
+        "android|method|android.widget.FrameLayout#getWindowVisibleDisplayFrame"
+      ],
+      "source": "android",
+      "classOrObject": "WindowInsets, ViewTreeObserver and WindowManager.LayoutParams",
+      "method": "IME inset observation and temporary overlay geometry adjustment",
+      "classification": "guarded",
+      "scope": [
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js"
+      ],
+      "allowScopeExpansion": true,
+      "minApi": 30,
+      "guard": "WindowInsets.Type.ime() is called only when SDK_INT >= 30; ToolHub runtime minimum API remains 33",
+      "owner": "ToolHub panel IME avoidance",
+      "threadContract": "Observer installation, WindowManager layout updates and removal run on the existing panel owner thread; ToolApp remains Android-main-owned",
+      "fallback": "If WindowInsets is unavailable, use getWindowVisibleDisplayFrame; any observer or layout exception leaves the original panel geometry unchanged",
+      "reason": "为 ColorOS overlay 输入框增加主动 IME 避让，并在键盘隐藏或窗口移除时恢复原始几何"
+    },
+    {
+      "id": "api-panel-ime-avoidance-existing-scope",
+      "usageKeys": [
+        "android|class|android.graphics.Rect",
+        "android|method|android.content.Context#getResources",
+        "android|method|android.graphics#Rect",
+        "android|method|android.os#Handler",
+        "android|method|android.util#DisplayMetrics",
+        "android|method|android.view.WindowInsets.Type#systemBars"
+      ],
+      "source": "android",
+      "classOrObject": "Existing Android display, inset and main-handler APIs",
+      "method": "existing APIs reused by panel IME avoidance",
+      "classification": "guarded",
+      "scope": [
+        "ToolHub.js",
+        "code/th_01_base.js",
+        "code/th_02_core.js",
+        "code/th_03_icon.js",
+        "code/th_04_theme.js",
+        "code/th_06_icon_parser.js",
+        "code/th_10_shell.js",
+        "code/th_13_panel_ui.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_16_entry.js",
+        "code/th_17_pointer.js",
+        "code/th_18_pointer_ocr.js",
+        "code/th_19_position_state.js",
+        "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ],
+      "allowScopeExpansion": true,
+      "minApi": 23,
+      "guard": "ToolHub runtime minimum API is 33; systemBars is used inside the SDK_INT >= 30 WindowInsets branch",
+      "owner": "ToolHub panel IME avoidance",
+      "threadContract": "Handler uses Looper.getMainLooper and window geometry changes stay on the panel owner thread",
+      "fallback": "Failures are isolated per API read and fall back to stored screen metrics, 24dp top inset, or unchanged geometry",
+      "reason": "精确批准现有显示与窗口 API 扩展到 th_15_extra.js 的统一 IME 避让实现"
+    },
+    {
       "id": "api-shortx-ui-beta-phase1",
       "usageKeys": [
         "android|class|android.graphics.Color",

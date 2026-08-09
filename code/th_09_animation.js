@@ -1,4 +1,4 @@
-// @version 1.0.12
+// @version 1.0.13
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -84,6 +84,13 @@ FloatBallAppWM.prototype.safeRemoveView = function(v, whichName, options) {
         this.unregisterPanelPredictiveBack(v, resetVisual);
       }
     } catch (eBack) {}
+
+    try {
+      if (this.detachPanelImeAvoidance) this.detachPanelImeAvoidance(v);
+    } catch (eImeDetach) {
+      safeLog(this.L, 'w', "IME avoidance detach fail which=" +
+        String(whichName || "") + " err=" + String(eImeDetach));
+    }
 
     if (!this.state || !this.state.wm) {
       return { ok: false, err: "WindowManager missing", where: whichName || "" };

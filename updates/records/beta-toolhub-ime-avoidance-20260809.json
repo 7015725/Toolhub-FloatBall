@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "beta-toolhub-ime-avoidance-20260809",
+  "type": "fix",
+  "title": "Beta：统一输入框 IME 主动避让",
+  "details": [
+    "为 ToolApp 设置分组、按钮与 Schema 编辑页中的输入框接入统一 IME 主动避让。",
+    "为颜色面板和 ShortX 图标选择器接入 WindowInsets 主路径与可见区域回退，键盘出现时临时调整窗口高度和位置。",
+    "键盘隐藏后精确恢复原始几何，窗口移除时注销布局、焦点监听与轮询，保持拖动缩放、返回手势和保存逻辑不变。"
+  ],
+  "manifestVersion": 0
+}
