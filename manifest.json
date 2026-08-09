@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "059387f37335a7a531677a0d834ca0cd951a4d40bdf96a5b6942d468673b6b57",
-      "size": 70826,
-      "version": 20260728112735
+      "sha256": "ab5bede45b9e32e21a865f7be3bd9b90a86afb0d8d7de4ee2d7c7ead89bfc1d6",
+      "size": 72784,
+      "version": 20260809162457
     }
   },
   "branch": "beta",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "db3b05682d2b84783429bac81309ea4e9db9ed7f50285a46894ff44297d37f00",
-    "size": 100891,
-    "version": 20260728160000,
+    "sha256": "5f4bbe2c391f993dd0af078bd5516c83dfb53d29168b6ab9e62a6e4200e0ac14",
+    "size": 106377,
+    "version": 20260810003500,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -56,9 +56,9 @@
       "version": "1.0.9"
     },
     "th_09_animation.js": {
-      "sha256": "c60bed71cf00e8fe52c193ff51ca59a93c462c4745f7d5e3d885e0d1eb072520",
-      "size": 42862,
-      "version": "1.0.12"
+      "sha256": "f05b9b3a62748121f5d22774b49ce93accb7d0afad7951ec9dc072ef50c4a436",
+      "size": 44195,
+      "version": "1.0.14"
     },
     "th_10_shell.js": {
       "sha256": "36427d7146a4589cbcf0512804acd90f4210a3d512cde6e03f2cb40c42d86d2d",
@@ -101,14 +101,14 @@
       "version": "0.0.4"
     },
     "th_14_icon_picker.js": {
-      "sha256": "7b7f9e7692d1e0ffaa67ccb094dad942a7fb81a97ca672259a54a8d9cb2ac561",
-      "size": 25129,
-      "version": "1.0.3"
+      "sha256": "3162e777d71ddcd8ce481c720d0ad4e8e63711ecfc1781b9ffcfcb4246e95a48",
+      "size": 25492,
+      "version": "1.0.4"
     },
     "th_14_panels.js": {
-      "sha256": "6c6f7d76bd70cbaa8863c1174d4e369e81a5515efd00a1c1cee4b7e14692bee8",
-      "size": 157044,
-      "version": "1.1.15"
+      "sha256": "71f9e703e9a24029a8629b259d83387067a41c5c733496e8b99e17eb5e30937b",
+      "size": 157384,
+      "version": "1.1.16"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -116,9 +116,9 @@
       "version": "1.0.4"
     },
     "th_15_extra.js": {
-      "sha256": "e6e1bf7e2a9ff72155854d079a28ef3a24bf14c2344bfea43411f2d19ecee3e2",
-      "size": 119268,
-      "version": "1.1.22"
+      "sha256": "933c8bbf7dbc11a6ba1fe28aa64fa45da09ca1e9be67e443a63535050ad47560",
+      "size": 130631,
+      "version": "1.1.23"
     },
     "th_15_main_panel.js": {
       "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
@@ -126,9 +126,9 @@
       "version": "1.5.8"
     },
     "th_16_entry.js": {
-      "sha256": "9ecbd2720717836044dbef15bb777a4e01745c94f650b838dbf8a34e7264705d",
-      "size": 34769,
-      "version": "1.0.17"
+      "sha256": "3efc33a6ecb6ad6422985c963356f63d375630456f5bb18823563c5c86511d3f",
+      "size": 35184,
+      "version": "1.0.18"
     },
     "th_17_pointer.js": {
       "sha256": "84492391435fa07220c29cca6f8f761f9b15bc306245786efe4116fd4a993680",
@@ -184,14 +184,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "将 Phase 2 至 Final R3 的 17 个已验收源码按固定顺序封装为单一 th_25_shortx_ui_package.js，并为每个解包源码保留独立 SHA-256 校验。",
-      "封装模块仅在原 startAsync 成功后安装，保持真机验收时序；任何安装或最终状态校验失败都会关闭当前实例并返回启动失败。",
-      "将最终封装纳入 Beta 模块列表、关键模块边界、签名 Manifest、API 使用约束和保护包装审计；Stable 通道继续排除全部 ShortXUI Beta 模块。",
-      "修正旧最终验收入口中的 R3 SHA-256，并保留实验室诊断入口用于后续回归。"
+      "为 ToolApp 设置分组、按钮与 Schema 编辑页中的输入框接入统一 IME 主动避让。",
+      "为颜色面板和 ShortX 图标选择器接入 WindowInsets 主路径与可见区域回退，键盘出现时临时调整窗口高度和位置。",
+      "键盘隐藏后精确恢复原始几何，窗口移除时注销布局、焦点监听与轮询，保持拖动缩放、返回手势和保存逻辑不变。",
+      "ToolHub.js 作为唯一入口支持 Stable/main 与 Beta/beta 双向切换，每次切换按目标通道重建模块集合，保留独立目录、选择持久化、验签校验与失败回退。",
+      "通道切换会等待旧悬浮球、面板与共享遮罩全部 detach 后再启动目标通道；同步 Stable 的普通 removeView 安全语义，关闭超时时阻止第二实例启动。"
     ],
-    "date": "2026-07-28",
-    "title": "Beta：收口封装 ShortXUI 最终 R3 运行时"
+    "date": "2026-08-10",
+    "title": "Beta：统一 IME 避让与安全通道切换"
   },
   "schema": 5,
-  "version": 20260728112735
+  "version": 20260809162457
 }

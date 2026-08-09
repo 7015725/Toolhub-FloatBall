@@ -10,5 +10,43 @@
     "ToolHub.js 作为唯一入口支持 Stable/main 与 Beta/beta 双向切换，每次切换按目标通道重建模块集合，保留独立目录、选择持久化、验签校验与失败回退。",
     "通道切换会等待旧悬浮球、面板与共享遮罩全部 detach 后再启动目标通道；同步 Stable 的普通 removeView 安全语义，关闭超时时阻止第二实例启动。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260809162457,
+  "date": "2026-08-10",
+  "modules": [
+    {
+      "name": "th_09_animation.js",
+      "from": "1.0.12",
+      "to": "1.0.14",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_icon_picker.js",
+      "from": "1.0.3",
+      "to": "1.0.4",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.15",
+      "to": "1.1.16",
+      "change": "updated"
+    },
+    {
+      "name": "th_15_extra.js",
+      "from": "1.1.22",
+      "to": "1.1.23",
+      "change": "updated"
+    },
+    {
+      "name": "th_16_entry.js",
+      "from": "1.0.17",
+      "to": "1.0.18",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": true,
+    "from": 20260728160000,
+    "to": 20260810003500
+  }
 }
