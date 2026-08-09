@@ -27,7 +27,7 @@ OUTPUT = ROOT / "code" / "th_25_shortx_ui_package.js"
 
 PACKAGE_MODULE = "th_25_shortx_ui_package.js"
 PACKAGE_VERSION = "0.9.2"
-ENTRY_VERSION = 20260809223000
+ENTRY_VERSION = 20260810003500
 
 PAYLOADS = [
     "beta/phase2/shortxui_guard.js",
