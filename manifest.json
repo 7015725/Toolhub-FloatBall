@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "ab5bede45b9e32e21a865f7be3bd9b90a86afb0d8d7de4ee2d7c7ead89bfc1d6",
-      "size": 72784,
-      "version": 20260809162457
+      "sha256": "e3a1147769bdc694f79eba9018673dba72aff808907b9115a44c975a6cf43616",
+      "size": 73766,
+      "version": 20260809164639
     }
   },
   "branch": "beta",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "5f4bbe2c391f993dd0af078bd5516c83dfb53d29168b6ab9e62a6e4200e0ac14",
-    "size": 106377,
-    "version": 20260810003500,
+    "sha256": "1cb77968b991be45b57e22a8de2afe12bb7fa167ca476d43bac6383423524b21",
+    "size": 107751,
+    "version": 20260810005000,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -184,15 +184,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "为 ToolApp 设置分组、按钮与 Schema 编辑页中的输入框接入统一 IME 主动避让。",
-      "为颜色面板和 ShortX 图标选择器接入 WindowInsets 主路径与可见区域回退，键盘出现时临时调整窗口高度和位置。",
-      "键盘隐藏后精确恢复原始几何，窗口移除时注销布局、焦点监听与轮询，保持拖动缩放、返回手势和保存逻辑不变。",
-      "ToolHub.js 作为唯一入口支持 Stable/main 与 Beta/beta 双向切换，每次切换按目标通道重建模块集合，保留独立目录、选择持久化、验签校验与失败回退。",
-      "通道切换会等待旧悬浮球、面板与共享遮罩全部 detach 后再启动目标通道；同步 Stable 的普通 removeView 安全语义，关闭超时时阻止第二实例启动。"
+      "修复入口在远程 manifest 暂时获取失败时，清单一致性检查提前终止、导致既有本地可信模块无法进入离线安全回退的问题。",
+      "启动、设置内重启、通道切换和切换失败回退统一执行本地可信模块集预检；仅当目标通道全部模块存在且实际 SHA-256 与已保存可信 SHA-256 完全一致时允许加载。",
+      "缺失模块、缺少可信哈希或内容哈希不一致仍会失败关闭；检查更新与安装更新继续强制要求远程 manifest 验签成功。"
     ],
     "date": "2026-08-10",
-    "title": "Beta：统一 IME 避让与安全通道切换"
+    "title": "Beta：修复可信清单暂时不可用时无法启动"
   },
   "schema": 5,
-  "version": 20260809162457
+  "version": 20260809164639
 }

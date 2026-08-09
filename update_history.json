@@ -1,8 +1,27 @@
 {
   "schema": 1,
-  "historyVersion": 20260809162457,
-  "generatedAt": "2026-08-10T00:24:57+08:00",
+  "historyVersion": 20260809164639,
+  "generatedAt": "2026-08-10T00:46:39+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "beta-trusted-manifest-local-fallback-20260810",
+      "type": "fix",
+      "title": "Beta：修复可信清单暂时不可用时无法启动",
+      "details": [
+        "修复入口在远程 manifest 暂时获取失败时，清单一致性检查提前终止、导致既有本地可信模块无法进入离线安全回退的问题。",
+        "启动、设置内重启、通道切换和切换失败回退统一执行本地可信模块集预检；仅当目标通道全部模块存在且实际 SHA-256 与已保存可信 SHA-256 完全一致时允许加载。",
+        "缺失模块、缺少可信哈希或内容哈希不一致仍会失败关闭；检查更新与安装更新继续强制要求远程 manifest 验签成功。"
+      ],
+      "manifestVersion": 20260809164639,
+      "date": "2026-08-10",
+      "modules": [],
+      "entry": {
+        "changed": true,
+        "from": 20260810003500,
+        "to": 20260810005000
+      }
+    },
     {
       "schema": 1,
       "id": "beta-toolhub-ime-avoidance-20260809",
