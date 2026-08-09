@@ -301,6 +301,7 @@ var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: �
 ```
 
 - `UPDATE_SECURITY_MODE` 当前默认是 `2`，即完整验签安全更新模式；只有明确值 `0` 才进入普通模式，无效值会强制回退到完整验签模式 `2`。
+- 远程 manifest 临时不可用时，入口只允许加载目标通道中“文件存在且实际 SHA-256 与已保存可信 SHA-256 完全一致”的完整模块集合；缺失或任一哈希异常都会终止启动。手动检查更新与安装更新仍必须取得并验证远程 manifest。
 - 入口中 `criticalModules` 包含 `th_01_base.js`、`th_02_core.js`、`th_05_persistence.js`、`th_16_entry.js` 和 `th_19_position_state.js`，任一加载失败都会中断启动。
 - 其他模块加载失败会记录到 `loadErrors`；悬浮球仍能启动时返回 `degraded`，不会再误报为完整成功。
 - 入口启动结果使用 `healthy / degraded / failed` 三态，并汇总安全状态、同步状态、布局、关闭广播、更新模块和加载异常。

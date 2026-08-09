@@ -9,9 +9,9 @@
 
 ## 扫描摘要
 
-- 入口行数：`2389`
+- 入口行数：`2430`
 - 子模块文件：`32`
-- 普通函数定义：`119`
+- 普通函数定义：`120`
 - 顶层变量：`40`
 - 跨模块引用函数：`18`
 - 动态引用待确认函数：`0`
@@ -75,16 +75,16 @@
 |`beginToolHubChannelSwitch`|313|11|入口内使用|1|1|0|0|0|
 |`commitToolHubActiveChannel`|325|11|入口内使用|1|1|0|0|0|
 |`cancelToolHubPendingChannel`|337|11|入口内使用|3|3|0|0|0|
-|`writeLog`|349|27|跨模块引用|54|54|5|5|0|
+|`writeLog`|349|27|跨模块引用|55|55|5|5|0|
 |`runShell`|377|7|入口内使用|1|1|0|0|0|
 |`setDirPerms`|385|6|入口内使用|2|2|0|0|0|
-|`ensureCodeDir`|392|16|入口内使用|9|9|0|0|0|
+|`ensureCodeDir`|392|16|入口内使用|10|10|0|0|0|
 |`readTextFile`|409|16|入口内使用|7|7|0|0|0|
 |`writeTextFile`|426|20|跨模块引用|7|7|2|4|0|
 |`readFirstLine`|447|6|跨模块引用|3|3|1|2|0|
-|`sha256File`|454|23|入口内使用|17|17|0|0|0|
+|`sha256File`|454|23|入口内使用|18|18|0|0|0|
 |`saveTrustedSha`|478|1|入口内使用|7|7|0|0|0|
-|`getTrustedSha`|479|1|入口内使用|4|4|0|0|0|
+|`getTrustedSha`|479|1|入口内使用|5|5|0|0|0|
 |`getTrustedVersion`|480|5|跨模块引用|3|3|1|2|0|
 |`saveTrustedVersion`|485|1|入口内使用|2|2|0|0|0|
 |`getEmptyInstalledManifest`|487|3|入口内使用|3|3|0|0|0|
@@ -108,7 +108,7 @@
 |`getTrustedManifestVersionNumber`|812|7|跨模块引用|2|2|1|2|0|
 |`buildToolHubSecurityText`|820|6|入口内使用|2|2|0|0|0|
 |`applyRuntimeUpdateState`|827|38|入口内使用|3|3|0|0|0|
-|`hashesEqual`|866|4|入口内使用|14|14|0|0|0|
+|`hashesEqual`|866|4|入口内使用|15|15|0|0|0|
 |`parseModuleVersionText`|871|10|入口内使用|2|2|0|0|0|
 |`compareModuleVersion`|882|9|入口内使用|1|1|0|0|0|
 |`readModuleVersionFromText`|892|12|入口内使用|1|1|0|0|0|
@@ -139,31 +139,32 @@
 |`executeStagedModuleTransaction`|1343|50|入口内使用|1|1|0|0|0|
 |`installPendingModuleUpdates`|1395|90|跨模块引用|0|0|1|2|0|
 |`checkToolHubModuleUpdatesNow`|1487|78|跨模块引用|0|0|3|9|0|
-|`checkModuleManifestConsistency`|1567|51|入口内使用|3|3|0|0|0|
-|`verifyLocalModuleBeforeEval`|1619|21|入口内使用|2|2|0|0|0|
-|`loadScript`|1641|29|入口内使用|3|3|0|0|0|
-|`copyToolHubModuleList`|1682|5|入口内使用|2|2|0|0|0|
-|`refreshToolHubChannelModuleSet`|1690|8|入口内使用|2|2|0|0|0|
-|`notifyToolHubModulesLoaded`|1724|15|入口内使用|1|1|0|0|0|
-|`registerToolHubAppInstance`|1749|16|入口内使用|3|3|0|0|0|
-|`unregisterToolHubAppInstance`|1766|15|跨模块引用|3|3|2|4|0|
-|`getToolHubCloseActionForRestart`|1782|9|入口内使用|1|1|0|0|0|
-|`sendToolHubCloseBroadcastForRestart`|1792|24|入口内使用|1|1|0|0|0|
-|`appendToolHubWindowSnapshot`|1817|9|入口内使用|1|1|0|0|0|
-|`snapshotToolHubAppWindows`|1827|20|入口内使用|1|1|0|0|0|
-|`isToolHubWindowAttached`|1848|8|入口内使用|1|1|0|0|0|
-|`waitForToolHubWindowsDetached`|1857|22|入口内使用|1|1|0|0|0|
-|`closeToolHubAppForRestart`|1880|58|入口内使用|1|1|0|0|0|
-|`closeToolHubAppsForRestart`|1939|45|入口内使用|5|5|0|0|0|
-|`reloadLocalToolHubModulesForRestart`|1985|29|入口内使用|1|1|0|0|0|
-|`restartToolHubFromSettings`|2015|44|跨模块引用|0|0|1|2|0|
-|`showToolHubChannelSwitchToast`|2062|8|跨模块引用|4|4|2|2|0|
-|`flushToolHubStateBeforeChannelSwitch`|2071|9|入口内使用|1|1|0|0|0|
-|`loadTargetToolHubChannelModules`|2081|16|入口内使用|1|1|0|0|0|
-|`reloadKnownGoodToolHubChannelModules`|2098|14|入口内使用|1|1|0|0|0|
-|`startToolHubAppAfterChannelLoad`|2113|19|入口内使用|2|2|0|0|0|
-|`switchToolHubUpdateChannel`|2133|89|跨模块引用|0|0|1|1|0|
-|`summarizeModuleUpdates`|2233|14|入口内使用|1|1|0|0|0|
-|`summarizePendingModuleUpdates`|2247|10|入口内使用|1|1|0|0|0|
-|`summarizeLoadErrors`|2257|10|入口内使用|1|1|0|0|0|
-|`buildToolHubUpdateState`|2267|47|入口内使用|1|1|0|0|0|
+|`checkLocalTrustedModuleSet`|1567|38|入口内使用|1|1|0|0|0|
+|`checkModuleManifestConsistency`|1606|58|入口内使用|4|4|0|0|0|
+|`verifyLocalModuleBeforeEval`|1665|21|入口内使用|2|2|0|0|0|
+|`loadScript`|1687|29|入口内使用|3|3|0|0|0|
+|`copyToolHubModuleList`|1728|5|入口内使用|2|2|0|0|0|
+|`refreshToolHubChannelModuleSet`|1736|8|入口内使用|2|2|0|0|0|
+|`notifyToolHubModulesLoaded`|1770|15|入口内使用|1|1|0|0|0|
+|`registerToolHubAppInstance`|1795|16|入口内使用|3|3|0|0|0|
+|`unregisterToolHubAppInstance`|1812|15|跨模块引用|3|3|2|4|0|
+|`getToolHubCloseActionForRestart`|1828|9|入口内使用|1|1|0|0|0|
+|`sendToolHubCloseBroadcastForRestart`|1838|24|入口内使用|1|1|0|0|0|
+|`appendToolHubWindowSnapshot`|1863|9|入口内使用|1|1|0|0|0|
+|`snapshotToolHubAppWindows`|1873|20|入口内使用|1|1|0|0|0|
+|`isToolHubWindowAttached`|1894|8|入口内使用|1|1|0|0|0|
+|`waitForToolHubWindowsDetached`|1903|22|入口内使用|1|1|0|0|0|
+|`closeToolHubAppForRestart`|1926|58|入口内使用|1|1|0|0|0|
+|`closeToolHubAppsForRestart`|1985|45|入口内使用|5|5|0|0|0|
+|`reloadLocalToolHubModulesForRestart`|2031|25|入口内使用|1|1|0|0|0|
+|`restartToolHubFromSettings`|2057|44|跨模块引用|0|0|1|2|0|
+|`showToolHubChannelSwitchToast`|2104|8|跨模块引用|4|4|2|2|0|
+|`flushToolHubStateBeforeChannelSwitch`|2113|9|入口内使用|1|1|0|0|0|
+|`loadTargetToolHubChannelModules`|2123|13|入口内使用|1|1|0|0|0|
+|`reloadKnownGoodToolHubChannelModules`|2137|16|入口内使用|1|1|0|0|0|
+|`startToolHubAppAfterChannelLoad`|2154|19|入口内使用|2|2|0|0|0|
+|`switchToolHubUpdateChannel`|2174|89|跨模块引用|0|0|1|1|0|
+|`summarizeModuleUpdates`|2274|14|入口内使用|1|1|0|0|0|
+|`summarizePendingModuleUpdates`|2288|10|入口内使用|1|1|0|0|0|
+|`summarizeLoadErrors`|2298|10|入口内使用|1|1|0|0|0|
+|`buildToolHubUpdateState`|2308|47|入口内使用|1|1|0|0|0|

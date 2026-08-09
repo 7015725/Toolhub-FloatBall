@@ -4,7 +4,7 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260810003500; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260810005000; // 入口文件版本，仅在 ToolHub.js 变化时提升
 
 var TOOLHUB_CHANNEL_SPECS = {
     stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
@@ -1564,19 +1564,65 @@ function checkToolHubModuleUpdatesNow() {
 }
 
 
+function checkLocalTrustedModuleSet() {
+    var ret = {
+        ok: true,
+        count: 0,
+        missing: [],
+        untrusted: [],
+        error: ""
+    };
+
+    try {
+        var dir = ensureCodeDir();
+        for (var i = 0; i < modules.length; i++) {
+            var relPath = String(modules[i]);
+            var file = new java.io.File(dir, relPath);
+            if (!file.exists()) {
+                ret.missing.push(relPath);
+                continue;
+            }
+            var trustedHash = getTrustedSha(relPath);
+            var actualHash = sha256File(file.getAbsolutePath());
+            if (!trustedHash || !actualHash || !hashesEqual(actualHash, trustedHash)) {
+                ret.untrusted.push(relPath);
+                continue;
+            }
+            ret.count++;
+        }
+
+        if (ret.missing.length > 0 || ret.untrusted.length > 0) {
+            ret.ok = false;
+            ret.error = "missing=" + ret.missing.join(",") + "; untrusted=" + ret.untrusted.join(",");
+        }
+        return ret;
+    } catch (e) {
+        ret.ok = false;
+        ret.error = String(e);
+        return ret;
+    }
+}
+
 function checkModuleManifestConsistency() {
     var ret = {
         ok: true,
         missingInManifest: [],
         unusedInManifest: [],
+        localTrustedFallback: false,
         error: ""
     };
 
     try {
         if (UPDATE_SECURITY_MODE === 0) return ret;
         if (!__trustedManifest || !__trustedManifest.files) {
+            var localTrusted = checkLocalTrustedModuleSet();
+            if (localTrusted.ok) {
+                ret.localTrustedFallback = true;
+                writeLog("Trusted manifest unavailable at boot; verified locally trusted module set, count=" + localTrusted.count);
+                return ret;
+            }
             ret.ok = false;
-            ret.error = "trusted manifest missing";
+            ret.error = "trusted manifest missing; local trusted module set invalid: " + String(localTrusted.error || "unknown");
             return ret;
         }
 
@@ -1989,10 +2035,6 @@ function reloadLocalToolHubModulesForRestart() {
     fetchTrustedManifest();
   }
 
-  if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) {
-    throw (__securityStatus && __securityStatus.msg ? __securityStatus.msg : "更新清单不可用");
-  }
-
   var checkRet = checkModuleManifestConsistency();
   if (!checkRet.ok) {
     throw "模块清单自检失败: " + String(checkRet.error || "");
@@ -2081,9 +2123,6 @@ function flushToolHubStateBeforeChannelSwitch() {
 function loadTargetToolHubChannelModules() {
   recoverPendingModuleTransaction();
   fetchTrustedManifest();
-  if (UPDATE_SECURITY_MODE !== 0 && !__trustedManifest) {
-    throw (__securityStatus && __securityStatus.msg ? __securityStatus.msg : "目标通道安全清单不可用");
-  }
   var checkRet = checkModuleManifestConsistency();
   if (!checkRet.ok) throw "目标通道模块清单自检失败: " + String(checkRet.error || "");
   __moduleUpdates = [];
@@ -2097,6 +2136,8 @@ function loadTargetToolHubChannelModules() {
 
 function reloadKnownGoodToolHubChannelModules() {
   try { fetchTrustedManifest(); } catch (eManifest) {}
+  var checkRet = checkModuleManifestConsistency();
+  if (!checkRet.ok) throw "回退通道模块清单自检失败: " + String(checkRet.error || "");
   var dir = ensureCodeDir();
   for (var i = 0; i < modules.length; i++) {
     var relPath = String(modules[i]);
