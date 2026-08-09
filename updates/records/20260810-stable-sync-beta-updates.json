@@ -9,43 +9,5 @@
     "更新重启与通道切换继续使用普通 WindowManager.removeView；WM HandlerThread 仅在受监控窗口真实 detach 后退出，4.2 秒超时只记录，15 秒仍不强制同步销毁，避免重新引入 system_server/ColorOS Hook 风险。",
     "入口同步到 20260810005000，保留 Stable/main 与 Beta/beta 双通道隔离、可信本地模块回退和旧窗口未完成 detach 时阻止第二实例启动的 fail-closed 行为。",
     "Stable 独立生成 main 通道 Manifest、RSA 签名和更新历史，不复制 Beta 的 manifest.json、manifest.sig、update_history.json 或 Beta 发布记录。"
-  ],
-  "date": "2026-08-10",
-  "modules": [
-    {
-      "name": "th_09_animation.js",
-      "from": "1.0.13",
-      "to": "1.0.15",
-      "change": "updated"
-    },
-    {
-      "name": "th_14_icon_picker.js",
-      "from": "1.0.3",
-      "to": "1.0.5",
-      "change": "updated"
-    },
-    {
-      "name": "th_14_panels.js",
-      "from": "1.1.15",
-      "to": "1.1.17",
-      "change": "updated"
-    },
-    {
-      "name": "th_15_extra.js",
-      "from": "1.1.22",
-      "to": "1.1.26",
-      "change": "updated"
-    },
-    {
-      "name": "th_16_entry.js",
-      "from": "1.0.18",
-      "to": "1.0.21",
-      "change": "updated"
-    }
-  ],
-  "entry": {
-    "changed": true,
-    "from": 20260721201500,
-    "to": 20260810005000
-  }
+  ]
 }
