@@ -1,4 +1,4 @@
-// @version 1.1.24
+// @version 1.1.25
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();

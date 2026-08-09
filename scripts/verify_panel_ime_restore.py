@@ -29,7 +29,7 @@ def isolate(text, start_marker, end_marker):
     return text[start:end]
 
 
-version_at_least(EXTRA, (1, 1, 24), "th_15_extra.js")
+version_at_least(EXTRA, (1, 1, 25), "th_15_extra.js")
 version_at_least(ANIMATION, (1, 0, 15), "th_09_animation.js")
 version_at_least(PANELS, (1, 1, 17), "th_14_panels.js")
 version_at_least(ICON_PICKER, (1, 0, 5), "th_14_icon_picker.js")
