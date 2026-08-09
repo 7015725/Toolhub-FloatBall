@@ -1,8 +1,35 @@
 {
   "schema": 1,
-  "historyVersion": 20260809204938,
-  "generatedAt": "2026-08-10T04:49:38+08:00",
+  "historyVersion": 20260809210624,
+  "generatedAt": "2026-08-10T05:06:24+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "beta-restart-mask-detach-20260810",
+      "type": "fix",
+      "title": "Beta：修复更新重启后遮罩残留",
+      "details": [
+        "修复设置页完成模块更新并自动重启时，WM HandlerThread 在普通 removeView 的 ViewRoot detach 消息执行前退出，导致旧 mask 与 ballRoot 残留。",
+        "关闭流程改为先提交 panel、mask、ballRoot 的普通 removeView，再在同一 WM 消息队列尾部延迟退出 HandlerThread，保证已排队的 detach 先执行。",
+        "保留 system_server 下普通 removeView 的安全语义，不切换为 removeViewImmediate，避免同步销毁重新进入 ColorOS/Xposed 调用栈。",
+        "不修改 IME 避让、IME 回退和焦点逻辑；本次只收口更新重启与通道切换共用的关闭生命周期。"
+      ],
+      "manifestVersion": 20260809210624,
+      "date": "2026-08-10",
+      "modules": [
+        {
+          "name": "th_16_entry.js",
+          "from": "1.0.18",
+          "to": "1.0.20",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260810005000,
+        "to": 20260810005000
+      }
+    },
     {
       "schema": 1,
       "id": "beta-ime-insets-hidden-restore-20260810",

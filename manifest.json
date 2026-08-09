@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "8ec322e91757949bdcbdb53df9982d5672c92f4e0d9c6485db8ca924e0a79919",
-      "size": 76634,
-      "version": 20260809204938
+      "sha256": "f566cf947688b4d0070c561e3e14b2e22842e9e1e08eb1ced05b135fdb505592",
+      "size": 77844,
+      "version": 20260809210624
     }
   },
   "branch": "beta",
@@ -126,9 +126,9 @@
       "version": "1.5.8"
     },
     "th_16_entry.js": {
-      "sha256": "3efc33a6ecb6ad6422985c963356f63d375630456f5bb18823563c5c86511d3f",
-      "size": 35184,
-      "version": "1.0.18"
+      "sha256": "c42198d201ed2415e13346a3bc1d810b53cad81700b5cde9c69c72e9611e7cf8",
+      "size": 36300,
+      "version": "1.0.20"
     },
     "th_17_pointer.js": {
       "sha256": "84492391435fa07220c29cca6f8f761f9b15bc306245786efe4116fd4a993680",
@@ -184,14 +184,14 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Android 11 及以上改为以 WindowInsets.isVisible(Type.ime()) 作为 IME 显示状态真值，键盘隐藏后立即恢复避让前窗口几何。",
-      "修复 ColorOS 在窗口临时缩短后仍返回旧 visible frame 间隙、导致程序误判键盘持续显示而无法回退的问题。",
-      "可见区域回退仅在 WindowInsets 不可用时决定 IME 状态；Insets 已确认键盘可见时只允许它补充键盘高度。",
-      "新增成功回退日志，记录 owner、reason 与检测来源，便于真机区分 ime_hidden、input_blur 和返回键回退。"
+      "修复设置页完成模块更新并自动重启时，WM HandlerThread 在普通 removeView 的 ViewRoot detach 消息执行前退出，导致旧 mask 与 ballRoot 残留。",
+      "关闭流程改为先提交 panel、mask、ballRoot 的普通 removeView，再在同一 WM 消息队列尾部延迟退出 HandlerThread，保证已排队的 detach 先执行。",
+      "保留 system_server 下普通 removeView 的安全语义，不切换为 removeViewImmediate，避免同步销毁重新进入 ColorOS/Xposed 调用栈。",
+      "不修改 IME 避让、IME 回退和焦点逻辑；本次只收口更新重启与通道切换共用的关闭生命周期。"
     ],
     "date": "2026-08-10",
-    "title": "Beta：修复 ColorOS 键盘收起后窗口不回位"
+    "title": "Beta：修复更新重启后遮罩残留"
   },
   "schema": 5,
-  "version": 20260809204938
+  "version": 20260809210624
 }

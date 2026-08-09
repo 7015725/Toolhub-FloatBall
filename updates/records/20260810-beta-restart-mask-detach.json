@@ -9,5 +9,19 @@
     "保留 system_server 下普通 removeView 的安全语义，不切换为 removeViewImmediate，避免同步销毁重新进入 ColorOS/Xposed 调用栈。",
     "不修改 IME 避让、IME 回退和焦点逻辑；本次只收口更新重启与通道切换共用的关闭生命周期。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260809210624,
+  "date": "2026-08-10",
+  "modules": [
+    {
+      "name": "th_16_entry.js",
+      "from": "1.0.18",
+      "to": "1.0.20",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260810005000,
+    "to": 20260810005000
+  }
 }
