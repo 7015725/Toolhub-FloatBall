@@ -224,7 +224,6 @@ FloatBallAppWM.prototype.close = function() {
     }
   } catch (eWatchViewer) {}
   try { rememberWmDetachView(stateRef.mask, "mask"); } catch (eWatchMask) {}
-  try { rememberWmDetachView(stateRef.predictiveBackIndicatorView, "predictiveBackIndicator"); } catch (eWatchBackIndicator) {}
 
   function closeStep(name, fn) {
     try {
@@ -343,7 +342,7 @@ FloatBallAppWM.prototype.close = function() {
         return;
       }
 
-      var detachStartedAt = Number(java.lang.System.currentTimeMillis());
+      var detachStartedAt = Date.now();
       var detachSoftTimeoutMs = 4200;
       var detachHardTimeoutMs = 15000;
       var detachTimeoutLogged = false;
@@ -356,7 +355,7 @@ FloatBallAppWM.prototype.close = function() {
             return;
           }
 
-          var elapsed = Number(java.lang.System.currentTimeMillis()) - detachStartedAt;
+          var elapsed = Date.now() - detachStartedAt;
           if (!detachTimeoutLogged && elapsed >= detachSoftTimeoutMs) {
             detachTimeoutLogged = true;
             try {
