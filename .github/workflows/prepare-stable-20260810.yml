@@ -90,33 +90,29 @@ jobs:
                   api.setdefault('rules', []).append(beta_rules[rule_id])
                   existing.add(rule_id)
 
-          stable_scope_rule = {
-              'id': 'api-panel-ime-restore-existing-callback-scope',
-              'usageKeys': [
-                  'android|class|android.os.Handler',
-                  'android|class|android.util.DisplayMetrics',
-                  'android|method|android.os.Looper#getMainLooper',
-                  'java|class|java.lang.Runnable',
-                  'java|method|java.lang#Runnable',
-              ],
-              'source': 'android/java',
-              'classOrObject': 'Handler, DisplayMetrics, Looper and Runnable',
-              'method': 'existing callback and display APIs reused by IME avoidance',
-              'classification': 'guarded',
-              'scope': [
-                  'code/th_14_icon_picker.js',
-                  'code/th_15_extra.js',
-              ],
-              'allowScopeExpansion': True,
-              'minApi': 23,
-              'guard': 'ToolHub runtime minimum API is 33; these APIs are existing framework callback/display primitives',
-              'owner': 'ToolHub panel IME avoidance and restore',
-              'threadContract': 'Handler binds to Looper.getMainLooper only for observer callbacks; window layout mutations remain on the existing overlay owner path',
-              'fallback': 'If callback posting or display metric access fails, IME avoidance keeps the stored geometry or falls back to existing visible-frame logic',
-              'reason': '精确批准 2026-08-10 IME 避让将既有 Handler、DisplayMetrics、主 Looper 与 Runnable 回调扩展到 th_15_extra 和 th_14_icon_picker',
-          }
-          if stable_scope_rule['id'] not in existing:
-              api.setdefault('rules', []).append(stable_scope_rule)
+          rules_by_id = {str(rule.get('id')): rule for rule in api.get('rules', [])}
+          existing_scope_rule = rules_by_id.get('api-panel-ime-avoidance-existing-scope')
+          if not existing_scope_rule:
+              raise SystemExit('IME existing-scope API rule missing')
+          for usage_key in [
+              'android|class|android.os.Handler',
+              'android|class|android.util.DisplayMetrics',
+              'android|method|android.os.Looper#getMainLooper',
+              'java|class|java.lang.Runnable',
+              'java|method|java.lang#Runnable',
+          ]:
+              if usage_key not in existing_scope_rule.setdefault('usageKeys', []):
+                  existing_scope_rule['usageKeys'].append(usage_key)
+          for scope_path in [
+              'code/th_09_animation.js',
+              'code/th_14_button_icon_editor.js',
+          ]:
+              if scope_path not in existing_scope_rule.setdefault('scope', []):
+                  existing_scope_rule['scope'].append(scope_path)
+          existing_scope_rule['reason'] = (
+              '精确批准 2026-08-10 IME 避让复用既有显示、主线程 Handler/Looper 与 Runnable 回调 API，'
+              '并覆盖这些 API 在 Stable 当前代码中的既有使用文件，避免未审核范围漂移'
+          )
           api_path.write_text(json.dumps(api, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
 
