@@ -1,4 +1,4 @@
-// @version 1.0.18
+// @version 1.0.19
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -281,9 +281,37 @@ FloatBallAppWM.prototype.close = function() {
     });
 
     closeStep("quitHandlerThread", function() {
-      if (!stateRef.ht) return;
-      if (android.os.Build.VERSION.SDK_INT >= 18) stateRef.ht.quitSafely();
-      else stateRef.ht.quit();
+      var wmThread = stateRef.ht;
+      var wmHandler = stateRef.h;
+      if (!wmThread) return;
+
+      var quitTask = new JavaAdapter(java.lang.Runnable, {
+        run: function() {
+          try {
+            if (android.os.Build.VERSION.SDK_INT >= 18) wmThread.quitSafely();
+            else wmThread.quit();
+            try { safeLog(self.L, 'd', "wm handler quit after deferred window detach"); } catch (eLogQuit) {}
+          } catch (eQuitDeferred) {
+            try { safeLog(self.L, 'w', "deferred wm handler quit fail: " + String(eQuitDeferred)); } catch (eLogQuitFail) {}
+          }
+        }
+      });
+
+      var postedQuit = false;
+      try {
+        if (wmHandler) postedQuit = wmHandler.post(quitTask) === true;
+      } catch (ePostQuit) {
+        try { safeLog(self.L, 'w', "defer wm handler quit post fail: " + String(ePostQuit)); } catch (eLogPostQuit) {}
+      }
+
+      if (!postedQuit) {
+        if (android.os.Build.VERSION.SDK_INT >= 18) wmThread.quitSafely();
+        else wmThread.quit();
+        try { safeLog(self.L, 'w', "wm handler quit fallback used"); } catch (eLogFallbackQuit) {}
+        return;
+      }
+
+      try { safeLog(self.L, 'd', "wm handler quit deferred behind removeView queue"); } catch (eLogDeferredQuit) {}
     });
     closeStep("quitIconLoader", function() {
       if (!self._iconLoader || !self._iconLoader.ht) return;
@@ -715,7 +743,7 @@ FloatBallAppWM.prototype.postToToolHubWm = function(fn) {
 FloatBallAppWM.prototype.runOnToolAppMainSync = function(fn, timeoutMs) {
   if (!fn) return { ok: false, error: "empty-fn" };
   if (this.isAndroidMainThread()) {
-    try { return { ok: true, value: fn(), direct: true }; }
+    try { return { ok: true, value: fn(), direct: true };
     catch (eDirect) { return { ok: false, error: eDirect }; }
   }
   try {
