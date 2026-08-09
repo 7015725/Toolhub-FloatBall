@@ -88,6 +88,35 @@ jobs:
                   raise SystemExit('Missing Beta API rule: ' + rule_id)
               if rule_id not in existing:
                   api.setdefault('rules', []).append(beta_rules[rule_id])
+                  existing.add(rule_id)
+
+          stable_scope_rule = {
+              'id': 'api-panel-ime-restore-existing-callback-scope',
+              'usageKeys': [
+                  'android|class|android.os.Handler',
+                  'android|class|android.util.DisplayMetrics',
+                  'android|method|android.os.Looper#getMainLooper',
+                  'java|class|java.lang.Runnable',
+                  'java|method|java.lang#Runnable',
+              ],
+              'source': 'android/java',
+              'classOrObject': 'Handler, DisplayMetrics, Looper and Runnable',
+              'method': 'existing callback and display APIs reused by IME avoidance',
+              'classification': 'guarded',
+              'scope': [
+                  'code/th_14_icon_picker.js',
+                  'code/th_15_extra.js',
+              ],
+              'allowScopeExpansion': True,
+              'minApi': 23,
+              'guard': 'ToolHub runtime minimum API is 33; these APIs are existing framework callback/display primitives',
+              'owner': 'ToolHub panel IME avoidance and restore',
+              'threadContract': 'Handler binds to Looper.getMainLooper only for observer callbacks; window layout mutations remain on the existing overlay owner path',
+              'fallback': 'If callback posting or display metric access fails, IME avoidance keeps the stored geometry or falls back to existing visible-frame logic',
+              'reason': '精确批准 2026-08-10 IME 避让将既有 Handler、DisplayMetrics、主 Looper 与 Runnable 回调扩展到 th_15_extra 和 th_14_icon_picker',
+          }
+          if stable_scope_rule['id'] not in existing:
+              api.setdefault('rules', []).append(stable_scope_rule)
           api_path.write_text(json.dumps(api, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
 
