@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "id": "20260810-stable-sync-beta-updates",
+  "type": "fix",
+  "title": "同步 2026-08-10 Beta 已验证更新到 Stable",
+  "details": [
+    "将 2026-08-10 Beta 已完成真机与 CI 验证的更新同步到 Stable/main，包含可信清单离线安全回退、统一 IME 避让与键盘收起几何恢复、ColorOS WindowInsets 隐藏判定，以及更新重启窗口 detach 生命周期修复。",
+    "设置页、按钮编辑、Schema 编辑、颜色面板与 ShortX 图标选择器统一使用 IME 避让/回退契约；键盘隐藏后恢复首次避让前 width、height、gravity、x、y，并避免多次开合位置漂移。",
+    "更新重启与通道切换继续使用普通 WindowManager.removeView；WM HandlerThread 仅在受监控窗口真实 detach 后退出，4.2 秒超时只记录，15 秒仍不强制同步销毁，避免重新引入 system_server/ColorOS Hook 风险。",
+    "入口同步到 20260810005000，保留 Stable/main 与 Beta/beta 双通道隔离、可信本地模块回退和旧窗口未完成 detach 时阻止第二实例启动的 fail-closed 行为。",
+    "Stable 独立生成 main 通道 Manifest、RSA 签名和更新历史，不复制 Beta 的 manifest.json、manifest.sig、update_history.json 或 Beta 发布记录。"
+  ],
+  "manifestVersion": 20260809235317,
+  "date": "2026-08-10",
+  "modules": [
+    {
+      "name": "th_09_animation.js",
+      "from": "1.0.13",
+      "to": "1.0.15",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_icon_picker.js",
+      "from": "1.0.3",
+      "to": "1.0.5",
+      "change": "updated"
+    },
+    {
+      "name": "th_14_panels.js",
+      "from": "1.1.15",
+      "to": "1.1.17",
+      "change": "updated"
+    },
+    {
+      "name": "th_15_extra.js",
+      "from": "1.1.22",
+      "to": "1.1.26",
+      "change": "updated"
+    },
+    {
+      "name": "th_16_entry.js",
+      "from": "1.0.18",
+      "to": "1.0.21",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": true,
+    "from": 20260721201500,
+    "to": 20260810005000
+  }
+}

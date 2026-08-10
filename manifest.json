@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "e9cafefc09b655b7c9b07f4985a1c6141cd34b39ee363f90caf8797ec93bb5cb",
-      "size": 60183,
-      "version": 20260727013657
+      "sha256": "a351cf038bae2065ae5148cc48d08bd6281ce3cb26efde9c1806e4054772632b",
+      "size": 62448,
+      "version": 20260809235317
     }
   },
   "branch": "main",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "48a8ed1fccc0070eaf47cbcd73f7779b80c1a8ba6e10fe895ea7f82d735eb386",
-    "size": 99993,
-    "version": 20260721201500,
+    "sha256": "46ac5f0c32c2934c5e80c2a1827eaea72423083230ee78164e62524d7a9e4388",
+    "size": 107751,
+    "version": 20260810005000,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -56,9 +56,9 @@
       "version": "1.0.9"
     },
     "th_09_animation.js": {
-      "sha256": "175cb11c4e5fa60ede9b4eaa555aacd7db9164cbd45b82940ed78cbf2c444154",
-      "size": 44146,
-      "version": "1.0.13"
+      "sha256": "e769055314111646d1499fe932f4a7fc2bebbe26f8782cf051d0b523574d7b85",
+      "size": 44445,
+      "version": "1.0.15"
     },
     "th_10_shell.js": {
       "sha256": "36427d7146a4589cbcf0512804acd90f4210a3d512cde6e03f2cb40c42d86d2d",
@@ -101,14 +101,14 @@
       "version": "0.0.4"
     },
     "th_14_icon_picker.js": {
-      "sha256": "7b7f9e7692d1e0ffaa67ccb094dad942a7fb81a97ca672259a54a8d9cb2ac561",
-      "size": 25129,
-      "version": "1.0.3"
+      "sha256": "7abb83c4509503c81b19cf040c425481865229ef47bed78302c7e6cd8c975f5b",
+      "size": 27561,
+      "version": "1.0.5"
     },
     "th_14_panels.js": {
-      "sha256": "6c6f7d76bd70cbaa8863c1174d4e369e81a5515efd00a1c1cee4b7e14692bee8",
-      "size": 157044,
-      "version": "1.1.15"
+      "sha256": "f41f23f6b215e1ed3d0cb9f74372270f772c896518a2f4b9a937b61541d9dd7a",
+      "size": 157599,
+      "version": "1.1.17"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -116,9 +116,9 @@
       "version": "1.0.4"
     },
     "th_15_extra.js": {
-      "sha256": "e6e1bf7e2a9ff72155854d079a28ef3a24bf14c2344bfea43411f2d19ecee3e2",
-      "size": 119268,
-      "version": "1.1.22"
+      "sha256": "3ae08e40327113933a3a25a3e4b26c7b999cb38526bd768c4987a83b32dc57ae",
+      "size": 135636,
+      "version": "1.1.26"
     },
     "th_15_main_panel.js": {
       "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
@@ -126,9 +126,9 @@
       "version": "1.5.8"
     },
     "th_16_entry.js": {
-      "sha256": "7c48ecfe918644ae49e33302e6486ad7c11691aa7fbe8a46f1875732b0496276",
-      "size": 35070,
-      "version": "1.0.18"
+      "sha256": "beff1667a542e7ffbcfec887e3231bfd449b581cfad1753d1c6918e67ce4aeaa",
+      "size": 39530,
+      "version": "1.0.21"
     },
     "th_17_pointer.js": {
       "sha256": "84492391435fa07220c29cca6f8f761f9b15bc306245786efe4116fd4a993680",
@@ -169,15 +169,15 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "主面板和共享遮罩保留 INVISIBLE、alpha=0、返回回调注销及 generation/identity 保护，但统一改为普通 removeView，让 ViewRoot 和 Surface 销毁跨越当前 Rhino 点击消息边界。",
-      "主面板关闭后的遮罩清理由同一 WindowManager HandlerThread 延后一轮执行；检测到 ToolApp UI generation 已变化时复用原遮罩，避免设置切页中的 remove/add 竞态。",
-      "ToolApp 在 Android 主线程关闭时先隐藏、清除焦点和输入法，再使用普通 removeView；删除全局关闭和异常回退中的 removeViewImmediate。",
-      "ToolApp 创建失败时回投 WindowManager HandlerThread 清理无所有者遮罩，避免透明遮罩残留和触摸阻塞。",
-      "Stable 正式发布保持 ToolHub.js 入口版本和 Stable/main 更新源不变，仅更新运行模块、验证器、审计及独立签名发布产物。"
+      "将 2026-08-10 Beta 已完成真机与 CI 验证的更新同步到 Stable/main，包含可信清单离线安全回退、统一 IME 避让与键盘收起几何恢复、ColorOS WindowInsets 隐藏判定，以及更新重启窗口 detach 生命周期修复。",
+      "设置页、按钮编辑、Schema 编辑、颜色面板与 ShortX 图标选择器统一使用 IME 避让/回退契约；键盘隐藏后恢复首次避让前 width、height、gravity、x、y，并避免多次开合位置漂移。",
+      "更新重启与通道切换继续使用普通 WindowManager.removeView；WM HandlerThread 仅在受监控窗口真实 detach 后退出，4.2 秒超时只记录，15 秒仍不强制同步销毁，避免重新引入 system_server/ColorOS Hook 风险。",
+      "入口同步到 20260810005000，保留 Stable/main 与 Beta/beta 双通道隔离、可信本地模块回退和旧窗口未完成 detach 时阻止第二实例启动的 fail-closed 行为。",
+      "Stable 独立生成 main 通道 Manifest、RSA 签名和更新历史，不复制 Beta 的 manifest.json、manifest.sig、update_history.json 或 Beta 发布记录。"
     ],
-    "date": "2026-07-27",
-    "title": "修复 WindowManager 同步移除导致的 system_server 重启"
+    "date": "2026-08-10",
+    "title": "同步 2026-08-10 Beta 已验证更新到 Stable"
   },
   "schema": 5,
-  "version": 20260727013657
+  "version": 20260809235317
 }

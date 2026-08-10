@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.5
 // ToolHub - ShortX 图标选择器模块
 //
 // 阶段 1：承载 showShortXIconPickerPopup。
@@ -155,6 +155,7 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   try { toolhubSafeSetBackgroundColor(rootOverlay, self.withAlpha(isDark ? 0xFF000000 : 0xFFFFFFFF, isDark ? 0.58 : 0.42)); }
   catch(eOverlayBg) { toolhubSafeSetBackgroundColor(rootOverlay, 0x33000000); }
   rootOverlay.setClickable(true);
+  try { rootOverlay.setFocusable(true); rootOverlay.setFocusableInTouchMode(true); } catch(eOverlayFocus) {}
 
   var card = new android.widget.LinearLayout(context);
   card.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -174,18 +175,35 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
     android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
     android.graphics.PixelFormat.TRANSLUCENT
   );
-  overlayLp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+  overlayLp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
     | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 
   try { wm.addView(rootOverlay, overlayLp); } catch(eAdd) {
     safeLog(self.L, 'e', "icon picker addView fail: " + String(eAdd));
     return null;
   }
+  try {
+    if (self.attachPanelImeAvoidance) {
+      self.attachPanelImeAvoidance(rootOverlay, overlayLp, "shortx_icon_picker");
+    }
+  } catch(eImeAttach) {
+    safeLog(self.L, 'w', "icon picker IME avoidance attach fail: " + String(eImeAttach));
+  }
 
   var isDismissed = false;
+  var pickerBackDispatcher = null;
+  var pickerBackCallback = null;
   function dismiss() {
     if (isDismissed) return;
     isDismissed = true;
+    try { if (self.detachPanelImeAvoidance) self.detachPanelImeAvoidance(rootOverlay); } catch(eImeDetach) {}
+    try {
+      if (pickerBackDispatcher && pickerBackCallback) {
+        pickerBackDispatcher.unregisterOnBackInvokedCallback(pickerBackCallback);
+      }
+    } catch(eBackDetach) {}
+    pickerBackDispatcher = null;
+    pickerBackCallback = null;
     try { wm.removeView(rootOverlay);  } catch(e) { safeLog(null, 'e', "catch " + String(e)); }
     if (typeof onDismissCb === "function") {
       try { onDismissCb();  } catch(eD) { safeLog(null, 'e', "catch " + String(eD)); }
@@ -193,6 +211,43 @@ FloatBallAppWM.prototype.showShortXIconPickerPopup = function(opts) {
   }
   rootOverlay.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { dismiss(); } }));
   card.setOnClickListener(new android.view.View.OnClickListener({ onClick: function() { } }));
+  try {
+    rootOverlay.setOnKeyListener(new android.view.View.OnKeyListener({
+      onKey: function(v, keyCode, event) {
+        try {
+          if (keyCode === android.view.KeyEvent.KEYCODE_BACK && event &&
+              event.getAction && event.getAction() === android.view.KeyEvent.ACTION_UP) {
+            if (self.handlePanelImeBack && self.handlePanelImeBack(rootOverlay, "back_key")) return true;
+            dismiss();
+            return true;
+          }
+        } catch(eKey) {}
+        return false;
+      }
+    }));
+    rootOverlay.requestFocus();
+    rootOverlay.post(new java.lang.Runnable({ run: function() {
+      try {
+        if (isDismissed || android.os.Build.VERSION.SDK_INT < 33) return;
+        var dispatcher = rootOverlay.findOnBackInvokedDispatcher();
+        if (!dispatcher) return;
+        var cbCls = java.lang.Class.forName("android.window.OnBackInvokedCallback");
+        var cb = new JavaAdapter(cbCls, { onBackInvoked: function() {
+          if (self.handlePanelImeBack && self.handlePanelImeBack(rootOverlay, "on_back_invoked")) return;
+          dismiss();
+        }});
+        var priority = 0;
+        try { priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT; } catch(ePriority) {}
+        dispatcher.registerOnBackInvokedCallback(priority, cb);
+        pickerBackDispatcher = dispatcher;
+        pickerBackCallback = cb;
+      } catch(eBackRegister) {
+        safeLog(self.L, 'w', "icon picker back callback register fail: " + String(eBackRegister));
+      }
+    }}));
+  } catch(eBackAttach) {
+    safeLog(self.L, 'w', "icon picker back handler attach fail: " + String(eBackAttach));
+  }
 
   var header = new android.widget.LinearLayout(context);
   header.setOrientation(android.widget.LinearLayout.HORIZONTAL);

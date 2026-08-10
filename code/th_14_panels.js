@@ -1,4 +1,4 @@
-// @version 1.1.15
+// @version 1.1.17
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -1711,6 +1711,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
       onKey: function(v, keyCode, event) {
         try {
           if (keyCode === android.view.KeyEvent.KEYCODE_BACK && event && event.getAction && event.getAction() === android.view.KeyEvent.ACTION_UP) {
+            if (self.handlePanelImeBack && self.handlePanelImeBack(root, "back_key")) return true;
             closePopup();
             return true;
           }
@@ -1889,10 +1890,17 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
   lp.x = 0;
   lp.y = 0;
-  lp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+  lp.softInputMode = android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
     | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN;
 
   try { wm.addView(root, lp); } catch(eAdd) { safeLog(self.L, 'e', "popup addView fail: " + String(eAdd)); return null; }
+  try {
+    if (self.attachPanelImeAvoidance) {
+      self.attachPanelImeAvoidance(root, lp, "fullscreen_input_popup");
+    }
+  } catch(eImeAttach) {
+    safeLog(self.L, 'w', "popup IME avoidance attach fail: " + String(eImeAttach));
+  }
   try {
     if (!self.state) self.state = {};
     // 接入 ToolHub 统一面板关闭链路：handleSystemUiDismiss()/hideAllPanels() 会关闭临时弹窗。
@@ -1908,7 +1916,10 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
         try { dispatcher = root.findOnBackInvokedDispatcher(); } catch(eFindBack) { dispatcher = null; }
         if (!dispatcher) return;
         var cbCls = java.lang.Class.forName("android.window.OnBackInvokedCallback");
-        var cb = new JavaAdapter(cbCls, { onBackInvoked: function() { closePopup(); } });
+        var cb = new JavaAdapter(cbCls, { onBackInvoked: function() {
+          if (self.handlePanelImeBack && self.handlePanelImeBack(root, "on_back_invoked")) return;
+          closePopup();
+        }});
         var priority = 0;
         try { priority = android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT; } catch(ePri) { priority = 0; }
         dispatcher.registerOnBackInvokedCallback(priority, cb);
@@ -1923,6 +1934,7 @@ FloatBallAppWM.prototype.showPopupOverlay = function(opts) {
   function closePopup() {
     if (popupClosed) return;
     popupClosed = true;
+    try { if (self.detachPanelImeAvoidance) self.detachPanelImeAvoidance(root); } catch(eImeDetach) {}
     try {
       if (popupBackDispatcher && popupBackCallback) popupBackDispatcher.unregisterOnBackInvokedCallback(popupBackCallback);
     } catch(eUnregPopupBack) {}

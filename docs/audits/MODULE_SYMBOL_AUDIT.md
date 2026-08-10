@@ -16,9 +16,9 @@
 
 ### 文件概况
 
-- 版本：`1.0.13`
-- 行数：`1156`
-- 字节数：`44146`
+- 版本：`1.0.15`
+- 行数：`1168`
+- 字节数：`44445`
 - ToolHub 加载模块：`29`
 - 原型方法定义：`27`
 - 唯一原型方法：`27`
@@ -79,16 +79,16 @@
 
 ### 文件概况
 
-- 版本：`1.1.22`
-- 行数：`2641`
-- 字节数：`119268`
+- 版本：`1.1.26`
+- 行数：`3045`
+- 字节数：`135636`
 - ToolHub 加载模块：`29`
-- 原型方法定义：`57`
-- 唯一原型方法：`57`
+- 原型方法定义：`69`
+- 唯一原型方法：`69`
 - 模块内重复定义方法：`0`
 - 后续覆盖候选：`0`
 - 受保护覆盖/包装链：`1`
-- 唯一实现：`56`
+- 唯一实现：`68`
 
 ### 后续覆盖候选
 
@@ -108,7 +108,7 @@
 
 ### `th_15` 唯一实现
 
-`addPanel`、`applyToolAppBackPreviewProgress`、`applyToolAppPageSnapshot`、`attachDragResizeListeners`、`buildBallContentView`、`buildBallPreviewView`、`buildPanelView`、`buildToolAppPreviewBody`、`buildToolAppShell`、`buildViewerPanelView`、`bumpToolAppStackVersion`、`calculateToolAppLayout`、`cancelLongPressTimer`、`captureToolAppCurrentScrollY`、`captureToolAppPageSnapshot`、`clearToolAppBackPreview`、`cloneToolAppPageSnapshot`、`cloneToolAppSnapshotValue`、`closeToolApp`、`createBallPreviewContent`、`createBallViews`、`ensureToolAppShell`、`findToolAppFirstScrollView`、`findToolAppTouchedChild`、`finishToolAppBackPreview`、`getBestPanelPosition`、`getToolAppBackEdgeWidthPx`、`getToolAppBackGestureMode`、`getToolAppBackSurfaceSlopPx`、`getToolAppPreviousStackEntry`、`getToolAppResponsiveSpec`、`getToolAppSnapshotKey`、`getToolAppStackVersion`、`getToolAppTitle`、`hasToolAppBackTarget`、`hasToolAppPaneBackTarget`、`isToolAppBackBlockedAt`、`isToolAppBackInteractiveView`、`isToolAppRoute`、`makeToolAppStackEntry`、`openToolHubManual`、`prepareToolAppBackPreview`、`pushToolAppPage`、`pushToolAppSettingsGroup`、`refreshBallPreviewInSettings`、`replaceToolAppPage`、`resetLongPressState`、`restoreToolAppScrollLater`、`saveToolAppCurrentStackScroll`、`setToolAppContent`、`showPanelAvoidBall`、`showToolApp`、`showViewerPanel`、`updateToolAppShellChrome`、`withPendingBallConfig`、`wrapDraggablePanel`
+`addPanel`、`applyToolAppBackPreviewProgress`、`applyToolAppPageSnapshot`、`attachDragResizeListeners`、`attachPanelImeAvoidance`、`buildBallContentView`、`buildBallPreviewView`、`buildPanelView`、`buildToolAppPreviewBody`、`buildToolAppShell`、`buildViewerPanelView`、`bumpToolAppStackVersion`、`calculateToolAppLayout`、`cancelLongPressTimer`、`capturePanelImeGeometry`、`captureToolAppCurrentScrollY`、`captureToolAppPageSnapshot`、`clearToolAppBackPreview`、`cloneToolAppPageSnapshot`、`cloneToolAppSnapshotValue`、`closeToolApp`、`createBallPreviewContent`、`createBallViews`、`detachPanelImeAvoidance`、`ensurePanelFocusedInputVisible`、`ensureToolAppShell`、`findPanelFocusedImeInput`、`findPanelImeBinding`、`findToolAppFirstScrollView`、`findToolAppTouchedChild`、`finishToolAppBackPreview`、`getBestPanelPosition`、`getPanelImeBindings`、`getToolAppBackEdgeWidthPx`、`getToolAppBackGestureMode`、`getToolAppBackSurfaceSlopPx`、`getToolAppPreviousStackEntry`、`getToolAppResponsiveSpec`、`getToolAppSnapshotKey`、`getToolAppStackVersion`、`getToolAppTitle`、`handlePanelImeBack`、`hasToolAppBackTarget`、`hasToolAppPaneBackTarget`、`isToolAppBackBlockedAt`、`isToolAppBackInteractiveView`、`isToolAppRoute`、`makeToolAppStackEntry`、`openToolHubManual`、`prepareToolAppBackPreview`、`pushToolAppPage`、`pushToolAppSettingsGroup`、`readPanelImeState`、`refreshBallPreviewInSettings`、`releasePanelImeFocus`、`replaceToolAppPage`、`resetLongPressState`、`restorePanelImeGeometry`、`restoreToolAppScrollLater`、`saveToolAppCurrentStackScroll`、`setToolAppContent`、`showPanelAvoidBall`、`showToolApp`、`showViewerPanel`、`updatePanelImeLayout`、`updateToolAppShellChrome`、`withPendingBallConfig`、`wrapDraggablePanel`
 
 ### 模块内重复定义
 

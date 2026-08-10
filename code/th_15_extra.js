@@ -1,4 +1,4 @@
-// @version 1.1.22
+// @version 1.1.26
 FloatBallAppWM.prototype.buildViewerPanelView = function(titleText, bodyText) {
   var self = this;
   var isDark = this.isDarkTheme();
@@ -147,6 +147,401 @@ FloatBallAppWM.prototype.getBestPanelPosition = function(pw, ph, bx, by, ballSiz
   return best;
 };
 
+// =======================【统一 IME 主动避让】=======================
+// ColorOS 的 TYPE_APPLICATION_OVERLAY 不保证执行 ADJUST_RESIZE。
+// 这里参考 ClipHub 已验收实现：WindowInsets 为主路径，可见区域为回退；
+// 仅在键盘可见时临时修改窗口几何，隐藏或移除时精确恢复。
+FloatBallAppWM.prototype.getPanelImeBindings = function() {
+  if (!this.state) return [];
+  if (!this.state.panelImeBindings) this.state.panelImeBindings = [];
+  return this.state.panelImeBindings;
+};
+
+FloatBallAppWM.prototype.findPanelImeBinding = function(root) {
+  var list = this.getPanelImeBindings ? this.getPanelImeBindings() : [];
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && list[i].root === root) return list[i];
+  }
+  return null;
+};
+
+FloatBallAppWM.prototype.readPanelImeState = function(root) {
+  var screenH = Math.max(1, Number(this.state && this.state.screen && this.state.screen.h || 0));
+  var screenW = Math.max(1, Number(this.state && this.state.screen && this.state.screen.w || 0));
+  try {
+    var metrics = new android.util.DisplayMetrics();
+    this.state.wm.getDefaultDisplay().getRealMetrics(metrics);
+    if (Number(metrics.heightPixels) > 0) screenH = Number(metrics.heightPixels);
+    if (Number(metrics.widthPixels) > 0) screenW = Number(metrics.widthPixels);
+  } catch(eMetrics) {}
+
+  var out = {
+    visible: false,
+    bottomPx: 0,
+    topInsetPx: this.dp(24),
+    screenHeightPx: screenH,
+    screenWidthPx: screenW,
+    source: "none",
+    insetsAvailable: false,
+    insetsVisible: false
+  };
+
+  try {
+    var resources = context.getResources();
+    var statusId = Number(resources.getIdentifier("status_bar_height", "dimen", "android"));
+    if (statusId > 0) out.topInsetPx = Math.max(out.topInsetPx,
+      Number(resources.getDimensionPixelSize(statusId)));
+  } catch(eStatus) {}
+
+  if (!root) return out;
+  if (android.os.Build.VERSION.SDK_INT >= 30) {
+    try {
+      var insets = root.getRootWindowInsets();
+      if (insets) {
+        var imeMask = android.view.WindowInsets.Type.ime();
+        var barsMask = android.view.WindowInsets.Type.systemBars();
+        var imeInsets = insets.getInsets(imeMask);
+        var barInsets = insets.getInsets(barsMask);
+        out.insetsAvailable = true;
+        out.insetsVisible = insets.isVisible(imeMask) === true;
+        out.bottomPx = out.insetsVisible ? Math.max(0, Number(imeInsets.bottom)) : 0;
+        out.topInsetPx = Math.max(out.topInsetPx, Number(barInsets.top));
+        // API 30+ 以官方 isVisible(Type.ime()) 为显示状态真值。
+        // ColorOS 退场动画结束后 visible frame/旧 bottom 可能仍保留一帧，不能反向覆盖隐藏状态。
+        out.visible = out.insetsVisible;
+        out.source = "root_window_insets";
+      }
+    } catch(eInsets) {}
+  }
+
+  try {
+    var frame = new android.graphics.Rect();
+    root.getWindowVisibleDisplayFrame(frame);
+    var gap = Math.max(0, screenH - Number(frame.bottom));
+    out.topInsetPx = Math.max(out.topInsetPx, Number(frame.top));
+    if (gap >= this.dp(120)) {
+      if (!out.insetsAvailable) {
+        out.bottomPx = gap;
+        out.visible = true;
+        out.source = "visible_display_frame";
+      } else if (out.insetsVisible && gap > out.bottomPx) {
+        // Insets 已确认 IME 可见时，visible frame 只补充键盘高度，不再决定显示状态。
+        out.bottomPx = gap;
+        out.source = "root_window_insets+visible_display_frame";
+      }
+    }
+  } catch(eFrame) {}
+
+  if (!out.visible || out.bottomPx < this.dp(120)) {
+    out.visible = false;
+    out.bottomPx = 0;
+  }
+  return out;
+};
+
+FloatBallAppWM.prototype.capturePanelImeGeometry = function(binding) {
+  if (!binding || binding.restore || !binding.lp) return false;
+  var lp = binding.lp;
+  binding.restore = {
+    width: Number(lp.width),
+    height: Number(lp.height),
+    gravity: Number(lp.gravity),
+    x: Number(lp.x || 0),
+    y: Number(lp.y || 0)
+  };
+  return true;
+};
+
+FloatBallAppWM.prototype.findPanelFocusedImeInput = function(root) {
+  if (!root) return null;
+  try {
+    var focused = root.findFocus();
+    if (focused && focused instanceof android.widget.EditText) return focused;
+  } catch(eFocus) {}
+  return null;
+};
+
+FloatBallAppWM.prototype.releasePanelImeFocus = function(binding, reason) {
+  if (!binding || binding.detached || !binding.root) return false;
+  var focused = this.findPanelFocusedImeInput(binding.root);
+  if (!focused) return false;
+  try { focused.clearFocus(); } catch(eClear) {}
+  try {
+    binding.root.setFocusable(true);
+    binding.root.setFocusableInTouchMode(true);
+    binding.root.requestFocus();
+  } catch(eRootFocus) {}
+  safeLog(this.L, 'd', "IME focus released owner=" + String(binding.owner || "") +
+    " reason=" + String(reason || "hidden"));
+  return true;
+};
+
+FloatBallAppWM.prototype.restorePanelImeGeometry = function(binding, reason, releaseFocus, applyLayout) {
+  if (!binding || !binding.lp || !binding.restore) return false;
+  var lp = binding.lp;
+  var restore = binding.restore;
+  lp.width = restore.width;
+  lp.height = restore.height;
+  lp.gravity = restore.gravity;
+  lp.x = restore.x;
+  lp.y = restore.y;
+
+  // 移除窗口时只归一化 LayoutParams 并清空快照，不追加一次无意义的 WM 事务。
+  var shouldApply = applyLayout !== false;
+  if (shouldApply) {
+    if (binding.detached || !binding.root || !this.state || !this.state.wm) return false;
+    try {
+      if (!binding.root.isAttachedToWindow()) return false;
+    } catch(eAttached) { return false; }
+    try {
+      // 即使 LayoutParams 已在上一次失败中回写，也必须重试提交到 WindowManager。
+      this.state.wm.updateViewLayout(binding.root, lp);
+    } catch(eRestore) {
+      safeLog(this.L, 'w', "IME geometry restore fail owner=" + String(binding.owner || "") +
+        " reason=" + String(reason || "hidden") + " err=" + String(eRestore));
+      return false;
+    }
+  }
+
+  binding.restore = null;
+  binding.applied = false;
+  binding.lastImeVisible = false;
+  binding.lastRestoreReason = String(reason || "hidden");
+  if (shouldApply) {
+    safeLog(this.L, 'd', "IME geometry restored owner=" + String(binding.owner || "") +
+      " reason=" + String(reason || "hidden") +
+      " source=" + String(binding.lastImeSource || "none"));
+  }
+  if (releaseFocus === true) this.releasePanelImeFocus(binding, reason);
+  return true;
+};
+
+FloatBallAppWM.prototype.handlePanelImeBack = function(root, reason) {
+  var binding = this.findPanelImeBinding ? this.findPanelImeBinding(root) : null;
+  if (!binding || binding.detached || !binding.restore) return false;
+  var focused = this.findPanelFocusedImeInput(binding.root);
+  try {
+    var token = focused ? focused.getWindowToken() : binding.root.getWindowToken();
+    var imm = context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+    if (imm && token) imm.hideSoftInputFromWindow(token, 0);
+  } catch(eHide) {}
+  // 第一次返回只负责收起 IME、恢复窗口并交还根视图焦点；第二次返回才进入页面关闭链路。
+  this.restorePanelImeGeometry(binding, reason || "ime_back", true, true);
+  return true;
+};
+
+FloatBallAppWM.prototype.updatePanelImeLayout = function(binding) {
+  if (!binding || binding.detached || !binding.root || !binding.lp ||
+      !this.state || !this.state.wm) return false;
+  try {
+    if (!binding.root.isAttachedToWindow()) return false;
+  } catch(eAttached) { return false; }
+
+  var ime = this.readPanelImeState(binding.root);
+  var focusedInput = this.findPanelFocusedImeInput(binding.root);
+  var lp = binding.lp;
+  var changed = false;
+  // Insets/可见区域在键盘退场动画中可能滞后一帧；失焦是更直接的回退信号。
+  if (!ime.visible || !focusedInput) {
+    var restoreReason = !focusedInput ? "input_blur" : "ime_hidden";
+    var releaseFocus = !ime.visible && !!focusedInput &&
+      (binding.applied || binding.lastImeVisible);
+    if (!binding.restore) {
+      binding.applied = false;
+      binding.lastImeVisible = false;
+      if (releaseFocus) this.releasePanelImeFocus(binding, restoreReason);
+      return false;
+    }
+    binding.lastImeSource = String(ime.source || "none");
+    return this.restorePanelImeGeometry(binding, restoreReason, releaseFocus, true);
+  }
+
+  this.capturePanelImeGeometry(binding);
+  var base = binding.restore;
+  if (!base) return false;
+  var keyboardTop = Math.max(1, Number(ime.screenHeightPx) - Number(ime.bottomPx));
+  var topSafe = Math.max(0, Number(ime.topInsetPx));
+  var bottomLimit = Math.max(topSafe + 1, keyboardTop - this.dp(6));
+  var originalTop = Math.max(topSafe, Number(base.y || 0));
+  var normalHeight = Number(base.height);
+  if (normalHeight <= 0) normalHeight = Math.max(1, Number(ime.screenHeightPx) - originalTop);
+  var availableAtOriginalTop = Math.max(1, bottomLimit - originalTop);
+  var targetHeight = Math.min(normalHeight, availableAtOriginalTop);
+  var minimumHeight = this.dp(240);
+  var targetTop = originalTop;
+  if (targetHeight < minimumHeight) {
+    targetTop = topSafe;
+    targetHeight = Math.min(normalHeight, Math.max(1, bottomLimit - targetTop));
+  }
+  targetTop = Math.max(topSafe, Math.min(targetTop, bottomLimit - targetHeight));
+
+  var targetGravity = android.view.Gravity.TOP | android.view.Gravity.START;
+  if (Number(lp.height) !== Number(targetHeight)) { lp.height = targetHeight; changed = true; }
+  if (Number(lp.gravity) !== Number(targetGravity)) { lp.gravity = targetGravity; changed = true; }
+  if (Number(lp.y || 0) !== Number(targetTop)) { lp.y = targetTop; changed = true; }
+  var needsApply = changed || !binding.applied;
+  binding.lastImeVisible = true;
+  binding.lastImeSource = String(ime.source || "none");
+
+  if (needsApply) {
+    try { this.state.wm.updateViewLayout(binding.root, lp); } catch(eApply) {
+      safeLog(this.L, 'w', "IME geometry apply fail owner=" + String(binding.owner || "") +
+        " err=" + String(eApply));
+      binding.applied = false;
+      return false;
+    }
+  }
+  binding.applied = true;
+  this.ensurePanelFocusedInputVisible(binding.root);
+  return changed;
+};
+
+FloatBallAppWM.prototype.ensurePanelFocusedInputVisible = function(root) {
+  if (!root) return false;
+  try {
+    var focused = root.findFocus();
+    if (!focused || !(focused instanceof android.widget.EditText)) return false;
+    var rect = new android.graphics.Rect();
+    focused.getDrawingRect(rect);
+    rect.top = Math.max(0, Number(rect.top) - this.dp(12));
+    rect.bottom = Number(rect.bottom) + this.dp(20);
+    focused.requestRectangleOnScreen(rect, true);
+    return true;
+  } catch(eScroll) {}
+  return false;
+};
+
+FloatBallAppWM.prototype.attachPanelImeAvoidance = function(root, lp, owner) {
+  if (!root || !lp || !this.state || !this.state.wm) return null;
+  var existing = this.findPanelImeBinding(root);
+  if (existing) {
+    existing.lp = lp;
+    existing.owner = String(owner || existing.owner || "panel");
+    return existing;
+  }
+
+  var self = this;
+  var binding = {
+    root: root,
+    lp: lp,
+    owner: String(owner || "panel"),
+    restore: null,
+    applied: false,
+    detached: false,
+    observer: null,
+    layoutListener: null,
+    focusListener: null,
+    handler: new android.os.Handler(android.os.Looper.getMainLooper()),
+    pollRunnable: null,
+    focusRestoreRunnable: null,
+    generation: 1,
+    lastImeSource: "none",
+    lastImeVisible: false,
+    lastRestoreReason: "none"
+  };
+  this.getPanelImeBindings().push(binding);
+
+  function schedulePoll(delayMs) {
+    if (binding.detached || !binding.handler) return;
+    if (binding.pollRunnable) {
+      try { binding.handler.removeCallbacks(binding.pollRunnable); } catch(eRemove) {}
+    }
+    var generation = binding.generation;
+    binding.pollRunnable = new java.lang.Runnable({ run: function() {
+      if (binding.detached || generation !== binding.generation) return;
+      try { self.updatePanelImeLayout(binding); } catch(ePoll) {
+        safeLog(self.L, 'w', "IME poll fail owner=" + String(binding.owner) + " err=" + String(ePoll));
+      }
+      if (!binding.detached && generation === binding.generation) {
+        try { binding.handler.postDelayed(binding.pollRunnable, binding.applied ? 120 : 420); } catch(ePost) {}
+      }
+    }});
+    try { binding.handler.postDelayed(binding.pollRunnable, Math.max(0, Number(delayMs || 0))); } catch(eSchedule) {}
+  }
+
+  try {
+    binding.observer = root.getViewTreeObserver();
+    binding.layoutListener = new JavaAdapter(
+      android.view.ViewTreeObserver.OnGlobalLayoutListener, {
+        onGlobalLayout: function() {
+          if (binding.detached) return;
+          try { self.updatePanelImeLayout(binding); } catch(eLayout) {}
+        }
+      });
+    binding.observer.addOnGlobalLayoutListener(binding.layoutListener);
+    binding.focusListener = new JavaAdapter(
+      android.view.ViewTreeObserver.OnGlobalFocusChangeListener, {
+        onGlobalFocusChanged: function(oldFocus, newFocus) {
+          if (binding.detached) return;
+          try {
+            if (newFocus && newFocus instanceof android.widget.EditText) {
+              if (binding.focusRestoreRunnable) {
+                try { binding.handler.removeCallbacks(binding.focusRestoreRunnable); } catch(eCancelRestore) {}
+                binding.focusRestoreRunnable = null;
+              }
+              schedulePoll(0);
+              binding.handler.postDelayed(new java.lang.Runnable({ run: function() {
+                if (!binding.detached) self.ensurePanelFocusedInputVisible(binding.root);
+              }}), 160);
+            } else if (oldFocus && oldFocus instanceof android.widget.EditText) {
+              var focusGeneration = binding.generation;
+              binding.focusRestoreRunnable = new java.lang.Runnable({ run: function() {
+                if (binding.detached || focusGeneration !== binding.generation) return;
+                binding.focusRestoreRunnable = null;
+                if (!self.findPanelFocusedImeInput(binding.root)) {
+                  try { self.updatePanelImeLayout(binding); } catch(eRestoreFocus) {}
+                }
+              }});
+              binding.handler.postDelayed(binding.focusRestoreRunnable, 80);
+            }
+          } catch(eFocus) {}
+        }
+      });
+    binding.observer.addOnGlobalFocusChangeListener(binding.focusListener);
+  } catch(eObserver) {
+    safeLog(this.L, 'w', "IME observer install fail owner=" + String(binding.owner) +
+      " err=" + String(eObserver));
+  }
+  schedulePoll(180);
+  return binding;
+};
+
+FloatBallAppWM.prototype.detachPanelImeAvoidance = function(root) {
+  if (!root || !this.state) return false;
+  var list = this.getPanelImeBindings ? this.getPanelImeBindings() : [];
+  var removed = false;
+  for (var i = list.length - 1; i >= 0; i--) {
+    var binding = list[i];
+    if (!binding || binding.root !== root) continue;
+    // 必须在丢弃快照前恢复完整原始几何；窗口马上移除时无需再提交 WM 更新。
+    try { this.restorePanelImeGeometry(binding, "detach", false, false); } catch(eRestore) {}
+    binding.detached = true;
+    binding.generation += 1;
+    try {
+      if (binding.handler && binding.pollRunnable) binding.handler.removeCallbacks(binding.pollRunnable);
+    } catch(ePoll) {}
+    try {
+      if (binding.handler && binding.focusRestoreRunnable) binding.handler.removeCallbacks(binding.focusRestoreRunnable);
+    } catch(eFocusRestore) {}
+    try {
+      var observer = binding.observer;
+      if ((!observer || !observer.isAlive()) && root.getViewTreeObserver) observer = root.getViewTreeObserver();
+      if (observer && observer.isAlive()) {
+        if (binding.layoutListener) observer.removeOnGlobalLayoutListener(binding.layoutListener);
+        if (binding.focusListener) observer.removeOnGlobalFocusChangeListener(binding.focusListener);
+      }
+    } catch(eObserver) {}
+    binding.root = null;
+    binding.lp = null;
+    binding.restore = null;
+    binding.pollRunnable = null;
+    binding.focusRestoreRunnable = null;
+    list.splice(i, 1);
+    removed = true;
+  }
+  return removed;
+};
+
 FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
   var __toolAppPanel = String(which || "") === "tool_app";
   if (__toolAppPanel && (!this.isAndroidMainThread || !this.isAndroidMainThread())) {
@@ -227,6 +622,15 @@ FloatBallAppWM.prototype.addPanel = function(panel, x, y, which) {
   if (which === "main") { this.state.panel = panel; this.state.panelLp = lp; this.state.addedPanel = true; }
   else if (which === "settings") { this.state.settingsPanel = panel; this.state.settingsPanelLp = lp; this.state.addedSettings = true; }
   else { this.state.viewerPanel = panel; this.state.viewerPanelLp = lp; this.state.viewerPanelType = which; this.state.addedViewer = true; }
+
+  try {
+    if (isModal && this.attachPanelImeAvoidance) {
+      this.attachPanelImeAvoidance(panel, lp, String(which || "panel"));
+    }
+  } catch(eImeAttach) {
+    safeLog(this.L, 'w', "IME avoidance attach fail which=" + String(which || "") +
+      " err=" + String(eImeAttach));
+  }
 
   try { panel.requestFocus(); } catch (eReqFocus) {}
 

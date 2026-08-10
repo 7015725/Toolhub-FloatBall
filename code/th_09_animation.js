@@ -1,4 +1,4 @@
-// @version 1.0.13
+// @version 1.0.15
 FloatBallAppWM.prototype.playBounce = function(v) {
   if (!this.config.ENABLE_BOUNCE) return;
   if (!this.config.ENABLE_ANIMATIONS) return;
@@ -68,8 +68,9 @@ FloatBallAppWM.prototype.safeRemoveView = function(v, whichName, options) {
     var keepInvisible = opts.keepInvisible === true;
     var resetVisual = opts.resetVisual !== false;
     var requestedImmediate = opts.immediate === true || !!(this.state && this.state.closing);
-    // ToolHub 运行在 system_server；同步销毁 ViewRoot 会把 ColorOS/Xposed Hook 嵌套在 Rhino 回调栈中。
-    // 所有窗口统一提交普通 removeView，让真正的 Surface 销毁跨越当前消息边界。
+    // ToolHub 运行在 system_server；同步销毁 ViewRoot 会把 ColorOS/Xposed Hook
+    // 嵌套在当前 Rhino 回调栈中。所有窗口统一提交普通 removeView，
+    // 让真正的 Surface 销毁跨越当前消息边界。
     var immediate = false;
 
     try { v.animate().cancel(); } catch (eAnimCancel) {}
@@ -87,6 +88,13 @@ FloatBallAppWM.prototype.safeRemoveView = function(v, whichName, options) {
         this.unregisterPanelPredictiveBack(v, resetVisual);
       }
     } catch (eBack) {}
+
+    try {
+      if (this.detachPanelImeAvoidance) this.detachPanelImeAvoidance(v);
+    } catch (eImeDetach) {
+      safeLog(this.L, 'w', "IME avoidance detach fail which=" +
+        String(whichName || "") + " err=" + String(eImeDetach));
+    }
 
     if (!this.state || !this.state.wm) {
       return { ok: false, err: "WindowManager missing", where: whichName || "" };
@@ -233,8 +241,6 @@ FloatBallAppWM.prototype.hideMainPanel = function(immediate) {
 
     if (isLatest) {
       self.state.mainPanelExitAnimating = false;
-      // 延后一轮清理共享遮罩：主面板点击“设置”等入口会在当前回调末尾增加
-      // toolAppUiGeneration，届时保留原 mask 给 ToolApp 复用，避免 remove/add 竞态。
       function performMaskCleanup() {
         try {
           if (!self.state) return;
@@ -632,13 +638,16 @@ FloatBallAppWM.prototype.registerPanelPredictiveBack = function(panel, which) {
     var usedAnimation = false;
 
     function finishBack(reason) {
+      self.resetPanelPredictiveBackVisual(panel);
+      if (self.handlePanelImeBack && self.handlePanelImeBack(panel, reason || "predictive_back")) {
+        return;
+      }
       if (String(which || "") === "tool_app" && self.finishToolAppBackPreview && self.hasToolAppBackTarget && self.hasToolAppBackTarget()) {
         var edge = 0;
         try { edge = Number(self.state.toolAppBackEdge || 0); } catch (eEdge) { edge = 0; }
         self.finishToolAppBackPreview(edge, true);
         return;
       }
-      self.resetPanelPredictiveBackVisual(panel);
       self.handlePanelBack(which, reason || "predictive_back");
     }
 
@@ -706,7 +715,10 @@ FloatBallAppWM.prototype.attachPanelSystemKeyHandler = function(panel, which) {
         try {
           if (!event) return false;
           if (event.getAction() !== android.view.KeyEvent.ACTION_UP) return false;
-          if (keyCode === android.view.KeyEvent.KEYCODE_BACK) return self.handlePanelBack(which, "back_key");
+          if (keyCode === android.view.KeyEvent.KEYCODE_BACK) {
+            if (self.handlePanelImeBack && self.handlePanelImeBack(panel, "back_key")) return true;
+            return self.handlePanelBack(which, "back_key");
+          }
           if (keyCode === android.view.KeyEvent.KEYCODE_ESCAPE) return self.handlePanelBack(which, "escape_key");
         } catch (e) { safeLog(self.L, 'e', "panel key handler fail: " + String(e)); }
         return false;
