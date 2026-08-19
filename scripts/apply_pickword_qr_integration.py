@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Idempotently normalize the permanent Beta QR wiring before signing.
 
-Current fix: th_26 v1.0.5 avoids Context.getCodeCacheDir() in system_server.
-Android API 26+ passes no optimized directory because DexClassLoader ignores it;
-API 24-25 uses the active ToolHub channel lib/.dexopt directory.
+Current fix: th_26 v1.0.6 resolves DexClassLoader through Rhino's Packages root.
+ShortX/Rhino does not expose `dalvik` as a top-level Java package identifier,
+while existing ToolHub integrations already use Packages.* for Java imports.
 """
 import json
 from pathlib import Path
@@ -14,18 +14,13 @@ QR_MODULE = ROOT / "code" / "th_26_qr_runtime.js"
 BOUNDARIES = ROOT / "constraints" / "MODULE_BOUNDARIES.json"
 VERIFY_MANIFEST = ROOT / "scripts" / "verify_manifest.py"
 VERIFY_STORAGE = ROOT / "scripts" / "verify_channel_private_storage_isolation.py"
+VERIFY_QR = ROOT / "scripts" / "verify_pickword_qr.py"
 NEW_ENTRY_VERSION = 20260819231000
 
 
 def require(condition, message):
     if not condition:
         raise SystemExit("integration contract failed: " + message)
-
-
-def replace_if_present(text, old, new):
-    if old in text and new not in text:
-        return text.replace(old, new)
-    return text
 
 
 def patch_entry():
@@ -40,19 +35,17 @@ def patch_entry():
 
 def patch_qr_module():
     text = QR_MODULE.read_text(encoding="utf-8")
-    if text.startswith("// @version 1.0.4\n"):
-        text = text.replace("// @version 1.0.4\n", "// @version 1.0.5\n", 1)
-    require(text.startswith("// @version 1.0.5\n"), "QR module version 1.0.5")
+    if text.startswith("// @version 1.0.5\n"):
+        text = text.replace("// @version 1.0.5\n", "// @version 1.0.6\n", 1)
+    require(text.startswith("// @version 1.0.6\n"), "QR module version 1.0.6")
 
-    old_loader = '''    var codeCache = new java.io.File(context.getCodeCacheDir(), "toolhub_qr");\n    if (!codeCache.exists() && !codeCache.mkdirs() && !codeCache.exists()) throw new Error("二维码运行时优化目录创建失败");\n    var loader = new dalvik.system.DexClassLoader(\n      installed.file.getAbsolutePath(),\n      codeCache.getAbsolutePath(),\n      null,\n      context.getClassLoader()\n    );'''
-    new_loader = '''    var optimizedDirectory = getDexOptimizedDirectory26();\n    var loader = new dalvik.system.DexClassLoader(\n      installed.file.getAbsolutePath(),\n      optimizedDirectory,\n      null,\n      context.getClassLoader()\n    );'''
-    if old_loader in text:
-        helper = '''\n  function getDexOptimizedDirectory26() {\n    var sdk = Number(android.os.Build.VERSION.SDK_INT || 0);\n    if (sdk >= 26) return null;\n    var lib = getLibDir26();\n    var dexopt = new java.io.File(lib, ".dexopt").getCanonicalFile();\n    var libPath = String(lib.getCanonicalPath());\n    var dexoptPath = String(dexopt.getCanonicalPath());\n    if (dexoptPath.indexOf(libPath + java.io.File.separator) !== 0) throw new Error("二维码运行时优化目录越界");\n    if (!dexopt.exists() && !dexopt.mkdirs() && !dexopt.exists()) throw new Error("二维码运行时优化目录创建失败");\n    if (!dexopt.isDirectory()) throw new Error("二维码运行时优化路径不是目录");\n    if (typeof assertWritableDirPath === "function") assertWritableDirPath(dexoptPath, "ToolHub QR dexopt");\n    return dexoptPath;\n  }\n'''
-        anchor = "\n  function loadRuntime26(appObj) {"
-        require(anchor in text, "loadRuntime26 anchor")
-        text = text.replace(anchor, helper + anchor, 1)
-        text = text.replace(old_loader, new_loader, 1)
+    text = text.replace(
+        "new dalvik.system.DexClassLoader(",
+        "new Packages.dalvik.system.DexClassLoader(",
+    )
 
+    require("new dalvik.system.DexClassLoader(" not in text, "bare dalvik package must not be used in Rhino")
+    require("new Packages.dalvik.system.DexClassLoader(" in text, "Rhino Packages DexClassLoader")
     require("context.getCodeCacheDir()" not in text, "system_server codeCacheDir must not be used")
     require("function getDexOptimizedDirectory26()" in text, "Dex optimized-directory helper")
     require("if (sdk >= 26) return null;" in text, "API 26+ DexClassLoader optimizedDirectory bypass")
@@ -74,56 +67,57 @@ def patch_qr_module():
     QR_MODULE.write_text(text, encoding="utf-8")
 
 
+def patch_version_verifier(path):
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(
+        '"// @version 1.0.5",\n)',
+        '"// @version 1.0.5",\n    "// @version 1.0.6",\n)',
+    )
+    text = text.replace(
+        '"// @version 1.0.5")',
+        '"// @version 1.0.5", "// @version 1.0.6")',
+    )
+    text = text.replace("1.0.1/1.0.2/1.0.3/1.0.4/1.0.5", "1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6")
+    path.write_text(text, encoding="utf-8")
+
+
 def patch_verifiers():
+    for path in (VERIFY_MANIFEST, VERIFY_STORAGE, VERIFY_QR):
+        patch_version_verifier(path)
+
     text = VERIFY_MANIFEST.read_text(encoding="utf-8")
-    text = replace_if_present(
-        text,
-        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
-        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
-    )
-    text = replace_if_present(text, "version 1.0.1/1.0.2/1.0.3/1.0.4", "version 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5")
-    text = replace_if_present(
-        text,
-        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
-        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
-    )
-    text = replace_if_present(
-        text,
-        '("// @version 1.0.3", "// @version 1.0.4")',
-        '("// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
-    )
-    text = replace_if_present(
-        text,
-        'if version == "// @version 1.0.4":',
-        'if version in ("// @version 1.0.4", "// @version 1.0.5"):',
-    )
-    require('"// @version 1.0.5"' in text, "verify_manifest 1.0.5 gate")
+    if 'if version == "// @version 1.0.5":' in text:
+        text = text.replace(
+            'if version == "// @version 1.0.5":',
+            'if version in ("// @version 1.0.5", "// @version 1.0.6"):',
+        )
+    marker = '            \'var optimizedDirectory = getDexOptimizedDirectory26();\','
+    if marker in text and 'Packages.dalvik.system.DexClassLoader' not in text:
+        text = text.replace(marker, marker + '\n            \'new Packages.dalvik.system.DexClassLoader(\',')
     VERIFY_MANIFEST.write_text(text, encoding="utf-8")
 
     text = VERIFY_STORAGE.read_text(encoding="utf-8")
-    text = replace_if_present(
-        text,
-        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
-        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
-    )
-    text = replace_if_present(text, "version must be 1.0.1/1.0.2/1.0.3/1.0.4", "version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5")
-    text = replace_if_present(
-        text,
-        '("// @version 1.0.3", "// @version 1.0.4")',
-        '("// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
-    )
-    text = replace_if_present(
-        text,
-        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
-        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
-    )
-    text = replace_if_present(
-        text,
-        'if qr_version == "// @version 1.0.4":',
-        'if qr_version in ("// @version 1.0.4", "// @version 1.0.5"):',
-    )
-    require('"// @version 1.0.5"' in text, "storage verifier 1.0.5 gate")
+    if 'if qr_version == "// @version 1.0.5":' in text:
+        text = text.replace(
+            'if qr_version == "// @version 1.0.5":',
+            'if qr_version in ("// @version 1.0.5", "// @version 1.0.6"):',
+        )
+    text = text.replace("'new dalvik.system.DexClassLoader',", "'new Packages.dalvik.system.DexClassLoader',")
+    if 'qr_version == "// @version 1.0.6"' not in text:
+        anchor = 'allowed_shortx_files = {"th_01_base.js"}'
+        guard = '''if qr_version == "// @version 1.0.6":\n    require("new dalvik.system.DexClassLoader(" not in QR, "QR runtime must not use bare dalvik package in Rhino")\n    require("new Packages.dalvik.system.DexClassLoader(" in QR, "QR runtime must resolve DexClassLoader through Rhino Packages")\n\n'''
+        require(anchor in text, "storage verifier guard anchor")
+        text = text.replace(anchor, guard + anchor, 1)
     VERIFY_STORAGE.write_text(text, encoding="utf-8")
+
+    text = VERIFY_QR.read_text(encoding="utf-8")
+    text = text.replace('"new dalvik.system.DexClassLoader",', '"new Packages.dalvik.system.DexClassLoader",')
+    if 'if qr_version == "// @version 1.0.6":' not in text:
+        anchor = 'require(GEN, \'"th_26_qr_runtime.js"\', "signed QR module")'
+        guard = '''if qr_version == "// @version 1.0.6":\n    forbid(QR, "new dalvik.system.DexClassLoader(", "bare dalvik package is undefined in ShortX Rhino")\n    require(QR, "new Packages.dalvik.system.DexClassLoader(", "Rhino Packages DexClassLoader")\n\n'''
+        require(anchor in text, "QR verifier guard anchor")
+        text = text.replace(anchor, guard + anchor, 1)
+    VERIFY_QR.write_text(text, encoding="utf-8")
 
 
 def validate_boundaries():
@@ -141,7 +135,7 @@ def main():
     patch_qr_module()
     patch_verifiers()
     validate_boundaries()
-    print("OK Beta QR wiring idempotent version=1.0.5 system_server_code_cache=avoided api26_no_dexopt=1 legacy_channel_dexopt=1")
+    print("OK Beta QR wiring idempotent version=1.0.6 rhino_packages_dexloader=1 system_server_code_cache=avoided")
 
 
 if __name__ == "__main__":
