@@ -348,7 +348,6 @@
       "usageKeys": [
         "android|method|android.content.ClipData#newPlainText",
         "android|method|android.content.Context#getClassLoader",
-        "android|method|android.content.Context#getCodeCacheDir",
         "android|method|android.graphics.drawable#GradientDrawable",
         "android|method|android.os.Handler#post",
         "android|method|android.os.Handler#postDelayed",

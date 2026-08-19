@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "20260820-beta-qr-system-server-dexloader",
+  "type": "fix",
+  "title": "Beta：修复 system_server 下二维码运行时加载失败",
+  "details": [
+    "修复 ShortX/ToolHub 运行在 system_server、uid=1000 时调用 context.getCodeCacheDir() 触发 No data directory found for package android，导致 ZXing JAR 已预检就绪但 DexClassLoader 无法进入加载阶段的问题。",
+    "Android API 26 及以上不再创建应用 code_cache，并向 DexClassLoader 传入空 optimizedDirectory；该参数自 API 26 起已废弃且无实际作用。",
+    "Android API 24-25 的兼容路径改用当前 ToolHub 通道私有 lib/.dexopt 可写目录；Beta/Stable 隔离、JAR SHA-256/size/只读校验和二维码显式解析边界保持不变。"
+  ],
+  "manifestVersion": 20260819230134,
+  "date": "2026-08-20",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
+}

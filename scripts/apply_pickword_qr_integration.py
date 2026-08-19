@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Idempotently validate/normalize the permanent Beta QR wiring before signing.
+"""Idempotently normalize the permanent Beta QR wiring before signing.
 
-The one-time QR migration has already landed on Beta. This script keeps the
-current contract stable across signer-generated commits and advances the QR
-runtime to v1.0.4. ZXing stays under the active ToolHub channel root while
-runtime/preflight failures become directly observable in ToolHub logs and UI.
+Current fix: th_26 v1.0.5 avoids Context.getCodeCacheDir() in system_server.
+Android API 26+ passes no optimized directory because DexClassLoader ignores it;
+API 24-25 uses the active ToolHub channel lib/.dexopt directory.
 """
 import json
 from pathlib import Path
@@ -13,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "ToolHub.js"
 QR_MODULE = ROOT / "code" / "th_26_qr_runtime.js"
 BOUNDARIES = ROOT / "constraints" / "MODULE_BOUNDARIES.json"
+VERIFY_MANIFEST = ROOT / "scripts" / "verify_manifest.py"
+VERIFY_STORAGE = ROOT / "scripts" / "verify_channel_private_storage_isolation.py"
 NEW_ENTRY_VERSION = 20260819231000
 
 
@@ -21,94 +22,108 @@ def require(condition, message):
         raise SystemExit("integration contract failed: " + message)
 
 
+def replace_if_present(text, old, new):
+    if old in text and new not in text:
+        return text.replace(old, new)
+    return text
+
+
 def patch_entry():
     text = ENTRY.read_text(encoding="utf-8")
-    old = "var TOOLHUB_ENTRY_VERSION = 20260810005000;"
-    new = "var TOOLHUB_ENTRY_VERSION = %d;" % NEW_ENTRY_VERSION
-    if old in text and new not in text:
-        text = text.replace(old, new, 1)
-    require(new in text, "ToolHub entry version")
-
-    old_modules = '"th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_23_screenshot_manager.js", "th_25_shortx_ui_package.js"]'
-    new_modules = '"th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_26_qr_runtime.js", "th_23_screenshot_manager.js", "th_25_shortx_ui_package.js"]'
-    if old_modules in text and new_modules not in text:
-        text = text.replace(old_modules, new_modules, 1)
+    require("var TOOLHUB_ENTRY_VERSION = %d;" % NEW_ENTRY_VERSION in text, "ToolHub entry version")
     require(text.count('"th_26_qr_runtime.js"') == 1, "Beta QR module must appear exactly once")
-
     stable_start = text.find("var TOOLHUB_STABLE_MODULES")
     stable_end = text.find("var modules =", stable_start)
     require(stable_start >= 0 and stable_end > stable_start, "stable module list")
     require('"th_26_qr_runtime.js"' not in text[stable_start:stable_end], "Stable must remain QR-free")
-    ENTRY.write_text(text, encoding="utf-8")
 
 
 def patch_qr_module():
     text = QR_MODULE.read_text(encoding="utf-8")
-    if "// @version 1.0.4" not in text:
-        for old_version in ("// @version 1.0.3", "// @version 1.0.2", "// @version 1.0.1", "// @version 1.0.0"):
-            if old_version in text:
-                text = text.replace(old_version, "// @version 1.0.4", 1)
-                break
-        else:
-            raise SystemExit("integration anchor missing: QR module version")
+    if text.startswith("// @version 1.0.4\n"):
+        text = text.replace("// @version 1.0.4\n", "// @version 1.0.5\n", 1)
+    require(text.startswith("// @version 1.0.5\n"), "QR module version 1.0.5")
 
-    old_comment = "// Beta only. ZXing DEX/JAR is preflighted asynchronously on module startup/update under shortx.getShortXDir()/lib."
-    channel_comment = "// Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib."
-    if old_comment in text:
-        text = text.replace(old_comment, channel_comment, 1)
+    old_loader = '''    var codeCache = new java.io.File(context.getCodeCacheDir(), "toolhub_qr");\n    if (!codeCache.exists() && !codeCache.mkdirs() && !codeCache.exists()) throw new Error("二维码运行时优化目录创建失败");\n    var loader = new dalvik.system.DexClassLoader(\n      installed.file.getAbsolutePath(),\n      codeCache.getAbsolutePath(),\n      null,\n      context.getClassLoader()\n    );'''
+    new_loader = '''    var optimizedDirectory = getDexOptimizedDirectory26();\n    var loader = new dalvik.system.DexClassLoader(\n      installed.file.getAbsolutePath(),\n      optimizedDirectory,\n      null,\n      context.getClassLoader()\n    );'''
+    if old_loader in text:
+        helper = '''\n  function getDexOptimizedDirectory26() {\n    var sdk = Number(android.os.Build.VERSION.SDK_INT || 0);\n    if (sdk >= 26) return null;\n    var lib = getLibDir26();\n    var dexopt = new java.io.File(lib, ".dexopt").getCanonicalFile();\n    var libPath = String(lib.getCanonicalPath());\n    var dexoptPath = String(dexopt.getCanonicalPath());\n    if (dexoptPath.indexOf(libPath + java.io.File.separator) !== 0) throw new Error("二维码运行时优化目录越界");\n    if (!dexopt.exists() && !dexopt.mkdirs() && !dexopt.exists()) throw new Error("二维码运行时优化目录创建失败");\n    if (!dexopt.isDirectory()) throw new Error("二维码运行时优化路径不是目录");\n    if (typeof assertWritableDirPath === "function") assertWritableDirPath(dexoptPath, "ToolHub QR dexopt");\n    return dexoptPath;\n  }\n'''
+        anchor = "\n  function loadRuntime26(appObj) {"
+        require(anchor in text, "loadRuntime26 anchor")
+        text = text.replace(anchor, helper + anchor, 1)
+        text = text.replace(old_loader, new_loader, 1)
 
-    old_lib = '''  function getLibDir26() {\n    if (typeof shortx === "undefined" || !shortx || typeof shortx.getShortXDir !== "function") throw new Error("ShortX 根目录不可用");\n    var base = new java.io.File(String(shortx.getShortXDir() || "")).getCanonicalFile();\n    var lib = new java.io.File(base, "lib").getCanonicalFile();\n    var basePath = String(base.getCanonicalPath());\n    var libPath = String(lib.getCanonicalPath());\n    if (libPath.indexOf(basePath + java.io.File.separator) !== 0) throw new Error("ShortX lib 目录越界");\n    if (!lib.exists() && !lib.mkdirs() && !lib.exists()) throw new Error("无法创建 ShortX lib 目录");\n    if (!lib.isDirectory()) throw new Error("ShortX lib 路径不是目录");\n    return lib;\n  }'''
-    new_lib = '''  function getLibDir26() {\n    if (typeof getToolHubRootDir !== "function") throw new Error("ToolHub 通道根目录不可用");\n    var root = new java.io.File(String(getToolHubRootDir() || "")).getCanonicalFile();\n    var lib = new java.io.File(root, "lib").getCanonicalFile();\n    var rootPath = String(root.getCanonicalPath());\n    var libPath = String(lib.getCanonicalPath());\n    if (libPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("ToolHub lib 目录越界");\n    if (!lib.exists() && !lib.mkdirs() && !lib.exists()) throw new Error("无法创建 ToolHub lib 目录");\n    if (!lib.isDirectory()) throw new Error("ToolHub lib 路径不是目录");\n    if (typeof assertWritableDirPath === "function") assertWritableDirPath(libPath, "ToolHub QR lib");\n    return lib;\n  }'''
-    if old_lib in text:
-        text = text.replace(old_lib, new_lib, 1)
-
-    old_log = '''  function log26(appObj, level, message) {\n    try { safeLog(appObj && appObj.L ? appObj.L : null, level, "pickword qr " + String(message || "")); } catch (e0) {}\n  }'''
-    new_log = '''  function sanitizeError26(error) {\n    var text = "";\n    try { text = String(error == null ? "" : error); } catch (e0) { text = "runtime error"; }\n    text = text.replace(/[\\r\\n\\t]+/g, " ").replace(/\\s+/g, " ").replace(/^\\s+|\\s+$/g, "");\n    if (text.length > 220) text = text.substring(0, 220);\n    return text;\n  }\n\n  function log26(appObj, level, message) {\n    var text = "pickword qr " + String(message || "");\n    var appLogged = false;\n    try {\n      if (appObj && appObj.L) {\n        safeLog(appObj.L, level, text);\n        appLogged = true;\n      }\n    } catch (e0) { appLogged = false; }\n    if (!appLogged) {\n      try { if (typeof writeLog === "function") writeLog("[" + String(level || "i").toUpperCase() + "] " + text); } catch (e1) {}\n    }\n  }'''
-    if old_log in text:
-        text = text.replace(old_log, new_log, 1)
-
-    old_decode_start = '''    var worker = new java.lang.Thread(new java.lang.Runnable({ run: function() {\n      var result = null;\n      try {\n        var loaded = loadRuntime26(appObj);'''
-    new_decode_start = '''    var worker = new java.lang.Thread(new java.lang.Runnable({ run: function() {\n      var result = null;\n      var decodeStage = "load_runtime";\n      try {\n        var loaded = loadRuntime26(appObj);\n        decodeStage = "invoke_decode";'''
-    if old_decode_start in text:
-        text = text.replace(old_decode_start, new_decode_start, 1)
-
-    old_decode_catch = '''      } catch (eDecode) {\n        runtime26.error = String(eDecode);\n        result = { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE", text: "", format: "", error: String(eDecode).substring(0, 180) };\n      }'''
-    new_decode_catch = '''      } catch (eDecode) {\n        var detail = sanitizeError26(eDecode);\n        runtime26.error = detail;\n        var libPath = "";\n        try { libPath = String(getLibDir26().getAbsolutePath()); } catch (eLibPath) { libPath = "unavailable:" + sanitizeError26(eLibPath); }\n        log26(appObj, "e", "runtime failure stage=" + decodeStage + " preflight=" + String(runtime26.preflightStatus || "idle") + " lib=" + libPath + " error=" + detail);\n        result = { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE", text: "", format: "", error: "stage=" + decodeStage + " " + detail };\n      }'''
-    if old_decode_catch in text:
-        text = text.replace(old_decode_catch, new_decode_catch, 1)
-
-    old_runtime_message = '        else if (code === "PICKWORD_QR_RUNTIME_UNAVAILABLE") message = "二维码运行时不可用";'
-    new_runtime_message = '''        else if (code === "PICKWORD_QR_RUNTIME_UNAVAILABLE") {\n          message = "二维码运行时不可用";\n          var runtimeDetail = sanitizeError26(result && result.error);\n          if (runtimeDetail) message += "\\n" + runtimeDetail.substring(0, 140);\n        }'''
-    if old_runtime_message in text:
-        text = text.replace(old_runtime_message, new_runtime_message, 1)
-
-    require(text.startswith("// @version 1.0.4\n"), "QR module version 1.0.4")
+    require("context.getCodeCacheDir()" not in text, "system_server codeCacheDir must not be used")
+    require("function getDexOptimizedDirectory26()" in text, "Dex optimized-directory helper")
+    require("if (sdk >= 26) return null;" in text, "API 26+ DexClassLoader optimizedDirectory bypass")
+    require('new java.io.File(lib, ".dexopt")' in text, "API 24-25 channel-private dexopt")
+    require('assertWritableDirPath(dexoptPath, "ToolHub QR dexopt")' in text, "legacy dexopt writable probe")
+    require("var optimizedDirectory = getDexOptimizedDirectory26();" in text, "DexClassLoader optimizedDirectory selection")
     require("root.__toolHubQrDecorated26" not in text, "must not attach JS state to Android thumbnail View")
     require("controller.__toolHubQrThumbnailDecorated26 = true" in text, "thumbnail decoration marker owner")
-    require('log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate))' in text,
-            "thumbnail fail-open guard")
     require("installLock: new java.util.concurrent.locks.ReentrantLock()" in text, "runtime install lock")
     require("function preflightRuntime26(appObj, reason)" in text, "startup preflight worker")
     require('preflightRuntime26(null, "module_startup_or_update")' in text, "startup/update preflight dispatch")
-    require("return { file: dest, meta: meta, downloaded: false }" in text, "valid runtime skip path")
-    require("return { file: downloadRuntime26(meta, dest), meta: meta, downloaded: true }" in text,
-            "missing/invalid runtime download path")
-    require('"runtime preflight " + (installed.downloaded === true ? "downloaded" : "skip_existing")' in text,
-            "preflight result logging")
     require('typeof getToolHubRootDir !== "function"' in text, "channel root helper guard")
     require('new java.io.File(root, "lib")' in text, "channel-private lib path")
     require('assertWritableDirPath(libPath, "ToolHub QR lib")' in text, "channel-private lib writable probe")
     require("shortx.getShortXDir" not in text, "QR module must not bypass ToolHub channel root")
     require("function sanitizeError26(error)" in text, "runtime error sanitizer")
-    require('writeLog("[" + String(level || "i").toUpperCase() + "] " + text)' in text,
-            "preflight log fallback")
     require('var decodeStage = "load_runtime"' in text, "runtime load stage marker")
     require('decodeStage = "invoke_decode"' in text, "runtime decode stage marker")
-    require('log26(appObj, "e", "runtime failure stage=" + decodeStage' in text,
-            "runtime failure log")
-    require('message += "\\n" + runtimeDetail.substring(0, 140)' in text,
-            "runtime failure UI detail")
     QR_MODULE.write_text(text, encoding="utf-8")
+
+
+def patch_verifiers():
+    text = VERIFY_MANIFEST.read_text(encoding="utf-8")
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(text, "version 1.0.1/1.0.2/1.0.3/1.0.4", "version 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5")
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(
+        text,
+        'if version == "// @version 1.0.4":',
+        'if version in ("// @version 1.0.4", "// @version 1.0.5"):',
+    )
+    require('"// @version 1.0.5"' in text, "verify_manifest 1.0.5 gate")
+    VERIFY_MANIFEST.write_text(text, encoding="utf-8")
+
+    text = VERIFY_STORAGE.read_text(encoding="utf-8")
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(text, "version must be 1.0.1/1.0.2/1.0.3/1.0.4", "version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5")
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(
+        text,
+        'if qr_version == "// @version 1.0.4":',
+        'if qr_version in ("// @version 1.0.4", "// @version 1.0.5"):',
+    )
+    require('"// @version 1.0.5"' in text, "storage verifier 1.0.5 gate")
+    VERIFY_STORAGE.write_text(text, encoding="utf-8")
 
 
 def validate_boundaries():
@@ -118,18 +133,15 @@ def validate_boundaries():
     for method in ("createPickwordImageController", "hidePickwordWindow", "disposePickwordModule"):
         record = by_method.get(method)
         require(record is not None, "QR wrapper boundary missing: " + method)
-        require(str(record.get("effectiveOwner", "")) == "th_26_qr_runtime.js",
-                "QR wrapper owner mismatch: " + method)
-    owners = data.get("directOwners") or {}
-    for method in ("createPickwordImageController", "hidePickwordWindow", "disposePickwordModule"):
-        require(method not in owners, "QR wrapper must not be declared direct owner: " + method)
+        require(str(record.get("effectiveOwner", "")) == "th_26_qr_runtime.js", "QR wrapper owner mismatch: " + method)
 
 
 def main():
     patch_entry()
     patch_qr_module()
+    patch_verifiers()
     validate_boundaries()
-    print("OK Beta QR wiring idempotent version=1.0.4 startup_preflight=enabled channel_lib=1 diagnostics=1 stable_intrusion=0")
+    print("OK Beta QR wiring idempotent version=1.0.5 system_server_code_cache=avoided api26_no_dexopt=1 legacy_channel_dexopt=1")
 
 
 if __name__ == "__main__":

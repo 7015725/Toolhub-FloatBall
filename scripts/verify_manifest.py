@@ -141,16 +141,22 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         fail("Beta QR module missing")
     text = path.read_text(encoding="utf-8")
     version = text.splitlines()[0] if text.splitlines() else ""
-    supported = ("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")
+    supported = (
+        "// @version 1.0.1",
+        "// @version 1.0.2",
+        "// @version 1.0.3",
+        "// @version 1.0.4",
+        "// @version 1.0.5",
+    )
     if version not in supported:
-        fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1/1.0.2/1.0.3/1.0.4")
+        fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5")
     if "root.__toolHubQrDecorated26" in text:
         fail("QR module must not attach dynamic state to Android thumbnail View")
     if 'log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate))' not in text:
         fail("QR thumbnail decorator must fail open to the original screenshot View")
     if "controller.__toolHubQrThumbnailDecorated26 = true" not in text:
         fail("QR thumbnail decoration marker must live on the JS controller")
-    if version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4"):
+    if version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5"):
         for marker in (
             "installLock: new java.util.concurrent.locks.ReentrantLock()",
             "function preflightRuntime26(appObj, reason)",
@@ -161,7 +167,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         ):
             if marker not in text:
                 fail("Beta QR startup preflight marker missing: " + marker)
-    if version in ("// @version 1.0.3", "// @version 1.0.4"):
+    if version in ("// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5"):
         for marker in (
             'typeof getToolHubRootDir !== "function"',
             'new java.io.File(root, "lib")',
@@ -171,7 +177,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
                 fail("Beta QR channel-lib marker missing: " + marker)
         if "shortx.getShortXDir" in text:
             fail("Beta QR must not bypass ToolHub channel root")
-    if version == "// @version 1.0.4":
+    if version in ("// @version 1.0.4", "// @version 1.0.5"):
         for marker in (
             'function sanitizeError26(error)',
             'typeof writeLog === "function"',
@@ -182,6 +188,18 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         ):
             if marker not in text:
                 fail("Beta QR runtime diagnostics marker missing: " + marker)
+    if version == "// @version 1.0.5":
+        if "context.getCodeCacheDir()" in text:
+            fail("Beta QR must not call Context.getCodeCacheDir from system_server")
+        for marker in (
+            'function getDexOptimizedDirectory26()',
+            'if (sdk >= 26) return null;',
+            'new java.io.File(lib, ".dexopt")',
+            'assertWritableDirPath(dexoptPath, "ToolHub QR dexopt")',
+            'var optimizedDirectory = getDexOptimizedDirectory26();',
+        ):
+            if marker not in text:
+                fail("Beta QR system_server DexClassLoader marker missing: " + marker)
 
 
 def main():
@@ -228,13 +246,9 @@ def main():
     entry_meta = manifest.get("entry") or {}
     if str(entry_meta.get("name", "")) != "ToolHub.js":
         fail("manifest entry.name must be ToolHub.js")
-    if int(entry_meta.get("version", 0) or 0) != entry_version or str(
-        entry_meta.get("versionSource", "")
-    ) != entry_source:
+    if int(entry_meta.get("version", 0) or 0) != entry_version or str(entry_meta.get("versionSource", "")) != entry_source:
         fail("manifest entry version mismatch")
-    if str(entry_meta.get("sha256", "")).lower() != entry_hash or int(
-        entry_meta.get("size", -1)
-    ) != ENTRY.stat().st_size:
+    if str(entry_meta.get("sha256", "")).lower() != entry_hash or int(entry_meta.get("size", -1)) != ENTRY.stat().st_size:
         fail("manifest entry hash/size mismatch")
     if entry_meta.get("manualUpdate") is not True:
         fail("manifest entry.manualUpdate must be true")
@@ -243,25 +257,19 @@ def main():
 
     history = json.loads(HISTORY.read_text(encoding="utf-8"))
     asset = ((manifest.get("assets") or {}).get("updateHistory") or {})
-    if str(asset.get("name", "")) != "update_history.json" or int(
-        asset.get("schema", 0) or 0
-    ) != 1:
+    if str(asset.get("name", "")) != "update_history.json" or int(asset.get("schema", 0) or 0) != 1:
         fail("manifest updateHistory asset missing or invalid")
     if str(asset.get("sha256", "")).lower() != sha256_file(HISTORY):
         fail("update_history sha256 mismatch")
     if int(asset.get("size", -1)) != HISTORY.stat().st_size:
         fail("update_history size mismatch")
-    if int(asset.get("version", 0) or 0) != int(
-        history.get("historyVersion", 0) or 0
-    ):
+    if int(asset.get("version", 0) or 0) != int(history.get("historyVersion", 0) or 0):
         fail("update_history version mismatch")
 
     records = history.get("records") or []
     if not records:
         fail("update history records missing")
-    if int(records[0].get("manifestVersion", 0) or 0) != int(
-        manifest.get("version", 0) or 0
-    ):
+    if int(records[0].get("manifestVersion", 0) or 0) != int(manifest.get("version", 0) or 0):
         fail("latest update history record must match manifest version")
     current = records[0]
     release = manifest.get("release") or {}
@@ -269,23 +277,17 @@ def main():
         fail("manifest release title differs from current history record")
     if str(release.get("date", "")) != str(current.get("date", "")):
         fail("manifest release date differs from current history record")
-    if [str(x) for x in (release.get("changes") or [])] != [
-        str(x) for x in (current.get("details") or [])
-    ]:
+    if [str(x) for x in (release.get("changes") or [])] != [str(x) for x in (current.get("details") or [])]:
         fail("manifest release changes differ from current history record")
 
     history_args = [sys.executable, "scripts/verify_update_history.py"]
     if args.allow_pending:
         history_args.append("--require-one-pending")
     subprocess.check_call(history_args, cwd=str(ROOT))
-    subprocess.check_call(
-        [sys.executable, "scripts/verify_release_record_flow.py"], cwd=str(ROOT)
-    )
+    subprocess.check_call([sys.executable, "scripts/verify_release_record_flow.py"], cwd=str(ROOT))
     py_files = collect_python_files()
     if py_files:
-        subprocess.check_call(
-            [sys.executable, "-W", "error::SyntaxWarning", "-m", "py_compile"] + py_files, cwd=str(ROOT)
-        )
+        subprocess.check_call([sys.executable, "-W", "error::SyntaxWarning", "-m", "py_compile"] + py_files, cwd=str(ROOT))
     print(
         "OK manifest_version=%s channel=%s branch=%s files=%s runtime=%s history=%s entry_version=%s qr_thumbnail_fail_open=%s"
         % (

@@ -1,4 +1,4 @@
-// @version 1.0.4
+// @version 1.0.5
 // =======================【拾字截图二维码解析 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -321,15 +321,28 @@
     return method.invoke(null, args);
   }
 
+  function getDexOptimizedDirectory26() {
+    var sdk = Number(android.os.Build.VERSION.SDK_INT || 0);
+    if (sdk >= 26) return null;
+    var lib = getLibDir26();
+    var dexopt = new java.io.File(lib, ".dexopt").getCanonicalFile();
+    var libPath = String(lib.getCanonicalPath());
+    var dexoptPath = String(dexopt.getCanonicalPath());
+    if (dexoptPath.indexOf(libPath + java.io.File.separator) !== 0) throw new Error("二维码运行时优化目录越界");
+    if (!dexopt.exists() && !dexopt.mkdirs() && !dexopt.exists()) throw new Error("二维码运行时优化目录创建失败");
+    if (!dexopt.isDirectory()) throw new Error("二维码运行时优化路径不是目录");
+    if (typeof assertWritableDirPath === "function") assertWritableDirPath(dexoptPath, "ToolHub QR dexopt");
+    return dexoptPath;
+  }
+
   function loadRuntime26(appObj) {
     if (runtime26.clazz && runtime26.decodeMethod) return runtime26;
     var installed = ensureRuntimeFile26();
     if (installed.file.canWrite()) throw new Error("二维码运行时文件必须只读");
-    var codeCache = new java.io.File(context.getCodeCacheDir(), "toolhub_qr");
-    if (!codeCache.exists() && !codeCache.mkdirs() && !codeCache.exists()) throw new Error("二维码运行时优化目录创建失败");
+    var optimizedDirectory = getDexOptimizedDirectory26();
     var loader = new dalvik.system.DexClassLoader(
       installed.file.getAbsolutePath(),
-      codeCache.getAbsolutePath(),
+      optimizedDirectory,
       null,
       context.getClassLoader()
     );

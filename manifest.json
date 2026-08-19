@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "3d223595dcc6ff23e5f3e8cecb832f24b2c9a4ccb8670451d9feb5fef8ff0f23",
-      "size": 84556,
-      "version": 20260819181623
+      "sha256": "0820feb8ce98e01733c6bef16262f2f3058887ea1a687f856e223b7ade8f0e5c",
+      "size": 85594,
+      "version": 20260819230134
     }
   },
   "branch": "beta",
@@ -176,9 +176,9 @@
       "version": "0.9.2"
     },
     "th_26_qr_runtime.js": {
-      "sha256": "b60d71d0a5894063ab53956479d9fbf65081d4ac6acfe4687b63e668e339abe5",
-      "size": 34399,
-      "version": "1.0.4"
+      "sha256": "8c875c75c9897a0827b014a544dd1d778a46f2f8b57b5d86bb78922ebefd0c18",
+      "size": 35057,
+      "version": "1.0.5"
     },
     "th_34_shortx_ui_lab.js": {
       "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
@@ -189,12 +189,12 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "二维码解析遇到运行时异常时不再只显示“二维码运行时不可用”，同时把真实异常写入 ToolHub 日志，区分 runtime 文件准备、DexClassLoader、loadClass、反射接口与 decode 调用阶段。",
-      "启动/更新预检在没有 App logger 的情况下回退到 ToolHub writeLog，确保 preflight 成功或失败都能在日志中留痕。",
-      "二维码失败结果继续保留用户可读的通用提示，并附带经过截断和单行化的诊断原因；不改变 OCR、框选截图、拾字与二维码显式触发边界。"
+      "修复 ShortX/ToolHub 运行在 system_server、uid=1000 时调用 context.getCodeCacheDir() 触发 No data directory found for package android，导致 ZXing JAR 已预检就绪但 DexClassLoader 无法进入加载阶段的问题。",
+      "Android API 26 及以上不再创建应用 code_cache，并向 DexClassLoader 传入空 optimizedDirectory；该参数自 API 26 起已废弃且无实际作用。",
+      "Android API 24-25 的兼容路径改用当前 ToolHub 通道私有 lib/.dexopt 可写目录；Beta/Stable 隔离、JAR SHA-256/size/只读校验和二维码显式解析边界保持不变。"
     ],
     "date": "2026-08-20",
-    "title": "Beta：补齐二维码运行时失败诊断"
+    "title": "Beta：修复 system_server 下二维码运行时加载失败"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -210,5 +210,5 @@
     }
   },
   "schema": 6,
-  "version": 20260819181623
+  "version": 20260819230134
 }
