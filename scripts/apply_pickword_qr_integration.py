@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Idempotently wire the Beta QR module into ToolHub.js before signing."""
+"""Idempotently wire the Beta QR module into ToolHub before signing."""
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "ToolHub.js"
 QR_MODULE = ROOT / "code" / "th_26_qr_runtime.js"
+BOUNDARIES = ROOT / "constraints" / "MODULE_BOUNDARIES.json"
 NEW_ENTRY_VERSION = 20260819231000
 
 
@@ -43,10 +45,78 @@ def patch_qr_wrapper():
     QR_MODULE.write_text(text, encoding="utf-8")
 
 
+def qr_boundary_records():
+    return [
+        {
+            "method": "createPickwordImageController",
+            "definitions": ["th_22_image_viewer.js", "th_26_qr_runtime.js"],
+            "effectiveOwner": "th_26_qr_runtime.js",
+            "type": "wrapper",
+            "reason": "Beta 拾字截图控制器叠加显式二维码解析入口与结果卡，不修改截图查看器内部实现",
+            "wrappers": [
+                {
+                    "module": "th_26_qr_runtime.js",
+                    "owner": "th_22_image_viewer.js",
+                    "oldVariable": "originalControllerFactory"
+                }
+            ]
+        },
+        {
+            "method": "hidePickwordWindow",
+            "definitions": ["th_20_pickword.js", "th_26_qr_runtime.js"],
+            "effectiveOwner": "th_26_qr_runtime.js",
+            "type": "wrapper",
+            "reason": "关闭拾字窗口前取消二维码 worker、timeout 与迟到结果 token",
+            "wrappers": [
+                {
+                    "module": "th_26_qr_runtime.js",
+                    "owner": "th_20_pickword.js",
+                    "oldVariable": "originalHide"
+                }
+            ]
+        },
+        {
+            "method": "disposePickwordModule",
+            "definitions": ["th_20_pickword.js", "th_26_qr_runtime.js"],
+            "effectiveOwner": "th_26_qr_runtime.js",
+            "type": "wrapper",
+            "reason": "释放拾字模块前取消二维码解析会话，不改变原拾字清理顺序",
+            "wrappers": [
+                {
+                    "module": "th_26_qr_runtime.js",
+                    "owner": "th_20_pickword.js",
+                    "oldVariable": "originalDispose"
+                }
+            ]
+        }
+    ]
+
+
+def patch_boundaries():
+    data = json.loads(BOUNDARIES.read_text(encoding="utf-8"))
+    owners = data.get("directOwners") or {}
+    for method in ("createPickwordImageController", "hidePickwordWindow", "disposePickwordModule"):
+        owners.pop(method, None)
+    data["directOwners"] = owners
+
+    records = data.get("duplicateDefinitions") or []
+    by_method = {str(item.get("method", "")): item for item in records if isinstance(item, dict)}
+    for record in qr_boundary_records():
+        method = record["method"]
+        if method in by_method:
+            if by_method[method] != record:
+                raise SystemExit("existing QR boundary record differs: " + method)
+        else:
+            records.append(record)
+    data["duplicateDefinitions"] = records
+    BOUNDARIES.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def main():
     patch_entry()
     patch_qr_wrapper()
-    print("OK QR wiring entry_version=%d" % NEW_ENTRY_VERSION)
+    patch_boundaries()
+    print("OK QR wiring entry_version=%d boundaries=3" % NEW_ENTRY_VERSION)
 
 
 if __name__ == "__main__":
