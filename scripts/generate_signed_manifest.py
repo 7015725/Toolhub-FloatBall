@@ -38,8 +38,8 @@ MODULES = [
 
 RUNTIME_FILES = {
     "toolhub-zxing-runtime": {
-        "path": "runtime/toolhub-zxing-runtime-3.5.4-r1.jar",
-        "version": "3.5.4-r1",
+        "path": "runtime/toolhub-zxing-runtime-3.5.4-r2.jar",
+        "version": "3.5.4-r2",
         "kind": "dex-jar",
         "minApi": 24,
         "requiredBy": ["th_26_qr_runtime.js"],
