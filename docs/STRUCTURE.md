@@ -1,6 +1,6 @@
 # ToolHub-FloatBall 整体结构说明
 
-更新时间：2026-07-28
+更新时间：2026-08-19
 
 本文档用于整理 `7015725/Toolhub-FloatBall` 当前代码结构、启动链路、模块职责和主要状态流。项目运行环境为 **ShortX / Rhino ES5 JavaScript**，入口文件负责安全更新和模块加载，核心业务集中挂载到 `FloatBallAppWM.prototype`。
 
@@ -72,6 +72,7 @@ Toolhub-FloatBall/
 │   ├── th_20_pickword.js
 │   ├── th_21_result_preview.js
 │   ├── th_22_image_viewer.js
+│   ├── th_26_qr_runtime.js
 │   ├── th_23_screenshot_manager.js
 │   └── th_25_shortx_ui_package.js
 └── scripts/
@@ -83,8 +84,8 @@ Toolhub-FloatBall/
     └── ... 其他专项回归脚本
 ```
 
-当前实际加载 **32 个子模块**。
-Beta 通道额外加载 `th_24_shortx_ui_runtime.js`、`th_34_shortx_ui_lab.js` 与 `th_25_shortx_ui_package.js`。前两者提供基础运行时和诊断入口，最终封装模块在 `startAsync()` 成功后安装 Phase 2 至 Final R3 的已验收能力；全部状态位于 `ToolHub-Beta` 隔离根目录，Stable 和 ClipHub 不读取这些实验状态。
+当前实际加载 **33 个子模块**。
+Beta 通道额外加载 `th_24_shortx_ui_runtime.js`、`th_34_shortx_ui_lab.js`、`th_26_qr_runtime.js` 与 `th_25_shortx_ui_package.js`。前两者提供基础运行时和诊断入口，最终封装模块在 `startAsync()` 成功后安装 Phase 2 至 Final R3 的已验收能力；全部状态位于 `ToolHub-Beta` 隔离根目录，Stable 和 ClipHub 不读取这些实验状态。
 `th_14_*` 已拆出按钮快捷方式、按钮图标编辑、按钮管理/编辑、颜色选择器、图标选择器和 schema 编辑器；快捷方式选择能力由 `th_14_button_shortcut.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，指针取字由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置和悬浮球重建回滚由 `th_19_position_state.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载。
 
 当前编号存在历史空洞：`th_06` 后直接到 `th_08`。这是为降低更新风险而保留的历史编号；本仓库延续现有文件名，避免影响 `ToolHub.js`、`manifest.json`、旧缓存和实机稳定性。
@@ -151,7 +152,10 @@ th_50_entry.js
 ## 4. 实机目录
 
 ```text
-shortx.getShortXDir()/ToolHub/
+shortx.getShortXDir()/
+├── lib/
+│   └── toolhub-zxing-runtime-3.5.4-r1.jar   # Beta QR 按需下载；清单哈希通过后只读加载
+└── ToolHub/
 ├── code/                         # 本地缓存子模块
 │   ├── th_01_base.js
 │   ├── ...
@@ -161,6 +165,7 @@ shortx.getShortXDir()/ToolHub/
 │   ├── th_20_pickword.js
 │   ├── th_21_result_preview.js
 │   ├── th_22_image_viewer.js
+│   ├── th_26_qr_runtime.js
 │   ├── th_23_screenshot_manager.js
 │   ├── th_25_shortx_ui_package.js
 │   ├── .installed_manifest.json
@@ -253,6 +258,7 @@ th_19_position_state.js
 | `th_20_pickword.js` | 拾字文字选择、复制、翻译、钉屏、放大镜及其生命周期清理 |
 | `th_21_result_preview.js` | 顶部两行全自绘结果预览、倒计时、动效与拾字入口 |
 | `th_22_image_viewer.js` | 拾字截图查看、缩放平移、保存分享删除、图片记录和自动清理 |
+| `th_26_qr_runtime.js` | Beta 拾字截图二维码解析适配层：显式按钮触发、后台解码、会话 token 保护，并从签名清单按需安装 ZXing DEX/JAR 到 `shortx.getShortXDir()/lib` |
 | `th_23_screenshot_manager.js` | 截图列表、内部/已保存分类、缩略图缓存、外部打开和删除入口 |
 
 ---
@@ -583,7 +589,7 @@ version: 以当前 manifest.json 为准
 alg: SHA256withRSA
 keyId: toolhub-targets-20260703-rsa3072
 entry: ToolHub.js 入口版本、哈希、大小和手动更新标记
-files: 32 个模块
+files: 33 个模块
 assets.updateHistory: 更新历史名称、schema、版本、哈希和大小
 release: 结构化记录生成的标题、日期和 changes
 ```

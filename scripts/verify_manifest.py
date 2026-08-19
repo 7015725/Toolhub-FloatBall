@@ -7,10 +7,12 @@ import os
 import re
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CODE_DIR = ROOT / "code"
+RUNTIME_DIR = ROOT / "runtime"
 MANIFEST = ROOT / "manifest.json"
 ENTRY = ROOT / "ToolHub.js"
 ENTRY_SHA = ROOT / "ToolHub.js.sha256"
@@ -32,14 +34,25 @@ def sha256_file(path):
     return h.hexdigest()
 
 
-def parse_python_modules():
+def parse_assignment(name):
     tree = ast.parse(SIGN_SCRIPT.read_text(encoding="utf-8"), filename=str(SIGN_SCRIPT))
     for node in tree.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "MODULES":
-                    return [str(item) for item in ast.literal_eval(node.value)]
-    fail("MODULES not found in generate_signed_manifest.py")
+                if isinstance(target, ast.Name) and target.id == name:
+                    return ast.literal_eval(node.value)
+    fail("%s not found in generate_signed_manifest.py" % name)
+
+
+def parse_python_modules():
+    return [str(item) for item in parse_assignment("MODULES")]
+
+
+def parse_python_runtime_files():
+    raw = parse_assignment("RUNTIME_FILES")
+    if not isinstance(raw, dict):
+        fail("RUNTIME_FILES must be a dict")
+    return raw
 
 
 def parse_entry_modules():
@@ -73,6 +86,53 @@ def collect_python_files():
     )
 
 
+def verify_runtime_files(manifest, py_runtime_files, py_modules):
+    runtime_files = manifest.get("runtimeFiles") or {}
+    if set(runtime_files) != set(py_runtime_files):
+        fail("manifest runtimeFiles differs from generate_signed_manifest.py RUNTIME_FILES")
+    for runtime_id, template in py_runtime_files.items():
+        meta = runtime_files.get(runtime_id) or {}
+        rel = str(template.get("path", ""))
+        if str(meta.get("path", "")) != rel:
+            fail("runtime path mismatch: " + runtime_id)
+        if not rel.startswith("runtime/") or ".." in rel or not rel.endswith(".jar"):
+            fail("runtime path invalid: " + rel)
+        path = ROOT / rel
+        if not path.exists() or not path.is_file():
+            fail("runtime file missing: " + rel)
+        if str(meta.get("version", "")) != str(template.get("version", "")):
+            fail("runtime version mismatch: " + runtime_id)
+        if str(meta.get("kind", "")) != "dex-jar":
+            fail("runtime kind must be dex-jar: " + runtime_id)
+        if int(meta.get("minApi", 0) or 0) != int(template.get("minApi", 0) or 0):
+            fail("runtime minApi mismatch: " + runtime_id)
+        required_by = [str(x) for x in (meta.get("requiredBy") or [])]
+        if required_by != [str(x) for x in (template.get("requiredBy") or [])]:
+            fail("runtime requiredBy mismatch: " + runtime_id)
+        for module in required_by:
+            if module not in py_modules:
+                fail("runtime requiredBy module missing: %s -> %s" % (runtime_id, module))
+        if str(meta.get("sha256", "")).lower() != sha256_file(path):
+            fail("runtime sha256 mismatch: " + runtime_id)
+        if int(meta.get("size", -1)) != path.stat().st_size:
+            fail("runtime size mismatch: " + runtime_id)
+        with zipfile.ZipFile(path) as archive:
+            names = set(archive.namelist())
+            for required in (
+                "classes.dex",
+                "META-INF/toolhub-runtime.properties",
+                "META-INF/LICENSE-zxing.txt",
+                "META-INF/NOTICE-zxing.txt",
+            ):
+                if required not in names:
+                    fail("runtime jar missing %s: %s" % (required, runtime_id))
+            props = archive.read("META-INF/toolhub-runtime.properties").decode("utf-8", "replace")
+            if "local.install.dir=shortx.getShortXDir()/lib" not in props:
+                fail("runtime lib install contract missing: " + runtime_id)
+            if "bridge.class=toolhub.runtime.qr.ToolHubQrRuntime" not in props:
+                fail("runtime bridge contract missing: " + runtime_id)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--allow-pending", action="store_true")
@@ -82,8 +142,8 @@ def main():
         if not path.exists():
             fail(str(path.relative_to(ROOT)) + " missing")
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    if int(manifest.get("schema", 0) or 0) < 5:
-        fail("manifest schema must be at least 5")
+    if int(manifest.get("schema", 0) or 0) < 6:
+        fail("manifest schema must be at least 6")
     channel = str(manifest.get("channel", "")).strip().lower()
     branch = str(manifest.get("branch", "")).strip()
     if channel not in CHANNEL_BRANCHES:
@@ -108,6 +168,8 @@ def main():
             fail("sha256 mismatch: " + name)
         if path.stat().st_size != int(meta.get("size", -1)):
             fail("size mismatch: " + name)
+
+    verify_runtime_files(manifest, parse_python_runtime_files(), py_modules)
 
     entry_hash = sha256_file(ENTRY)
     entry_version, entry_source = parse_entry_version()
@@ -173,8 +235,11 @@ def main():
             [sys.executable, "-W", "error::SyntaxWarning", "-m", "py_compile"] + py_files, cwd=str(ROOT)
         )
     print(
-        "OK manifest_version=%s channel=%s branch=%s files=%s history=%s entry_version=%s"
-        % (manifest.get("version"), channel, branch, len(py_modules), len(records), entry_version)
+        "OK manifest_version=%s channel=%s branch=%s files=%s runtime=%s history=%s entry_version=%s"
+        % (
+            manifest.get("version"), channel, branch, len(py_modules),
+            len(manifest.get("runtimeFiles") or {}), len(records), entry_version,
+        )
     )
 
 

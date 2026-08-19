@@ -27,7 +27,7 @@ OUTPUT = ROOT / "code" / "th_25_shortx_ui_package.js"
 
 PACKAGE_MODULE = "th_25_shortx_ui_package.js"
 PACKAGE_VERSION = "0.9.2"
-ENTRY_VERSION = 20260810005000
+ENTRY_VERSION = 20260819231000
 
 PAYLOADS = [
     "beta/phase2/shortxui_guard.js",
@@ -337,6 +337,8 @@ def patch_entry(text: str) -> str:
 
 
 def patch_manifest_generator(text: str) -> str:
+    if '"th_26_qr_runtime.js"' in text and '"th_25_shortx_ui_package.js"' in text:
+        return text
     source = '    "th_23_screenshot_manager.js",\n]'
     target = '    "th_23_screenshot_manager.js", "th_25_shortx_ui_package.js",\n]'
     return replace_once(text, source, target, "manifest module list")
@@ -349,6 +351,8 @@ def patch_prepare_constraints(text: str) -> str:
 
 
 def patch_api_rules(text: str) -> str:
+    if '"api-pickword-qr-runtime"' in text:
+        return text
     from report_api_usage import scan_repository
 
     phase_files = {
@@ -394,6 +398,8 @@ def patch_api_rules(text: str) -> str:
 
 
 def patch_boundaries(text: str) -> str:
+    if '"th_26_qr_runtime.js"' in text:
+        return text
     data = json.loads(text)
     records = list(data.get("duplicateDefinitions") or [])
     record = {
@@ -418,6 +424,8 @@ def patch_boundaries(text: str) -> str:
 
 
 def patch_protected_reporter(text: str) -> str:
+    if '"拾字二维码扩展"' in text:
+        return text
     if '    "ShortXUI 最终封装": 6,' not in text:
         text = replace_once(
             text,
@@ -447,6 +455,8 @@ def patch_protected_reporter(text: str) -> str:
 
 
 def patch_architecture(text: str) -> str:
+    if "th_26_qr_runtime.js" in text:
+        return text
     text = text.replace("更新时间：2026-07-27", "更新时间：2026-07-28", 1)
     text = text.replace("31 个子模块", "32 个子模块")
     source = "  th_23_screenshot_manager.js\n```"
@@ -486,6 +496,8 @@ def patch_architecture(text: str) -> str:
 
 
 def patch_structure(text: str) -> str:
+    if "th_26_qr_runtime.js" in text:
+        return text
     text = text.replace("更新时间：2026-07-27", "更新时间：2026-07-28", 1)
     text = text.replace("31 个子模块", "32 个子模块")
     text = text.replace("files: 31 个模块", "files: 32 个模块")

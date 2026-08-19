@@ -152,8 +152,8 @@ jobs:
             python3 scripts/verify_entry_redundancy_cleanup.py
             python3 scripts/verify_entry_writable_probe.py
             python3 scripts/verify_sqlite_storage.py
-          python3 scripts/verify_channel_screenshot_storage_isolation.py
-          python3 scripts/verify_channel_private_storage_isolation.py
+            python3 scripts/verify_channel_screenshot_storage_isolation.py
+            python3 scripts/verify_channel_private_storage_isolation.py
             python3 scripts/verify_sqlite_debounce_race.py
             python3 scripts/verify_ball_position_state.py
             python3 scripts/verify_animation_callback_safety.py
@@ -208,6 +208,7 @@ jobs:
             python3 scripts/verify_result_preview.py
             python3 scripts/verify_pickword_image_viewer.py
             python3 scripts/verify_pickword_image_meta_handoff.py
+            python3 scripts/verify_pickword_qr.py
             python3 scripts/verify_screenshot_manager.py
             python3 .github/scripts/verify_manifest_signature.py
           } 2>&1 | tee toolhub-verification-report.txt

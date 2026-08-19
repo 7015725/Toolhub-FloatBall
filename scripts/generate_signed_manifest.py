@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CODE_DIR = ROOT / "code"
+RUNTIME_DIR = ROOT / "runtime"
 PRIVATE_KEY = Path.home() / ".hermes" / "toolhub_signing" / "private_key.pem"
 MANIFEST = ROOT / "manifest.json"
 SIG = ROOT / "manifest.sig"
@@ -32,8 +33,18 @@ MODULES = [
     "th_14_schema_editor.js", "th_15_extra.js", "th_34_shortx_ui_lab.js", "th_15_main_panel.js", "th_16_entry.js",
     "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js",
     "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js",
-    "th_23_screenshot_manager.js", "th_25_shortx_ui_package.js",
+    "th_26_qr_runtime.js", "th_23_screenshot_manager.js", "th_25_shortx_ui_package.js",
 ]
+
+RUNTIME_FILES = {
+    "toolhub-zxing-runtime": {
+        "path": "runtime/toolhub-zxing-runtime-3.5.4-r1.jar",
+        "version": "3.5.4-r1",
+        "kind": "dex-jar",
+        "minApi": 24,
+        "requiredBy": ["th_26_qr_runtime.js"],
+    }
+}
 
 
 def sha256_file(path):
@@ -86,6 +97,20 @@ def print_review_summary():
         print("-- %s --" % title)
         value = git_output(args)
         print(value.rstrip() or "clean")
+
+
+def build_runtime_manifest():
+    output = {}
+    for runtime_id, template in RUNTIME_FILES.items():
+        rel = str(template["path"])
+        path = ROOT / rel
+        if not path.exists() or not path.is_file() or path.stat().st_size <= 0:
+            raise SystemExit("Missing runtime file: %s" % path)
+        item = dict(template)
+        item["sha256"] = sha256_file(path)
+        item["size"] = path.stat().st_size
+        output[runtime_id] = item
+    return output
 
 
 def main():
@@ -141,6 +166,7 @@ def main():
             "size": path.stat().st_size,
         }
 
+    runtime_files = build_runtime_manifest()
     entry_hash = sha256_file(ENTRY)
     entry_version, entry_version_source = read_entry_version(ENTRY)
     history_hash = sha256_file(HISTORY)
@@ -151,7 +177,7 @@ def main():
         "changes": release_changes,
     }
     manifest = {
-        "schema": 5,
+        "schema": 6,
         "channel": channel,
         "branch": branch,
         "version": version,
@@ -166,6 +192,7 @@ def main():
             "manualUpdate": True,
         },
         "files": files,
+        "runtimeFiles": runtime_files,
         "assets": {
             "updateHistory": {
                 "name": "update_history.json",
@@ -195,6 +222,7 @@ def main():
     print("update_branch=%s" % branch)
     print("record_id=%s" % record.get("id"))
     print("signed_files=%s" % len(files))
+    print("runtime_files=%s" % len(runtime_files))
     print("history_records=%s" % len(history.get("records") or []))
     print("release_title=%s" % release["title"])
     print("ToolHub.js_sha256=%s" % entry_hash)

@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "506c16ca252f6bc31baf5b467ad67b78688bd21d4674d86a3c36abd2a7d114d3",
-      "size": 79187,
-      "version": 20260809220348
+      "sha256": "281bdd7f3a2b24c8953b459ad5dc4ce95e22386fc7686fe4a257ad584a6337c9",
+      "size": 80634,
+      "version": 20260819155603
     }
   },
   "branch": "beta",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "1cb77968b991be45b57e22a8de2afe12bb7fa167ca476d43bac6383423524b21",
-    "size": 107751,
-    "version": 20260810005000,
+    "sha256": "cde8158e2f73b96f71abfb4eeb08a23349f1d5324ada44e89650fb0f51e49531",
+    "size": 107774,
+    "version": 20260819231000,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -175,6 +175,11 @@
       "size": 165464,
       "version": "0.9.2"
     },
+    "th_26_qr_runtime.js": {
+      "sha256": "cf6cbc82ff927e6cb65e807bbabdbe33b85cd66a9e9dac73346e643b527096ae",
+      "size": 30296,
+      "version": "1.0.0"
+    },
     "th_34_shortx_ui_lab.js": {
       "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
       "size": 29693,
@@ -184,14 +189,27 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "将 th_16_entry.js 升级到 1.0.21；关闭流程在清空逻辑状态前保存 WM 线程所属窗口引用，并使用 isAttachedToWindow/getWindowToken 确认真实 detach。",
-      "WM HandlerThread 不再仅依赖 removeView 请求后的队列顺序退出；全部受监控窗口真实 detach 后才调用 quitSafely，避免 mask 与 ballRoot 的 ViewRoot 销毁消息被提前截断。",
-      "4.2 秒未完成 detach 时只记录超时并保持 Looper 存活，15 秒硬超时仍不强制同步销毁或提前退出线程，避免重新引入 system_server/ColorOS Hook 调用栈风险。",
-      "保持普通 WindowManager.removeView、ToolApp Android main thread 归属、IME 避让/回退、mask generation/identity 和通道切换 fail-closed 逻辑不变。"
+      "拾字面板仅在持有有效框选截图时提供“解析二维码”入口；解析由用户显式触发，不侵入框选截图和 OCR 完成回调，也不自动复制、打开 URL 或执行 Intent。",
+      "新增基于 ZXing Core 3.5.4 的单文件 DEX/JAR 运行时；正式产物由 CI 重定位并 D8 编译，设备端按需下载到 shortx.getShortXDir()/lib，经过签名清单 SHA-256/size 校验并设为只读后再加载。",
+      "二维码解析使用独立线程、2MP 默认采样上限、2500ms 超时以及 generation/imageKey/token/doneToken 迟到结果保护；面板关闭、截图删除和新会话会取消旧任务。",
+      "解析结果保留在拾字截图区域内的独立结果卡，可手动复制、载入拾字或恢复原文；无二维码、图片失效、运行时不可用和超时均独立降级，不影响 ToolHub 其他功能。"
     ],
-    "date": "2026-08-10",
-    "title": "Beta：WM HandlerThread 仅在窗口真实分离后退出"
+    "date": "2026-08-19",
+    "title": "Beta：拾字截图支持 ZXing Core 二维码解析"
   },
-  "schema": 5,
-  "version": 20260809220348
+  "runtimeFiles": {
+    "toolhub-zxing-runtime": {
+      "kind": "dex-jar",
+      "minApi": 24,
+      "path": "runtime/toolhub-zxing-runtime-3.5.4-r1.jar",
+      "requiredBy": [
+        "th_26_qr_runtime.js"
+      ],
+      "sha256": "60ac595690390ecd5377b5759c9083676ec5b0c59da21cd79ca817a1e64278c6",
+      "size": 272993,
+      "version": "3.5.4-r1"
+    }
+  },
+  "schema": 6,
+  "version": 20260819155603
 }

@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "id": "20260819-beta-pickword-zxing-core",
+  "type": "feature",
+  "title": "Beta：拾字截图支持 ZXing Core 二维码解析",
+  "details": [
+    "拾字面板仅在持有有效框选截图时提供“解析二维码”入口；解析由用户显式触发，不侵入框选截图和 OCR 完成回调，也不自动复制、打开 URL 或执行 Intent。",
+    "新增基于 ZXing Core 3.5.4 的单文件 DEX/JAR 运行时；正式产物由 CI 重定位并 D8 编译，设备端按需下载到 shortx.getShortXDir()/lib，经过签名清单 SHA-256/size 校验并设为只读后再加载。",
+    "二维码解析使用独立线程、2MP 默认采样上限、2500ms 超时以及 generation/imageKey/token/doneToken 迟到结果保护；面板关闭、截图删除和新会话会取消旧任务。",
+    "解析结果保留在拾字截图区域内的独立结果卡，可手动复制、载入拾字或恢复原文；无二维码、图片失效、运行时不可用和超时均独立降级，不影响 ToolHub 其他功能。"
+  ],
+  "manifestVersion": 20260819155603,
+  "date": "2026-08-19",
+  "modules": [
+    {
+      "name": "th_26_qr_runtime.js",
+      "from": "",
+      "to": "1.0.0",
+      "change": "added"
+    }
+  ],
+  "entry": {
+    "changed": true,
+    "from": 20260810005000,
+    "to": 20260819231000
+  }
+}
