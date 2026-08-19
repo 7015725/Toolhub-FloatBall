@@ -59,7 +59,7 @@ for token in (
     "fileSha25626(tmp)",
     "tmp.setReadOnly()",
     "destFile.setReadOnly()",
-    "destFile.canWrite()",
+    "installed.file.canWrite()",
     "new dalvik.system.DexClassLoader",
     'QR_RUNTIME_CLASS26 = "toolhub.runtime.qr.ToolHubQrRuntime"',
 ):
