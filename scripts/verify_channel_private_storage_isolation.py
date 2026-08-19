@@ -21,7 +21,7 @@ def require(condition, message):
 require(THEME.splitlines()[0] == "// @version 1.0.12", "th_04_theme.js version must be 1.0.12")
 require(PANEL.splitlines()[0] == "// @version 1.0.16", "th_13_panel_ui.js version must be 1.0.16")
 require(PICKWORD.splitlines()[0] == "// @version 1.0.21", "th_20_pickword.js version must be 1.0.21")
-require(QR.splitlines()[0] == "// @version 1.0.1", "th_26_qr_runtime.js version must be 1.0.1")
+require(QR.splitlines()[0] in ("// @version 1.0.1", "// @version 1.0.2"), "th_26_qr_runtime.js version must be 1.0.1 or 1.0.2 during pre-sign generation")
 
 for name, source in (("theme", THEME), ("panel_ui", PANEL), ("pickword", PICKWORD)):
     require("shortx.getShortXDir" not in source, name + " must not bypass APP_ROOT_DIR")
@@ -64,6 +64,17 @@ for marker in (
     'new dalvik.system.DexClassLoader',
 ):
     require(marker in QR, "QR shared-lib safety marker missing: " + marker)
+
+if QR.splitlines()[0] == "// @version 1.0.2":
+    for marker in (
+        'installLock: new java.util.concurrent.locks.ReentrantLock()',
+        'function preflightRuntime26(appObj, reason)',
+        'preflightRuntime26(null, "module_startup_or_update")',
+        'downloaded: false',
+        'downloaded: true',
+    ):
+        require(marker in QR, "QR startup-preflight marker missing: " + marker)
+
 for forbidden in (
     'shortx.getShortXDir() + "/ToolHub',
     'shortx.getShortXDir() + "/ToolHub-Beta',
@@ -89,4 +100,4 @@ if errors:
         print("FAIL channel-private-storage:", item)
     raise SystemExit(1)
 
-print("OK channel-private-storage private=APP_ROOT_DIR shared_lib=th_26_only shortx_lib=canonical+signed stable_legacy_import=copy-only")
+print("OK channel-private-storage private=APP_ROOT_DIR shared_lib=th_26_only shortx_lib=canonical+signed preflight=guarded stable_legacy_import=copy-only")
