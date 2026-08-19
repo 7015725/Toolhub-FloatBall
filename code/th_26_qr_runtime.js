@@ -1,4 +1,4 @@
-// @version 1.0.0
+// @version 1.0.1
 // =======================【拾字截图二维码解析 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is downloaded on demand to shortx.getShortXDir()/lib.
 (function() {
@@ -460,11 +460,10 @@
   }
 
   function decorateThumbnail26(appObj, controller, opts, root) {
-    if (!root || root.__toolHubQrDecorated26 === true) return root;
+    if (!root || (controller && controller.__toolHubQrThumbnailDecorated26 === true)) return root;
     var session = opts && opts.session ? opts.session : null;
     var key = imageKey26(session);
     if (!key) return root;
-    root.__toolHubQrDecorated26 = true;
     var palette = colors26(appObj);
 
     var qrButton = textButton26(appObj, "解析二维码", palette.primary, function() {
@@ -599,6 +598,7 @@
 
     var cached = runtime26.cache[key];
     if (cached && cached.result) renderResult(cached.result, false);
+    if (controller) controller.__toolHubQrThumbnailDecorated26 = true;
     return root;
   }
 
@@ -609,7 +609,12 @@
     if (typeof originalCreate === "function") {
       controller.createThumbnailView = function() {
         var root = originalCreate.call(controller);
-        return decorateThumbnail26(appObj, controller, opts || {}, root);
+        try {
+          return decorateThumbnail26(appObj, controller, opts || {}, root);
+        } catch (eDecorate) {
+          log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate));
+          return root;
+        }
       };
     }
     var originalRelease = controller.release;
