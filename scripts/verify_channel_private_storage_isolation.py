@@ -21,8 +21,8 @@ def require(condition, message):
 require(THEME.splitlines()[0] == "// @version 1.0.12", "th_04_theme.js version must be 1.0.12")
 require(PANEL.splitlines()[0] == "// @version 1.0.16", "th_13_panel_ui.js version must be 1.0.16")
 require(PICKWORD.splitlines()[0] == "// @version 1.0.21", "th_20_pickword.js version must be 1.0.21")
-require(QR.splitlines()[0] in ("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4"),
-        "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3/1.0.4 during generation")
+require(QR.splitlines()[0] in ("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5"),
+        "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5 during generation")
 
 for name, source in (("theme", THEME), ("panel_ui", PANEL), ("pickword", PICKWORD)):
     require("shortx.getShortXDir" not in source, name + " must not bypass APP_ROOT_DIR")
@@ -53,7 +53,7 @@ require(legacy_block and ".delete()" not in legacy_block,
         "legacy font migration must not delete old data")
 
 qr_version = QR.splitlines()[0] if QR.splitlines() else ""
-if qr_version in ("// @version 1.0.3", "// @version 1.0.4"):
+if qr_version in ("// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5"):
     for marker in (
         'typeof getToolHubRootDir !== "function"',
         'var root = new java.io.File(String(getToolHubRootDir() || "")).getCanonicalFile();',
@@ -76,7 +76,7 @@ if qr_version in ("// @version 1.0.3", "// @version 1.0.4"):
     ):
         require(forbidden not in QR, "QR channel-lib scope widened: " + forbidden)
 
-if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4"):
+if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5"):
     for marker in (
         'installLock: new java.util.concurrent.locks.ReentrantLock()',
         'function preflightRuntime26(appObj, reason)',
@@ -86,7 +86,7 @@ if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")
     ):
         require(marker in QR, "QR startup-preflight marker missing: " + marker)
 
-if qr_version == "// @version 1.0.4":
+if qr_version in ("// @version 1.0.4", "// @version 1.0.5"):
     for marker in (
         'function sanitizeError26(error)',
         'typeof writeLog === "function"',
@@ -94,7 +94,16 @@ if qr_version == "// @version 1.0.4":
     ):
         require(marker in QR, "QR runtime diagnostics marker missing: " + marker)
 
-# No feature module other than the base bootstrap may read the raw ShortX root.
+if qr_version == "// @version 1.0.5":
+    require("context.getCodeCacheDir()" not in QR, "QR runtime must not call app code cache from system_server")
+    for marker in (
+        'function getDexOptimizedDirectory26()',
+        'if (sdk >= 26) return null;',
+        'new java.io.File(lib, ".dexopt")',
+        'assertWritableDirPath(dexoptPath, "ToolHub QR dexopt")',
+    ):
+        require(marker in QR, "QR system_server DexClassLoader marker missing: " + marker)
+
 allowed_shortx_files = {"th_01_base.js"}
 for source_path in sorted(CODE.glob("*.js")):
     source = source_path.read_text(encoding="utf-8")
@@ -109,4 +118,4 @@ if errors:
         print("FAIL channel-private-storage:", item)
     raise SystemExit(1)
 
-print("OK channel-private-storage private=APP_ROOT_DIR qr_lib=channel_root/lib preflight=guarded diagnostics=guarded stable_legacy_import=copy-only")
+print("OK channel-private-storage private=APP_ROOT_DIR qr_lib=channel_root/lib preflight=guarded diagnostics=guarded system_server_dexloader=guarded stable_legacy_import=copy-only")
