@@ -44,7 +44,7 @@
     "code/th_26_qr_runtime.js",
     "code/th_34_shortx_ui_lab.js"
   ],
-  "usageCount": 779,
+  "usageCount": 778,
   "entries": [
     {
       "key": "android|class|android.animation.Animator.AnimatorListener",
@@ -4393,7 +4393,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 513,
+          "line": 526,
           "form": "direct_static_call"
         }
       ],
@@ -4591,25 +4591,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 334,
-          "form": "instance_call"
-        }
-      ],
-      "occurrenceCount": 1
-    },
-    {
-      "key": "android|method|android.content.Context#getCodeCacheDir",
-      "source": "android",
-      "kind": "method",
-      "classOrObject": "android.content.Context",
-      "method": "getCodeCacheDir",
-      "files": [
-        "code/th_26_qr_runtime.js"
-      ],
-      "locations": [
-        {
-          "file": "code/th_26_qr_runtime.js",
-          "line": 328,
+          "line": 347,
           "form": "instance_call"
         }
       ],
@@ -13724,7 +13706,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 568,
+          "line": 581,
           "form": "instance_call"
         }
       ],
@@ -19255,7 +19237,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 669,
+          "line": 682,
           "form": "instance_call"
         }
       ],
@@ -19599,7 +19581,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 526,
+          "line": 539,
           "form": "instance_call"
         }
       ],
@@ -20278,17 +20260,17 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 592,
+          "line": 605,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 670,
+          "line": 683,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 673,
+          "line": 686,
           "form": "instance_call"
         }
       ],
@@ -21444,7 +21426,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 535,
+          "line": 548,
           "form": "direct_static_call"
         }
       ],
@@ -24118,12 +24100,12 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 569,
+          "line": 582,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 631,
+          "line": 644,
           "form": "instance_call"
         }
       ],
@@ -24405,7 +24387,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 72
+      "occurrenceCount": 71
     },
     {
       "key": "java|method|java.io.File#getCanonicalFile",
@@ -24503,7 +24485,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 33
+      "occurrenceCount": 35
     },
     {
       "key": "java|method|java.io.File#getName",
@@ -24702,9 +24684,14 @@
           "file": "code/th_26_qr_runtime.js",
           "line": 133,
           "form": "instance_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 333,
+          "form": "instance_call"
         }
       ],
-      "occurrenceCount": 8
+      "occurrenceCount": 9
     },
     {
       "key": "java|method|java.io.File#isFile",
@@ -27263,7 +27250,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 506,
+          "line": 519,
           "form": "instance_call"
         }
       ],
@@ -28876,5 +28863,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:b21684e970404697f5b61d9cf43bfc7f4d3f675bf8ada9b97a19a09381cc6d5d"
+  "usageDigest": "sha256:7b28db80b9450d1aee7fa386cc61bbe4b3931164f0917aacf3a6f0c5099eb4da"
 }

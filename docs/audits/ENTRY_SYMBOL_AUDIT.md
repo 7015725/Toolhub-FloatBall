@@ -61,7 +61,7 @@
 |`disconnectQuietly`|197|3|入口内使用|2|2|0|0|0|
 |`syncFileOutput`|201|7|入口内使用|3|3|0|0|0|
 |`canWriteDirPath`|211|8|入口内使用|1|1|0|0|0|
-|`assertWritableDirPath`|220|23|跨模块引用|2|2|1|2|0|
+|`assertWritableDirPath`|220|23|跨模块引用|2|2|2|4|0|
 |`getToolHubRootDir`|244|18|跨模块引用|6|6|6|10|0|
 |`getLogPath`|268|1|入口内使用|1|1|0|0|0|
 |`getCodeDirPath`|269|1|入口内使用|8|8|0|0|0|
