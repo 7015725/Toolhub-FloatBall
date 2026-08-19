@@ -1,0 +1,33 @@
+name: qr-diagnostic
+
+on:
+  pull_request:
+    branches: [beta]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply QR generated wiring
+        run: python3 scripts/apply_pickword_qr_integration.py
+
+      - name: ES5 scan
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: JavaScript syntax
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: QR boundary contract
+        run: python3 scripts/verify_pickword_qr.py
