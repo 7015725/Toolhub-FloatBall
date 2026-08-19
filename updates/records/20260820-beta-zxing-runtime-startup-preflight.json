@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "20260820-beta-zxing-runtime-startup-preflight",
+  "type": "optimize",
+  "title": "Beta：ZXing 运行时改为启动/更新预检",
+  "details": [
+    "ToolHub Beta 加载二维码模块时在独立线程检查 shortx.getShortXDir()/lib 中的 ZXing DEX/JAR，不阻塞 ToolHub 主界面启动。",
+    "本地运行时同时满足签名清单 size、SHA-256 与只读要求时直接跳过下载；文件缺失或校验失败时自动重新下载、校验并只读安装。",
+    "二维码按钮继续由用户显式触发解析，但不再承担首次下载；预检失败只记录二维码运行时状态，不影响框选截图、OCR、拾字和 ToolHub 其他功能。"
+  ],
+  "manifestVersion": 20260819172904,
+  "date": "2026-08-20",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
+}

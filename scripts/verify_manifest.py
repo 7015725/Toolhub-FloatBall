@@ -140,14 +140,26 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     if not path.exists():
         fail("Beta QR module missing")
     text = path.read_text(encoding="utf-8")
-    if not text.startswith("// @version 1.0.1\n"):
-        fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1")
+    version = text.splitlines()[0] if text.splitlines() else ""
+    if version not in ("// @version 1.0.1", "// @version 1.0.2"):
+        fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1 or 1.0.2")
     if "root.__toolHubQrDecorated26" in text:
         fail("QR module must not attach dynamic state to Android thumbnail View")
     if 'log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate))' not in text:
         fail("QR thumbnail decorator must fail open to the original screenshot View")
     if "controller.__toolHubQrThumbnailDecorated26 = true" not in text:
         fail("QR thumbnail decoration marker must live on the JS controller")
+    if version == "// @version 1.0.2":
+        for marker in (
+            "installLock: new java.util.concurrent.locks.ReentrantLock()",
+            "function preflightRuntime26(appObj, reason)",
+            'preflightRuntime26(null, "module_startup_or_update")',
+            "return { file: dest, meta: meta, downloaded: false }",
+            "return { file: downloadRuntime26(meta, dest), meta: meta, downloaded: true }",
+            '"runtime preflight " + (installed.downloaded === true ? "downloaded" : "skip_existing")',
+        ):
+            if marker not in text:
+                fail("Beta QR startup preflight marker missing: " + marker)
 
 
 def main():

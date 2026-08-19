@@ -363,6 +363,7 @@
         "java|class|java.io.FileInputStream",
         "java|class|java.lang.Thread",
         "java|class|java.net.URL",
+        "java|class|java.util.concurrent.locks.ReentrantLock",
         "java|method|java.io#FileInputStream",
         "java|method|java.io.File#canWrite",
         "java|method|java.io.File#getCanonicalPath",
@@ -391,6 +392,7 @@
         "java|method|java.net.URL#setReadTimeout",
         "java|method|java.net.URL#setRequestProperty",
         "java|method|java.net.URL#setUseCaches",
+        "java|method|java.util.concurrent.locks#ReentrantLock",
         "shortx|method|shortx#getShortXDir"
       ],
       "source": "android/java/shortx",

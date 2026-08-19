@@ -1,6 +1,6 @@
-// @version 1.0.1
+// @version 1.0.2
 // =======================【拾字截图二维码解析 / ZXing Core】=======================
-// Beta only. ZXing DEX/JAR is downloaded on demand to shortx.getShortXDir()/lib.
+// Beta only. ZXing DEX/JAR is preflighted asynchronously on module startup/update under shortx.getShortXDir()/lib.
 (function() {
   var QR_ASSET_ID26 = "toolhub-zxing-runtime";
   var QR_RUNTIME_CLASS26 = "toolhub.runtime.qr.ToolHubQrRuntime";
@@ -15,7 +15,14 @@
     loading: false,
     error: "",
     cache: {},
-    installGeneration: 0
+    installGeneration: 0,
+    installLock: new java.util.concurrent.locks.ReentrantLock(),
+    preflightThread: null,
+    preflightStatus: "idle",
+    preflightError: "",
+    preflightReason: "",
+    preflightCheckedAt: 0,
+    preflightDownloaded: false
   };
 
   function now26() { return Number(java.lang.System.currentTimeMillis()); }
@@ -225,12 +232,56 @@
   }
 
   function ensureRuntimeFile26() {
-    var meta = runtimeMeta26();
-    var lib = getLibDir26();
-    var dest = new java.io.File(lib, meta.fileName).getCanonicalFile();
-    if (String(dest.getCanonicalPath()).indexOf(String(lib.getCanonicalPath()) + java.io.File.separator) !== 0) throw new Error("二维码运行时目标路径越界");
-    if (validRuntimeFile26(dest, meta)) return { file: dest, meta: meta };
-    return { file: downloadRuntime26(meta, dest), meta: meta };
+    runtime26.installLock.lock();
+    try {
+      var meta = runtimeMeta26();
+      var lib = getLibDir26();
+      var dest = new java.io.File(lib, meta.fileName).getCanonicalFile();
+      if (String(dest.getCanonicalPath()).indexOf(String(lib.getCanonicalPath()) + java.io.File.separator) !== 0) throw new Error("二维码运行时目标路径越界");
+      if (validRuntimeFile26(dest, meta)) return { file: dest, meta: meta, downloaded: false };
+      return { file: downloadRuntime26(meta, dest), meta: meta, downloaded: true };
+    } finally {
+      runtime26.installLock.unlock();
+    }
+  }
+
+  function preflightRuntime26(appObj, reason) {
+    var why = String(reason || "startup");
+    try {
+      if (runtime26.preflightThread && runtime26.preflightThread.isAlive()) {
+        log26(appObj, "d", "runtime preflight skip reason=busy requested=" + why);
+        return true;
+      }
+    } catch (eBusy) {}
+    runtime26.preflightStatus = "checking";
+    runtime26.preflightError = "";
+    runtime26.preflightReason = why;
+    runtime26.preflightDownloaded = false;
+    var worker = new java.lang.Thread(new java.lang.Runnable({ run: function() {
+      try {
+        var installed = ensureRuntimeFile26();
+        runtime26.preflightStatus = "ready";
+        runtime26.preflightError = "";
+        runtime26.preflightCheckedAt = now26();
+        runtime26.preflightDownloaded = installed.downloaded === true;
+        log26(appObj, "i",
+          "runtime preflight " + (installed.downloaded === true ? "downloaded" : "skip_existing") +
+          " reason=" + why +
+          " version=" + String(installed.meta.version || "") +
+          " path=" + String(installed.file.getAbsolutePath()));
+      } catch (ePreflight) {
+        runtime26.preflightStatus = "failed";
+        runtime26.preflightError = String(ePreflight);
+        runtime26.preflightCheckedAt = now26();
+        runtime26.preflightDownloaded = false;
+        log26(appObj, "w", "runtime preflight failed reason=" + why + " error=" + String(ePreflight));
+      } finally {
+        runtime26.preflightThread = null;
+      }
+    }}), "ToolHub-ZXing-Preflight");
+    runtime26.preflightThread = worker;
+    worker.start();
+    return true;
   }
 
   function findMethod26(clazz, name, parameterCount) {
@@ -673,17 +724,26 @@
           return originalDispose.call(this, reason);
         };
       }
+      proto.ensurePickwordQrRuntimeReady = function(reason) {
+        return preflightRuntime26(this, String(reason || "manual"));
+      };
       proto.getPickwordQrRuntimeStatus = function() {
         return {
           loaded: !!runtime26.clazz,
           version: String(runtime26.version || ""),
           error: String(runtime26.error || ""),
-          libDir: String(getLibDir26().getAbsolutePath())
+          libDir: String(getLibDir26().getAbsolutePath()),
+          preflightStatus: String(runtime26.preflightStatus || "idle"),
+          preflightError: String(runtime26.preflightError || ""),
+          preflightReason: String(runtime26.preflightReason || ""),
+          preflightCheckedAt: Number(runtime26.preflightCheckedAt || 0),
+          preflightDownloaded: runtime26.preflightDownloaded === true
         };
       };
       proto.__toolHubQrRuntimeInstalled26 = true;
       runtime26.installGeneration++;
       log26(null, "i", "installed generation=" + String(runtime26.installGeneration));
+      preflightRuntime26(null, "module_startup_or_update");
       return true;
     } catch (eInstall) {
       log26(null, "e", "install failed=" + String(eInstall));
