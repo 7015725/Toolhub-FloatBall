@@ -133,6 +133,21 @@ def verify_runtime_files(manifest, py_runtime_files, py_modules):
                 fail("runtime bridge contract missing: " + runtime_id)
 
 
+def verify_beta_qr_thumbnail_fail_open(channel):
+    if channel != "beta":
+        return
+    path = CODE_DIR / "th_26_qr_runtime.js"
+    if not path.exists():
+        fail("Beta QR module missing")
+    text = path.read_text(encoding="utf-8")
+    if "root.__toolHubQrDecorated26" in text:
+        fail("QR module must not attach dynamic state to Android thumbnail View")
+    if 'log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate))' not in text:
+        fail("QR thumbnail decorator must fail open to the original screenshot View")
+    if "controller.__toolHubQrThumbnailDecorated26 = true" not in text:
+        fail("QR thumbnail decoration marker must live on the JS controller")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--allow-pending", action="store_true")
@@ -170,6 +185,7 @@ def main():
             fail("size mismatch: " + name)
 
     verify_runtime_files(manifest, parse_python_runtime_files(), py_modules)
+    verify_beta_qr_thumbnail_fail_open(channel)
 
     entry_hash = sha256_file(ENTRY)
     entry_version, entry_source = parse_entry_version()
@@ -235,10 +251,11 @@ def main():
             [sys.executable, "-W", "error::SyntaxWarning", "-m", "py_compile"] + py_files, cwd=str(ROOT)
         )
     print(
-        "OK manifest_version=%s channel=%s branch=%s files=%s runtime=%s history=%s entry_version=%s"
+        "OK manifest_version=%s channel=%s branch=%s files=%s runtime=%s history=%s entry_version=%s qr_thumbnail_fail_open=%s"
         % (
             manifest.get("version"), channel, branch, len(py_modules),
             len(manifest.get("runtimeFiles") or {}), len(records), entry_version,
+            1 if channel == "beta" else 0,
         )
     )
 
