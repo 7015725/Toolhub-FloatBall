@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class ToolHubQrRuntime {
-    private static final String VERSION = "3.5.4-r1";
+    private static final String VERSION = "3.5.4-r2";
     private static final int DEFAULT_MAX_PIXELS = 2_000_000;
     private static final int MIN_MAX_PIXELS = 300_000;
     private static final int MAX_MAX_PIXELS = 4_000_000;
