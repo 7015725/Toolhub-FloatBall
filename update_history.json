@@ -1,8 +1,27 @@
 {
   "schema": 1,
-  "historyVersion": 20260819230134,
-  "generatedAt": "2026-08-20T07:01:34+08:00",
+  "historyVersion": 20260819235430,
+  "generatedAt": "2026-08-20T07:54:30+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260820-beta-qr-rhino-dexclassloader",
+      "type": "fix",
+      "title": "Beta：修复 Rhino 下二维码 DexClassLoader 类解析",
+      "details": [
+        "修复 ShortX Rhino 中直接使用 dalvik.system.DexClassLoader 触发 ReferenceError: dalvik is not defined，导致 ZXing JAR 已预检就绪但仍无法进入运行时加载的问题。",
+        "DexClassLoader 改为通过 Rhino 已支持的 Packages.dalvik.system.DexClassLoader 解析；保留 Android 26+ optimizedDirectory=null 与 Android 24-25 通道私有 lib/.dexopt 兼容策略。",
+        "新增发布门禁禁止裸 dalvik.system.DexClassLoader，并要求 1.0.6 使用 Packages 根；ZXing 3.5.4-r2、通道私有 lib、SHA-256/size/只读校验、启动预检和二维码显式触发边界保持不变。"
+      ],
+      "manifestVersion": 20260819235430,
+      "date": "2026-08-20",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260820-beta-qr-system-server-dexloader",
