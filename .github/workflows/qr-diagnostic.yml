@@ -21,7 +21,14 @@ jobs:
           python-version: '3.x'
 
       - name: Apply QR generated wiring
-        run: python3 scripts/apply_pickword_qr_integration.py
+        run: |
+          python3 scripts/apply_pickword_qr_integration.py
+          python3 scripts/apply_shortx_ui_qr_compat.py
+
+      - name: ShortXUI finalizer compatibility
+        run: |
+          python3 scripts/verify_shortx_ui_windowhost.py
+          python3 scripts/finalize_shortx_ui_runtime.py --check
 
       - name: ES5 scan
         run: python3 .github/scripts/es5_scan.py
