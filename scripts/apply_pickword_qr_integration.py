@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Idempotently validate/normalize the permanent Beta QR wiring before signing.
 
-The one-time QR migration has already landed on Beta. This script now keeps the
-current contract stable across signer-generated commits: v1.0.0/v1.0.1 may be
-advanced to v1.0.2, while an already generated v1.0.2 tree is a strict no-op.
+The one-time QR migration has already landed on Beta. This script keeps the
+current contract stable across signer-generated commits and advances the QR
+runtime to v1.0.3, where the signed ZXing DEX/JAR is stored under the active
+ToolHub channel root: ToolHub/lib for Stable and ToolHub-Beta/lib for Beta.
 """
 import json
 from pathlib import Path
@@ -43,15 +44,25 @@ def patch_entry():
 
 def patch_qr_module():
     text = QR_MODULE.read_text(encoding="utf-8")
-    if "// @version 1.0.2" not in text:
-        if "// @version 1.0.1" in text:
-            text = text.replace("// @version 1.0.1", "// @version 1.0.2", 1)
-        elif "// @version 1.0.0" in text:
-            text = text.replace("// @version 1.0.0", "// @version 1.0.2", 1)
+    if "// @version 1.0.3" not in text:
+        for old_version in ("// @version 1.0.2", "// @version 1.0.1", "// @version 1.0.0"):
+            if old_version in text:
+                text = text.replace(old_version, "// @version 1.0.3", 1)
+                break
         else:
             raise SystemExit("integration anchor missing: QR module version")
 
-    require(text.startswith("// @version 1.0.2\n"), "QR module version 1.0.2")
+    old_comment = "// Beta only. ZXing DEX/JAR is preflighted asynchronously on module startup/update under shortx.getShortXDir()/lib."
+    new_comment = "// Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib."
+    if old_comment in text:
+        text = text.replace(old_comment, new_comment, 1)
+
+    old_lib = '''  function getLibDir26() {\n    if (typeof shortx === "undefined" || !shortx || typeof shortx.getShortXDir !== "function") throw new Error("ShortX 根目录不可用");\n    var base = new java.io.File(String(shortx.getShortXDir() || "")).getCanonicalFile();\n    var lib = new java.io.File(base, "lib").getCanonicalFile();\n    var basePath = String(base.getCanonicalPath());\n    var libPath = String(lib.getCanonicalPath());\n    if (libPath.indexOf(basePath + java.io.File.separator) !== 0) throw new Error("ShortX lib 目录越界");\n    if (!lib.exists() && !lib.mkdirs() && !lib.exists()) throw new Error("无法创建 ShortX lib 目录");\n    if (!lib.isDirectory()) throw new Error("ShortX lib 路径不是目录");\n    return lib;\n  }'''
+    new_lib = '''  function getLibDir26() {\n    if (typeof getToolHubRootDir !== "function") throw new Error("ToolHub 通道根目录不可用");\n    var root = new java.io.File(String(getToolHubRootDir() || "")).getCanonicalFile();\n    var lib = new java.io.File(root, "lib").getCanonicalFile();\n    var rootPath = String(root.getCanonicalPath());\n    var libPath = String(lib.getCanonicalPath());\n    if (libPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("ToolHub lib 目录越界");\n    if (!lib.exists() && !lib.mkdirs() && !lib.exists()) throw new Error("无法创建 ToolHub lib 目录");\n    if (!lib.isDirectory()) throw new Error("ToolHub lib 路径不是目录");\n    if (typeof assertWritableDirPath === "function") assertWritableDirPath(libPath, "ToolHub QR lib");\n    return lib;\n  }'''
+    if old_lib in text:
+        text = text.replace(old_lib, new_lib, 1)
+
+    require(text.startswith("// @version 1.0.3\n"), "QR module version 1.0.3")
     require("root.__toolHubQrDecorated26" not in text, "must not attach JS state to Android thumbnail View")
     require("controller.__toolHubQrThumbnailDecorated26 = true" in text, "thumbnail decoration marker owner")
     require('log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate))' in text,
@@ -64,6 +75,10 @@ def patch_qr_module():
             "missing/invalid runtime download path")
     require('"runtime preflight " + (installed.downloaded === true ? "downloaded" : "skip_existing")' in text,
             "preflight result logging")
+    require('typeof getToolHubRootDir !== "function"' in text, "channel root helper guard")
+    require('new java.io.File(root, "lib")' in text, "channel-private lib path")
+    require('assertWritableDirPath(libPath, "ToolHub QR lib")' in text, "channel-private lib writable probe")
+    require("shortx.getShortXDir" not in text, "QR module must not bypass ToolHub channel root")
     QR_MODULE.write_text(text, encoding="utf-8")
 
 
@@ -85,7 +100,7 @@ def main():
     patch_entry()
     patch_qr_module()
     validate_boundaries()
-    print("OK Beta QR wiring idempotent version=1.0.2 startup_preflight=enabled stable_intrusion=0")
+    print("OK Beta QR wiring idempotent version=1.0.3 startup_preflight=enabled channel_lib=1 stable_intrusion=0")
 
 
 if __name__ == "__main__":

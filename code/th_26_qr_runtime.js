@@ -1,6 +1,6 @@
-// @version 1.0.2
+// @version 1.0.3
 // =======================【拾字截图二维码解析 / ZXing Core】=======================
-// Beta only. ZXing DEX/JAR is preflighted asynchronously on module startup/update under shortx.getShortXDir()/lib.
+// Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
   var QR_ASSET_ID26 = "toolhub-zxing-runtime";
   var QR_RUNTIME_CLASS26 = "toolhub.runtime.qr.ToolHubQrRuntime";
@@ -105,14 +105,15 @@
   }
 
   function getLibDir26() {
-    if (typeof shortx === "undefined" || !shortx || typeof shortx.getShortXDir !== "function") throw new Error("ShortX 根目录不可用");
-    var base = new java.io.File(String(shortx.getShortXDir() || "")).getCanonicalFile();
-    var lib = new java.io.File(base, "lib").getCanonicalFile();
-    var basePath = String(base.getCanonicalPath());
+    if (typeof getToolHubRootDir !== "function") throw new Error("ToolHub 通道根目录不可用");
+    var root = new java.io.File(String(getToolHubRootDir() || "")).getCanonicalFile();
+    var lib = new java.io.File(root, "lib").getCanonicalFile();
+    var rootPath = String(root.getCanonicalPath());
     var libPath = String(lib.getCanonicalPath());
-    if (libPath.indexOf(basePath + java.io.File.separator) !== 0) throw new Error("ShortX lib 目录越界");
-    if (!lib.exists() && !lib.mkdirs() && !lib.exists()) throw new Error("无法创建 ShortX lib 目录");
-    if (!lib.isDirectory()) throw new Error("ShortX lib 路径不是目录");
+    if (libPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("ToolHub lib 目录越界");
+    if (!lib.exists() && !lib.mkdirs() && !lib.exists()) throw new Error("无法创建 ToolHub lib 目录");
+    if (!lib.isDirectory()) throw new Error("ToolHub lib 路径不是目录");
+    if (typeof assertWritableDirPath === "function") assertWritableDirPath(libPath, "ToolHub QR lib");
     return lib;
   }
 

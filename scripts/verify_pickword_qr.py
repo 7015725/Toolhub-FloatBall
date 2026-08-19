@@ -25,10 +25,10 @@ def forbid(text, token, label):
 
 
 qr_version = QR.splitlines()[0] if QR.splitlines() else ""
-if qr_version not in ("// @version 1.0.1", "// @version 1.0.2"):
+if qr_version not in ("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3"):
     errors.append("unexpected QR module version: %s" % qr_version)
 
-# W8/W9: pointer and OCR remain QR-agnostic; decode is user-triggered in pickword image UI only.
+# Pointer and OCR remain QR-agnostic; decode is user-triggered in pickword image UI only.
 for token in ("ZXing", "zxing", "area_qr", "PICKWORD_QR_", "decodeFile("):
     forbid(POINTER, token, "pointer QR coupling")
     forbid(OCR, token, "OCR QR coupling")
@@ -36,7 +36,7 @@ require(QR, '"解析二维码"', "explicit QR button")
 require(QR, "decodeAsync26(appObj, session", "button decode dispatch")
 require(QR, "createThumbnailView = function", "thumbnail-only UI integration")
 
-# N12/N18: generation + image key + token + done-token stale-result protection and cancellation.
+# generation + image key + token + done-token stale-result protection and cancellation.
 for token in (
     "Number(ps.generation || 0) !== Number(generation)",
     "String(imageKey26(ps.meta)) !== String(key)",
@@ -48,17 +48,18 @@ for token in (
 ):
     require(QR, token, "stale-result/cancel guard")
 
-# N13/N21: clipboard and text replacement only exist behind explicit card buttons.
+# Clipboard and text replacement only exist behind explicit card buttons.
 require(QR, 'textButton26(appObj, "复制结果"', "manual copy action")
 require(QR, 'textButton26(appObj, "载入拾字"', "manual load action")
 require(QR, "setClipboard26(text)", "manual clipboard implementation")
 for token in ("startActivity(", "ACTION_VIEW", "Intent.parseUri", "WifiNetworkSuggestion"):
     forbid(QR, token, "automatic external execution")
 
-# Shared ShortX lib contract, manifest trust, read-only DCL and no eval of the runtime JAR.
+# Active ToolHub channel root contract, manifest trust, read-only DCL and no eval of runtime JAR.
 for token in (
-    'new java.io.File(base, "lib")',
-    "shortx.getShortXDir",
+    'typeof getToolHubRootDir !== "function"',
+    'new java.io.File(root, "lib")',
+    'assertWritableDirPath(libPath, "ToolHub QR lib")',
     "manifest.runtimeFiles",
     "fileSha25626(tmp)",
     "tmp.setReadOnly()",
@@ -68,12 +69,12 @@ for token in (
     'QR_RUNTIME_CLASS26 = "toolhub.runtime.qr.ToolHubQrRuntime"',
 ):
     require(QR, token, "runtime trust/loading contract")
-for token in ("eval(", "geval("):
-    forbid(QR, token, "runtime eval")
+for token in ("shortx.getShortXDir", "eval(", "geval("):
+    forbid(QR, token, "runtime storage/eval bypass")
 
 # v1.0.2+: runtime is prepared asynchronously at Beta module startup/update.
-# A valid signed local JAR is reused; only missing/invalid files are downloaded.
-if qr_version == "// @version 1.0.2":
+# v1.0.3 additionally requires channel-private ToolHub root storage.
+if qr_version in ("// @version 1.0.2", "// @version 1.0.3"):
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
         "function preflightRuntime26(appObj, reason)",
@@ -92,7 +93,7 @@ require(GEN, '"toolhub-zxing-runtime"', "signed runtime asset")
 require(GEN, '"schema": 6', "manifest schema 6")
 require(BUILD, 'FINAL="$OUT_DIR/toolhub-zxing-runtime-${VERSION}.jar"', "runtime artifact")
 require(BUILD, '"$D8" --min-api 24', "D8 compilation")
-require(BUILD, 'local.install.dir=shortx.getShortXDir()/lib', "runtime metadata lib path")
+require(BUILD, 'local.install.dir=getToolHubRootDir()/lib', "runtime metadata channel lib path")
 require(JAVA, "POSSIBLE_FORMATS", "QR-only decode hint")
 require(JAVA, "BarcodeFormat.QR_CODE", "QR-only format")
 require(JAVA, "DecodeHintType.TRY_HARDER", "try-harder fallback")
@@ -118,4 +119,4 @@ if errors:
         print("FAIL", item)
     raise SystemExit(1)
 
-print("OK pickword_qr beta_only=1 pointer_intrusion=0 ocr_intrusion=0 shared_lib=1 signed_runtime=1 stale_guard=1 startup_preflight=%d" % (1 if qr_version == "// @version 1.0.2" else 0))
+print("OK pickword_qr beta_only=1 pointer_intrusion=0 ocr_intrusion=0 channel_private_lib=1 signed_runtime=1 stale_guard=1 startup_preflight=%d" % (1 if qr_version in ("// @version 1.0.2", "// @version 1.0.3") else 0))

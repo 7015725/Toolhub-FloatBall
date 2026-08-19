@@ -44,7 +44,7 @@
     "code/th_26_qr_runtime.js",
     "code/th_34_shortx_ui_lab.js"
   ],
-  "usageCount": 778,
+  "usageCount": 779,
   "entries": [
     {
       "key": "android|class|android.animation.Animator.AnimatorListener",
@@ -4393,7 +4393,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 488,
+          "line": 489,
           "form": "direct_static_call"
         }
       ],
@@ -4591,7 +4591,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 315,
+          "line": 316,
           "form": "instance_call"
         }
       ],
@@ -4609,7 +4609,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 309,
+          "line": 310,
           "form": "instance_call"
         }
       ],
@@ -13724,7 +13724,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 543,
+          "line": 544,
           "form": "instance_call"
         }
       ],
@@ -19255,7 +19255,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 640,
+          "line": 641,
           "form": "instance_call"
         }
       ],
@@ -19599,7 +19599,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 501,
+          "line": 502,
           "form": "instance_call"
         }
       ],
@@ -20278,17 +20278,17 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 567,
+          "line": 568,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 641,
+          "line": 642,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 644,
+          "line": 645,
           "form": "instance_call"
         }
       ],
@@ -21444,7 +21444,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 510,
+          "line": 511,
           "form": "direct_static_call"
         }
       ],
@@ -22867,12 +22867,12 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 180,
+          "line": 181,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 180,
+          "line": 181,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -24107,6 +24107,29 @@
       "occurrenceCount": 3
     },
     {
+      "key": "java|method|java.io.File#addView",
+      "source": "java",
+      "kind": "method",
+      "classOrObject": "java.io.File",
+      "method": "addView",
+      "files": [
+        "code/th_26_qr_runtime.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 545,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 607,
+          "form": "instance_call"
+        }
+      ],
+      "occurrenceCount": 2
+    },
+    {
       "key": "java|method|java.io.File#canWrite",
       "source": "java",
       "kind": "method",
@@ -24124,17 +24147,17 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 150,
+          "line": 151,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 154,
+          "line": 155,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 206,
+          "line": 207,
           "form": "instance_call"
         }
       ],
@@ -25142,12 +25165,12 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 152,
+          "line": 153,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 177,
+          "line": 178,
           "form": "instance_call"
         }
       ],
@@ -25165,12 +25188,12 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 151,
+          "line": 152,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 176,
+          "line": 177,
           "form": "instance_call"
         }
       ],
@@ -25210,12 +25233,12 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 202,
+          "line": 203,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 227,
+          "line": 228,
           "form": "instance_call"
         }
       ],
@@ -25267,7 +25290,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 194,
+          "line": 195,
           "form": "instance_call"
         }
       ],
@@ -25334,12 +25357,12 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 200,
+          "line": 201,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 226,
+          "line": 227,
           "form": "instance_call"
         }
       ],
@@ -25396,7 +25419,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 160,
+          "line": 161,
           "form": "instance_call"
         }
       ],
@@ -25432,7 +25455,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 161,
+          "line": 162,
           "form": "instance_call"
         }
       ],
@@ -25517,7 +25540,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 197,
+          "line": 198,
           "form": "instance_call"
         }
       ],
@@ -26969,7 +26992,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 166,
+          "line": 167,
           "form": "direct_static_call"
         }
       ],
@@ -27235,12 +27258,12 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 283,
+          "line": 284,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 481,
+          "line": 482,
           "form": "instance_call"
         }
       ],
@@ -27414,7 +27437,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 180,
+          "line": 181,
           "form": "direct_static_call"
         }
       ],
@@ -27432,7 +27455,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 228,
+          "line": 229,
           "form": "instance_call"
         }
       ],
@@ -27450,7 +27473,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 188,
+          "line": 189,
           "form": "instance_call"
         }
       ],
@@ -27468,7 +27491,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 190,
+          "line": 191,
           "form": "instance_call"
         }
       ],
@@ -27486,7 +27509,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 186,
+          "line": 187,
           "form": "instance_call"
         }
       ],
@@ -27533,7 +27556,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 182,
+          "line": 183,
           "form": "instance_call"
         }
       ],
@@ -27551,7 +27574,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 183,
+          "line": 184,
           "form": "instance_call"
         }
       ],
@@ -27569,12 +27592,12 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 184,
+          "line": 185,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 185,
+          "line": 186,
           "form": "instance_call"
         }
       ],
@@ -27592,7 +27615,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 181,
+          "line": 182,
           "form": "instance_call"
         }
       ],
@@ -28813,8 +28836,7 @@
       "method": "getShortXDir",
       "files": [
         "ToolHub.js",
-        "code/th_01_base.js",
-        "code/th_26_qr_runtime.js"
+        "code/th_01_base.js"
       ],
       "locations": [
         {
@@ -28831,14 +28853,9 @@
           "file": "code/th_01_base.js",
           "line": 457,
           "form": "shortx_call"
-        },
-        {
-          "file": "code/th_26_qr_runtime.js",
-          "line": 109,
-          "form": "shortx_call"
         }
       ],
-      "occurrenceCount": 4
+      "occurrenceCount": 3
     },
     {
       "key": "shortx|method|shortx#getUiAutomation",
@@ -28859,5 +28876,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:a510d66e0264b923042c7358ca7c6022ae120b1c6ef02995363b0862b225e1fa"
+  "usageDigest": "sha256:8ce05edafbfe2868bed9ef26dfca3617a05a5e086c6d96c0cc34205d6ee0a804"
 }
