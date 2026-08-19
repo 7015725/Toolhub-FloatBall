@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "03a1065d0956a794fce5694759cc10d0535b1cc465744d7e7cc2f489c614a665",
-      "size": 82558,
-      "version": 20260819172904
+      "sha256": "b16923da1fba289f95a882bb2566a779bb4532ce3e080387612922ff3f42597a",
+      "size": 83568,
+      "version": 20260819180213
     }
   },
   "branch": "beta",
@@ -176,9 +176,9 @@
       "version": "0.9.2"
     },
     "th_26_qr_runtime.js": {
-      "sha256": "25390c4b2c6d3db6b3550016429ed7e74cbde95ebbf362545cddb42c7872c2b4",
-      "size": 33099,
-      "version": "1.0.2"
+      "sha256": "d473d39487d229ec323cbe351188e06d263c34928a7245e4b7e110d927f540f1",
+      "size": 33170,
+      "version": "1.0.3"
     },
     "th_34_shortx_ui_lab.js": {
       "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
@@ -189,26 +189,26 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "ToolHub Beta 加载二维码模块时在独立线程检查 shortx.getShortXDir()/lib 中的 ZXing DEX/JAR，不阻塞 ToolHub 主界面启动。",
-      "本地运行时同时满足签名清单 size、SHA-256 与只读要求时直接跳过下载；文件缺失或校验失败时自动重新下载、校验并只读安装。",
-      "二维码按钮继续由用户显式触发解析，但不再承担首次下载；预检失败只记录二维码运行时状态，不影响框选截图、OCR、拾字和 ToolHub 其他功能。"
+      "ZXing DEX/JAR 不再写入 shortx.getShortXDir()/lib，统一改为 getToolHubRootDir()/lib；Beta 实际落到 shortx.getShortXDir()/ToolHub-Beta/lib，正式通道对应 shortx.getShortXDir()/ToolHub/lib。",
+      "运行时目录复用 ToolHub 入口现有通道根目录与可写探测，不再绕过 ToolHub 私有存储边界，避免 ShortX 根目录 lib 对 uid=1000 不可写导致 EACCES。",
+      "ZXing runtime 升级为 3.5.4-r2；启动/更新预检、SHA-256/size 校验、只读安装、缺失或损坏自动重下以及二维码显式解析交互保持不变。"
     ],
     "date": "2026-08-20",
-    "title": "Beta：ZXing 运行时改为启动/更新预检"
+    "title": "Beta：ZXing 运行时迁移到 ToolHub 通道私有目录"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
       "kind": "dex-jar",
       "minApi": 24,
-      "path": "runtime/toolhub-zxing-runtime-3.5.4-r1.jar",
+      "path": "runtime/toolhub-zxing-runtime-3.5.4-r2.jar",
       "requiredBy": [
         "th_26_qr_runtime.js"
       ],
-      "sha256": "60ac595690390ecd5377b5759c9083676ec5b0c59da21cd79ca817a1e64278c6",
-      "size": 272993,
-      "version": "3.5.4-r1"
+      "sha256": "a198634e3afb69002ea1e1c709b45a218beb6b9f3673cb67694b886f5883a367",
+      "size": 272988,
+      "version": "3.5.4-r2"
     }
   },
   "schema": 6,
-  "version": 20260819172904
+  "version": 20260819180213
 }
