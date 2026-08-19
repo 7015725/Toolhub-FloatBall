@@ -127,8 +127,8 @@ def verify_runtime_files(manifest, py_runtime_files, py_modules):
                 if required not in names:
                     fail("runtime jar missing %s: %s" % (required, runtime_id))
             props = archive.read("META-INF/toolhub-runtime.properties").decode("utf-8", "replace")
-            if "local.install.dir=shortx.getShortXDir()/lib" not in props:
-                fail("runtime lib install contract missing: " + runtime_id)
+            if "local.install.dir=getToolHubRootDir()/lib" not in props:
+                fail("runtime channel lib install contract missing: " + runtime_id)
             if "bridge.class=toolhub.runtime.qr.ToolHubQrRuntime" not in props:
                 fail("runtime bridge contract missing: " + runtime_id)
 
@@ -141,15 +141,15 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         fail("Beta QR module missing")
     text = path.read_text(encoding="utf-8")
     version = text.splitlines()[0] if text.splitlines() else ""
-    if version not in ("// @version 1.0.1", "// @version 1.0.2"):
-        fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1 or 1.0.2")
+    if version not in ("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3"):
+        fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1/1.0.2/1.0.3")
     if "root.__toolHubQrDecorated26" in text:
         fail("QR module must not attach dynamic state to Android thumbnail View")
     if 'log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate))' not in text:
         fail("QR thumbnail decorator must fail open to the original screenshot View")
     if "controller.__toolHubQrThumbnailDecorated26 = true" not in text:
         fail("QR thumbnail decoration marker must live on the JS controller")
-    if version == "// @version 1.0.2":
+    if version in ("// @version 1.0.2", "// @version 1.0.3"):
         for marker in (
             "installLock: new java.util.concurrent.locks.ReentrantLock()",
             "function preflightRuntime26(appObj, reason)",
@@ -160,6 +160,16 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         ):
             if marker not in text:
                 fail("Beta QR startup preflight marker missing: " + marker)
+    if version == "// @version 1.0.3":
+        for marker in (
+            'typeof getToolHubRootDir !== "function"',
+            'new java.io.File(root, "lib")',
+            'assertWritableDirPath(libPath, "ToolHub QR lib")',
+        ):
+            if marker not in text:
+                fail("Beta QR channel-lib marker missing: " + marker)
+        if "shortx.getShortXDir" in text:
+            fail("Beta QR must not bypass ToolHub channel root")
 
 
 def main():
