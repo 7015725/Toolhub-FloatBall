@@ -69,14 +69,15 @@ def patch_qr_module():
 
 def patch_version_verifier(path):
     text = path.read_text(encoding="utf-8")
-    text = text.replace(
-        '"// @version 1.0.5",\n)',
-        '"// @version 1.0.5",\n    "// @version 1.0.6",\n)',
-    )
-    text = text.replace(
-        '"// @version 1.0.5")',
-        '"// @version 1.0.5", "// @version 1.0.6")',
-    )
+    if '"// @version 1.0.6"' not in text:
+        text = text.replace(
+            '"// @version 1.0.5",\n',
+            '"// @version 1.0.5",\n    "// @version 1.0.6",\n',
+        )
+        text = text.replace(
+            '"// @version 1.0.5")',
+            '"// @version 1.0.5", "// @version 1.0.6")',
+        )
     text = text.replace("1.0.1/1.0.2/1.0.3/1.0.4/1.0.5", "1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6")
     path.write_text(text, encoding="utf-8")
 
