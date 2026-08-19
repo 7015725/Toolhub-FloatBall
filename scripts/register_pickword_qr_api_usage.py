@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Register th_26 QR API usage without wildcard/global policy relaxation."""
+"""Register th_26 QR API usage without wildcard/global policy relaxation.
+
+This file is also a signed-input trigger so the Rhino DexClassLoader fix is
+materialized into a fresh Beta manifest/signature bundle.
+"""
 import json
 from pathlib import Path
 
