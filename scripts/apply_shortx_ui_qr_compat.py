@@ -3,8 +3,8 @@
 
 The ShortXUI finalizer predates th_26. It remains authoritative for the generated
 th_25 package, but must not roll back later QR-owned entry, manifest, API-policy,
-boundary, wrapper-report, documentation, startup-preflight, or channel-private
-runtime-directory state.
+boundary, wrapper-report, documentation, startup-preflight, channel-private
+runtime-directory, or runtime-diagnostics state.
 """
 from pathlib import Path
 
@@ -25,10 +25,12 @@ def replace_once(text, old, new, label):
 def validate_qr_integration_version_gate():
     text = QR_INTEGRATION.read_text(encoding="utf-8")
     for token in (
-        '"// @version 1.0.3"',
+        '"// @version 1.0.4"',
         'new java.io.File(root, "lib")',
         'assertWritableDirPath(libPath, "ToolHub QR lib")',
         'require("shortx.getShortXDir" not in text',
+        'function sanitizeError26(error)',
+        'runtime failure stage=',
     ):
         if token not in text:
             raise SystemExit("ShortXUI QR compat integration marker missing: " + token)
@@ -36,8 +38,8 @@ def validate_qr_integration_version_gate():
 
 def validate_qr_runtime():
     text = QR_MODULE.read_text(encoding="utf-8")
-    if not text.startswith("// @version 1.0.3"):
-        raise SystemExit("ShortXUI QR compat requires QR runtime version 1.0.3")
+    if not text.startswith("// @version 1.0.4"):
+        raise SystemExit("ShortXUI QR compat requires QR runtime version 1.0.4")
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
         "function preflightRuntime26(appObj, reason)",
@@ -47,6 +49,11 @@ def validate_qr_runtime():
         'typeof getToolHubRootDir !== "function"',
         'new java.io.File(root, "lib")',
         'assertWritableDirPath(libPath, "ToolHub QR lib")',
+        'function sanitizeError26(error)',
+        'var decodeStage = "load_runtime"',
+        'decodeStage = "invoke_decode"',
+        'runtime failure stage=',
+        'typeof writeLog === "function"',
     ):
         if token not in text:
             raise SystemExit("ShortXUI QR compat runtime marker missing: " + token)
@@ -109,7 +116,7 @@ def main():
     TARGET.write_text(text, encoding="utf-8")
     validate_qr_integration_version_gate()
     validate_qr_runtime()
-    print("OK ShortXUI finalizer preserves later Beta QR state; ZXing startup preflight=enabled channel_lib=1")
+    print("OK ShortXUI finalizer preserves later Beta QR state; ZXing startup preflight=enabled channel_lib=1 diagnostics=1")
 
 
 if __name__ == "__main__":

@@ -25,7 +25,13 @@ def forbid(text, token, label):
 
 
 qr_version = QR.splitlines()[0] if QR.splitlines() else ""
-if qr_version not in ("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3"):
+SUPPORTED_QR_VERSIONS = (
+    "// @version 1.0.1",
+    "// @version 1.0.2",
+    "// @version 1.0.3",
+    "// @version 1.0.4",
+)
+if qr_version not in SUPPORTED_QR_VERSIONS:
     errors.append("unexpected QR module version: %s" % qr_version)
 
 # Pointer and OCR remain QR-agnostic; decode is user-triggered in pickword image UI only.
@@ -73,8 +79,7 @@ for token in ("shortx.getShortXDir", "eval(", "geval("):
     forbid(QR, token, "runtime storage/eval bypass")
 
 # v1.0.2+: runtime is prepared asynchronously at Beta module startup/update.
-# v1.0.3 additionally requires channel-private ToolHub root storage.
-if qr_version in ("// @version 1.0.2", "// @version 1.0.3"):
+if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4"):
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
         "function preflightRuntime26(appObj, reason)",
@@ -87,6 +92,19 @@ if qr_version in ("// @version 1.0.2", "// @version 1.0.3"):
         "qr.thread",
     ):
         require(QR, token, "startup runtime preflight")
+
+# v1.0.4: runtime failure must be diagnosable from ToolHub logs/UI rather than collapsed silently.
+if qr_version == "// @version 1.0.4":
+    for token in (
+        "function sanitizeError26(error)",
+        'typeof writeLog === "function"',
+        'var decodeStage = "load_runtime"',
+        'decodeStage = "invoke_decode"',
+        'log26(appObj, "e", "runtime failure stage=" + decodeStage',
+        'preflight=" + String(runtime26.preflightStatus || "idle")',
+        'message += "\\n" + runtimeDetail.substring(0, 140)',
+    ):
+        require(QR, token, "runtime diagnostics")
 
 require(GEN, '"th_26_qr_runtime.js"', "signed QR module")
 require(GEN, '"toolhub-zxing-runtime"', "signed runtime asset")
@@ -119,4 +137,10 @@ if errors:
         print("FAIL", item)
     raise SystemExit(1)
 
-print("OK pickword_qr beta_only=1 pointer_intrusion=0 ocr_intrusion=0 channel_private_lib=1 signed_runtime=1 stale_guard=1 startup_preflight=%d" % (1 if qr_version in ("// @version 1.0.2", "// @version 1.0.3") else 0))
+print(
+    "OK pickword_qr beta_only=1 pointer_intrusion=0 ocr_intrusion=0 channel_private_lib=1 signed_runtime=1 stale_guard=1 startup_preflight=%d diagnostics=%d"
+    % (
+        1 if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4") else 0,
+        1 if qr_version == "// @version 1.0.4" else 0,
+    )
+)
