@@ -30,11 +30,11 @@ SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.2",
     "// @version 1.0.3",
     "// @version 1.0.4",
+    "// @version 1.0.5",
 )
 if qr_version not in SUPPORTED_QR_VERSIONS:
     errors.append("unexpected QR module version: %s" % qr_version)
 
-# Pointer and OCR remain QR-agnostic; decode is user-triggered in pickword image UI only.
 for token in ("ZXing", "zxing", "area_qr", "PICKWORD_QR_", "decodeFile("):
     forbid(POINTER, token, "pointer QR coupling")
     forbid(OCR, token, "OCR QR coupling")
@@ -42,7 +42,6 @@ require(QR, '"解析二维码"', "explicit QR button")
 require(QR, "decodeAsync26(appObj, session", "button decode dispatch")
 require(QR, "createThumbnailView = function", "thumbnail-only UI integration")
 
-# generation + image key + token + done-token stale-result protection and cancellation.
 for token in (
     "Number(ps.generation || 0) !== Number(generation)",
     "String(imageKey26(ps.meta)) !== String(key)",
@@ -54,14 +53,12 @@ for token in (
 ):
     require(QR, token, "stale-result/cancel guard")
 
-# Clipboard and text replacement only exist behind explicit card buttons.
 require(QR, 'textButton26(appObj, "复制结果"', "manual copy action")
 require(QR, 'textButton26(appObj, "载入拾字"', "manual load action")
 require(QR, "setClipboard26(text)", "manual clipboard implementation")
 for token in ("startActivity(", "ACTION_VIEW", "Intent.parseUri", "WifiNetworkSuggestion"):
     forbid(QR, token, "automatic external execution")
 
-# Active ToolHub channel root contract, manifest trust, read-only DCL and no eval of runtime JAR.
 for token in (
     'typeof getToolHubRootDir !== "function"',
     'new java.io.File(root, "lib")',
@@ -78,8 +75,7 @@ for token in (
 for token in ("shortx.getShortXDir", "eval(", "geval("):
     forbid(QR, token, "runtime storage/eval bypass")
 
-# v1.0.2+: runtime is prepared asynchronously at Beta module startup/update.
-if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4"):
+if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5"):
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
         "function preflightRuntime26(appObj, reason)",
@@ -93,8 +89,7 @@ if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")
     ):
         require(QR, token, "startup runtime preflight")
 
-# v1.0.4: runtime failure must be diagnosable from ToolHub logs/UI rather than collapsed silently.
-if qr_version == "// @version 1.0.4":
+if qr_version in ("// @version 1.0.4", "// @version 1.0.5"):
     for token in (
         "function sanitizeError26(error)",
         'typeof writeLog === "function"',
@@ -105,6 +100,18 @@ if qr_version == "// @version 1.0.4":
         'message += "\\n" + runtimeDetail.substring(0, 140)',
     ):
         require(QR, token, "runtime diagnostics")
+
+if qr_version == "// @version 1.0.5":
+    forbid(QR, "context.getCodeCacheDir()", "system_server has no app code-cache directory")
+    for token in (
+        "function getDexOptimizedDirectory26()",
+        "var sdk = Number(android.os.Build.VERSION.SDK_INT || 0)",
+        "if (sdk >= 26) return null;",
+        'new java.io.File(lib, ".dexopt")',
+        'assertWritableDirPath(dexoptPath, "ToolHub QR dexopt")',
+        "var optimizedDirectory = getDexOptimizedDirectory26();",
+    ):
+        require(QR, token, "system_server DexClassLoader compatibility")
 
 require(GEN, '"th_26_qr_runtime.js"', "signed QR module")
 require(GEN, '"toolhub-zxing-runtime"', "signed runtime asset")
@@ -118,7 +125,6 @@ require(JAVA, "DecodeHintType.TRY_HARDER", "try-harder fallback")
 require(JAVA, "DecodeHintType.ALSO_INVERTED", "inverted fallback")
 require(JAVA, "DEFAULT_MAX_PIXELS = 2_000_000", "2MP default cap")
 
-# Beta module set must load QR after the image viewer; stable list remains separate.
 beta_match = re.search(r"var\s+modules\s*=\s*\[(.*?)\]\s*;", ENTRY, re.S)
 if not beta_match:
     errors.append("Beta modules list missing")
@@ -137,10 +143,7 @@ if errors:
         print("FAIL", item)
     raise SystemExit(1)
 
-print(
-    "OK pickword_qr beta_only=1 pointer_intrusion=0 ocr_intrusion=0 channel_private_lib=1 signed_runtime=1 stale_guard=1 startup_preflight=%d diagnostics=%d"
-    % (
-        1 if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4") else 0,
-        1 if qr_version == "// @version 1.0.4" else 0,
-    )
-)
+print("OK pickword_qr beta_only=1 system_server_dexloader=%d diagnostics=%d" % (
+    1 if qr_version == "// @version 1.0.5" else 0,
+    1 if qr_version in ("// @version 1.0.4", "// @version 1.0.5") else 0,
+))
