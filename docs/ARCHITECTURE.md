@@ -1,8 +1,8 @@
 # ToolHub 技术架构
 
-更新时间：2026-07-28
+更新时间：2026-08-19
 
-本文基于当前 `beta` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **32 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载，拾字截图查看与生命周期由 `th_22_image_viewer.js` 承载，截图管理列表由 `th_23_screenshot_manager.js` 承载。
+本文基于当前 `beta` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **33 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载，拾字截图查看与生命周期由 `th_22_image_viewer.js` 承载，截图管理列表由 `th_23_screenshot_manager.js` 承载。
 - 主面板尺寸遵循“网格决定面板宽高”：`gridWidth = cols × cellOuterWidth`，`panelWidth = gridWidth + 2 × panelPadding`；完整网格高度、可视高度和页脚共同反推面板高度，WindowManager 使用相同的 `EXACTLY` 宽高。
 
 ---
@@ -25,7 +25,7 @@ ShortX JS 任务入口
 - `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
 - `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
 - `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
-- `code/th_*.js`：入口按顺序加载的子模块，当前为 31 个。
+- `code/th_*.js`：入口按顺序加载的子模块，当前为 33 个。
 
 ---
 
@@ -94,7 +94,7 @@ ballRoot / ballContent Touch
 
 ## 3. 模块分层
 
-当前实际加载 32 个子模块，入口 `modules[]` 顺序如下：
+当前实际加载 33 个子模块，入口 `modules[]` 顺序如下：
 
 ```text
 基础能力层
@@ -140,6 +140,7 @@ UI 基础与页面层
 
 拾字截图与管理层
   th_22_image_viewer.js
+  th_26_qr_runtime.js
   th_23_screenshot_manager.js
 
 最终封装层
@@ -245,6 +246,9 @@ th_21_result_preview.js
 
 th_22_image_viewer.js
   拾字截图缩略图、同窗原图查看、缩放平移、大图区域解码、保存、分享、删除和自动清理。
+
+th_26_qr_runtime.js
+  Beta 拾字截图二维码解析适配层；只在用户点击“解析二维码”后启动后台解码，按签名清单从 GitHub 下载 D8 运行时到 shortx.getShortXDir()/lib，校验 size/SHA-256、只读属性并通过 DexClassLoader 调用 ZXing Core。
 
 th_23_screenshot_manager.js
   截图管理器列表、内部与已保存分类、缩略图缓存、外部打开和删除入口。

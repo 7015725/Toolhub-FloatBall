@@ -2,10 +2,10 @@
 
 ## 结论
 
-- 已登记受保护覆盖/包装链：`15`。
+- 已登记受保护覆盖/包装链：`18`。
 - 定义链、有效所有者、旧方法捕获变量和调用关系均与 `MODULE_BOUNDARIES.json` 一致。
 - 下一轮专项审查：无。
-- 继续保留：`15` 条；这些链承担指针/OCR、生命周期或页面状态职责。
+- 继续保留：`18` 条；这些链承担指针/OCR、生命周期或页面状态职责。
 - 本报告不自动修改运行时代码；剩余包装均承担明确功能或生命周期职责。
 
 ## 分类摘要
@@ -16,6 +16,7 @@
 |指针布局与生命周期|3|继续保留，属于资源和竞态保护|
 |ToolApp 状态保持|1|继续保留，属于页面状态契约|
 |Beta 实验扩展|4|继续保留，仅在 Beta 实验室路由生效|
+|拾字二维码扩展|3|继续保留，仅扩展拾字截图显式 QR 解析与取消边界|
 |ShortXUI 最终封装|1|继续保留，属于验收封装与失败回滚边界|
 
 ## 包装链明细
@@ -36,6 +37,9 @@
 |Beta 实验扩展|`getSettingsHomeCategoryDefs`|`th_14_panels.js → th_34_shortx_ui_lab.js`|`th_34_shortx_ui_lab.js`|`wrapper`|1|4|0|2|继续保留|
 |Beta 实验扩展|`getToolAppTitle`|`th_15_extra.js → th_34_shortx_ui_lab.js`|`th_34_shortx_ui_lab.js`|`wrapper`|3|6|0|1|继续保留|
 |Beta 实验扩展|`isToolAppRoute`|`th_15_extra.js → th_34_shortx_ui_lab.js`|`th_34_shortx_ui_lab.js`|`wrapper`|11|15|0|7|继续保留|
+|拾字二维码扩展|`createPickwordImageController`|`th_22_image_viewer.js → th_26_qr_runtime.js`|`th_26_qr_runtime.js`|`wrapper`|2|7|0|2|继续保留|
+|拾字二维码扩展|`disposePickwordModule`|`th_20_pickword.js → th_26_qr_runtime.js`|`th_26_qr_runtime.js`|`wrapper`|1|5|0|1|继续保留|
+|拾字二维码扩展|`hidePickwordWindow`|`th_20_pickword.js → th_26_qr_runtime.js`|`th_26_qr_runtime.js`|`wrapper`|2|7|0|1|继续保留|
 |ShortXUI 最终封装|`startAsync`|`th_16_entry.js → th_25_shortx_ui_package.js`|`th_25_shortx_ui_package.js`|`wrapper`|0|4|0|1|继续保留|
 
 ## 判定说明
@@ -54,12 +58,15 @@
 - **`getSettingsHomeCategoryDefs` / Beta 实验扩展**：只在原设置分类结果中追加 Beta 实验入口，不替换既有分类。 原登记原因：Beta 设置首页追加 ShortX UI 实验室入口，保留原分类生成结果
 - **`getToolAppTitle` / Beta 实验扩展**：只补充实验室标题，其他 ToolApp 路由继续委托原实现。 原登记原因：为 ShortX UI 实验室提供标题，其他路由继续委托原实现
 - **`isToolAppRoute` / Beta 实验扩展**：只登记实验室路由，其他路由识别继续委托原实现。 原登记原因：登记 ShortX UI 实验室为 Beta ToolApp 路由，其他路由继续委托原实现
+- **`createPickwordImageController` / 拾字二维码扩展**：仅在既有截图控制器外叠加显式解析入口、结果卡和删除取消回调。 原登记原因：Beta 拾字截图控制器叠加显式二维码解析入口与结果卡，不修改截图查看器内部实现
+- **`disposePickwordModule` / 拾字二维码扩展**：模块释放前只取消 QR 会话，再委托原拾字清理实现。 原登记原因：释放拾字模块前取消二维码解析会话，不改变原拾字清理顺序
+- **`hidePickwordWindow` / 拾字二维码扩展**：关闭拾字窗口前只取消 QR worker、timeout 和迟到结果 token，再委托原关闭实现。 原登记原因：关闭拾字窗口前取消二维码 worker、timeout 与迟到结果 token
 - **`startAsync` / ShortXUI 最终封装**：原启动成功后再安装已验收 R3 能力；封装失败会关闭实例并返回启动失败。 原登记原因：在悬浮球启动成功后安装经真机验收的 ShortXUI 最终 R3 封装，保持原测试时序并将失败回传为启动失败
 
 ## 下一轮顺序
 
 1. 设置与类型包装已并回 `th_05_persistence.js`。
-2. 当前剩余 15 条包装链全部继续保留，不进入批量收敛流程。
+2. 当前剩余 18 条包装链全部继续保留，不进入批量收敛流程。
 3. 指针/OCR 与 ToolApp 包装仅在明确回归证据下重新审查。
 
 ## 使用方式

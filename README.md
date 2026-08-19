@@ -38,12 +38,12 @@ docs/audits/docs/audits/docs/audits/MODULE_SYMBOL_AUDIT.md
 - Schema 使用递归关系节点保存数组、对象和选项。
 - 旧 JSON 文档表和配置文件会在迁移成功后删除。
 - ToolApp 设置页支持手机、横屏和平板宽屏布局。
-- Beta 通道加载 `th_24_shortx_ui_runtime.js`、`th_34_shortx_ui_lab.js` 与最终封装模块 `th_25_shortx_ui_package.js`；最终模块仅在启动成功后安装已验收的 Phase 2 至 Final R3 能力，并逐项校验内置源码 SHA-256。
+- Beta 通道加载 `th_24_shortx_ui_runtime.js`、`th_34_shortx_ui_lab.js`、`th_26_qr_runtime.js` 与最终封装模块 `th_25_shortx_ui_package.js`；二维码模块仅在有效拾字截图上按用户点击触发，并按需从签名清单下载 ZXing DEX/JAR 到 `shortx.getShortXDir()/lib`。
 - 主按钮面板采用可配置自适应网格：宽度占比只用于确定列数预算，网格根据卡片尺寸、精确间距和可视行数计算，面板与 WindowManager 使用同一精确宽高，避免右侧额外空白。
 - 主面板支持实时运行状态、拖动排序、分页吸附、新增和编辑按钮直接保存、单页隐藏分页圆点和关闭闪烁；默认背景透明度为 0.92。
 - 支持按钮搜索、筛选、启停、排序和编辑。
 - 支持悬浮球拖动唤出指针、悬停取字、小框回退和框选 OCR。
-- 支持拾字截图查看、保存、分享、删除、自动清理和截图管理。
+- 支持拾字截图查看、保存、分享、删除、自动清理和截图管理；Beta 有有效框选截图时可显式解析二维码，结果不会自动复制或打开外部链接。
 - 支持 Android 返回键、预测性返回和 ToolApp 横向滑动返回。
 - 启动、更新、存储和运行异常写入 `ToolHub/logs/`。
 
@@ -99,6 +99,8 @@ var UPDATE_SECURITY_MODE = 2;   // 0: 普通, 1: manifest校验, 2: 完整验签
 
 ```text
 shortx.getShortXDir()/
+├── lib/
+│   └── toolhub-zxing-runtime-3.5.4-r1.jar   # Beta 首次解析二维码时按需下载、验签清单哈希并只读加载
 └── ToolHub/
     ├── code/
     │   ├── th_01_base.js
@@ -131,6 +133,7 @@ shortx.getShortXDir()/
     │   ├── th_20_pickword.js
     │   ├── th_21_result_preview.js
     │   ├── th_22_image_viewer.js
+    │   ├── th_26_qr_runtime.js
     │   ├── th_23_screenshot_manager.js
     │   └── th_25_shortx_ui_package.js
     ├── logs/

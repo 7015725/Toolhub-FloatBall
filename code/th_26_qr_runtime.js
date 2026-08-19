@@ -416,6 +416,7 @@
           } else {
             if (String(result.code || "") === "QR_NOT_FOUND") result.code = "PICKWORD_QR_NOT_FOUND";
             else if (String(result.code || "") === "QR_IMAGE_DECODE_FAILED") result.code = "PICKWORD_QR_IMAGE_DECODE_FAILED";
+            else if (String(result.code || "") === "QR_RUNTIME_ERROR") result.code = "PICKWORD_QR_RUNTIME_UNAVAILABLE";
             qr.status = "failed";
             qr.result = result;
           }
@@ -649,7 +650,7 @@
             try { if (typeof originalClose === "function") originalClose(); } catch (e0) {}
           };
         }
-        var controller = originalControllerFactory.call(appObj, opts);
+        var controller = originalControllerFactory.call(this, opts);
         return decorateController26(appObj, controller, opts || {});
       };
 

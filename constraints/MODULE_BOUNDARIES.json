@@ -29,15 +29,12 @@
     "completePointerTextCopy": "th_17_pointer.js",
     "showPickwordText": "th_20_pickword.js",
     "isPickwordShowing": "th_20_pickword.js",
-    "hidePickwordWindow": "th_20_pickword.js",
-    "disposePickwordModule": "th_20_pickword.js",
     "onPickwordConfigurationChanged": "th_20_pickword.js",
     "publishResultPreview": "th_21_result_preview.js",
     "dismissResultPreview": "th_21_result_preview.js",
     "openResultPreviewPrimaryAction": "th_21_result_preview.js",
     "disposeResultPreview": "th_21_result_preview.js",
     "onResultPreviewConfigurationChanged": "th_21_result_preview.js",
-    "createPickwordImageController": "th_22_image_viewer.js",
     "getPickwordImageService": "th_22_image_viewer.js",
     "buildScreenshotManagerPanelView": "th_23_screenshot_manager.js"
   },
@@ -287,6 +284,57 @@
           "module": "th_18_pointer_ocr.js",
           "owner": "th_17_pointer.js",
           "oldVariable": "oldStartPointerTool"
+        }
+      ]
+    },
+    {
+      "method": "createPickwordImageController",
+      "definitions": [
+        "th_22_image_viewer.js",
+        "th_26_qr_runtime.js"
+      ],
+      "effectiveOwner": "th_26_qr_runtime.js",
+      "type": "wrapper",
+      "reason": "Beta 拾字截图控制器叠加显式二维码解析入口与结果卡，不修改截图查看器内部实现",
+      "wrappers": [
+        {
+          "module": "th_26_qr_runtime.js",
+          "owner": "th_22_image_viewer.js",
+          "oldVariable": "originalControllerFactory"
+        }
+      ]
+    },
+    {
+      "method": "hidePickwordWindow",
+      "definitions": [
+        "th_20_pickword.js",
+        "th_26_qr_runtime.js"
+      ],
+      "effectiveOwner": "th_26_qr_runtime.js",
+      "type": "wrapper",
+      "reason": "关闭拾字窗口前取消二维码 worker、timeout 与迟到结果 token",
+      "wrappers": [
+        {
+          "module": "th_26_qr_runtime.js",
+          "owner": "th_20_pickword.js",
+          "oldVariable": "originalHide"
+        }
+      ]
+    },
+    {
+      "method": "disposePickwordModule",
+      "definitions": [
+        "th_20_pickword.js",
+        "th_26_qr_runtime.js"
+      ],
+      "effectiveOwner": "th_26_qr_runtime.js",
+      "type": "wrapper",
+      "reason": "释放拾字模块前取消二维码解析会话，不改变原拾字清理顺序",
+      "wrappers": [
+        {
+          "module": "th_26_qr_runtime.js",
+          "owner": "th_20_pickword.js",
+          "oldVariable": "originalDispose"
         }
       ]
     }
