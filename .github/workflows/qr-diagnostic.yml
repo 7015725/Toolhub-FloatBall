@@ -24,6 +24,9 @@ jobs:
         run: |
           python3 scripts/apply_pickword_qr_integration.py
           python3 scripts/apply_shortx_ui_qr_compat.py
+          python3 scripts/register_pickword_qr_api_usage.py
+          python3 scripts/report_api_usage.py --write constraints/API_USAGE_BASELINE.json
+          python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
 
       - name: ShortXUI finalizer compatibility
         run: |
