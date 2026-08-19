@@ -12,12 +12,20 @@ ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "ToolHub.js"
 QR_MODULE = ROOT / "code" / "th_26_qr_runtime.js"
 BOUNDARIES = ROOT / "constraints" / "MODULE_BOUNDARIES.json"
+VERIFY_MANIFEST = ROOT / "scripts" / "verify_manifest.py"
+VERIFY_STORAGE = ROOT / "scripts" / "verify_channel_private_storage_isolation.py"
 NEW_ENTRY_VERSION = 20260819231000
 
 
 def require(condition, message):
     if not condition:
         raise SystemExit("integration contract failed: " + message)
+
+
+def replace_if_present(text, old, new):
+    if old in text and new not in text:
+        return text.replace(old, new)
+    return text
 
 
 def patch_entry():
@@ -66,6 +74,58 @@ def patch_qr_module():
     QR_MODULE.write_text(text, encoding="utf-8")
 
 
+def patch_verifiers():
+    text = VERIFY_MANIFEST.read_text(encoding="utf-8")
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(text, "version 1.0.1/1.0.2/1.0.3/1.0.4", "version 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5")
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(
+        text,
+        'if version == "// @version 1.0.4":',
+        'if version in ("// @version 1.0.4", "// @version 1.0.5"):',
+    )
+    require('"// @version 1.0.5"' in text, "verify_manifest 1.0.5 gate")
+    VERIFY_MANIFEST.write_text(text, encoding="utf-8")
+
+    text = VERIFY_STORAGE.read_text(encoding="utf-8")
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(text, "version must be 1.0.1/1.0.2/1.0.3/1.0.4", "version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5")
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(
+        text,
+        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4")',
+        '("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5")',
+    )
+    text = replace_if_present(
+        text,
+        'if qr_version == "// @version 1.0.4":',
+        'if qr_version in ("// @version 1.0.4", "// @version 1.0.5"):',
+    )
+    require('"// @version 1.0.5"' in text, "storage verifier 1.0.5 gate")
+    VERIFY_STORAGE.write_text(text, encoding="utf-8")
+
+
 def validate_boundaries():
     data = json.loads(BOUNDARIES.read_text(encoding="utf-8"))
     records = data.get("duplicateDefinitions") or []
@@ -79,6 +139,7 @@ def validate_boundaries():
 def main():
     patch_entry()
     patch_qr_module()
+    patch_verifiers()
     validate_boundaries()
     print("OK Beta QR wiring idempotent version=1.0.5 system_server_code_cache=avoided api26_no_dexopt=1 legacy_channel_dexopt=1")
 
