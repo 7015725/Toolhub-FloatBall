@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify Stable/Beta private diagnostics and pickword state isolation."""
+"""Verify Stable/Beta private storage isolation and the narrowly scoped shared ShortX lib exception."""
 
 import re
 from pathlib import Path
@@ -9,6 +9,7 @@ CODE = ROOT / "code"
 THEME = (CODE / "th_04_theme.js").read_text(encoding="utf-8")
 PANEL = (CODE / "th_13_panel_ui.js").read_text(encoding="utf-8")
 PICKWORD = (CODE / "th_20_pickword.js").read_text(encoding="utf-8")
+QR = (CODE / "th_26_qr_runtime.js").read_text(encoding="utf-8")
 errors = []
 
 
@@ -20,6 +21,7 @@ def require(condition, message):
 require(THEME.splitlines()[0] == "// @version 1.0.12", "th_04_theme.js version must be 1.0.12")
 require(PANEL.splitlines()[0] == "// @version 1.0.16", "th_13_panel_ui.js version must be 1.0.16")
 require(PICKWORD.splitlines()[0] == "// @version 1.0.21", "th_20_pickword.js version must be 1.0.21")
+require(QR.splitlines()[0] == "// @version 1.0.0", "th_26_qr_runtime.js version must be 1.0.0")
 
 for name, source in (("theme", THEME), ("panel_ui", PANEL), ("pickword", PICKWORD)):
     require("shortx.getShortXDir" not in source, name + " must not bypass APP_ROOT_DIR")
@@ -49,7 +51,31 @@ legacy_block = PICKWORD[legacy_start:legacy_end] if legacy_start >= 0 and legacy
 require(legacy_block and ".delete()" not in legacy_block,
         "legacy font migration must not delete old data")
 
-allowed_shortx_files = {"th_01_base.js"}
+# User-approved shared dependency exception: th_26 may use only
+# shortx.getShortXDir()/lib for the signed ZXing DEX/JAR. It must not use this
+# bypass for ToolHub private diagnostics/data/cache/screenshots/logs or a
+# channel-specific runtime directory.
+for marker in (
+    'new java.io.File(base, "lib")',
+    'var base = new java.io.File(String(shortx.getShortXDir() || "")).getCanonicalFile();',
+    'var lib = new java.io.File(base, "lib").getCanonicalFile();',
+    'if (libPath.indexOf(basePath + java.io.File.separator) !== 0)',
+    'manifest.runtimeFiles',
+    'new dalvik.system.DexClassLoader',
+):
+    require(marker in QR, "QR shared-lib safety marker missing: " + marker)
+for forbidden in (
+    'shortx.getShortXDir() + "/ToolHub',
+    'shortx.getShortXDir() + "/ToolHub-Beta',
+    'new java.io.File(base, "diagnostics")',
+    'new java.io.File(base, "data")',
+    'new java.io.File(base, "cache")',
+    'new java.io.File(base, "screenshots")',
+    'new java.io.File(base, "logs")',
+):
+    require(forbidden not in QR, "QR shared-lib exception widened into private storage: " + forbidden)
+
+allowed_shortx_files = {"th_01_base.js", "th_26_qr_runtime.js"}
 for source_path in sorted(CODE.glob("*.js")):
     source = source_path.read_text(encoding="utf-8")
     if "shortx.getShortXDir" in source and source_path.name not in allowed_shortx_files:
@@ -63,4 +89,4 @@ if errors:
         print("FAIL channel-private-storage:", item)
     raise SystemExit(1)
 
-print("OK channel-private-storage diagnostics=APP_ROOT_DIR pickword=file+prefs-per-channel stable_legacy_import=copy-only")
+print("OK channel-private-storage private=APP_ROOT_DIR shared_lib=th_26_only shortx_lib=canonical+signed stable_legacy_import=copy-only")
