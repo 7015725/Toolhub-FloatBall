@@ -15,10 +15,13 @@ NEW_ENTRY_VERSION = 20260819231000
 
 
 def replace_once(text, old, new, label):
-    if old in text:
-        return text.replace(old, new, 1)
+    # Important for idempotence: many replacements intentionally contain the old
+    # text as a prefix. Check the fully patched form first or repeated signer runs
+    # would keep mutating already-generated artifacts.
     if new in text:
         return text
+    if old in text:
+        return text.replace(old, new, 1)
     raise SystemExit("integration anchor missing: " + label)
 
 
@@ -51,6 +54,12 @@ def patch_qr_module():
     text = QR_MODULE.read_text(encoding="utf-8")
     text = replace_once(
         text,
+        "// @version 1.0.0",
+        "// @version 1.0.1",
+        "QR module version",
+    )
+    text = replace_once(
+        text,
         "var controller = originalControllerFactory.call(appObj, opts);",
         "var controller = originalControllerFactory.call(this, opts);",
         "controller wrapper this binding",
@@ -61,6 +70,34 @@ def patch_qr_module():
         'else if (String(result.code || "") === "QR_IMAGE_DECODE_FAILED") result.code = "PICKWORD_QR_IMAGE_DECODE_FAILED";\n            else if (String(result.code || "") === "QR_RUNTIME_ERROR") result.code = "PICKWORD_QR_RUNTIME_UNAVAILABLE";',
         "runtime error mapping",
     )
+    text = replace_once(
+        text,
+        "    if (!root || root.__toolHubQrDecorated26 === true) return root;",
+        "    if (!root || (controller && controller.__toolHubQrThumbnailDecorated26 === true)) return root;",
+        "thumbnail decoration marker owner",
+    )
+    text = replace_once(
+        text,
+        "    root.__toolHubQrDecorated26 = true;\n    var palette = colors26(appObj);",
+        "    var palette = colors26(appObj);",
+        "remove Java View dynamic marker",
+    )
+    text = replace_once(
+        text,
+        "    var cached = runtime26.cache[key];\n    if (cached && cached.result) renderResult(cached.result, false);\n    return root;\n  }\n\n  function decorateController26",
+        "    var cached = runtime26.cache[key];\n    if (cached && cached.result) renderResult(cached.result, false);\n    if (controller) controller.__toolHubQrThumbnailDecorated26 = true;\n    return root;\n  }\n\n  function decorateController26",
+        "thumbnail decoration marker commit",
+    )
+    text = replace_once(
+        text,
+        "      controller.createThumbnailView = function() {\n        var root = originalCreate.call(controller);\n        return decorateThumbnail26(appObj, controller, opts || {}, root);\n      };",
+        "      controller.createThumbnailView = function() {\n        var root = originalCreate.call(controller);\n        try {\n          return decorateThumbnail26(appObj, controller, opts || {}, root);\n        } catch (eDecorate) {\n          log26(appObj, \"w\", \"thumbnail decorate fail-open=\" + String(eDecorate));\n          return root;\n        }\n      };",
+        "thumbnail fail-open wrapper",
+    )
+    if "root.__toolHubQrDecorated26" in text:
+        raise SystemExit("QR module must not attach dynamic properties to Android thumbnail View")
+    if "thumbnail decorate fail-open=" not in text:
+        raise SystemExit("QR thumbnail fail-open guard missing")
     QR_MODULE.write_text(text, encoding="utf-8")
 
 
