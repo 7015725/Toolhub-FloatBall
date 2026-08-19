@@ -3,8 +3,8 @@
 
 The one-time QR migration has already landed on Beta. This script keeps the
 current contract stable across signer-generated commits and advances the QR
-runtime to v1.0.3, where the signed ZXing DEX/JAR is stored under the active
-ToolHub channel root: ToolHub/lib for Stable and ToolHub-Beta/lib for Beta.
+runtime to v1.0.4. ZXing stays under the active ToolHub channel root while
+runtime/preflight failures become directly observable in ToolHub logs and UI.
 """
 import json
 from pathlib import Path
@@ -44,25 +44,45 @@ def patch_entry():
 
 def patch_qr_module():
     text = QR_MODULE.read_text(encoding="utf-8")
-    if "// @version 1.0.3" not in text:
-        for old_version in ("// @version 1.0.2", "// @version 1.0.1", "// @version 1.0.0"):
+    if "// @version 1.0.4" not in text:
+        for old_version in ("// @version 1.0.3", "// @version 1.0.2", "// @version 1.0.1", "// @version 1.0.0"):
             if old_version in text:
-                text = text.replace(old_version, "// @version 1.0.3", 1)
+                text = text.replace(old_version, "// @version 1.0.4", 1)
                 break
         else:
             raise SystemExit("integration anchor missing: QR module version")
 
     old_comment = "// Beta only. ZXing DEX/JAR is preflighted asynchronously on module startup/update under shortx.getShortXDir()/lib."
-    new_comment = "// Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib."
+    channel_comment = "// Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib."
     if old_comment in text:
-        text = text.replace(old_comment, new_comment, 1)
+        text = text.replace(old_comment, channel_comment, 1)
 
     old_lib = '''  function getLibDir26() {\n    if (typeof shortx === "undefined" || !shortx || typeof shortx.getShortXDir !== "function") throw new Error("ShortX 根目录不可用");\n    var base = new java.io.File(String(shortx.getShortXDir() || "")).getCanonicalFile();\n    var lib = new java.io.File(base, "lib").getCanonicalFile();\n    var basePath = String(base.getCanonicalPath());\n    var libPath = String(lib.getCanonicalPath());\n    if (libPath.indexOf(basePath + java.io.File.separator) !== 0) throw new Error("ShortX lib 目录越界");\n    if (!lib.exists() && !lib.mkdirs() && !lib.exists()) throw new Error("无法创建 ShortX lib 目录");\n    if (!lib.isDirectory()) throw new Error("ShortX lib 路径不是目录");\n    return lib;\n  }'''
     new_lib = '''  function getLibDir26() {\n    if (typeof getToolHubRootDir !== "function") throw new Error("ToolHub 通道根目录不可用");\n    var root = new java.io.File(String(getToolHubRootDir() || "")).getCanonicalFile();\n    var lib = new java.io.File(root, "lib").getCanonicalFile();\n    var rootPath = String(root.getCanonicalPath());\n    var libPath = String(lib.getCanonicalPath());\n    if (libPath.indexOf(rootPath + java.io.File.separator) !== 0) throw new Error("ToolHub lib 目录越界");\n    if (!lib.exists() && !lib.mkdirs() && !lib.exists()) throw new Error("无法创建 ToolHub lib 目录");\n    if (!lib.isDirectory()) throw new Error("ToolHub lib 路径不是目录");\n    if (typeof assertWritableDirPath === "function") assertWritableDirPath(libPath, "ToolHub QR lib");\n    return lib;\n  }'''
     if old_lib in text:
         text = text.replace(old_lib, new_lib, 1)
 
-    require(text.startswith("// @version 1.0.3\n"), "QR module version 1.0.3")
+    old_log = '''  function log26(appObj, level, message) {\n    try { safeLog(appObj && appObj.L ? appObj.L : null, level, "pickword qr " + String(message || "")); } catch (e0) {}\n  }'''
+    new_log = '''  function sanitizeError26(error) {\n    var text = "";\n    try { text = String(error == null ? "" : error); } catch (e0) { text = "runtime error"; }\n    text = text.replace(/[\\r\\n\\t]+/g, " ").replace(/\\s+/g, " ").replace(/^\\s+|\\s+$/g, "");\n    if (text.length > 220) text = text.substring(0, 220);\n    return text;\n  }\n\n  function log26(appObj, level, message) {\n    var text = "pickword qr " + String(message || "");\n    var appLogged = false;\n    try {\n      if (appObj && appObj.L) {\n        safeLog(appObj.L, level, text);\n        appLogged = true;\n      }\n    } catch (e0) { appLogged = false; }\n    if (!appLogged) {\n      try { if (typeof writeLog === "function") writeLog("[" + String(level || "i").toUpperCase() + "] " + text); } catch (e1) {}\n    }\n  }'''
+    if old_log in text:
+        text = text.replace(old_log, new_log, 1)
+
+    old_decode_start = '''    var worker = new java.lang.Thread(new java.lang.Runnable({ run: function() {\n      var result = null;\n      try {\n        var loaded = loadRuntime26(appObj);'''
+    new_decode_start = '''    var worker = new java.lang.Thread(new java.lang.Runnable({ run: function() {\n      var result = null;\n      var decodeStage = "load_runtime";\n      try {\n        var loaded = loadRuntime26(appObj);\n        decodeStage = "invoke_decode";'''
+    if old_decode_start in text:
+        text = text.replace(old_decode_start, new_decode_start, 1)
+
+    old_decode_catch = '''      } catch (eDecode) {\n        runtime26.error = String(eDecode);\n        result = { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE", text: "", format: "", error: String(eDecode).substring(0, 180) };\n      }'''
+    new_decode_catch = '''      } catch (eDecode) {\n        var detail = sanitizeError26(eDecode);\n        runtime26.error = detail;\n        var libPath = "";\n        try { libPath = String(getLibDir26().getAbsolutePath()); } catch (eLibPath) { libPath = "unavailable:" + sanitizeError26(eLibPath); }\n        log26(appObj, "e", "runtime failure stage=" + decodeStage + " preflight=" + String(runtime26.preflightStatus || "idle") + " lib=" + libPath + " error=" + detail);\n        result = { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE", text: "", format: "", error: "stage=" + decodeStage + " " + detail };\n      }'''
+    if old_decode_catch in text:
+        text = text.replace(old_decode_catch, new_decode_catch, 1)
+
+    old_runtime_message = '        else if (code === "PICKWORD_QR_RUNTIME_UNAVAILABLE") message = "二维码运行时不可用";'
+    new_runtime_message = '''        else if (code === "PICKWORD_QR_RUNTIME_UNAVAILABLE") {\n          message = "二维码运行时不可用";\n          var runtimeDetail = sanitizeError26(result && result.error);\n          if (runtimeDetail) message += "\\n" + runtimeDetail.substring(0, 140);\n        }'''
+    if old_runtime_message in text:
+        text = text.replace(old_runtime_message, new_runtime_message, 1)
+
+    require(text.startswith("// @version 1.0.4\n"), "QR module version 1.0.4")
     require("root.__toolHubQrDecorated26" not in text, "must not attach JS state to Android thumbnail View")
     require("controller.__toolHubQrThumbnailDecorated26 = true" in text, "thumbnail decoration marker owner")
     require('log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate))' in text,
@@ -79,6 +99,15 @@ def patch_qr_module():
     require('new java.io.File(root, "lib")' in text, "channel-private lib path")
     require('assertWritableDirPath(libPath, "ToolHub QR lib")' in text, "channel-private lib writable probe")
     require("shortx.getShortXDir" not in text, "QR module must not bypass ToolHub channel root")
+    require("function sanitizeError26(error)" in text, "runtime error sanitizer")
+    require('writeLog("[" + String(level || "i").toUpperCase() + "] " + text)' in text,
+            "preflight log fallback")
+    require('var decodeStage = "load_runtime"' in text, "runtime load stage marker")
+    require('decodeStage = "invoke_decode"' in text, "runtime decode stage marker")
+    require('log26(appObj, "e", "runtime failure stage=" + decodeStage' in text,
+            "runtime failure log")
+    require('message += "\\n" + runtimeDetail.substring(0, 140)' in text,
+            "runtime failure UI detail")
     QR_MODULE.write_text(text, encoding="utf-8")
 
 
@@ -100,7 +129,7 @@ def main():
     patch_entry()
     patch_qr_module()
     validate_boundaries()
-    print("OK Beta QR wiring idempotent version=1.0.3 startup_preflight=enabled channel_lib=1 stable_intrusion=0")
+    print("OK Beta QR wiring idempotent version=1.0.4 startup_preflight=enabled channel_lib=1 diagnostics=1 stable_intrusion=0")
 
 
 if __name__ == "__main__":
