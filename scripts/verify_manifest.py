@@ -140,6 +140,8 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     if not path.exists():
         fail("Beta QR module missing")
     text = path.read_text(encoding="utf-8")
+    if not text.startswith("// @version 1.0.1\n"):
+        fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1")
     if "root.__toolHubQrDecorated26" in text:
         fail("QR module must not attach dynamic state to Android thumbnail View")
     if 'log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate))' not in text:
