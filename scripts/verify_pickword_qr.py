@@ -24,6 +24,10 @@ def forbid(text, token, label):
         errors.append("forbidden %s: %s" % (label, token))
 
 
+qr_version = QR.splitlines()[0] if QR.splitlines() else ""
+if qr_version not in ("// @version 1.0.1", "// @version 1.0.2"):
+    errors.append("unexpected QR module version: %s" % qr_version)
+
 # W8/W9: pointer and OCR remain QR-agnostic; decode is user-triggered in pickword image UI only.
 for token in ("ZXing", "zxing", "area_qr", "PICKWORD_QR_", "decodeFile("):
     forbid(POINTER, token, "pointer QR coupling")
@@ -67,6 +71,22 @@ for token in (
 for token in ("eval(", "geval("):
     forbid(QR, token, "runtime eval")
 
+# v1.0.2+: runtime is prepared asynchronously at Beta module startup/update.
+# A valid signed local JAR is reused; only missing/invalid files are downloaded.
+if qr_version == "// @version 1.0.2":
+    for token in (
+        "installLock: new java.util.concurrent.locks.ReentrantLock()",
+        "function preflightRuntime26(appObj, reason)",
+        'preflightRuntime26(null, "module_startup_or_update")',
+        "return { file: dest, meta: meta, downloaded: false }",
+        "return { file: downloadRuntime26(meta, dest), meta: meta, downloaded: true }",
+        '"runtime preflight " + (installed.downloaded === true ? "downloaded" : "skip_existing")',
+        "proto.ensurePickwordQrRuntimeReady = function(reason)",
+        "preflightThread",
+        "qr.thread",
+    ):
+        require(QR, token, "startup runtime preflight")
+
 require(GEN, '"th_26_qr_runtime.js"', "signed QR module")
 require(GEN, '"toolhub-zxing-runtime"', "signed runtime asset")
 require(GEN, '"schema": 6', "manifest schema 6")
@@ -98,4 +118,4 @@ if errors:
         print("FAIL", item)
     raise SystemExit(1)
 
-print("OK pickword_qr beta_only=1 pointer_intrusion=0 ocr_intrusion=0 shared_lib=1 signed_runtime=1 stale_guard=1")
+print("OK pickword_qr beta_only=1 pointer_intrusion=0 ocr_intrusion=0 shared_lib=1 signed_runtime=1 stale_guard=1 startup_preflight=%d" % (1 if qr_version == "// @version 1.0.2" else 0))
