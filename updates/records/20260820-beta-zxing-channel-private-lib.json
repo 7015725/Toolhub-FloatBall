@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "20260820-beta-zxing-channel-private-lib",
+  "type": "fix",
+  "title": "Beta：ZXing 运行时迁移到 ToolHub 通道私有目录",
+  "details": [
+    "ZXing DEX/JAR 不再写入 shortx.getShortXDir()/lib，统一改为 getToolHubRootDir()/lib；Beta 实际落到 shortx.getShortXDir()/ToolHub-Beta/lib，正式通道对应 shortx.getShortXDir()/ToolHub/lib。",
+    "运行时目录复用 ToolHub 入口现有通道根目录与可写探测，不再绕过 ToolHub 私有存储边界，避免 ShortX 根目录 lib 对 uid=1000 不可写导致 EACCES。",
+    "ZXing runtime 升级为 3.5.4-r2；启动/更新预检、SHA-256/size 校验、只读安装、缺失或损坏自动重下以及二维码显式解析交互保持不变。"
+  ],
+  "manifestVersion": 0
+}
