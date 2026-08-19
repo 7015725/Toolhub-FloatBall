@@ -76,7 +76,7 @@ def patch_qr_runtime_preflight():
         "function preflightRuntime26(appObj, reason)",
         '"runtime preflight " + (installed.downloaded === true ? "downloaded" : "skip_existing")',
         'preflightRuntime26(null, "module_startup_or_update")',
-        "preflightDownloaded: installed.downloaded === true",
+        "runtime26.preflightDownloaded = installed.downloaded === true;",
     ):
         if token not in text:
             raise SystemExit("ShortXUI QR compat preflight marker missing: " + token)
