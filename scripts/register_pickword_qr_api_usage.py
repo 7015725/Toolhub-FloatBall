@@ -61,17 +61,17 @@ def main():
     qr_rule = {
         "id": RULE_ID,
         "usageKeys": unmatched,
-        "source": "android/java/shortx",
-        "classOrObject": "QR runtime dependency, ShortX shared lib, worker and compact result UI APIs",
+        "source": "android/java/toolhub",
+        "classOrObject": "QR runtime dependency, ToolHub channel-private lib, worker and compact result UI APIs",
         "method": "mixed",
         "classification": "guarded",
         "scope": sorted(unmatched_scope),
         "allowScopeExpansion": True,
         "minApi": 24,
-        "guard": "二维码入口仅在有效拾字截图存在且用户显式点击后执行；运行时文件必须来自签名清单、size/SHA-256 匹配并在 DexClassLoader 前设为只读",
+        "guard": "二维码入口仅在有效拾字截图存在且用户显式点击后执行；运行时文件必须位于 getToolHubRootDir()/lib，来自签名清单、size/SHA-256 匹配并在 DexClassLoader 前设为只读",
         "owner": "ToolHub Beta pickword QR runtime",
-        "threadContract": "下载、Bitmap/ZXing 解码和运行时加载在独立 worker；仅按钮与结果卡更新回 Android main Looper",
-        "fallback": "任何下载、哈希、只读、类加载、图片解码或超时失败只降级二维码结果卡，不阻断 ToolHub、框选截图或 OCR",
+        "threadContract": "启动/更新预检、下载、Bitmap/ZXing 解码和运行时加载在独立 worker；仅按钮与结果卡更新回 Android main Looper",
+        "fallback": "任何目录、下载、哈希、只读、类加载、图片解码或超时失败只降级二维码结果卡，不阻断 ToolHub、框选截图或 OCR",
         "reason": "显式登记 th_26_qr_runtime.js 引入的 API，并仅保留这些 usage key 当前实际存在的有限文件作用域；不使用通配符扩大到其他模块",
     }
     if existing_qr is None:
