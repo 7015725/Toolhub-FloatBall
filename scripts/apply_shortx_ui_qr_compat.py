@@ -4,6 +4,7 @@
 The ShortXUI finalizer predates th_26. It remains authoritative for the generated
 th_25 package, but must not roll back or rewrite later feature-owned entry,
 manifest, API-policy, boundary, wrapper-report, or documentation state.
+This compatibility transform is part of the signed Beta QR release input.
 """
 from pathlib import Path
 
