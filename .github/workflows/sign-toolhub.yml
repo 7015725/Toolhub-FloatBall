@@ -68,7 +68,7 @@ jobs:
           if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
             while IFS= read -r path; do
               case "$path" in
-                ToolHub.js|code/*.js|runtime-src/zxing/*|scripts/apply_pickword_qr_integration.py|scripts/generate_signed_manifest.py|scripts/verify_manifest.py)
+                ToolHub.js|code/*.js|runtime-src/zxing/*|scripts/apply_pickword_qr_integration.py|scripts/register_pickword_qr_api_usage.py|scripts/generate_signed_manifest.py|scripts/verify_manifest.py)
                   changed=true
                   echo "signed input changed: $path"
                   ;;
@@ -134,7 +134,11 @@ jobs:
 
       - name: Apply Beta QR integration wiring
         shell: bash
-        run: python3 scripts/apply_pickword_qr_integration.py
+        run: |
+          python3 scripts/apply_pickword_qr_integration.py
+          python3 scripts/register_pickword_qr_api_usage.py
+          python3 scripts/report_api_usage.py --write constraints/API_USAGE_BASELINE.json
+          python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
 
       - name: Regenerate deterministic audits
         shell: bash
@@ -291,7 +295,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ToolHub.js code/th_26_qr_runtime.js constraints/MODULE_BOUNDARIES.json scripts/report_protected_wrapper_chains.py README.md docs/ARCHITECTURE.md docs/STRUCTURE.md docs/audits/ENTRY_SYMBOL_AUDIT.md docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md ToolHub.js.sha256 manifest.json manifest.sig update_history.json updates/records runtime/toolhub-zxing-runtime-3.5.4-r1.jar
+          git add ToolHub.js code/th_26_qr_runtime.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json scripts/report_protected_wrapper_chains.py README.md docs/ARCHITECTURE.md docs/STRUCTURE.md docs/audits/ENTRY_SYMBOL_AUDIT.md docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md ToolHub.js.sha256 manifest.json manifest.sig update_history.json updates/records runtime/toolhub-zxing-runtime-3.5.4-r1.jar
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
             exit 0
