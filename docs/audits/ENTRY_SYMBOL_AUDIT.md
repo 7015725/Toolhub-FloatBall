@@ -75,7 +75,7 @@
 |`beginToolHubChannelSwitch`|313|11|入口内使用|1|1|0|0|0|
 |`commitToolHubActiveChannel`|325|11|入口内使用|1|1|0|0|0|
 |`cancelToolHubPendingChannel`|337|11|入口内使用|3|3|0|0|0|
-|`writeLog`|349|27|跨模块引用|55|55|5|5|0|
+|`writeLog`|349|27|跨模块引用|55|55|6|7|0|
 |`runShell`|377|7|入口内使用|1|1|0|0|0|
 |`setDirPerms`|385|6|入口内使用|2|2|0|0|0|
 |`ensureCodeDir`|392|16|入口内使用|10|10|0|0|0|

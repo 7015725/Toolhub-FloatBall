@@ -1,4 +1,4 @@
-// @version 1.0.3
+// @version 1.0.4
 // =======================【拾字截图二维码解析 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -27,8 +27,26 @@
 
   function now26() { return Number(java.lang.System.currentTimeMillis()); }
 
+  function sanitizeError26(error) {
+    var text = "";
+    try { text = String(error == null ? "" : error); } catch (e0) { text = "runtime error"; }
+    text = text.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+    if (text.length > 220) text = text.substring(0, 220);
+    return text;
+  }
+
   function log26(appObj, level, message) {
-    try { safeLog(appObj && appObj.L ? appObj.L : null, level, "pickword qr " + String(message || "")); } catch (e0) {}
+    var text = "pickword qr " + String(message || "");
+    var appLogged = false;
+    try {
+      if (appObj && appObj.L) {
+        safeLog(appObj.L, level, text);
+        appLogged = true;
+      }
+    } catch (e0) { appLogged = false; }
+    if (!appLogged) {
+      try { if (typeof writeLog === "function") writeLog("[" + String(level || "i").toUpperCase() + "] " + text); } catch (e1) {}
+    }
   }
 
   function dp26(appObj, value) {
@@ -430,8 +448,10 @@
 
     var worker = new java.lang.Thread(new java.lang.Runnable({ run: function() {
       var result = null;
+      var decodeStage = "load_runtime";
       try {
         var loaded = loadRuntime26(appObj);
+        decodeStage = "invoke_decode";
         var path = String(session.internalPath || "");
         var options = JSON.stringify({
           formats: ["QR_CODE"],
@@ -444,8 +464,12 @@
         result = JSON.parse(raw);
         if (!result || typeof result !== "object") throw new Error("二维码运行时返回值非法");
       } catch (eDecode) {
-        runtime26.error = String(eDecode);
-        result = { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE", text: "", format: "", error: String(eDecode).substring(0, 180) };
+        var detail = sanitizeError26(eDecode);
+        runtime26.error = detail;
+        var libPath = "";
+        try { libPath = String(getLibDir26().getAbsolutePath()); } catch (eLibPath) { libPath = "unavailable:" + sanitizeError26(eLibPath); }
+        log26(appObj, "e", "runtime failure stage=" + decodeStage + " preflight=" + String(runtime26.preflightStatus || "idle") + " lib=" + libPath + " error=" + detail);
+        result = { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE", text: "", format: "", error: "stage=" + decodeStage + " " + detail };
       }
       mainHandler.post(new java.lang.Runnable({ run: function() {
         try {
@@ -624,7 +648,11 @@
         else if (code === "PICKWORD_QR_IMAGE_UNAVAILABLE") message = "截图已不可用";
         else if (code === "PICKWORD_QR_TIMEOUT") message = "解析超时，请重试";
         else if (code === "PICKWORD_QR_IMAGE_DECODE_FAILED") message = "图片解码失败";
-        else if (code === "PICKWORD_QR_RUNTIME_UNAVAILABLE") message = "二维码运行时不可用";
+        else if (code === "PICKWORD_QR_RUNTIME_UNAVAILABLE") {
+          message = "二维码运行时不可用";
+          var runtimeDetail = sanitizeError26(result && result.error);
+          if (runtimeDetail) message += "\n" + runtimeDetail.substring(0, 140);
+        }
         body.setText(message);
         safeText26(body, palette.danger);
         copyBtn.setVisibility(android.view.View.GONE);

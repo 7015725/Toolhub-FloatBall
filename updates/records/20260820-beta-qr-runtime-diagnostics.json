@@ -8,5 +8,12 @@
     "启动/更新预检在没有 App logger 的情况下回退到 ToolHub writeLog，确保 preflight 成功或失败都能在日志中留痕。",
     "二维码失败结果继续保留用户可读的通用提示，并附带经过截断和单行化的诊断原因；不改变 OCR、框选截图、拾字与二维码显式触发边界。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260819181623,
+  "date": "2026-08-20",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
 }

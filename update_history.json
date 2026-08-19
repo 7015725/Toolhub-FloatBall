@@ -1,8 +1,27 @@
 {
   "schema": 1,
-  "historyVersion": 20260819180213,
-  "generatedAt": "2026-08-20T02:02:13+08:00",
+  "historyVersion": 20260819181623,
+  "generatedAt": "2026-08-20T02:16:23+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260820-beta-qr-runtime-diagnostics",
+      "type": "fix",
+      "title": "Beta：补齐二维码运行时失败诊断",
+      "details": [
+        "二维码解析遇到运行时异常时不再只显示“二维码运行时不可用”，同时把真实异常写入 ToolHub 日志，区分 runtime 文件准备、DexClassLoader、loadClass、反射接口与 decode 调用阶段。",
+        "启动/更新预检在没有 App logger 的情况下回退到 ToolHub writeLog，确保 preflight 成功或失败都能在日志中留痕。",
+        "二维码失败结果继续保留用户可读的通用提示，并附带经过截断和单行化的诊断原因；不改变 OCR、框选截图、拾字与二维码显式触发边界。"
+      ],
+      "manifestVersion": 20260819181623,
+      "date": "2026-08-20",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260820-beta-zxing-channel-private-lib",
