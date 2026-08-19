@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SRC="$ROOT/runtime-src/zxing"
 OUT_DIR="$ROOT/runtime"
 WORK="$SRC/target/toolhub-dex"
-VERSION="3.5.4-r1"
+VERSION="3.5.4-r2"
 FINAL="$OUT_DIR/toolhub-zxing-runtime-${VERSION}.jar"
 
 ANDROID_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
@@ -54,7 +54,7 @@ runtime.version=$VERSION
 zxing.core.version=3.5.4
 min.api=24
 bridge.class=toolhub.runtime.qr.ToolHubQrRuntime
-local.install.dir=shortx.getShortXDir()/lib
+local.install.dir=getToolHubRootDir()/lib
 EOF
 
 python3 - "$FINAL" "$WORK/dex/classes.dex" "$WORK/toolhub-runtime.properties" "$SRC/LICENSE-zxing.txt" "$SRC/THIRD_PARTY_NOTICES.md" <<'PY'
