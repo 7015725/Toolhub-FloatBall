@@ -295,7 +295,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ToolHub.js code/th_26_qr_runtime.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json scripts/finalize_shortx_ui_runtime.py scripts/report_protected_wrapper_chains.py README.md docs/ARCHITECTURE.md docs/STRUCTURE.md docs/audits/ENTRY_SYMBOL_AUDIT.md docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md ToolHub.js.sha256 manifest.json manifest.sig update_history.json updates/records runtime/toolhub-zxing-runtime-3.5.4-r1.jar
+          git add ToolHub.js code/th_26_qr_runtime.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json scripts/finalize_shortx_ui_runtime.py scripts/report_protected_wrapper_chains.py README.md docs/ARCHITECTURE.md docs/STRUCTURE.md docs/audits/ENTRY_SYMBOL_AUDIT.md docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md ToolHub.js.sha256 manifest.json manifest.sig update_history.json updates/records runtime/toolhub-zxing-runtime-3.5.4-r2.jar
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
             exit 0
