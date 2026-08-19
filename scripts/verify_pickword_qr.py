@@ -31,10 +31,12 @@ SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.3",
     "// @version 1.0.4",
     "// @version 1.0.5",
+    "// @version 1.0.6",
 )
 if qr_version not in SUPPORTED_QR_VERSIONS:
     errors.append("unexpected QR module version: %s" % qr_version)
 
+# Pointer/OCR stay QR-agnostic; QR remains explicit in the pickword image UI.
 for token in ("ZXing", "zxing", "area_qr", "PICKWORD_QR_", "decodeFile("):
     forbid(POINTER, token, "pointer QR coupling")
     forbid(OCR, token, "OCR QR coupling")
@@ -42,6 +44,7 @@ require(QR, '"解析二维码"', "explicit QR button")
 require(QR, "decodeAsync26(appObj, session", "button decode dispatch")
 require(QR, "createThumbnailView = function", "thumbnail-only UI integration")
 
+# Stale-result protection and lifecycle cancellation.
 for token in (
     "Number(ps.generation || 0) !== Number(generation)",
     "String(imageKey26(ps.meta)) !== String(key)",
@@ -53,12 +56,14 @@ for token in (
 ):
     require(QR, token, "stale-result/cancel guard")
 
+# Clipboard/text replacement are manual result-card actions only.
 require(QR, 'textButton26(appObj, "复制结果"', "manual copy action")
 require(QR, 'textButton26(appObj, "载入拾字"', "manual load action")
 require(QR, "setClipboard26(text)", "manual clipboard implementation")
 for token in ("startActivity(", "ACTION_VIEW", "Intent.parseUri", "WifiNetworkSuggestion"):
     forbid(QR, token, "automatic external execution")
 
+# Runtime trust/storage contract.
 for token in (
     'typeof getToolHubRootDir !== "function"',
     'new java.io.File(root, "lib")',
@@ -68,14 +73,24 @@ for token in (
     "tmp.setReadOnly()",
     "destFile.setReadOnly()",
     "installed.file.canWrite()",
-    "new dalvik.system.DexClassLoader",
     'QR_RUNTIME_CLASS26 = "toolhub.runtime.qr.ToolHubQrRuntime"',
 ):
     require(QR, token, "runtime trust/loading contract")
+if qr_version == "// @version 1.0.6":
+    require(QR, "new Packages.dalvik.system.DexClassLoader", "Rhino Packages DexClassLoader")
+else:
+    require(QR, "new dalvik.system.DexClassLoader", "legacy DexClassLoader")
 for token in ("shortx.getShortXDir", "eval(", "geval("):
     forbid(QR, token, "runtime storage/eval bypass")
 
-if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4", "// @version 1.0.5"):
+# v1.0.2+: startup/update preflight.
+if qr_version in (
+    "// @version 1.0.2",
+    "// @version 1.0.3",
+    "// @version 1.0.4",
+    "// @version 1.0.5",
+    "// @version 1.0.6",
+):
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
         "function preflightRuntime26(appObj, reason)",
@@ -89,7 +104,12 @@ if qr_version in ("// @version 1.0.2", "// @version 1.0.3", "// @version 1.0.4",
     ):
         require(QR, token, "startup runtime preflight")
 
-if qr_version in ("// @version 1.0.4", "// @version 1.0.5"):
+# v1.0.4+: stage diagnostics.
+if qr_version in (
+    "// @version 1.0.4",
+    "// @version 1.0.5",
+    "// @version 1.0.6",
+):
     for token in (
         "function sanitizeError26(error)",
         'typeof writeLog === "function"',
@@ -101,7 +121,8 @@ if qr_version in ("// @version 1.0.4", "// @version 1.0.5"):
     ):
         require(QR, token, "runtime diagnostics")
 
-if qr_version == "// @version 1.0.5":
+# v1.0.5+: system_server has no application code-cache directory.
+if qr_version in ("// @version 1.0.5", "// @version 1.0.6"):
     forbid(QR, "context.getCodeCacheDir()", "system_server has no app code-cache directory")
     for token in (
         "function getDexOptimizedDirectory26()",
@@ -112,6 +133,11 @@ if qr_version == "// @version 1.0.5":
         "var optimizedDirectory = getDexOptimizedDirectory26();",
     ):
         require(QR, token, "system_server DexClassLoader compatibility")
+
+# v1.0.6: Rhino does not expose dalvik as a bare top-level package.
+if qr_version == "// @version 1.0.6":
+    forbid(QR, "new dalvik.system.DexClassLoader(", "bare dalvik package is undefined in ShortX Rhino")
+    require(QR, "new Packages.dalvik.system.DexClassLoader(", "Rhino Packages DexClassLoader")
 
 require(GEN, '"th_26_qr_runtime.js"', "signed QR module")
 require(GEN, '"toolhub-zxing-runtime"', "signed runtime asset")
@@ -125,6 +151,7 @@ require(JAVA, "DecodeHintType.TRY_HARDER", "try-harder fallback")
 require(JAVA, "DecodeHintType.ALSO_INVERTED", "inverted fallback")
 require(JAVA, "DEFAULT_MAX_PIXELS = 2_000_000", "2MP default cap")
 
+# Beta loads th26 after image viewer; Stable remains QR-free.
 beta_match = re.search(r"var\s+modules\s*=\s*\[(.*?)\]\s*;", ENTRY, re.S)
 if not beta_match:
     errors.append("Beta modules list missing")
@@ -143,7 +170,8 @@ if errors:
         print("FAIL", item)
     raise SystemExit(1)
 
-print("OK pickword_qr beta_only=1 system_server_dexloader=%d diagnostics=%d" % (
-    1 if qr_version == "// @version 1.0.5" else 0,
-    1 if qr_version in ("// @version 1.0.4", "// @version 1.0.5") else 0,
+print("OK pickword_qr beta_only=1 system_server_dexloader=%d rhino_packages=%d diagnostics=%d" % (
+    1 if qr_version in ("// @version 1.0.5", "// @version 1.0.6") else 0,
+    1 if qr_version == "// @version 1.0.6" else 0,
+    1 if qr_version in ("// @version 1.0.4", "// @version 1.0.5", "// @version 1.0.6") else 0,
 ))
