@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Register only th_26 QR API usage in the existing classified API policy."""
+"""Register only th_26 QR API usage; never widen the QR-specific rule beyond that module."""
 import json
 from pathlib import Path
 
@@ -70,8 +70,8 @@ def main():
     api["rules"] = rules
     API_PATH.write_text(json.dumps(api, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(
-        "OK QR API policy keys=%d new_keys=%d expanded_rules=%s"
-        % (len(qr_keys), len(unmatched), ",".join(sorted(expanded_rule_ids)) or "none")
+        "OK QR API policy keys=%d new_keys=%d expanded_rules=%s scope=%s"
+        % (len(qr_keys), len(unmatched), ",".join(sorted(expanded_rule_ids)) or "none", QR_PATH)
     )
 
 
