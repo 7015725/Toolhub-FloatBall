@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify Stable/Beta private storage isolation and the narrowly scoped shared ShortX lib exception."""
+"""Verify Stable/Beta private storage isolation, including the QR runtime lib."""
 
 import re
 from pathlib import Path
@@ -21,7 +21,8 @@ def require(condition, message):
 require(THEME.splitlines()[0] == "// @version 1.0.12", "th_04_theme.js version must be 1.0.12")
 require(PANEL.splitlines()[0] == "// @version 1.0.16", "th_13_panel_ui.js version must be 1.0.16")
 require(PICKWORD.splitlines()[0] == "// @version 1.0.21", "th_20_pickword.js version must be 1.0.21")
-require(QR.splitlines()[0] in ("// @version 1.0.1", "// @version 1.0.2"), "th_26_qr_runtime.js version must be 1.0.1 or 1.0.2 during pre-sign generation")
+require(QR.splitlines()[0] in ("// @version 1.0.1", "// @version 1.0.2", "// @version 1.0.3"),
+        "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3 during generation")
 
 for name, source in (("theme", THEME), ("panel_ui", PANEL), ("pickword", PICKWORD)):
     require("shortx.getShortXDir" not in source, name + " must not bypass APP_ROOT_DIR")
@@ -51,21 +52,31 @@ legacy_block = PICKWORD[legacy_start:legacy_end] if legacy_start >= 0 and legacy
 require(legacy_block and ".delete()" not in legacy_block,
         "legacy font migration must not delete old data")
 
-# User-approved shared dependency exception: th_26 may use only
-# shortx.getShortXDir()/lib for the signed ZXing DEX/JAR. It must not use this
-# bypass for ToolHub private diagnostics/data/cache/screenshots/logs or a
-# channel-specific runtime directory.
-for marker in (
-    'new java.io.File(base, "lib")',
-    'var base = new java.io.File(String(shortx.getShortXDir() || "")).getCanonicalFile();',
-    'var lib = new java.io.File(base, "lib").getCanonicalFile();',
-    'if (libPath.indexOf(basePath + java.io.File.separator) !== 0)',
-    'manifest.runtimeFiles',
-    'new dalvik.system.DexClassLoader',
-):
-    require(marker in QR, "QR shared-lib safety marker missing: " + marker)
+qr_version = QR.splitlines()[0] if QR.splitlines() else ""
+if qr_version == "// @version 1.0.3":
+    for marker in (
+        'typeof getToolHubRootDir !== "function"',
+        'var root = new java.io.File(String(getToolHubRootDir() || "")).getCanonicalFile();',
+        'var lib = new java.io.File(root, "lib").getCanonicalFile();',
+        'if (libPath.indexOf(rootPath + java.io.File.separator) !== 0)',
+        'assertWritableDirPath(libPath, "ToolHub QR lib")',
+        'manifest.runtimeFiles',
+        'new dalvik.system.DexClassLoader',
+    ):
+        require(marker in QR, "QR channel-lib safety marker missing: " + marker)
+    require("shortx.getShortXDir" not in QR, "QR runtime must not bypass ToolHub channel root")
+    for forbidden in (
+        'shortx.getShortXDir() + "/ToolHub',
+        'shortx.getShortXDir() + "/ToolHub-Beta',
+        'new java.io.File(root, "diagnostics")',
+        'new java.io.File(root, "data")',
+        'new java.io.File(root, "cache")',
+        'new java.io.File(root, "screenshots")',
+        'new java.io.File(root, "logs")',
+    ):
+        require(forbidden not in QR, "QR channel-lib scope widened: " + forbidden)
 
-if QR.splitlines()[0] == "// @version 1.0.2":
+if qr_version in ("// @version 1.0.2", "// @version 1.0.3"):
     for marker in (
         'installLock: new java.util.concurrent.locks.ReentrantLock()',
         'function preflightRuntime26(appObj, reason)',
@@ -75,18 +86,8 @@ if QR.splitlines()[0] == "// @version 1.0.2":
     ):
         require(marker in QR, "QR startup-preflight marker missing: " + marker)
 
-for forbidden in (
-    'shortx.getShortXDir() + "/ToolHub',
-    'shortx.getShortXDir() + "/ToolHub-Beta',
-    'new java.io.File(base, "diagnostics")',
-    'new java.io.File(base, "data")',
-    'new java.io.File(base, "cache")',
-    'new java.io.File(base, "screenshots")',
-    'new java.io.File(base, "logs")',
-):
-    require(forbidden not in QR, "QR shared-lib exception widened into private storage: " + forbidden)
-
-allowed_shortx_files = {"th_01_base.js", "th_26_qr_runtime.js"}
+# No feature module other than the base bootstrap may read the raw ShortX root.
+allowed_shortx_files = {"th_01_base.js"}
 for source_path in sorted(CODE.glob("*.js")):
     source = source_path.read_text(encoding="utf-8")
     if "shortx.getShortXDir" in source and source_path.name not in allowed_shortx_files:
@@ -100,4 +101,4 @@ if errors:
         print("FAIL channel-private-storage:", item)
     raise SystemExit(1)
 
-print("OK channel-private-storage private=APP_ROOT_DIR shared_lib=th_26_only shortx_lib=canonical+signed preflight=guarded stable_legacy_import=copy-only")
+print("OK channel-private-storage private=APP_ROOT_DIR qr_lib=channel_root/lib preflight=guarded stable_legacy_import=copy-only")
