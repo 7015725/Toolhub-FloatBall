@@ -1,8 +1,41 @@
 {
   "schema": 1,
-  "historyVersion": 20260820041540,
-  "generatedAt": "2026-08-20T12:15:40+08:00",
+  "historyVersion": 20260820082221,
+  "generatedAt": "2026-08-20T16:22:21+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260820-beta-pickword-image-action-grid-icons",
+      "type": "optimize",
+      "title": "Beta：拾字截图操作整合为 2×3 ShortX 图标网格",
+      "details": [
+        "截图右侧操作区由 2×2 扩展为 2×3，统一承载分享、二维码解析/重新解析、查看原图、保存、复制二维码结果、载入拾字/恢复原文；不新增业务能力。",
+        "六个操作仅显示图标，文字仅保留在 contentDescription；图标复用 th_06_icon_parser.js 的 ShortX Drawable 解析与 R$drawable 反射基础层，拾字与二维码模块不新增第二套反射。",
+        "二维码模块继续独占 decode/cache/copy/load/restore 状态，通过 controller action/state bridge 提供给拾字网格；二维码结果覆盖层收口为纯标题与内容卡，不再重复放置查看、复制、载入和重新解析文字按钮。",
+        "保留图片分享 chooser 成功后关闭拾字、原图页面、保存链、image-only、截图删除恢复文本、ZXing worker 与 ShortX system_server 兼容边界；th_22_image_viewer.js 业务代码不修改。"
+      ],
+      "manifestVersion": 20260820082221,
+      "date": "2026-08-20",
+      "modules": [
+        {
+          "name": "th_20_pickword.js",
+          "from": "1.0.23",
+          "to": "1.0.24",
+          "change": "updated"
+        },
+        {
+          "name": "th_26_qr_runtime.js",
+          "from": "1.0.7",
+          "to": "1.0.8",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260820-beta-pickword-screenshot-layout-regression-fix",

@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "0432a13c1d47815f3668310534267722a74ce761f86ff3530d9e93dfe8248521",
-      "size": 89828,
-      "version": 20260820041540
+      "sha256": "623194e7f3917bf70a199ffa5771024f3d5e8a2164fdd09e49fddbaa07873d5c",
+      "size": 91486,
+      "version": 20260820082221
     }
   },
   "branch": "beta",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "313c9fb8949fe65cb02d1f90e503e6a4d6a01c2cbaa9467ed64878817633d8d1",
-      "size": 276505,
-      "version": "1.0.23"
+      "sha256": "a839681a7c9eca83f3b0b386e613c86851f5e0d49ed0c0cf4d86a989aae373d4",
+      "size": 282229,
+      "version": "1.0.24"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -176,9 +176,9 @@
       "version": "0.9.2"
     },
     "th_26_qr_runtime.js": {
-      "sha256": "40a28778fbd30dfdaff592322fad550a01fd3b73d53470ac278f23b40b149a54",
-      "size": 35082,
-      "version": "1.0.7"
+      "sha256": "4f50d3dad66a67b1977c194059d359e4352a38e2e3b8b22ac4b7541fb048df77",
+      "size": 34309,
+      "version": "1.0.8"
     },
     "th_34_shortx_ui_lab.js": {
       "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
@@ -189,13 +189,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "截图拾字文字区改为 WRAP_CONTENT 外层 + 截图模式独立最大高度，消除短文本下方固定透明留白，同时保留无截图模式原自适应逻辑。",
-      "已选文字预览仅在 image-only 会话隐藏；普通截图 OCR/拾字文本恢复预览，并在创建、拖选与选择更新时同步可见性。",
-      "右侧 2×2 分享使用一次性 pending，仅在图片分享 chooser 成功拉起后的 onShared 关闭拾字浮窗；失败、释放均清理状态，完整图片页分享保持原行为。",
-      "图片查看器 th_22_image_viewer.js 业务实现保持不变；同步 th_20 1.0.23 verifier 白名单与三项回归断言。"
+      "截图右侧操作区由 2×2 扩展为 2×3，统一承载分享、二维码解析/重新解析、查看原图、保存、复制二维码结果、载入拾字/恢复原文；不新增业务能力。",
+      "六个操作仅显示图标，文字仅保留在 contentDescription；图标复用 th_06_icon_parser.js 的 ShortX Drawable 解析与 R$drawable 反射基础层，拾字与二维码模块不新增第二套反射。",
+      "二维码模块继续独占 decode/cache/copy/load/restore 状态，通过 controller action/state bridge 提供给拾字网格；二维码结果覆盖层收口为纯标题与内容卡，不再重复放置查看、复制、载入和重新解析文字按钮。",
+      "保留图片分享 chooser 成功后关闭拾字、原图页面、保存链、image-only、截图删除恢复文本、ZXing worker 与 ShortX system_server 兼容边界；th_22_image_viewer.js 业务代码不修改。"
     ],
     "date": "2026-08-20",
-    "title": "Beta：修复拾字截图布局三项回归"
+    "title": "Beta：拾字截图操作整合为 2×3 ShortX 图标网格"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -211,5 +211,5 @@
     }
   },
   "schema": 6,
-  "version": 20260820041540
+  "version": 20260820082221
 }
