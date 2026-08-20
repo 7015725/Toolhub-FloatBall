@@ -28,7 +28,7 @@ def validate_qr_integration_version_gate():
         'context.getCodeCacheDir()" not in text',
         'if (sdk >= 26) return null;',
         'new java.io.File(lib, ".dexopt")',
-        'hidePickwordWindow("qr_load")\' not in text',
+        'QR load-to-pickword must not async hide before show',
         'appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));',
     ):
         if token not in text:
