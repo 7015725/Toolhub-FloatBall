@@ -1,4 +1,4 @@
-// @version 1.0.21
+// @version 1.0.22
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -239,6 +239,7 @@
     var pickwordImageTextView20 = null;
     var pickwordImageTextOriginalLp20 = null;
     var pickwordImageTextOriginalIndex20 = -1;
+    var pickwordQrTriggerView20 = null;
 
     function normalizePickwordImageMeta20(meta) {
         if (!meta || typeof meta !== "object") return null;
@@ -310,6 +311,7 @@
         pickwordImageTextView20 = null;
         pickwordImageTextOriginalLp20 = null;
         pickwordImageTextOriginalIndex20 = -1;
+        pickwordQrTriggerView20 = null;
     }
 
     function removePickwordImageAfterDelete20(info) {
@@ -483,6 +485,141 @@
         }
     }
 
+    function collapsePickwordAuxView20(viewObj) {
+        if (!viewObj) return;
+        try { viewObj.setVisibility(View.GONE); } catch (eVisibility) {}
+    }
+
+    function normalizePickwordThumbnailChrome20(root) {
+        pickwordQrTriggerView20 = null;
+        if (!root) return root;
+        try {
+            var childCount = Number(root.getChildCount() || 0);
+            if (childCount > 0) {
+                var previewImage = root.getChildAt(0);
+                var imageLp = previewImage ? previewImage.getLayoutParams() : null;
+                if (imageLp && imageLp.bottomMargin !== undefined) {
+                    imageLp.bottomMargin = 0;
+                    previewImage.setLayoutParams(imageLp);
+                }
+            }
+            if (childCount > 1) collapsePickwordAuxView20(root.getChildAt(1));
+            if (childCount > 2) {
+                pickwordQrTriggerView20 = root.getChildAt(2);
+                collapsePickwordAuxView20(pickwordQrTriggerView20);
+            }
+        } catch (eChrome) {}
+        return root;
+    }
+
+    function performPickwordQrAction20(thumbRoot) {
+        try {
+            if (!pickwordQrTriggerView20) normalizePickwordThumbnailChrome20(thumbRoot);
+            var trigger = pickwordQrTriggerView20;
+            if (!trigger) {
+                showToast("二维码入口暂不可用");
+                return false;
+            }
+            try { trigger.setVisibility(View.VISIBLE); } catch (eVisible) {}
+            var clicked = false;
+            try { clicked = trigger.performClick() === true; } catch (eClick) { clicked = false; }
+            collapsePickwordAuxView20(trigger);
+            return clicked;
+        } catch (eQr) {
+            showToast("二维码操作失败");
+        }
+        return false;
+    }
+
+    function performPickwordImagePageAction20(actionIndex, unavailableText) {
+        try {
+            if (!pickwordImagePage20) {
+                showToast(String(unavailableText || "图片操作暂不可用"));
+                return false;
+            }
+            var bottom = pickwordImagePage20.getChildAt(2);
+            var actions = bottom ? bottom.getChildAt(0) : null;
+            var action = actions ? actions.getChildAt(Number(actionIndex || 0)) : null;
+            if (!action) {
+                showToast(String(unavailableText || "图片操作暂不可用"));
+                return false;
+            }
+            return action.performClick() === true;
+        } catch (eAction) {}
+        showToast(String(unavailableText || "图片操作失败"));
+        return false;
+    }
+
+    function createPickwordImageActionTile20(labelText, iconKind, callback) {
+        var tile = new LinearLayout(appContext);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setGravity(Gravity.CENTER);
+        tile.setClickable(true);
+        tile.setFocusable(true);
+        tile.setPadding(uiDp(6, 8), uiDp(7, 9), uiDp(6, 8), uiDp(6, 8));
+        tile.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 16 : 14, 1));
+
+        var iconSize = isTablet ? 27 : 22;
+        var icon = createReplicaIcon20(iconKind, "imageAction", iconSize);
+        tile.addView(icon, new LinearLayout.LayoutParams(uiDp(iconSize, iconSize + 2), uiDp(iconSize, iconSize + 2)));
+
+        var label = new TextView(appContext);
+        label.setText(String(labelText || ""));
+        label.setTextSize(uiTextSize(11, 14));
+        label.setGravity(Gravity.CENTER);
+        label.setSingleLine(true);
+        safeTextColor(label, Colors.text);
+        var labelLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        labelLp.topMargin = uiDp(3, 5);
+        tile.addView(label, labelLp);
+        tile.setContentDescription(String(labelText || ""));
+        tile.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
+            hapticFeedback(v);
+            try { callback(); } catch (eCallback) { showToast("操作失败"); }
+        } }));
+        return tile;
+    }
+
+    function addPickwordImageActionTile20(row, tile, addLeftMargin) {
+        var lp = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+        if (addLeftMargin === true) lp.leftMargin = uiDp(7, 9);
+        row.addView(tile, lp);
+    }
+
+    function createPickwordImageActionGrid20(thumbRoot) {
+        var grid = new LinearLayout(appContext);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setGravity(Gravity.CENTER);
+
+        var topRow = new LinearLayout(appContext);
+        topRow.setOrientation(LinearLayout.HORIZONTAL);
+        var bottomRow = new LinearLayout(appContext);
+        bottomRow.setOrientation(LinearLayout.HORIZONTAL);
+
+        addPickwordImageActionTile20(topRow,
+            createPickwordImageActionTile20("分享", "share", function() {
+                performPickwordImagePageAction20(0, "截图分享暂不可用");
+            }), false);
+        addPickwordImageActionTile20(topRow,
+            createPickwordImageActionTile20("二维码", "qr", function() {
+                performPickwordQrAction20(thumbRoot);
+            }), true);
+        addPickwordImageActionTile20(bottomRow,
+            createPickwordImageActionTile20("贴图", "image", function() {
+                if (!openPickwordImagePage20()) showToast("截图查看暂不可用");
+            }), false);
+        addPickwordImageActionTile20(bottomRow,
+            createPickwordImageActionTile20("保存", "save", function() {
+                performPickwordImagePageAction20(1, "截图保存暂不可用");
+            }), true);
+
+        grid.addView(topRow, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
+        var bottomLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1);
+        bottomLp.topMargin = uiDp(7, 9);
+        grid.addView(bottomRow, bottomLp);
+        return grid;
+    }
+
     function addPickwordTextArea20(parent, view, originalLp) {
         var meta = currentPickwordMeta20;
         if (!meta || meta.available !== true || !toolhubAppRef ||
@@ -542,11 +679,12 @@
             }
 
             var dm = appContext.getResources().getDisplayMetrics();
-            var widthDp = Number(dm.widthPixels || 0) / Math.max(0.1, Number(dm.density || 1));
-            var horizontal = widthDp >= 520;
+            var density20 = Math.max(0.1, Number(dm.density || 1));
+            var contentWidthDp20 = Number(windowWidth || dm.widthPixels || 0) / density20;
+            var horizontal = contentWidthDp20 >= 320;
             var host = new LinearLayout(appContext);
             pickwordContentHost20 = host;
-            host.setOrientation(horizontal ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+            host.setOrientation(LinearLayout.VERTICAL);
             host.setGravity(Gravity.CENTER_VERTICAL);
 
             var textColumn = new LinearLayout(appContext);
@@ -555,25 +693,35 @@
             imageColumn.setOrientation(LinearLayout.VERTICAL);
             imageColumn.setGravity(Gravity.CENTER);
             var thumb = pickwordImageController20.createThumbnailView();
+            normalizePickwordThumbnailChrome20(thumb);
+            var actionGrid20 = createPickwordImageActionGrid20(thumb);
 
-            var thumbHeight20 = Math.round(uiDp(108, 132));
+            var mediaHeight20 = Math.round(uiDp(150, 188));
             if (horizontal) {
-                textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                var mediaRow20 = new LinearLayout(appContext);
+                mediaRow20.setOrientation(LinearLayout.HORIZONTAL);
+                mediaRow20.setGravity(Gravity.CENTER_VERTICAL);
                 imageColumn.addView(thumb, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-                host.addView(textColumn, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 7));
-                var imageLp = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 3);
-                imageLp.leftMargin = uiDp(8, 10);
-                host.addView(imageColumn, imageLp);
+                mediaRow20.addView(imageColumn, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
+                var gridLp20 = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+                gridLp20.leftMargin = uiDp(9, 12);
+                mediaRow20.addView(actionGrid20, gridLp20);
+                host.addView(mediaRow20, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, mediaHeight20));
             } else {
+                var thumbHeight20 = Math.round(uiDp(126, 154));
                 imageColumn.addView(thumb, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, thumbHeight20));
                 host.addView(imageColumn, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, thumbHeight20));
-                var compactTextHeight20 = Math.round(Math.min(textAreaHeight, uiDp(156, 220)));
-                if (!(compactTextHeight20 > 0)) compactTextHeight20 = Math.round(uiDp(156, 220));
-                var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, compactTextHeight20);
-                textLp.topMargin = uiDp(6, 8);
-                textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-                host.addView(textColumn, textLp);
+                var compactGridLp20 = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, Math.round(uiDp(126, 154)));
+                compactGridLp20.topMargin = uiDp(8, 10);
+                host.addView(actionGrid20, compactGridLp20);
             }
+
+            var compactTextHeight20 = Math.round(Math.min(textAreaHeight, uiDp(164, 220)));
+            if (!(compactTextHeight20 > 0)) compactTextHeight20 = Math.round(uiDp(164, 220));
+            var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, compactTextHeight20);
+            textLp.topMargin = uiDp(10, 12);
+            textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+            host.addView(textColumn, textLp);
 
             var hostWidth20 = resolvedOriginalLp && resolvedOriginalLp.width !== undefined ? resolvedOriginalLp.width : LayoutParams.MATCH_PARENT;
             var hostLp = new LinearLayout.LayoutParams(hostWidth20, LayoutParams.WRAP_CONTENT);
@@ -1514,7 +1662,7 @@
 
     function resolveReplicaIconColor20(styleKind) {
         if (styleKind === "primary") return Colors.onPrimary;
-        if (styleKind === "pin") return replicaAccent20();
+        if (styleKind === "pin" || styleKind === "imageAction") return replicaAccent20();
         return Colors.text;
     }
 
@@ -1567,6 +1715,38 @@
                         canvas.drawCircle(left + s * 0.18, cy, r, paint);
                         canvas.drawCircle(right - s * 0.16, top + s * 0.18, r, paint);
                         canvas.drawCircle(right - s * 0.16, bottom - s * 0.18, r, paint);
+                    } else if (kind === "qr") {
+                        var q = s * 0.28;
+                        rect.set(left + s * 0.03, top + s * 0.03, left + s * 0.03 + q, top + s * 0.03 + q);
+                        canvas.drawRect(rect, paint);
+                        rect.set(right - s * 0.03 - q, top + s * 0.03, right - s * 0.03, top + s * 0.03 + q);
+                        canvas.drawRect(rect, paint);
+                        rect.set(left + s * 0.03, bottom - s * 0.03 - q, left + s * 0.03 + q, bottom - s * 0.03);
+                        canvas.drawRect(rect, paint);
+                        canvas.drawLine(cx + s * 0.05, cy + s * 0.05, right - s * 0.04, cy + s * 0.05, paint);
+                        canvas.drawLine(cx + s * 0.05, cy + s * 0.05, cx + s * 0.05, bottom - s * 0.04, paint);
+                        canvas.drawLine(cx + s * 0.24, cy + s * 0.22, right - s * 0.04, cy + s * 0.22, paint);
+                    } else if (kind === "image") {
+                        rect.set(left + s * 0.03, top + s * 0.08, right - s * 0.03, bottom - s * 0.08);
+                        canvas.drawRoundRect(rect, s * 0.08, s * 0.08, paint);
+                        canvas.drawCircle(right - s * 0.25, top + s * 0.28, s * 0.07, paint);
+                        var pImage = new android.graphics.Path();
+                        pImage.moveTo(left + s * 0.15, bottom - s * 0.20);
+                        pImage.lineTo(cx - s * 0.08, cy + s * 0.02);
+                        pImage.lineTo(cx + s * 0.08, cy + s * 0.18);
+                        pImage.lineTo(right - s * 0.18, cy - s * 0.02);
+                        pImage.lineTo(right - s * 0.08, bottom - s * 0.20);
+                        canvas.drawPath(pImage, paint);
+                    } else if (kind === "save") {
+                        canvas.drawLine(cx, top + s * 0.02, cx, cy + s * 0.18, paint);
+                        canvas.drawLine(cx, cy + s * 0.18, cx - s * 0.18, cy, paint);
+                        canvas.drawLine(cx, cy + s * 0.18, cx + s * 0.18, cy, paint);
+                        var pSave = new android.graphics.Path();
+                        pSave.moveTo(left + s * 0.10, cy + s * 0.18);
+                        pSave.lineTo(left + s * 0.10, bottom - s * 0.06);
+                        pSave.lineTo(right - s * 0.10, bottom - s * 0.06);
+                        pSave.lineTo(right - s * 0.10, cy + s * 0.18);
+                        canvas.drawPath(pSave, paint);
                     } else if (kind === "pin") {
                         paint.setStyle(Paint.Style.FILL);
                         var pPin = new android.graphics.Path();
@@ -3131,6 +3311,7 @@
             previewTextView.setMaxLines(2);
             try { previewTextView.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch (eEllipsize) {}
             previewTextView.setContentDescription("选中文字预览；点击编辑，长按去空格");
+            if (currentPickwordMeta20 && currentPickwordMeta20.available === true) previewTextView.setVisibility(View.GONE);
             previewTextView.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
                 if (selectedIndices.length > 0) { hapticFeedback(v); self.editPreviewText(); }
             } }));
