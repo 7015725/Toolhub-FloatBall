@@ -12,8 +12,8 @@ def require(condition, message):
 
 
 require(
-    source.startswith("// @version 1.0.21\n") or source.startswith("// @version 1.0.22\n"),
-    "pickword module version must be 1.0.21 or 1.0.22",
+    source.startswith("// @version 1.0.21\n") or source.startswith("// @version 1.0.22\n") or source.startswith("// @version 1.0.23\n"),
+    "pickword module version must be 1.0.21, 1.0.22, or 1.0.23",
 )
 require("CANVAS_DRAG_VISIBLE_LINE_BUFFER: 8" in source, "drag visible-line buffer config missing")
 require("CANVAS_DRAG_HIGHLIGHT_INTERVAL_MS: 40" in source, "drag highlight interval config missing")

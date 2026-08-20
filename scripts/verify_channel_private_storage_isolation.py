@@ -20,7 +20,7 @@ def require(condition, message):
 
 require(THEME.splitlines()[0] == "// @version 1.0.12", "th_04_theme.js version must be 1.0.12")
 require(PANEL.splitlines()[0] == "// @version 1.0.16", "th_13_panel_ui.js version must be 1.0.16")
-require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22"), "th_20_pickword.js version must be 1.0.21 or 1.0.22")
+require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23"), "th_20_pickword.js version must be 1.0.21, 1.0.22, or 1.0.23")
 SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.1",
     "// @version 1.0.2",

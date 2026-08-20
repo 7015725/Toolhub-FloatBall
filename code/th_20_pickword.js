@@ -1,4 +1,4 @@
-// @version 1.0.22
+// @version 1.0.23
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -240,6 +240,7 @@
     var pickwordImageTextOriginalLp20 = null;
     var pickwordImageTextOriginalIndex20 = -1;
     var pickwordQrTriggerView20 = null;
+    var pickwordGridShareClosePending20 = false;
 
     function normalizePickwordImageMeta20(meta) {
         if (!meta || typeof meta !== "object") return null;
@@ -312,6 +313,7 @@
         pickwordImageTextOriginalLp20 = null;
         pickwordImageTextOriginalIndex20 = -1;
         pickwordQrTriggerView20 = null;
+        pickwordGridShareClosePending20 = false;
     }
 
     function removePickwordImageAfterDelete20(info) {
@@ -598,7 +600,9 @@
 
         addPickwordImageActionTile20(topRow,
             createPickwordImageActionTile20("分享", "share", function() {
-                performPickwordImagePageAction20(0, "截图分享暂不可用");
+                pickwordGridShareClosePending20 = true;
+                var clicked = performPickwordImagePageAction20(0, "截图分享暂不可用");
+                if (!clicked) pickwordGridShareClosePending20 = false;
             }), false);
         addPickwordImageActionTile20(topRow,
             createPickwordImageActionTile20("二维码", "qr", function() {
@@ -661,10 +665,16 @@
                     } catch (eSaved) {}
                 },
                 onShared: function(info) {
+                    var closeAfterShare = pickwordGridShareClosePending20 === true;
+                    pickwordGridShareClosePending20 = false;
                     try { safeLog(toolhubAppRef && toolhubAppRef.L, "i", "pickword image shared uri=" + String(info && info.contentUri || "")); } catch (eShared) {}
+                    if (closeAfterShare) {
+                        try { 拾字Floaty.hide(); } catch (eHide) {}
+                    }
                 },
                 onDeleted: function(info) { removePickwordImageAfterDelete20(info); },
                 onError: function(stage, error) {
+                    if (String(stage || "").indexOf("share") === 0) pickwordGridShareClosePending20 = false;
                     try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image stage=" + String(stage || "") + " err=" + String(error || "")); } catch (eLog) {}
                 }
             });
@@ -716,11 +726,9 @@
                 host.addView(actionGrid20, compactGridLp20);
             }
 
-            var compactTextHeight20 = Math.round(Math.min(textAreaHeight, uiDp(164, 220)));
-            if (!(compactTextHeight20 > 0)) compactTextHeight20 = Math.round(uiDp(164, 220));
-            var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, compactTextHeight20);
+            var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
             textLp.topMargin = uiDp(10, 12);
-            textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+            textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
             host.addView(textColumn, textLp);
 
             var hostWidth20 = resolvedOriginalLp && resolvedOriginalLp.width !== undefined ? resolvedOriginalLp.width : LayoutParams.MATCH_PARENT;
@@ -745,6 +753,12 @@
         }
     }
 
+
+    function syncPickwordPreviewVisibility20() {
+        if (!previewTextView) return;
+        var hidePreview = currentPickwordMeta20 && currentPickwordMeta20.imageOnly === true;
+        try { previewTextView.setVisibility(hidePreview ? View.GONE : View.VISIBLE); } catch (eVisibility) {}
+    }
 
     var fullText = "";
     var selectedIndices = [];
@@ -3237,8 +3251,12 @@
             try {
                 var contentHeight = textCanvasControl.getContentHeight();
                 // contentHeight 已包含 Canvas 上下内边距，不再额外补高，确保父子高度一致。
-                var adaptiveHeight = Math.min(contentHeight, textAreaHeight);
-                var newHeight = Math.min(Math.max(adaptiveHeight, textAreaMinHeight), textAreaHeight);
+                var maxHeight = textAreaHeight;
+                if (currentPickwordMeta20 && currentPickwordMeta20.available === true) {
+                    maxHeight = Math.min(maxHeight, Math.round(uiDp(164, 220)));
+                }
+                var adaptiveHeight = Math.min(contentHeight, maxHeight);
+                var newHeight = Math.min(Math.max(adaptiveHeight, textAreaMinHeight), maxHeight);
                 var params = scrollView.getLayoutParams();
                 if (params.height !== newHeight) {
                     params.height = newHeight;
@@ -3311,7 +3329,7 @@
             previewTextView.setMaxLines(2);
             try { previewTextView.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch (eEllipsize) {}
             previewTextView.setContentDescription("选中文字预览；点击编辑，长按去空格");
-            if (currentPickwordMeta20 && currentPickwordMeta20.available === true) previewTextView.setVisibility(View.GONE);
+            syncPickwordPreviewVisibility20();
             previewTextView.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
                 if (selectedIndices.length > 0) { hapticFeedback(v); self.editPreviewText(); }
             } }));
@@ -4256,6 +4274,7 @@
             var count = isDragging ? dragSelectionCount : countSelectedGraphemes20(selectedSet);
             setCountLabel20(count);
             this.updateActionButtons();
+            syncPickwordPreviewVisibility20();
             try {
                 if (previewTextView) {
                     if (count > 0) {
@@ -4273,6 +4292,7 @@
             var count = countSelectedGraphemes20(selectedSet);
             setCountLabel20(count);
             this.updateActionButtons();
+            syncPickwordPreviewVisibility20();
             if (count === 0) {
                 previewTextOverride = null;
                 previewSelectionSignature = "";
