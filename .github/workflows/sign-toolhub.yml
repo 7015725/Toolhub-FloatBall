@@ -68,7 +68,7 @@ jobs:
           if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
             while IFS= read -r path; do
               case "$path" in
-                ToolHub.js|code/*.js|runtime-src/zxing/*|scripts/apply_pickword_qr_integration.py|scripts/apply_pickword_reference_layout.py|scripts/apply_shortx_ui_qr_compat.py|scripts/register_pickword_qr_api_usage.py|scripts/generate_signed_manifest.py|scripts/verify_manifest.py)
+                ToolHub.js|code/*.js|runtime-src/zxing/*|scripts/apply_pickword_qr_integration.py|scripts/apply_pickword_reference_layout.py|scripts/fix_pickword_reference_layout_api_usage.py|scripts/apply_shortx_ui_qr_compat.py|scripts/register_pickword_qr_api_usage.py|scripts/generate_signed_manifest.py|scripts/verify_manifest.py)
                   changed=true
                   echo "signed input changed: $path"
                   ;;
@@ -137,6 +137,7 @@ jobs:
         run: |
           python3 scripts/apply_pickword_qr_integration.py
           python3 scripts/apply_pickword_reference_layout.py
+          python3 scripts/fix_pickword_reference_layout_api_usage.py
           python3 scripts/apply_shortx_ui_qr_compat.py
           python3 scripts/register_pickword_qr_api_usage.py
           python3 scripts/report_api_usage.py --write constraints/API_USAGE_BASELINE.json
@@ -296,7 +297,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ToolHub.js code/th_20_pickword.js code/th_26_qr_runtime.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json scripts/apply_pickword_reference_layout.py scripts/finalize_shortx_ui_runtime.py scripts/report_protected_wrapper_chains.py README.md docs/ARCHITECTURE.md docs/STRUCTURE.md docs/audits/ENTRY_SYMBOL_AUDIT.md docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md ToolHub.js.sha256 manifest.json manifest.sig update_history.json updates/records runtime/toolhub-zxing-runtime-3.5.4-r2.jar
+          git add ToolHub.js code/th_20_pickword.js code/th_26_qr_runtime.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json scripts/apply_pickword_reference_layout.py scripts/fix_pickword_reference_layout_api_usage.py scripts/finalize_shortx_ui_runtime.py scripts/report_protected_wrapper_chains.py README.md docs/ARCHITECTURE.md docs/STRUCTURE.md docs/audits/ENTRY_SYMBOL_AUDIT.md docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md ToolHub.js.sha256 manifest.json manifest.sig update_history.json updates/records runtime/toolhub-zxing-runtime-3.5.4-r2.jar
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
             exit 0
