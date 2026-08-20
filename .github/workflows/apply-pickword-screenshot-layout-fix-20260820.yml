@@ -1,0 +1,206 @@
+name: apply-pickword-screenshot-layout-fix-20260820
+
+on:
+  push:
+    branches: [beta]
+    paths:
+      - '.github/workflows/apply-pickword-screenshot-layout-fix-20260820.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    env:
+      TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+    steps:
+      - name: Checkout beta
+        uses: actions/checkout@v4
+        with:
+          ref: beta
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Apply bounded pickword fix
+        shell: bash
+        run: |
+          cat > /tmp/prepare_pickword_layout_fix_20260820.py <<'PY'
+          #!/usr/bin/env python3
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit('%s anchor count=%d' % (label, count))
+              return text.replace(old, new, 1)
+
+          def patch_pickword(repo):
+              path = repo / 'code' / 'th_20_pickword.js'
+              text = path.read_text(encoding='utf-8')
+              text = replace_once(text, '// @version 1.0.22\n', '// @version 1.0.23\n', 'pickword version')
+              text = replace_once(text,
+                  '    var pickwordQrTriggerView20 = null;\n',
+                  '    var pickwordQrTriggerView20 = null;\n    var pickwordGridShareClosePending20 = false;\n',
+                  'grid share pending state')
+              text = replace_once(text,
+                  '        pickwordImageTextOriginalIndex20 = -1;\n        pickwordQrTriggerView20 = null;\n',
+                  '        pickwordImageTextOriginalIndex20 = -1;\n        pickwordQrTriggerView20 = null;\n        pickwordGridShareClosePending20 = false;\n',
+                  'grid share pending cleanup')
+              text = replace_once(text,
+                  '            createPickwordImageActionTile20("分享", "share", function() {\n                performPickwordImagePageAction20(0, "截图分享暂不可用");\n            }), false);',
+                  '            createPickwordImageActionTile20("分享", "share", function() {\n                pickwordGridShareClosePending20 = true;\n                var clicked = performPickwordImagePageAction20(0, "截图分享暂不可用");\n                if (!clicked) pickwordGridShareClosePending20 = false;\n            }), false);',
+                  'grid share entry')
+              text = replace_once(text,
+                  '                onShared: function(info) {\n                    try { safeLog(toolhubAppRef && toolhubAppRef.L, "i", "pickword image shared uri=" + String(info && info.contentUri || "")); } catch (eShared) {}\n                },\n                onDeleted: function(info) { removePickwordImageAfterDelete20(info); },\n                onError: function(stage, error) {\n                    try { safeLog(toolhubAppRef && toolhubAppRef.L, \'w\', "pickword image stage=" + String(stage || "") + " err=" + String(error || "")); } catch (eLog) {}\n                }',
+                  '                onShared: function(info) {\n                    var closeAfterShare = pickwordGridShareClosePending20 === true;\n                    pickwordGridShareClosePending20 = false;\n                    try { safeLog(toolhubAppRef && toolhubAppRef.L, "i", "pickword image shared uri=" + String(info && info.contentUri || "")); } catch (eShared) {}\n                    if (closeAfterShare) {\n                        try { 拾字Floaty.hide(); } catch (eHide) {}\n                    }\n                },\n                onDeleted: function(info) { removePickwordImageAfterDelete20(info); },\n                onError: function(stage, error) {\n                    if (String(stage || "").indexOf("share") === 0) pickwordGridShareClosePending20 = false;\n                    try { safeLog(toolhubAppRef && toolhubAppRef.L, \'w\', "pickword image stage=" + String(stage || "") + " err=" + String(error || "")); } catch (eLog) {}\n                }',
+                  'image share callback boundary')
+              text = replace_once(text,
+                  '            var compactTextHeight20 = Math.round(Math.min(textAreaHeight, uiDp(164, 220)));\n            if (!(compactTextHeight20 > 0)) compactTextHeight20 = Math.round(uiDp(164, 220));\n            var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, compactTextHeight20);\n            textLp.topMargin = uiDp(10, 12);\n            textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));\n            host.addView(textColumn, textLp);',
+                  '            var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);\n            textLp.topMargin = uiDp(10, 12);\n            textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));\n            host.addView(textColumn, textLp);',
+                  'screenshot text wrapper sizing')
+              text = replace_once(text,
+                  '                var contentHeight = textCanvasControl.getContentHeight();\n                // contentHeight 已包含 Canvas 上下内边距，不再额外补高，确保父子高度一致。\n                var adaptiveHeight = Math.min(contentHeight, textAreaHeight);\n                var newHeight = Math.min(Math.max(adaptiveHeight, textAreaMinHeight), textAreaHeight);',
+                  '                var contentHeight = textCanvasControl.getContentHeight();\n                // contentHeight 已包含 Canvas 上下内边距，不再额外补高，确保父子高度一致。\n                var maxHeight = textAreaHeight;\n                if (currentPickwordMeta20 && currentPickwordMeta20.available === true) {\n                    maxHeight = Math.min(maxHeight, Math.round(uiDp(164, 220)));\n                }\n                var adaptiveHeight = Math.min(contentHeight, maxHeight);\n                var newHeight = Math.min(Math.max(adaptiveHeight, textAreaMinHeight), maxHeight);',
+                  'screenshot text max height')
+              helper = '    function syncPickwordPreviewVisibility20() {\n        if (!previewTextView) return;\n        var hidePreview = currentPickwordMeta20 && currentPickwordMeta20.imageOnly === true;\n        try { previewTextView.setVisibility(hidePreview ? View.GONE : View.VISIBLE); } catch (eVisibility) {}\n    }\n\n'
+              text = replace_once(text, '    var fullText = "";\n', helper + '    var fullText = "";\n', 'preview visibility helper')
+              text = replace_once(text,
+                  '            previewTextView.setContentDescription("选中文字预览；点击编辑，长按去空格");\n            if (currentPickwordMeta20 && currentPickwordMeta20.available === true) previewTextView.setVisibility(View.GONE);',
+                  '            previewTextView.setContentDescription("选中文字预览；点击编辑，长按去空格");\n            syncPickwordPreviewVisibility20();',
+                  'preview create visibility')
+              text = replace_once(text,
+                  '        updatePreviewDuringDrag: function() {\n            var count = isDragging ? dragSelectionCount : countSelectedGraphemes20(selectedSet);\n            setCountLabel20(count);\n            this.updateActionButtons();',
+                  '        updatePreviewDuringDrag: function() {\n            var count = isDragging ? dragSelectionCount : countSelectedGraphemes20(selectedSet);\n            setCountLabel20(count);\n            this.updateActionButtons();\n            syncPickwordPreviewVisibility20();',
+                  'drag preview visibility sync')
+              text = replace_once(text,
+                  '        updatePreview: function() {\n            var count = countSelectedGraphemes20(selectedSet);\n            setCountLabel20(count);\n            this.updateActionButtons();',
+                  '        updatePreview: function() {\n            var count = countSelectedGraphemes20(selectedSet);\n            setCountLabel20(count);\n            this.updateActionButtons();\n            syncPickwordPreviewVisibility20();',
+                  'preview visibility sync')
+              path.write_text(text, encoding='utf-8')
+
+          def patch_version_whitelist(path):
+              text = path.read_text(encoding='utf-8')
+              before = text
+              text = text.replace('text.startswith("// @version 1.0.21\\n") or text.startswith("// @version 1.0.22\\n")', 'text.startswith("// @version 1.0.21\\n") or text.startswith("// @version 1.0.22\\n") or text.startswith("// @version 1.0.23\\n")')
+              text = text.replace('source.startswith("// @version 1.0.21\\n") or source.startswith("// @version 1.0.22\\n")', 'source.startswith("// @version 1.0.21\\n") or source.startswith("// @version 1.0.22\\n") or source.startswith("// @version 1.0.23\\n")')
+              text = text.replace('PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22")', 'PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23")')
+              text = text.replace('version must be 1.0.21 or 1.0.22', 'version must be 1.0.21, 1.0.22, or 1.0.23')
+              text = text.replace('module version must be 1.0.21 or 1.0.22', 'module version must be 1.0.21, 1.0.22, or 1.0.23')
+              text = text.replace('pickword version must be 1.0.21 or 1.0.22', 'pickword version must be 1.0.21, 1.0.22, or 1.0.23')
+              if text == before:
+                  raise SystemExit('version whitelist unchanged: ' + str(path))
+              path.write_text(text, encoding='utf-8')
+
+          def patch_image_viewer_verifier(repo):
+              path = repo / 'scripts' / 'verify_pickword_image_viewer.py'
+              text = path.read_text(encoding='utf-8')
+              anchor = 'require(\'addPickwordTextArea20(mainLayout, scrollView\' in th20, "pickword text/image layout host missing")\n'
+              checks = '''require('var pickwordGridShareClosePending20 = false;' in th20, "grid-share pending state missing")
+require('pickwordGridShareClosePending20 = true;' in th20, "grid-share entry must mark pending before dispatch")
+require('var closeAfterShare = pickwordGridShareClosePending20 === true;' in th20, "image share callback must snapshot pending state")
+require('String(stage || "").indexOf("share") === 0' in th20, "failed image share must clear pending state")
+require('function syncPickwordPreviewVisibility20()' in th20, "preview visibility synchronization missing")
+require('var hidePreview = currentPickwordMeta20 && currentPickwordMeta20.imageOnly === true;' in th20, "only image-only sessions may hide text preview")
+require('currentPickwordMeta20 && currentPickwordMeta20.available === true) previewTextView.setVisibility(View.GONE)' not in th20, "screenshot availability must not hide text preview")
+require('var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);' in th20, "screenshot text wrapper must wrap content")
+require('textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));' in th20, "screenshot scroll view must not be forced to fixed parent height")
+require('compactTextHeight20' not in th20, "fixed screenshot text wrapper height must stay removed")
+require('maxHeight = Math.min(maxHeight, Math.round(uiDp(164, 220)));' in th20, "screenshot text max-height cap missing")
+grid_start = th20.find('function createPickwordImageActionGrid20(thumbRoot)')
+grid_end = th20.find('function addPickwordTextArea20(parent, view, originalLp)', grid_start)
+require(grid_start >= 0 and grid_end > grid_start, "image action grid block missing")
+grid_body = th20[grid_start:grid_end]
+require('拾字Floaty.hide();' not in grid_body, "grid share must not close pickword before async share succeeds")
+controller_start = th20.find('pickwordImageController20 = toolhubAppRef.createPickwordImageController({')
+controller_end = th20.find('            });', controller_start)
+require(controller_start >= 0 and controller_end > controller_start, "pickword image controller callback block missing")
+controller_body = th20[controller_start:controller_end]
+require('if (closeAfterShare)' in controller_body and '拾字Floaty.hide();' in controller_body, "grid share close must be gated inside onShared")
+'''
+              if anchor not in text:
+                  raise SystemExit('image-viewer verifier anchor missing')
+              path.write_text(text.replace(anchor, anchor + checks, 1), encoding='utf-8')
+
+          repo = Path.cwd()
+          patch_pickword(repo)
+          for rel in (
+              'scripts/verify_pickword_long_click_api34.py',
+              'scripts/verify_pickword_unified_cleanup.py',
+              'scripts/verify_channel_private_storage_isolation.py',
+              'scripts/verify_pickword_emoji_grapheme.py',
+          ):
+              patch_version_whitelist(repo / rel)
+          patch_image_viewer_verifier(repo)
+          print('prepared pickword screenshot layout fix: th_20 1.0.23 + verifier updates')
+          PY
+          python3 /tmp/prepare_pickword_layout_fix_20260820.py
+
+          python3 scripts/create_update_record.py \
+            --non-interactive \
+            --id 20260820-beta-pickword-screenshot-layout-regression-fix \
+            --type fix \
+            --title 'Beta：修复拾字截图布局三项回归' \
+            --detail '截图拾字文字区改为 WRAP_CONTENT 外层 + 截图模式独立最大高度，消除短文本下方固定透明留白，同时保留无截图模式原自适应逻辑。' \
+            --detail '已选文字预览仅在 image-only 会话隐藏；普通截图 OCR/拾字文本恢复预览，并在创建、拖选与选择更新时同步可见性。' \
+            --detail '右侧 2×2 分享使用一次性 pending，仅在图片分享 chooser 成功拉起后的 onShared 关闭拾字浮窗；失败、释放均清理状态，完整图片页分享保持原行为。' \
+            --detail '图片查看器 th_22_image_viewer.js 业务实现保持不变；同步 th_20 1.0.23 verifier 白名单与三项回归断言。'
+
+      - name: Verify bounded source patch
+        shell: bash
+        run: |
+          set -eo pipefail
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_code_constraints.py --output code-constraint-report.json
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_pickword_translate_settings.py
+          python3 scripts/verify_pickword_long_click_api34.py
+          python3 scripts/verify_pickword_share_close_cleanup.py
+          python3 scripts/verify_pickword_unified_cleanup.py
+          python3 scripts/verify_pickword_emoji_grapheme.py
+          python3 scripts/verify_channel_private_storage_isolation.py
+          python3 scripts/verify_pointer_regressions.py
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_pickword_image_viewer.py
+          python3 scripts/verify_pickword_image_meta_handoff.py
+          python3 scripts/verify_changed_module_versions.py --base-ref HEAD
+          git diff --check
+          grep -q '^// @version 1.0.23$' code/th_20_pickword.js
+          grep -q 'var pickwordGridShareClosePending20 = false;' code/th_20_pickword.js
+          grep -q 'function syncPickwordPreviewVisibility20()' code/th_20_pickword.js
+          grep -q 'var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);' code/th_20_pickword.js
+          git diff --exit-code -- code/th_22_image_viewer.js
+          allowed='^(code/th_20_pickword.js|scripts/verify_pickword_long_click_api34.py|scripts/verify_pickword_unified_cleanup.py|scripts/verify_channel_private_storage_isolation.py|scripts/verify_pickword_emoji_grapheme.py|scripts/verify_pickword_image_viewer.py|updates/records/20260820-beta-pickword-screenshot-layout-regression-fix.json)$'
+          unexpected="$(git diff --name-only | grep -Ev "$allowed" || true)"
+          if [ -n "$unexpected" ]; then
+            echo 'Unexpected changed files:'
+            echo "$unexpected"
+            exit 1
+          fi
+
+      - name: Commit bounded fix
+        shell: bash
+        run: |
+          if [ -z "$TOOLHUB_AUTOMATION_TOKEN" ]; then
+            echo 'TOOLHUB_AUTOMATION_TOKEN is empty'
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            code/th_20_pickword.js \
+            scripts/verify_pickword_long_click_api34.py \
+            scripts/verify_pickword_unified_cleanup.py \
+            scripts/verify_channel_private_storage_isolation.py \
+            scripts/verify_pickword_emoji_grapheme.py \
+            scripts/verify_pickword_image_viewer.py \
+            updates/records/20260820-beta-pickword-screenshot-layout-regression-fix.json
+          if git diff --cached --quiet; then
+            echo 'No bounded source changes'
+            exit 0
+          fi
+          git commit -m '修复拾字截图布局三项回归'
+          git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:beta
