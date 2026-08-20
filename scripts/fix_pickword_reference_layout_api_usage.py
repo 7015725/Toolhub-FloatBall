@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "code" / "th_20_pickword.js"
+IMAGE_VIEWER_VERIFY = ROOT / "scripts" / "verify_pickword_image_viewer.py"
 
 
 def require(condition, message):
@@ -11,14 +12,13 @@ def require(condition, message):
         raise SystemExit("pickword layout API fixup failed: " + message)
 
 
-def main():
+def patch_pickword():
     text = TARGET.read_text(encoding="utf-8")
     require(text.startswith("// @version 1.0.22\n"), "expected th_20 version 1.0.22")
 
     if "function findPickwordTextAction20(root, labels)" not in text:
         require("function performPickwordImagePageAction20(actionIndex, unavailableText)" in text, "fixed image action helper missing")
         require("root.getChildAt(2)" in text, "thumbnail QR child binding missing")
-        print("OK pickword reference layout API fixup already applied")
         return
 
     start = text.find("    function findPickwordTextAction20(root, labels) {")
@@ -100,7 +100,22 @@ def main():
     require('performPickwordImagePageAction20(0, "截图分享暂不可用");' in text, "share action index")
     require('performPickwordImagePageAction20(1, "截图保存暂不可用");' in text, "save action index")
     TARGET.write_text(text, encoding="utf-8")
-    print("OK pickword reference layout API fixup hierarchy_actions=1 generic_getText=0")
+
+
+def patch_image_viewer_verifier():
+    text = IMAGE_VIEWER_VERIFY.read_text(encoding="utf-8")
+    old = "require('uiDp(108, 132)' in th20 and 'uiDp(156, 220)' in th20, \"compact thumbnail/text dimensions missing\")"
+    new = "require('uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20, \"reference screenshot/text dimensions missing\")"
+    if old in text:
+        text = text.replace(old, new, 1)
+    require(new in text, "image viewer verifier reference dimensions")
+    IMAGE_VIEWER_VERIFY.write_text(text, encoding="utf-8")
+
+
+def main():
+    patch_pickword()
+    patch_image_viewer_verifier()
+    print("OK pickword reference layout API fixup hierarchy_actions=1 generic_getText=0 verifier=reference_layout")
 
 
 if __name__ == "__main__":
