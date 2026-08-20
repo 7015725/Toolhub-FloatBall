@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "f7c917ed50c7343374257ade553377a8b2150861dbdc09ceb50a6ac33cc837fa",
-      "size": 87654,
-      "version": 20260820002736
+      "sha256": "776f8b5a73cc0c71c550a7c15501af33b1cc6d161dfb6e5373a446f43cb90920",
+      "size": 88571,
+      "version": 20260820030758
     }
   },
   "branch": "beta",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "03adfc0d055cceefedfb6ccaf89574fefa13d9c81db210218c1082a2ad47eb97",
-      "size": 266276,
-      "version": "1.0.21"
+      "sha256": "f05fa20b1c21d645fb60810d1f52fe2e3211e1590c0bf0c6b8e1af6cf479af49",
+      "size": 275518,
+      "version": "1.0.22"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -189,12 +189,12 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复二维码结果“载入拾字”先异步 hide 再立即 show，旧窗口迟到清理把 mainLayout/textView 置空，触发 Cannot call method setText/setVisibility of null 的问题。",
-      "二维码文本改为直接复用当前拾字窗口，通过 showPickwordText 重置当前会话，不再调用 hidePickwordWindow(\"qr_load\")；截图元数据、二维码结果缓存与恢复原文状态保持不变。",
-      "新增发布门禁禁止二维码载入路径恢复 hide→show 竞态；ZXing 3.5.4-r2、通道私有 lib、框选截图、OCR 与二维码解析主链保持不变。"
+      "带截图的拾字窗口重排为上方截图预览 + 2×2 操作区、下方正文卡片，操作区固定为分享、二维码、贴图、保存。",
+      "二维码继续复用现有 ZXing 解析入口，分享与保存继续复用截图查看器原有动作；截图状态条与旧内嵌二维码按钮收拢，避免重复入口。",
+      "无截图拾字保持原布局与文字选择能力；复制、翻译、全选、清空、复制全部、去重换行、文字分享与钉屏主链不变。"
     ],
     "date": "2026-08-20",
-    "title": "Beta：修复二维码载入拾字窗口竞态"
+    "title": "Beta：复刻拾字截图参考布局"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -210,5 +210,5 @@
     }
   },
   "schema": 6,
-  "version": 20260820002736
+  "version": 20260820030758
 }

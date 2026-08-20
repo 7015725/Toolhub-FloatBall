@@ -1,8 +1,27 @@
 {
   "schema": 1,
-  "historyVersion": 20260820002736,
-  "generatedAt": "2026-08-20T08:27:37+08:00",
+  "historyVersion": 20260820030758,
+  "generatedAt": "2026-08-20T11:07:58+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260820-beta-pickword-reference-layout",
+      "type": "optimize",
+      "title": "Beta：复刻拾字截图参考布局",
+      "details": [
+        "带截图的拾字窗口重排为上方截图预览 + 2×2 操作区、下方正文卡片，操作区固定为分享、二维码、贴图、保存。",
+        "二维码继续复用现有 ZXing 解析入口，分享与保存继续复用截图查看器原有动作；截图状态条与旧内嵌二维码按钮收拢，避免重复入口。",
+        "无截图拾字保持原布局与文字选择能力；复制、翻译、全选、清空、复制全部、去重换行、文字分享与钉屏主链不变。"
+      ],
+      "manifestVersion": 20260820030758,
+      "date": "2026-08-20",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260820-beta-qr-load-text-race",
