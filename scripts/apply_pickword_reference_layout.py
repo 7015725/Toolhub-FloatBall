@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "code" / "th_20_pickword.js"
 OLD_VERSION = "// @version 1.0.21\n"
 NEW_VERSION = "// @version 1.0.22\n"
+CURRENT_VERSION = "// @version 1.0.23\n"
 
 
 def require(condition, message):
@@ -21,20 +22,19 @@ def replace_once(text, old, new, label):
 
 def already_applied(text):
     markers = (
-        NEW_VERSION.strip(),
         "function createPickwordImageActionGrid20(thumbRoot)",
         'createPickwordImageActionTile20("二维码", "qr"',
         'createPickwordImageActionTile20("贴图", "image"',
         "normalizePickwordThumbnailChrome20(thumb);",
         "var contentWidthDp20 = Number(windowWidth || dm.widthPixels || 0) / density20;",
     )
-    return all(marker in text for marker in markers)
+    return (text.startswith(NEW_VERSION) or text.startswith(CURRENT_VERSION)) and all(marker in text for marker in markers)
 
 
 def patch():
     text = TARGET.read_text(encoding="utf-8")
     if already_applied(text):
-        print("OK pickword reference layout already applied version=1.0.22")
+        print("OK pickword reference layout already applied version=current")
         return
 
     require(text.startswith(OLD_VERSION), "expected th_20 version 1.0.21")
