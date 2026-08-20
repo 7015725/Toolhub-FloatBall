@@ -8,5 +8,12 @@
     "二维码文本改为直接复用当前拾字窗口，通过 showPickwordText 重置当前会话，不再调用 hidePickwordWindow(\"qr_load\")；截图元数据、二维码结果缓存与恢复原文状态保持不变。",
     "新增发布门禁禁止二维码载入路径恢复 hide→show 竞态；ZXing 3.5.4-r2、通道私有 lib、框选截图、OCR 与二维码解析主链保持不变。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260820002736,
+  "date": "2026-08-20",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
 }

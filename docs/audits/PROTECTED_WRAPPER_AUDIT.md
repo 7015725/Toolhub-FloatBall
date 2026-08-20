@@ -39,7 +39,7 @@
 |Beta 实验扩展|`isToolAppRoute`|`th_15_extra.js → th_34_shortx_ui_lab.js`|`th_34_shortx_ui_lab.js`|`wrapper`|11|15|0|7|继续保留|
 |拾字二维码扩展|`createPickwordImageController`|`th_22_image_viewer.js → th_26_qr_runtime.js`|`th_26_qr_runtime.js`|`wrapper`|2|7|0|2|继续保留|
 |拾字二维码扩展|`disposePickwordModule`|`th_20_pickword.js → th_26_qr_runtime.js`|`th_26_qr_runtime.js`|`wrapper`|1|5|0|1|继续保留|
-|拾字二维码扩展|`hidePickwordWindow`|`th_20_pickword.js → th_26_qr_runtime.js`|`th_26_qr_runtime.js`|`wrapper`|2|7|0|1|继续保留|
+|拾字二维码扩展|`hidePickwordWindow`|`th_20_pickword.js → th_26_qr_runtime.js`|`th_26_qr_runtime.js`|`wrapper`|1|5|0|1|继续保留|
 |ShortXUI 最终封装|`startAsync`|`th_16_entry.js → th_25_shortx_ui_package.js`|`th_25_shortx_ui_package.js`|`wrapper`|0|4|0|1|继续保留|
 
 ## 判定说明
