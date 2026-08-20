@@ -1,0 +1,1 @@
+cleanup=delete temporary PR trigger branch after successful beta signing
