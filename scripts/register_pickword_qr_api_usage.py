@@ -4,6 +4,7 @@
 This file is also a signed-input trigger so the Rhino DexClassLoader fix is
 materialized into a fresh Beta manifest/signature bundle.
 """
+# 2026-08-20: temporary signed-input trigger for the th_20 1.0.23 Beta bundle.
 import json
 from pathlib import Path
 
