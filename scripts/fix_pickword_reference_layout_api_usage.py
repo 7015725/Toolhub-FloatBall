@@ -15,7 +15,10 @@ def require(condition, message):
 
 def patch_pickword():
     text = TARGET.read_text(encoding="utf-8")
-    require(text.startswith("// @version 1.0.22\n"), "expected th_20 version 1.0.22")
+    require(
+        text.startswith("// @version 1.0.22\n") or text.startswith("// @version 1.0.23\n"),
+        "expected th_20 version 1.0.22 or 1.0.23",
+    )
 
     if "function findPickwordTextAction20(root, labels)" not in text:
         require("function performPickwordImagePageAction20(actionIndex, unavailableText)" in text, "fixed image action helper missing")
@@ -132,9 +135,12 @@ def patch_image_viewer_verifier():
 def patch_channel_storage_verifier():
     text = CHANNEL_STORAGE_VERIFY.read_text(encoding="utf-8")
     old = 'require(PICKWORD.splitlines()[0] == "// @version 1.0.21", "th_20_pickword.js version must be 1.0.21")'
-    new = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22"), "th_20_pickword.js version must be 1.0.21 or 1.0.22")'
+    legacy = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22"), "th_20_pickword.js version must be 1.0.21 or 1.0.22")'
+    new = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23"), "th_20_pickword.js version must be 1.0.21, 1.0.22, or 1.0.23")'
     if old in text:
         text = text.replace(old, new, 1)
+    elif legacy in text:
+        text = text.replace(legacy, new, 1)
     require(new in text, "channel storage verifier version compatibility")
     CHANNEL_STORAGE_VERIFY.write_text(text, encoding="utf-8")
 
@@ -143,7 +149,7 @@ def main():
     patch_pickword()
     patch_image_viewer_verifier()
     patch_channel_storage_verifier()
-    print("OK pickword reference layout API fixup hierarchy_actions=1 generic_getText=0 verifier=v1.0.21|v1.0.22")
+    print("OK pickword reference layout API fixup hierarchy_actions=1 generic_getText=0 verifier=v1.0.21|v1.0.22|v1.0.23")
 
 
 if __name__ == "__main__":
