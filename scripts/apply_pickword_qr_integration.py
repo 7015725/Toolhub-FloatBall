@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Idempotently normalize the permanent Beta QR wiring before signing.
 
-Current fix: th_26 v1.0.6 resolves DexClassLoader through Rhino's Packages root.
-ShortX/Rhino does not expose `dalvik` as a top-level Java package identifier,
-while existing ToolHub integrations already use Packages.* for Java imports.
+Current fix: th_26 v1.0.7 keeps QR "load to pickword" on the current pickword
+window instead of issuing async hide followed immediately by show. The old order
+could let a late hide cleanup null mainLayout/textView after the new session had
+already started, producing setText/setVisibility of null.
 """
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,13 +39,24 @@ def patch_qr_module():
     text = QR_MODULE.read_text(encoding="utf-8")
     if text.startswith("// @version 1.0.5\n"):
         text = text.replace("// @version 1.0.5\n", "// @version 1.0.6\n", 1)
-    require(text.startswith("// @version 1.0.6\n"), "QR module version 1.0.6")
+    if text.startswith("// @version 1.0.6\n"):
+        text = text.replace("// @version 1.0.6\n", "// @version 1.0.7\n", 1)
+    require(text.startswith("// @version 1.0.7\n"), "QR module version 1.0.7")
 
     text = text.replace(
         "new dalvik.system.DexClassLoader(",
         "new Packages.dalvik.system.DexClassLoader(",
     )
 
+    old_load = '''        cancelQr26(appObj, "load_qr_text");\n        try { if (typeof appObj.hidePickwordWindow === "function") appObj.hidePickwordWindow("qr_load"); } catch (eHide) {}\n        appObj.showPickwordText(String(cached.result.text == null ? "" : cached.result.text), shallowCopy26(session));'''
+    new_load = '''        cancelQr26(appObj, "load_qr_text");\n        var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);\n        log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));\n        appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));'''
+    if old_load in text:
+        text = text.replace(old_load, new_load, 1)
+
+    require('hidePickwordWindow("qr_load")' not in text, "QR load-to-pickword must not async hide before show")
+    require('var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);' in text, "QR load text local value")
+    require('log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));' in text, "QR load text reuse-window log")
+    require('appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));' in text, "QR direct load into current pickword window")
     require("new dalvik.system.DexClassLoader(" not in text, "bare dalvik package must not be used in Rhino")
     require("new Packages.dalvik.system.DexClassLoader(" in text, "Rhino Packages DexClassLoader")
     require("context.getCodeCacheDir()" not in text, "system_server codeCacheDir must not be used")
@@ -69,54 +82,60 @@ def patch_qr_module():
 
 def patch_version_verifier(path):
     text = path.read_text(encoding="utf-8")
-    if '"// @version 1.0.6"' not in text:
-        text = text.replace(
-            '"// @version 1.0.5",\n',
-            '"// @version 1.0.5",\n    "// @version 1.0.6",\n',
+    if '"// @version 1.0.7"' not in text:
+        text = re.sub(
+            r'(?m)^(\s*)"// @version 1\.0\.6",\n(\s*)\)',
+            r'\1"// @version 1.0.6",\n\1"// @version 1.0.7",\n\2)',
+            text,
         )
         text = text.replace(
-            '"// @version 1.0.5")',
-            '"// @version 1.0.5", "// @version 1.0.6")',
+            '"// @version 1.0.6")',
+            '"// @version 1.0.6", "// @version 1.0.7")',
         )
-    text = text.replace("1.0.1/1.0.2/1.0.3/1.0.4/1.0.5", "1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6")
+    text = text.replace(
+        "1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6",
+        "1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6/1.0.7",
+    )
     path.write_text(text, encoding="utf-8")
+
+
+def extend_version_lists(text):
+    text = text.replace(
+        '("// @version 1.0.5", "// @version 1.0.6")',
+        '("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7")',
+    )
+    text = text.replace(
+        'if version == "// @version 1.0.6":',
+        'if version in ("// @version 1.0.6", "// @version 1.0.7"):',
+    )
+    text = text.replace(
+        'if qr_version == "// @version 1.0.6":',
+        'if qr_version in ("// @version 1.0.6", "// @version 1.0.7"):',
+    )
+    return text
 
 
 def patch_verifiers():
     for path in (VERIFY_MANIFEST, VERIFY_STORAGE, VERIFY_QR):
         patch_version_verifier(path)
 
-    text = VERIFY_MANIFEST.read_text(encoding="utf-8")
-    if 'if version == "// @version 1.0.5":' in text:
-        text = text.replace(
-            'if version == "// @version 1.0.5":',
-            'if version in ("// @version 1.0.5", "// @version 1.0.6"):',
-        )
-    marker = '            \'var optimizedDirectory = getDexOptimizedDirectory26();\','
-    if marker in text and 'Packages.dalvik.system.DexClassLoader' not in text:
-        text = text.replace(marker, marker + '\n            \'new Packages.dalvik.system.DexClassLoader(\',')
+    text = extend_version_lists(VERIFY_MANIFEST.read_text(encoding="utf-8"))
+    if 'if version == "// @version 1.0.7":' not in text:
+        anchor = '\n\ndef main():'
+        guard = '''\n    if version == "// @version 1.0.7":\n        if 'hidePickwordWindow("qr_load")' in text:\n            fail("Beta QR load-to-pickword must not async hide before show")\n        for marker in (\n            'var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);',\n            'log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));',\n            'appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));',\n        ):\n            if marker not in text:\n                fail("Beta QR load-to-pickword reuse marker missing: " + marker)\n'''
+        require(anchor in text, "manifest verifier load-race guard anchor")
+        text = text.replace(anchor, guard + anchor, 1)
     VERIFY_MANIFEST.write_text(text, encoding="utf-8")
 
-    text = VERIFY_STORAGE.read_text(encoding="utf-8")
-    if 'if qr_version == "// @version 1.0.5":' in text:
-        text = text.replace(
-            'if qr_version == "// @version 1.0.5":',
-            'if qr_version in ("// @version 1.0.5", "// @version 1.0.6"):',
-        )
-    text = text.replace("'new dalvik.system.DexClassLoader',", "'new Packages.dalvik.system.DexClassLoader',")
-    if 'qr_version == "// @version 1.0.6"' not in text:
-        anchor = 'allowed_shortx_files = {"th_01_base.js"}'
-        guard = '''if qr_version == "// @version 1.0.6":\n    require("new dalvik.system.DexClassLoader(" not in QR, "QR runtime must not use bare dalvik package in Rhino")\n    require("new Packages.dalvik.system.DexClassLoader(" in QR, "QR runtime must resolve DexClassLoader through Rhino Packages")\n\n'''
-        require(anchor in text, "storage verifier guard anchor")
-        text = text.replace(anchor, guard + anchor, 1)
+    text = extend_version_lists(VERIFY_STORAGE.read_text(encoding="utf-8"))
     VERIFY_STORAGE.write_text(text, encoding="utf-8")
 
-    text = VERIFY_QR.read_text(encoding="utf-8")
+    text = extend_version_lists(VERIFY_QR.read_text(encoding="utf-8"))
     text = text.replace('"new dalvik.system.DexClassLoader",', '"new Packages.dalvik.system.DexClassLoader",')
-    if 'if qr_version == "// @version 1.0.6":' not in text:
+    if 'if qr_version == "// @version 1.0.7":' not in text:
         anchor = 'require(GEN, \'"th_26_qr_runtime.js"\', "signed QR module")'
-        guard = '''if qr_version == "// @version 1.0.6":\n    forbid(QR, "new dalvik.system.DexClassLoader(", "bare dalvik package is undefined in ShortX Rhino")\n    require(QR, "new Packages.dalvik.system.DexClassLoader(", "Rhino Packages DexClassLoader")\n\n'''
-        require(anchor in text, "QR verifier guard anchor")
+        guard = '''if qr_version == "// @version 1.0.7":\n    forbid(QR, 'hidePickwordWindow("qr_load")', "QR load-to-pickword hide/show race")\n    require(QR, 'var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);', "QR load text local value")\n    require(QR, 'log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));', "QR load reuse-window log")\n    require(QR, 'appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));', "QR direct load to existing pickword window")\n\n'''
+        require(anchor in text, "QR verifier load-race guard anchor")
         text = text.replace(anchor, guard + anchor, 1)
     VERIFY_QR.write_text(text, encoding="utf-8")
 
@@ -136,7 +155,7 @@ def main():
     patch_qr_module()
     patch_verifiers()
     validate_boundaries()
-    print("OK Beta QR wiring idempotent version=1.0.6 rhino_packages_dexloader=1 system_server_code_cache=avoided")
+    print("OK Beta QR wiring idempotent version=1.0.7 load_text_reuse_window=1 rhino_packages_dexloader=1")
 
 
 if __name__ == "__main__":

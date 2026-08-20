@@ -1,4 +1,4 @@
-// @version 1.0.6
+// @version 1.0.7
 // =======================【拾字截图二维码解析 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -628,8 +628,9 @@
         };
         cached.loaded = true;
         cancelQr26(appObj, "load_qr_text");
-        try { if (typeof appObj.hidePickwordWindow === "function") appObj.hidePickwordWindow("qr_load"); } catch (eHide) {}
-        appObj.showPickwordText(String(cached.result.text == null ? "" : cached.result.text), shallowCopy26(session));
+        var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);
+        log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));
+        appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));
       } else if (cached.snapshot) {
         cached.loaded = false;
         var snapshot = cached.snapshot;

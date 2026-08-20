@@ -28,10 +28,11 @@ SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.4",
     "// @version 1.0.5",
     "// @version 1.0.6",
+    "// @version 1.0.7",
 )
 require(
     QR.splitlines()[0] in SUPPORTED_QR_VERSIONS,
-    "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6 during generation",
+    "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6/1.0.7 during generation",
 )
 
 for name, source in (("theme", THEME), ("panel_ui", PANEL), ("pickword", PICKWORD)):
@@ -68,6 +69,7 @@ if qr_version in (
     "// @version 1.0.4",
     "// @version 1.0.5",
     "// @version 1.0.6",
+    "// @version 1.0.7",
 ):
     for marker in (
         'typeof getToolHubRootDir !== "function"',
@@ -78,7 +80,7 @@ if qr_version in (
         'manifest.runtimeFiles',
     ):
         require(marker in QR, "QR channel-lib safety marker missing: " + marker)
-    if qr_version == "// @version 1.0.6":
+    if qr_version in ("// @version 1.0.6", "// @version 1.0.7"):
         require('new Packages.dalvik.system.DexClassLoader' in QR,
                 "QR Rhino DexClassLoader marker missing")
     else:
@@ -102,6 +104,7 @@ if qr_version in (
     "// @version 1.0.4",
     "// @version 1.0.5",
     "// @version 1.0.6",
+    "// @version 1.0.7",
 ):
     for marker in (
         'installLock: new java.util.concurrent.locks.ReentrantLock()',
@@ -116,6 +119,7 @@ if qr_version in (
     "// @version 1.0.4",
     "// @version 1.0.5",
     "// @version 1.0.6",
+    "// @version 1.0.7",
 ):
     for marker in (
         'function sanitizeError26(error)',
@@ -124,7 +128,7 @@ if qr_version in (
     ):
         require(marker in QR, "QR runtime diagnostics marker missing: " + marker)
 
-if qr_version in ("// @version 1.0.5", "// @version 1.0.6"):
+if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7"):
     require("context.getCodeCacheDir()" not in QR,
             "QR runtime must not call app code cache from system_server")
     for marker in (
@@ -135,7 +139,7 @@ if qr_version in ("// @version 1.0.5", "// @version 1.0.6"):
     ):
         require(marker in QR, "QR system_server DexClassLoader marker missing: " + marker)
 
-if qr_version == "// @version 1.0.6":
+if qr_version in ("// @version 1.0.6", "// @version 1.0.7"):
     require("new dalvik.system.DexClassLoader(" not in QR,
             "QR runtime must not use bare dalvik package in Rhino")
     require("new Packages.dalvik.system.DexClassLoader(" in QR,
