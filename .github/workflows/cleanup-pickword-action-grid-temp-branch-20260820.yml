@@ -3,7 +3,7 @@ name: cleanup-pickword-action-grid-temp-branch-20260820
 on:
   pull_request:
     branches: [beta]
-    types: [reopened]
+    types: [reopened, synchronize]
 
 permissions:
   contents: write
