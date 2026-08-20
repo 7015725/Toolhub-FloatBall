@@ -1,4 +1,4 @@
-// @version 1.0.5
+// @version 1.0.6
 // =======================【拾字截图二维码解析 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -340,7 +340,7 @@
     var installed = ensureRuntimeFile26();
     if (installed.file.canWrite()) throw new Error("二维码运行时文件必须只读");
     var optimizedDirectory = getDexOptimizedDirectory26();
-    var loader = new dalvik.system.DexClassLoader(
+    var loader = new Packages.dalvik.system.DexClassLoader(
       installed.file.getAbsolutePath(),
       optimizedDirectory,
       null,

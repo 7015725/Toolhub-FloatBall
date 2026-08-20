@@ -19,7 +19,8 @@ def replace_once(text, old, new, label):
 def validate_qr_integration_version_gate():
     text = QR_INTEGRATION.read_text(encoding="utf-8")
     for token in (
-        '"// @version 1.0.5"',
+        '"// @version 1.0.6"',
+        'new Packages.dalvik.system.DexClassLoader(',
         'new java.io.File(root, "lib")',
         'require("shortx.getShortXDir" not in text',
         'function sanitizeError26(error)',
@@ -34,8 +35,8 @@ def validate_qr_integration_version_gate():
 
 def validate_qr_runtime():
     text = QR_MODULE.read_text(encoding="utf-8")
-    if not text.startswith("// @version 1.0.5"):
-        raise SystemExit("ShortXUI QR compat requires QR runtime version 1.0.5")
+    if not text.startswith("// @version 1.0.6"):
+        raise SystemExit("ShortXUI QR compat requires QR runtime version 1.0.6")
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
         "function preflightRuntime26(appObj, reason)",
@@ -51,9 +52,12 @@ def validate_qr_runtime():
         'new java.io.File(lib, ".dexopt")',
         'assertWritableDirPath(dexoptPath, "ToolHub QR dexopt")',
         'var optimizedDirectory = getDexOptimizedDirectory26();',
+        'new Packages.dalvik.system.DexClassLoader(',
     ):
         if token not in text:
             raise SystemExit("ShortXUI QR compat runtime marker missing: " + token)
+    if "new dalvik.system.DexClassLoader(" in text:
+        raise SystemExit("ShortXUI QR compat forbids bare dalvik package in Rhino")
     if "context.getCodeCacheDir()" in text:
         raise SystemExit("ShortXUI QR compat forbids system_server Context.getCodeCacheDir")
     if "shortx.getShortXDir" in text:
@@ -102,7 +106,7 @@ def main():
     TARGET.write_text(text, encoding="utf-8")
     validate_qr_integration_version_gate()
     validate_qr_runtime()
-    print("OK ShortXUI finalizer preserves Beta QR 1.0.5 system_server DexClassLoader fix")
+    print("OK ShortXUI finalizer preserves Beta QR 1.0.6 Rhino Packages DexClassLoader fix")
 
 
 if __name__ == "__main__":
