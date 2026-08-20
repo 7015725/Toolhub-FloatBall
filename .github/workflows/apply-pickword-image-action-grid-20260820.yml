@@ -28,6 +28,18 @@ jobs:
           git show FETCH_HEAD:scripts/_trigger_pickword_image_action_grid_20260820.py > scripts/_tmp_pickword_image_action_grid_20260820.py
           python3 scripts/_tmp_pickword_image_action_grid_20260820.py
           rm -f scripts/_tmp_pickword_image_action_grid_20260820.py
+          python3 - <<'PYFIX'
+          from pathlib import Path
+          path = Path('scripts/apply_pickword_qr_integration.py')
+          text = path.read_text(encoding='utf-8')
+          bad = 'if current_qr_text.startswith("// @version 1.0.8\n"):'
+          good = 'if current_qr_text.startswith("// @version 1.0.8\\n"):'
+          if bad not in text:
+              raise SystemExit('expected generated QR verifier newline defect not found')
+          text = text.replace(bad, good, 1)
+          path.write_text(text, encoding='utf-8')
+          PYFIX
+          python3 -m py_compile scripts/apply_pickword_qr_integration.py
 
       - name: Verify signing normalizers are idempotent
         shell: bash
