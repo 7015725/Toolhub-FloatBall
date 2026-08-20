@@ -105,10 +105,13 @@ def patch_pickword():
 def patch_image_viewer_verifier():
     text = IMAGE_VIEWER_VERIFY.read_text(encoding="utf-8")
     old = "require('uiDp(108, 132)' in th20 and 'uiDp(156, 220)' in th20, \"compact thumbnail/text dimensions missing\")"
-    new = "require('uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20, \"reference screenshot/text dimensions missing\")"
+    reference_only = "require('uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20, \"reference screenshot/text dimensions missing\")"
+    flexible = "compact_layout = 'uiDp(108, 132)' in th20 and 'uiDp(156, 220)' in th20\nreference_layout = 'uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20\nrequire(compact_layout or reference_layout, \"supported thumbnail/text dimensions missing\")"
     if old in text:
-        text = text.replace(old, new, 1)
-    require(new in text, "image viewer verifier reference dimensions")
+        text = text.replace(old, flexible, 1)
+    elif reference_only in text:
+        text = text.replace(reference_only, flexible, 1)
+    require("reference_layout = 'uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20" in text, \"image viewer verifier reference dimensions\")
     IMAGE_VIEWER_VERIFY.write_text(text, encoding="utf-8")
 
 

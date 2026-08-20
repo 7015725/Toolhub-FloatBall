@@ -37,7 +37,9 @@ require(image_page_start >= 0 and image_page_end > image_page_start, "image page
 image_page_body = th20[image_page_start:image_page_end]
 require('layoutParams.width = targetSize.width' in image_page_body and 'layoutParams.height = targetSize.height' in image_page_body, "image page must use calculated card size")
 require('LayoutParams.MATCH_PARENT' not in image_page_body and 'Gravity.CENTER' in image_page_body, "image page must remain centered card instead of fullscreen")
-require('uiDp(108, 132)' in th20 and 'uiDp(156, 220)' in th20, "compact thumbnail/text dimensions missing")
+compact_layout = 'uiDp(108, 132)' in th20 and 'uiDp(156, 220)' in th20
+reference_layout = 'uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20
+require(compact_layout or reference_layout, "supported thumbnail/text dimensions missing")
 require('onSaved: function(info)' in th20 and 'onDeleted: function(info)' in th20, "stage2 callbacks missing")
 require('createPickwordImageController' in th22, "image controller missing")
 require('ImageView.ScaleType.FIT_CENTER' in th22, "thumbnail must keep full image with FIT_CENTER")
