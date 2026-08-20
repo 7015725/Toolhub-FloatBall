@@ -12,8 +12,8 @@ def require(value, message):
 
 
 require(
-    SOURCE.startswith("// @version 1.0.21\n") or SOURCE.startswith("// @version 1.0.22\n"),
-    "th_20 version must be 1.0.21 or 1.0.22",
+    SOURCE.startswith("// @version 1.0.21\n") or SOURCE.startswith("// @version 1.0.22\n") or SOURCE.startswith("// @version 1.0.23\n"),
+    "th_20 version must be 1.0.21, 1.0.22, or 1.0.23",
 )
 match = re.search(
     r"function normalizePickwordImageMeta20\(meta\) \{(?P<body>.*?)\n    \}\n\n    function releasePickwordImageController20",
