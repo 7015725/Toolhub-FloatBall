@@ -1,0 +1,94 @@
+name: apply-pickword-image-action-grid-20260820
+
+on:
+  pull_request:
+    branches: [beta]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'agent/pickword-image-action-grid-trigger-20260820'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout beta
+        uses: actions/checkout@v4
+        with:
+          ref: beta
+          fetch-depth: 0
+          token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+
+      - name: Apply bounded patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' 'IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKClJPT1QgPSBQYXRoKF9fZmlsZV9fKS5yZXNvbHZlKCkucGFyZW50c1sxXQoKCmRlZiBmYWlsKG1zZyk6CiAgICByYWlzZSBTeXN0ZW1FeGl0KCdwaWNrd29yZCBhY3Rpb24tZ3JpZCBwYXRjaCBmYWlsZWQ6ICcgKyBtc2cpCgoKZGVmIHJlYWQocmVsKToKICAgIHJldHVybiAoUk9PVCAvIHJlbCkucmVhZF90ZXh0KGVuY29kaW5nPSd1dGYtOCcpCgoKZGVmIHdyaXRlKHJlbCwgdGV4dCk6CiAgICAoUk9PVCAvIHJlbCkud3JpdGVfdGV4dCh0ZXh0LCBlbmNvZGluZz0ndXRmLTgnKQoKCmRlZiByZXF1aXJlKGNvbmQsIG1zZyk6CiAgICBpZiBub3QgY29uZDoKICAgICAgICBmYWlsKG1zZykKCgpkZWYgcmVwbGFjZV9vbmNlKHRleHQsIG9sZCwgbmV3LCBsYWJlbCk6CiAgICBjb3VudCA9IHRleHQuY291bnQob2xkKQogICAgcmVxdWlyZShjb3VudCA9PSAxLCAnJXMgYW5jaG9yIGNvdW50PSVkJyAlIChsYWJlbCwgY291bnQpKQogICAgcmV0dXJuIHRleHQucmVwbGFjZShvbGQsIG5ldywgMSkKCgpkZWYgcmVwbGFjZV9ibG9jayh0ZXh0LCBzdGFydF9tYXJrZXIsIGVuZF9tYXJrZXIsIHJlcGxhY2VtZW50LCBsYWJlbCk6CiAgICBzdGFydCA9IHRleHQuZmluZChzdGFydF9tYXJrZXIpCiAgICBlbmQgPSB0ZXh0LmZpbmQoZW5kX21hcmtlciwgc3RhcnQgKyBsZW4oc3RhcnRfbWFya2VyKSkgaWYgc3RhcnQgPj0gMCBlbHNlIC0xCiAgICByZXF1aXJlKHN0YXJ0ID49IDAgYW5kIGVuZCA+IHN0YXJ0LCBsYWJlbCArICcgYmxvY2sgYW5jaG9ycycpCiAgICByZXR1cm4gdGV4dFs6c3RhcnRdICsgcmVwbGFjZW1lbnQgKyB0ZXh0W2VuZDpdCgoKZGVmIHBhdGNoX3RoMjAoKToKICAgIHJlbCA9ICdjb2RlL3RoXzIwX3BpY2t3b3JkLmpzJwogICAgdGV4dCA9IHJlYWQocmVsKQogICAgcmVxdWlyZSh0ZXh0LnN0YXJ0c3dpdGgoJy8vIEB2ZXJzaW9uIDEuMC4yM1xuJyksICdleHBlY3RlZCB0aF8yMCB2ZXJzaW9uIDEuMC4yMycpCiAgICB0ZXh0ID0gdGV4dC5yZXBsYWNlKCcvLyBAdmVyc2lvbiAxLjAuMjNcbicsICcvLyBAdmVyc2lvbiAxLjAuMjRcbicsIDEpCgogICAgdGV4dCA9IHJlcGxhY2Vfb25jZSgKICAgICAgICB0ZXh0LAogICAgICAgICcgICAgdmFyIHBpY2t3b3JkUXJUcmlnZ2VyVmlldzIwID0gbnVsbDtcbiAgICB2YXIgcGlja3dvcmRHcmlkU2hhcmVDbG9zZVBlbmRpbmcyMCA9IGZhbHNlO1xuJywKICAgICAgICAnICAgIHZhciBwaWNrd29yZFFyQWN0aW9uVGlsZTIwID0gbnVsbDtcbicKICAgICAgICAnICAgIHZhciBwaWNrd29yZFFyQ29weVRpbGUyMCA9IG51bGw7XG4nCiAgICAgICAgJyAgICB2YXIgcGlja3dvcmRRckxvYWRUaWxlMjAgPSBudWxsO1xuJwogICAgICAgICcgICAgdmFyIHBpY2t3b3JkR3JpZFNoYXJlQ2xvc2VQZW5kaW5nMjAgPSBmYWxzZTtcbicsCiAgICAgICAgJ2ltYWdlLWdyaWQgc3RhdGUgdmFycycsCiAgICApCgogICAgdGV4dCA9IHJlcGxhY2Vfb25jZSgKICAgICAgICB0ZXh0LAogICAgICAgICcgICAgZnVuY3Rpb24gcmVsZWFzZVBpY2t3b3JkSW1hZ2VDb250cm9sbGVyMjAocmVhc29uKSB7XG4gICAgICAgIHRyeSB7XG4gICAgICAgICAgICBpZiAocGlja3dvcmRJbWFnZUNvbnRyb2xsZXIyMCAmJiB0eXBlb2YgcGlja3dvcmRJbWFnZUNvbnRyb2xsZXIyMC5yZWxlYXNlID09PSAiZnVuY3Rpb24iKSB7XG4nLAogICAgICAgICcgICAgZnVuY3Rpb24gcmVsZWFzZVBpY2t3b3JkSW1hZ2VDb250cm9sbGVyMjAocmVhc29uKSB7XG4nCiAgICAgICAgJyAgICAgICAgdHJ5IHtcbicKICAgICAgICAnICAgICAgICAgICAgaWYgKHBpY2t3b3JkSW1hZ2VDb250cm9sbGVyMjAgJiYgdHlwZW9mIHBpY2t3b3JkSW1hZ2VDb250cm9sbGVyMjAuc2V0UGlja3dvcmRRckFjdGlvblN0YXRlTGlzdGVuZXIgPT09ICJmdW5jdGlvbiIpIHtcbicKICAgICAgICAnICAgICAgICAgICAgICAgIHBpY2t3b3JkSW1hZ2VDb250cm9sbGVyMjAuc2V0UGlja3dvcmRRckFjdGlvblN0YXRlTGlzdGVuZXIobnVsbCk7XG4nCiAgICAgICAgJyAgICAgICAgICAgIH1cbicKICAgICAgICAnICAgICAgICB9IGNhdGNoIChlUXJMaXN0ZW5lcikge31cbicKICAgICAgICAnICAgICAgICB0cnkge1xuJwogICAgICAgICcgICAgICAgICAgICBpZiAocGlja3dvcmRJbWFnZUNvbnRyb2xsZXIyMCAmJiB0eXBlb2YgcGlja3dvcmRJbWFnZUNvbnRyb2xsZXIyMC5yZWxlYXNlID09PSAiZnVuY3Rpb24iKSB7XG4nLAogICAgICAgICdyZWxlYXNlIGxpc3RlbmVyIGNsZWFudXAnLAogICAgKQogICAgdGV4dCA9IHJlcGxhY2Vfb25jZSgKICAgICAgICB0ZXh0LAogICAgICAgICcgICAgICAgIHBpY2t3b3JkUXJUcmlnZ2VyVmlldzIwID0gbnVsbDtcbiAgICAgICAgcGlja3dvcmRHcmlkU2hhcmVDbG9zZVBlbmRpbmcyMCA9IGZhbHNlO1xuJywKICAgICAgICAnICAgICAgICBwaWNrd29yZFFyQWN0aW9uVGlsZTIwID0gbnVsbDtcbicKICAgICAgICAnICAgICAgICBwaWNrd29yZFFyQ29weVRpbGUyMCA9IG51bGw7XG4nCiAgICAgICAgJyAgICAgICAgcGlja3dvcmRRckxvYWRUaWxlMjAgPSBudWxsO1xuJwogICAgICAgICcgICAgICAgIHBpY2t3b3JkR3JpZFNoYXJlQ2xvc2VQZW5kaW5nMjAgPSBmYWxzZTtcbicsCiAgICAgICAgJ3JlbGVhc2UgZ3JpZCByZWZzJywKICAgICkKCiAgICBuZXdfaGVscGVycyA9IHInJycgICAgZnVuY3Rpb24gY29sbGFwc2VQaWNrd29yZEF1eFZpZXcyMCh2aWV3T2JqKSB7CiAgICAgICAgaWYgKCF2aWV3T2JqKSByZXR1cm47CiAgICAgICAgdHJ5IHsgdmlld09iai5zZXRWaXNpYmlsaXR5KFZpZXcuR09ORSk7IH0gY2F0Y2ggKGVWaXNpYmlsaXR5KSB7fQogICAgfQoKICAgIGZ1bmN0aW9uIG5vcm1hbGl6ZVBpY2t3b3JkVGh1bWJuYWlsQ2hyb21lMjAocm9vdCkgewogICAgICAgIGlmICghcm9vdCkgcmV0dXJuIHJvb3Q7CiAgICAgICAgdHJ5IHsKICAgICAgICAgICAgdmFyIGNoaWxkQ291bnQgPSBOdW1iZXIocm9vdC5nZXRDaGlsZENvdW50KCkgfHwgMCk7CiAgICAgICAgICAgIGlmIChjaGlsZENvdW50ID4gMCkgewogICAgICAgICAgICAgICAgdmFyIHByZXZpZXdJbWFnZSA9IHJvb3QuZ2V0Q2hpbGRBdCgwKTsKICAgICAgICAgICAgICAgIHZhciBpbWFnZUxwID0gcHJldmlld0ltYWdlID8gcHJldmlld0ltYWdlLmdldExheW91dFBhcmFtcygpIDogbnVsbDsKICAgICAgICAgICAgICAgIGlmIChpbWFnZUxwICYmIGltYWdlTHAuYm90dG9tTWFyZ2luICE9PSB1bmRlZmluZWQpIHsKICAgICAgICAgICAgICAgICAgICBpbWFnZUxwLmJvdHRvbU1hcmdpbiA9IDA7CiAgICAgICAgICAgICAgICAgICAgcHJldmlld0ltYWdlLnNldExheW91dFBhcmFtcyhpbWFnZUxwKTsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfQogICAgICAgICAgICAvLyB0aF8yMiDnmoTnvKnnlaXlm77nirbmgIHmloflrZfnu6fnu63pmpDol4/vvJt0aF8yNiDov73liqDnmoTkuoznu7TnoIHnu5PmnpzljaHkv53nlZnnu5nmiKrlm77lhoXlrrnljLrmmL7npLrjgIIKICAgICAgICAgICAgaWYgKGNoaWxkQ291bnQgPiAxKSBjb2xsYXBzZVBpY2t3b3JkQXV4VmlldzIwKHJvb3QuZ2V0Q2hpbGRBdCgxKSk7CiAgICAgICAgfSBjYXRjaCAoZUNocm9tZSkge30KICAgICAgICByZXR1cm4gcm9vdDsKICAgIH0KCiAgICBmdW5jdGlvbiBwaWNrd29yZEFjdGlvbkljb25DYW5kaWRhdGVzMjAoa2luZCkgewogICAgICAgIGlmIChraW5kID09PSAic2hhcmUiKSByZXR1cm4gWyJzaGFyZV9mb3J3YXJkIiwgInNoYXJlXzIiLCAic2hhcmUiXTsKICAgICAgICBpZiAoa2luZCA9PT0gInFyIikgcmV0dXJuIFsicXJfY29kZSIsICJxcl9zY2FuXzIiLCAic2Nhbl8yIiwgInNjYW4iXTsKICAgICAgICBpZiAoa2luZCA9PT0gInJlZnJlc2giKSByZXR1cm4gWyJyZWZyZXNoIiwgInJlc3RhcnQiLCAibG9vcF9sZWZ0Il07CiAgICAgICAgaWYgKGtpbmQgPT09ICJpbWFnZSIpIHJldHVybiBbImltYWdlIiwgImdhbGxlcnkiLCAiaW1hZ2VfMiJdOwogICAgICAgIGlmIChraW5kID09PSAic2F2ZSIpIHJldHVybiBbInNhdmUiLCAiZG93bmxvYWRfMiIsICJkb3dubG9hZCJdOwogICAgICAgIGlmIChraW5kID09PSAiY29weSIpIHJldHVybiBbImZpbGVfY29weSIsICJjbGlwYm9hcmQiLCAiY29weSJdOwogICAgICAgIGlmIChraW5kID09PSAibG9hZCIpIHJldHVybiBbImZpbGVfdGV4dCIsICJmaWxlX2Rvd25sb2FkIiwgImltcG9ydCJdOwogICAgICAgIGlmIChraW5kID09PSAicmVzdG9yZSIpIHJldHVybiBbImhpc3RvcnkiLCAiYXJyb3dfZ29fYmFjayIsICJyZXN0YXJ0Il07CiAgICAgICAgcmV0dXJuIFtTdHJpbmcoa2luZCB8fCAiIildOwogICAgfQoKICAgIGZ1bmN0aW9uIHBpY2t3b3JkQ29sb3JIZXgyMChjb2xvclZhbHVlKSB7CiAgICAgICAgdmFyIG4gPSBOdW1iZXIoY29sb3JWYWx1ZSk7CiAgICAgICAgaWYgKGlzTmFOKG4pKSByZXR1cm4gIiI7CiAgICAgICAgdmFyIGhleCA9IChuID4+PiAwKS50b1N0cmluZygxNikudG9VcHBlckNhc2UoKTsKICAgICAgICB3aGlsZSAoaGV4Lmxlbmd0aCA8IDgpIGhleCA9ICIwIiArIGhleDsKICAgICAgICByZXR1cm4gIiMiICsgaGV4OwogICAgfQoKICAgIGZ1bmN0aW9uIHJlc29sdmVQaWNrd29yZFNob3J0WEFjdGlvbkRyYXdhYmxlMjAoa2luZCkgewogICAgICAgIHZhciBjYW5kaWRhdGVzID0gcGlja3dvcmRBY3Rpb25JY29uQ2FuZGlkYXRlczIwKGtpbmQpOwogICAgICAgIHZhciB0aW50SGV4ID0gcGlja3dvcmRDb2xvckhleDIwKHJlcGxpY2FBY2NlbnQyMCgpKTsKICAgICAgICBpZiAodG9vbGh1YkFwcFJlZikgewogICAgICAgICAgICBmb3IgKHZhciBpID0gMDsgaSA8IGNhbmRpZGF0ZXMubGVuZ3RoOyBpKyspIHsKICAgICAgICAgICAgICAgIHZhciBuYW1lID0gU3RyaW5nKGNhbmRpZGF0ZXNbaV0gfHwgIiIpOwogICAgICAgICAgICAgICAgaWYgKCFuYW1lKSBjb250aW51ZTsKICAgICAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICAgICAgaWYgKHR5cGVvZiB0b29saHViQXBwUmVmLnJlc29sdmVTaG9ydFhEcmF3YWJsZSA9PT0gImZ1bmN0aW9uIikgewogICAgICAgICAgICAgICAgICAgICAgICB2YXIgZHIgPSB0b29saHViQXBwUmVmLnJlc29sdmVTaG9ydFhEcmF3YWJsZShuYW1lLCB0aW50SGV4KTsKICAgICAgICAgICAgICAgICAgICAgICAgaWYgKGRyKSByZXR1cm4gZHI7CiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgfSBjYXRjaCAoZVJlc29sdmUpIHt9CiAgICAgICAgICAgICAgICB0cnkgewogICAgICAgICAgICAgICAgICAgIGlmICh0eXBlb2YgdG9vbGh1YkFwcFJlZi5nZXRTaG9ydFhJY29uRHJhd2FibGUgPT09ICJmdW5jdGlvbiIpIHsKICAgICAgICAgICAgICAgICAgICAgICAgdmFyIGRyMiA9IHRvb2xodWJBcHBSZWYuZ2V0U2hvcnRYSWNvbkRyYXdhYmxlKG5hbWUpOwogICAgICAgICAgICAgICAgICAgICAgICBpZiAoZHIyKSByZXR1cm4gZHIyOwogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgIH0gY2F0Y2ggKGVHZXQpIHt9CiAgICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgdHJ5IHsKICAgICAgICAgICAgc2FmZUxvZyh0b29saHViQXBwUmVmICYmIHRvb2xodWJBcHBSZWYuTCwgInciLCAicGlja3dvcmQgaW1hZ2UgYWN0aW9uIFNob3J0WCBpY29uIGZhbGxiYWNrIGtpbmQ9IiArIFN0cmluZyhraW5kIHx8ICIiKSk7CiAgICAgICAgfSBjYXRjaCAoZUxvZykge30KICAgICAgICB0cnkgeyByZXR1cm4gYXBwQ29udGV4dC5nZXRSZXNvdXJjZXMoKS5nZXREcmF3YWJsZShhbmRyb2lkLlIuZHJhd2FibGUuaWNfbWVudV9oZWxwLCBudWxsKTsgfSBjYXRjaCAoZUZhbGxiYWNrKSB7fQogICAgICAgIHJldHVybiBudWxsOwogICAgfQoKICAgIGZ1bmN0aW9uIGNyZWF0ZVBpY2t3b3JkSW1hZ2VBY3Rpb25UaWxlMjAobGFiZWxUZXh0LCBpY29uS2luZCwgY2FsbGJhY2spIHsKICAgICAgICB2YXIgdGlsZSA9IG5ldyBMaW5lYXJMYXlvdXQoYXBwQ29udGV4dCk7CiAgICAgICAgdGlsZS5zZXRPcmllbnRhdGlvbihMaW5lYXJMYXlvdXQuVkVSVElDQUwpOwogICAgICAgIHRpbGUuc2V0R3Jhdml0eShHcmF2aXR5LkNFTlRFUik7CiAgICAgICAgdGlsZS5zZXRDbGlja2FibGUodHJ1ZSk7CiAgICAgICAgdGlsZS5zZXRGb2N1c2FibGUodHJ1ZSk7CiAgICAgICAgdGlsZS5zZXRQYWRkaW5nKHVpRHAoNSwgNyksIHVpRHAoNCwgNiksIHVpRHAoNSwgNyksIHVpRHAoNCwgNikpOwogICAgICAgIHRpbGUuc2V0QmFja2dyb3VuZChjcmVhdGVTdHJva2VSb3VuZFJlY3REcmF3YWJsZShyZXBsaWNhU29mdFN1cmZhY2UyMCgpLCByZXBsaWNhT3V0bGluZTIwKCksIGlzVGFibGV0ID8gMTYgOiAxNCwgMSkpOwoKICAgICAgICB2YXIgaWNvblNpemUgPSBpc1RhYmxldCA/IDI4IDogMjM7CiAgICAgICAgdmFyIGljb24gPSBuZXcgYW5kcm9pZC53aWRnZXQuSW1hZ2VWaWV3KGFwcENvbnRleHQpOwogICAgICAgIGljb24uc2V0U2NhbGVUeXBlKGFuZHJvaWQud2lkZ2V0LkltYWdlVmlldy5TY2FsZVR5cGUuQ0VOVEVSX0lOU0lERSk7CiAgICAgICAgdHJ5IHsgaWNvbi5zZXRJbWFnZURyYXdhYmxlKHJlc29sdmVQaWNrd29yZFNob3J0WEFjdGlvbkRyYXdhYmxlMjAoaWNvbktpbmQpKTsgfSBjYXRjaCAoZUljb24pIHt9CiAgICAgICAgdGlsZS5hZGRWaWV3KGljb24sIG5ldyBMaW5lYXJMYXlvdXQuTGF5b3V0UGFyYW1zKHVpRHAoaWNvblNpemUsIGljb25TaXplICsgMiksIHVpRHAoaWNvblNpemUsIGljb25TaXplICsgMikpKTsKICAgICAgICB0aWxlLnNldFRhZyhpY29uKTsKICAgICAgICB0aWxlLnNldENvbnRlbnREZXNjcmlwdGlvbihTdHJpbmcobGFiZWxUZXh0IHx8ICIiKSk7CiAgICAgICAgdGlsZS5zZXRPbkNsaWNrTGlzdGVuZXIobmV3IFZpZXcuT25DbGlja0xpc3RlbmVyKHsgb25DbGljazogZnVuY3Rpb24odikgewogICAgICAgICAgICBoYXB0aWNGZWVkYmFjayh2KTsKICAgICAgICAgICB0cnkgeyBjYWxsYmFjaygpOyB9IGNhdGNoIChlQ2FsbGJhY2spIHsgc2hvd1RvYXN0KCLmk43kvZzlpLHotKU...<TRUNCATED_BASE64>...' | base64 -d > scripts/_tmp_pickword_image_action_grid_20260820.py
+          python3 scripts/_tmp_pickword_image_action_grid_20260820.py
+          rm -f scripts/_tmp_pickword_image_action_grid_20260820.py
+
+      - name: Verify signing normalizers are idempotent
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/apply_pickword_qr_integration.py
+          python3 scripts/apply_pickword_reference_layout.py
+          python3 scripts/fix_pickword_reference_layout_api_usage.py
+          python3 scripts/apply_shortx_ui_qr_compat.py
+
+      - name: Targeted verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/es5_scan.py
+          python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_code_constraints.py
+          python3 scripts/verify_module_boundaries.py
+          python3 scripts/verify_pickword_qr.py
+          python3 scripts/verify_pickword_image_viewer.py
+          python3 scripts/verify_pickword_long_click_api34.py
+          python3 scripts/verify_pickword_share_close_cleanup.py
+          python3 scripts/verify_pickword_unified_cleanup.py
+          python3 scripts/verify_pickword_emoji_grapheme.py
+          python3 scripts/verify_channel_private_storage_isolation.py
+          python3 scripts/verify_pickword_image_meta_handoff.py
+          python3 scripts/verify_result_preview.py
+          python3 scripts/verify_update_history.py --require-one-pending
+          git diff --check
+
+      - name: Verify scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- code/th_22_image_viewer.js
+          python3 - <<'PY2'
+          import subprocess
+          allowed = ['code/th_20_pickword.js', 'code/th_26_qr_runtime.js', 'scripts/verify_pickword_long_click_api34.py', 'scripts/verify_pickword_unified_cleanup.py', 'scripts/verify_pickword_emoji_grapheme.py', 'scripts/verify_channel_private_storage_isolation.py', 'scripts/verify_pickword_image_meta_handoff.py', 'scripts/verify_pickword_qr.py', 'scripts/verify_manifest.py', 'scripts/verify_pickword_image_viewer.py', 'scripts/apply_pickword_reference_layout.py', 'scripts/fix_pickword_reference_layout_api_usage.py', 'scripts/apply_pickword_qr_integration.py', 'scripts/apply_shortx_ui_qr_compat.py', 'updates/records/20260820-beta-pickword-image-action-grid-icons.json']
+          changed = subprocess.check_output(['git','diff','--name-only'], text=True).splitlines()
+          extra = [x for x in changed if x not in allowed]
+          missing_core = [x for x in ('code/th_20_pickword.js','code/th_26_qr_runtime.js') if x not in changed]
+          if extra:
+              raise SystemExit('unexpected changed files: ' + ', '.join(extra))
+          if missing_core:
+              raise SystemExit('core patch missing: ' + ', '.join(missing_core))
+          print('scope OK files=' + str(len(changed)))
+          PY2
+          grep -q '^// @version 1.0.24$' code/th_20_pickword.js
+          grep -q '^// @version 1.0.8$' code/th_26_qr_runtime.js
+          grep -q 'function resolvePickwordShortXActionDrawable20(kind)' code/th_20_pickword.js
+          grep -q 'controller.performPickwordQrAction = function(action)' code/th_26_qr_runtime.js
+          ! grep -q 'textButton26(' code/th_26_qr_runtime.js
+
+      - name: Commit and push beta
+        env:
+          TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- 'code/th_20_pickword.js' 'code/th_26_qr_runtime.js' 'scripts/verify_pickword_long_click_api34.py' 'scripts/verify_pickword_unified_cleanup.py' 'scripts/verify_pickword_emoji_grapheme.py' 'scripts/verify_channel_private_storage_isolation.py' 'scripts/verify_pickword_image_meta_handoff.py' 'scripts/verify_pickword_qr.py' 'scripts/verify_manifest.py' 'scripts/verify_pickword_image_viewer.py' 'scripts/apply_pickword_reference_layout.py' 'scripts/fix_pickword_reference_layout_api_usage.py' 'scripts/apply_pickword_qr_integration.py' 'scripts/apply_shortx_ui_qr_compat.py' 'updates/records/20260820-beta-pickword-image-action-grid-icons.json'
+          git diff --cached --check
+          git commit -m '优化拾字截图 2x3 ShortX 图标操作区'
+          git push "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git" HEAD:beta
