@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  patch-beta:
+  repair-signing-helper:
     if: github.event.pull_request.head.ref == 'agent/pickword-beta-fix-trigger-20260820'
     runs-on: ubuntu-latest
     env:
@@ -23,71 +23,49 @@ jobs:
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
           persist-credentials: false
 
-      - name: Extract existing bounded patcher
+      - name: Allow current pickword version in reference-layout helper
         shell: bash
         run: |
           set -eo pipefail
-          awk '/cat > \/tmp\/prepare_pickword_layout_fix_20260820.py <<'"'"'PY'"'"'/{flag=1; next} flag && /^          PY$/{exit} flag{print}' \
-            .github/workflows/apply-pickword-screenshot-layout-fix-20260820.yml \
-            | sed 's/^          //' > /tmp/prepare_pickword_layout_fix_20260820.py
-          test -s /tmp/prepare_pickword_layout_fix_20260820.py
-          python3 /tmp/prepare_pickword_layout_fix_20260820.py
-
-      - name: Align result preview verifier
-        shell: bash
-        run: |
           python3 - <<'PY'
           from pathlib import Path
-          path = Path('scripts/verify_result_preview.py')
+          path = Path('scripts/apply_pickword_reference_layout.py')
           text = path.read_text(encoding='utf-8')
-          old1 = '        and "Math.min(contentHeight, textAreaHeight)" in pickword_height\n'
-          old2 = '        and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), textAreaHeight)" in pickword_height\n'
-          if text.count(old1) != 1 or text.count(old2) != 1:
-              raise SystemExit('result-preview height contract anchor drift')
-          new1 = '        and "var maxHeight = textAreaHeight;" in pickword_height\n        and "maxHeight = Math.min(maxHeight, Math.round(uiDp(164, 220)))" in pickword_height\n        and "Math.min(contentHeight, maxHeight)" in pickword_height\n'
-          new2 = '        and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), maxHeight)" in pickword_height\n'
-          text = text.replace(old1, new1, 1).replace(old2, new2, 1)
+          version_anchor = 'NEW_VERSION = "// @version 1.0.22\\n"\n'
+          if 'CURRENT_VERSION = "// @version 1.0.23\\n"' not in text:
+              if text.count(version_anchor) != 1:
+                  raise SystemExit('reference-layout version anchor drift')
+              text = text.replace(version_anchor, version_anchor + 'CURRENT_VERSION = "// @version 1.0.23\\n"\n', 1)
+          old_markers = '''    markers = (\n        NEW_VERSION.strip(),\n        "function createPickwordImageActionGrid20(thumbRoot)",\n'''
+          new_markers = '''    markers = (\n        "function createPickwordImageActionGrid20(thumbRoot)",\n'''
+          if old_markers in text:
+              text = text.replace(old_markers, new_markers, 1)
+          old_return = '    return all(marker in text for marker in markers)\n'
+          new_return = '    return (text.startswith(NEW_VERSION) or text.startswith(CURRENT_VERSION)) and all(marker in text for marker in markers)\n'
+          if new_return not in text:
+              if text.count(old_return) != 1:
+                  raise SystemExit('reference-layout already_applied return drift')
+              text = text.replace(old_return, new_return, 1)
+          text = text.replace('print("OK pickword reference layout already applied version=1.0.22")', 'print("OK pickword reference layout already applied version=current")')
           path.write_text(text, encoding='utf-8')
           PY
-
-      - name: Record update
-        shell: bash
-        run: |
-          python3 scripts/create_update_record.py \
-            --non-interactive \
-            --id 20260820-beta-pickword-screenshot-layout-regression-fix \
-            --type fix \
-            --title 'Beta：修复拾字截图布局三项回归' \
-            --detail '截图拾字文字区改为 WRAP_CONTENT 外层 + 截图模式独立最大高度，消除短文本下方固定透明留白，同时保留无截图模式原自适应逻辑。' \
-            --detail '已选文字预览仅在 image-only 会话隐藏；普通截图 OCR/拾字文本恢复预览，并在创建、拖选与选择更新时同步可见性。' \
-            --detail '右侧 2×2 分享使用一次性 pending，仅在图片分享 chooser 成功拉起后的 onShared 关闭拾字浮窗；失败、释放均清理状态，完整图片页分享保持原行为。' \
-            --detail '图片查看器 th_22_image_viewer.js 业务实现保持不变；同步 th_20 1.0.23 verifier 白名单与三项回归断言。'
-
-      - name: Verify bounded patch
-        shell: bash
-        run: |
-          set -eo pipefail
-          python3 .github/scripts/es5_scan.py
-          python3 scripts/verify_js_syntax.py
-          python3 scripts/verify_pickword_long_click_api34.py
-          python3 scripts/verify_pickword_share_close_cleanup.py
-          python3 scripts/verify_pickword_unified_cleanup.py
-          python3 scripts/verify_pickword_emoji_grapheme.py
-          python3 scripts/verify_channel_private_storage_isolation.py
-          python3 scripts/verify_result_preview.py
-          python3 scripts/verify_pickword_image_viewer.py
-          python3 scripts/verify_pickword_image_meta_handoff.py
+          python3 scripts/apply_pickword_reference_layout.py
+          grep -q '^// @version 1.0.23$' code/th_20_pickword.js
           git diff --check
-          git diff --exit-code -- code/th_22_image_viewer.js
+          git diff --exit-code -- code/th_20_pickword.js
 
-      - name: Commit and push beta
+      - name: Commit and push helper repair
         shell: bash
         run: |
           set -eo pipefail
           test -n "$TOOLHUB_AUTOMATION_TOKEN"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- code/th_20_pickword.js scripts/verify_pickword_long_click_api34.py scripts/verify_pickword_unified_cleanup.py scripts/verify_channel_private_storage_isolation.py scripts/verify_pickword_emoji_grapheme.py scripts/verify_pickword_image_viewer.py scripts/verify_result_preview.py updates/records/20260820-beta-pickword-screenshot-layout-regression-fix.json
-          git commit -m '修复拾字截图布局三项回归'
+          git add -- scripts/apply_pickword_reference_layout.py
+          if git diff --cached --quiet; then
+            echo 'Signing helper already compatible'
+            exit 0
+          fi
+          git commit -m '修复拾字 1.0.23 签名辅助脚本兼容性'
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin HEAD:beta
