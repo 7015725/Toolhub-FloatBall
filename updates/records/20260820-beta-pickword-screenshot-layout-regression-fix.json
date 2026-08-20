@@ -9,5 +9,19 @@
     "右侧 2×2 分享使用一次性 pending，仅在图片分享 chooser 成功拉起后的 onShared 关闭拾字浮窗；失败、释放均清理状态，完整图片页分享保持原行为。",
     "图片查看器 th_22_image_viewer.js 业务实现保持不变；同步 th_20 1.0.23 verifier 白名单与三项回归断言。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260820041540,
+  "date": "2026-08-20",
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.22",
+      "to": "1.0.23",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
 }

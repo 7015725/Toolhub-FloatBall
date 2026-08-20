@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "acc441f59ec015fa5436d2d3884502325c5bc80f81f2b0dd5195a0b6bd46577f",
-      "size": 88571,
-      "version": 20260820030722
+      "sha256": "0432a13c1d47815f3668310534267722a74ce761f86ff3530d9e93dfe8248521",
+      "size": 89828,
+      "version": 20260820041540
     }
   },
   "branch": "beta",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "f05fa20b1c21d645fb60810d1f52fe2e3211e1590c0bf0c6b8e1af6cf479af49",
-      "size": 275518,
-      "version": "1.0.22"
+      "sha256": "313c9fb8949fe65cb02d1f90e503e6a4d6a01c2cbaa9467ed64878817633d8d1",
+      "size": 276505,
+      "version": "1.0.23"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -189,12 +189,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "带截图的拾字窗口重排为上方截图预览 + 2×2 操作区、下方正文卡片，操作区固定为分享、二维码、贴图、保存。",
-      "二维码继续复用现有 ZXing 解析入口，分享与保存继续复用截图查看器原有动作；截图状态条与旧内嵌二维码按钮收拢，避免重复入口。",
-      "无截图拾字保持原布局与文字选择能力；复制、翻译、全选、清空、复制全部、去重换行、文字分享与钉屏主链不变。"
+      "截图拾字文字区改为 WRAP_CONTENT 外层 + 截图模式独立最大高度，消除短文本下方固定透明留白，同时保留无截图模式原自适应逻辑。",
+      "已选文字预览仅在 image-only 会话隐藏；普通截图 OCR/拾字文本恢复预览，并在创建、拖选与选择更新时同步可见性。",
+      "右侧 2×2 分享使用一次性 pending，仅在图片分享 chooser 成功拉起后的 onShared 关闭拾字浮窗；失败、释放均清理状态，完整图片页分享保持原行为。",
+      "图片查看器 th_22_image_viewer.js 业务实现保持不变；同步 th_20 1.0.23 verifier 白名单与三项回归断言。"
     ],
     "date": "2026-08-20",
-    "title": "Beta：复刻拾字截图参考布局"
+    "title": "Beta：修复拾字截图布局三项回归"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -210,5 +211,5 @@
     }
   },
   "schema": 6,
-  "version": 20260820030722
+  "version": 20260820041540
 }

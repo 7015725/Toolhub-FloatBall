@@ -1,8 +1,35 @@
 {
   "schema": 1,
-  "historyVersion": 20260820030722,
-  "generatedAt": "2026-08-20T11:07:22+08:00",
+  "historyVersion": 20260820041540,
+  "generatedAt": "2026-08-20T12:15:40+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260820-beta-pickword-screenshot-layout-regression-fix",
+      "type": "fix",
+      "title": "Beta：修复拾字截图布局三项回归",
+      "details": [
+        "截图拾字文字区改为 WRAP_CONTENT 外层 + 截图模式独立最大高度，消除短文本下方固定透明留白，同时保留无截图模式原自适应逻辑。",
+        "已选文字预览仅在 image-only 会话隐藏；普通截图 OCR/拾字文本恢复预览，并在创建、拖选与选择更新时同步可见性。",
+        "右侧 2×2 分享使用一次性 pending，仅在图片分享 chooser 成功拉起后的 onShared 关闭拾字浮窗；失败、释放均清理状态，完整图片页分享保持原行为。",
+        "图片查看器 th_22_image_viewer.js 业务实现保持不变；同步 th_20 1.0.23 verifier 白名单与三项回归断言。"
+      ],
+      "manifestVersion": 20260820041540,
+      "date": "2026-08-20",
+      "modules": [
+        {
+          "name": "th_20_pickword.js",
+          "from": "1.0.22",
+          "to": "1.0.23",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260820-beta-pickword-reference-layout",
