@@ -33,6 +33,26 @@ jobs:
           test -s /tmp/prepare_pickword_layout_fix_20260820.py
           python3 /tmp/prepare_pickword_layout_fix_20260820.py
 
+      - name: Align result preview verifier
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/verify_result_preview.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''        and "Math.min(contentHeight, textAreaHeight)" in pickword_height
+          and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), textAreaHeight)" in pickword_height
+          '''
+          new = '''        and "var maxHeight = textAreaHeight;" in pickword_height
+          and "maxHeight = Math.min(maxHeight, Math.round(uiDp(164, 220)))" in pickword_height
+          and "Math.min(contentHeight, maxHeight)" in pickword_height
+          and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), maxHeight)" in pickword_height
+          '''
+          if text.count(old) != 1:
+              raise SystemExit('result-preview height contract anchor drift')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Record update
         shell: bash
         run: |
@@ -70,7 +90,7 @@ jobs:
           test -n "$TOOLHUB_AUTOMATION_TOKEN"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- code/th_20_pickword.js scripts/verify_pickword_long_click_api34.py scripts/verify_pickword_unified_cleanup.py scripts/verify_channel_private_storage_isolation.py scripts/verify_pickword_emoji_grapheme.py scripts/verify_pickword_image_viewer.py updates/records/20260820-beta-pickword-screenshot-layout-regression-fix.json
+          git add -- code/th_20_pickword.js scripts/verify_pickword_long_click_api34.py scripts/verify_pickword_unified_cleanup.py scripts/verify_channel_private_storage_isolation.py scripts/verify_pickword_emoji_grapheme.py scripts/verify_pickword_image_viewer.py scripts/verify_result_preview.py updates/records/20260820-beta-pickword-screenshot-layout-regression-fix.json
           git commit -m '修复拾字截图布局三项回归'
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin HEAD:beta
