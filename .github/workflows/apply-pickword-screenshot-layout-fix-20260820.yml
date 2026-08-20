@@ -204,3 +204,5 @@ require('if (closeAfterShare)' in controller_body and '拾字Floaty.hide();' in 
           git commit -m '修复拾字截图布局三项回归'
           git remote set-url origin "https://x-access-token:${TOOLHUB_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin HEAD:beta
+
+# trigger: 2
