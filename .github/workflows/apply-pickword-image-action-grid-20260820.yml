@@ -50,6 +50,14 @@ jobs:
           python3 scripts/fix_pickword_reference_layout_api_usage.py
           python3 scripts/apply_shortx_ui_qr_compat.py
 
+      - name: Refresh reviewed API baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/register_pickword_qr_api_usage.py
+          python3 scripts/report_api_usage.py --write constraints/API_USAGE_BASELINE.json
+          python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
+
       - name: Targeted verification
         shell: bash
         run: |
@@ -80,6 +88,8 @@ jobs:
           allowed = [
               'code/th_20_pickword.js',
               'code/th_26_qr_runtime.js',
+              'constraints/API_USAGE_BASELINE.json',
+              'constraints/api.json',
               'scripts/verify_pickword_long_click_api34.py',
               'scripts/verify_pickword_unified_cleanup.py',
               'scripts/verify_pickword_emoji_grapheme.py',
@@ -96,7 +106,7 @@ jobs:
           ]
           changed = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
           extra = [x for x in changed if x not in allowed]
-          missing = [x for x in ('code/th_20_pickword.js', 'code/th_26_qr_runtime.js') if x not in changed]
+          missing = [x for x in ('code/th_20_pickword.js', 'code/th_26_qr_runtime.js', 'constraints/API_USAGE_BASELINE.json') if x not in changed]
           if extra:
               raise SystemExit('unexpected changed files: ' + ', '.join(extra))
           if missing:
@@ -120,6 +130,8 @@ jobs:
           git add -- \
             'code/th_20_pickword.js' \
             'code/th_26_qr_runtime.js' \
+            'constraints/API_USAGE_BASELINE.json' \
+            'constraints/api.json' \
             'scripts/verify_pickword_long_click_api34.py' \
             'scripts/verify_pickword_unified_cleanup.py' \
             'scripts/verify_pickword_emoji_grapheme.py' \
