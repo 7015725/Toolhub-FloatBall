@@ -6,7 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "code" / "th_20_pickword.js"
 OLD_VERSION = "// @version 1.0.21\n"
 NEW_VERSION = "// @version 1.0.22\n"
-CURRENT_VERSION = "// @version 1.0.23\n"
+PREVIOUS_VERSION = "// @version 1.0.23\n"
+CURRENT_VERSION = "// @version 1.0.24\n"
 
 
 def require(condition, message):
@@ -21,14 +22,23 @@ def replace_once(text, old, new, label):
 
 
 def already_applied(text):
-    markers = (
+    legacy_markers = (
         "function createPickwordImageActionGrid20(thumbRoot)",
         'createPickwordImageActionTile20("二维码", "qr"',
         'createPickwordImageActionTile20("贴图", "image"',
         "normalizePickwordThumbnailChrome20(thumb);",
         "var contentWidthDp20 = Number(windowWidth || dm.widthPixels || 0) / density20;",
     )
-    return (text.startswith(NEW_VERSION) or text.startswith(CURRENT_VERSION)) and all(marker in text for marker in markers)
+    current_markers = (
+        "function createPickwordImageActionGrid20(thumbRoot)",
+        "function resolvePickwordShortXActionDrawable20(kind)",
+        'performPickwordQrAction20("decode")',
+        'createPickwordImageActionTile20("查看原图", "image"',
+        "normalizePickwordThumbnailChrome20(thumb);",
+        "var contentWidthDp20 = Number(windowWidth || dm.widthPixels || 0) / density20;",
+    )
+    supported_version = text.startswith(NEW_VERSION) or text.startswith(PREVIOUS_VERSION) or text.startswith(CURRENT_VERSION)
+    return supported_version and (all(marker in text for marker in legacy_markers) or all(marker in text for marker in current_markers))
 
 
 def patch():

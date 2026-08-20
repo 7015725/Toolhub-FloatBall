@@ -12,8 +12,8 @@ def require(condition, message):
 
 
 require(
-    text.startswith("// @version 1.0.21\n") or text.startswith("// @version 1.0.22\n") or text.startswith("// @version 1.0.23\n"),
-    "pickword version must be 1.0.21, 1.0.22, or 1.0.23",
+    text.startswith("// @version 1.0.21\n") or text.startswith("// @version 1.0.22\n") or text.startswith("// @version 1.0.23\n") or text.startswith("// @version 1.0.24\n"),
+    "pickword version must be 1.0.21, 1.0.22, 1.0.23, or 1.0.24",
 )
 for marker in (
     "segmentPickwordGraphemes20",

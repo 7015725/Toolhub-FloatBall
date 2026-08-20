@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Idempotently normalize the permanent Beta QR wiring before signing.
 
-Current fix: th_26 v1.0.7 keeps QR "load to pickword" on the current pickword
+Current fix: th_26 v1.0.7+ keeps QR "load to pickword" on the current pickword
 window instead of issuing async hide followed immediately by show. The old order
 could let a late hide cleanup null mainLayout/textView after the new session had
 already started, producing setText/setVisibility of null.
@@ -41,7 +41,8 @@ def patch_qr_module():
         text = text.replace("// @version 1.0.5\n", "// @version 1.0.6\n", 1)
     if text.startswith("// @version 1.0.6\n"):
         text = text.replace("// @version 1.0.6\n", "// @version 1.0.7\n", 1)
-    require(text.startswith("// @version 1.0.7\n"), "QR module version 1.0.7")
+    qr_version = text.splitlines()[0] if text.splitlines() else ""
+    require(qr_version in ("// @version 1.0.7", "// @version 1.0.8"), "QR module version 1.0.7 or 1.0.8")
 
     text = text.replace(
         "new dalvik.system.DexClassLoader(",
@@ -65,6 +66,11 @@ def patch_qr_module():
     require('new java.io.File(lib, ".dexopt")' in text, "API 24-25 channel-private dexopt")
     require('assertWritableDirPath(dexoptPath, "ToolHub QR dexopt")' in text, "legacy dexopt writable probe")
     require("var optimizedDirectory = getDexOptimizedDirectory26();" in text, "DexClassLoader optimizedDirectory selection")
+    if qr_version == "// @version 1.0.8":
+        require("controller.getPickwordQrActionState = function()" in text, "QR action state bridge")
+        require("controller.performPickwordQrAction = function(action)" in text, "QR action dispatch bridge")
+        require("controller.setPickwordQrActionStateListener = function(listener)" in text, "QR action state listener")
+        require("textButton26(" not in text, "legacy QR text button UI must stay removed")
     require("root.__toolHubQrDecorated26" not in text, "must not attach JS state to Android thumbnail View")
     require("controller.__toolHubQrThumbnailDecorated26 = true" in text, "thumbnail decoration marker owner")
     require("installLock: new java.util.concurrent.locks.ReentrantLock()" in text, "runtime install lock")
@@ -116,6 +122,15 @@ def extend_version_lists(text):
 
 
 def patch_verifiers():
+    current_qr_text = QR_MODULE.read_text(encoding="utf-8")
+    if current_qr_text.startswith("// @version 1.0.8\n"):
+        for path in (VERIFY_MANIFEST, VERIFY_STORAGE, VERIFY_QR):
+            verifier_text = path.read_text(encoding="utf-8")
+            require('"// @version 1.0.8"' in verifier_text, "QR 1.0.8 verifier support missing: " + str(path.name))
+        qr_verify_text = VERIFY_QR.read_text(encoding="utf-8")
+        require("controller.performPickwordQrAction = function(action)" in qr_verify_text, "QR 1.0.8 action-bridge verifier missing")
+        require('forbid(QR, "textButton26("' in qr_verify_text, "QR 1.0.8 legacy text-button verifier missing")
+        return
     for path in (VERIFY_MANIFEST, VERIFY_STORAGE, VERIFY_QR):
         patch_version_verifier(path)
 
@@ -155,7 +170,7 @@ def main():
     patch_qr_module()
     patch_verifiers()
     validate_boundaries()
-    print("OK Beta QR wiring idempotent version=1.0.7 load_text_reuse_window=1 rhino_packages_dexloader=1")
+    print("OK Beta QR wiring idempotent version=1.0.7|1.0.8 load_text_reuse_window=1 rhino_packages_dexloader=1")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-// @version 1.0.23
+// @version 1.0.24
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -239,7 +239,9 @@
     var pickwordImageTextView20 = null;
     var pickwordImageTextOriginalLp20 = null;
     var pickwordImageTextOriginalIndex20 = -1;
-    var pickwordQrTriggerView20 = null;
+    var pickwordQrActionTile20 = null;
+    var pickwordQrCopyTile20 = null;
+    var pickwordQrLoadTile20 = null;
     var pickwordGridShareClosePending20 = false;
 
     function normalizePickwordImageMeta20(meta) {
@@ -299,6 +301,11 @@
 
     function releasePickwordImageController20(reason) {
         try {
+            if (pickwordImageController20 && typeof pickwordImageController20.setPickwordQrActionStateListener === "function") {
+                pickwordImageController20.setPickwordQrActionStateListener(null);
+            }
+        } catch (eQrListener) {}
+        try {
             if (pickwordImageController20 && typeof pickwordImageController20.release === "function") {
                 pickwordImageController20.release(String(reason || "release"));
             }
@@ -312,7 +319,9 @@
         pickwordImageTextView20 = null;
         pickwordImageTextOriginalLp20 = null;
         pickwordImageTextOriginalIndex20 = -1;
-        pickwordQrTriggerView20 = null;
+        pickwordQrActionTile20 = null;
+        pickwordQrCopyTile20 = null;
+        pickwordQrLoadTile20 = null;
         pickwordGridShareClosePending20 = false;
     }
 
@@ -493,7 +502,6 @@
     }
 
     function normalizePickwordThumbnailChrome20(root) {
-        pickwordQrTriggerView20 = null;
         if (!root) return root;
         try {
             var childCount = Number(root.getChildCount() || 0);
@@ -505,28 +513,145 @@
                     previewImage.setLayoutParams(imageLp);
                 }
             }
+            // th_22 的缩略图状态文字继续隐藏；th_26 追加的二维码结果卡保留给截图内容区显示。
             if (childCount > 1) collapsePickwordAuxView20(root.getChildAt(1));
-            if (childCount > 2) {
-                pickwordQrTriggerView20 = root.getChildAt(2);
-                collapsePickwordAuxView20(pickwordQrTriggerView20);
-            }
         } catch (eChrome) {}
         return root;
     }
 
-    function performPickwordQrAction20(thumbRoot) {
+    function pickwordActionIconCandidates20(kind) {
+        if (kind === "share") return ["share_forward", "share_2", "share"];
+        if (kind === "qr") return ["qr_code", "qr_scan_2", "scan_2", "scan"];
+        if (kind === "refresh") return ["refresh", "restart", "loop_left"];
+        if (kind === "image") return ["image", "gallery", "image_2"];
+        if (kind === "save") return ["save", "download_2", "download"];
+        if (kind === "copy") return ["file_copy", "clipboard", "copy"];
+        if (kind === "load") return ["file_text", "file_download", "import"];
+        if (kind === "restore") return ["history", "arrow_go_back", "restart"];
+        return [String(kind || "")];
+    }
+
+    function pickwordColorHex20(colorValue) {
+        var n = Number(colorValue);
+        if (isNaN(n)) return "";
+        var hex = (n >>> 0).toString(16).toUpperCase();
+        while (hex.length < 8) hex = "0" + hex;
+        return "#" + hex;
+    }
+
+    function resolvePickwordShortXActionDrawable20(kind) {
+        var candidates = pickwordActionIconCandidates20(kind);
+        var tintHex = pickwordColorHex20(replicaAccent20());
+        if (toolhubAppRef) {
+            for (var i = 0; i < candidates.length; i++) {
+                var name = String(candidates[i] || "");
+                if (!name) continue;
+                try {
+                    if (typeof toolhubAppRef.resolveShortXDrawable === "function") {
+                        var dr = toolhubAppRef.resolveShortXDrawable(name, tintHex);
+                        if (dr) return dr;
+                    }
+                } catch (eResolve) {}
+                try {
+                    if (typeof toolhubAppRef.getShortXIconDrawable === "function") {
+                        var dr2 = toolhubAppRef.getShortXIconDrawable(name);
+                        if (dr2) return dr2;
+                    }
+                } catch (eGet) {}
+            }
+        }
         try {
-            if (!pickwordQrTriggerView20) normalizePickwordThumbnailChrome20(thumbRoot);
-            var trigger = pickwordQrTriggerView20;
-            if (!trigger) {
+            safeLog(toolhubAppRef && toolhubAppRef.L, "w", "pickword image action ShortX icon fallback kind=" + String(kind || ""));
+        } catch (eLog) {}
+        try { return appContext.getResources().getDrawable(android.R.drawable.ic_menu_help, null); } catch (eFallback) {}
+        return null;
+    }
+
+    function createPickwordImageActionTile20(labelText, iconKind, callback) {
+        var tile = new LinearLayout(appContext);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setGravity(Gravity.CENTER);
+        tile.setClickable(true);
+        tile.setFocusable(true);
+        tile.setPadding(uiDp(5, 7), uiDp(4, 6), uiDp(5, 7), uiDp(4, 6));
+        tile.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 16 : 14, 1));
+
+        var iconSize = isTablet ? 28 : 23;
+        var icon = new android.widget.ImageView(appContext);
+        icon.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+        try { icon.setImageDrawable(resolvePickwordShortXActionDrawable20(iconKind)); } catch (eIcon) {}
+        tile.addView(icon, new LinearLayout.LayoutParams(uiDp(iconSize, iconSize + 2), uiDp(iconSize, iconSize + 2)));
+        tile.setTag(icon);
+        tile.setContentDescription(String(labelText || ""));
+        tile.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
+            hapticFeedback(v);
+            try { callback(); } catch (eCallback) { showToast("操作失败"); }
+        } }));
+        return tile;
+    }
+
+    function addPickwordImageActionTile20(row, tile, addLeftMargin) {
+        var lp = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+        if (addLeftMargin === true) lp.leftMargin = uiDp(5, 7);
+        row.addView(tile, lp);
+    }
+
+    function setPickwordImageActionTileState20(tile, description, iconKind, enabled, alphaValue) {
+        if (!tile) return;
+        try { tile.setContentDescription(String(description || "")); } catch (eDesc) {}
+        try { tile.setEnabled(enabled !== false); } catch (eEnabled) {}
+        try { tile.setAlpha(alphaValue == null ? 1.0 : Number(alphaValue)); } catch (eAlpha) {}
+        try {
+            var icon = tile.getTag ? tile.getTag() : null;
+            if (icon && icon.setImageDrawable) icon.setImageDrawable(resolvePickwordShortXActionDrawable20(iconKind));
+        } catch (eIcon) {}
+    }
+
+    function syncPickwordImageActionGridState20() {
+        var state = null;
+        try {
+            if (pickwordImageController20 && typeof pickwordImageController20.getPickwordQrActionState === "function") {
+                state = pickwordImageController20.getPickwordQrActionState();
+            }
+        } catch (eState) { state = null; }
+        state = state || { available: false, status: "idle", hasResult: false, loaded: false };
+        var status = String(state.status || "idle");
+        var running = status === "running";
+        var retry = status === "success" || status === "failed" || status === "timeout" || state.hasResult === true;
+        var qrDesc = retry ? (status === "success" ? "重新解析二维码" : "重试解析二维码") : "解析二维码";
+        if (running) qrDesc = "正在解析二维码";
+        setPickwordImageActionTileState20(
+            pickwordQrActionTile20,
+            qrDesc,
+            retry ? "refresh" : "qr",
+            state.available === true && !running,
+            running ? 0.45 : (state.available === true ? 1.0 : 0.32)
+        );
+        setPickwordImageActionTileState20(
+            pickwordQrCopyTile20,
+            "复制二维码结果",
+            "copy",
+            state.hasResult === true && !running,
+            state.hasResult === true && !running ? 1.0 : 0.32
+        );
+        setPickwordImageActionTileState20(
+            pickwordQrLoadTile20,
+            state.loaded === true ? "恢复原文" : "载入拾字",
+            state.loaded === true ? "restore" : "load",
+            state.hasResult === true && !running,
+            state.hasResult === true && !running ? 1.0 : 0.32
+        );
+    }
+
+    function performPickwordQrAction20(action) {
+        try {
+            if (!pickwordImageController20 || typeof pickwordImageController20.performPickwordQrAction !== "function") {
                 showToast("二维码入口暂不可用");
                 return false;
             }
-            try { trigger.setVisibility(View.VISIBLE); } catch (eVisible) {}
-            var clicked = false;
-            try { clicked = trigger.performClick() === true; } catch (eClick) { clicked = false; }
-            collapsePickwordAuxView20(trigger);
-            return clicked;
+            var ok = pickwordImageController20.performPickwordQrAction(String(action || "")) === true;
+            syncPickwordImageActionGridState20();
+            return ok;
         } catch (eQr) {
             showToast("二维码操作失败");
         }
@@ -552,42 +677,6 @@
         return false;
     }
 
-    function createPickwordImageActionTile20(labelText, iconKind, callback) {
-        var tile = new LinearLayout(appContext);
-        tile.setOrientation(LinearLayout.VERTICAL);
-        tile.setGravity(Gravity.CENTER);
-        tile.setClickable(true);
-        tile.setFocusable(true);
-        tile.setPadding(uiDp(6, 8), uiDp(7, 9), uiDp(6, 8), uiDp(6, 8));
-        tile.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 16 : 14, 1));
-
-        var iconSize = isTablet ? 27 : 22;
-        var icon = createReplicaIcon20(iconKind, "imageAction", iconSize);
-        tile.addView(icon, new LinearLayout.LayoutParams(uiDp(iconSize, iconSize + 2), uiDp(iconSize, iconSize + 2)));
-
-        var label = new TextView(appContext);
-        label.setText(String(labelText || ""));
-        label.setTextSize(uiTextSize(11, 14));
-        label.setGravity(Gravity.CENTER);
-        label.setSingleLine(true);
-        safeTextColor(label, Colors.text);
-        var labelLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        labelLp.topMargin = uiDp(3, 5);
-        tile.addView(label, labelLp);
-        tile.setContentDescription(String(labelText || ""));
-        tile.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
-            hapticFeedback(v);
-            try { callback(); } catch (eCallback) { showToast("操作失败"); }
-        } }));
-        return tile;
-    }
-
-    function addPickwordImageActionTile20(row, tile, addLeftMargin) {
-        var lp = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
-        if (addLeftMargin === true) lp.leftMargin = uiDp(7, 9);
-        row.addView(tile, lp);
-    }
-
     function createPickwordImageActionGrid20(thumbRoot) {
         var grid = new LinearLayout(appContext);
         grid.setOrientation(LinearLayout.VERTICAL);
@@ -595,32 +684,56 @@
 
         var topRow = new LinearLayout(appContext);
         topRow.setOrientation(LinearLayout.HORIZONTAL);
+        var middleRow = new LinearLayout(appContext);
+        middleRow.setOrientation(LinearLayout.HORIZONTAL);
         var bottomRow = new LinearLayout(appContext);
         bottomRow.setOrientation(LinearLayout.HORIZONTAL);
 
         addPickwordImageActionTile20(topRow,
-            createPickwordImageActionTile20("分享", "share", function() {
+            createPickwordImageActionTile20("分享截图", "share", function() {
                 pickwordGridShareClosePending20 = true;
                 var clicked = performPickwordImagePageAction20(0, "截图分享暂不可用");
                 if (!clicked) pickwordGridShareClosePending20 = false;
             }), false);
-        addPickwordImageActionTile20(topRow,
-            createPickwordImageActionTile20("二维码", "qr", function() {
-                performPickwordQrAction20(thumbRoot);
-            }), true);
-        addPickwordImageActionTile20(bottomRow,
-            createPickwordImageActionTile20("贴图", "image", function() {
+        pickwordQrActionTile20 = createPickwordImageActionTile20("解析二维码", "qr", function() {
+            performPickwordQrAction20("decode");
+        });
+        addPickwordImageActionTile20(topRow, pickwordQrActionTile20, true);
+
+        addPickwordImageActionTile20(middleRow,
+            createPickwordImageActionTile20("查看原图", "image", function() {
                 if (!openPickwordImagePage20()) showToast("截图查看暂不可用");
             }), false);
-        addPickwordImageActionTile20(bottomRow,
-            createPickwordImageActionTile20("保存", "save", function() {
+        addPickwordImageActionTile20(middleRow,
+            createPickwordImageActionTile20("保存截图", "save", function() {
                 performPickwordImagePageAction20(1, "截图保存暂不可用");
             }), true);
 
+        pickwordQrCopyTile20 = createPickwordImageActionTile20("复制二维码结果", "copy", function() {
+            performPickwordQrAction20("copy");
+        });
+        addPickwordImageActionTile20(bottomRow, pickwordQrCopyTile20, false);
+        pickwordQrLoadTile20 = createPickwordImageActionTile20("载入拾字", "load", function() {
+            performPickwordQrAction20("toggle_load");
+        });
+        addPickwordImageActionTile20(bottomRow, pickwordQrLoadTile20, true);
+
         grid.addView(topRow, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
+        var middleLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1);
+        middleLp.topMargin = uiDp(4, 5);
+        grid.addView(middleRow, middleLp);
         var bottomLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1);
-        bottomLp.topMargin = uiDp(7, 9);
+        bottomLp.topMargin = uiDp(4, 5);
         grid.addView(bottomRow, bottomLp);
+
+        try {
+            if (pickwordImageController20 && typeof pickwordImageController20.setPickwordQrActionStateListener === "function") {
+                pickwordImageController20.setPickwordQrActionStateListener(function(state) {
+                    try { syncPickwordImageActionGridState20(); } catch (eSync) {}
+                });
+            }
+        } catch (eListener) {}
+        syncPickwordImageActionGridState20();
         return grid;
     }
 

@@ -33,6 +33,7 @@ SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.5",
     "// @version 1.0.6",
     "// @version 1.0.7",
+    "// @version 1.0.8",
 )
 if qr_version not in SUPPORTED_QR_VERSIONS:
     errors.append("unexpected QR module version: %s" % qr_version)
@@ -40,9 +41,11 @@ if qr_version not in SUPPORTED_QR_VERSIONS:
 for token in ("ZXing", "zxing", "area_qr", "PICKWORD_QR_", "decodeFile("):
     forbid(POINTER, token, "pointer QR coupling")
     forbid(OCR, token, "OCR QR coupling")
-require(QR, '"解析二维码"', "explicit QR button")
-require(QR, "decodeAsync26(appObj, session", "button decode dispatch")
+require(QR, "decodeAsync26(appObj, session", "QR decode dispatch")
 require(QR, "createThumbnailView = function", "thumbnail-only UI integration")
+require(QR, "controller.getPickwordQrActionState = function()", "QR action state bridge")
+require(QR, "controller.performPickwordQrAction = function(action)", "QR action dispatch bridge")
+require(QR, "controller.setPickwordQrActionStateListener = function(listener)", "QR action state listener")
 
 for token in (
     "Number(ps.generation || 0) !== Number(generation)",
@@ -55,9 +58,12 @@ for token in (
 ):
     require(QR, token, "stale-result/cancel guard")
 
-require(QR, 'textButton26(appObj, "复制结果"', "manual copy action")
-require(QR, 'textButton26(appObj, "载入拾字"', "manual load action")
+require(QR, 'name === "copy"', "manual copy bridge action")
+require(QR, 'name === "toggle_load"', "manual load/restore bridge action")
+require(QR, "function copyQrResult26(appObj, session)", "manual copy owner")
+require(QR, "function toggleQrLoad26(appObj, session)", "manual load/restore owner")
 require(QR, "setClipboard26(text)", "manual clipboard implementation")
+forbid(QR, "textButton26(", "legacy QR text-button UI")
 for token in ("startActivity(", "ACTION_VIEW", "Intent.parseUri", "WifiNetworkSuggestion"):
     forbid(QR, token, "automatic external execution")
 
@@ -73,7 +79,7 @@ for token in (
     'QR_RUNTIME_CLASS26 = "toolhub.runtime.qr.ToolHubQrRuntime"',
 ):
     require(QR, token, "runtime trust/loading contract")
-if qr_version in ("// @version 1.0.6", "// @version 1.0.7"):
+if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8"):
     require(QR, "new Packages.dalvik.system.DexClassLoader", "Rhino Packages DexClassLoader")
 else:
     require(QR, "new dalvik.system.DexClassLoader", "legacy DexClassLoader")
@@ -87,6 +93,7 @@ if qr_version in (
     "// @version 1.0.5",
     "// @version 1.0.6",
     "// @version 1.0.7",
+    "// @version 1.0.8",
 ):
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
@@ -106,6 +113,7 @@ if qr_version in (
     "// @version 1.0.5",
     "// @version 1.0.6",
     "// @version 1.0.7",
+    "// @version 1.0.8",
 ):
     for token in (
         "function sanitizeError26(error)",
@@ -118,7 +126,7 @@ if qr_version in (
     ):
         require(QR, token, "runtime diagnostics")
 
-if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7"):
+if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8"):
     forbid(QR, "context.getCodeCacheDir()", "system_server has no app code-cache directory")
     for token in (
         "function getDexOptimizedDirectory26()",
@@ -130,11 +138,11 @@ if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7")
     ):
         require(QR, token, "system_server DexClassLoader compatibility")
 
-if qr_version in ("// @version 1.0.6", "// @version 1.0.7"):
+if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8"):
     forbid(QR, "new dalvik.system.DexClassLoader(", "bare dalvik package is undefined in ShortX Rhino")
     require(QR, "new Packages.dalvik.system.DexClassLoader(", "Rhino Packages DexClassLoader")
 
-if qr_version == "// @version 1.0.7":
+if qr_version in ("// @version 1.0.7", "// @version 1.0.8"):
     forbid(QR, 'hidePickwordWindow("qr_load")', "QR load-to-pickword hide/show race")
     require(QR, 'var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);', "QR load text local value")
     require(QR, 'log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));', "QR load reuse-window log")
@@ -171,8 +179,8 @@ if errors:
     raise SystemExit(1)
 
 print("OK pickword_qr beta_only=1 system_server_dexloader=%d rhino_packages=%d diagnostics=%d load_text_reuse_window=%d" % (
-    1 if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7") else 0,
-    1 if qr_version in ("// @version 1.0.6", "// @version 1.0.7") else 0,
+    1 if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8") else 0,
+    1 if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8") else 0,
     1 if qr_version in ("// @version 1.0.4", "// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7") else 0,
     1 if qr_version == "// @version 1.0.7" else 0,
 ))

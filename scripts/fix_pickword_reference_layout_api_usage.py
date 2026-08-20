@@ -16,13 +16,18 @@ def require(condition, message):
 def patch_pickword():
     text = TARGET.read_text(encoding="utf-8")
     require(
-        text.startswith("// @version 1.0.22\n") or text.startswith("// @version 1.0.23\n"),
-        "expected th_20 version 1.0.22 or 1.0.23",
+        text.startswith("// @version 1.0.22\n") or text.startswith("// @version 1.0.23\n") or text.startswith("// @version 1.0.24\n"),
+        "expected th_20 version 1.0.22, 1.0.23, or 1.0.24",
     )
 
     if "function findPickwordTextAction20(root, labels)" not in text:
         require("function performPickwordImagePageAction20(actionIndex, unavailableText)" in text, "fixed image action helper missing")
-        require("root.getChildAt(2)" in text, "thumbnail QR child binding missing")
+        if text.startswith("// @version 1.0.24\n"):
+            require("getPickwordQrActionState" in text, "QR state bridge missing")
+            require("performPickwordQrAction20(\"decode\")" in text, "QR decode bridge missing")
+            require("resolvePickwordShortXActionDrawable20" in text, "ShortX image-action icon resolver missing")
+        else:
+            require("root.getChildAt(2)" in text, "thumbnail QR child binding missing")
         return
 
     start = text.find("    function findPickwordTextAction20(root, labels) {")
@@ -136,7 +141,7 @@ def patch_channel_storage_verifier():
     text = CHANNEL_STORAGE_VERIFY.read_text(encoding="utf-8")
     old = 'require(PICKWORD.splitlines()[0] == "// @version 1.0.21", "th_20_pickword.js version must be 1.0.21")'
     legacy = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22"), "th_20_pickword.js version must be 1.0.21 or 1.0.22")'
-    new = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23"), "th_20_pickword.js version must be 1.0.21, 1.0.22, or 1.0.23")'
+    new = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23", "// @version 1.0.24"), "th_20_pickword.js version must be 1.0.21, 1.0.22, 1.0.23, or 1.0.24")'
     if old in text:
         text = text.replace(old, new, 1)
     elif legacy in text:

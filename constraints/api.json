@@ -352,10 +352,8 @@
         "android|method|android.os.Handler#post",
         "android|method|android.os.Handler#postDelayed",
         "android|method|android.os.Handler#removeCallbacks",
-        "android|method|android.widget.FrameLayout.LayoutParams#setMargins",
         "android|method|android.widget.LinearLayout#setVisibility",
         "android|method|android.widget.TextView#getMaxLines",
-        "android|method|android.widget.TextView#setClickable",
         "android|method|android.widget.TextView#setEllipsize",
         "android|method|android.widget.TextView#setMaxLines",
         "android|method|android.widget.Toast#makeText",
@@ -432,6 +430,40 @@
       "threadContract": "启动/更新预检、下载、Bitmap/ZXing 解码和运行时加载在独立 worker；仅按钮与结果卡更新回 Android main Looper",
       "fallback": "任何目录、下载、哈希、只读、类加载、图片解码或超时失败只降级二维码结果卡，不阻断 ToolHub、框选截图或 OCR",
       "reason": "显式登记 th_26_qr_runtime.js 引入的 API，并仅保留这些 usage key 当前实际存在的有限文件作用域；不使用通配符扩大到其他模块"
+    },
+    {
+      "id": "api-pickword-image-action-grid-icons",
+      "usageKeys": [
+        "android|class|android.widget.ImageView",
+        "android|method|android.widget#ImageView",
+        "android|method|android.widget.LinearLayout#getTag",
+        "android|method|android.widget.LinearLayout#setAlpha",
+        "android|method|android.widget.LinearLayout#setEnabled",
+        "android|method|android.widget.TextView#setImageDrawable",
+        "android|method|android.widget.TextView#setScaleType"
+      ],
+      "source": "android",
+      "classOrObject": "ImageView and existing LinearLayout tile state APIs",
+      "method": "ShortX drawable icon rendering and QR action-state updates",
+      "classification": "guarded",
+      "scope": [
+        "code/th_14_button_icon_editor.js",
+        "code/th_14_button_shortcut.js",
+        "code/th_14_icon_picker.js",
+        "code/th_14_panels.js",
+        "code/th_15_extra.js",
+        "code/th_15_main_panel.js",
+        "code/th_20_pickword.js",
+        "code/th_22_image_viewer.js",
+        "code/th_23_screenshot_manager.js"
+      ],
+      "allowScopeExpansion": true,
+      "minApi": 23,
+      "guard": "Only the pickword screenshot 2x3 action grid creates the new ImageView icon and updates tile state; drawable lookup reuses the existing ShortX resource resolver.",
+      "owner": "ToolHub Beta pickword screenshot action grid",
+      "threadContract": "Tile construction, icon replacement, alpha/enabled state and QR state listener callbacks execute on the existing Android main/UI owner path.",
+      "fallback": "Missing ShortX drawable falls back to an Android help drawable; QR runtime errors only disable QR-dependent cells and do not block screenshot viewing, sharing or saving.",
+      "reason": "Explicitly review the finite API keys and exact current file scopes needed by the icon-only 2x3 screenshot action grid; no usage-key prefix or wildcard scope is introduced."
     }
   ],
   "explicitRuleRequirements": [

@@ -1,4 +1,4 @@
-// @version 1.0.7
+// @version 1.0.8
 // =======================【拾字截图二维码解析 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -529,23 +529,63 @@
     return false;
   }
 
-  function textButton26(appObj, label, color, onClick) {
-    var view = new android.widget.TextView(context);
-    view.setText(String(label || ""));
-    view.setGravity(android.view.Gravity.CENTER);
-    view.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-    view.setPadding(dp26(appObj, 8), dp26(appObj, 5), dp26(appObj, 8), dp26(appObj, 5));
-    safeText26(view, color);
-    view.setClickable(true);
-    view.setBackground(round26(appObj, colors26(appObj).surface2, colors26(appObj).outlineVariant, 10));
-    view.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
-      try { onClick(); } catch (e0) { log26(appObj, "w", "button failed=" + String(e0)); }
-    }}));
-    return view;
-  }
-
   function showToast26(text) {
     try { android.widget.Toast.makeText(context, String(text || ""), android.widget.Toast.LENGTH_SHORT).show(); } catch (e0) {}
+  }
+
+  function qrActionState26(appObj, session) {
+    var key = imageKey26(session);
+    var qr = ensureQrState26(appObj, session);
+    var cached = key ? runtime26.cache[key] : null;
+    var hasResult = !!(cached && cached.result && cached.result.ok === true && String(cached.result.text == null ? "" : cached.result.text));
+    var status = qr ? String(qr.status || "idle") : "idle";
+    if (status !== "running" && hasResult) status = "success";
+    return {
+      available: !!key,
+      status: status,
+      hasResult: hasResult,
+      loaded: !!(cached && cached.loaded === true)
+    };
+  }
+
+  function copyQrResult26(appObj, session) {
+    var key = imageKey26(session);
+    var cached = key ? runtime26.cache[key] : null;
+    var text = cached && cached.result ? String(cached.result.text == null ? "" : cached.result.text) : "";
+    if (!text) return false;
+    if (setClipboard26(text)) {
+      showToast26("已复制二维码内容");
+      return true;
+    }
+    return false;
+  }
+
+  function toggleQrLoad26(appObj, session) {
+    var key = imageKey26(session);
+    var cached = key ? runtime26.cache[key] : null;
+    if (!cached || !cached.result || cached.result.ok !== true) return false;
+    if (!cached.loaded) {
+      var ps = appObj.state && appObj.state.pickword ? appObj.state.pickword : null;
+      cached.snapshot = {
+        text: ps ? String(ps.fullText == null ? "" : ps.fullText) : "",
+        meta: shallowCopy26(session)
+      };
+      cached.loaded = true;
+      cancelQr26(appObj, "load_qr_text");
+      var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);
+      log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));
+      appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));
+      return true;
+    }
+    if (cached.snapshot) {
+      cached.loaded = false;
+      var snapshot = cached.snapshot;
+      cancelQr26(appObj, "restore_qr_text");
+      try { if (typeof appObj.hidePickwordWindow === "function") appObj.hidePickwordWindow("qr_restore"); } catch (eHide2) {}
+      appObj.showPickwordText(String(snapshot.text == null ? "" : snapshot.text), shallowCopy26(snapshot.meta));
+      return true;
+    }
+    return false;
   }
 
   function decorateThumbnail26(appObj, controller, opts, root) {
@@ -555,51 +595,18 @@
     if (!key) return root;
     var palette = colors26(appObj);
 
-    var qrButton = textButton26(appObj, "解析二维码", palette.primary, function() {
-      if (!imageKey26(session)) {
-        qrButton.setVisibility(android.view.View.GONE);
-        showToast26("截图已不可用");
-        return;
-      }
-      qrButton.setText("解析中…");
-      qrButton.setEnabled(false);
-      qrButton.setAlpha(0.55);
-      decodeAsync26(appObj, session, function(result) {
-        qrButton.setEnabled(true);
-        qrButton.setAlpha(1.0);
-        if (result && result.ok === true) {
-          qrButton.setText("重新解析");
-          renderResult(result, true);
-        } else {
-          var code = String(result && result.code || "");
-          qrButton.setText(code === "PICKWORD_QR_NOT_FOUND" ? "重试解析" : "重试解析");
-          renderResult(result || { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE" }, true);
-        }
-      });
-    });
-    var qrLp = new android.widget.FrameLayout.LayoutParams(-2, dp26(appObj, 36), android.view.Gravity.RIGHT | android.view.Gravity.BOTTOM);
-    qrLp.setMargins(dp26(appObj, 4), dp26(appObj, 4), dp26(appObj, 6), dp26(appObj, 4));
-    root.addView(qrButton, qrLp);
-
     var card = new android.widget.LinearLayout(context);
     card.setOrientation(android.widget.LinearLayout.VERTICAL);
-    card.setPadding(dp26(appObj, 10), dp26(appObj, 7), dp26(appObj, 10), dp26(appObj, 6));
+    card.setPadding(dp26(appObj, 10), dp26(appObj, 8), dp26(appObj, 10), dp26(appObj, 8));
     card.setBackground(round26(appObj, palette.surface, palette.outlineVariant, 12));
     card.setVisibility(android.view.View.GONE);
-    var titleRow = new android.widget.LinearLayout(context);
-    titleRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-    titleRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
     var title = new android.widget.TextView(context);
     title.setText("二维码内容");
     title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
     safeText26(title, palette.onSurface2);
-    titleRow.addView(title, new android.widget.LinearLayout.LayoutParams(0, dp26(appObj, 22), 1));
-    var back = textButton26(appObj, "查看截图", palette.primary, function() {
-      card.setVisibility(android.view.View.GONE);
-      qrButton.setVisibility(android.view.View.VISIBLE);
-    });
-    titleRow.addView(back, new android.widget.LinearLayout.LayoutParams(dp26(appObj, 68), dp26(appObj, 24)));
-    card.addView(titleRow, new android.widget.LinearLayout.LayoutParams(-1, dp26(appObj, 24)));
+    card.addView(title, new android.widget.LinearLayout.LayoutParams(-1, dp26(appObj, 24)));
+
     var body = new android.widget.TextView(context);
     body.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
     body.setMaxLines(2);
@@ -608,40 +615,6 @@
     body.setGravity(android.view.Gravity.CENTER_VERTICAL);
     body.setPadding(0, dp26(appObj, 2), 0, dp26(appObj, 2));
     card.addView(body, new android.widget.LinearLayout.LayoutParams(-1, 0, 1));
-    var actions = new android.widget.LinearLayout(context);
-    actions.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-    actions.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    var copyBtn = textButton26(appObj, "复制结果", palette.primary, function() {
-      var cached = runtime26.cache[key];
-      var text = cached && cached.result ? String(cached.result.text == null ? "" : cached.result.text) : "";
-      if (!text) return;
-      if (setClipboard26(text)) showToast26("已复制二维码内容");
-    });
-    var loadBtn = textButton26(appObj, "载入拾字", palette.primary, function() {
-      var cached = runtime26.cache[key];
-      if (!cached || !cached.result || cached.result.ok !== true) return;
-      if (!cached.loaded) {
-        var ps = appObj.state && appObj.state.pickword ? appObj.state.pickword : null;
-        cached.snapshot = {
-          text: ps ? String(ps.fullText == null ? "" : ps.fullText) : "",
-          meta: shallowCopy26(session)
-        };
-        cached.loaded = true;
-        cancelQr26(appObj, "load_qr_text");
-        var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);
-        log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));
-        appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));
-      } else if (cached.snapshot) {
-        cached.loaded = false;
-        var snapshot = cached.snapshot;
-        cancelQr26(appObj, "restore_qr_text");
-        try { if (typeof appObj.hidePickwordWindow === "function") appObj.hidePickwordWindow("qr_restore"); } catch (eHide2) {}
-        appObj.showPickwordText(String(snapshot.text == null ? "" : snapshot.text), shallowCopy26(snapshot.meta));
-      }
-    });
-    actions.addView(copyBtn, new android.widget.LinearLayout.LayoutParams(0, dp26(appObj, 28), 1));
-    actions.addView(loadBtn, new android.widget.LinearLayout.LayoutParams(0, dp26(appObj, 28), 1));
-    card.addView(actions, new android.widget.LinearLayout.LayoutParams(-1, dp26(appObj, 30)));
     root.addView(card, new android.widget.FrameLayout.LayoutParams(-1, -1));
 
     function renderResult(result, showCard) {
@@ -651,11 +624,7 @@
         title.setText("二维码内容 · " + String(result.format || "QR_CODE"));
         body.setText(String(result.text == null ? "" : result.text));
         safeText26(body, palette.onSurface);
-        copyBtn.setVisibility(android.view.View.VISIBLE);
-        loadBtn.setVisibility(android.view.View.VISIBLE);
-        var cached = runtime26.cache[key];
-        loadBtn.setText(cached && cached.loaded ? "恢复原文" : "载入拾字");
-      } else {
+      } else if (result) {
         title.setText("二维码解析");
         var message = "解析失败";
         if (code === "PICKWORD_QR_NOT_FOUND") message = "未识别到二维码";
@@ -669,13 +638,8 @@
         }
         body.setText(message);
         safeText26(body, palette.danger);
-        copyBtn.setVisibility(android.view.View.GONE);
-        loadBtn.setVisibility(android.view.View.GONE);
       }
-      if (showCard) {
-        qrButton.setVisibility(android.view.View.GONE);
-        card.setVisibility(android.view.View.VISIBLE);
-      }
+      try { card.setVisibility(showCard === true ? android.view.View.VISIBLE : android.view.View.GONE); } catch (eCard) {}
     }
 
     body.setOnClickListener(new android.view.View.OnClickListener({ onClick: function(v) {
@@ -690,15 +654,63 @@
       } catch (e0) {}
     }}));
 
+    if (controller) {
+      controller.__toolHubQrRender26 = function(result, showCard) {
+        renderResult(result, showCard === true);
+      };
+      controller.__toolHubQrThumbnailDecorated26 = true;
+    }
     var cached = runtime26.cache[key];
     if (cached && cached.result) renderResult(cached.result, false);
-    if (controller) controller.__toolHubQrThumbnailDecorated26 = true;
     return root;
   }
 
   function decorateController26(appObj, controller, opts) {
     if (!controller || controller.__toolHubQrDecorated26 === true) return controller;
     controller.__toolHubQrDecorated26 = true;
+    var session = opts && opts.session ? opts.session : null;
+    var actionStateListener = null;
+
+    function notifyActionState26() {
+      if (typeof actionStateListener !== "function") return;
+      try { actionStateListener(qrActionState26(appObj, session)); } catch (eNotify) {}
+    }
+
+    controller.getPickwordQrActionState = function() {
+      return qrActionState26(appObj, session);
+    };
+    controller.setPickwordQrActionStateListener = function(listener) {
+      actionStateListener = typeof listener === "function" ? listener : null;
+      notifyActionState26();
+      return true;
+    };
+    controller.performPickwordQrAction = function(action) {
+      var name = String(action || "");
+      if (name === "decode") {
+        if (!imageKey26(session)) {
+          showToast26("截图已不可用");
+          notifyActionState26();
+          return false;
+        }
+        try { if (controller.__toolHubQrRender26) controller.__toolHubQrRender26(null, false); } catch (eHideCard) {}
+        var started = decodeAsync26(appObj, session, function(result) {
+          try { if (controller.__toolHubQrRender26) controller.__toolHubQrRender26(result || { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE" }, true); } catch (eRender) {}
+          notifyActionState26();
+        });
+        notifyActionState26();
+        return started === true;
+      }
+      if (name === "copy") {
+        var copied = copyQrResult26(appObj, session);
+        notifyActionState26();
+        return copied;
+      }
+      if (name === "toggle_load") {
+        return toggleQrLoad26(appObj, session);
+      }
+      return false;
+    };
+
     var originalCreate = controller.createThumbnailView;
     if (typeof originalCreate === "function") {
       controller.createThumbnailView = function() {
@@ -714,6 +726,8 @@
     var originalRelease = controller.release;
     if (typeof originalRelease === "function") {
       controller.release = function(reason) {
+        actionStateListener = null;
+        try { controller.__toolHubQrRender26 = null; } catch (eRenderClear) {}
         cancelQr26(appObj, "image_release_" + String(reason || ""));
         return originalRelease.call(controller, reason);
       };

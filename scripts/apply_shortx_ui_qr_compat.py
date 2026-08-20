@@ -37,8 +37,8 @@ def validate_qr_integration_version_gate():
 
 def validate_qr_runtime():
     text = QR_MODULE.read_text(encoding="utf-8")
-    if not text.startswith("// @version 1.0.7"):
-        raise SystemExit("ShortXUI QR compat requires QR runtime version 1.0.7")
+    if not (text.startswith("// @version 1.0.7") or text.startswith("// @version 1.0.8")):
+        raise SystemExit("ShortXUI QR compat requires QR runtime version 1.0.7 or 1.0.8")
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
         "function preflightRuntime26(appObj, reason)",
@@ -69,6 +69,16 @@ def validate_qr_runtime():
         raise SystemExit("ShortXUI QR compat forbids system_server Context.getCodeCacheDir")
     if "shortx.getShortXDir" in text:
         raise SystemExit("ShortXUI QR compat forbids shared ShortX root lib bypass")
+    if text.startswith("// @version 1.0.8"):
+        for token in (
+            "controller.getPickwordQrActionState = function()",
+            "controller.performPickwordQrAction = function(action)",
+            "controller.setPickwordQrActionStateListener = function(listener)",
+        ):
+            if token not in text:
+                raise SystemExit("ShortXUI QR compat 1.0.8 bridge marker missing: " + token)
+        if "textButton26(" in text:
+            raise SystemExit("ShortXUI QR compat 1.0.8 forbids legacy QR text buttons")
 
 
 def main():
@@ -113,7 +123,7 @@ def main():
     TARGET.write_text(text, encoding="utf-8")
     validate_qr_integration_version_gate()
     validate_qr_runtime()
-    print("OK ShortXUI finalizer preserves Beta QR 1.0.7 load-text reuse-window fix")
+    print("OK ShortXUI finalizer preserves Beta QR 1.0.7/1.0.8 load-text reuse-window fix")
 
 
 if __name__ == "__main__":
