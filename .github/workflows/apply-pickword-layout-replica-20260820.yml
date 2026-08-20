@@ -5,6 +5,8 @@ on:
     branches: [beta]
     paths:
       - '.github/workflows/apply-pickword-layout-replica-20260820.yml'
+  pull_request:
+    branches: [beta]
 
 permissions:
   contents: write
