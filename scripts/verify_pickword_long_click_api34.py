@@ -16,8 +16,8 @@ def fail(message):
 def main():
     text = SOURCE.read_text(encoding="utf-8")
 
-    if not text.startswith("// @version 1.0.21\n"):
-        fail("th_20_pickword.js version must be 1.0.21")
+    if not (text.startswith("// @version 1.0.21\n") or text.startswith("// @version 1.0.22\n")):
+        fail("th_20_pickword.js version must be 1.0.21 or 1.0.22")
 
     listeners = list(re.finditer(r"new\s+View\.OnLongClickListener\s*\(\s*\{", text))
     if len(listeners) != 2:
