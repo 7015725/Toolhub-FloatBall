@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Keep the reference pickword layout inside the existing Android API policy surface."""
+"""Keep the reference pickword layout inside the existing Android/API verification surface."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "code" / "th_20_pickword.js"
 IMAGE_VIEWER_VERIFY = ROOT / "scripts" / "verify_pickword_image_viewer.py"
+CHANNEL_STORAGE_VERIFY = ROOT / "scripts" / "verify_channel_private_storage_isolation.py"
 
 
 def require(condition, message):
@@ -92,8 +93,14 @@ def patch_pickword():
 
 '''
     text = text[:start] + replacement + text[end:]
-    text = text.replace('performPickwordImagePageAction20(["分享"], "截图分享暂不可用");', 'performPickwordImagePageAction20(0, "截图分享暂不可用");')
-    text = text.replace('performPickwordImagePageAction20(["保存", "已保存"], "截图保存暂不可用");', 'performPickwordImagePageAction20(1, "截图保存暂不可用");')
+    text = text.replace(
+        'performPickwordImagePageAction20(["分享"], "截图分享暂不可用");',
+        'performPickwordImagePageAction20(0, "截图分享暂不可用");',
+    )
+    text = text.replace(
+        'performPickwordImagePageAction20(["保存", "已保存"], "截图保存暂不可用");',
+        'performPickwordImagePageAction20(1, "截图保存暂不可用");',
+    )
 
     require("function findPickwordTextAction20(root, labels)" not in text, "text-scanning helper still present")
     require("node.getText" not in text, "generic View#getText call still present")
@@ -106,19 +113,37 @@ def patch_image_viewer_verifier():
     text = IMAGE_VIEWER_VERIFY.read_text(encoding="utf-8")
     old = "require('uiDp(108, 132)' in th20 and 'uiDp(156, 220)' in th20, \"compact thumbnail/text dimensions missing\")"
     reference_only = "require('uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20, \"reference screenshot/text dimensions missing\")"
-    flexible = "compact_layout = 'uiDp(108, 132)' in th20 and 'uiDp(156, 220)' in th20\nreference_layout = 'uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20\nrequire(compact_layout or reference_layout, \"supported thumbnail/text dimensions missing\")"
+    flexible = (
+        "compact_layout = 'uiDp(108, 132)' in th20 and 'uiDp(156, 220)' in th20\n"
+        "reference_layout = 'uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20\n"
+        "require(compact_layout or reference_layout, \"supported thumbnail/text dimensions missing\")"
+    )
     if old in text:
         text = text.replace(old, flexible, 1)
     elif reference_only in text:
         text = text.replace(reference_only, flexible, 1)
-    require("reference_layout = 'uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20" in text, \"image viewer verifier reference dimensions\")
+    require(
+        "reference_layout = 'uiDp(150, 188)' in th20 and 'uiDp(164, 220)' in th20" in text,
+        "image viewer verifier reference dimensions",
+    )
     IMAGE_VIEWER_VERIFY.write_text(text, encoding="utf-8")
+
+
+def patch_channel_storage_verifier():
+    text = CHANNEL_STORAGE_VERIFY.read_text(encoding="utf-8")
+    old = 'require(PICKWORD.splitlines()[0] == "// @version 1.0.21", "th_20_pickword.js version must be 1.0.21")'
+    new = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22"), "th_20_pickword.js version must be 1.0.21 or 1.0.22")'
+    if old in text:
+        text = text.replace(old, new, 1)
+    require(new in text, "channel storage verifier version compatibility")
+    CHANNEL_STORAGE_VERIFY.write_text(text, encoding="utf-8")
 
 
 def main():
     patch_pickword()
     patch_image_viewer_verifier()
-    print("OK pickword reference layout API fixup hierarchy_actions=1 generic_getText=0 verifier=reference_layout")
+    patch_channel_storage_verifier()
+    print("OK pickword reference layout API fixup hierarchy_actions=1 generic_getText=0 verifier=v1.0.21|v1.0.22")
 
 
 if __name__ == "__main__":
