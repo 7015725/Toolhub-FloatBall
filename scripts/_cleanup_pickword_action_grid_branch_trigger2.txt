@@ -1,0 +1,1 @@
+cleanup=second synchronize trigger
