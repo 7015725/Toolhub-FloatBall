@@ -5,6 +5,7 @@ Current fix: th_26 v1.0.7 keeps QR "load to pickword" on the current pickword
 window instead of issuing async hide followed immediately by show. The old order
 could let a late hide cleanup null mainLayout/textView after the new session had
 already started, producing setText/setVisibility of null.
+The pickword reference-layout normalizer is applied separately by sign-toolhub.
 """
 import json
 import re
