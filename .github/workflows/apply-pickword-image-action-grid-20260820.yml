@@ -56,6 +56,53 @@ jobs:
           set -euo pipefail
           python3 scripts/register_pickword_qr_api_usage.py
           python3 scripts/report_api_usage.py --write constraints/API_USAGE_BASELINE.json
+          python3 - <<'PYAPI'
+          import json
+          from pathlib import Path
+
+          api_path = Path('constraints/api.json')
+          baseline_path = Path('constraints/API_USAGE_BASELINE.json')
+          api = json.loads(api_path.read_text(encoding='utf-8'))
+          baseline = json.loads(baseline_path.read_text(encoding='utf-8'))
+          keys = [
+              'android|class|android.widget.ImageView',
+              'android|method|android.widget#ImageView',
+              'android|method|android.widget.LinearLayout#getTag',
+              'android|method|android.widget.LinearLayout#setAlpha',
+              'android|method|android.widget.LinearLayout#setEnabled',
+              'android|method|android.widget.TextView#setImageDrawable',
+              'android|method|android.widget.TextView#setScaleType',
+          ]
+          by_key = {str(x.get('key', '')): x for x in (baseline.get('entries') or [])}
+          missing = [key for key in keys if key not in by_key]
+          if missing:
+              raise SystemExit('pickword action-grid API keys missing from scan: ' + ', '.join(missing))
+          scope = sorted({path for key in keys for path in (by_key[key].get('files') or [])})
+          if 'code/th_20_pickword.js' not in scope:
+              raise SystemExit('th_20 missing from reviewed action-grid API scope')
+          rule = {
+              'id': 'api-pickword-image-action-grid-icons',
+              'usageKeys': keys,
+              'source': 'android',
+              'classOrObject': 'ImageView and existing LinearLayout tile state APIs',
+              'method': 'ShortX drawable icon rendering and QR action-state updates',
+              'classification': 'guarded',
+              'scope': scope,
+              'allowScopeExpansion': True,
+              'minApi': 23,
+              'guard': 'Only the pickword screenshot 2x3 action grid creates the new ImageView icon and updates tile state; drawable lookup reuses the existing ShortX resource resolver.',
+              'owner': 'ToolHub Beta pickword screenshot action grid',
+              'threadContract': 'Tile construction, icon replacement, alpha/enabled state and QR state listener callbacks execute on the existing Android main/UI owner path.',
+              'fallback': 'Missing ShortX drawable falls back to an Android help drawable; QR runtime errors only disable QR-dependent cells and do not block screenshot viewing, sharing or saving.',
+              'reason': 'Explicitly review the finite API keys and exact current file scopes needed by the icon-only 2x3 screenshot action grid; no usage-key prefix or wildcard scope is introduced.',
+          }
+          rules = api.get('rules') or []
+          rules = [x for x in rules if str(x.get('id', '')) != rule['id']]
+          rules.append(rule)
+          api['rules'] = rules
+          api_path.write_text(json.dumps(api, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print('OK action-grid API policy keys=%d scope_files=%d' % (len(keys), len(scope)))
+          PYAPI
           python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
 
       - name: Targeted verification
@@ -106,7 +153,7 @@ jobs:
           ]
           changed = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
           extra = [x for x in changed if x not in allowed]
-          missing = [x for x in ('code/th_20_pickword.js', 'code/th_26_qr_runtime.js', 'constraints/API_USAGE_BASELINE.json') if x not in changed]
+          missing = [x for x in ('code/th_20_pickword.js', 'code/th_26_qr_runtime.js', 'constraints/API_USAGE_BASELINE.json', 'constraints/api.json') if x not in changed]
           if extra:
               raise SystemExit('unexpected changed files: ' + ', '.join(extra))
           if missing:
