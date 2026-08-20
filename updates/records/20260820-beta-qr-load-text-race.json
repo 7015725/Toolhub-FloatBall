@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "20260820-beta-qr-load-text-race",
+  "type": "fix",
+  "title": "Beta：修复二维码载入拾字窗口竞态",
+  "details": [
+    "修复二维码结果“载入拾字”先异步 hide 再立即 show，旧窗口迟到清理把 mainLayout/textView 置空，触发 Cannot call method setText/setVisibility of null 的问题。",
+    "二维码文本改为直接复用当前拾字窗口，通过 showPickwordText 重置当前会话，不再调用 hidePickwordWindow(\"qr_load\")；截图元数据、二维码结果缓存与恢复原文状态保持不变。",
+    "新增发布门禁禁止二维码载入路径恢复 hide→show 竞态；ZXing 3.5.4-r2、通道私有 lib、框选截图、OCR 与二维码解析主链保持不变。"
+  ],
+  "manifestVersion": 0
+}
