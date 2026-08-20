@@ -40,17 +40,14 @@ jobs:
           from pathlib import Path
           path = Path('scripts/verify_result_preview.py')
           text = path.read_text(encoding='utf-8')
-          old = '''        and "Math.min(contentHeight, textAreaHeight)" in pickword_height
-          and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), textAreaHeight)" in pickword_height
-          '''
-          new = '''        and "var maxHeight = textAreaHeight;" in pickword_height
-          and "maxHeight = Math.min(maxHeight, Math.round(uiDp(164, 220)))" in pickword_height
-          and "Math.min(contentHeight, maxHeight)" in pickword_height
-          and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), maxHeight)" in pickword_height
-          '''
-          if text.count(old) != 1:
+          old1 = '        and "Math.min(contentHeight, textAreaHeight)" in pickword_height\n'
+          old2 = '        and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), textAreaHeight)" in pickword_height\n'
+          if text.count(old1) != 1 or text.count(old2) != 1:
               raise SystemExit('result-preview height contract anchor drift')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          new1 = '        and "var maxHeight = textAreaHeight;" in pickword_height\n        and "maxHeight = Math.min(maxHeight, Math.round(uiDp(164, 220)))" in pickword_height\n        and "Math.min(contentHeight, maxHeight)" in pickword_height\n'
+          new2 = '        and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), maxHeight)" in pickword_height\n'
+          text = text.replace(old1, new1, 1).replace(old2, new2, 1)
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Record update
