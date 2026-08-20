@@ -1,0 +1,28 @@
+name: cleanup-pickword-action-grid-temp-branch-20260820
+
+on:
+  pull_request:
+    branches: [beta]
+    types: [reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.ref == 'agent/pickword-image-action-grid-trigger-20260820'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete temporary trigger branch
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          test -n "$TOKEN"
+          test "$HEAD_BRANCH" = 'agent/pickword-image-action-grid-trigger-20260820'
+          git init cleanup-repo
+          cd cleanup-repo
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git"
+          git push origin --delete "$HEAD_BRANCH"
