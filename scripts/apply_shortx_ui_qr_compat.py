@@ -19,7 +19,7 @@ def replace_once(text, old, new, label):
 def validate_qr_integration_version_gate():
     text = QR_INTEGRATION.read_text(encoding="utf-8")
     for token in (
-        '"// @version 1.0.6"',
+        '"// @version 1.0.7"',
         'new Packages.dalvik.system.DexClassLoader(',
         'new java.io.File(root, "lib")',
         'require("shortx.getShortXDir" not in text',
@@ -28,6 +28,8 @@ def validate_qr_integration_version_gate():
         'context.getCodeCacheDir()" not in text',
         'if (sdk >= 26) return null;',
         'new java.io.File(lib, ".dexopt")',
+        'hidePickwordWindow("qr_load")\' not in text',
+        'appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));',
     ):
         if token not in text:
             raise SystemExit("ShortXUI QR compat integration marker missing: " + token)
@@ -35,8 +37,8 @@ def validate_qr_integration_version_gate():
 
 def validate_qr_runtime():
     text = QR_MODULE.read_text(encoding="utf-8")
-    if not text.startswith("// @version 1.0.6"):
-        raise SystemExit("ShortXUI QR compat requires QR runtime version 1.0.6")
+    if not text.startswith("// @version 1.0.7"):
+        raise SystemExit("ShortXUI QR compat requires QR runtime version 1.0.7")
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
         "function preflightRuntime26(appObj, reason)",
@@ -53,9 +55,14 @@ def validate_qr_runtime():
         'assertWritableDirPath(dexoptPath, "ToolHub QR dexopt")',
         'var optimizedDirectory = getDexOptimizedDirectory26();',
         'new Packages.dalvik.system.DexClassLoader(',
+        'var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);',
+        'log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));',
+        'appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));',
     ):
         if token not in text:
             raise SystemExit("ShortXUI QR compat runtime marker missing: " + token)
+    if 'hidePickwordWindow("qr_load")' in text:
+        raise SystemExit("ShortXUI QR compat forbids QR load hide/show race")
     if "new dalvik.system.DexClassLoader(" in text:
         raise SystemExit("ShortXUI QR compat forbids bare dalvik package in Rhino")
     if "context.getCodeCacheDir()" in text:
@@ -106,7 +113,7 @@ def main():
     TARGET.write_text(text, encoding="utf-8")
     validate_qr_integration_version_gate()
     validate_qr_runtime()
-    print("OK ShortXUI finalizer preserves Beta QR 1.0.6 Rhino Packages DexClassLoader fix")
+    print("OK ShortXUI finalizer preserves Beta QR 1.0.7 load-text reuse-window fix")
 
 
 if __name__ == "__main__":
