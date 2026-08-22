@@ -20,7 +20,7 @@ def require(condition, message):
 
 require(THEME.splitlines()[0] == "// @version 1.0.12", "th_04_theme.js version must be 1.0.12")
 require(PANEL.splitlines()[0] == "// @version 1.0.16", "th_13_panel_ui.js version must be 1.0.16")
-require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23", "// @version 1.0.24"), "th_20_pickword.js version must be 1.0.21, 1.0.22, 1.0.23, or 1.0.24")
+require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23", "// @version 1.0.24", "// @version 1.0.25"), "th_20_pickword.js version must be 1.0.21, 1.0.22, 1.0.23, 1.0.24, or 1.0.25")
 SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.1",
     "// @version 1.0.2",
@@ -30,10 +30,11 @@ SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.6",
     "// @version 1.0.7",
     "// @version 1.0.8",
+    "// @version 1.0.9",
 )
 require(
     QR.splitlines()[0] in SUPPORTED_QR_VERSIONS,
-    "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6/1.0.7/1.0.8 during generation",
+    "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6/1.0.7/1.0.8/1.0.9 during generation",
 )
 
 for name, source in (("theme", THEME), ("panel_ui", PANEL), ("pickword", PICKWORD)):

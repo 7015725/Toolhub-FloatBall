@@ -44,7 +44,7 @@
     "code/th_26_qr_runtime.js",
     "code/th_34_shortx_ui_lab.js"
   ],
-  "usageCount": 781,
+  "usageCount": 786,
   "entries": [
     {
       "key": "android|class|android.animation.Animator.AnimatorListener",
@@ -94,12 +94,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4442,
+          "line": 4446,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4442,
+          "line": 4446,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -494,7 +494,8 @@
       "classOrObject": "android.graphics.Canvas",
       "method": null,
       "files": [
-        "code/th_14_button_shortcut.js"
+        "code/th_14_button_shortcut.js",
+        "code/th_26_qr_runtime.js"
       ],
       "locations": [
         {
@@ -506,9 +507,19 @@
           "file": "code/th_14_button_shortcut.js",
           "line": 69,
           "form": "direct_constructor_assignment"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 663,
+          "form": "direct_constructor"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 663,
+          "form": "direct_constructor_assignment"
         }
       ],
-      "occurrenceCount": 2
+      "occurrenceCount": 4
     },
     {
       "key": "android|class|android.graphics.Color",
@@ -610,7 +621,8 @@
         "code/th_18_pointer_ocr.js",
         "code/th_20_pickword.js",
         "code/th_21_result_preview.js",
-        "code/th_22_image_viewer.js"
+        "code/th_22_image_viewer.js",
+        "code/th_26_qr_runtime.js"
       ],
       "locations": [
         {
@@ -674,7 +686,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 23
+      "occurrenceCount": 25
     },
     {
       "key": "android|class|android.graphics.Path",
@@ -710,42 +722,42 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1827,
+          "line": 1831,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1827,
+          "line": 1831,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1860,
+          "line": 1864,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1860,
+          "line": 1864,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1871,
+          "line": 1875,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1871,
+          "line": 1875,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1879,
+          "line": 1883,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1879,
+          "line": 1883,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -992,17 +1004,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3324,
+          "line": 3328,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4626,
+          "line": 4630,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4633,
+          "line": 4637,
           "form": "direct_constructor"
         }
       ],
@@ -1136,17 +1148,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1728,
+          "line": 1732,
           "form": "class_alias"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1781,
+          "line": 1785,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1781,
+          "line": 1785,
           "form": "direct_constructor_assignment"
         },
         {
@@ -1169,7 +1181,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2566,
+          "line": 2570,
           "form": "class_alias"
         }
       ],
@@ -1205,17 +1217,17 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2164,
+          "line": 2168,
           "form": "class_alias"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2198,
+          "line": 2202,
           "form": "class_alias"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3490,
+          "line": 3494,
           "form": "class_alias"
         }
       ],
@@ -1309,7 +1321,7 @@
           "form": "direct_constructor_assignment"
         }
       ],
-      "occurrenceCount": 56
+      "occurrenceCount": 58
     },
     {
       "key": "android|class|android.os.HandlerThread",
@@ -1442,12 +1454,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2025,
+          "line": 2029,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2025,
+          "line": 2029,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -1516,7 +1528,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4540,
+          "line": 4544,
           "form": "direct_constructor"
         }
       ],
@@ -1534,7 +1546,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2026,
+          "line": 2030,
           "form": "direct_constructor"
         }
       ],
@@ -1552,7 +1564,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2027,
+          "line": 2031,
           "form": "direct_constructor"
         }
       ],
@@ -1593,12 +1605,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1687,
+          "line": 1691,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1687,
+          "line": 1691,
           "form": "direct_constructor_assignment"
         },
         {
@@ -3332,7 +3344,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3500,
+          "line": 3504,
           "form": "class_alias"
         }
       ],
@@ -3372,12 +3384,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3318,
+          "line": 3322,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3318,
+          "line": 3322,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -3401,7 +3413,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3329,
+          "line": 3333,
           "form": "direct_constructor"
         }
       ],
@@ -4049,7 +4061,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4442,
+          "line": 4446,
           "form": "direct_static_call"
         }
       ],
@@ -4114,17 +4126,17 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4578,
+          "line": 4582,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4608,
+          "line": 4612,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4610,
+          "line": 4614,
           "form": "instance_call"
         }
       ],
@@ -4142,12 +4154,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4622,
+          "line": 4626,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4631,
+          "line": 4635,
           "form": "instance_call"
         }
       ],
@@ -4165,7 +4177,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4443,
+          "line": 4447,
           "form": "instance_call"
         }
       ],
@@ -4183,7 +4195,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4620,
+          "line": 4624,
           "form": "instance_call"
         }
       ],
@@ -4201,7 +4213,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4629,
+          "line": 4633,
           "form": "instance_call"
         }
       ],
@@ -4330,12 +4342,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2863,
+          "line": 2867,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5292,
+          "line": 5296,
           "form": "direct_static_call"
         },
         {
@@ -4399,12 +4411,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2290,
+          "line": 2294,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 526,
+          "line": 564,
           "form": "direct_static_call"
         }
       ],
@@ -4602,7 +4614,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 347,
+          "line": 357,
           "form": "instance_call"
         }
       ],
@@ -5132,7 +5144,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5295,
+          "line": 5299,
           "form": "direct_static_call"
         },
         {
@@ -5429,7 +5441,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2864,
+          "line": 2868,
           "form": "instance_call"
         }
       ],
@@ -5482,7 +5494,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2865,
+          "line": 2869,
           "form": "instance_call"
         }
       ],
@@ -5525,7 +5537,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5293,
+          "line": 5297,
           "form": "instance_call"
         },
         {
@@ -5691,16 +5703,22 @@
       "classOrObject": "android.graphics",
       "method": "Canvas",
       "files": [
-        "code/th_14_button_shortcut.js"
+        "code/th_14_button_shortcut.js",
+        "code/th_26_qr_runtime.js"
       ],
       "locations": [
         {
           "file": "code/th_14_button_shortcut.js",
           "line": 69,
           "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 663,
+          "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 1
+      "occurrenceCount": 2
     },
     {
       "key": "android|method|android.graphics#Paint",
@@ -5712,7 +5730,8 @@
         "code/th_17_pointer.js",
         "code/th_18_pointer_ocr.js",
         "code/th_21_result_preview.js",
-        "code/th_22_image_viewer.js"
+        "code/th_22_image_viewer.js",
+        "code/th_26_qr_runtime.js"
       ],
       "locations": [
         {
@@ -5769,9 +5788,14 @@
           "file": "code/th_22_image_viewer.js",
           "line": 2636,
           "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 665,
+          "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 11
+      "occurrenceCount": 12
     },
     {
       "key": "android|method|android.graphics#Path",
@@ -5797,22 +5821,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1827,
+          "line": 1831,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1860,
+          "line": 1864,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1871,
+          "line": 1875,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1879,
+          "line": 1883,
           "form": "direct_static_call"
         },
         {
@@ -5935,7 +5959,8 @@
       "method": "createBitmap",
       "files": [
         "code/th_14_button_shortcut.js",
-        "code/th_17_pointer.js"
+        "code/th_17_pointer.js",
+        "code/th_26_qr_runtime.js"
       ],
       "locations": [
         {
@@ -5962,9 +5987,14 @@
           "file": "code/th_17_pointer.js",
           "line": 1487,
           "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 662,
+          "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 5
+      "occurrenceCount": 6
     },
     {
       "key": "android|method|android.graphics.Bitmap#createScaledBitmap",
@@ -6212,6 +6242,42 @@
       "occurrenceCount": 1
     },
     {
+      "key": "android|method|android.graphics.Canvas#drawColor",
+      "source": "android",
+      "kind": "method",
+      "classOrObject": "android.graphics.Canvas",
+      "method": "drawColor",
+      "files": [
+        "code/th_26_qr_runtime.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 664,
+          "form": "instance_call"
+        }
+      ],
+      "occurrenceCount": 1
+    },
+    {
+      "key": "android|method|android.graphics.Canvas#drawRect",
+      "source": "android",
+      "kind": "method",
+      "classOrObject": "android.graphics.Canvas",
+      "method": "drawRect",
+      "files": [
+        "code/th_26_qr_runtime.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 673,
+          "form": "instance_call"
+        }
+      ],
+      "occurrenceCount": 1
+    },
+    {
       "key": "android|method|android.graphics.Color#argb",
       "source": "android",
       "kind": "method",
@@ -6418,7 +6484,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1313,
+          "line": 1317,
           "form": "instance_call"
         }
       ],
@@ -6437,16 +6503,6 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1279,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
-          "line": 1280,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
           "line": 1283,
           "form": "instance_call"
         },
@@ -6457,7 +6513,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5053,
+          "line": 1287,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 1288,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 5057,
           "form": "instance_call"
         },
         {
@@ -6562,7 +6628,8 @@
       "method": "setAntiAlias",
       "files": [
         "code/th_17_pointer.js",
-        "code/th_18_pointer_ocr.js"
+        "code/th_18_pointer_ocr.js",
+        "code/th_26_qr_runtime.js"
       ],
       "locations": [
         {
@@ -6579,9 +6646,14 @@
           "file": "code/th_18_pointer_ocr.js",
           "line": 244,
           "form": "instance_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 666,
+          "form": "instance_call"
         }
       ],
-      "occurrenceCount": 3
+      "occurrenceCount": 4
     },
     {
       "key": "android|method|android.graphics.Paint#setLinearText",
@@ -6595,7 +6667,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1241,
+          "line": 1245,
           "form": "instance_call"
         }
       ],
@@ -6648,7 +6720,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1813,
+          "line": 1817,
           "form": "instance_call"
         },
         {
@@ -6683,7 +6755,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1814,
+          "line": 1818,
           "form": "instance_call"
         },
         {
@@ -6734,7 +6806,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1812,
+          "line": 1816,
           "form": "instance_call"
         },
         {
@@ -6760,7 +6832,8 @@
         "code/th_17_pointer.js",
         "code/th_18_pointer_ocr.js",
         "code/th_20_pickword.js",
-        "code/th_21_result_preview.js"
+        "code/th_21_result_preview.js",
+        "code/th_26_qr_runtime.js"
       ],
       "locations": [
         {
@@ -6820,11 +6893,11 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1815,
+          "line": 1819,
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 19
+      "occurrenceCount": 20
     },
     {
       "key": "android|method|android.graphics.Paint#setSubpixelText",
@@ -6838,7 +6911,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1240,
+          "line": 1244,
           "form": "instance_call"
         }
       ],
@@ -6882,12 +6955,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1239,
+          "line": 1243,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5045,
+          "line": 5049,
           "form": "instance_call"
         },
         {
@@ -6925,7 +6998,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5046,
+          "line": 5050,
           "form": "instance_call"
         }
       ],
@@ -6954,7 +7027,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1886,
+          "line": 1890,
           "form": "instance_call"
         }
       ],
@@ -7059,32 +7132,32 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1828,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
           "line": 1832,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1834,
+          "line": 1836,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1861,
+          "line": 1838,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1872,
+          "line": 1865,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1880,
+          "line": 1876,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 1884,
           "form": "instance_call"
         },
         {
@@ -7107,7 +7180,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1830,
+          "line": 1834,
           "form": "instance_call"
         }
       ],
@@ -7171,27 +7244,17 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1424,
+          "line": 1428,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1819,
+          "line": 1823,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1821,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
-          "line": 1847,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
-          "line": 1849,
+          "line": 1825,
           "form": "instance_call"
         },
         {
@@ -7201,17 +7264,27 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1857,
+          "line": 1853,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1892,
+          "line": 1855,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1906,
+          "line": 1861,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 1896,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 1910,
           "form": "instance_call"
         }
       ],
@@ -7264,17 +7337,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3324,
+          "line": 3328,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4626,
+          "line": 4630,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4633,
+          "line": 4637,
           "form": "direct_static_call"
         }
       ],
@@ -7390,7 +7463,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1781,
+          "line": 1785,
           "form": "direct_static_call"
         }
       ],
@@ -7524,12 +7597,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1731,
+          "line": 1735,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1735,
+          "line": 1739,
           "form": "instance_call"
         },
         {
@@ -7585,22 +7658,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1738,
+          "line": 1742,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1739,
+          "line": 1743,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1782,
+          "line": 1786,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1783,
+          "line": 1787,
           "form": "instance_call"
         },
         {
@@ -7628,12 +7701,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1714,
+          "line": 1718,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1722,
+          "line": 1726,
           "form": "instance_call"
         }
       ],
@@ -7651,12 +7724,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1712,
+          "line": 1716,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1720,
+          "line": 1724,
           "form": "instance_call"
         }
       ],
@@ -7674,7 +7747,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2562,
+          "line": 2566,
           "form": "direct_static_call"
         }
       ],
@@ -7785,7 +7858,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2864,
+          "line": 2868,
           "form": "direct_static_call"
         },
         {
@@ -7902,7 +7975,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 39
+      "occurrenceCount": 40
     },
     {
       "key": "android|method|android.os#HandlerThread",
@@ -8122,7 +8195,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 24
+      "occurrenceCount": 25
     },
     {
       "key": "android|method|android.os.Handler#postDelayed",
@@ -8156,47 +8229,47 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2929,
+          "line": 2933,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2987,
+          "line": 2991,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2995,
+          "line": 2999,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3077,
+          "line": 3081,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3393,
+          "line": 3397,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3744,
+          "line": 3748,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3849,
+          "line": 3853,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3955,
+          "line": 3959,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3961,
+          "line": 3965,
           "form": "instance_call"
         }
       ],
@@ -8259,22 +8332,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2718,
+          "line": 2722,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2719,
+          "line": 2723,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2720,
+          "line": 2724,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2721,
+          "line": 2725,
           "form": "instance_call"
         }
       ],
@@ -8636,7 +8709,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 40
+      "occurrenceCount": 41
     },
     {
       "key": "android|method|android.os.Looper#myLooper",
@@ -8992,7 +9065,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2861,
+          "line": 2865,
           "form": "direct_static_call"
         }
       ],
@@ -9118,7 +9191,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2025,
+          "line": 2029,
           "form": "direct_static_call"
         }
       ],
@@ -9182,7 +9255,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4540,
+          "line": 4544,
           "form": "direct_static_call"
         }
       ],
@@ -9200,12 +9273,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2026,
+          "line": 2030,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2027,
+          "line": 2031,
           "form": "instance_call"
         }
       ],
@@ -9333,7 +9406,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2026,
+          "line": 2030,
           "form": "direct_static_call"
         }
       ],
@@ -9351,7 +9424,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2027,
+          "line": 2031,
           "form": "direct_static_call"
         }
       ],
@@ -9381,7 +9454,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1687,
+          "line": 1691,
           "form": "direct_static_call"
         }
       ],
@@ -9517,12 +9590,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1185,
+          "line": 1189,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1214,
+          "line": 1218,
           "form": "class_alias_call"
         }
       ],
@@ -9895,12 +9968,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1983,
+          "line": 1987,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3449,
+          "line": 3453,
           "form": "class_alias_call"
         }
       ],
@@ -9924,7 +9997,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3008,
+          "line": 3012,
           "form": "class_alias_call"
         }
       ],
@@ -9975,22 +10048,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3022,
+          "line": 3026,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3246,
+          "line": 3250,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3696,
+          "line": 3700,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5183,
+          "line": 5187,
           "form": "class_alias_call"
         }
       ],
@@ -10120,17 +10193,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2011,
+          "line": 2015,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2079,
+          "line": 2083,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3199,
+          "line": 3203,
           "form": "instance_call"
         }
       ],
@@ -10313,7 +10386,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1474,
+          "line": 1478,
           "form": "direct_static_call"
         }
       ],
@@ -10850,7 +10923,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4492,
+          "line": 4496,
           "form": "direct_static_call"
         }
       ],
@@ -11057,7 +11130,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 580,
+          "line": 583,
           "form": "direct_static_call"
         },
         {
@@ -11202,7 +11275,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3318,
+          "line": 3322,
           "form": "direct_static_call"
         }
       ],
@@ -11636,7 +11709,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4540,
+          "line": 4544,
           "form": "instance_call"
         }
       ],
@@ -11703,12 +11776,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4543,
+          "line": 4547,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4591,
+          "line": 4595,
           "form": "instance_call"
         }
       ],
@@ -11726,7 +11799,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4639,
+          "line": 4643,
           "form": "instance_call"
         }
       ],
@@ -11848,7 +11921,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4497,
+          "line": 4501,
           "form": "instance_call"
         }
       ],
@@ -11931,7 +12004,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4501,
+          "line": 4505,
           "form": "instance_call"
         }
       ],
@@ -11973,7 +12046,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4499,
+          "line": 4503,
           "form": "instance_call"
         }
       ],
@@ -11991,7 +12064,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4498,
+          "line": 4502,
           "form": "instance_call"
         }
       ],
@@ -12089,7 +12162,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4502,
+          "line": 4506,
           "form": "instance_call"
         }
       ],
@@ -12193,7 +12266,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4500,
+          "line": 4504,
           "form": "instance_call"
         }
       ],
@@ -12260,12 +12333,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4493,
+          "line": 4497,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4554,
+          "line": 4558,
           "form": "instance_call"
         }
       ],
@@ -12329,7 +12402,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4494,
+          "line": 4498,
           "form": "instance_call"
         }
       ],
@@ -14915,17 +14988,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 456,
+          "line": 458,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 509,
+          "line": 511,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 517,
+          "line": 519,
           "form": "instance_call"
         }
       ],
@@ -14960,12 +15033,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 454,
+          "line": 456,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 507,
+          "line": 509,
           "form": "instance_call"
         }
       ],
@@ -15019,7 +15092,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 337,
+          "line": 339,
           "form": "instance_call"
         }
       ],
@@ -15043,7 +15116,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 605,
+          "line": 608,
           "form": "instance_call"
         }
       ],
@@ -15097,12 +15170,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5598,
+          "line": 5602,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5599,
+          "line": 5603,
           "form": "instance_call"
         }
       ],
@@ -15284,7 +15357,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 603,
+          "line": 606,
           "form": "instance_call"
         }
       ],
@@ -15434,12 +15507,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 574,
+          "line": 577,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1958,
+          "line": 1962,
           "form": "instance_call"
         }
       ],
@@ -15530,17 +15603,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 585,
+          "line": 588,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 601,
+          "line": 604,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1974,
+          "line": 1978,
           "form": "instance_call"
         }
       ],
@@ -15638,7 +15711,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 602,
+          "line": 605,
           "form": "instance_call"
         }
       ],
@@ -15673,12 +15746,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 575,
+          "line": 578,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1959,
+          "line": 1963,
           "form": "instance_call"
         }
       ],
@@ -16035,7 +16108,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1983,
+          "line": 1987,
           "form": "instance_call"
         }
       ],
@@ -16053,12 +16126,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3246,
+          "line": 3250,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5237,
+          "line": 5241,
           "form": "instance_call"
         }
       ],
@@ -16392,12 +16465,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 584,
+          "line": 587,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1973,
+          "line": 1977,
           "form": "instance_call"
         }
       ],
@@ -16930,7 +17003,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3508,
+          "line": 3512,
           "form": "class_alias_call"
         }
       ],
@@ -16948,7 +17021,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3676,
+          "line": 3680,
           "form": "instance_call"
         }
       ],
@@ -16966,22 +17039,22 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3589,
+          "line": 3593,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3649,
+          "line": 3653,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3667,
+          "line": 3671,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3675,
+          "line": 3679,
           "form": "instance_call"
         }
       ],
@@ -16999,22 +17072,22 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3574,
+          "line": 3578,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3576,
+          "line": 3580,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3633,
+          "line": 3637,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3635,
+          "line": 3639,
           "form": "instance_call"
         }
       ],
@@ -17038,7 +17111,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3329,
+          "line": 3333,
           "form": "direct_static_call"
         }
       ],
@@ -17115,7 +17188,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3324,
+          "line": 3328,
           "form": "instance_call"
         }
       ],
@@ -17139,7 +17212,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3328,
+          "line": 3332,
           "form": "instance_call"
         }
       ],
@@ -17181,7 +17254,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3327,
+          "line": 3331,
           "form": "instance_call"
         }
       ],
@@ -17211,7 +17284,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3326,
+          "line": 3330,
           "form": "instance_call"
         }
       ],
@@ -17253,7 +17326,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3329,
+          "line": 3333,
           "form": "instance_call"
         }
       ],
@@ -17283,7 +17356,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3325,
+          "line": 3329,
           "form": "instance_call"
         }
       ],
@@ -17331,7 +17404,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3339,
+          "line": 3343,
           "form": "instance_call"
         }
       ],
@@ -18030,27 +18103,27 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1503,
+          "line": 1507,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1642,
+          "line": 1646,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3891,
+          "line": 3895,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3926,
+          "line": 3930,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5159,
+          "line": 5163,
           "form": "instance_call"
         }
       ],
@@ -18068,7 +18141,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3373,
+          "line": 3377,
           "form": "instance_call"
         }
       ],
@@ -18110,47 +18183,47 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1502,
+          "line": 1506,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1641,
+          "line": 1645,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1642,
+          "line": 1646,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3054,
+          "line": 3058,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3890,
+          "line": 3894,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3917,
+          "line": 3921,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3941,
+          "line": 3945,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4311,
+          "line": 4315,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4702,
+          "line": 4706,
           "form": "instance_call"
         }
       ],
@@ -18203,7 +18276,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1650,
+          "line": 1654,
           "form": "instance_call"
         }
       ],
@@ -18227,7 +18300,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4378,
+          "line": 4382,
           "form": "instance_call"
         }
       ],
@@ -18245,17 +18318,17 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3707,
+          "line": 3711,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3767,
+          "line": 3771,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3777,
+          "line": 3781,
           "form": "instance_call"
         }
       ],
@@ -18297,22 +18370,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3944,
+          "line": 3948,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4258,
+          "line": 4262,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4378,
+          "line": 4382,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4741,
+          "line": 4745,
           "form": "instance_call"
         }
       ],
@@ -18330,12 +18403,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2077,
+          "line": 2081,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3142,
+          "line": 3146,
           "form": "instance_call"
         }
       ],
@@ -18353,7 +18426,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3144,
+          "line": 3148,
           "form": "instance_call"
         }
       ],
@@ -18389,12 +18462,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3143,
+          "line": 3147,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5121,
+          "line": 5125,
           "form": "instance_call"
         },
         {
@@ -18435,17 +18508,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3141,
+          "line": 3145,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3376,
+          "line": 3380,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5125,
+          "line": 5129,
           "form": "instance_call"
         }
       ],
@@ -18469,7 +18542,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3008,
+          "line": 3012,
           "form": "instance_call"
         }
       ],
@@ -18515,12 +18588,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3022,
+          "line": 3026,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5239,
+          "line": 5243,
           "form": "instance_call"
         }
       ],
@@ -18599,7 +18672,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5123,
+          "line": 5127,
           "form": "instance_call"
         }
       ],
@@ -18617,7 +18690,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5122,
+          "line": 5126,
           "form": "instance_call"
         }
       ],
@@ -19303,7 +19376,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4957,
+          "line": 4961,
           "form": "instance_call"
         }
       ],
@@ -19339,7 +19412,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5159,
+          "line": 5163,
           "form": "instance_call"
         }
       ],
@@ -19357,7 +19430,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 647,
+          "line": 820,
           "form": "instance_call"
         }
       ],
@@ -19398,7 +19471,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2059,
+          "line": 2063,
           "form": "instance_call"
         }
       ],
@@ -19434,7 +19507,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3337,
+          "line": 3341,
           "form": "instance_call"
         }
       ],
@@ -19523,12 +19596,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4524,
+          "line": 4528,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4557,
+          "line": 4561,
           "form": "instance_call"
         },
         {
@@ -19635,7 +19708,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5117,
+          "line": 5121,
           "form": "instance_call"
         }
       ],
@@ -19916,12 +19989,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4526,
+          "line": 4530,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4556,
+          "line": 4560,
           "form": "instance_call"
         },
         {
@@ -20062,7 +20135,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5115,
+          "line": 5119,
           "form": "instance_call"
         }
       ],
@@ -20080,7 +20153,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5118,
+          "line": 5122,
           "form": "instance_call"
         }
       ],
@@ -20098,12 +20171,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 582,
+          "line": 585,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 606,
+          "line": 609,
           "form": "instance_call"
         }
       ],
@@ -20256,12 +20329,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4515,
+          "line": 4519,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5140,
+          "line": 5144,
           "form": "instance_call"
         }
       ],
@@ -20303,12 +20376,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3440,
+          "line": 3444,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5109,
+          "line": 5113,
           "form": "instance_call"
         },
         {
@@ -20391,22 +20464,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3442,
+          "line": 3446,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 612,
+          "line": 785,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 648,
+          "line": 821,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 651,
+          "line": 824,
           "form": "instance_call"
         }
       ],
@@ -20435,7 +20508,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5114,
+          "line": 5118,
           "form": "instance_call"
         }
       ],
@@ -20862,7 +20935,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3449,
+          "line": 3453,
           "form": "instance_call"
         }
       ],
@@ -20880,7 +20953,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5238,
+          "line": 5242,
           "form": "instance_call"
         }
       ],
@@ -21011,7 +21084,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 581,
+          "line": 584,
           "form": "instance_call"
         }
       ],
@@ -21146,7 +21219,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3283,
+          "line": 3287,
           "form": "instance_call"
         }
       ],
@@ -21266,7 +21339,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5111,
+          "line": 5115,
           "form": "instance_call"
         }
       ],
@@ -21511,17 +21584,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4464,
+          "line": 4468,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4900,
+          "line": 4904,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4910,
+          "line": 4914,
           "form": "instance_call"
         }
       ],
@@ -21575,12 +21648,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2138,
+          "line": 2142,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 533,
+          "line": 571,
           "form": "direct_static_call"
         }
       ],
@@ -22025,7 +22098,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 235
+      "occurrenceCount": 239
     },
     {
       "key": "java|class|java.io.FileInputStream",
@@ -22187,7 +22260,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 36
+      "occurrenceCount": 38
     },
     {
       "key": "java|class|java.io.FileReader",
@@ -22201,7 +22274,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2351,
+          "line": 2355,
           "form": "direct_constructor"
         }
       ],
@@ -22230,22 +22303,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2175,
+          "line": 2179,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2175,
+          "line": 2179,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2376,
+          "line": 2380,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2376,
+          "line": 2380,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -22309,7 +22382,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4845,
+          "line": 4849,
           "form": "direct_constructor"
         },
         {
@@ -22691,7 +22764,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 161
+      "occurrenceCount": 163
     },
     {
       "key": "java|class|java.lang.String",
@@ -22773,7 +22846,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 38
+      "occurrenceCount": 40
     },
     {
       "key": "java|class|java.lang.StringBuilder",
@@ -22933,7 +23006,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 22
+      "occurrenceCount": 24
     },
     {
       "key": "java|class|java.lang.reflect.Array",
@@ -22993,22 +23066,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4829,
+          "line": 4833,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4829,
+          "line": 4833,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 199,
+          "line": 209,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 199,
+          "line": 209,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -23090,12 +23163,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2156,
+          "line": 2160,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2156,
+          "line": 2160,
           "form": "direct_constructor_assignment"
         },
         {
@@ -23154,7 +23227,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2156,
+          "line": 2160,
           "form": "direct_constructor"
         },
         {
@@ -23169,6 +23242,29 @@
         }
       ],
       "occurrenceCount": 7
+    },
+    {
+      "key": "java|class|java.util.EnumMap",
+      "source": "java",
+      "kind": "class",
+      "classOrObject": "java.util.EnumMap",
+      "method": null,
+      "files": [
+        "code/th_26_qr_runtime.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 651,
+          "form": "direct_constructor"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 651,
+          "form": "direct_constructor_assignment"
+        }
+      ],
+      "occurrenceCount": 2
     },
     {
       "key": "java|class|java.util.Timer",
@@ -23333,7 +23429,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 19,
+          "line": 29,
           "form": "direct_constructor"
         }
       ],
@@ -23438,12 +23534,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2351,
+          "line": 2355,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4845,
+          "line": 4849,
           "form": "direct_static_call"
         },
         {
@@ -23589,7 +23685,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 127
+      "occurrenceCount": 129
     },
     {
       "key": "java|method|java.io#FileInputStream",
@@ -23751,7 +23847,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 20
+      "occurrenceCount": 21
     },
     {
       "key": "java|method|java.io#FileReader",
@@ -23765,7 +23861,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2351,
+          "line": 2355,
           "form": "direct_static_call"
         }
       ],
@@ -23789,12 +23885,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2175,
+          "line": 2179,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2376,
+          "line": 2380,
           "form": "direct_static_call"
         }
       ],
@@ -23853,7 +23949,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4845,
+          "line": 4849,
           "form": "direct_static_call"
         },
         {
@@ -24051,22 +24147,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2353,
+          "line": 2357,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2361,
+          "line": 2365,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4849,
+          "line": 4853,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4869,
+          "line": 4873,
           "form": "instance_call"
         },
         {
@@ -24130,12 +24226,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2352,
+          "line": 2356,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4848,
+          "line": 4852,
           "form": "instance_call"
         },
         {
@@ -24254,7 +24350,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 618,
+          "line": 791,
           "form": "instance_call"
         }
       ],
@@ -24278,17 +24374,17 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 169,
+          "line": 179,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 173,
+          "line": 183,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 225,
+          "line": 235,
           "form": "instance_call"
         }
       ],
@@ -24459,7 +24555,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 149
+      "occurrenceCount": 151
     },
     {
       "key": "java|method|java.io.File#getAbsolutePath",
@@ -24536,7 +24632,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 71
+      "occurrenceCount": 72
     },
     {
       "key": "java|method|java.io.File#getCanonicalFile",
@@ -24575,7 +24671,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 271,
+          "line": 272,
           "form": "instance_call"
         },
         {
@@ -24634,7 +24730,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 35
+      "occurrenceCount": 37
     },
     {
       "key": "java|method|java.io.File#getName",
@@ -24769,7 +24865,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2173,
+          "line": 2177,
           "form": "instance_call"
         },
         {
@@ -24831,12 +24927,12 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 133,
+          "line": 143,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 333,
+          "line": 343,
           "form": "instance_call"
         }
       ],
@@ -24896,7 +24992,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 267,
+          "line": 268,
           "form": "instance_call"
         },
         {
@@ -24920,7 +25016,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 23
+      "occurrenceCount": 24
     },
     {
       "key": "java|method|java.io.File#lastModified",
@@ -25075,7 +25171,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 36
+      "occurrenceCount": 37
     },
     {
       "key": "java|method|java.io.File#listFiles",
@@ -25208,7 +25304,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 16
+      "occurrenceCount": 17
     },
     {
       "key": "java|method|java.io.File#renameTo",
@@ -25301,12 +25397,12 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 171,
+          "line": 181,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 196,
+          "line": 206,
           "form": "instance_call"
         }
       ],
@@ -25324,12 +25420,12 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 170,
+          "line": 180,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 195,
+          "line": 205,
           "form": "instance_call"
         }
       ],
@@ -25364,17 +25460,17 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 116,
+          "line": 126,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 221,
+          "line": 231,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 246,
+          "line": 256,
           "form": "instance_call"
         }
       ],
@@ -25421,12 +25517,12 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 103,
+          "line": 113,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 213,
+          "line": 223,
           "form": "instance_call"
         }
       ],
@@ -25493,16 +25589,21 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 219,
+          "line": 229,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 245,
+          "line": 255,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 704,
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 11
+      "occurrenceCount": 12
     },
     {
       "key": "java|method|java.io.FileOutputStream#flush",
@@ -25555,11 +25656,16 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 179,
+          "line": 189,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 701,
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 8
+      "occurrenceCount": 9
     },
     {
       "key": "java|method|java.io.FileOutputStream#getFD",
@@ -25591,11 +25697,16 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 180,
+          "line": 190,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 702,
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 4
+      "occurrenceCount": 5
     },
     {
       "key": "java|method|java.io.FileOutputStream#push",
@@ -25676,7 +25787,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 216,
+          "line": 226,
           "form": "instance_call"
         }
       ],
@@ -25700,17 +25811,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2178,
+          "line": 2182,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2379,
+          "line": 2383,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2385,
+          "line": 2389,
           "form": "instance_call"
         }
       ],
@@ -25728,12 +25839,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2177,
+          "line": 2181,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2378,
+          "line": 2382,
           "form": "instance_call"
         }
       ],
@@ -25757,12 +25868,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2176,
+          "line": 2180,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2377,
+          "line": 2381,
           "form": "instance_call"
         }
       ],
@@ -26258,7 +26369,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 115
+      "occurrenceCount": 117
     },
     {
       "key": "java|method|java.lang#String",
@@ -26336,11 +26447,11 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1012,
+          "line": 1016,
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 34
+      "occurrenceCount": 36
     },
     {
       "key": "java|method|java.lang#StringBuilder",
@@ -26405,12 +26516,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1014,
+          "line": 1018,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1029,
+          "line": 1033,
           "form": "direct_static_call"
         }
       ],
@@ -26486,16 +26597,16 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5333,
+          "line": 5337,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5369,
+          "line": 5373,
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 16
+      "occurrenceCount": 17
     },
     {
       "key": "java|method|java.lang.Boolean#valueOf",
@@ -26646,12 +26757,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1016,
+          "line": 1020,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1031,
+          "line": 1035,
           "form": "direct_static_call"
         }
       ],
@@ -26869,7 +26980,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1017,
+          "line": 1021,
           "form": "instance_call"
         }
       ],
@@ -26974,12 +27085,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1020,
+          "line": 1024,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1035,
+          "line": 1039,
           "form": "instance_call"
         }
       ],
@@ -27128,7 +27239,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 185,
+          "line": 195,
           "form": "direct_static_call"
         }
       ],
@@ -27384,7 +27495,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5586,
+          "line": 5590,
           "form": "instance_call"
         },
         {
@@ -27394,16 +27505,21 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 302,
+          "line": 312,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 519,
+          "line": 557,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 760,
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 6
+      "occurrenceCount": 7
     },
     {
       "key": "java|method|java.lang.reflect.Array#getLength",
@@ -27568,12 +27684,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4829,
+          "line": 4833,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 199,
+          "line": 209,
           "form": "direct_static_call"
         }
       ],
@@ -27591,7 +27707,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 247,
+          "line": 257,
           "form": "instance_call"
         }
       ],
@@ -27609,7 +27725,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 207,
+          "line": 217,
           "form": "instance_call"
         }
       ],
@@ -27627,7 +27743,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 209,
+          "line": 219,
           "form": "instance_call"
         }
       ],
@@ -27645,7 +27761,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 205,
+          "line": 215,
           "form": "instance_call"
         }
       ],
@@ -27674,7 +27790,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4830,
+          "line": 4834,
           "form": "instance_call"
         }
       ],
@@ -27692,7 +27808,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 201,
+          "line": 211,
           "form": "instance_call"
         }
       ],
@@ -27710,7 +27826,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 202,
+          "line": 212,
           "form": "instance_call"
         }
       ],
@@ -27728,12 +27844,12 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 203,
+          "line": 213,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 204,
+          "line": 214,
           "form": "instance_call"
         }
       ],
@@ -27751,7 +27867,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 200,
+          "line": 210,
           "form": "instance_call"
         }
       ],
@@ -27769,7 +27885,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1075,
+          "line": 1079,
           "form": "direct_static_call"
         }
       ],
@@ -27832,12 +27948,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1011,
+          "line": 1015,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1026,
+          "line": 1030,
           "form": "direct_static_call"
         },
         {
@@ -27852,7 +27968,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 99,
+          "line": 109,
           "form": "direct_static_call"
         }
       ],
@@ -27932,7 +28048,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2156,
+          "line": 2160,
           "form": "direct_static_call"
         },
         {
@@ -28022,7 +28138,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2156,
+          "line": 2160,
           "form": "direct_static_call"
         },
         {
@@ -28037,6 +28153,24 @@
         }
       ],
       "occurrenceCount": 7
+    },
+    {
+      "key": "java|method|java.util#EnumMap",
+      "source": "java",
+      "kind": "method",
+      "classOrObject": "java.util",
+      "method": "EnumMap",
+      "files": [
+        "code/th_26_qr_runtime.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 651,
+          "form": "direct_static_call"
+        }
+      ],
+      "occurrenceCount": 1
     },
     {
       "key": "java|method|java.util#Timer",
@@ -28068,6 +28202,24 @@
       "occurrenceCount": 3
     },
     {
+      "key": "java|method|java.util.EnumMap#put",
+      "source": "java",
+      "kind": "method",
+      "classOrObject": "java.util.EnumMap",
+      "method": "put",
+      "files": [
+        "code/th_26_qr_runtime.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 652,
+          "form": "instance_call"
+        }
+      ],
+      "occurrenceCount": 1
+    },
+    {
       "key": "java|method|java.util.Locale#getDefault",
       "source": "java",
       "kind": "method",
@@ -28093,7 +28245,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2562,
+          "line": 2566,
           "form": "direct_static_call"
         },
         {
@@ -28193,12 +28345,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1047,
+          "line": 1051,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1054,
+          "line": 1058,
           "form": "direct_static_call"
         }
       ],
@@ -28423,7 +28575,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 19,
+          "line": 29,
           "form": "direct_static_call"
         }
       ],
@@ -28608,7 +28760,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2145,
+          "line": 2149,
           "form": "reflection_class_literal"
         }
       ],
@@ -28853,7 +29005,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2146,
+          "line": 2150,
           "form": "reflection_dynamic_method"
         }
       ],
@@ -28871,7 +29023,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2146,
+          "line": 2150,
           "form": "reflection_method_literal"
         }
       ],
@@ -29012,5 +29164,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:e32624dadd96d0ceca8a23d293d655f3a34ecc5caaa56ccfec0e73985cdfedcf"
+  "usageDigest": "sha256:dba15c8edd6fd2809a3d3fe7b13a21ccc316357205f25d007d133b8a7962f398"
 }
