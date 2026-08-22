@@ -1,16 +1,26 @@
-// @version 1.0.8
-// =======================【拾字截图二维码解析 / ZXing Core】=======================
+// @version 1.0.9
+// =======================【拾字截图二维码解析/生成 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
   var QR_ASSET_ID26 = "toolhub-zxing-runtime";
   var QR_RUNTIME_CLASS26 = "toolhub.runtime.qr.ToolHubQrRuntime";
   var QR_MAX_PIXELS26 = 2000000;
   var QR_TIMEOUT_MS26 = 2500;
+  var QR_GEN_TEXT_MAX26 = 1000;
+  var QR_GEN_SIZE_MIN26 = 128;
+  var QR_GEN_SIZE_DEFAULT26 = 512;
+  var QR_GEN_SIZE_MAX26 = 1024;
+  var QR_WRITER_CLASS26 = "toolhub.runtime.shaded.zxing.qrcode.QRCodeWriter";
+  var QR_FORMAT_CLASS26 = "toolhub.runtime.shaded.zxing.BarcodeFormat";
+  var QR_HINTS_CLASS26 = "toolhub.runtime.shaded.zxing.EncodeHintType";
   var runtime26 = {
     loader: null,
     clazz: null,
     decodeMethod: null,
     versionMethod: null,
+    writerClass: null,
+    formatClass: null,
+    hintsClass: null,
     version: "",
     loading: false,
     error: "",
@@ -352,10 +362,26 @@
     if (!decodeMethod || !versionMethod) throw new Error("二维码运行时接口不完整");
     var version = String(invokeStatic26(versionMethod, []) || "");
     if (installed.meta.version && version !== String(installed.meta.version)) throw new Error("二维码运行时版本不匹配");
+    var writerClass = null;
+    var formatClass = null;
+    var hintsClass = null;
+    try {
+      writerClass = loader.loadClass(QR_WRITER_CLASS26);
+      formatClass = loader.loadClass(QR_FORMAT_CLASS26);
+      hintsClass = loader.loadClass(QR_HINTS_CLASS26);
+    } catch (eGen) {
+      writerClass = null;
+      formatClass = null;
+      hintsClass = null;
+      log26(appObj, "w", "runtime generate classes unavailable error=" + sanitizeError26(eGen));
+    }
     runtime26.loader = loader;
     runtime26.clazz = clazz;
     runtime26.decodeMethod = decodeMethod;
     runtime26.versionMethod = versionMethod;
+    runtime26.writerClass = writerClass;
+    runtime26.formatClass = formatClass;
+    runtime26.hintsClass = hintsClass;
     runtime26.version = version;
     runtime26.error = "";
     log26(appObj, "i", "runtime loaded version=" + version + " path=" + String(installed.file.getAbsolutePath()));
@@ -389,7 +415,13 @@
         status: "idle",
         result: null,
         thread: null,
-        timeoutRunnable: null
+        timeoutRunnable: null,
+        genSeq: 0,
+        genRunningToken: 0,
+        genDoneToken: 0,
+        genStatus: "idle",
+        genPath: "",
+        genThread: null
       };
     }
     ps.qr.imageKey = imageKey26(session || ps.meta);
@@ -410,6 +442,12 @@
         try { qr.thread.interrupt(); } catch (e1) {}
       }
       qr.thread = null;
+      if (qr.genStatus === "running") qr.genStatus = "cancelled";
+      qr.genRunningToken = 0;
+      if (qr.genThread) {
+        try { qr.genThread.interrupt(); } catch (eGenThread) {}
+      }
+      qr.genThread = null;
       log26(appObj, "d", "cancel reason=" + String(reason || ""));
     } catch (e2) {}
   }
@@ -544,7 +582,10 @@
       available: !!key,
       status: status,
       hasResult: hasResult,
-      loaded: !!(cached && cached.loaded === true)
+      loaded: !!(cached && cached.loaded === true),
+      hasText: !!pickwordFullText26(appObj),
+      generating: !!qr && String(qr.genStatus || "idle") === "running",
+      generateSupported: !!(runtime26.writerClass && runtime26.formatClass && runtime26.hintsClass)
     };
   }
 
@@ -586,6 +627,138 @@
       return true;
     }
     return false;
+  }
+
+  function pickwordFullText26(appObj) {
+    var ps = appObj && appObj.state && appObj.state.pickword ? appObj.state.pickword : null;
+    return ps ? String(ps.fullText == null ? "" : ps.fullText) : "";
+  }
+
+  function clampGenerateSize26(size) {
+    var value = Math.round(Number(size || 0));
+    if (!(value > 0)) return QR_GEN_SIZE_DEFAULT26;
+    if (value < QR_GEN_SIZE_MIN26) return QR_GEN_SIZE_MIN26;
+    if (value > QR_GEN_SIZE_MAX26) return QR_GEN_SIZE_MAX26;
+    return value;
+  }
+
+  function encodeQrMatrix26(text, size) {
+    if (!runtime26.writerClass || !runtime26.formatClass || !runtime26.hintsClass) {
+      throw new Error("二维码运行时缺少生成能力");
+    }
+    var writer = runtime26.writerClass.getDeclaredConstructor().newInstance();
+    var format = runtime26.formatClass.getField("QR_CODE").get(null);
+    var hints = new java.util.EnumMap(runtime26.hintsClass);
+    hints.put(runtime26.hintsClass.getField("CHARACTER_SET").get(null), new java.lang.String("UTF-8"));
+    var matrix = writer.encode(new java.lang.String(String(text == null ? "" : text)), format, size, size, hints);
+    if (!matrix) throw new Error("二维码矩阵生成失败");
+    return matrix;
+  }
+
+  function renderQrBitmap26(matrix, size) {
+    var matrixWidth = Number(matrix.getWidth());
+    var matrixHeight = Number(matrix.getHeight());
+    if (!(matrixWidth > 0) || !(matrixHeight > 0)) throw new Error("二维码矩阵尺寸非法");
+    var bitmap = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
+    var canvas = new android.graphics.Canvas(bitmap);
+    canvas.drawColor(0xFFFFFFFF | 0);
+    var paint = new android.graphics.Paint();
+    paint.setAntiAlias(false);
+    paint.setStyle(android.graphics.Paint.Style.FILL);
+    toolhubSafeSetPaintColor(paint, 0xFF000000 | 0);
+    var scale = Number(size) / matrixWidth;
+    for (var y = 0; y < matrixHeight; y++) {
+      for (var x = 0; x < matrixWidth; x++) {
+        if (matrix.get(x, y) === true) {
+          canvas.drawRect(x * scale, y * scale, (x + 1) * scale + 0.5, (y + 1) * scale + 0.5, paint);
+        }
+      }
+    }
+    return bitmap;
+  }
+
+  function generateQrBitmap26(text, size) {
+    var content = String(text == null ? "" : text).replace(/^[\r\n]+|[\r\n]+$/g, "");
+    if (!content) return { ok: false, code: "PICKWORD_QR_TEXT_EMPTY", error: "文本内容为空" };
+    if (content.length > QR_GEN_TEXT_MAX26) {
+      return { ok: false, code: "PICKWORD_QR_TEXT_TOO_LONG", error: "文本超出二维码容量限制" };
+    }
+    var resolvedSize = clampGenerateSize26(size);
+    var bitmap = renderQrBitmap26(encodeQrMatrix26(content, resolvedSize), resolvedSize);
+    return { ok: true, code: "PICKWORD_QR_GENERATE_SUCCESS", bitmap: bitmap, width: resolvedSize, height: resolvedSize };
+  }
+
+  function saveGeneratedQrPng26(bitmap) {
+    var base = new java.io.File(String(APP_ROOT_DIR || ""), "screenshots").getCanonicalFile();
+    var basePath = String(base.getCanonicalPath());
+    if (!base.exists() && !base.mkdirs() && !base.exists()) throw new Error("无法创建截图目录");
+    var target = new java.io.File(base, "toolhub_qr_gen_" + String(now26()) + ".png").getCanonicalFile();
+    if (String(target.getCanonicalPath()).indexOf(basePath + java.io.File.separator) !== 0) throw new Error("生成图片路径越界");
+    var output = null;
+    try {
+      output = new java.io.FileOutputStream(target, false);
+      if (!bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output)) throw new Error("PNG 编码失败");
+      output.flush();
+      try { output.getFD().sync(); } catch (eSync) {}
+    } finally {
+      try { if (output) output.close(); } catch (eClose) {}
+    }
+    if (!target.isFile() || target.length() <= 0) throw new Error("生成图片写入失败");
+    return target;
+  }
+
+  function genSessionMatches26(appObj, generation, token) {
+    try {
+      var ps = appObj.state && appObj.state.pickword;
+      if (!ps || Number(ps.generation || 0) !== Number(generation)) return false;
+      var qr = ps.qr;
+      if (!qr || Number(qr.genRunningToken || 0) !== Number(token)) return false;
+      return true;
+    } catch (e0) {}
+    return false;
+  }
+
+  function generateAsync26(appObj, session, text, callback) {
+    var qr = ensureQrState26(appObj, session);
+    var generation = Number(appObj.state.pickword.generation || 0);
+    try { if (qr.genThread) qr.genThread.interrupt(); } catch (ePrev) {}
+    var token = Number(qr.genSeq || 0) + 1;
+    qr.genSeq = token;
+    qr.genRunningToken = token;
+    qr.genDoneToken = 0;
+    qr.genStatus = "running";
+    var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    var worker = new java.lang.Thread(new java.lang.Runnable({ run: function() {
+      var result = null;
+      try {
+        loadRuntime26(appObj);
+        var generated = generateQrBitmap26(text, QR_GEN_SIZE_DEFAULT26);
+        if (generated.ok !== true) throw new Error(String(generated.error || "二维码生成失败"));
+        var file = saveGeneratedQrPng26(generated.bitmap);
+        try { generated.bitmap.recycle(); } catch (eRecycle) {}
+        result = { ok: true, code: "PICKWORD_QR_GENERATE_SUCCESS", path: String(file.getAbsolutePath()), width: Number(generated.width), height: Number(generated.height) };
+      } catch (eGen) {
+        result = { ok: false, code: "PICKWORD_QR_GENERATE_FAILED", path: "", error: sanitizeError26(eGen) };
+        log26(appObj, "e", "generate failure error=" + sanitizeError26(eGen));
+      }
+      mainHandler.post(new java.lang.Runnable({ run: function() {
+        try {
+          if (!genSessionMatches26(appObj, generation, token)) return;
+          if (Number(qr.genDoneToken || 0) === token) return;
+          qr.genDoneToken = token;
+          qr.genRunningToken = 0;
+          qr.genThread = null;
+          qr.genStatus = result.ok === true ? "success" : "failed";
+          qr.genPath = result.ok === true ? String(result.path || "") : "";
+          callback(result);
+        } catch (eApply) {
+          log26(appObj, "w", "generate apply failed=" + String(eApply));
+        }
+      }}));
+    }}), "ToolHub-Pickword-QR-Generate");
+    qr.genThread = worker;
+    worker.start();
+    return true;
   }
 
   function decorateThumbnail26(appObj, controller, opts, root) {
@@ -708,6 +881,41 @@
       if (name === "toggle_load") {
         return toggleQrLoad26(appObj, session);
       }
+      if (name === "generate") {
+        var genText = pickwordFullText26(appObj);
+        if (!genText) {
+          showToast26("拾字内容为空");
+          notifyActionState26();
+          return false;
+        }
+        if (qrActionState26(appObj, session).generating) {
+          showToast26("正在生成二维码");
+          return false;
+        }
+        var genStarted = generateAsync26(appObj, session, genText, function(genResult) {
+          try {
+            if (!genResult || genResult.ok !== true) {
+              showToast26("二维码生成失败");
+              notifyActionState26();
+              return;
+            }
+            try {
+              var service = appObj.getPickwordImageService();
+              var shareResult = service.prepareShareInternal(String(genResult.path));
+              service.launchView(shareResult);
+              showToast26("已生成二维码图片");
+            } catch (eView) {
+              log26(appObj, "w", "generate view failed=" + sanitizeError26(eView));
+              showToast26("二维码已生成，打开查看失败");
+            }
+            notifyActionState26();
+          } catch (eGenApply) {
+            log26(appObj, "w", "generate callback failed=" + sanitizeError26(eGenApply));
+          }
+        });
+        notifyActionState26();
+        return genStarted === true;
+      }
       return false;
     };
 
@@ -783,6 +991,9 @@
       }
       proto.ensurePickwordQrRuntimeReady = function(reason) {
         return preflightRuntime26(this, String(reason || "manual"));
+      };
+      proto.generateTextQRCode = function(text, size) {
+        return generateQrBitmap26(String(text == null ? "" : text), clampGenerateSize26(size));
       };
       proto.getPickwordQrRuntimeStatus = function() {
         return {

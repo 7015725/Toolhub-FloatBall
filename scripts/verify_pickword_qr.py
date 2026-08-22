@@ -34,6 +34,7 @@ SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.6",
     "// @version 1.0.7",
     "// @version 1.0.8",
+    "// @version 1.0.9",
 )
 if qr_version not in SUPPORTED_QR_VERSIONS:
     errors.append("unexpected QR module version: %s" % qr_version)
@@ -60,6 +61,7 @@ for token in (
 
 require(QR, 'name === "copy"', "manual copy bridge action")
 require(QR, 'name === "toggle_load"', "manual load/restore bridge action")
+require(QR, 'name === "generate"', "QR generate bridge action")
 require(QR, "function copyQrResult26(appObj, session)", "manual copy owner")
 require(QR, "function toggleQrLoad26(appObj, session)", "manual load/restore owner")
 require(QR, "setClipboard26(text)", "manual clipboard implementation")
@@ -79,7 +81,7 @@ for token in (
     'QR_RUNTIME_CLASS26 = "toolhub.runtime.qr.ToolHubQrRuntime"',
 ):
     require(QR, token, "runtime trust/loading contract")
-if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8"):
+if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9"):
     require(QR, "new Packages.dalvik.system.DexClassLoader", "Rhino Packages DexClassLoader")
 else:
     require(QR, "new dalvik.system.DexClassLoader", "legacy DexClassLoader")
@@ -94,6 +96,7 @@ if qr_version in (
     "// @version 1.0.6",
     "// @version 1.0.7",
     "// @version 1.0.8",
+    "// @version 1.0.9",
 ):
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
@@ -114,6 +117,7 @@ if qr_version in (
     "// @version 1.0.6",
     "// @version 1.0.7",
     "// @version 1.0.8",
+    "// @version 1.0.9",
 ):
     for token in (
         "function sanitizeError26(error)",
@@ -126,7 +130,7 @@ if qr_version in (
     ):
         require(QR, token, "runtime diagnostics")
 
-if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8"):
+if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9"):
     forbid(QR, "context.getCodeCacheDir()", "system_server has no app code-cache directory")
     for token in (
         "function getDexOptimizedDirectory26()",
@@ -138,15 +142,30 @@ if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7",
     ):
         require(QR, token, "system_server DexClassLoader compatibility")
 
-if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8"):
+if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9"):
     forbid(QR, "new dalvik.system.DexClassLoader(", "bare dalvik package is undefined in ShortX Rhino")
     require(QR, "new Packages.dalvik.system.DexClassLoader(", "Rhino Packages DexClassLoader")
 
-if qr_version in ("// @version 1.0.7", "// @version 1.0.8"):
+if qr_version in ("// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9"):
     forbid(QR, 'hidePickwordWindow("qr_load")', "QR load-to-pickword hide/show race")
     require(QR, 'var qrTextToLoad26 = String(cached.result.text == null ? "" : cached.result.text);', "QR load text local value")
     require(QR, 'log26(appObj, "i", "load text reuse_window textLen=" + String(qrTextToLoad26.length));', "QR load reuse-window log")
     require(QR, 'appObj.showPickwordText(qrTextToLoad26, shallowCopy26(session));', "QR direct load to existing pickword window")
+
+if qr_version == "// @version 1.0.9":
+    for token in (
+        'QR_WRITER_CLASS26 = "toolhub.runtime.shaded.zxing.qrcode.QRCodeWriter"',
+        'QR_FORMAT_CLASS26 = "toolhub.runtime.shaded.zxing.BarcodeFormat"',
+        'QR_HINTS_CLASS26 = "toolhub.runtime.shaded.zxing.EncodeHintType"',
+        "function generateQrBitmap26(text, size)",
+        "function saveGeneratedQrPng26(bitmap)",
+        "function generateAsync26(appObj, session, text, callback)",
+        "genSessionMatches26(appObj, generation, token)",
+        "proto.generateTextQRCode = function(text, size)",
+    ):
+        require(QR, token, "QR generate contract")
+    forbid(QR, "startActivity(", "generate path must reuse image viewer service")
+    forbid(QR, "ACTION_VIEW", "generate path must reuse image viewer service")
 
 require(GEN, '"th_26_qr_runtime.js"', "signed QR module")
 require(GEN, '"toolhub-zxing-runtime"', "signed runtime asset")
@@ -179,8 +198,8 @@ if errors:
     raise SystemExit(1)
 
 print("OK pickword_qr beta_only=1 system_server_dexloader=%d rhino_packages=%d diagnostics=%d load_text_reuse_window=%d" % (
-    1 if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8") else 0,
-    1 if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8") else 0,
+    1 if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9") else 0,
+    1 if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9") else 0,
     1 if qr_version in ("// @version 1.0.4", "// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7") else 0,
     1 if qr_version == "// @version 1.0.7" else 0,
 ))
