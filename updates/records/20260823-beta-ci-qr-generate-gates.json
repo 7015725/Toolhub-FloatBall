@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "20260823-beta-ci-qr-generate-gates",
+  "type": "fix",
+  "title": "修复二维码生成相关 CI 门禁版本档位",
+  "details": [
+    "修复了因 diagnose/sign 门禁脚本未纳入 th_26 1.0.9 与 th_20 1.0.25 版本档位，导致二维码生成改造后 CI 失败的问题；同步刷新 API 使用基线与死代码审计。"
+  ],
+  "manifestVersion": 20260822212841,
+  "date": "2026-08-23",
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.24",
+      "to": "1.0.25",
+      "change": "updated"
+    },
+    {
+      "name": "th_26_qr_runtime.js",
+      "from": "1.0.8",
+      "to": "1.0.9",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
+}
