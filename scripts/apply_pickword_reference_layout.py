@@ -8,6 +8,7 @@ OLD_VERSION = "// @version 1.0.21\n"
 NEW_VERSION = "// @version 1.0.22\n"
 PREVIOUS_VERSION = "// @version 1.0.23\n"
 CURRENT_VERSION = "// @version 1.0.24\n"
+LATEST_VERSION = "// @version 1.0.25\n"
 
 
 def require(condition, message):
@@ -37,7 +38,7 @@ def already_applied(text):
         "normalizePickwordThumbnailChrome20(thumb);",
         "var contentWidthDp20 = Number(windowWidth || dm.widthPixels || 0) / density20;",
     )
-    supported_version = text.startswith(NEW_VERSION) or text.startswith(PREVIOUS_VERSION) or text.startswith(CURRENT_VERSION)
+    supported_version = text.startswith(NEW_VERSION) or text.startswith(PREVIOUS_VERSION) or text.startswith(CURRENT_VERSION) or text.startswith(LATEST_VERSION)
     return supported_version and (all(marker in text for marker in legacy_markers) or all(marker in text for marker in current_markers))
 
 
