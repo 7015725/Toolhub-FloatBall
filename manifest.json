@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "a4a01c3d44cc0dc3a5d7c5ece701b05847dec68cce45903a443bcfcc6b317bd8",
-      "size": 92466,
-      "version": 20260822193553
+      "sha256": "bbb3f6e61c3f70a97c43373589afcf949edf2c61c6d36f8226fbb268ecb9b10e",
+      "size": 93367,
+      "version": 20260822212841
     }
   },
   "branch": "beta",
@@ -189,12 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "拾字模块在二维码解析基础上新增二维码生成，2x3 操作区新增生成按钮，按当前拾字文本生成 512x512 二维码图片。",
-      "复用现有 toolhub-zxing-runtime-3.5.4-r2 运行时内已内置的 QRCodeWriter/BitMatrix 编码链，通过同一 DexClassLoader 加载，不引入新二维码库；runtime 缺少生成类时解析能力保持可用。",
-      "生成结果写入独立 PNG 文件并经既有图片查看链路打开，原截图与解析缓存不受影响；空文本、超长文本和运行时缺失场景直接 Toast 提示。"
+      "修复了因 diagnose/sign 门禁脚本未纳入 th_26 1.0.9 与 th_20 1.0.25 版本档位，导致二维码生成改造后 CI 失败的问题；同步刷新 API 使用基线与死代码审计。"
     ],
     "date": "2026-08-23",
-    "title": "Beta：拾字新增二维码生成"
+    "title": "修复二维码生成相关 CI 门禁版本档位"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -210,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260822193553
+  "version": 20260822212841
 }
