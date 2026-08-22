@@ -1,4 +1,4 @@
-// @version 1.0.24
+// @version 1.0.25
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -240,6 +240,7 @@
     var pickwordImageTextOriginalLp20 = null;
     var pickwordImageTextOriginalIndex20 = -1;
     var pickwordQrActionTile20 = null;
+    var pickwordQrGenerateTile20 = null;
     var pickwordQrCopyTile20 = null;
     var pickwordQrLoadTile20 = null;
     var pickwordGridShareClosePending20 = false;
@@ -320,6 +321,7 @@
         pickwordImageTextOriginalLp20 = null;
         pickwordImageTextOriginalIndex20 = -1;
         pickwordQrActionTile20 = null;
+        pickwordQrGenerateTile20 = null;
         pickwordQrCopyTile20 = null;
         pickwordQrLoadTile20 = null;
         pickwordGridShareClosePending20 = false;
@@ -522,6 +524,7 @@
     function pickwordActionIconCandidates20(kind) {
         if (kind === "share") return ["share_forward", "share_2", "share"];
         if (kind === "qr") return ["qr_code", "qr_scan_2", "scan_2", "scan"];
+        if (kind === "qr_generate") return ["qr_code_generate", "qr_generate", "add_circle", "qr_code"];
         if (kind === "refresh") return ["refresh", "restart", "loop_left"];
         if (kind === "image") return ["image", "gallery", "image_2"];
         if (kind === "save") return ["save", "download_2", "download"];
@@ -627,12 +630,13 @@
             state.available === true && !running,
             running ? 0.45 : (state.available === true ? 1.0 : 0.32)
         );
+        var genRunning = state.generating === true;
         setPickwordImageActionTileState20(
-            pickwordQrCopyTile20,
-            "复制二维码结果",
-            "copy",
-            state.hasResult === true && !running,
-            state.hasResult === true && !running ? 1.0 : 0.32
+            pickwordQrGenerateTile20,
+            genRunning ? "正在生成二维码" : "二维码生成",
+            "qr_generate",
+            state.hasText === true && !genRunning,
+            state.hasText === true && !genRunning ? 1.0 : 0.32
         );
         setPickwordImageActionTileState20(
             pickwordQrLoadTile20,
@@ -709,10 +713,10 @@
                 performPickwordImagePageAction20(1, "截图保存暂不可用");
             }), true);
 
-        pickwordQrCopyTile20 = createPickwordImageActionTile20("复制二维码结果", "copy", function() {
-            performPickwordQrAction20("copy");
+        pickwordQrGenerateTile20 = createPickwordImageActionTile20("二维码生成", "qr_generate", function() {
+            performPickwordQrAction20("generate");
         });
-        addPickwordImageActionTile20(bottomRow, pickwordQrCopyTile20, false);
+        addPickwordImageActionTile20(bottomRow, pickwordQrGenerateTile20, false);
         pickwordQrLoadTile20 = createPickwordImageActionTile20("载入拾字", "load", function() {
             performPickwordQrAction20("toggle_load");
         });

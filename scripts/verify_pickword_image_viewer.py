@@ -44,7 +44,7 @@ require('拾字Floaty.hide();' not in grid_body, "grid share must not close pick
 require('var middleRow = new LinearLayout(appContext);' in grid_body, "2x3 image action grid middle row missing")
 require(grid_body.count('createPickwordImageActionTile20(') == 6, "2x3 image action grid must expose exactly six actions")
 require('performPickwordQrAction20("decode")' in grid_body, "QR decode must dispatch through controller bridge")
-require('performPickwordQrAction20("copy")' in grid_body, "QR copy must dispatch through controller bridge")
+require('performPickwordQrAction20("generate")' in grid_body, "QR generate must dispatch through controller bridge")
 require('performPickwordQrAction20("toggle_load")' in grid_body, "QR load/restore must dispatch through controller bridge")
 require('"查看原图"' in grid_body and 'openPickwordImagePage20()' in grid_body, "original-image action must reuse image page owner")
 tile_start = th20.find('function createPickwordImageActionTile20(labelText, iconKind, callback)')

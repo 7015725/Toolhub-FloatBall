@@ -346,8 +346,17 @@
     {
       "id": "api-pickword-qr-runtime",
       "usageKeys": [
+        "android|class|android.graphics.Canvas",
+        "android|class|android.graphics.Paint",
         "android|method|android.content.ClipData#newPlainText",
         "android|method|android.content.Context#getClassLoader",
+        "android|method|android.graphics#Canvas",
+        "android|method|android.graphics#Paint",
+        "android|method|android.graphics.Bitmap#createBitmap",
+        "android|method|android.graphics.Canvas#drawColor",
+        "android|method|android.graphics.Canvas#drawRect",
+        "android|method|android.graphics.Paint#setAntiAlias",
+        "android|method|android.graphics.Paint#setStyle",
         "android|method|android.graphics.drawable#GradientDrawable",
         "android|method|android.os.Handler#post",
         "android|method|android.os.Handler#postDelayed",
@@ -360,6 +369,7 @@
         "java|class|java.io.FileInputStream",
         "java|class|java.lang.Thread",
         "java|class|java.net.URL",
+        "java|class|java.util.EnumMap",
         "java|class|java.util.concurrent.locks.ReentrantLock",
         "java|method|java.io#FileInputStream",
         "java|method|java.io.File#addView",
@@ -390,6 +400,8 @@
         "java|method|java.net.URL#setReadTimeout",
         "java|method|java.net.URL#setRequestProperty",
         "java|method|java.net.URL#setUseCaches",
+        "java|method|java.util#EnumMap",
+        "java|method|java.util.EnumMap#put",
         "java|method|java.util.concurrent.locks#ReentrantLock"
       ],
       "source": "android/java/toolhub",
@@ -419,6 +431,7 @@
         "code/th_17_pointer.js",
         "code/th_18_pointer_ocr.js",
         "code/th_20_pickword.js",
+        "code/th_21_result_preview.js",
         "code/th_22_image_viewer.js",
         "code/th_23_screenshot_manager.js",
         "code/th_26_qr_runtime.js"

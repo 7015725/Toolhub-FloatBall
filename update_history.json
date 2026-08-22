@@ -1,8 +1,27 @@
 {
   "schema": 1,
-  "historyVersion": 20260820082221,
-  "generatedAt": "2026-08-20T16:22:21+08:00",
+  "historyVersion": 20260822193553,
+  "generatedAt": "2026-08-23T03:35:53+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260822-beta-pickword-qr-generate",
+      "type": "feature",
+      "title": "Beta：拾字新增二维码生成",
+      "details": [
+        "拾字模块在二维码解析基础上新增二维码生成，2x3 操作区新增生成按钮，按当前拾字文本生成 512x512 二维码图片。",
+        "复用现有 toolhub-zxing-runtime-3.5.4-r2 运行时内已内置的 QRCodeWriter/BitMatrix 编码链，通过同一 DexClassLoader 加载，不引入新二维码库；runtime 缺少生成类时解析能力保持可用。",
+        "生成结果写入独立 PNG 文件并经既有图片查看链路打开，原截图与解析缓存不受影响；空文本、超长文本和运行时缺失场景直接 Toast 提示。"
+      ],
+      "manifestVersion": 20260822193553,
+      "date": "2026-08-23",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260820-beta-pickword-image-action-grid-icons",
