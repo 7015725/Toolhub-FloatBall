@@ -1,8 +1,25 @@
 {
   "schema": 1,
-  "historyVersion": 20260823003253,
-  "generatedAt": "2026-08-23T08:32:53+08:00",
+  "historyVersion": 20260823010015,
+  "generatedAt": "2026-08-23T09:00:16+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260823-beta-qr-generate-inwindow-view",
+      "type": "fix",
+      "title": "修复二维码生成后无法查看的问题",
+      "details": [
+        "修复了因公共目录导出链路在 system_server 环境不可用（root 广播桥超时、MediaStore 写入被拒）导致二维码生成后打开查看失败的问题；改为复用拾字窗口内图片查看链路，生成按钮支持一键返回原文。"
+      ],
+      "manifestVersion": 20260823010015,
+      "date": "2026-08-23",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260823-beta-qr-generate-drawcolor-fix",

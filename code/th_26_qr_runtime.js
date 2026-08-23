@@ -1,4 +1,4 @@
-// @version 1.0.10
+// @version 1.0.11
 // =======================【拾字截图二维码解析/生成 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -421,7 +421,8 @@
         genDoneToken: 0,
         genStatus: "idle",
         genPath: "",
-        genThread: null
+        genThread: null,
+        genSnapshot: null
       };
     }
     ps.qr.imageKey = imageKey26(session || ps.meta);
@@ -585,6 +586,7 @@
       loaded: !!(cached && cached.loaded === true),
       hasText: !!pickwordFullText26(appObj),
       generating: !!qr && String(qr.genStatus || "idle") === "running",
+      generateCanRestore: !!(qr && qr.genSnapshot && appObj.state && appObj.state.pickword && appObj.state.pickword.meta && String(appObj.state.pickword.meta.source || "") === "qr_generate"),
       generateSupported: !!(runtime26.writerClass && runtime26.formatClass && runtime26.hintsClass)
     };
   }
@@ -886,14 +888,26 @@
         return toggleQrLoad26(appObj, session);
       }
       if (name === "generate") {
+        var qrGenState = ensureQrState26(appObj, session);
+        if (qrActionState26(appObj, session).generating) {
+          showToast26("正在生成二维码");
+          return false;
+        }
+        var psCur = appObj.state && appObj.state.pickword ? appObj.state.pickword : null;
+        var curSource = psCur && psCur.meta ? String(psCur.meta.source || "") : "";
+        if (curSource === "qr_generate" && qrGenState.genSnapshot) {
+          var genSnapshot = qrGenState.genSnapshot;
+          qrGenState.genSnapshot = null;
+          cancelQr26(appObj, "restore_qr_generate");
+          appObj.showPickwordText(String(genSnapshot.text == null ? "" : genSnapshot.text), shallowCopy26(genSnapshot.meta));
+          showToast26("已返回拾字内容");
+          notifyActionState26();
+          return true;
+        }
         var genText = pickwordFullText26(appObj);
         if (!genText) {
           showToast26("拾字内容为空");
           notifyActionState26();
-          return false;
-        }
-        if (qrActionState26(appObj, session).generating) {
-          showToast26("正在生成二维码");
           return false;
         }
         var genStarted = generateAsync26(appObj, session, genText, function(genResult) {
@@ -904,10 +918,17 @@
               return;
             }
             try {
-              var service = appObj.getPickwordImageService();
-              var shareResult = service.prepareShareInternal(String(genResult.path));
-              service.launchView(shareResult);
-              showToast26("已生成二维码图片");
+              qrGenState.genSnapshot = { text: genText, meta: shallowCopy26(session) };
+              var genMeta = {
+                internalPath: String(genResult.path),
+                source: "qr_generate",
+                createdAt: Number(now26()),
+                screenshotOk: true,
+                allowEmptyText: true,
+                imageOnly: true
+              };
+              appObj.showPickwordText("", genMeta);
+              showToast26("已生成二维码，点生成按钮可返回");
             } catch (eView) {
               log26(appObj, "w", "generate view failed=" + sanitizeError26(eView));
               showToast26("二维码已生成，打开查看失败");

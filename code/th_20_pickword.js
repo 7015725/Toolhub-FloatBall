@@ -1,4 +1,4 @@
-// @version 1.0.25
+// @version 1.0.26
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -631,12 +631,13 @@
             running ? 0.45 : (state.available === true ? 1.0 : 0.32)
         );
         var genRunning = state.generating === true;
+        var genCanRestore = state.generateCanRestore === true;
         setPickwordImageActionTileState20(
             pickwordQrGenerateTile20,
-            genRunning ? "正在生成二维码" : "二维码生成",
+            genRunning ? "正在生成二维码" : (genCanRestore ? "返回拾字" : "二维码生成"),
             "qr_generate",
-            state.hasText === true && !genRunning,
-            state.hasText === true && !genRunning ? 1.0 : 0.32
+            !genRunning && (state.hasText === true || genCanRestore),
+            !genRunning && (state.hasText === true || genCanRestore) ? 1.0 : 0.32
         );
         setPickwordImageActionTileState20(
             pickwordQrLoadTile20,
