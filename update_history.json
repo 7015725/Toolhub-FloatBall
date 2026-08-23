@@ -1,8 +1,25 @@
 {
   "schema": 1,
-  "historyVersion": 20260823035641,
-  "generatedAt": "2026-08-23T11:56:41+08:00",
+  "historyVersion": 20260823050742,
+  "generatedAt": "2026-08-23T13:07:42+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260823-beta-qr-dense-render-fix",
+      "type": "fix",
+      "title": "修复长文本生成二维码无法识别的问题",
+      "details": [
+        "修复了因二维码矩阵逐格绘制时浮点边界四舍五入加半像素外扩，导致长文本密集码模块宽度抖动过大、白模块被侵蚀而无法识别的问题；改为整数栅格对齐绘制，长文本自动改用 1024 尺寸并提升纠错等级至 M。"
+      ],
+      "manifestVersion": 20260823050742,
+      "date": "2026-08-23",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260823-beta-qr-restore-hide-race",
