@@ -159,6 +159,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     "// @version 1.0.14",
     "// @version 1.0.15",
     "// @version 1.0.16",
+    "// @version 1.0.17",
     )
     if version not in supported:
         fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1..1.0.9")
@@ -185,6 +186,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     "// @version 1.0.14",
     "// @version 1.0.15",
     "// @version 1.0.16",
+    "// @version 1.0.17",
     ):
         for marker in (
             "installLock: new java.util.concurrent.locks.ReentrantLock()",
@@ -212,6 +214,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     "// @version 1.0.14",
     "// @version 1.0.15",
     "// @version 1.0.16",
+    "// @version 1.0.17",
     ):
         for marker in (
             'typeof getToolHubRootDir !== "function"',
@@ -237,6 +240,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     "// @version 1.0.14",
     "// @version 1.0.15",
     "// @version 1.0.16",
+    "// @version 1.0.17",
     ):
         for marker in (
             'function sanitizeError26(error)',

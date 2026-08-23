@@ -42,7 +42,7 @@ def patch_qr_module():
     if text.startswith("// @version 1.0.6\n"):
         text = text.replace("// @version 1.0.6\n", "// @version 1.0.7\n", 1)
     qr_version = text.splitlines()[0] if text.splitlines() else ""
-    require(qr_version in ("// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13", "// @version 1.0.14", "// @version 1.0.15", "// @version 1.0.16"), "QR module version 1.0.7 to 1.0.10")
+    require(qr_version in ("// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13", "// @version 1.0.14", "// @version 1.0.15", "// @version 1.0.16", "// @version 1.0.17"), "QR module version 1.0.7 to 1.0.10")
 
     text = text.replace(
         "new dalvik.system.DexClassLoader(",
@@ -66,7 +66,7 @@ def patch_qr_module():
     require('new java.io.File(lib, ".dexopt")' in text, "API 24-25 channel-private dexopt")
     require('assertWritableDirPath(dexoptPath, "ToolHub QR dexopt")' in text, "legacy dexopt writable probe")
     require("var optimizedDirectory = getDexOptimizedDirectory26();" in text, "DexClassLoader optimizedDirectory selection")
-    if qr_version in ("// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13", "// @version 1.0.14", "// @version 1.0.15", "// @version 1.0.16"):
+    if qr_version in ("// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13", "// @version 1.0.14", "// @version 1.0.15", "// @version 1.0.16", "// @version 1.0.17"):
         require("controller.getPickwordQrActionState = function()" in text, "QR action state bridge")
         require("controller.performPickwordQrAction = function(action)" in text, "QR action dispatch bridge")
         require("controller.setPickwordQrActionStateListener = function(listener)" in text, "QR action state listener")
@@ -123,7 +123,7 @@ def extend_version_lists(text):
 
 def patch_verifiers():
     current_qr_text = QR_MODULE.read_text(encoding="utf-8")
-    if current_qr_text.startswith("// @version 1.0.8\n") or current_qr_text.startswith("// @version 1.0.9\n") or current_qr_text.startswith("// @version 1.0.10\n") or current_qr_text.startswith("// @version 1.0.11\n") or current_qr_text.startswith("// @version 1.0.12\n") or current_qr_text.startswith("// @version 1.0.13\n") or current_qr_text.startswith("// @version 1.0.14\n") or current_qr_text.startswith("// @version 1.0.15\n") or current_qr_text.startswith("// @version 1.0.16\n"):
+    if current_qr_text.startswith("// @version 1.0.8\n") or current_qr_text.startswith("// @version 1.0.9\n") or current_qr_text.startswith("// @version 1.0.10\n") or current_qr_text.startswith("// @version 1.0.11\n") or current_qr_text.startswith("// @version 1.0.12\n") or current_qr_text.startswith("// @version 1.0.13\n") or current_qr_text.startswith("// @version 1.0.14\n") or current_qr_text.startswith("// @version 1.0.15\n") or current_qr_text.startswith("// @version 1.0.16\n") or current_qr_text.startswith("// @version 1.0.17\n"):
         for path in (VERIFY_MANIFEST, VERIFY_STORAGE, VERIFY_QR):
             verifier_text = path.read_text(encoding="utf-8")
             require('"// @version 1.0.8"' in verifier_text, "QR 1.0.8 verifier support missing: " + str(path.name))
