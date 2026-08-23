@@ -1,4 +1,4 @@
-// @version 1.0.16
+// @version 1.0.17
 // =======================【拾字截图二维码解析/生成 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -856,7 +856,7 @@
   function decorateController26(appObj, controller, opts) {
     if (!controller || controller.__toolHubQrDecorated26 === true) return controller;
     controller.__toolHubQrDecorated26 = true;
-    controller.__toolHubQrCardShown26 = false;
+    controller.__toolHubQrScanShown26 = false;
     var session = opts && opts.session ? opts.session : null;
     var actionStateListener = null;
 
@@ -882,17 +882,33 @@
           return false;
         }
         var qrRenderFn26 = controller.__toolHubQrRender26;
-        if (controller.__toolHubQrCardShown26 === true) {
-          controller.__toolHubQrCardShown26 = false;
-          try { if (qrRenderFn26) qrRenderFn26(null, false); } catch (eHideCardBack) {}
-          showToast26("已恢复原截图");
+        if (controller.__toolHubQrScanShown26 === true) {
+          var scanSnap26 = controller.__toolHubQrScanSnapshot26 || {};
+          controller.__toolHubQrScanShown26 = false;
+          controller.__toolHubQrScanSnapshot26 = null;
+          cancelQr26(appObj, "restore_qr_scan");
+          appObj.showPickwordText(String(scanSnap26.text == null ? "" : scanSnap26.text), shallowCopy26(scanSnap26.meta || session));
+          showToast26("已恢复原文字");
           notifyActionState26();
           return true;
         }
         try { if (qrRenderFn26) qrRenderFn26(null, false); } catch (eHideCard) {}
         var started = decodeAsync26(appObj, session, function(result) {
-          controller.__toolHubQrCardShown26 = true;
-          try { if (qrRenderFn26) qrRenderFn26(result || { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE" }, true); } catch (eRender) {}
+          if (!result || result.ok !== true) {
+            showToast26("二维码识别失败");
+            notifyActionState26();
+            return;
+          }
+          controller.__toolHubQrScanShown26 = true;
+          controller.__toolHubQrScanSnapshot26 = {
+            text: pickwordFullText26(appObj),
+            meta: shallowCopy26(session)
+          };
+          cancelQr26(appObj, "apply_qr_text");
+          var qrTextToApply26 = String(result.text == null ? "" : result.text);
+          log26(appObj, "i", "scan text applied textLen=" + String(qrTextToApply26.length));
+          appObj.showPickwordText(qrTextToApply26, shallowCopy26(session));
+          showToast26("识别结果已写入文字区，再点可恢复");
           notifyActionState26();
         });
         notifyActionState26();

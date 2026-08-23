@@ -38,6 +38,7 @@ SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.14",
     "// @version 1.0.15",
     "// @version 1.0.16",
+    "// @version 1.0.17",
 )
 require(
     QR.splitlines()[0] in SUPPORTED_QR_VERSIONS,

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "id": "20260823-beta-qr-scan-text-apply",
+  "type": "feature",
+  "title": "二维码识别结果直接写入文字展示区",
+  "details": [
+    "识别二维码后截图保持显示，解析文字直接覆盖到拾字文字区，再次点击识别按钮可恢复原文字"
+  ],
+  "manifestVersion": 0
+}
