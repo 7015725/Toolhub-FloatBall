@@ -8,7 +8,7 @@ OLD_VERSION = "// @version 1.0.21\n"
 NEW_VERSION = "// @version 1.0.22\n"
 PREVIOUS_VERSION = "// @version 1.0.23\n"
 CURRENT_VERSION = "// @version 1.0.24\n"
-LATEST_VERSION = "// @version 1.0.29\n"
+LATEST_VERSION = "// @version 1.0.30\n"
 
 
 def require(condition, message):
@@ -34,7 +34,7 @@ def already_applied(text):
         "function createPickwordImageActionGrid20(thumbRoot)",
         "function resolvePickwordShortXActionDrawable20(kind)",
         'performPickwordQrAction20("decode")',
-        'createPickwordImageActionTile20("查看原图", "image"',
+        'createPickwordImageActionTile20("重新识别", "reocr"',
         "normalizePickwordThumbnailChrome20(thumb);",
         "var contentWidthDp20 = Number(windowWidth || dm.widthPixels || 0) / density20;",
     )
