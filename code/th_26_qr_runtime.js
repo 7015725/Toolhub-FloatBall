@@ -1,4 +1,4 @@
-// @version 1.0.11
+// @version 1.0.12
 // =======================【拾字截图二维码解析/生成 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -899,6 +899,7 @@
           var genSnapshot = qrGenState.genSnapshot;
           qrGenState.genSnapshot = null;
           cancelQr26(appObj, "restore_qr_generate");
+          try { if (typeof appObj.hidePickwordWindow === "function") appObj.hidePickwordWindow("qr_generate_restore"); } catch (eHideGenRestore) {}
           appObj.showPickwordText(String(genSnapshot.text == null ? "" : genSnapshot.text), shallowCopy26(genSnapshot.meta));
           showToast26("已返回拾字内容");
           notifyActionState26();
@@ -927,6 +928,7 @@
                 allowEmptyText: true,
                 imageOnly: true
               };
+              try { if (typeof appObj.hidePickwordWindow === "function") appObj.hidePickwordWindow("qr_generate_view"); } catch (eHideGenView) {}
               appObj.showPickwordText("", genMeta);
               showToast26("已生成二维码，点生成按钮可返回");
             } catch (eView) {
