@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "bbb3f6e61c3f70a97c43373589afcf949edf2c61c6d36f8226fbb268ecb9b10e",
-      "size": 93367,
-      "version": 20260822212841
+      "sha256": "f9d2436f5961cf4e455a38c972455662fad9bbf3f26e16993d93d063379c26f9",
+      "size": 93931,
+      "version": 20260823003253
     }
   },
   "branch": "beta",
@@ -176,9 +176,9 @@
       "version": "0.9.2"
     },
     "th_26_qr_runtime.js": {
-      "sha256": "a94272e338e67a69b07972d40e9449ceef73bae6edf1e859e38fa3b5c145efb6",
-      "size": 43693,
-      "version": "1.0.9"
+      "sha256": "5639a30e59e2662989422c80cc2dc75bf75de6318bc7848acbd44372c3a74fb9",
+      "size": 43913,
+      "version": "1.0.10"
     },
     "th_34_shortx_ui_lab.js": {
       "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
@@ -189,10 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因 diagnose/sign 门禁脚本未纳入 th_26 1.0.9 与 th_20 1.0.25 版本档位，导致二维码生成改造后 CI 失败的问题；同步刷新 API 使用基线与死代码审计。"
+      "修复了因 Canvas.drawColor 在部分系统上走 long 重载、颜色空间 ID 越界导致二维码生成失败的问题；背景填充改为 Paint+drawRect。"
     ],
     "date": "2026-08-23",
-    "title": "修复二维码生成相关 CI 门禁版本档位"
+    "title": "修复拾字二维码生成失败"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260822212841
+  "version": 20260823003253
 }

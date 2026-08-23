@@ -353,7 +353,6 @@
         "android|method|android.graphics#Canvas",
         "android|method|android.graphics#Paint",
         "android|method|android.graphics.Bitmap#createBitmap",
-        "android|method|android.graphics.Canvas#drawColor",
         "android|method|android.graphics.Canvas#drawRect",
         "android|method|android.graphics.Paint#setAntiAlias",
         "android|method|android.graphics.Paint#setStyle",

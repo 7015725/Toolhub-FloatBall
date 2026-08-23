@@ -31,10 +31,11 @@ SUPPORTED_QR_VERSIONS = (
     "// @version 1.0.7",
     "// @version 1.0.8",
     "// @version 1.0.9",
+    "// @version 1.0.10",
 )
 require(
     QR.splitlines()[0] in SUPPORTED_QR_VERSIONS,
-    "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6/1.0.7/1.0.8/1.0.9 during generation",
+    "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6/1.0.7/1.0.8/1.0.9/1.0.10 during generation",
 )
 
 for name, source in (("theme", THEME), ("panel_ui", PANEL), ("pickword", PICKWORD)):

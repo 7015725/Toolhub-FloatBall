@@ -1,4 +1,4 @@
-// @version 1.0.9
+// @version 1.0.10
 // =======================【拾字截图二维码解析/生成 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -661,7 +661,11 @@
     if (!(matrixWidth > 0) || !(matrixHeight > 0)) throw new Error("二维码矩阵尺寸非法");
     var bitmap = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
     var canvas = new android.graphics.Canvas(bitmap);
-    canvas.drawColor(0xFFFFFFFF | 0);
+    var paintBg = new android.graphics.Paint();
+    paintBg.setAntiAlias(false);
+    paintBg.setStyle(android.graphics.Paint.Style.FILL);
+    toolhubSafeSetPaintColor(paintBg, 0xFFFFFFFF | 0);
+    canvas.drawRect(0, 0, Number(size), Number(size), paintBg);
     var paint = new android.graphics.Paint();
     paint.setAntiAlias(false);
     paint.setStyle(android.graphics.Paint.Style.FILL);
