@@ -37,7 +37,7 @@ def validate_qr_integration_version_gate():
 
 def validate_qr_runtime():
     text = QR_MODULE.read_text(encoding="utf-8")
-    if not (text.startswith("// @version 1.0.7") or text.startswith("// @version 1.0.8") or text.startswith("// @version 1.0.9") or text.startswith("// @version 1.0.10") or text.startswith("// @version 1.0.11") or text.startswith("// @version 1.0.12") or text.startswith("// @version 1.0.13") or text.startswith("// @version 1.0.14") or text.startswith("// @version 1.0.15")):
+    if not (text.startswith("// @version 1.0.7") or text.startswith("// @version 1.0.8") or text.startswith("// @version 1.0.9") or text.startswith("// @version 1.0.10") or text.startswith("// @version 1.0.11") or text.startswith("// @version 1.0.12") or text.startswith("// @version 1.0.13") or text.startswith("// @version 1.0.14") or text.startswith("// @version 1.0.15") or text.startswith("// @version 1.0.16")):
         raise SystemExit("ShortXUI QR compat requires QR runtime version 1.0.7 to 1.0.14")
     for token in (
         "installLock: new java.util.concurrent.locks.ReentrantLock()",
@@ -69,7 +69,7 @@ def validate_qr_runtime():
         raise SystemExit("ShortXUI QR compat forbids system_server Context.getCodeCacheDir")
     if "shortx.getShortXDir" in text:
         raise SystemExit("ShortXUI QR compat forbids shared ShortX root lib bypass")
-    if text.startswith("// @version 1.0.8") or text.startswith("// @version 1.0.9") or text.startswith("// @version 1.0.10") or text.startswith("// @version 1.0.11") or text.startswith("// @version 1.0.12") or text.startswith("// @version 1.0.13") or text.startswith("// @version 1.0.14") or text.startswith("// @version 1.0.15"):
+    if text.startswith("// @version 1.0.8") or text.startswith("// @version 1.0.9") or text.startswith("// @version 1.0.10") or text.startswith("// @version 1.0.11") or text.startswith("// @version 1.0.12") or text.startswith("// @version 1.0.13") or text.startswith("// @version 1.0.14") or text.startswith("// @version 1.0.15") or text.startswith("// @version 1.0.16"):
         for token in (
             "controller.getPickwordQrActionState = function()",
             "controller.performPickwordQrAction = function(action)",

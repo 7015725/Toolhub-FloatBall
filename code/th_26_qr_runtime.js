@@ -1,4 +1,4 @@
-// @version 1.0.15
+// @version 1.0.16
 // =======================【拾字截图二维码解析/生成 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -856,6 +856,7 @@
   function decorateController26(appObj, controller, opts) {
     if (!controller || controller.__toolHubQrDecorated26 === true) return controller;
     controller.__toolHubQrDecorated26 = true;
+    controller.__toolHubQrCardShown26 = false;
     var session = opts && opts.session ? opts.session : null;
     var actionStateListener = null;
 
@@ -880,9 +881,18 @@
           notifyActionState26();
           return false;
         }
-        try { if (controller.__toolHubQrRender26) controller.__toolHubQrRender26(null, false); } catch (eHideCard) {}
+        var qrRenderFn26 = controller.__toolHubQrRender26;
+        if (controller.__toolHubQrCardShown26 === true) {
+          controller.__toolHubQrCardShown26 = false;
+          try { if (qrRenderFn26) qrRenderFn26(null, false); } catch (eHideCardBack) {}
+          showToast26("已恢复原截图");
+          notifyActionState26();
+          return true;
+        }
+        try { if (qrRenderFn26) qrRenderFn26(null, false); } catch (eHideCard) {}
         var started = decodeAsync26(appObj, session, function(result) {
-          try { if (controller.__toolHubQrRender26) controller.__toolHubQrRender26(result || { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE" }, true); } catch (eRender) {}
+          controller.__toolHubQrCardShown26 = true;
+          try { if (qrRenderFn26) qrRenderFn26(result || { ok: false, code: "PICKWORD_QR_RUNTIME_UNAVAILABLE" }, true); } catch (eRender) {}
           notifyActionState26();
         });
         notifyActionState26();

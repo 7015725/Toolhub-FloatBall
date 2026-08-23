@@ -1,8 +1,25 @@
 {
   "schema": 1,
-  "historyVersion": 20260823050742,
-  "generatedAt": "2026-08-23T13:07:42+08:00",
+  "historyVersion": 20260823052242,
+  "generatedAt": "2026-08-23T13:22:42+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260823-beta-qr-scan-toggle",
+      "type": "feature",
+      "title": "识别按钮支持再次点击回退到原截图",
+      "details": [
+        "识别结果卡片显示时再次点击识别按钮即收起卡片并恢复原截图视图。"
+      ],
+      "manifestVersion": 20260823052242,
+      "date": "2026-08-23",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260823-beta-qr-dense-render-fix",

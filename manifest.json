@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "c8cf1198b5bf23f28d601c1c0a794225d0eb60324a22da706781b1a93d0dec67",
-      "size": 98442,
-      "version": 20260823050742
+      "sha256": "387fefce5b37ccf48d1918a713e55c6ec1390ab79738e6872d9d488a2464ecea",
+      "size": 98944,
+      "version": 20260823052242
     }
   },
   "branch": "beta",
@@ -176,9 +176,9 @@
       "version": "0.9.2"
     },
     "th_26_qr_runtime.js": {
-      "sha256": "f9e708ae8e51c5426b209b08157d30659b077a3344598f0139fc7f2c182f565b",
-      "size": 45448,
-      "version": "1.0.15"
+      "sha256": "a4d196ea60f11866cb35dc34a2d508bb0863f376ac80fee302380cd9892d2cf2",
+      "size": 45844,
+      "version": "1.0.16"
     },
     "th_34_shortx_ui_lab.js": {
       "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
@@ -189,10 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因二维码矩阵逐格绘制时浮点边界四舍五入加半像素外扩，导致长文本密集码模块宽度抖动过大、白模块被侵蚀而无法识别的问题；改为整数栅格对齐绘制，长文本自动改用 1024 尺寸并提升纠错等级至 M。"
+      "识别结果卡片显示时再次点击识别按钮即收起卡片并恢复原截图视图。"
     ],
     "date": "2026-08-23",
-    "title": "修复长文本生成二维码无法识别的问题"
+    "title": "识别按钮支持再次点击回退到原截图"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260823050742
+  "version": 20260823052242
 }
