@@ -1,4 +1,4 @@
-// @version 1.0.14
+// @version 1.0.15
 // =======================【拾字截图二维码解析/生成 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -10,6 +10,7 @@
   var QR_GEN_SIZE_MIN26 = 128;
   var QR_GEN_SIZE_DEFAULT26 = 512;
   var QR_GEN_SIZE_MAX26 = 1024;
+  var QR_GEN_DENSE_TEXT_THRESHOLD26 = 200;
   var QR_WRITER_CLASS26 = "toolhub.runtime.shaded.zxing.qrcode.QRCodeWriter";
   var QR_FORMAT_CLASS26 = "toolhub.runtime.shaded.zxing.BarcodeFormat";
   var QR_HINTS_CLASS26 = "toolhub.runtime.shaded.zxing.EncodeHintType";
@@ -651,6 +652,10 @@
     var format = runtime26.formatClass.getField("QR_CODE").get(null);
     var hints = new java.util.EnumMap(runtime26.hintsClass);
     hints.put(runtime26.hintsClass.getField("CHARACTER_SET").get(null), new java.lang.String("UTF-8"));
+    try {
+      hints.put(runtime26.hintsClass.getField("ERROR_CORRECTION").get(null),
+          runtime26.clazz.loadClass("toolhub.runtime.shaded.zxing.qrcode.decoder.ErrorCorrectionLevel").getField("M").get(null));
+    } catch (eEcHint) {}
     var matrix = writer.encode(new java.lang.String(String(text == null ? "" : text)), format, size, size, hints);
     if (!matrix) throw new Error("二维码矩阵生成失败");
     return matrix;
@@ -673,9 +678,11 @@
     toolhubSafeSetPaintColor(paint, 0xFF000000 | 0);
     var scale = Number(size) / matrixWidth;
     for (var y = 0; y < matrixHeight; y++) {
+      var cellTop = Math.floor(y * scale);
+      var cellBottom = Math.floor((y + 1) * scale);
       for (var x = 0; x < matrixWidth; x++) {
         if (matrix.get(x, y) === true) {
-          canvas.drawRect(x * scale, y * scale, (x + 1) * scale + 0.5, (y + 1) * scale + 0.5, paint);
+          canvas.drawRect(Math.floor(x * scale), cellTop, Math.floor((x + 1) * scale), cellBottom, paint);
         }
       }
     }
@@ -689,6 +696,9 @@
       return { ok: false, code: "PICKWORD_QR_TEXT_TOO_LONG", error: "文本超出二维码容量限制" };
     }
     var resolvedSize = clampGenerateSize26(size);
+    if (!size && content.length > QR_GEN_DENSE_TEXT_THRESHOLD26) {
+      resolvedSize = QR_GEN_SIZE_MAX26;
+    }
     var bitmap = renderQrBitmap26(encodeQrMatrix26(content, resolvedSize), resolvedSize);
     return { ok: true, code: "PICKWORD_QR_GENERATE_SUCCESS", bitmap: bitmap, width: resolvedSize, height: resolvedSize };
   }
