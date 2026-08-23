@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "5fd4484c8797732c9932b70533ca7dfa4c8a5ae721e2a153009408e940a76aac",
-      "size": 107156,
-      "version": 20260823070704
+      "sha256": "f76dd5747537a3a3ec0fa27b0e42482478b63c69da9abb1cf1abe722308f6248",
+      "size": 109908,
+      "version": 20260823071329
     }
   },
   "branch": "beta",
@@ -189,10 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "查看原图改为重新识别，对当前截图重跑 OCR 覆盖文字区并支持再次点击恢复原文字；载入拾字改为清空文字，一键清空文本便于连续拾字"
+      "同步按钮位调整后的审计文件与签名清单"
     ],
     "date": "2026-08-23",
-    "title": "拾字按钮位调整：重新识别与清空文字"
+    "title": "刷新死代码与受保护链路审计"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260823070704
+  "version": 20260823071329
 }
