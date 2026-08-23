@@ -1,4 +1,4 @@
-// @version 1.0.28
+// @version 1.0.29
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -523,7 +523,7 @@
 
     function pickwordActionIconCandidates20(kind) {
         if (kind === "share") return ["share_forward", "share_2", "share"];
-        if (kind === "qr") return ["qr_code", "qr_scan_2", "scan_2", "scan"];
+        if (kind === "qr") return ["qr_scan_line", "qr_scan_fill", "qr_code_line", "scan"];
         if (kind === "qr_generate") return ["qr_code_line", "qr_code_fill", "add_circle_line", "qr_code"];
         if (kind === "refresh") return ["refresh", "restart", "loop_left"];
         if (kind === "image") return ["gallery_line", "image_2_line", "image_2", "gallery"];

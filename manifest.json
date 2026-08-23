@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "2e3c7f53c5c976aece93e10fff1b77ad9101719e5e20ff40676b099d55d8a173",
-      "size": 96455,
-      "version": 20260823031429
+      "sha256": "80daa64e5b57f104214c22d32a56c3f947c3e42b4412c69c85476e39ad1f4783",
+      "size": 97055,
+      "version": 20260823034502
     }
   },
   "branch": "beta",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "51a1b62b84843e103eb54c2d2253fc1e04c9101afec6ceddd231d75967bcf4a3",
-      "size": 283168,
-      "version": "1.0.28"
+      "sha256": "38026693b133b6c858e5164423c5f20e623dd61806aa3d946407267da0cc44d3",
+      "size": 283182,
+      "version": "1.0.29"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -189,10 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因二维码生成与图片操作位的图标候选名在 ShortX 图标表中缺失，导致每次布局刷新都触发图标回退的问题；改用 ShortX 实际存在的 remix 图标名。"
+      "修复了因二维码识别按钮复用通用扫码图标导致图标与功能语义不匹配的问题；改用 ShortX 自带的 qr_scan 线性图标，与二维码生成按钮的 qr_code 图标区分。"
     ],
     "date": "2026-08-23",
-    "title": "修复拾字操作位图标回退告警"
+    "title": "更换二维码识别按钮图标"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260823031429
+  "version": 20260823034502
 }
