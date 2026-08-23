@@ -155,6 +155,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     "// @version 1.0.10",
     "// @version 1.0.11",
     "// @version 1.0.12",
+    "// @version 1.0.13",
     )
     if version not in supported:
         fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1..1.0.9")
@@ -177,6 +178,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     "// @version 1.0.10",
     "// @version 1.0.11",
     "// @version 1.0.12",
+    "// @version 1.0.13",
     ):
         for marker in (
             "installLock: new java.util.concurrent.locks.ReentrantLock()",
@@ -200,6 +202,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     "// @version 1.0.10",
     "// @version 1.0.11",
     "// @version 1.0.12",
+    "// @version 1.0.13",
     ):
         for marker in (
             'typeof getToolHubRootDir !== "function"',
@@ -221,6 +224,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     "// @version 1.0.10",
     "// @version 1.0.11",
     "// @version 1.0.12",
+    "// @version 1.0.13",
     ):
         for marker in (
             'function sanitizeError26(error)',
@@ -232,7 +236,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         ):
             if marker not in text:
                 fail("Beta QR runtime diagnostics marker missing: " + marker)
-    if version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12"):
+    if version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13"):
         if "context.getCodeCacheDir()" in text:
             fail("Beta QR must not call Context.getCodeCacheDir from system_server")
         for marker in (
@@ -244,12 +248,12 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         ):
             if marker not in text:
                 fail("Beta QR system_server DexClassLoader marker missing: " + marker)
-    if version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12"):
+    if version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13"):
         if "new dalvik.system.DexClassLoader(" in text:
             fail("Beta QR must not use bare dalvik package in Rhino")
         if "new Packages.dalvik.system.DexClassLoader(" not in text:
             fail("Beta QR must resolve DexClassLoader through Rhino Packages")
-    if version in ("// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12"):
+    if version in ("// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13"):
         if 'hidePickwordWindow("qr_load")' in text:
             fail("Beta QR load-to-pickword must not async hide before show")
         for marker in (
