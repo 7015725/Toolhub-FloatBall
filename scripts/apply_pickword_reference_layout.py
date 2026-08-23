@@ -34,7 +34,7 @@ def already_applied(text):
         "function createPickwordImageActionGrid20(thumbRoot)",
         "function resolvePickwordShortXActionDrawable20(kind)",
         'performPickwordQrAction20("decode")',
-        'createPickwordImageActionTile20("查看原图", "image"',
+        'createPickwordImageActionTile20("重新识别", "reocr"',
         "normalizePickwordThumbnailChrome20(thumb);",
         "var contentWidthDp20 = Number(windowWidth || dm.widthPixels || 0) / density20;",
     )
