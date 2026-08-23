@@ -1,4 +1,4 @@
-// @version 1.2.14
+// @version 1.2.15
 // =======================【指针取字 / 框选截图 OCR 子模块】======================
 
 function ToolHubPointerResult(type, ok, code, message) {
@@ -1333,6 +1333,7 @@ FloatBallAppWM.prototype.getPointerCaptureDisplayId = function() {
 };
 
 FloatBallAppWM.prototype.capturePointerBitmapByWindowManager = function(cropRect) {
+  if (this.wmReflectCaptureDisabled === true) throw new Error("wm_capture_display_reflect disabled after structural failure");
   var identity = 0;
   var cleared = false;
   var captureBuffer = null;
@@ -1361,8 +1362,14 @@ FloatBallAppWM.prototype.capturePointerBitmapByWindowManager = function(cropRect
     return { bitmap: bitmap, buffer: captureBuffer, method: "wm_capture_display_reflect" };
   } catch (e0) {
     try { this.releasePointerCaptureBuffer(captureBuffer); } catch (eRelease) {}
-    safeLog(this.L, 'w', "pointer capture failed method=wm_capture_display_reflect err=" + th17LogSingleLine(e0, 420));
-    throw new Error("wm_capture_display_reflect: " + String(e0));
+    var wmErr17 = String(e0);
+    if (wmErr17.indexOf("Pair 字段解析失败") >= 0 || wmErr17.indexOf("找不到 captureDisplay") >= 0) {
+      this.wmReflectCaptureDisabled = true;
+      safeLog(this.L, 'd', "pointer capture wm_capture_display_reflect unavailable on this rom, disabled for session err=" + th17LogSingleLine(e0, 420));
+    } else {
+      safeLog(this.L, 'w', "pointer capture failed method=wm_capture_display_reflect err=" + th17LogSingleLine(e0, 420));
+    }
+    throw new Error("wm_capture_display_reflect: " + wmErr17);
   } finally {
     if (cleared) try { android.os.Binder.restoreCallingIdentity(identity); } catch (eRestore) {}
   }
