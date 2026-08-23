@@ -8,7 +8,7 @@ OLD_VERSION = "// @version 1.0.21\n"
 NEW_VERSION = "// @version 1.0.22\n"
 PREVIOUS_VERSION = "// @version 1.0.23\n"
 CURRENT_VERSION = "// @version 1.0.24\n"
-LATEST_VERSION = "// @version 1.0.29\n"
+LATEST_VERSION = "// @version 1.0.30\n"
 
 
 def require(condition, message):

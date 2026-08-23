@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "11549801c4be49ac5f57b3ac286ec7abc755e0be668ebc244f98a9da7743afee",
-      "size": 104406,
-      "version": 20260823061741
+      "sha256": "5fd4484c8797732c9932b70533ca7dfa4c8a5ae721e2a153009408e940a76aac",
+      "size": 107156,
+      "version": 20260823070704
     }
   },
   "branch": "beta",
@@ -136,9 +136,9 @@
       "version": "1.2.15"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "70112b5098852b54e55ded3a3d05f6723ca29a22e8e09d1f093bf60def0aae85",
-      "size": 39331,
-      "version": "1.1.4"
+      "sha256": "0698ec5d6304e52edb510fdf22aff25c1b0ccb0b4c5b9546f30788ec6b21fb68",
+      "size": 40108,
+      "version": "1.1.5"
     },
     "th_19_position_state.js": {
       "sha256": "3cfc4b131cb70a1008a0e0e0b6213aded7a36f0ae722a0f309f003231b3c959a",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "38026693b133b6c858e5164423c5f20e623dd61806aa3d946407267da0cc44d3",
-      "size": 283182,
-      "version": "1.0.29"
+      "sha256": "5eba9adde22c01be512e42b6f6173168d6e72d4ce2d1d5d0b2a8afad08df0a91",
+      "size": 289072,
+      "version": "1.0.30"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -189,10 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因部分 ROM 的 ScreenCapture 同步监听器结构差异导致每次框选截图都先失败一次并产生告警日志的问题，结构化失败后本会话内直接走媒体投影兜底"
+      "查看原图改为重新识别，对当前截图重跑 OCR 覆盖文字区并支持再次点击恢复原文字；载入拾字改为清空文字，一键清空文本便于连续拾字"
     ],
     "date": "2026-08-23",
-    "title": "修复框选截图反复尝试不可用反射捕获路径的问题"
+    "title": "拾字按钮位调整：重新识别与清空文字"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260823061741
+  "version": 20260823070704
 }

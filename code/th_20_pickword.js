@@ -1,4 +1,4 @@
-// @version 1.0.29
+// @version 1.0.30
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -525,7 +525,9 @@
         if (kind === "share") return ["share_forward", "share_2", "share"];
         if (kind === "qr") return ["qr_scan_line", "qr_scan_fill", "qr_code_line", "scan"];
         if (kind === "qr_generate") return ["qr_code_line", "qr_code_fill", "add_circle_line", "qr_code"];
-        if (kind === "refresh") return ["refresh", "restart", "loop_left"];
+        if (kind === "refresh") return ["refresh_line", "refresh_fill", "refresh"];
+        if (kind === "reocr") return ["refresh_line", "refresh_fill", "restart"];
+        if (kind === "clear") return ["delete_bin_line", "delete_bin_2_line", "close_line"];
         if (kind === "image") return ["gallery_line", "image_2_line", "image_2", "gallery"];
         if (kind === "save") return ["save", "download_2", "download"];
         if (kind === "copy") return ["file_copy", "clipboard", "copy"];
@@ -643,9 +645,134 @@
             pickwordQrLoadTile20,
             state.loaded === true ? "恢复原文" : "载入拾字",
             state.loaded === true ? "restore" : "load",
-            state.hasResult === true && !running,
-            state.hasResult === true && !running ? 1.0 : 0.32
+            false,
+            0.32
         );
+        resetPickwordReocrState20(false);
+        setPickwordImageActionTileState20(
+            pickwordReocrTileRef20,
+            pickwordReocrRunning20 ? "正在识别文字" : (pickwordReocrApplied20 ? "恢复原文字" : "重新识别"),
+            pickwordReocrApplied20 ? "restore" : "reocr",
+            !pickwordReocrRunning20,
+            pickwordReocrRunning20 ? 0.45 : 1.0
+        );
+        var clearHasText20 = false;
+        try {
+            var psClear20 = toolhubAppRef && toolhubAppRef.state && toolhubAppRef.state.pickword ? toolhubAppRef.state.pickword : null;
+            clearHasText20 = !!(psClear20 && String(psClear20.fullText == null ? "" : psClear20.fullText));
+        } catch (eClearSync) { clearHasText20 = false; }
+        setPickwordImageActionTileState20(
+            pickwordClearTileRef20,
+            "清空文字",
+            "clear",
+            clearHasText20,
+            clearHasText20 ? 1.0 : 0.32
+        );
+    }
+
+    var pickwordReocrApplied20 = false;
+    var pickwordReocrRunning20 = false;
+    var pickwordReocrSnapshot20 = null;
+    var pickwordReocrSessionKey20 = "";
+    var pickwordReocrTileRef20 = null;
+    var pickwordClearTileRef20 = null;
+
+    function currentReocrSessionKey20() {
+        try {
+            if (pickwordImageController20 && pickwordImageController20.session) {
+                return String(pickwordImageController20.session.internalPath || "");
+            }
+        } catch (eKey) {}
+        return "";
+    }
+
+    function cloneCurrentPickwordMeta20() {
+        var src = currentPickwordMeta20 || {};
+        var out = {};
+        for (var k in src) {
+            if (Object.prototype.hasOwnProperty.call(src, k)) out[k] = src[k];
+        }
+        return out;
+    }
+
+    function resetPickwordReocrState20(force) {
+        var key = currentReocrSessionKey20();
+        if (force === true || key !== pickwordReocrSessionKey20) {
+            pickwordReocrApplied20 = false;
+            pickwordReocrSnapshot20 = null;
+            if (key) pickwordReocrSessionKey20 = key; else pickwordReocrSessionKey20 = "";
+        }
+    }
+
+    function performPickwordClearTextAction20() {
+        try {
+            var ps = toolhubAppRef && toolhubAppRef.state ? toolhubAppRef.state.pickword : null;
+            var text = ps ? String(ps.fullText == null ? "" : ps.fullText) : "";
+            if (!text) { showToast("文字区已为空"); return false; }
+            var meta = cloneCurrentPickwordMeta20();
+            meta.allowEmptyText = true;
+            var ret = toolhubAppRef.showPickwordText("", meta);
+            resetPickwordReocrState20(true);
+            syncPickwordImageActionGridState20();
+            return !!(ret && ret.ok);
+        } catch (eClear) {
+            showToast("清空失败");
+        }
+        return false;
+    }
+
+    function performPickwordReocrAction20() {
+        try {
+            if (!toolhubAppRef || typeof toolhubAppRef.runPointerAreaTextByImage !== "function") {
+                showToast("重新识别暂不可用");
+                return false;
+            }
+            resetPickwordReocrState20(false);
+            if (pickwordReocrRunning20) { showToast("正在识别截图文字"); return false; }
+            if (pickwordReocrApplied20) {
+                var snap = pickwordReocrSnapshot20 || { text: "" };
+                var metaRestore = cloneCurrentPickwordMeta20();
+                if (!String(snap.text == null ? "" : snap.text)) metaRestore.allowEmptyText = true;
+                pickwordReocrApplied20 = false;
+                pickwordReocrSnapshot20 = null;
+                toolhubAppRef.showPickwordText(String(snap.text == null ? "" : snap.text), metaRestore);
+                showToast("已恢复原文字");
+                syncPickwordImageActionGridState20();
+                return true;
+            }
+            var ps = toolhubAppRef && toolhubAppRef.state && toolhubAppRef.state.pickword ? toolhubAppRef.state.pickword : null;
+            if (!ps || !String(ps.fullText == null ? "" : ps.fullText)) {
+                showToast("当前没有可重新识别的文字");
+                return false;
+            }
+            var sessionPath = currentReocrSessionKey20();
+            if (!sessionPath) { showToast("截图文件不可用"); return false; }
+            pickwordReocrRunning20 = true;
+            syncPickwordImageActionGridState20();
+            var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            new java.lang.Thread(new java.lang.Runnable({ run: function() {
+                var ocrText = "";
+                var ocrErr = "";
+                try { ocrText = String(toolhubAppRef.runPointerAreaTextByImage(sessionPath) || ""); } catch (eOcr) { ocrErr = String(eOcr); }
+                mainHandler.post(new java.lang.Runnable({ run: function() {
+                    pickwordReocrRunning20 = false;
+                    if (ocrErr) { showToast("重新识别失败"); }
+                    else if (!ocrText.replace(/\s+/g, "")) { showToast("未识别到文字"); }
+                    else {
+                        pickwordReocrSnapshot20 = { text: String(ps.fullText == null ? "" : ps.fullText) };
+                        pickwordReocrApplied20 = true;
+                        try { toolhubAppRef.showPickwordText(ocrText, cloneCurrentPickwordMeta20()); } catch (eApply) { showToast("识别结果写入失败"); }
+                        showToast("已更新识别文字，再点可恢复");
+                    }
+                    try { syncPickwordImageActionGridState20(); } catch (eSync) {}
+                }}));
+            }})).start();
+            return true;
+        } catch (eReocr) {
+            pickwordReocrRunning20 = false;
+            showToast("重新识别失败");
+        }
+        return false;
     }
 
     function performPickwordQrAction20(action) {
@@ -706,8 +833,8 @@
         addPickwordImageActionTile20(topRow, pickwordQrActionTile20, true);
 
         addPickwordImageActionTile20(middleRow,
-            createPickwordImageActionTile20("查看原图", "image", function() {
-                if (!openPickwordImagePage20()) showToast("截图查看暂不可用");
+            pickwordReocrTileRef20 = createPickwordImageActionTile20("重新识别", "reocr", function() {
+                performPickwordReocrAction20();
             }), false);
         addPickwordImageActionTile20(middleRow,
             createPickwordImageActionTile20("保存截图", "save", function() {
@@ -718,10 +845,10 @@
             performPickwordQrAction20("generate");
         });
         addPickwordImageActionTile20(bottomRow, pickwordQrGenerateTile20, false);
-        pickwordQrLoadTile20 = createPickwordImageActionTile20("载入拾字", "load", function() {
-            performPickwordQrAction20("toggle_load");
-        });
-        addPickwordImageActionTile20(bottomRow, pickwordQrLoadTile20, true);
+        addPickwordImageActionTile20(bottomRow,
+            pickwordClearTileRef20 = createPickwordImageActionTile20("清空文字", "clear", function() {
+                performPickwordClearTextAction20();
+            }), true);
 
         grid.addView(topRow, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
         var middleLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1);
