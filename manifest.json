@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "6b7b450b951ee538b0a245447d9d6f34e7930701afdcabdf69df0ffc2d202626",
-      "size": 95849,
-      "version": 20260823024340
+      "sha256": "2e3c7f53c5c976aece93e10fff1b77ad9101719e5e20ff40676b099d55d8a173",
+      "size": 96455,
+      "version": 20260823031429
     }
   },
   "branch": "beta",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "98218a0e4f1e8bbcb2d58a969c343dccf26b884c65be2c223172e4dd7b7c5870",
-      "size": 283143,
-      "version": "1.0.27"
+      "sha256": "51a1b62b84843e103eb54c2d2253fc1e04c9101afec6ceddd231d75967bcf4a3",
+      "size": 283168,
+      "version": "1.0.28"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -189,10 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因窗口复用路径下收起与重建时序冲突，导致生成结果会话切换时拾字窗口被异步移除任务误删的问题；改为在 show 检测到图片会话变化时同步重建窗口。"
+      "修复了因二维码生成与图片操作位的图标候选名在 ShortX 图标表中缺失，导致每次布局刷新都触发图标回退的问题；改用 ShortX 实际存在的 remix 图标名。"
     ],
     "date": "2026-08-23",
-    "title": "修复二维码生成后窗口被误关闭的问题"
+    "title": "修复拾字操作位图标回退告警"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260823024340
+  "version": 20260823031429
 }
