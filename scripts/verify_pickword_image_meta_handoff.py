@@ -12,7 +12,7 @@ def require(value, message):
 
 
 require(
-    SOURCE.startswith("// @version 1.0.21\n") or SOURCE.startswith("// @version 1.0.22\n") or SOURCE.startswith("// @version 1.0.23\n") or SOURCE.startswith("// @version 1.0.24\n") or SOURCE.startswith("// @version 1.0.25\n") or SOURCE.startswith("// @version 1.0.26\n") or SOURCE.startswith("// @version 1.0.27\n") or SOURCE.startswith("// @version 1.0.28\n"),
+    SOURCE.startswith("// @version 1.0.21\n") or SOURCE.startswith("// @version 1.0.22\n") or SOURCE.startswith("// @version 1.0.23\n") or SOURCE.startswith("// @version 1.0.24\n") or SOURCE.startswith("// @version 1.0.25\n") or SOURCE.startswith("// @version 1.0.26\n") or SOURCE.startswith("// @version 1.0.27\n") or SOURCE.startswith("// @version 1.0.28\n") or SOURCE.startswith("// @version 1.0.29\n"),
     "th_20 version must be 1.0.21, 1.0.22, 1.0.23, or 1.0.24",
 )
 match = re.search(

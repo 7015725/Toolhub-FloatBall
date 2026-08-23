@@ -1,8 +1,25 @@
 {
   "schema": 1,
-  "historyVersion": 20260823031429,
-  "generatedAt": "2026-08-23T11:14:29+08:00",
+  "historyVersion": 20260823034502,
+  "generatedAt": "2026-08-23T11:45:02+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260823-beta-pickword-qr-scan-icon",
+      "type": "fix",
+      "title": "更换二维码识别按钮图标",
+      "details": [
+        "修复了因二维码识别按钮复用通用扫码图标导致图标与功能语义不匹配的问题；改用 ShortX 自带的 qr_scan 线性图标，与二维码生成按钮的 qr_code 图标区分。"
+      ],
+      "manifestVersion": 20260823034502,
+      "date": "2026-08-23",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260823-beta-pickword-icon-candidates",
