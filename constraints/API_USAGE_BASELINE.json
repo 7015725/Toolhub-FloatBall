@@ -44,7 +44,7 @@
     "code/th_26_qr_runtime.js",
     "code/th_34_shortx_ui_lab.js"
   ],
-  "usageCount": 786,
+  "usageCount": 785,
   "entries": [
     {
       "key": "android|class|android.animation.Animator.AnimatorListener",
@@ -686,7 +686,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 25
+      "occurrenceCount": 27
     },
     {
       "key": "android|class|android.graphics.Path",
@@ -5791,11 +5791,11 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 665,
+          "line": 664,
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 12
+      "occurrenceCount": 13
     },
     {
       "key": "android|method|android.graphics#Path",
@@ -6242,24 +6242,6 @@
       "occurrenceCount": 1
     },
     {
-      "key": "android|method|android.graphics.Canvas#drawColor",
-      "source": "android",
-      "kind": "method",
-      "classOrObject": "android.graphics.Canvas",
-      "method": "drawColor",
-      "files": [
-        "code/th_26_qr_runtime.js"
-      ],
-      "locations": [
-        {
-          "file": "code/th_26_qr_runtime.js",
-          "line": 664,
-          "form": "instance_call"
-        }
-      ],
-      "occurrenceCount": 1
-    },
-    {
       "key": "android|method|android.graphics.Canvas#drawRect",
       "source": "android",
       "kind": "method",
@@ -6271,11 +6253,16 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 673,
+          "line": 668,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 677,
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 1
+      "occurrenceCount": 2
     },
     {
       "key": "android|method|android.graphics.Color#argb",
@@ -6649,11 +6636,16 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 666,
+          "line": 665,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_26_qr_runtime.js",
+          "line": 670,
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 4
+      "occurrenceCount": 5
     },
     {
       "key": "android|method|android.graphics.Paint#setLinearText",
@@ -6897,7 +6889,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 20
+      "occurrenceCount": 21
     },
     {
       "key": "android|method|android.graphics.Paint#setSubpixelText",
@@ -19430,7 +19422,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 820,
+          "line": 824,
           "form": "instance_call"
         }
       ],
@@ -20469,17 +20461,17 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 785,
+          "line": 789,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 821,
+          "line": 825,
           "form": "instance_call"
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 824,
+          "line": 828,
           "form": "instance_call"
         }
       ],
@@ -24350,7 +24342,7 @@
       "locations": [
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 791,
+          "line": 795,
           "form": "instance_call"
         }
       ],
@@ -25599,7 +25591,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 704,
+          "line": 708,
           "form": "instance_call"
         }
       ],
@@ -25661,7 +25653,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 701,
+          "line": 705,
           "form": "instance_call"
         }
       ],
@@ -25702,7 +25694,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 702,
+          "line": 706,
           "form": "instance_call"
         }
       ],
@@ -27515,7 +27507,7 @@
         },
         {
           "file": "code/th_26_qr_runtime.js",
-          "line": 760,
+          "line": 764,
           "form": "instance_call"
         }
       ],
@@ -29164,5 +29156,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:dba15c8edd6fd2809a3d3fe7b13a21ccc316357205f25d007d133b8a7962f398"
+  "usageDigest": "sha256:56eb4728964d88f0938cf22ce4e05a7e81f200180e3613d516a11ff4edac4dca"
 }
