@@ -141,11 +141,14 @@ def patch_channel_storage_verifier():
     text = CHANNEL_STORAGE_VERIFY.read_text(encoding="utf-8")
     old = 'require(PICKWORD.splitlines()[0] == "// @version 1.0.21", "th_20_pickword.js version must be 1.0.21")'
     legacy = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22"), "th_20_pickword.js version must be 1.0.21 or 1.0.22")'
-    new = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23", "// @version 1.0.24", "// @version 1.0.25", "// @version 1.0.26", "// @version 1.0.27", "// @version 1.0.28", "// @version 1.0.29", "// @version 1.0.30"), "th_20_pickword.js version must be 1.0.21, 1.0.22, 1.0.23, 1.0.24, or 1.0.25")'
+    new = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23", "// @version 1.0.24", "// @version 1.0.25", "// @version 1.0.26", "// @version 1.0.27", "// @version 1.0.28", "// @version 1.0.29", "// @version 1.0.30", "// @version 1.0.31"), "th_20_pickword.js version must be 1.0.21, 1.0.22, 1.0.23, 1.0.24, or 1.0.25")'
+    current = 'require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23", "// @version 1.0.24", "// @version 1.0.25", "// @version 1.0.26", "// @version 1.0.27", "// @version 1.0.28", "// @version 1.0.29", "// @version 1.0.30"), "th_20_pickword.js version must be 1.0.21, 1.0.22, 1.0.23, 1.0.24, or 1.0.25")'
     if old in text:
         text = text.replace(old, new, 1)
     elif legacy in text:
         text = text.replace(legacy, new, 1)
+    elif current in text:
+        text = text.replace(current, new, 1)
     require(new in text, "channel storage verifier version compatibility")
     CHANNEL_STORAGE_VERIFY.write_text(text, encoding="utf-8")
 
