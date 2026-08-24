@@ -68,7 +68,7 @@ jobs:
           if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
             while IFS= read -r path; do
               case "$path" in
-                ToolHub.js|code/*.js|runtime-src/zxing/*|scripts/apply_pickword_qr_integration.py|scripts/apply_pickword_reference_layout.py|scripts/fix_pickword_reference_layout_api_usage.py|scripts/apply_shortx_ui_qr_compat.py|scripts/register_pickword_qr_api_usage.py|scripts/generate_signed_manifest.py|scripts/verify_manifest.py)
+                ToolHub.js|code/*.js|runtime-src/zxing/*|constraints/API_USAGE_BASELINE.json|scripts/apply_pickword_qr_integration.py|scripts/apply_pickword_reference_layout.py|scripts/fix_pickword_reference_layout_api_usage.py|scripts/apply_shortx_ui_qr_compat.py|scripts/register_pickword_qr_api_usage.py|scripts/generate_signed_manifest.py|scripts/verify_manifest.py)
                   changed=true
                   echo "signed input changed: $path"
                   ;;
