@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "df5e42724c94bccba27085eaf86344bc4092424cc9cfcead7edb00d0c9b43e83",
-      "size": 113288,
-      "version": 20260824102806
+      "sha256": "6a28fd506c615a30326fdf322477d859b935306921f95534bdae2e001567ab05",
+      "size": 114085,
+      "version": 20260824144924
     }
   },
   "branch": "beta",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "5eba9adde22c01be512e42b6f6173168d6e72d4ce2d1d5d0b2a8afad08df0a91",
-      "size": 289072,
-      "version": "1.0.30"
+      "sha256": "a6d1df72ff1ae7c13098d376b62514475292018767b7813d8999f9a7f6187e25",
+      "size": 291920,
+      "version": "1.0.31"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -189,11 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因签名输入检测列表遗漏 constraints/API_USAGE_BASELINE.json 导致纯元数据 PR 卡在待签校验的问题：sign-toolhub 的 signed-input 检测补充该文件。",
-      "同步 API_USAGE_BASELINE.json 行号到 CI 生成版本：修复了因 Stable 同步后 th_01_base.js 行号变化导致基线与 CI 重新生成结果漂移的问题。"
+      "修复了因文字区为空导致历史截图中二维码生成按钮置灰不可用的问题；现在从管理器打开历史截图时点二维码生成，会先对当前截图做一次识别，以图内文本作为二维码内容"
     ],
     "date": "2026-08-24",
-    "title": "修复了因签名输入检测遗漏 API 基线导致纯元数据 PR 卡在待签校验的问题"
+    "title": "二维码生成支持以截图 OCR 文本为内容源"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -209,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260824102806
+  "version": 20260824144924
 }
