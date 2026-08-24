@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "id": "20260825-generated-qr-auto-open",
+  "type": "fix",
+  "title": "生成二维码后自动打开图片页",
+  "details": [
+    "修复了因生成二维码后只刷新拾字文字页导致二维码图片页面未自动显示的问题"
+  ],
+  "manifestVersion": 20260824162203,
+  "date": "2026-08-25",
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.32",
+      "to": "1.0.33",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
+}
