@@ -1,36 +1,28 @@
 {
   "schema": 1,
-  "historyVersion": 20260824064738,
-  "generatedAt": "2026-08-24T14:47:38+08:00",
+  "historyVersion": 20260824090818,
+  "generatedAt": "2026-08-24T17:08:18+08:00",
   "records": [
     {
       "schema": 1,
-      "id": "20260824-log-cleanup-init-file",
-      "type": "fix",
-      "title": "修复了因日志清理前缀过滤导致 init.log 永不清理的问题",
+      "id": "20260824-stable-sync-beta-qr-shortxui",
+      "type": "feature",
+      "title": "同步 Beta 二维码与 ShortXUI 运行时更新到 Stable",
       "details": [
-        "cleanupOldFiles 原先只匹配 ShortX_ToolHub 前缀，logs 目录下常驻追加的 init.log 被豁免而无限增长；现目录内全部日志文件统一按日志保留天数清理"
+        "将 2026-08-10 之后 Beta 已完成真机与 CI 验证的更新同步到 Stable/main：二维码识别与生成（ZXing 运行时、密集码渲染增强、扫码结果直写文字区）、ShortXUI 运行时底座（DEX Bridge、IME 避让、生命周期收口）、拾字截图操作网格重构（重新识别/清空文字/窗内查看二维码）。",
+        "Shell 执行改为 ShortX Action 优先，可获取真实退出码与输出，广播桥兜底；主面板运行状态行点击直达更新与版本页面。",
+        "稳定性加固：更新重启窗口分离确认后退出、ColorOS IME 隐藏后窗口回位、pointer 反射捕获结构性失败熔断、init.log 纳入保留天数清理。",
+        "Stable 独立生成 main 通道 Manifest、RSA 签名和更新历史，不复制 Beta 的 manifest.json、manifest.sig、update_history.json 或 Beta 发布记录。"
       ],
-      "manifestVersion": 20260824064738,
-      "date": "2026-08-24",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260824-entry-version-bump",
-      "type": "fix",
-      "title": "入口模块版本同步提升",
-      "details": [
-        "修复了因 th_16_entry.js 内容变更未提升版本导致 CI changed-module-versions 门禁失败的问题"
-      ],
-      "manifestVersion": 20260824051853,
+      "manifestVersion": 20260824090818,
       "date": "2026-08-24",
       "modules": [
+        {
+          "name": "th_01_base.js",
+          "from": "1.1.19",
+          "to": "1.1.20",
+          "change": "updated"
+        },
         {
           "name": "th_10_shell.js",
           "from": "1.0.9",
@@ -38,116 +30,20 @@
           "change": "updated"
         },
         {
+          "name": "th_15_main_panel.js",
+          "from": "1.5.8",
+          "to": "1.5.9",
+          "change": "updated"
+        },
+        {
           "name": "th_16_entry.js",
           "from": "1.0.21",
           "to": "1.0.22",
           "change": "updated"
-        }
-      ],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260824-shell-action-first",
-      "type": "feature",
-      "title": "Shell 执行改为 ShortX Action 优先",
-      "details": [
-        "Shell 按钮优先通过 shortx.executeAction(ShellCommand) 同步执行，可获取 shellOut/shellErr/shellCode 真实结果",
-        "ShortX Action 不可用时自动回退原广播桥，兼容配置与迁移逻辑保持不变"
-      ],
-      "manifestVersion": 20260824042347,
-      "date": "2026-08-24",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260824-mainpanel-status-open-update",
-      "type": "optimize",
-      "title": "主面板运行状态点击直达更新页",
-      "details": [
-        "点击主面板更新状态区域改为打开更新与版本页面",
-        "移除原状态详情 Toast 展示"
-      ],
-      "manifestVersion": 20260824005134,
-      "date": "2026-08-24",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-pickword-audit-refresh",
-      "type": "optimize",
-      "title": "刷新死代码与受保护链路审计",
-      "details": [
-        "同步按钮位调整后的审计文件与签名清单"
-      ],
-      "manifestVersion": 20260823071329,
-      "date": "2026-08-23",
-      "modules": [
-        {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
-        {
-          "name": "th_08_content.js",
-          "from": "1.0.8",
-          "to": "1.0.9",
-          "change": "updated"
-        },
-        {
-          "name": "th_09_animation.js",
-          "from": "1.0.12",
-          "to": "1.0.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_icon_picker.js",
-          "from": "1.0.3",
-          "to": "1.0.5",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_panels.js",
-          "from": "1.1.13",
-          "to": "1.1.17",
-          "change": "updated"
-        },
-        {
-          "name": "th_15_extra.js",
-          "from": "1.1.22",
-          "to": "1.1.26",
-          "change": "updated"
-        },
-        {
-          "name": "th_16_entry.js",
-          "from": "1.0.17",
-          "to": "1.0.21",
-          "change": "updated"
         },
         {
           "name": "th_17_pointer.js",
-          "from": "1.2.13",
+          "from": "1.2.14",
           "to": "1.2.15",
           "change": "updated"
         },
@@ -159,17 +55,11 @@
         },
         {
           "name": "th_20_pickword.js",
-          "from": "1.0.19",
+          "from": "1.0.21",
           "to": "1.0.30",
           "change": "updated"
         },
         {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
-          "change": "updated"
-        },
-        {
           "name": "th_24_shortx_ui_runtime.js",
           "from": "",
           "to": "0.2.0",
@@ -196,957 +86,81 @@
       ],
       "entry": {
         "changed": true,
-        "from": 20260721201500,
+        "from": 20260810005000,
         "to": 20260819231000
       }
     },
     {
       "schema": 1,
-      "id": "20260823-beta-pickword-reocr-clear-tiles",
-      "type": "feature",
-      "title": "拾字按钮位调整：重新识别与清空文字",
+      "id": "20260810-stable-sync-beta-updates",
+      "type": "fix",
+      "title": "同步 2026-08-10 Beta 已验证更新到 Stable",
       "details": [
-        "查看原图改为重新识别，对当前截图重跑 OCR 覆盖文字区并支持再次点击恢复原文字；载入拾字改为清空文字，一键清空文本便于连续拾字"
+        "将 2026-08-10 Beta 已完成真机与 CI 验证的更新同步到 Stable/main，包含可信清单离线安全回退、统一 IME 避让与键盘收起几何恢复、ColorOS WindowInsets 隐藏判定，以及更新重启窗口 detach 生命周期修复。",
+        "设置页、按钮编辑、Schema 编辑、颜色面板与 ShortX 图标选择器统一使用 IME 避让/回退契约；键盘隐藏后恢复首次避让前 width、height、gravity、x、y，并避免多次开合位置漂移。",
+        "更新重启与通道切换继续使用普通 WindowManager.removeView；WM HandlerThread 仅在受监控窗口真实 detach 后退出，4.2 秒超时只记录，15 秒仍不强制同步销毁，避免重新引入 system_server/ColorOS Hook 风险。",
+        "入口同步到 20260810005000，保留 Stable/main 与 Beta/beta 双通道隔离、可信本地模块回退和旧窗口未完成 detach 时阻止第二实例启动的 fail-closed 行为。",
+        "Stable 独立生成 main 通道 Manifest、RSA 签名和更新历史，不复制 Beta 的 manifest.json、manifest.sig、update_history.json 或 Beta 发布记录。"
       ],
-      "manifestVersion": 20260823070704,
-      "date": "2026-08-23",
+      "manifestVersion": 20260809235317,
+      "date": "2026-08-10",
       "modules": [
         {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
-        {
-          "name": "th_08_content.js",
-          "from": "1.0.8",
-          "to": "1.0.9",
-          "change": "updated"
-        },
-        {
           "name": "th_09_animation.js",
-          "from": "1.0.12",
+          "from": "1.0.13",
           "to": "1.0.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
           "change": "updated"
         },
         {
           "name": "th_14_icon_picker.js",
           "from": "1.0.3",
           "to": "1.0.5",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_panels.js",
-          "from": "1.1.13",
-          "to": "1.1.17",
-          "change": "updated"
-        },
-        {
-          "name": "th_15_extra.js",
-          "from": "1.1.22",
-          "to": "1.1.26",
-          "change": "updated"
-        },
-        {
-          "name": "th_16_entry.js",
-          "from": "1.0.17",
-          "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.19",
-          "to": "1.0.30",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
-          "change": "updated"
-        },
-        {
-          "name": "th_24_shortx_ui_runtime.js",
-          "from": "",
-          "to": "0.2.0",
-          "change": "added"
-        },
-        {
-          "name": "th_25_shortx_ui_package.js",
-          "from": "",
-          "to": "0.9.2",
-          "change": "added"
-        },
-        {
-          "name": "th_26_qr_runtime.js",
-          "from": "",
-          "to": "1.0.17",
-          "change": "added"
-        },
-        {
-          "name": "th_34_shortx_ui_lab.js",
-          "from": "",
-          "to": "0.2.0",
-          "change": "added"
-        }
-      ],
-      "entry": {
-        "changed": true,
-        "from": 20260721201500,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-pointer-wm-reflect-breaker",
-      "type": "fix",
-      "title": "修复框选截图反复尝试不可用反射捕获路径的问题",
-      "details": [
-        "修复了因部分 ROM 的 ScreenCapture 同步监听器结构差异导致每次框选截图都先失败一次并产生告警日志的问题，结构化失败后本会话内直接走媒体投影兜底"
-      ],
-      "manifestVersion": 20260823061741,
-      "date": "2026-08-23",
-      "modules": [
-        {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
-        {
-          "name": "th_08_content.js",
-          "from": "1.0.8",
-          "to": "1.0.9",
-          "change": "updated"
-        },
-        {
-          "name": "th_09_animation.js",
-          "from": "1.0.12",
-          "to": "1.0.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_icon_picker.js",
-          "from": "1.0.3",
-          "to": "1.0.5",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_panels.js",
-          "from": "1.1.13",
-          "to": "1.1.17",
-          "change": "updated"
-        },
-        {
-          "name": "th_15_extra.js",
-          "from": "1.1.22",
-          "to": "1.1.26",
-          "change": "updated"
-        },
-        {
-          "name": "th_16_entry.js",
-          "from": "1.0.17",
-          "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.19",
-          "to": "1.0.29",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
-          "change": "updated"
-        },
-        {
-          "name": "th_24_shortx_ui_runtime.js",
-          "from": "",
-          "to": "0.2.0",
-          "change": "added"
-        },
-        {
-          "name": "th_25_shortx_ui_package.js",
-          "from": "",
-          "to": "0.9.2",
-          "change": "added"
-        },
-        {
-          "name": "th_26_qr_runtime.js",
-          "from": "",
-          "to": "1.0.17",
-          "change": "added"
-        },
-        {
-          "name": "th_34_shortx_ui_lab.js",
-          "from": "",
-          "to": "0.2.0",
-          "change": "added"
-        }
-      ],
-      "entry": {
-        "changed": true,
-        "from": 20260721201500,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-qr-scan-text-apply",
-      "type": "feature",
-      "title": "二维码识别结果直接写入文字展示区",
-      "details": [
-        "识别二维码后截图保持显示，解析文字直接覆盖到拾字文字区，再次点击识别按钮可恢复原文字"
-      ],
-      "manifestVersion": 20260823060312,
-      "date": "2026-08-23",
-      "modules": [
-        {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
-        {
-          "name": "th_08_content.js",
-          "from": "1.0.8",
-          "to": "1.0.9",
-          "change": "updated"
-        },
-        {
-          "name": "th_09_animation.js",
-          "from": "1.0.12",
-          "to": "1.0.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_icon_picker.js",
-          "from": "1.0.3",
-          "to": "1.0.5",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_panels.js",
-          "from": "1.1.13",
-          "to": "1.1.17",
-          "change": "updated"
-        },
-        {
-          "name": "th_15_extra.js",
-          "from": "1.1.22",
-          "to": "1.1.26",
-          "change": "updated"
-        },
-        {
-          "name": "th_16_entry.js",
-          "from": "1.0.17",
-          "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.14",
-          "change": "updated"
-        },
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.19",
-          "to": "1.0.29",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
-          "change": "updated"
-        },
-        {
-          "name": "th_24_shortx_ui_runtime.js",
-          "from": "",
-          "to": "0.2.0",
-          "change": "added"
-        },
-        {
-          "name": "th_25_shortx_ui_package.js",
-          "from": "",
-          "to": "0.9.2",
-          "change": "added"
-        },
-        {
-          "name": "th_26_qr_runtime.js",
-          "from": "",
-          "to": "1.0.17",
-          "change": "added"
-        },
-        {
-          "name": "th_34_shortx_ui_lab.js",
-          "from": "",
-          "to": "0.2.0",
-          "change": "added"
-        }
-      ],
-      "entry": {
-        "changed": true,
-        "from": 20260721201500,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-qr-scan-toggle",
-      "type": "feature",
-      "title": "识别按钮支持再次点击回退到原截图",
-      "details": [
-        "识别结果卡片显示时再次点击识别按钮即收起卡片并恢复原截图视图。"
-      ],
-      "manifestVersion": 20260823052242,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-qr-dense-render-fix",
-      "type": "fix",
-      "title": "修复长文本生成二维码无法识别的问题",
-      "details": [
-        "修复了因二维码矩阵逐格绘制时浮点边界四舍五入加半像素外扩，导致长文本密集码模块宽度抖动过大、白模块被侵蚀而无法识别的问题；改为整数栅格对齐绘制，长文本自动改用 1024 尺寸并提升纠错等级至 M。"
-      ],
-      "manifestVersion": 20260823050742,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-qr-restore-hide-race",
-      "type": "fix",
-      "title": "修复载入拾字还原时窗口被误关闭的问题",
-      "details": [
-        "修复了因还原分支仍走异步收起加显示的旧模式，导致收起移除任务晚于窗口刷新执行、把刚刷新的拾字窗口连同二维码图片控制器一并误删的问题；撤掉冗余收起调用，交由 show 的会话变化同步重建机制处理。"
-      ],
-      "manifestVersion": 20260823035641,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-pickword-qr-scan-icon",
-      "type": "fix",
-      "title": "更换二维码识别按钮图标",
-      "details": [
-        "修复了因二维码识别按钮复用通用扫码图标导致图标与功能语义不匹配的问题；改用 ShortX 自带的 qr_scan 线性图标，与二维码生成按钮的 qr_code 图标区分。"
-      ],
-      "manifestVersion": 20260823034502,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-pickword-icon-candidates",
-      "type": "fix",
-      "title": "修复拾字操作位图标回退告警",
-      "details": [
-        "修复了因二维码生成与图片操作位的图标候选名在 ShortX 图标表中缺失，导致每次布局刷新都触发图标回退的问题；改用 ShortX 实际存在的 remix 图标名。"
-      ],
-      "manifestVersion": 20260823031429,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-qr-generate-show-rebuild",
-      "type": "fix",
-      "title": "修复二维码生成后窗口被误关闭的问题",
-      "details": [
-        "修复了因窗口复用路径下收起与重建时序冲突，导致生成结果会话切换时拾字窗口被异步移除任务误删的问题；改为在 show 检测到图片会话变化时同步重建窗口。"
-      ],
-      "manifestVersion": 20260823024340,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-qr-generate-rebind-view",
-      "type": "fix",
-      "title": "修复二维码生成后窗口仍显示原截图的问题",
-      "details": [
-        "修复了因拾字窗口复用时图片控制器未随会话重建，导致生成结果查看页仍显示原截图的问题；切换生成结果会话前先收起窗口触发全量重建。"
-      ],
-      "manifestVersion": 20260823012738,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-qr-generate-inwindow-view",
-      "type": "fix",
-      "title": "修复二维码生成后无法查看的问题",
-      "details": [
-        "修复了因公共目录导出链路在 system_server 环境不可用（root 广播桥超时、MediaStore 写入被拒）导致二维码生成后打开查看失败的问题；改为复用拾字窗口内图片查看链路，生成按钮支持一键返回原文。"
-      ],
-      "manifestVersion": 20260823010015,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-qr-generate-drawcolor-fix",
-      "type": "fix",
-      "title": "修复拾字二维码生成失败",
-      "details": [
-        "修复了因 Canvas.drawColor 在部分系统上走 long 重载、颜色空间 ID 越界导致二维码生成失败的问题；背景填充改为 Paint+drawRect。"
-      ],
-      "manifestVersion": 20260823003253,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260823-beta-ci-qr-generate-gates",
-      "type": "fix",
-      "title": "修复二维码生成相关 CI 门禁版本档位",
-      "details": [
-        "修复了因 diagnose/sign 门禁脚本未纳入 th_26 1.0.9 与 th_20 1.0.25 版本档位，导致二维码生成改造后 CI 失败的问题；同步刷新 API 使用基线与死代码审计。"
-      ],
-      "manifestVersion": 20260822212841,
-      "date": "2026-08-23",
-      "modules": [
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.24",
-          "to": "1.0.25",
-          "change": "updated"
-        },
-        {
-          "name": "th_26_qr_runtime.js",
-          "from": "1.0.8",
-          "to": "1.0.9",
-          "change": "updated"
-        }
-      ],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260822-beta-pickword-qr-generate",
-      "type": "feature",
-      "title": "Beta：拾字新增二维码生成",
-      "details": [
-        "拾字模块在二维码解析基础上新增二维码生成，2x3 操作区新增生成按钮，按当前拾字文本生成 512x512 二维码图片。",
-        "复用现有 toolhub-zxing-runtime-3.5.4-r2 运行时内已内置的 QRCodeWriter/BitMatrix 编码链，通过同一 DexClassLoader 加载，不引入新二维码库；runtime 缺少生成类时解析能力保持可用。",
-        "生成结果写入独立 PNG 文件并经既有图片查看链路打开，原截图与解析缓存不受影响；空文本、超长文本和运行时缺失场景直接 Toast 提示。"
-      ],
-      "manifestVersion": 20260822193553,
-      "date": "2026-08-23",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-pickword-image-action-grid-icons",
-      "type": "optimize",
-      "title": "Beta：拾字截图操作整合为 2×3 ShortX 图标网格",
-      "details": [
-        "截图右侧操作区由 2×2 扩展为 2×3，统一承载分享、二维码解析/重新解析、查看原图、保存、复制二维码结果、载入拾字/恢复原文；不新增业务能力。",
-        "六个操作仅显示图标，文字仅保留在 contentDescription；图标复用 th_06_icon_parser.js 的 ShortX Drawable 解析与 R$drawable 反射基础层，拾字与二维码模块不新增第二套反射。",
-        "二维码模块继续独占 decode/cache/copy/load/restore 状态，通过 controller action/state bridge 提供给拾字网格；二维码结果覆盖层收口为纯标题与内容卡，不再重复放置查看、复制、载入和重新解析文字按钮。",
-        "保留图片分享 chooser 成功后关闭拾字、原图页面、保存链、image-only、截图删除恢复文本、ZXing worker 与 ShortX system_server 兼容边界；th_22_image_viewer.js 业务代码不修改。"
-      ],
-      "manifestVersion": 20260820082221,
-      "date": "2026-08-20",
-      "modules": [
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.23",
-          "to": "1.0.24",
-          "change": "updated"
-        },
-        {
-          "name": "th_26_qr_runtime.js",
-          "from": "1.0.7",
-          "to": "1.0.8",
-          "change": "updated"
-        }
-      ],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-pickword-screenshot-layout-regression-fix",
-      "type": "fix",
-      "title": "Beta：修复拾字截图布局三项回归",
-      "details": [
-        "截图拾字文字区改为 WRAP_CONTENT 外层 + 截图模式独立最大高度，消除短文本下方固定透明留白，同时保留无截图模式原自适应逻辑。",
-        "已选文字预览仅在 image-only 会话隐藏；普通截图 OCR/拾字文本恢复预览，并在创建、拖选与选择更新时同步可见性。",
-        "右侧 2×2 分享使用一次性 pending，仅在图片分享 chooser 成功拉起后的 onShared 关闭拾字浮窗；失败、释放均清理状态，完整图片页分享保持原行为。",
-        "图片查看器 th_22_image_viewer.js 业务实现保持不变；同步 th_20 1.0.23 verifier 白名单与三项回归断言。"
-      ],
-      "manifestVersion": 20260820041540,
-      "date": "2026-08-20",
-      "modules": [
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.22",
-          "to": "1.0.23",
-          "change": "updated"
-        }
-      ],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-pickword-reference-layout",
-      "type": "optimize",
-      "title": "Beta：复刻拾字截图参考布局",
-      "details": [
-        "带截图的拾字窗口重排为上方截图预览 + 2×2 操作区、下方正文卡片，操作区固定为分享、二维码、贴图、保存。",
-        "二维码继续复用现有 ZXing 解析入口，分享与保存继续复用截图查看器原有动作；截图状态条与旧内嵌二维码按钮收拢，避免重复入口。",
-        "无截图拾字保持原布局与文字选择能力；复制、翻译、全选、清空、复制全部、去重换行、文字分享与钉屏主链不变。"
-      ],
-      "manifestVersion": 20260820030722,
-      "date": "2026-08-20",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-qr-load-text-race",
-      "type": "fix",
-      "title": "Beta：修复二维码载入拾字窗口竞态",
-      "details": [
-        "修复二维码结果“载入拾字”先异步 hide 再立即 show，旧窗口迟到清理把 mainLayout/textView 置空，触发 Cannot call method setText/setVisibility of null 的问题。",
-        "二维码文本改为直接复用当前拾字窗口，通过 showPickwordText 重置当前会话，不再调用 hidePickwordWindow(\"qr_load\")；截图元数据、二维码结果缓存与恢复原文状态保持不变。",
-        "新增发布门禁禁止二维码载入路径恢复 hide→show 竞态；ZXing 3.5.4-r2、通道私有 lib、框选截图、OCR 与二维码解析主链保持不变。"
-      ],
-      "manifestVersion": 20260820002736,
-      "date": "2026-08-20",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-qr-rhino-dexclassloader",
-      "type": "fix",
-      "title": "Beta：修复 Rhino 下二维码 DexClassLoader 类解析",
-      "details": [
-        "修复 ShortX Rhino 中直接使用 dalvik.system.DexClassLoader 触发 ReferenceError: dalvik is not defined，导致 ZXing JAR 已预检就绪但仍无法进入运行时加载的问题。",
-        "DexClassLoader 改为通过 Rhino 已支持的 Packages.dalvik.system.DexClassLoader 解析；保留 Android 26+ optimizedDirectory=null 与 Android 24-25 通道私有 lib/.dexopt 兼容策略。",
-        "新增发布门禁禁止裸 dalvik.system.DexClassLoader，并要求 1.0.6 使用 Packages 根；ZXing 3.5.4-r2、通道私有 lib、SHA-256/size/只读校验、启动预检和二维码显式触发边界保持不变。"
-      ],
-      "manifestVersion": 20260819235430,
-      "date": "2026-08-20",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-qr-system-server-dexloader",
-      "type": "fix",
-      "title": "Beta：修复 system_server 下二维码运行时加载失败",
-      "details": [
-        "修复 ShortX/ToolHub 运行在 system_server、uid=1000 时调用 context.getCodeCacheDir() 触发 No data directory found for package android，导致 ZXing JAR 已预检就绪但 DexClassLoader 无法进入加载阶段的问题。",
-        "Android API 26 及以上不再创建应用 code_cache，并向 DexClassLoader 传入空 optimizedDirectory；该参数自 API 26 起已废弃且无实际作用。",
-        "Android API 24-25 的兼容路径改用当前 ToolHub 通道私有 lib/.dexopt 可写目录；Beta/Stable 隔离、JAR SHA-256/size/只读校验和二维码显式解析边界保持不变。"
-      ],
-      "manifestVersion": 20260819230134,
-      "date": "2026-08-20",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-qr-runtime-diagnostics",
-      "type": "fix",
-      "title": "Beta：补齐二维码运行时失败诊断",
-      "details": [
-        "二维码解析遇到运行时异常时不再只显示“二维码运行时不可用”，同时把真实异常写入 ToolHub 日志，区分 runtime 文件准备、DexClassLoader、loadClass、反射接口与 decode 调用阶段。",
-        "启动/更新预检在没有 App logger 的情况下回退到 ToolHub writeLog，确保 preflight 成功或失败都能在日志中留痕。",
-        "二维码失败结果继续保留用户可读的通用提示，并附带经过截断和单行化的诊断原因；不改变 OCR、框选截图、拾字与二维码显式触发边界。"
-      ],
-      "manifestVersion": 20260819181623,
-      "date": "2026-08-20",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-zxing-channel-private-lib",
-      "type": "fix",
-      "title": "Beta：ZXing 运行时迁移到 ToolHub 通道私有目录",
-      "details": [
-        "ZXing DEX/JAR 不再写入 shortx.getShortXDir()/lib，统一改为 getToolHubRootDir()/lib；Beta 实际落到 shortx.getShortXDir()/ToolHub-Beta/lib，正式通道对应 shortx.getShortXDir()/ToolHub/lib。",
-        "运行时目录复用 ToolHub 入口现有通道根目录与可写探测，不再绕过 ToolHub 私有存储边界，避免 ShortX 根目录 lib 对 uid=1000 不可写导致 EACCES。",
-        "ZXing runtime 升级为 3.5.4-r2；启动/更新预检、SHA-256/size 校验、只读安装、缺失或损坏自动重下以及二维码显式解析交互保持不变。"
-      ],
-      "manifestVersion": 20260819180213,
-      "date": "2026-08-20",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-zxing-runtime-startup-preflight",
-      "type": "optimize",
-      "title": "Beta：ZXing 运行时改为启动/更新预检",
-      "details": [
-        "ToolHub Beta 加载二维码模块时在独立线程检查 shortx.getShortXDir()/lib 中的 ZXing DEX/JAR，不阻塞 ToolHub 主界面启动。",
-        "本地运行时同时满足签名清单 size、SHA-256 与只读要求时直接跳过下载；文件缺失或校验失败时自动重新下载、校验并只读安装。",
-        "二维码按钮继续由用户显式触发解析，但不再承担首次下载；预检失败只记录二维码运行时状态，不影响框选截图、OCR、拾字和 ToolHub 其他功能。"
-      ],
-      "manifestVersion": 20260819172904,
-      "date": "2026-08-20",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260820-beta-pickword-qr-thumbnail-fail-open",
-      "type": "fix",
-      "title": "Beta：修复二维码接入导致拾字截图回退",
-      "details": [
-        "修复二维码模块在 Android 截图 FrameLayout 上动态写入 JS 状态字段可能触发 Rhino 异常的问题，避免拾字面板因此进入纯文本 fallback 并隐藏框选截图。",
-        "二维码缩略图装饰状态改由纯 JS controller 持有，并增加 fail-open 保护；二维码 UI 装饰异常时始终返回原截图 View，不影响既有截图查看链路。",
-        "th_26_qr_runtime.js 升级至 1.0.1；ZXing DEX/JAR 仍仅在用户点击“解析二维码”后按需下载到 shortx.getShortXDir()/lib。"
-      ],
-      "manifestVersion": 20260819165113,
-      "date": "2026-08-20",
-      "modules": [],
-      "entry": {
-        "changed": false,
-        "from": 20260819231000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260819-beta-pickword-zxing-core",
-      "type": "feature",
-      "title": "Beta：拾字截图支持 ZXing Core 二维码解析",
-      "details": [
-        "拾字面板仅在持有有效框选截图时提供“解析二维码”入口；解析由用户显式触发，不侵入框选截图和 OCR 完成回调，也不自动复制、打开 URL 或执行 Intent。",
-        "新增基于 ZXing Core 3.5.4 的单文件 DEX/JAR 运行时；正式产物由 CI 重定位并 D8 编译，设备端按需下载到 shortx.getShortXDir()/lib，经过签名清单 SHA-256/size 校验并设为只读后再加载。",
-        "二维码解析使用独立线程、2MP 默认采样上限、2500ms 超时以及 generation/imageKey/token/doneToken 迟到结果保护；面板关闭、截图删除和新会话会取消旧任务。",
-        "解析结果保留在拾字截图区域内的独立结果卡，可手动复制、载入拾字或恢复原文；无二维码、图片失效、运行时不可用和超时均独立降级，不影响 ToolHub 其他功能。"
-      ],
-      "manifestVersion": 20260819155603,
-      "date": "2026-08-19",
-      "modules": [
-        {
-          "name": "th_26_qr_runtime.js",
-          "from": "",
-          "to": "1.0.0",
-          "change": "added"
-        }
-      ],
-      "entry": {
-        "changed": true,
-        "from": 20260810005000,
-        "to": 20260819231000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260810-beta-wm-detach-confirm",
-      "type": "fix",
-      "title": "Beta：WM HandlerThread 仅在窗口真实分离后退出",
-      "details": [
-        "将 th_16_entry.js 升级到 1.0.21；关闭流程在清空逻辑状态前保存 WM 线程所属窗口引用，并使用 isAttachedToWindow/getWindowToken 确认真实 detach。",
-        "WM HandlerThread 不再仅依赖 removeView 请求后的队列顺序退出；全部受监控窗口真实 detach 后才调用 quitSafely，避免 mask 与 ballRoot 的 ViewRoot 销毁消息被提前截断。",
-        "4.2 秒未完成 detach 时只记录超时并保持 Looper 存活，15 秒硬超时仍不强制同步销毁或提前退出线程，避免重新引入 system_server/ColorOS Hook 调用栈风险。",
-        "保持普通 WindowManager.removeView、ToolApp Android main thread 归属、IME 避让/回退、mask generation/identity 和通道切换 fail-closed 逻辑不变。"
-      ],
-      "manifestVersion": 20260809220348,
-      "date": "2026-08-10",
-      "modules": [
-        {
-          "name": "th_16_entry.js",
-          "from": "1.0.20",
-          "to": "1.0.21",
-          "change": "updated"
-        }
-      ],
-      "entry": {
-        "changed": false,
-        "from": 20260810005000,
-        "to": 20260810005000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "beta-restart-mask-detach-20260810",
-      "type": "fix",
-      "title": "Beta：修复更新重启后遮罩残留",
-      "details": [
-        "修复设置页完成模块更新并自动重启时，WM HandlerThread 在普通 removeView 的 ViewRoot detach 消息执行前退出，导致旧 mask 与 ballRoot 残留。",
-        "关闭流程改为先提交 panel、mask、ballRoot 的普通 removeView，再在同一 WM 消息队列尾部延迟退出 HandlerThread，保证已排队的 detach 先执行。",
-        "保留 system_server 下普通 removeView 的安全语义，不切换为 removeViewImmediate，避免同步销毁重新进入 ColorOS/Xposed 调用栈。",
-        "不修改 IME 避让、IME 回退和焦点逻辑；本次只收口更新重启与通道切换共用的关闭生命周期。"
-      ],
-      "manifestVersion": 20260809210624,
-      "date": "2026-08-10",
-      "modules": [
-        {
-          "name": "th_16_entry.js",
-          "from": "1.0.18",
-          "to": "1.0.20",
-          "change": "updated"
-        }
-      ],
-      "entry": {
-        "changed": false,
-        "from": 20260810005000,
-        "to": 20260810005000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "beta-ime-insets-hidden-restore-20260810",
-      "type": "fix",
-      "title": "Beta：修复 ColorOS 键盘收起后窗口不回位",
-      "details": [
-        "Android 11 及以上改为以 WindowInsets.isVisible(Type.ime()) 作为 IME 显示状态真值，键盘隐藏后立即恢复避让前窗口几何。",
-        "修复 ColorOS 在窗口临时缩短后仍返回旧 visible frame 间隙、导致程序误判键盘持续显示而无法回退的问题。",
-        "可见区域回退仅在 WindowInsets 不可用时决定 IME 状态；Insets 已确认键盘可见时只允许它补充键盘高度。",
-        "新增成功回退日志，记录 owner、reason 与检测来源，便于真机区分 ime_hidden、input_blur 和返回键回退。"
-      ],
-      "manifestVersion": 20260809204938,
-      "date": "2026-08-10",
-      "modules": [
-        {
-          "name": "th_15_extra.js",
-          "from": "1.1.25",
-          "to": "1.1.26",
-          "change": "updated"
-        }
-      ],
-      "entry": {
-        "changed": false,
-        "from": 20260810005000,
-        "to": 20260810005000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "beta-ime-geometry-restore-20260810",
-      "type": "fix",
-      "title": "Beta：补全 IME 收起后的窗口几何回退",
-      "details": [
-        "键盘隐藏或输入框失焦时按首次避让前快照恢复窗口 width、height、gravity、x、y，回退成功后才清空快照，避免多次开合产生位置漂移。",
-        "第一次返回键只收起输入法、恢复窗口并将焦点交还面板根视图，第二次返回键再执行页面返回或关闭；同时覆盖旧式按键和 Android 13+ 预测性返回。",
-        "设置页、按钮编辑、Schema 编辑、颜色弹窗与 ShortX 图标选择器共用同一回退契约，输入框之间切换不会误回退。",
-        "窗口关闭或 detach 时归一化 LayoutParams，并注销布局监听、焦点监听和全部轮询回调，避免残留触摸层或旧快照污染下一次打开。"
-      ],
-      "manifestVersion": 20260809171508,
-      "date": "2026-08-10",
-      "modules": [
-        {
-          "name": "th_09_animation.js",
-          "from": "1.0.14",
-          "to": "1.0.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_icon_picker.js",
-          "from": "1.0.4",
-          "to": "1.0.5",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_panels.js",
-          "from": "1.1.16",
-          "to": "1.1.17",
-          "change": "updated"
-        },
-        {
-          "name": "th_15_extra.js",
-          "from": "1.1.23",
-          "to": "1.1.25",
-          "change": "updated"
-        }
-      ],
-      "entry": {
-        "changed": false,
-        "from": 20260810005000,
-        "to": 20260810005000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "beta-trusted-manifest-local-fallback-20260810",
-      "type": "fix",
-      "title": "Beta：修复可信清单暂时不可用时无法启动",
-      "details": [
-        "修复入口在远程 manifest 暂时获取失败时，清单一致性检查提前终止、导致既有本地可信模块无法进入离线安全回退的问题。",
-        "启动、设置内重启、通道切换和切换失败回退统一执行本地可信模块集预检；仅当目标通道全部模块存在且实际 SHA-256 与已保存可信 SHA-256 完全一致时允许加载。",
-        "缺失模块、缺少可信哈希或内容哈希不一致仍会失败关闭；检查更新与安装更新继续强制要求远程 manifest 验签成功。"
-      ],
-      "manifestVersion": 20260809164639,
-      "date": "2026-08-10",
-      "modules": [],
-      "entry": {
-        "changed": true,
-        "from": 20260810003500,
-        "to": 20260810005000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "beta-toolhub-ime-avoidance-20260809",
-      "type": "fix",
-      "title": "Beta：统一 IME 避让与安全通道切换",
-      "details": [
-        "为 ToolApp 设置分组、按钮与 Schema 编辑页中的输入框接入统一 IME 主动避让。",
-        "为颜色面板和 ShortX 图标选择器接入 WindowInsets 主路径与可见区域回退，键盘出现时临时调整窗口高度和位置。",
-        "键盘隐藏后精确恢复原始几何，窗口移除时注销布局、焦点监听与轮询，保持拖动缩放、返回手势和保存逻辑不变。",
-        "ToolHub.js 作为唯一入口支持 Stable/main 与 Beta/beta 双向切换，每次切换按目标通道重建模块集合，保留独立目录、选择持久化、验签校验与失败回退。",
-        "通道切换会等待旧悬浮球、面板与共享遮罩全部 detach 后再启动目标通道；同步 Stable 的普通 removeView 安全语义，关闭超时时阻止第二实例启动。"
-      ],
-      "manifestVersion": 20260809162457,
-      "date": "2026-08-10",
-      "modules": [
-        {
-          "name": "th_09_animation.js",
-          "from": "1.0.12",
-          "to": "1.0.14",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_icon_picker.js",
-          "from": "1.0.3",
-          "to": "1.0.4",
           "change": "updated"
         },
         {
           "name": "th_14_panels.js",
           "from": "1.1.15",
-          "to": "1.1.16",
+          "to": "1.1.17",
           "change": "updated"
         },
         {
           "name": "th_15_extra.js",
           "from": "1.1.22",
-          "to": "1.1.23",
+          "to": "1.1.26",
+          "change": "updated"
+        },
+        {
+          "name": "th_16_entry.js",
+          "from": "1.0.18",
+          "to": "1.0.21",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": true,
+        "from": 20260721201500,
+        "to": 20260810005000
+      }
+    },
+    {
+      "schema": 1,
+      "id": "20260727-stable-system-server-window-remove-crash",
+      "type": "fix",
+      "title": "修复 WindowManager 同步移除导致的 system_server 重启",
+      "details": [
+        "主面板和共享遮罩保留 INVISIBLE、alpha=0、返回回调注销及 generation/identity 保护，但统一改为普通 removeView，让 ViewRoot 和 Surface 销毁跨越当前 Rhino 点击消息边界。",
+        "主面板关闭后的遮罩清理由同一 WindowManager HandlerThread 延后一轮执行；检测到 ToolApp UI generation 已变化时复用原遮罩，避免设置切页中的 remove/add 竞态。",
+        "ToolApp 在 Android 主线程关闭时先隐藏、清除焦点和输入法，再使用普通 removeView；删除全局关闭和异常回退中的 removeViewImmediate。",
+        "ToolApp 创建失败时回投 WindowManager HandlerThread 清理无所有者遮罩，避免透明遮罩残留和触摸阻塞。",
+        "Stable 正式发布保持 ToolHub.js 入口版本和 Stable/main 更新源不变，仅更新运行模块、验证器、审计及独立签名发布产物。"
+      ],
+      "manifestVersion": 20260727013657,
+      "date": "2026-07-27",
+      "modules": [
+        {
+          "name": "th_09_animation.js",
+          "from": "1.0.12",
+          "to": "1.0.13",
           "change": "updated"
         },
         {
@@ -1157,353 +171,30 @@
         }
       ],
       "entry": {
-        "changed": true,
-        "from": 20260728160000,
-        "to": 20260810003500
-      }
-    },
-    {
-      "schema": 1,
-      "id": "beta-shortx-ui-final-package",
-      "manifestVersion": 20260728112735,
-      "type": "feature",
-      "title": "Beta：收口封装 ShortXUI 最终 R3 运行时",
-      "details": [
-        "将 Phase 2 至 Final R3 的 17 个已验收源码按固定顺序封装为单一 th_25_shortx_ui_package.js，并为每个解包源码保留独立 SHA-256 校验。",
-        "封装模块仅在原 startAsync 成功后安装，保持真机验收时序；任何安装或最终状态校验失败都会关闭当前实例并返回启动失败。",
-        "将最终封装纳入 Beta 模块列表、关键模块边界、签名 Manifest、API 使用约束和保护包装审计；Stable 通道继续排除全部 ShortXUI Beta 模块。",
-        "修正旧最终验收入口中的 R3 SHA-256，并保留实验室诊断入口用于后续回归。"
-      ],
-      "date": "2026-07-28",
-      "modules": [
-        {
-          "name": "th_25_shortx_ui_package.js",
-          "from": "",
-          "to": "0.9.2",
-          "change": "added"
-        }
-      ],
-      "entry": {
-        "changed": true,
-        "from": 20260728000100,
-        "to": 20260728160000
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260727-beta-direct-signing-history-baseline",
-      "manifestVersion": 20260727070258,
-      "type": "fix",
-      "title": "修正 Beta 直推签名与发布历史基线",
-      "details": [
-        "Beta 直接提交时，待发布记录不再单独触发提前签名，只有受签名资产发生变化后才生成新 Manifest。",
-        "Beta 直推发布差异改为以上一次修改 manifest.json 的提交为基线，避免错误纳入 main 与历史 Beta 模块变化。",
-        "重新生成发布历史和签名资产，使入口通道模块过滤修复只记录实际入口变化。"
-      ],
-      "date": "2026-07-27",
-      "modules": [],
-      "entry": {
         "changed": false,
-        "from": 20260728000100,
-        "to": 20260728000100
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260727-beta-entry-channel-module-filter",
-      "manifestVersion": 20260727065120,
-      "type": "fix",
-      "title": "修复 Beta 入口跨通道模块清单自检",
-      "details": [
-        "Beta 入口仅在当前活动更新通道为 beta 时加载 ShortXUI Runtime 与实验室模块。",
-        "使用 Beta 入口但本地活动通道仍为 stable 时，入口会自动过滤 Beta 专用模块，并与 main Manifest 保持一致。",
-        "Beta 通道仍完整加载 th_24_shortx_ui_runtime.js 和 th_34_shortx_ui_lab.js；main 与 ClipHub 不做修改。"
-      ],
-      "date": "2026-07-27",
-      "modules": [],
-      "entry": {
-        "changed": true,
-        "from": 20260727234500,
-        "to": 20260728000100
-      }
-    },
-    {
-      "schema": 1,
-      "id": "beta-shortx-ui-windowhost-phase2",
-      "manifestVersion": 20260727015552,
-      "type": "feature",
-      "title": "Beta：加入 ShortXUI WindowHost 生命周期实验",
-      "details": [
-        "ShortXUI 运行时提升到 0.2.0，新增独立 WindowHost 状态机和 attach/detach 确认。",
-        "实验室提升到 0.2.0，加入打开、移动、普通移除、立即移除和 10 次循环测试。",
-        "WindowHost 只管理 Beta 实验窗口，不覆盖悬浮球、主面板、设置页或现有 safeRemoveView。"
-      ],
-      "date": "2026-07-27",
-      "modules": [
-        {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
-        {
-          "name": "th_08_content.js",
-          "from": "1.0.8",
-          "to": "1.0.9",
-          "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_panels.js",
-          "from": "1.1.13",
-          "to": "1.1.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.14",
-          "change": "updated"
-        },
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.19",
-          "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
-          "change": "updated"
-        },
-        {
-          "name": "th_24_shortx_ui_runtime.js",
-          "from": "",
-          "to": "0.2.0",
-          "change": "added"
-        },
-        {
-          "name": "th_34_shortx_ui_lab.js",
-          "from": "",
-          "to": "0.2.0",
-          "change": "added"
-        }
-      ],
-      "entry": {
-        "changed": true,
         "from": 20260721201500,
-        "to": 20260727234500
+        "to": 20260721201500
       }
     },
     {
       "schema": 1,
-      "id": "beta-shortx-ui-constraints-followup",
-      "manifestVersion": 20260726235732,
-      "type": "fix",
-      "title": "Beta：补齐 ShortXUI 模块边界与 API 约束",
-      "details": [
-        "将 ShortXUI 运行时提升到 0.1.3，消除 API 扫描器中的 DisplayMetrics 和 Drawable 局部变量别名误判。",
-        "登记实验室对 ToolApp 路由、标题、面板构建和设置分类的四条包装关系，锁定原实现委托与最终有效所有者。",
-        "按当前源码重新生成 API 使用基线，并为 ShortXUI Beta 第一阶段使用的精确 Android/Java API 增加受审查范围规则；Legacy 基线保持不变。"
-      ],
-      "date": "2026-07-27",
-      "modules": [
-        {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
-        {
-          "name": "th_08_content.js",
-          "from": "1.0.8",
-          "to": "1.0.9",
-          "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_panels.js",
-          "from": "1.1.13",
-          "to": "1.1.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.14",
-          "change": "updated"
-        },
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.19",
-          "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
-          "change": "updated"
-        },
-        {
-          "name": "th_24_shortx_ui_runtime.js",
-          "from": "",
-          "to": "0.1.3",
-          "change": "added"
-        },
-        {
-          "name": "th_34_shortx_ui_lab.js",
-          "from": "",
-          "to": "0.1.1",
-          "change": "added"
-        }
-      ],
-      "entry": {
-        "changed": true,
-        "from": 20260721201500,
-        "to": 20260727234500
-      }
-    },
-    {
-      "schema": 1,
-      "id": "beta-shortx-ui-runtime-phase1",
-      "manifestVersion": 20260726234919,
+      "id": "20260721-channel-health-diagnostics",
       "type": "feature",
-      "title": "Beta：加入 ShortX UI 基础运行时实验室",
+      "title": "新增通道健康自检与诊断报告",
       "details": [
-        "新增 Beta 专用 ShortXUI 基础运行时，首阶段提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics。",
-        "新增 ShortX UI 实验室 ToolApp 页面，用于颜色、Shape、显示参数和线程归属自检；默认不替换任何正式 UI 路径。",
-        "实验数据仅写入 ToolHub-Beta/diagnostics/shortx-ui，Stable 与 ClipHub 均不受影响。"
-      ],
-      "date": "2026-07-27",
-      "modules": [
-        {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
-        {
-          "name": "th_08_content.js",
-          "from": "1.0.8",
-          "to": "1.0.9",
-          "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_panels.js",
-          "from": "1.1.13",
-          "to": "1.1.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.14",
-          "change": "updated"
-        },
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.19",
-          "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
-          "change": "updated"
-        },
-        {
-          "name": "th_24_shortx_ui_runtime.js",
-          "from": "",
-          "to": "0.1.2",
-          "change": "added"
-        },
-        {
-          "name": "th_34_shortx_ui_lab.js",
-          "from": "",
-          "to": "0.1.1",
-          "change": "added"
-        }
-      ],
-      "entry": {
-        "changed": true,
-        "from": 20260721201500,
-        "to": 20260727234500
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260721-beta-channel-health-diagnostics",
-      "type": "feature",
-      "title": "Beta 新增通道健康自检与诊断报告",
-      "details": [
-        "在 Beta 运行记录中增加通道健康自检，核对活动通道、分支、根目录、启动状态、签名清单与 SQLite 存储",
-        "诊断结果保存到 ToolHub-Beta/diagnostics/channel-health-last.txt，不读取或覆盖 Stable 诊断结果",
+        "在运行记录中增加通道健康自检，核对活动通道、分支、根目录、启动状态、签名清单与 SQLite 存储",
+        "自检结果保存到当前通道 diagnostics/channel-health-last.txt，Stable 与 Beta 独立存储",
         "支持一键复制诊断报告，报告不包含翻译密钥、按钮内容或其他敏感配置",
-        "不修改 ToolHub.js，不联网、不自动修复"
+        "仅执行本地只读检查，不联网、不自动修复、不修改 ToolHub.js"
       ],
-      "manifestVersion": 20260721063154,
+      "manifestVersion": 20260721062327,
       "date": "2026-07-21",
       "modules": [
-        {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
         {
           "name": "th_08_content.js",
           "from": "1.0.8",
           "to": "1.0.9",
           "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
-          "change": "updated"
-        },
-        {
-          "name": "th_14_panels.js",
-          "from": "1.1.13",
-          "to": "1.1.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.14",
-          "change": "updated"
-        },
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.19",
-          "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
-          "change": "updated"
         }
       ],
       "entry": {
@@ -1514,52 +205,22 @@
     },
     {
       "schema": 1,
-      "id": "20260721-beta-channel-switch-observability",
+      "id": "20260721-channel-switch-observability",
       "type": "optimize",
-      "title": "Beta 补齐通道切换诊断日志",
+      "title": "补齐通道切换诊断日志",
       "details": [
-        "同步 Stable 已验证的 TH_CHANNEL 结构化日志",
+        "为通道切换后的自动更新检查增加统一 TH_CHANNEL 结构化日志",
         "记录目标通道、实际通道、检查结果、更新数量、错误和耗时",
-        "更新页显示最近一次切换后检查耗时",
-        "保持 Beta 自己的 Manifest、RSA 签名和更新历史"
+        "更新页显示最近一次切换后检查耗时，便于定位慢请求与回滚",
+        "不修改 ToolHub.js、数据目录、签名机制或自动安装行为"
       ],
-      "manifestVersion": 20260721055952,
+      "manifestVersion": 20260721055433,
       "date": "2026-07-21",
       "modules": [
         {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
-          "change": "updated"
-        },
-        {
           "name": "th_14_panels.js",
-          "from": "1.1.13",
+          "from": "1.1.14",
           "to": "1.1.15",
-          "change": "updated"
-        },
-        {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.14",
-          "change": "updated"
-        },
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.19",
-          "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
           "change": "updated"
         }
       ],
@@ -1571,52 +232,22 @@
     },
     {
       "schema": 1,
-      "id": "20260721-beta-channel-switch-update-discovery",
+      "id": "20260721-channel-switch-update-discovery",
       "type": "fix",
-      "title": "Beta 增强通道切换后的更新发现提示",
+      "title": "增强通道切换后的更新发现提示",
       "details": [
         "切换 Stable/Beta 完成后自动等待新通道启动并执行无缓存更新检查",
         "自动检查结果同步到更新页、设置首页摘要和红点，避免切换后误显示为最新",
         "检查失败或发现更新时给出明确提示，手动重新检查可刷新同一状态"
       ],
-      "manifestVersion": 20260721050155,
+      "manifestVersion": 20260721044134,
       "date": "2026-07-21",
       "modules": [
-        {
-          "name": "th_04_theme.js",
-          "from": "1.0.11",
-          "to": "1.0.12",
-          "change": "updated"
-        },
-        {
-          "name": "th_13_panel_ui.js",
-          "from": "1.0.15",
-          "to": "1.0.16",
-          "change": "updated"
-        },
         {
           "name": "th_14_panels.js",
           "from": "1.1.13",
           "to": "1.1.14",
           "change": "updated"
-        },
-        {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.14",
-          "change": "updated"
-        },
-        {
-          "name": "th_20_pickword.js",
-          "from": "1.0.19",
-          "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
-          "change": "updated"
         }
       ],
       "entry": {
@@ -1627,15 +258,15 @@
     },
     {
       "schema": 1,
-      "id": "20260721-beta-fix-channel-private-storage-isolation",
+      "id": "20260721-fix-channel-private-storage-isolation",
       "type": "fix",
-      "title": "Beta 隔离私有诊断与拾字状态",
+      "title": "隔离 Stable/Beta 私有诊断与拾字状态",
       "details": [
-        "Beta 颜色安全与设置交互诊断结果改为写入 ToolHub-Beta/diagnostics",
-        "Beta 拾字号文件与 SharedPreferences 使用独立通道状态，不继承 Stable 字号",
-        "Stable 旧字号迁移逻辑保留为只读复制，Beta 不读取旧公共状态"
+        "颜色安全与设置交互诊断结果改为写入当前通道 APP_ROOT_DIR",
+        "拾字号文件和 SharedPreferences 按 Stable/Beta 分区，避免首次启动继承另一通道状态",
+        "Stable 仅首次复制旧公共字号数据且不删除旧文件，Beta 不读取旧公共状态"
       ],
-      "manifestVersion": 20260721025631,
+      "manifestVersion": 20260721025117,
       "date": "2026-07-21",
       "modules": [
         {
@@ -1651,21 +282,9 @@
           "change": "updated"
         },
         {
-          "name": "th_17_pointer.js",
-          "from": "1.2.13",
-          "to": "1.2.14",
-          "change": "updated"
-        },
-        {
           "name": "th_20_pickword.js",
-          "from": "1.0.19",
+          "from": "1.0.20",
           "to": "1.0.21",
-          "change": "updated"
-        },
-        {
-          "name": "th_22_image_viewer.js",
-          "from": "1.3.2",
-          "to": "1.3.3",
           "change": "updated"
         }
       ],
@@ -1677,15 +296,15 @@
     },
     {
       "schema": 1,
-      "id": "20260721-beta-fix-channel-screenshot-storage-isolation",
+      "id": "20260721-fix-channel-screenshot-storage-isolation",
       "type": "fix",
-      "title": "Beta 修复截图数据通道隔离",
+      "title": "修复 Stable/Beta 截图数据隔离",
       "details": [
-        "Beta 内部截图创建、扫描和拾字路径校验统一使用 ToolHub-Beta 根目录",
-        "Beta Shell 桥结果与截图缩略图缓存写入 ToolHub-Beta 私有缓存目录",
-        "公共相册目录保持共享，但 Beta 截图管理记录继续使用独立 SQLite"
+        "内部截图创建、扫描和拾字路径校验统一使用当前通道 APP_ROOT_DIR",
+        "Shell 桥结果与截图缩略图缓存分别写入 Stable 或 Beta 私有缓存目录",
+        "公共相册目录保持不变，但截图管理记录继续由各通道独立 SQLite 保存"
       ],
-      "manifestVersion": 20260721020705,
+      "manifestVersion": 20260721020033,
       "date": "2026-07-21",
       "modules": [
         {
@@ -1707,25 +326,6 @@
           "change": "updated"
         }
       ],
-      "entry": {
-        "changed": false,
-        "from": 20260721201500,
-        "to": 20260721201500
-      }
-    },
-    {
-      "schema": 1,
-      "id": "20260721-beta-manifest-bootstrap",
-      "type": "feature",
-      "title": "初始化 Beta 更新通道",
-      "details": [
-        "为长期 beta 分支生成首份 channel=beta、branch=beta 的 RSA 签名 Manifest",
-        "Beta 与 Stable 继续使用相同 ToolHub.js 入口，但分别读取 beta 与 main 分支",
-        "本次仅初始化 Beta 发布基线，不修改运行时代码和正式版数据"
-      ],
-      "manifestVersion": 20260721010251,
-      "date": "2026-07-21",
-      "modules": [],
       "entry": {
         "changed": false,
         "from": 20260721201500,

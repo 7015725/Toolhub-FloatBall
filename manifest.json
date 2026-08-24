@@ -4,13 +4,13 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "972f6c4c6239fcffeaf43d346ca4a253713447b6f451cdc028e662072f27f4c9",
-      "size": 112461,
-      "version": 20260824064738
+      "sha256": "9b99031916e63e9463cf9f2d3ce23332265e6ebbca398e05cc57a7eb69fd9708",
+      "size": 65331,
+      "version": 20260824090818
     }
   },
-  "branch": "beta",
-  "channel": "beta",
+  "branch": "main",
+  "channel": "stable",
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
@@ -189,10 +189,13 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "cleanupOldFiles 原先只匹配 ShortX_ToolHub 前缀，logs 目录下常驻追加的 init.log 被豁免而无限增长；现目录内全部日志文件统一按日志保留天数清理"
+      "将 2026-08-10 之后 Beta 已完成真机与 CI 验证的更新同步到 Stable/main：二维码识别与生成（ZXing 运行时、密集码渲染增强、扫码结果直写文字区）、ShortXUI 运行时底座（DEX Bridge、IME 避让、生命周期收口）、拾字截图操作网格重构（重新识别/清空文字/窗内查看二维码）。",
+      "Shell 执行改为 ShortX Action 优先，可获取真实退出码与输出，广播桥兜底；主面板运行状态行点击直达更新与版本页面。",
+      "稳定性加固：更新重启窗口分离确认后退出、ColorOS IME 隐藏后窗口回位、pointer 反射捕获结构性失败熔断、init.log 纳入保留天数清理。",
+      "Stable 独立生成 main 通道 Manifest、RSA 签名和更新历史，不复制 Beta 的 manifest.json、manifest.sig、update_history.json 或 Beta 发布记录。"
     ],
     "date": "2026-08-24",
-    "title": "修复了因日志清理前缀过滤导致 init.log 永不清理的问题"
+    "title": "同步 Beta 二维码与 ShortXUI 运行时更新到 Stable"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +211,5 @@
     }
   },
   "schema": 6,
-  "version": 20260824064738
+  "version": 20260824090818
 }

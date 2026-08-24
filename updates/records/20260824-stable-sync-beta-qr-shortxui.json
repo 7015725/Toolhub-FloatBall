@@ -9,5 +9,79 @@
     "稳定性加固：更新重启窗口分离确认后退出、ColorOS IME 隐藏后窗口回位、pointer 反射捕获结构性失败熔断、init.log 纳入保留天数清理。",
     "Stable 独立生成 main 通道 Manifest、RSA 签名和更新历史，不复制 Beta 的 manifest.json、manifest.sig、update_history.json 或 Beta 发布记录。"
   ],
-  "manifestVersion": 0
+  "manifestVersion": 20260824090818,
+  "date": "2026-08-24",
+  "modules": [
+    {
+      "name": "th_01_base.js",
+      "from": "1.1.19",
+      "to": "1.1.20",
+      "change": "updated"
+    },
+    {
+      "name": "th_10_shell.js",
+      "from": "1.0.9",
+      "to": "1.0.10",
+      "change": "updated"
+    },
+    {
+      "name": "th_15_main_panel.js",
+      "from": "1.5.8",
+      "to": "1.5.9",
+      "change": "updated"
+    },
+    {
+      "name": "th_16_entry.js",
+      "from": "1.0.21",
+      "to": "1.0.22",
+      "change": "updated"
+    },
+    {
+      "name": "th_17_pointer.js",
+      "from": "1.2.14",
+      "to": "1.2.15",
+      "change": "updated"
+    },
+    {
+      "name": "th_18_pointer_ocr.js",
+      "from": "1.1.4",
+      "to": "1.1.5",
+      "change": "updated"
+    },
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.21",
+      "to": "1.0.30",
+      "change": "updated"
+    },
+    {
+      "name": "th_24_shortx_ui_runtime.js",
+      "from": "",
+      "to": "0.2.0",
+      "change": "added"
+    },
+    {
+      "name": "th_25_shortx_ui_package.js",
+      "from": "",
+      "to": "0.9.2",
+      "change": "added"
+    },
+    {
+      "name": "th_26_qr_runtime.js",
+      "from": "",
+      "to": "1.0.17",
+      "change": "added"
+    },
+    {
+      "name": "th_34_shortx_ui_lab.js",
+      "from": "",
+      "to": "0.2.0",
+      "change": "added"
+    }
+  ],
+  "entry": {
+    "changed": true,
+    "from": 20260810005000,
+    "to": 20260819231000
+  }
 }
