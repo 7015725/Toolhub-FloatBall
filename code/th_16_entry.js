@@ -744,8 +744,8 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
       wmThreadName: String(this.config.WM_THREAD_NAME)
     },
     shell: {
-      useActionFirst: false, // 已移除 ShellCommand Action
-      hasShellCommand: false, // 已移除 ShellCommand Action
+      useActionFirst: typeof this.execShellViaShortxAction === "function", // Action 优先 + 广播桥兜底
+      hasShellCommand: true, // ShellCommand proto builder available via Packages
       bridge: {
         action: String(this.config.SHELL_BRIDGE_ACTION),
         extraCmd: String(this.config.SHELL_BRIDGE_EXTRA_CMD),
