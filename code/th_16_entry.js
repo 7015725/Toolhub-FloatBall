@@ -1,4 +1,4 @@
-// @version 1.0.21
+// @version 1.0.22
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -744,8 +744,8 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
       wmThreadName: String(this.config.WM_THREAD_NAME)
     },
     shell: {
-      useActionFirst: false, // 已移除 ShellCommand Action
-      hasShellCommand: false, // 已移除 ShellCommand Action
+      useActionFirst: typeof this.execShellViaShortxAction === "function", // Action 优先 + 广播桥兜底
+      hasShellCommand: true, // ShellCommand proto builder available via Packages
       bridge: {
         action: String(this.config.SHELL_BRIDGE_ACTION),
         extraCmd: String(this.config.SHELL_BRIDGE_EXTRA_CMD),

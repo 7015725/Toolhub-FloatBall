@@ -118,7 +118,7 @@
       "locations": [
         {
           "file": "code/th_10_shell.js",
-          "line": 203,
+          "line": 285,
           "form": "direct_constructor"
         },
         {
@@ -236,12 +236,12 @@
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 187,
+          "line": 269,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 187,
+          "line": 269,
           "form": "direct_constructor_assignment"
         },
         {
@@ -1302,12 +1302,12 @@
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 412,
+          "line": 494,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 429,
+          "line": 511,
           "form": "direct_constructor"
         },
         {
@@ -4232,7 +4232,7 @@
       "locations": [
         {
           "file": "code/th_10_shell.js",
-          "line": 203,
+          "line": 285,
           "form": "direct_static_call"
         },
         {
@@ -4307,7 +4307,7 @@
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 187,
+          "line": 269,
           "form": "direct_static_call"
         },
         {
@@ -4967,7 +4967,7 @@
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 224,
+          "line": 306,
           "form": "instance_call"
         },
         {
@@ -5280,22 +5280,22 @@
       "locations": [
         {
           "file": "code/th_10_shell.js",
-          "line": 213,
+          "line": 295,
           "form": "instance_call"
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 220,
+          "line": 302,
           "form": "instance_call"
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 221,
+          "line": 303,
           "form": "instance_call"
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 222,
+          "line": 304,
           "form": "instance_call"
         },
         {
@@ -5390,7 +5390,7 @@
       "locations": [
         {
           "file": "code/th_10_shell.js",
-          "line": 203,
+          "line": 285,
           "form": "instance_call"
         },
         {
@@ -5513,7 +5513,7 @@
       "locations": [
         {
           "file": "code/th_10_shell.js",
-          "line": 206,
+          "line": 288,
           "form": "instance_call"
         },
         {
@@ -7934,12 +7934,12 @@
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 412,
+          "line": 494,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 429,
+          "line": 511,
           "form": "direct_static_call"
         },
         {
@@ -8668,12 +8668,12 @@
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 412,
+          "line": 494,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 429,
+          "line": 511,
           "form": "direct_static_call"
         },
         {
@@ -21642,7 +21642,7 @@
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 386,
+          "line": 468,
           "form": "direct_static_call"
         },
         {
@@ -26364,7 +26364,7 @@
         },
         {
           "file": "code/th_10_shell.js",
-          "line": 412,
+          "line": 494,
           "form": "direct_static_call"
         }
       ],
@@ -29109,9 +29109,15 @@
       "classOrObject": "shortx",
       "method": "executeAction",
       "files": [
+        "code/th_10_shell.js",
         "code/th_18_pointer_ocr.js"
       ],
       "locations": [
+        {
+          "file": "code/th_10_shell.js",
+          "line": 70,
+          "form": "shortx_call"
+        },
         {
           "file": "code/th_18_pointer_ocr.js",
           "line": 105,
@@ -29123,7 +29129,7 @@
           "form": "shortx_call"
         }
       ],
-      "occurrenceCount": 2
+      "occurrenceCount": 3
     },
     {
       "key": "shortx|method|shortx#getShortXDir",
@@ -29173,5 +29179,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:55a22eb696e260f0ae8f7e27a9780e993461146d9b1fdfe6beb72867c543f7d2"
+  "usageDigest": "sha256:95e983150b24541e20e36ffb32b0b5e1a6bc3156b003a0d4fd0f51fa325bb8b9"
 }

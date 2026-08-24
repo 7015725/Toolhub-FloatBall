@@ -1,7 +1,8 @@
-// @version 1.0.9
-// =======================【Shell：广播桥兼容配置】======================
-// 旧版 ToolHub 依赖 shortx.toolhub.SHELL 隐式广播。安全配置曾把默认模式改为 strict，
-// 但没有同时提供显式目标，导致旧设备和新安装设备的全部 Shell 按钮在发送前被拒绝。
+// @version 1.0.10
+// =======================【Shell：Action 优先 + 广播桥兜底】======================
+// 优先通过 shortx.executeAction(ShellCommand) 同步执行（能拿到 shellOut/shellErr/shellCode 真实结果）；
+// Action 不可用或执行失败时，回退到旧广播桥（shortx.toolhub.SHELL）由外部接收器执行。
+// 广播桥兼容默认值保留：旧设备/新装设备的兜底路径仍需可工作。
 (function() {
   try {
     if (typeof ConfigValidator !== "undefined" && ConfigValidator && ConfigValidator.schemas) {
@@ -28,12 +29,93 @@
   } catch(eDefault) {}
 })();
 
-// =======================【Shell：广播桥执行】======================
-// 仅通过广播桥发送 shell 命令，由外部接收器实际执行。
+// =======================【Shell：Action 优先执行】=======================
+// 通过 shortx.executeAction(ShellCommand) 同步执行命令。
+// 命令以 base64 传入，这里先解码为明文再交给 ShellCommand（proto 字段是 string command）。
+// 返回 { ok, via, out, err, code }；ok=false 表示该路径不可用或执行失败，调用方可走兜底。
+FloatBallAppWM.prototype.execShellViaShortxAction = function(cmdB64, needRoot) {
+  var ret = {
+    ok: false,
+    via: "ShortxAction",
+    out: "",
+    err: "",
+    code: -1,
+    errType: ""
+  };
+  try {
+    if (typeof shortx === "undefined" || !shortx || typeof shortx.executeAction !== "function") {
+      ret.errType = "action_unavailable";
+      ret.err = "shortx.executeAction unavailable";
+      return ret;
+    }
+    var cmdPlain = "";
+    try { cmdPlain = String(decodeBase64Utf8(cmdB64) || ""); } catch (eDecode) { cmdPlain = ""; }
+    if (!cmdPlain || cmdPlain.length === 0) {
+      // b64 解码失败时按旧兼容语义：把内容当明文使用（与 th_11 的兼容逻辑一致）。
+      cmdPlain = String(cmdB64 || "");
+    }
+    if (!cmdPlain || cmdPlain.length === 0) {
+      ret.errType = "empty_command";
+      ret.err = "shell command empty";
+      return ret;
+    }
+
+    var ShellCommand = Packages.tornaco.apps.shortx.core.proto.action.ShellCommand;
+    var action = ShellCommand.newBuilder()
+      .setCommand(cmdPlain)
+      .setSingleShot(true)
+      .setId("ToolHub#ShellCommand")
+      .build();
+
+    var result = shortx.executeAction(action);
+    var data = (result && result.contextData) ? result.contextData : null;
+    var shellOutText = "";
+    var shellErrText = "";
+    var shellCodeNum = -1;
+    try { shellOutText = data ? String(data.get("shellOut") || "") : ""; } catch (eOut) { shellOutText = ""; }
+    try { shellErrText = data ? String(data.get("shellErr") || "") : ""; } catch (eErr) { shellErrText = ""; }
+    try {
+      if (data && data.get("shellCode") !== undefined && data.get("shellCode") !== null) {
+        shellCodeNum = Number(data.get("shellCode"));
+        if (isNaN(shellCodeNum)) shellCodeNum = -1;
+      }
+    } catch (eCode) { shellCodeNum = -1; }
+
+    ret.out = shellOutText;
+    ret.err = shellErrText;
+    ret.code = shellCodeNum;
+    ret.ok = true; // Action 已真实执行；业务成败看 code
+    return ret;
+  } catch (eAction) {
+    ret.errType = "action_error";
+    ret.err = "Action err=" + String(eAction);
+    return ret;
+  }
+};
+
+// =======================【Shell：广播桥执行（兜底）】======================
+// Action 路径不可用/失败时，通过广播桥发送 shell 命令，由外部接收器实际执行（只发不确认）。
 // 注意：system_server 进程本身不直接执行 shell。
 FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
   var requestedRoot = (needRoot === true);
   var migrationTargetVersion = 1;
+
+  // # Action 优先：shortx.executeAction(ShellCommand) 同步执行，能拿到真实 out/err/code。
+  // # 失败（不可用/异常）时静默走下方广播桥兜底，保持旧设备可执行。
+  try {
+    var actionRet = this.execShellViaShortxAction(cmdB64, needRoot);
+    if (actionRet && actionRet.ok) {
+      safeLog(this.L, 'i', "shell via action ok root=" + String(requestedRoot) +
+        " cmd_b64_len=" + String(cmdB64 ? String(cmdB64).length : 0) +
+        " code=" + String(actionRet.code));
+      return actionRet;
+    }
+    safeLog(this.L, 'w', "shell via action unavailable err_type=" + String(actionRet && actionRet.errType ? actionRet.errType : "unknown") +
+      " fallback=broadcast_bridge");
+  } catch (eActionFirst) {
+    try { safeLog(this.L, 'w', "shell via action exception fallback=broadcast_bridge"); } catch (eLogA) {}
+  }
+
   var ret = {
     ok: false,
     via: "",

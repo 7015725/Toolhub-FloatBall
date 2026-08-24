@@ -476,6 +476,27 @@
       "threadContract": "Tile construction, icon replacement, alpha/enabled state and QR state listener callbacks execute on the existing Android main/UI owner path.",
       "fallback": "Missing ShortX drawable falls back to an Android help drawable; QR runtime errors only disable QR-dependent cells and do not block screenshot viewing, sharing or saving.",
       "reason": "Explicitly review the finite API keys and exact current file scopes needed by the icon-only 2x3 screenshot action grid; no usage-key prefix or wildcard scope is introduced."
+    },
+    {
+      "id": "api-shell-action-first",
+      "usageKeys": [
+        "shortx|method|shortx#executeAction"
+      ],
+      "source": "shortx",
+      "classOrObject": "ShortX ScriptShortXApi executeAction",
+      "method": "executeAction",
+      "classification": "guarded",
+      "scope": [
+        "code/th_10_shell.js",
+        "code/th_18_pointer_ocr.js"
+      ],
+      "allowScopeExpansion": true,
+      "minApi": 33,
+      "guard": "Shell 按钮执行优先 shortx.executeAction(ShellCommand) 同步链；仅由用户点击的 Shell 按钮/拾字 root 兜底触发，system_server 不直接 Runtime.exec",
+      "owner": "ToolHub Shell action-first runtime",
+      "threadContract": "execShellSmart 在按钮点击调用线程同步执行；广播桥兜底保持原异步语义",
+      "fallback": "Action 不可用或异常时回退旧广播桥（compat/explicit/strict 配置不变）",
+      "reason": "登记 th_10_shell.js Action 优先路径对 shortx.executeAction 的复用，与 th_18_pointer_ocr.js 既有用法同源"
     }
   ],
   "explicitRuleRequirements": [

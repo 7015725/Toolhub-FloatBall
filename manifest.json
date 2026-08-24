@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "09cc4f06ad76080aa70155b41a44fb94181c661d9f52855f3530ac628d0bd6ec",
-      "size": 110433,
-      "version": 20260824005134
+      "sha256": "b259a00f3b36350769937f7494e7440ad654844b19170970959855b3478bd8c1",
+      "size": 111844,
+      "version": 20260824051853
     }
   },
   "branch": "beta",
@@ -61,9 +61,9 @@
       "version": "1.0.15"
     },
     "th_10_shell.js": {
-      "sha256": "36427d7146a4589cbcf0512804acd90f4210a3d512cde6e03f2cb40c42d86d2d",
-      "size": 18803,
-      "version": "1.0.9"
+      "sha256": "beb8260146b9292b96e9fd37b35e914d35dbd4dae4fcb140cc4d85f014c92240",
+      "size": 22334,
+      "version": "1.0.10"
     },
     "th_11_action.js": {
       "sha256": "95ddf32a4bf144e2f8703afccd0890249dcc7b2d056a861c493454ce058ca583",
@@ -126,9 +126,9 @@
       "version": "1.5.9"
     },
     "th_16_entry.js": {
-      "sha256": "beff1667a542e7ffbcfec887e3231bfd449b581cfad1753d1c6918e67ce4aeaa",
-      "size": 39530,
-      "version": "1.0.21"
+      "sha256": "2b8af2bb45e6a1dfa5b8d718107dcb821795bf47ea84ed7b4fc944a203279116",
+      "size": 39597,
+      "version": "1.0.22"
     },
     "th_17_pointer.js": {
       "sha256": "b75151ad4baceb4b4faa6a1a26cf28c249534c130147f13c42ce83fa409c4486",
@@ -189,11 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "点击主面板更新状态区域改为打开更新与版本页面",
-      "移除原状态详情 Toast 展示"
+      "修复了因 th_16_entry.js 内容变更未提升版本导致 CI changed-module-versions 门禁失败的问题"
     ],
     "date": "2026-08-24",
-    "title": "主面板运行状态点击直达更新页"
+    "title": "入口模块版本同步提升"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -209,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260824005134
+  "version": 20260824051853
 }
