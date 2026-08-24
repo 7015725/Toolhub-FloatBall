@@ -1,8 +1,25 @@
 {
   "schema": 1,
-  "historyVersion": 20260824064738,
-  "generatedAt": "2026-08-24T14:47:38+08:00",
+  "historyVersion": 20260824091840,
+  "generatedAt": "2026-08-24T17:18:40+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260824-beta-api-baseline-linesync",
+      "type": "fix",
+      "title": "同步 API 使用基线行号到 CI 生成版本",
+      "details": [
+        "修复了因 Stable 同步后 th_01_base.js 行号变化导致 API_USAGE_BASELINE.json 与 CI 重新生成的基线漂移的问题；仅同步行号字段，内容与校验摘要不变。"
+      ],
+      "manifestVersion": 20260824091840,
+      "date": "2026-08-24",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260824-log-cleanup-init-file",
