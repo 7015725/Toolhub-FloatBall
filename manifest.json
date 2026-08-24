@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "92187baf3c8b71543f3c8ef33109b2a8e2132e4707985a99a7f6d7c27f9c8f8f",
-      "size": 113060,
-      "version": 20260824091840
+      "sha256": "df5e42724c94bccba27085eaf86344bc4092424cc9cfcead7edb00d0c9b43e83",
+      "size": 113288,
+      "version": 20260824102806
     }
   },
   "branch": "beta",
@@ -189,10 +189,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因 Stable 同步后 th_01_base.js 行号变化导致 API_USAGE_BASELINE.json 与 CI 重新生成的基线漂移的问题；仅同步行号字段，内容与校验摘要不变。"
+      "修复了因签名输入检测列表遗漏 constraints/API_USAGE_BASELINE.json 导致纯元数据 PR 卡在待签校验的问题：sign-toolhub 的 signed-input 检测补充该文件。",
+      "同步 API_USAGE_BASELINE.json 行号到 CI 生成版本：修复了因 Stable 同步后 th_01_base.js 行号变化导致基线与 CI 重新生成结果漂移的问题。"
     ],
     "date": "2026-08-24",
-    "title": "同步 API 使用基线行号到 CI 生成版本"
+    "title": "修复了因签名输入检测遗漏 API 基线导致纯元数据 PR 卡在待签校验的问题"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +209,5 @@
     }
   },
   "schema": 6,
-  "version": 20260824091840
+  "version": 20260824102806
 }
