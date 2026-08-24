@@ -1,4 +1,4 @@
-// @version 1.0.33
+// @version 1.0.34
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -3034,8 +3034,10 @@
             var nextMeta = normalizePickwordImageMeta20(meta);
             var prevMeta = currentPickwordMeta20;
             try {
-                if (mainLayout !== null && prevMeta && nextMeta &&
-                    String(prevMeta.internalPath || "") !== String(nextMeta.internalPath || "") &&
+                var prevImagePath20 = prevMeta ? String(prevMeta.internalPath || "") : "";
+                var nextImagePath20 = nextMeta ? String(nextMeta.internalPath || "") : "";
+                if (mainLayout !== null && (prevImagePath20 || nextImagePath20) &&
+                    prevImagePath20 !== nextImagePath20 &&
                     android.os.Looper.getMainLooper().equals(android.os.Looper.myLooper())) {
                     removeMainPickwordWindowNow20();
                 }

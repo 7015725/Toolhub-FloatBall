@@ -1,8 +1,32 @@
 {
   "schema": 1,
-  "historyVersion": 20260824162203,
-  "generatedAt": "2026-08-25T00:22:03+08:00",
+  "historyVersion": 20260824164546,
+  "generatedAt": "2026-08-25T00:45:46+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260825-qr-first-click-image-page",
+      "type": "fix",
+      "title": "修复首次生成二维码未显示图片页",
+      "details": [
+        "修复了因纯文字拾字切换到二维码图片时未重建图片控制器，导致第一次点击二维码按钮未显示图片页的问题"
+      ],
+      "manifestVersion": 20260824164546,
+      "date": "2026-08-25",
+      "modules": [
+        {
+          "name": "th_20_pickword.js",
+          "from": "1.0.33",
+          "to": "1.0.34",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260825-generated-qr-auto-open",

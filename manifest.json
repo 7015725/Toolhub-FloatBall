@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "c703600c081a583c08777d623c0c4dd96e871eb08ea63fa5be8c8b0b92fe702a",
-      "size": 115547,
-      "version": 20260824162203
+      "sha256": "ee9f414c410a623c019532ad0d6e19eb4e22191a7a7eb2b54a2f9050dad90316",
+      "size": 116249,
+      "version": 20260824164546
     }
   },
   "branch": "beta",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "01f2c3bb56ea8e6a107e80ea7c291a9d0f6d372c6661d160be6a9b638bdd99c9",
-      "size": 294037,
-      "version": "1.0.33"
+      "sha256": "1bad51dfcbdbed6afe895c83fcac41221eae1f9ea7364dd14a5e9030ede87760",
+      "size": 294195,
+      "version": "1.0.34"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -189,10 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因生成二维码后只刷新拾字文字页导致二维码图片页面未自动显示的问题"
+      "修复了因纯文字拾字切换到二维码图片时未重建图片控制器，导致第一次点击二维码按钮未显示图片页的问题"
     ],
     "date": "2026-08-25",
-    "title": "生成二维码后自动打开图片页"
+    "title": "修复首次生成二维码未显示图片页"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260824162203
+  "version": 20260824164546
 }
