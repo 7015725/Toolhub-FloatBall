@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "972f6c4c6239fcffeaf43d346ca4a253713447b6f451cdc028e662072f27f4c9",
-      "size": 112461,
-      "version": 20260824064738
+      "sha256": "92187baf3c8b71543f3c8ef33109b2a8e2132e4707985a99a7f6d7c27f9c8f8f",
+      "size": 113060,
+      "version": 20260824091840
     }
   },
   "branch": "beta",
@@ -189,10 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "cleanupOldFiles 原先只匹配 ShortX_ToolHub 前缀，logs 目录下常驻追加的 init.log 被豁免而无限增长；现目录内全部日志文件统一按日志保留天数清理"
+      "修复了因 Stable 同步后 th_01_base.js 行号变化导致 API_USAGE_BASELINE.json 与 CI 重新生成的基线漂移的问题；仅同步行号字段，内容与校验摘要不变。"
     ],
     "date": "2026-08-24",
-    "title": "修复了因日志清理前缀过滤导致 init.log 永不清理的问题"
+    "title": "同步 API 使用基线行号到 CI 生成版本"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260824064738
+  "version": 20260824091840
 }
