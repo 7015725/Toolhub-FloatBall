@@ -16,13 +16,13 @@ def require(condition, message):
 def patch_pickword():
     text = TARGET.read_text(encoding="utf-8")
     require(
-        text.startswith("// @version 1.0.22\n") or text.startswith("// @version 1.0.23\n") or text.startswith("// @version 1.0.24\n") or text.startswith("// @version 1.0.25\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n"),
+        text.startswith("// @version 1.0.22\n") or text.startswith("// @version 1.0.23\n") or text.startswith("// @version 1.0.24\n") or text.startswith("// @version 1.0.25\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n") or text.startswith("// @version 1.0.31\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n") or text.startswith("// @version 1.0.31\n"),
         "expected th_20 version 1.0.22, 1.0.23, 1.0.24, or 1.0.25",
     )
 
     if "function findPickwordTextAction20(root, labels)" not in text:
         require("function performPickwordImagePageAction20(actionIndex, unavailableText)" in text, "fixed image action helper missing")
-        if text.startswith("// @version 1.0.24\n") or text.startswith("// @version 1.0.25\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n"):
+        if text.startswith("// @version 1.0.24\n") or text.startswith("// @version 1.0.25\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n") or text.startswith("// @version 1.0.31\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n") or text.startswith("// @version 1.0.31\n"):
             require("getPickwordQrActionState" in text, "QR state bridge missing")
             require("performPickwordQrAction20(\"decode\")" in text, "QR decode bridge missing")
             require("resolvePickwordShortXActionDrawable20" in text, "ShortX image-action icon resolver missing")

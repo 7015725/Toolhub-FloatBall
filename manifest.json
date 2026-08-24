@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "972f6c4c6239fcffeaf43d346ca4a253713447b6f451cdc028e662072f27f4c9",
-      "size": 112461,
-      "version": 20260824064738
+      "sha256": "ddf80fd45438c76790ac716ca38872421c042a9f8acae1fee67bd4024db76363",
+      "size": 118937,
+      "version": 20260824114444
     }
   },
   "branch": "beta",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "5eba9adde22c01be512e42b6f6173168d6e72d4ce2d1d5d0b2a8afad08df0a91",
-      "size": 289072,
-      "version": "1.0.30"
+      "sha256": "a6d1df72ff1ae7c13098d376b62514475292018767b7813d8999f9a7f6187e25",
+      "size": 291920,
+      "version": "1.0.31"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -189,10 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "cleanupOldFiles 原先只匹配 ShortX_ToolHub 前缀，logs 目录下常驻追加的 init.log 被豁免而无限增长；现目录内全部日志文件统一按日志保留天数清理"
+      "修复了因文字区为空导致历史截图中二维码生成按钮置灰不可用的问题；现在从管理器打开历史截图时点二维码生成，会先对当前截图做一次识别，以图内文本作为二维码内容"
     ],
     "date": "2026-08-24",
-    "title": "修复了因日志清理前缀过滤导致 init.log 永不清理的问题"
+    "title": "二维码生成支持以截图 OCR 文本为内容源"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260824064738
+  "version": 20260824114444
 }
