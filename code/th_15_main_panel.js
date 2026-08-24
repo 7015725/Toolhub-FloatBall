@@ -1,4 +1,4 @@
-// @version 1.5.8
+// @version 1.5.9
 // ToolHub - 主按钮面板第十阶段：标题栏操作收纳
 
 var TOOLHUB_MAIN_PANEL_MODULE_LOADED = true;
@@ -580,14 +580,15 @@ FloatBallAppWM.prototype.refreshMainPanelRuntimeStatus = function() {
 FloatBallAppWM.prototype.showMainPanelRuntimeStatusDetail = function() {
   try {
     this.touchActivity();
-    var snapshot = this.refreshMainPanelRuntimeStatus();
-    if (!snapshot) return false;
-    var detail = String(snapshot.detail || snapshot.text || '状态未知');
-    if (detail.length > 220) detail = detail.substring(0, 217) + '...';
-    this.toast(detail);
-    return true;
+    this.refreshMainPanelRuntimeStatus();
+    this.hideMainPanel(true);
+    if (this.showPanelAvoidBall) {
+      this.showPanelAvoidBall('update');
+      return true;
+    }
+    return false;
   } catch (e) {
-    safeLog(this.L, 'w', 'show main panel runtime status detail fail: ' + String(e));
+    safeLog(this.L, 'w', 'open main panel runtime status update page fail: ' + String(e));
   }
   return false;
 };

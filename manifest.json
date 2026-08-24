@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "f76dd5747537a3a3ec0fa27b0e42482478b63c69da9abb1cf1abe722308f6248",
-      "size": 109908,
-      "version": 20260823071329
+      "sha256": "09cc4f06ad76080aa70155b41a44fb94181c661d9f52855f3530ac628d0bd6ec",
+      "size": 110433,
+      "version": 20260824005134
     }
   },
   "branch": "beta",
@@ -121,9 +121,9 @@
       "version": "1.1.26"
     },
     "th_15_main_panel.js": {
-      "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
-      "size": 81937,
-      "version": "1.5.8"
+      "sha256": "8d8b4a7f513bcf872485af46d3ca812acbb79d1544797ab265159d3396e58364",
+      "size": 81853,
+      "version": "1.5.9"
     },
     "th_16_entry.js": {
       "sha256": "beff1667a542e7ffbcfec887e3231bfd449b581cfad1753d1c6918e67ce4aeaa",
@@ -189,10 +189,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "同步按钮位调整后的审计文件与签名清单"
+      "点击主面板更新状态区域改为打开更新与版本页面",
+      "移除原状态详情 Toast 展示"
     ],
-    "date": "2026-08-23",
-    "title": "刷新死代码与受保护链路审计"
+    "date": "2026-08-24",
+    "title": "主面板运行状态点击直达更新页"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -208,5 +209,5 @@
     }
   },
   "schema": 6,
-  "version": 20260823071329
+  "version": 20260824005134
 }

@@ -39,7 +39,7 @@ if not version_at_least(ANIMATION, (1, 0, 14)):
     fail("expected th_09_animation.js >= 1.0.14")
 if not version_at_least(ENTRY_MODULE, (1, 0, 18)):
     fail("expected th_16_entry.js >= 1.0.18")
-if "// @version 1.5.8" not in MAIN_PANEL:
+if "// @version 1.5.9" not in MAIN_PANEL:
     fail("main panel UI module must remain unchanged")
 
 safe = isolate(
