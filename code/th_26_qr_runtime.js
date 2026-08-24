@@ -1,4 +1,4 @@
-// @version 1.0.17
+// @version 1.0.18
 // =======================【拾字截图二维码解析/生成 / ZXing Core】=======================
 // Beta only. ZXing DEX/JAR is preflighted asynchronously under the active ToolHub channel root: getToolHubRootDir()/lib.
 (function() {
@@ -1054,6 +1054,47 @@
       };
       proto.generateTextQRCode = function(text, size) {
         return generateQrBitmap26(String(text == null ? "" : text), clampGenerateSize26(size));
+      };
+      proto.showPickwordTextQRCode = function(text) {
+        var appObj = this;
+        var textValue = String(text == null ? "" : text);
+        if (!textValue.replace(/\s+/g, "")) { showToast26("拾字内容为空"); return false; }
+        showToast26("正在生成二维码");
+        var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        new java.lang.Thread(new java.lang.Runnable({ run: function() {
+          var result = null;
+          try {
+            loadRuntime26(appObj);
+            var generated = generateQrBitmap26(textValue, QR_GEN_SIZE_DEFAULT26);
+            if (generated.ok !== true) throw new Error(String(generated.error || "二维码生成失败"));
+            var file = saveGeneratedQrPng26(generated.bitmap);
+            try { generated.bitmap.recycle(); } catch (eRecycle) {}
+            result = { ok: true, path: String(file.getAbsolutePath()), width: Number(generated.width), height: Number(generated.height) };
+          } catch (eGen) {
+            result = { ok: false, error: sanitizeError26(eGen) };
+            log26(appObj, "e", "text generate failure error=" + sanitizeError26(eGen));
+          }
+          mainHandler.post(new java.lang.Runnable({ run: function() {
+            try {
+              if (!result || result.ok !== true) { showToast26("二维码生成失败"); return; }
+              var genMeta = {
+                internalPath: String(result.path),
+                source: "qr_generate_text",
+                createdAt: Number(now26()),
+                screenshotOk: true,
+                allowEmptyText: true,
+                imageOnly: true,
+                qrTextLen: Number(textValue.length || 0)
+              };
+              appObj.showPickwordText("", genMeta);
+              showToast26("已生成二维码");
+            } catch (eApply) {
+              log26(appObj, "w", "text generate apply failed=" + sanitizeError26(eApply));
+              showToast26("二维码打开失败");
+            }
+          }}));
+        }}), "ToolHub-Pickword-Text-QR-Generate").start();
+        return true;
       };
       proto.getPickwordQrRuntimeStatus = function() {
         return {

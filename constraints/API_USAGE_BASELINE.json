@@ -94,12 +94,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4633,
+          "line": 4639,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4633,
+          "line": 4639,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -722,42 +722,42 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2009,
+          "line": 2010,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2009,
+          "line": 2010,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2042,
+          "line": 2043,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2042,
+          "line": 2043,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2053,
+          "line": 2054,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2053,
+          "line": 2054,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2061,
+          "line": 2062,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2061,
+          "line": 2062,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -1004,17 +1004,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3515,
+          "line": 3518,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4817,
+          "line": 4823,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4824,
+          "line": 4830,
           "form": "direct_constructor"
         }
       ],
@@ -1148,17 +1148,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1910,
+          "line": 1911,
           "form": "class_alias"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1963,
+          "line": 1964,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1963,
+          "line": 1964,
           "form": "direct_constructor_assignment"
         },
         {
@@ -1181,7 +1181,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2748,
+          "line": 2750,
           "form": "class_alias"
         }
       ],
@@ -1217,17 +1217,17 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2346,
+          "line": 2348,
           "form": "class_alias"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2380,
+          "line": 2382,
           "form": "class_alias"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3681,
+          "line": 3687,
           "form": "class_alias"
         }
       ],
@@ -1321,7 +1321,7 @@
           "form": "direct_constructor_assignment"
         }
       ],
-      "occurrenceCount": 62
+      "occurrenceCount": 64
     },
     {
       "key": "android|class|android.os.HandlerThread",
@@ -1454,12 +1454,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2207,
+          "line": 2208,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2207,
+          "line": 2208,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -1528,7 +1528,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4731,
+          "line": 4737,
           "form": "direct_constructor"
         }
       ],
@@ -1546,7 +1546,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2208,
+          "line": 2209,
           "form": "direct_constructor"
         }
       ],
@@ -1564,7 +1564,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2209,
+          "line": 2210,
           "form": "direct_constructor"
         }
       ],
@@ -1605,12 +1605,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1869,
+          "line": 1870,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1869,
+          "line": 1870,
           "form": "direct_constructor_assignment"
         },
         {
@@ -3344,7 +3344,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3691,
+          "line": 3697,
           "form": "class_alias"
         }
       ],
@@ -3384,12 +3384,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3509,
+          "line": 3512,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3509,
+          "line": 3512,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -3413,7 +3413,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3520,
+          "line": 3523,
           "form": "direct_constructor"
         }
       ],
@@ -4061,7 +4061,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4633,
+          "line": 4639,
           "form": "direct_static_call"
         }
       ],
@@ -4126,17 +4126,17 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4769,
+          "line": 4775,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4799,
+          "line": 4805,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4801,
+          "line": 4807,
           "form": "instance_call"
         }
       ],
@@ -4154,12 +4154,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4813,
+          "line": 4819,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4822,
+          "line": 4828,
           "form": "instance_call"
         }
       ],
@@ -4177,7 +4177,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4634,
+          "line": 4640,
           "form": "instance_call"
         }
       ],
@@ -4195,7 +4195,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4811,
+          "line": 4817,
           "form": "instance_call"
         }
       ],
@@ -4213,7 +4213,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4820,
+          "line": 4826,
           "form": "instance_call"
         }
       ],
@@ -4342,12 +4342,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3054,
+          "line": 3057,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5483,
+          "line": 5504,
           "form": "direct_static_call"
         },
         {
@@ -4411,7 +4411,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2472,
+          "line": 2474,
           "form": "direct_static_call"
         },
         {
@@ -5144,7 +5144,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5486,
+          "line": 5507,
           "form": "direct_static_call"
         },
         {
@@ -5441,7 +5441,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3055,
+          "line": 3058,
           "form": "instance_call"
         }
       ],
@@ -5494,7 +5494,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3056,
+          "line": 3059,
           "form": "instance_call"
         }
       ],
@@ -5537,7 +5537,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5484,
+          "line": 5505,
           "form": "instance_call"
         },
         {
@@ -5821,22 +5821,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2009,
+          "line": 2010,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2042,
+          "line": 2043,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2053,
+          "line": 2054,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2061,
+          "line": 2062,
           "form": "direct_static_call"
         },
         {
@@ -6471,7 +6471,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1495,
+          "line": 1496,
           "form": "instance_call"
         }
       ],
@@ -6490,17 +6490,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1461,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
           "line": 1462,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1465,
+          "line": 1463,
           "form": "instance_call"
         },
         {
@@ -6510,7 +6505,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5244,
+          "line": 1467,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 5250,
           "form": "instance_call"
         },
         {
@@ -6659,7 +6659,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1423,
+          "line": 1424,
           "form": "instance_call"
         }
       ],
@@ -6712,7 +6712,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1995,
+          "line": 1996,
           "form": "instance_call"
         },
         {
@@ -6747,7 +6747,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1996,
+          "line": 1997,
           "form": "instance_call"
         },
         {
@@ -6798,7 +6798,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1994,
+          "line": 1995,
           "form": "instance_call"
         },
         {
@@ -6885,7 +6885,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1997,
+          "line": 1998,
           "form": "instance_call"
         }
       ],
@@ -6903,7 +6903,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1422,
+          "line": 1423,
           "form": "instance_call"
         }
       ],
@@ -6947,12 +6947,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1421,
+          "line": 1422,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5236,
+          "line": 5242,
           "form": "instance_call"
         },
         {
@@ -6990,7 +6990,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5237,
+          "line": 5243,
           "form": "instance_call"
         }
       ],
@@ -7019,7 +7019,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2068,
+          "line": 2069,
           "form": "instance_call"
         }
       ],
@@ -7124,32 +7124,32 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2010,
+          "line": 2011,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2014,
+          "line": 2015,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2016,
+          "line": 2017,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2043,
+          "line": 2044,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2054,
+          "line": 2055,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2062,
+          "line": 2063,
           "form": "instance_call"
         },
         {
@@ -7172,7 +7172,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2012,
+          "line": 2013,
           "form": "instance_call"
         }
       ],
@@ -7236,47 +7236,47 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1606,
+          "line": 1607,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2001,
+          "line": 2002,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2003,
+          "line": 2004,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2029,
+          "line": 2030,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2031,
+          "line": 2032,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2033,
+          "line": 2034,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2039,
+          "line": 2040,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2074,
+          "line": 2075,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2088,
+          "line": 2089,
           "form": "instance_call"
         }
       ],
@@ -7329,17 +7329,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3515,
+          "line": 3518,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4817,
+          "line": 4823,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4824,
+          "line": 4830,
           "form": "direct_static_call"
         }
       ],
@@ -7455,7 +7455,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1963,
+          "line": 1964,
           "form": "direct_static_call"
         }
       ],
@@ -7589,12 +7589,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1913,
+          "line": 1914,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1917,
+          "line": 1918,
           "form": "instance_call"
         },
         {
@@ -7650,22 +7650,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1920,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
           "line": 1921,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1964,
+          "line": 1922,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
           "line": 1965,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 1966,
           "form": "instance_call"
         },
         {
@@ -7693,12 +7693,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1896,
+          "line": 1897,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1904,
+          "line": 1905,
           "form": "instance_call"
         }
       ],
@@ -7716,12 +7716,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1894,
+          "line": 1895,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1902,
+          "line": 1903,
           "form": "instance_call"
         }
       ],
@@ -7739,7 +7739,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2744,
+          "line": 2746,
           "form": "direct_static_call"
         }
       ],
@@ -7850,7 +7850,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3055,
+          "line": 3058,
           "form": "direct_static_call"
         },
         {
@@ -7968,7 +7968,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 42
+      "occurrenceCount": 43
     },
     {
       "key": "android|method|android.os#HandlerThread",
@@ -8188,7 +8188,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 27
+      "occurrenceCount": 28
     },
     {
       "key": "android|method|android.os.Handler#postDelayed",
@@ -8222,47 +8222,47 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3120,
+          "line": 3123,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3178,
+          "line": 3181,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3186,
+          "line": 3189,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3268,
+          "line": 3271,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3584,
+          "line": 3587,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3935,
+          "line": 3941,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4040,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
-          "line": 4146,
+          "line": 4046,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
           "line": 4152,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 4158,
           "form": "instance_call"
         }
       ],
@@ -8325,22 +8325,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2900,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
-          "line": 2901,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
           "line": 2902,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
           "line": 2903,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 2904,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 2905,
           "form": "instance_call"
         }
       ],
@@ -8702,7 +8702,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 44
+      "occurrenceCount": 45
     },
     {
       "key": "android|method|android.os.Looper#myLooper",
@@ -8745,7 +8745,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3019,
+          "line": 3022,
           "form": "direct_static_call"
         },
         {
@@ -9064,7 +9064,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3052,
+          "line": 3055,
           "form": "direct_static_call"
         }
       ],
@@ -9190,7 +9190,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2207,
+          "line": 2208,
           "form": "direct_static_call"
         }
       ],
@@ -9254,7 +9254,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4731,
+          "line": 4737,
           "form": "direct_static_call"
         }
       ],
@@ -9272,12 +9272,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2208,
+          "line": 2209,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2209,
+          "line": 2210,
           "form": "instance_call"
         }
       ],
@@ -9405,7 +9405,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2208,
+          "line": 2209,
           "form": "direct_static_call"
         }
       ],
@@ -9423,7 +9423,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2209,
+          "line": 2210,
           "form": "direct_static_call"
         }
       ],
@@ -9453,7 +9453,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1869,
+          "line": 1870,
           "form": "direct_static_call"
         }
       ],
@@ -9589,12 +9589,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1367,
+          "line": 1368,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1396,
+          "line": 1397,
           "form": "class_alias_call"
         }
       ],
@@ -9967,12 +9967,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2165,
+          "line": 2166,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3640,
+          "line": 3646,
           "form": "class_alias_call"
         }
       ],
@@ -9996,7 +9996,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3199,
+          "line": 3202,
           "form": "class_alias_call"
         }
       ],
@@ -10047,22 +10047,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3213,
+          "line": 3216,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3437,
+          "line": 3440,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3887,
+          "line": 3893,
           "form": "class_alias_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5374,
+          "line": 5380,
           "form": "class_alias_call"
         }
       ],
@@ -10192,17 +10192,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2193,
+          "line": 2194,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2261,
+          "line": 2262,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3390,
+          "line": 3393,
           "form": "instance_call"
         }
       ],
@@ -10385,7 +10385,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1656,
+          "line": 1657,
           "form": "direct_static_call"
         }
       ],
@@ -10922,7 +10922,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4683,
+          "line": 4689,
           "form": "direct_static_call"
         }
       ],
@@ -11129,7 +11129,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 585,
+          "line": 586,
           "form": "direct_static_call"
         },
         {
@@ -11274,7 +11274,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3509,
+          "line": 3512,
           "form": "direct_static_call"
         }
       ],
@@ -11708,7 +11708,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4731,
+          "line": 4737,
           "form": "instance_call"
         }
       ],
@@ -11775,12 +11775,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4734,
+          "line": 4740,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4782,
+          "line": 4788,
           "form": "instance_call"
         }
       ],
@@ -11798,7 +11798,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4830,
+          "line": 4836,
           "form": "instance_call"
         }
       ],
@@ -11920,7 +11920,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4688,
+          "line": 4694,
           "form": "instance_call"
         }
       ],
@@ -12003,7 +12003,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4692,
+          "line": 4698,
           "form": "instance_call"
         }
       ],
@@ -12045,7 +12045,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4690,
+          "line": 4696,
           "form": "instance_call"
         }
       ],
@@ -12063,7 +12063,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4689,
+          "line": 4695,
           "form": "instance_call"
         }
       ],
@@ -12161,7 +12161,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4693,
+          "line": 4699,
           "form": "instance_call"
         }
       ],
@@ -12265,7 +12265,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4691,
+          "line": 4697,
           "form": "instance_call"
         }
       ],
@@ -12332,12 +12332,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4684,
+          "line": 4690,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4745,
+          "line": 4751,
           "form": "instance_call"
         }
       ],
@@ -12401,7 +12401,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4685,
+          "line": 4691,
           "form": "instance_call"
         }
       ],
@@ -14720,7 +14720,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 353
+      "occurrenceCount": 354
     },
     {
       "key": "android|method|android.widget.LinearLayout#addOnAttachStateChangeListener",
@@ -14838,7 +14838,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 403
+      "occurrenceCount": 405
     },
     {
       "key": "android|method|android.widget.LinearLayout#animate",
@@ -14987,17 +14987,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 458,
+          "line": 459,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 511,
+          "line": 512,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 519,
+          "line": 520,
           "form": "instance_call"
         }
       ],
@@ -15032,12 +15032,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 456,
+          "line": 457,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 509,
+          "line": 510,
           "form": "instance_call"
         }
       ],
@@ -15091,7 +15091,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 339,
+          "line": 340,
           "form": "instance_call"
         }
       ],
@@ -15115,7 +15115,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 610,
+          "line": 611,
           "form": "instance_call"
         }
       ],
@@ -15169,12 +15169,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5789,
+          "line": 5810,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5790,
+          "line": 5811,
           "form": "instance_call"
         }
       ],
@@ -15356,7 +15356,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 608,
+          "line": 609,
           "form": "instance_call"
         }
       ],
@@ -15506,12 +15506,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 579,
+          "line": 580,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2140,
+          "line": 2141,
           "form": "instance_call"
         }
       ],
@@ -15602,17 +15602,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 590,
+          "line": 591,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 606,
+          "line": 607,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2156,
+          "line": 2157,
           "form": "instance_call"
         }
       ],
@@ -15710,7 +15710,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 607,
+          "line": 608,
           "form": "instance_call"
         }
       ],
@@ -15745,12 +15745,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 580,
+          "line": 581,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2141,
+          "line": 2142,
           "form": "instance_call"
         }
       ],
@@ -16107,7 +16107,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2165,
+          "line": 2166,
           "form": "instance_call"
         }
       ],
@@ -16125,12 +16125,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3437,
+          "line": 3440,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5428,
+          "line": 5434,
           "form": "instance_call"
         }
       ],
@@ -16464,12 +16464,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 589,
+          "line": 590,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2155,
+          "line": 2156,
           "form": "instance_call"
         }
       ],
@@ -17002,7 +17002,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3699,
+          "line": 3705,
           "form": "class_alias_call"
         }
       ],
@@ -17020,7 +17020,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3867,
+          "line": 3873,
           "form": "instance_call"
         }
       ],
@@ -17038,22 +17038,22 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3780,
+          "line": 3786,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3840,
+          "line": 3846,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3858,
+          "line": 3864,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3866,
+          "line": 3872,
           "form": "instance_call"
         }
       ],
@@ -17071,22 +17071,22 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3765,
+          "line": 3771,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3767,
+          "line": 3773,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3824,
+          "line": 3830,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3826,
+          "line": 3832,
           "form": "instance_call"
         }
       ],
@@ -17110,7 +17110,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3520,
+          "line": 3523,
           "form": "direct_static_call"
         }
       ],
@@ -17187,7 +17187,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3515,
+          "line": 3518,
           "form": "instance_call"
         }
       ],
@@ -17211,7 +17211,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3519,
+          "line": 3522,
           "form": "instance_call"
         }
       ],
@@ -17253,7 +17253,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3518,
+          "line": 3521,
           "form": "instance_call"
         }
       ],
@@ -17283,7 +17283,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3517,
+          "line": 3520,
           "form": "instance_call"
         }
       ],
@@ -17325,7 +17325,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3520,
+          "line": 3523,
           "form": "instance_call"
         }
       ],
@@ -17355,7 +17355,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3516,
+          "line": 3519,
           "form": "instance_call"
         }
       ],
@@ -17403,7 +17403,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3530,
+          "line": 3533,
           "form": "instance_call"
         }
       ],
@@ -18102,27 +18102,27 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1685,
+          "line": 1686,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1824,
+          "line": 1825,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4082,
+          "line": 4088,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4117,
+          "line": 4123,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5350,
+          "line": 5356,
           "form": "instance_call"
         }
       ],
@@ -18140,7 +18140,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3564,
+          "line": 3567,
           "form": "instance_call"
         }
       ],
@@ -18182,12 +18182,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1684,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_20_pickword.js",
-          "line": 1823,
+          "line": 1685,
           "form": "instance_call"
         },
         {
@@ -18197,32 +18192,37 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3245,
+          "line": 1825,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4081,
+          "line": 3248,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4108,
+          "line": 4087,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4132,
+          "line": 4114,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4502,
+          "line": 4138,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4893,
+          "line": 4508,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_20_pickword.js",
+          "line": 4899,
           "form": "instance_call"
         }
       ],
@@ -18275,7 +18275,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1832,
+          "line": 1833,
           "form": "instance_call"
         }
       ],
@@ -18299,7 +18299,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4569,
+          "line": 4575,
           "form": "instance_call"
         }
       ],
@@ -18317,17 +18317,17 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3898,
+          "line": 3904,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3958,
+          "line": 3964,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3968,
+          "line": 3974,
           "form": "instance_call"
         }
       ],
@@ -18369,22 +18369,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4135,
+          "line": 4141,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4449,
+          "line": 4455,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4569,
+          "line": 4575,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4932,
+          "line": 4938,
           "form": "instance_call"
         }
       ],
@@ -18402,12 +18402,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2259,
+          "line": 2260,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3333,
+          "line": 3336,
           "form": "instance_call"
         }
       ],
@@ -18425,7 +18425,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3335,
+          "line": 3338,
           "form": "instance_call"
         }
       ],
@@ -18461,12 +18461,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3334,
+          "line": 3337,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5312,
+          "line": 5318,
           "form": "instance_call"
         },
         {
@@ -18507,17 +18507,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3332,
+          "line": 3335,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3567,
+          "line": 3570,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5316,
+          "line": 5322,
           "form": "instance_call"
         }
       ],
@@ -18541,7 +18541,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3199,
+          "line": 3202,
           "form": "instance_call"
         }
       ],
@@ -18587,12 +18587,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3213,
+          "line": 3216,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5430,
+          "line": 5436,
           "form": "instance_call"
         }
       ],
@@ -18671,7 +18671,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5314,
+          "line": 5320,
           "form": "instance_call"
         }
       ],
@@ -18689,7 +18689,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5313,
+          "line": 5319,
           "form": "instance_call"
         }
       ],
@@ -19375,7 +19375,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5148,
+          "line": 5154,
           "form": "instance_call"
         }
       ],
@@ -19411,7 +19411,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5350,
+          "line": 5356,
           "form": "instance_call"
         }
       ],
@@ -19470,7 +19470,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2241,
+          "line": 2242,
           "form": "instance_call"
         }
       ],
@@ -19506,7 +19506,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3528,
+          "line": 3531,
           "form": "instance_call"
         }
       ],
@@ -19595,12 +19595,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4715,
+          "line": 4721,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4748,
+          "line": 4754,
           "form": "instance_call"
         },
         {
@@ -19707,7 +19707,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5308,
+          "line": 5314,
           "form": "instance_call"
         }
       ],
@@ -19988,12 +19988,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 4717,
+          "line": 4723,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4747,
+          "line": 4753,
           "form": "instance_call"
         },
         {
@@ -20134,7 +20134,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5306,
+          "line": 5312,
           "form": "instance_call"
         }
       ],
@@ -20152,7 +20152,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5309,
+          "line": 5315,
           "form": "instance_call"
         }
       ],
@@ -20170,12 +20170,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 587,
+          "line": 588,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 611,
+          "line": 612,
           "form": "instance_call"
         }
       ],
@@ -20328,12 +20328,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4706,
+          "line": 4712,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5331,
+          "line": 5337,
           "form": "instance_call"
         }
       ],
@@ -20375,12 +20375,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3631,
+          "line": 3637,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5300,
+          "line": 5306,
           "form": "instance_call"
         },
         {
@@ -20463,7 +20463,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 3633,
+          "line": 3639,
           "form": "instance_call"
         },
         {
@@ -20507,7 +20507,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5305,
+          "line": 5311,
           "form": "instance_call"
         }
       ],
@@ -20934,7 +20934,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3640,
+          "line": 3646,
           "form": "instance_call"
         }
       ],
@@ -20952,7 +20952,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 5429,
+          "line": 5435,
           "form": "instance_call"
         }
       ],
@@ -21083,7 +21083,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 586,
+          "line": 587,
           "form": "instance_call"
         }
       ],
@@ -21218,7 +21218,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 3474,
+          "line": 3477,
           "form": "instance_call"
         }
       ],
@@ -21338,7 +21338,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5302,
+          "line": 5308,
           "form": "instance_call"
         }
       ],
@@ -21583,17 +21583,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 4655,
+          "line": 4661,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5091,
+          "line": 5097,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5101,
+          "line": 5107,
           "form": "instance_call"
         }
       ],
@@ -21647,7 +21647,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2320,
+          "line": 2322,
           "form": "direct_static_call"
         },
         {
@@ -22273,7 +22273,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2533,
+          "line": 2535,
           "form": "direct_constructor"
         }
       ],
@@ -22302,22 +22302,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2357,
+          "line": 2359,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2357,
+          "line": 2359,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2558,
+          "line": 2560,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2558,
+          "line": 2560,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -22381,7 +22381,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5036,
+          "line": 5042,
           "form": "direct_constructor"
         },
         {
@@ -22763,7 +22763,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 167
+      "occurrenceCount": 169
     },
     {
       "key": "java|class|java.lang.String",
@@ -23005,7 +23005,7 @@
           "form": "direct_constructor"
         }
       ],
-      "occurrenceCount": 26
+      "occurrenceCount": 27
     },
     {
       "key": "java|class|java.lang.reflect.Array",
@@ -23065,12 +23065,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5020,
+          "line": 5026,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5020,
+          "line": 5026,
           "form": "direct_constructor_assignment"
         },
         {
@@ -23162,12 +23162,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2338,
+          "line": 2340,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2338,
+          "line": 2340,
           "form": "direct_constructor_assignment"
         },
         {
@@ -23226,7 +23226,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2338,
+          "line": 2340,
           "form": "direct_constructor"
         },
         {
@@ -23533,12 +23533,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2533,
+          "line": 2535,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5036,
+          "line": 5042,
           "form": "direct_static_call"
         },
         {
@@ -23860,7 +23860,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2533,
+          "line": 2535,
           "form": "direct_static_call"
         }
       ],
@@ -23884,12 +23884,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2357,
+          "line": 2359,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2558,
+          "line": 2560,
           "form": "direct_static_call"
         }
       ],
@@ -23948,7 +23948,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5036,
+          "line": 5042,
           "form": "direct_static_call"
         },
         {
@@ -24146,22 +24146,22 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2535,
+          "line": 2537,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2543,
+          "line": 2545,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5040,
+          "line": 5046,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5060,
+          "line": 5066,
           "form": "instance_call"
         },
         {
@@ -24225,12 +24225,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2534,
+          "line": 2536,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5039,
+          "line": 5045,
           "form": "instance_call"
         },
         {
@@ -24631,7 +24631,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 72
+      "occurrenceCount": 73
     },
     {
       "key": "java|method|java.io.File#getCanonicalFile",
@@ -24670,7 +24670,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 272,
+          "line": 273,
           "form": "instance_call"
         },
         {
@@ -24864,7 +24864,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2355,
+          "line": 2357,
           "form": "instance_call"
         },
         {
@@ -24991,7 +24991,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 268,
+          "line": 269,
           "form": "instance_call"
         },
         {
@@ -25810,17 +25810,17 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2360,
+          "line": 2362,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2561,
+          "line": 2563,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2567,
+          "line": 2569,
           "form": "instance_call"
         }
       ],
@@ -25838,12 +25838,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2359,
+          "line": 2361,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2560,
+          "line": 2562,
           "form": "instance_call"
         }
       ],
@@ -25867,12 +25867,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2358,
+          "line": 2360,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2559,
+          "line": 2561,
           "form": "instance_call"
         }
       ],
@@ -26368,7 +26368,7 @@
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 121
+      "occurrenceCount": 123
     },
     {
       "key": "java|method|java.lang#String",
@@ -26446,7 +26446,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1194,
+          "line": 1195,
           "form": "direct_static_call"
         }
       ],
@@ -26515,12 +26515,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1196,
+          "line": 1197,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1211,
+          "line": 1212,
           "form": "direct_static_call"
         }
       ],
@@ -26596,16 +26596,16 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 753,
+          "line": 754,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 819,
+          "line": 820,
           "form": "direct_static_call"
         }
       ],
-      "occurrenceCount": 19
+      "occurrenceCount": 20
     },
     {
       "key": "java|method|java.lang.Boolean#valueOf",
@@ -26756,12 +26756,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1198,
+          "line": 1199,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1213,
+          "line": 1214,
           "form": "direct_static_call"
         }
       ],
@@ -26979,7 +26979,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1199,
+          "line": 1200,
           "form": "instance_call"
         }
       ],
@@ -27084,12 +27084,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1202,
+          "line": 1203,
           "form": "instance_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1217,
+          "line": 1218,
           "form": "instance_call"
         }
       ],
@@ -27494,7 +27494,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5777,
+          "line": 5798,
           "form": "instance_call"
         },
         {
@@ -27683,7 +27683,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5020,
+          "line": 5026,
           "form": "direct_static_call"
         },
         {
@@ -27789,7 +27789,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 5021,
+          "line": 5027,
           "form": "instance_call"
         }
       ],
@@ -27884,7 +27884,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1257,
+          "line": 1258,
           "form": "direct_static_call"
         }
       ],
@@ -27947,12 +27947,12 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1193,
+          "line": 1194,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1208,
+          "line": 1209,
           "form": "direct_static_call"
         },
         {
@@ -28047,7 +28047,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2338,
+          "line": 2340,
           "form": "direct_static_call"
         },
         {
@@ -28137,7 +28137,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2338,
+          "line": 2340,
           "form": "direct_static_call"
         },
         {
@@ -28249,7 +28249,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2744,
+          "line": 2746,
           "form": "direct_static_call"
         },
         {
@@ -28349,12 +28349,12 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 1229,
+          "line": 1230,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 1236,
+          "line": 1237,
           "form": "direct_static_call"
         }
       ],
@@ -28764,7 +28764,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2327,
+          "line": 2329,
           "form": "reflection_class_literal"
         }
       ],
@@ -29009,7 +29009,7 @@
         },
         {
           "file": "code/th_20_pickword.js",
-          "line": 2328,
+          "line": 2330,
           "form": "reflection_dynamic_method"
         }
       ],
@@ -29027,7 +29027,7 @@
       "locations": [
         {
           "file": "code/th_20_pickword.js",
-          "line": 2328,
+          "line": 2330,
           "form": "reflection_method_literal"
         }
       ],
@@ -29179,5 +29179,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:a06cb39185192198582a62841336115730fa1eb7b7155d303484b2b15dd8339b"
+  "usageDigest": "sha256:62d57697227a70350a89aed8e95f18dcdb385c877ca314ebd6d67b805465096d"
 }
