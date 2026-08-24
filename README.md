@@ -38,11 +38,12 @@ docs/audits/docs/audits/docs/audits/MODULE_SYMBOL_AUDIT.md
 - Schema 使用递归关系节点保存数组、对象和选项。
 - 旧 JSON 文档表和配置文件会在迁移成功后删除。
 - ToolApp 设置页支持手机、横屏和平板宽屏布局。
+- Beta 通道加载 `th_24_shortx_ui_runtime.js`、`th_34_shortx_ui_lab.js`、`th_26_qr_runtime.js` 与最终封装模块 `th_25_shortx_ui_package.js`；二维码模块仅在有效拾字截图上按用户点击触发，并按需从签名清单下载 ZXing DEX/JAR 到 `shortx.getShortXDir()/lib`。
 - 主按钮面板采用可配置自适应网格：宽度占比只用于确定列数预算，网格根据卡片尺寸、精确间距和可视行数计算，面板与 WindowManager 使用同一精确宽高，避免右侧额外空白。
 - 主面板支持实时运行状态、拖动排序、分页吸附、新增和编辑按钮直接保存、单页隐藏分页圆点和关闭闪烁；默认背景透明度为 0.92。
 - 支持按钮搜索、筛选、启停、排序和编辑。
 - 支持悬浮球拖动唤出指针、悬停取字、小框回退和框选 OCR。
-- 支持拾字截图查看、保存、分享、删除、自动清理和截图管理。
+- 支持拾字截图查看、保存、分享、删除、自动清理和截图管理；Beta 有有效框选截图时可显式解析二维码，结果不会自动复制或打开外部链接。
 - 支持 Android 返回键、预测性返回和 ToolApp 横向滑动返回。
 - 启动、更新、存储和运行异常写入 `ToolHub/logs/`。
 
@@ -98,10 +99,13 @@ var UPDATE_SECURITY_MODE = 2;   // 0: 普通, 1: manifest校验, 2: 完整验签
 
 ```text
 shortx.getShortXDir()/
+├── lib/
+│   └── toolhub-zxing-runtime-3.5.4-r1.jar   # Beta 首次解析二维码时按需下载、验签清单哈希并只读加载
 └── ToolHub/
     ├── code/
     │   ├── th_01_base.js
     │   ├── th_02_core.js
+    │   ├── th_24_shortx_ui_runtime.js
     │   ├── th_03_icon.js
     │   ├── th_04_theme.js
     │   ├── th_05_persistence.js
@@ -120,6 +124,7 @@ shortx.getShortXDir()/
     │   ├── th_14_icon_picker.js
     │   ├── th_14_schema_editor.js
     │   ├── th_15_extra.js
+    │   ├── th_34_shortx_ui_lab.js
     │   ├── th_15_main_panel.js
     │   ├── th_16_entry.js
     │   ├── th_17_pointer.js
@@ -128,7 +133,9 @@ shortx.getShortXDir()/
     │   ├── th_20_pickword.js
     │   ├── th_21_result_preview.js
     │   ├── th_22_image_viewer.js
-    │   └── th_23_screenshot_manager.js
+    │   ├── th_26_qr_runtime.js
+    │   ├── th_23_screenshot_manager.js
+    │   └── th_25_shortx_ui_package.js
     ├── logs/
     │   ├── init.log
     │   └── ShortX_ToolHub_yyyyMMdd.log
@@ -624,3 +631,7 @@ update_history.json
 ## 截图管理器
 
 主面板提供“截图管理”入口，包含“内部截图”和“已保存”两个标签。内部截图支持查看原图、保存、分享和删除；已保存标签管理系统相册或公共目录副本，删除公共副本时会显示额外的永久删除警告。公共副本不会被内部截图保留策略自动清理。
+
+## Beta ShortXUI WindowHost 实验
+
+`beta` 通道的 `th_24_shortx_ui_runtime.js` 与 `th_34_shortx_ui_lab.js` 已进入第二阶段，新增独立 `WindowHost` 生命周期实验。它在 ToolHub WM HandlerThread 上验证 `addView`、`updateViewLayout`、普通/立即移除以及 attach/detach 确认。实验窗口使用独立状态和 `LayoutParams`，不覆盖悬浮球、主面板、设置页或正式 `safeRemoveView()`。

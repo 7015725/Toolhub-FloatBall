@@ -1,4 +1,4 @@
-// @version 1.0.21
+// @version 1.0.30
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -239,6 +239,11 @@
     var pickwordImageTextView20 = null;
     var pickwordImageTextOriginalLp20 = null;
     var pickwordImageTextOriginalIndex20 = -1;
+    var pickwordQrActionTile20 = null;
+    var pickwordQrGenerateTile20 = null;
+    var pickwordQrCopyTile20 = null;
+    var pickwordQrLoadTile20 = null;
+    var pickwordGridShareClosePending20 = false;
 
     function normalizePickwordImageMeta20(meta) {
         if (!meta || typeof meta !== "object") return null;
@@ -297,6 +302,11 @@
 
     function releasePickwordImageController20(reason) {
         try {
+            if (pickwordImageController20 && typeof pickwordImageController20.setPickwordQrActionStateListener === "function") {
+                pickwordImageController20.setPickwordQrActionStateListener(null);
+            }
+        } catch (eQrListener) {}
+        try {
             if (pickwordImageController20 && typeof pickwordImageController20.release === "function") {
                 pickwordImageController20.release(String(reason || "release"));
             }
@@ -310,6 +320,11 @@
         pickwordImageTextView20 = null;
         pickwordImageTextOriginalLp20 = null;
         pickwordImageTextOriginalIndex20 = -1;
+        pickwordQrActionTile20 = null;
+        pickwordQrGenerateTile20 = null;
+        pickwordQrCopyTile20 = null;
+        pickwordQrLoadTile20 = null;
+        pickwordGridShareClosePending20 = false;
     }
 
     function removePickwordImageAfterDelete20(info) {
@@ -483,6 +498,377 @@
         }
     }
 
+    function collapsePickwordAuxView20(viewObj) {
+        if (!viewObj) return;
+        try { viewObj.setVisibility(View.GONE); } catch (eVisibility) {}
+    }
+
+    function normalizePickwordThumbnailChrome20(root) {
+        if (!root) return root;
+        try {
+            var childCount = Number(root.getChildCount() || 0);
+            if (childCount > 0) {
+                var previewImage = root.getChildAt(0);
+                var imageLp = previewImage ? previewImage.getLayoutParams() : null;
+                if (imageLp && imageLp.bottomMargin !== undefined) {
+                    imageLp.bottomMargin = 0;
+                    previewImage.setLayoutParams(imageLp);
+                }
+            }
+            // th_22 的缩略图状态文字继续隐藏；th_26 追加的二维码结果卡保留给截图内容区显示。
+            if (childCount > 1) collapsePickwordAuxView20(root.getChildAt(1));
+        } catch (eChrome) {}
+        return root;
+    }
+
+    function pickwordActionIconCandidates20(kind) {
+        if (kind === "share") return ["share_forward", "share_2", "share"];
+        if (kind === "qr") return ["qr_scan_line", "qr_scan_fill", "qr_code_line", "scan"];
+        if (kind === "qr_generate") return ["qr_code_line", "qr_code_fill", "add_circle_line", "qr_code"];
+        if (kind === "refresh") return ["refresh_line", "refresh_fill", "refresh"];
+        if (kind === "reocr") return ["refresh_line", "refresh_fill", "restart"];
+        if (kind === "clear") return ["delete_bin_line", "delete_bin_2_line", "close_line"];
+        if (kind === "image") return ["gallery_line", "image_2_line", "image_2", "gallery"];
+        if (kind === "save") return ["save", "download_2", "download"];
+        if (kind === "copy") return ["file_copy", "clipboard", "copy"];
+        if (kind === "load") return ["file_text", "file_download", "import"];
+        if (kind === "restore") return ["history", "arrow_go_back", "restart"];
+        return [String(kind || "")];
+    }
+
+    function pickwordColorHex20(colorValue) {
+        var n = Number(colorValue);
+        if (isNaN(n)) return "";
+        var hex = (n >>> 0).toString(16).toUpperCase();
+        while (hex.length < 8) hex = "0" + hex;
+        return "#" + hex;
+    }
+
+    function resolvePickwordShortXActionDrawable20(kind) {
+        var candidates = pickwordActionIconCandidates20(kind);
+        var tintHex = pickwordColorHex20(replicaAccent20());
+        if (toolhubAppRef) {
+            for (var i = 0; i < candidates.length; i++) {
+                var name = String(candidates[i] || "");
+                if (!name) continue;
+                try {
+                    if (typeof toolhubAppRef.resolveShortXDrawable === "function") {
+                        var dr = toolhubAppRef.resolveShortXDrawable(name, tintHex);
+                        if (dr) return dr;
+                    }
+                } catch (eResolve) {}
+                try {
+                    if (typeof toolhubAppRef.getShortXIconDrawable === "function") {
+                        var dr2 = toolhubAppRef.getShortXIconDrawable(name);
+                        if (dr2) return dr2;
+                    }
+                } catch (eGet) {}
+            }
+        }
+        try {
+            safeLog(toolhubAppRef && toolhubAppRef.L, "w", "pickword image action ShortX icon fallback kind=" + String(kind || ""));
+        } catch (eLog) {}
+        try { return appContext.getResources().getDrawable(android.R.drawable.ic_menu_help, null); } catch (eFallback) {}
+        return null;
+    }
+
+    function createPickwordImageActionTile20(labelText, iconKind, callback) {
+        var tile = new LinearLayout(appContext);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setGravity(Gravity.CENTER);
+        tile.setClickable(true);
+        tile.setFocusable(true);
+        tile.setPadding(uiDp(5, 7), uiDp(4, 6), uiDp(5, 7), uiDp(4, 6));
+        tile.setBackground(createStrokeRoundRectDrawable(replicaSoftSurface20(), replicaOutline20(), isTablet ? 16 : 14, 1));
+
+        var iconSize = isTablet ? 28 : 23;
+        var icon = new android.widget.ImageView(appContext);
+        icon.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+        try { icon.setImageDrawable(resolvePickwordShortXActionDrawable20(iconKind)); } catch (eIcon) {}
+        tile.addView(icon, new LinearLayout.LayoutParams(uiDp(iconSize, iconSize + 2), uiDp(iconSize, iconSize + 2)));
+        tile.setTag(icon);
+        tile.setContentDescription(String(labelText || ""));
+        tile.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
+            hapticFeedback(v);
+            try { callback(); } catch (eCallback) { showToast("操作失败"); }
+        } }));
+        return tile;
+    }
+
+    function addPickwordImageActionTile20(row, tile, addLeftMargin) {
+        var lp = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+        if (addLeftMargin === true) lp.leftMargin = uiDp(5, 7);
+        row.addView(tile, lp);
+    }
+
+    function setPickwordImageActionTileState20(tile, description, iconKind, enabled, alphaValue) {
+        if (!tile) return;
+        try { tile.setContentDescription(String(description || "")); } catch (eDesc) {}
+        try { tile.setEnabled(enabled !== false); } catch (eEnabled) {}
+        try { tile.setAlpha(alphaValue == null ? 1.0 : Number(alphaValue)); } catch (eAlpha) {}
+        try {
+            var icon = tile.getTag ? tile.getTag() : null;
+            if (icon && icon.setImageDrawable) icon.setImageDrawable(resolvePickwordShortXActionDrawable20(iconKind));
+        } catch (eIcon) {}
+    }
+
+    function syncPickwordImageActionGridState20() {
+        var state = null;
+        try {
+            if (pickwordImageController20 && typeof pickwordImageController20.getPickwordQrActionState === "function") {
+                state = pickwordImageController20.getPickwordQrActionState();
+            }
+        } catch (eState) { state = null; }
+        state = state || { available: false, status: "idle", hasResult: false, loaded: false };
+        var status = String(state.status || "idle");
+        var running = status === "running";
+        var retry = status === "success" || status === "failed" || status === "timeout" || state.hasResult === true;
+        var qrDesc = retry ? (status === "success" ? "重新解析二维码" : "重试解析二维码") : "解析二维码";
+        if (running) qrDesc = "正在解析二维码";
+        setPickwordImageActionTileState20(
+            pickwordQrActionTile20,
+            qrDesc,
+            retry ? "refresh" : "qr",
+            state.available === true && !running,
+            running ? 0.45 : (state.available === true ? 1.0 : 0.32)
+        );
+        var genRunning = state.generating === true;
+        var genCanRestore = state.generateCanRestore === true;
+        setPickwordImageActionTileState20(
+            pickwordQrGenerateTile20,
+            genRunning ? "正在生成二维码" : (genCanRestore ? "返回拾字" : "二维码生成"),
+            "qr_generate",
+            !genRunning && (state.hasText === true || genCanRestore),
+            !genRunning && (state.hasText === true || genCanRestore) ? 1.0 : 0.32
+        );
+        setPickwordImageActionTileState20(
+            pickwordQrLoadTile20,
+            state.loaded === true ? "恢复原文" : "载入拾字",
+            state.loaded === true ? "restore" : "load",
+            false,
+            0.32
+        );
+        resetPickwordReocrState20(false);
+        setPickwordImageActionTileState20(
+            pickwordReocrTileRef20,
+            pickwordReocrRunning20 ? "正在识别文字" : (pickwordReocrApplied20 ? "恢复原文字" : "重新识别"),
+            pickwordReocrApplied20 ? "restore" : "reocr",
+            !pickwordReocrRunning20,
+            pickwordReocrRunning20 ? 0.45 : 1.0
+        );
+        var clearHasText20 = false;
+        try {
+            var psClear20 = toolhubAppRef && toolhubAppRef.state && toolhubAppRef.state.pickword ? toolhubAppRef.state.pickword : null;
+            clearHasText20 = !!(psClear20 && String(psClear20.fullText == null ? "" : psClear20.fullText));
+        } catch (eClearSync) { clearHasText20 = false; }
+        setPickwordImageActionTileState20(
+            pickwordClearTileRef20,
+            "清空文字",
+            "clear",
+            clearHasText20,
+            clearHasText20 ? 1.0 : 0.32
+        );
+    }
+
+    var pickwordReocrApplied20 = false;
+    var pickwordReocrRunning20 = false;
+    var pickwordReocrSnapshot20 = null;
+    var pickwordReocrSessionKey20 = "";
+    var pickwordReocrTileRef20 = null;
+    var pickwordClearTileRef20 = null;
+
+    function currentReocrSessionKey20() {
+        try {
+            if (pickwordImageController20 && pickwordImageController20.session) {
+                return String(pickwordImageController20.session.internalPath || "");
+            }
+        } catch (eKey) {}
+        return "";
+    }
+
+    function cloneCurrentPickwordMeta20() {
+        var src = currentPickwordMeta20 || {};
+        var out = {};
+        for (var k in src) {
+            if (Object.prototype.hasOwnProperty.call(src, k)) out[k] = src[k];
+        }
+        return out;
+    }
+
+    function resetPickwordReocrState20(force) {
+        var key = currentReocrSessionKey20();
+        if (force === true || key !== pickwordReocrSessionKey20) {
+            pickwordReocrApplied20 = false;
+            pickwordReocrSnapshot20 = null;
+            if (key) pickwordReocrSessionKey20 = key; else pickwordReocrSessionKey20 = "";
+        }
+    }
+
+    function performPickwordClearTextAction20() {
+        try {
+            var ps = toolhubAppRef && toolhubAppRef.state ? toolhubAppRef.state.pickword : null;
+            var text = ps ? String(ps.fullText == null ? "" : ps.fullText) : "";
+            if (!text) { showToast("文字区已为空"); return false; }
+            var meta = cloneCurrentPickwordMeta20();
+            meta.allowEmptyText = true;
+            var ret = toolhubAppRef.showPickwordText("", meta);
+            resetPickwordReocrState20(true);
+            syncPickwordImageActionGridState20();
+            return !!(ret && ret.ok);
+        } catch (eClear) {
+            showToast("清空失败");
+        }
+        return false;
+    }
+
+    function performPickwordReocrAction20() {
+        try {
+            if (!toolhubAppRef || typeof toolhubAppRef.runPointerAreaTextByImage !== "function") {
+                showToast("重新识别暂不可用");
+                return false;
+            }
+            resetPickwordReocrState20(false);
+            if (pickwordReocrRunning20) { showToast("正在识别截图文字"); return false; }
+            if (pickwordReocrApplied20) {
+                var snap = pickwordReocrSnapshot20 || { text: "" };
+                var metaRestore = cloneCurrentPickwordMeta20();
+                if (!String(snap.text == null ? "" : snap.text)) metaRestore.allowEmptyText = true;
+                pickwordReocrApplied20 = false;
+                pickwordReocrSnapshot20 = null;
+                toolhubAppRef.showPickwordText(String(snap.text == null ? "" : snap.text), metaRestore);
+                showToast("已恢复原文字");
+                syncPickwordImageActionGridState20();
+                return true;
+            }
+            var ps = toolhubAppRef && toolhubAppRef.state && toolhubAppRef.state.pickword ? toolhubAppRef.state.pickword : null;
+            if (!ps || !String(ps.fullText == null ? "" : ps.fullText)) {
+                showToast("当前没有可重新识别的文字");
+                return false;
+            }
+            var sessionPath = currentReocrSessionKey20();
+            if (!sessionPath) { showToast("截图文件不可用"); return false; }
+            pickwordReocrRunning20 = true;
+            syncPickwordImageActionGridState20();
+            var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            new java.lang.Thread(new java.lang.Runnable({ run: function() {
+                var ocrText = "";
+                var ocrErr = "";
+                try { ocrText = String(toolhubAppRef.runPointerAreaTextByImage(sessionPath) || ""); } catch (eOcr) { ocrErr = String(eOcr); }
+                mainHandler.post(new java.lang.Runnable({ run: function() {
+                    pickwordReocrRunning20 = false;
+                    if (ocrErr) { showToast("重新识别失败"); }
+                    else if (!ocrText.replace(/\s+/g, "")) { showToast("未识别到文字"); }
+                    else {
+                        pickwordReocrSnapshot20 = { text: String(ps.fullText == null ? "" : ps.fullText) };
+                        pickwordReocrApplied20 = true;
+                        try { toolhubAppRef.showPickwordText(ocrText, cloneCurrentPickwordMeta20()); } catch (eApply) { showToast("识别结果写入失败"); }
+                        showToast("已更新识别文字，再点可恢复");
+                    }
+                    try { syncPickwordImageActionGridState20(); } catch (eSync) {}
+                }}));
+            }})).start();
+            return true;
+        } catch (eReocr) {
+            pickwordReocrRunning20 = false;
+            showToast("重新识别失败");
+        }
+        return false;
+    }
+
+    function performPickwordQrAction20(action) {
+        try {
+            if (!pickwordImageController20 || typeof pickwordImageController20.performPickwordQrAction !== "function") {
+                showToast("二维码入口暂不可用");
+                return false;
+            }
+            var ok = pickwordImageController20.performPickwordQrAction(String(action || "")) === true;
+            syncPickwordImageActionGridState20();
+            return ok;
+        } catch (eQr) {
+            showToast("二维码操作失败");
+        }
+        return false;
+    }
+
+    function performPickwordImagePageAction20(actionIndex, unavailableText) {
+        try {
+            if (!pickwordImagePage20) {
+                showToast(String(unavailableText || "图片操作暂不可用"));
+                return false;
+            }
+            var bottom = pickwordImagePage20.getChildAt(2);
+            var actions = bottom ? bottom.getChildAt(0) : null;
+            var action = actions ? actions.getChildAt(Number(actionIndex || 0)) : null;
+            if (!action) {
+                showToast(String(unavailableText || "图片操作暂不可用"));
+                return false;
+            }
+            return action.performClick() === true;
+        } catch (eAction) {}
+        showToast(String(unavailableText || "图片操作失败"));
+        return false;
+    }
+
+    function createPickwordImageActionGrid20(thumbRoot) {
+        var grid = new LinearLayout(appContext);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setGravity(Gravity.CENTER);
+
+        var topRow = new LinearLayout(appContext);
+        topRow.setOrientation(LinearLayout.HORIZONTAL);
+        var middleRow = new LinearLayout(appContext);
+        middleRow.setOrientation(LinearLayout.HORIZONTAL);
+        var bottomRow = new LinearLayout(appContext);
+        bottomRow.setOrientation(LinearLayout.HORIZONTAL);
+
+        addPickwordImageActionTile20(topRow,
+            createPickwordImageActionTile20("分享截图", "share", function() {
+                pickwordGridShareClosePending20 = true;
+                var clicked = performPickwordImagePageAction20(0, "截图分享暂不可用");
+                if (!clicked) pickwordGridShareClosePending20 = false;
+            }), false);
+        pickwordQrActionTile20 = createPickwordImageActionTile20("解析二维码", "qr", function() {
+            performPickwordQrAction20("decode");
+        });
+        addPickwordImageActionTile20(topRow, pickwordQrActionTile20, true);
+
+        addPickwordImageActionTile20(middleRow,
+            pickwordReocrTileRef20 = createPickwordImageActionTile20("重新识别", "reocr", function() {
+                performPickwordReocrAction20();
+            }), false);
+        addPickwordImageActionTile20(middleRow,
+            createPickwordImageActionTile20("保存截图", "save", function() {
+                performPickwordImagePageAction20(1, "截图保存暂不可用");
+            }), true);
+
+        pickwordQrGenerateTile20 = createPickwordImageActionTile20("二维码生成", "qr_generate", function() {
+            performPickwordQrAction20("generate");
+        });
+        addPickwordImageActionTile20(bottomRow, pickwordQrGenerateTile20, false);
+        addPickwordImageActionTile20(bottomRow,
+            pickwordClearTileRef20 = createPickwordImageActionTile20("清空文字", "clear", function() {
+                performPickwordClearTextAction20();
+            }), true);
+
+        grid.addView(topRow, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
+        var middleLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1);
+        middleLp.topMargin = uiDp(4, 5);
+        grid.addView(middleRow, middleLp);
+        var bottomLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1);
+        bottomLp.topMargin = uiDp(4, 5);
+        grid.addView(bottomRow, bottomLp);
+
+        try {
+            if (pickwordImageController20 && typeof pickwordImageController20.setPickwordQrActionStateListener === "function") {
+                pickwordImageController20.setPickwordQrActionStateListener(function(state) {
+                    try { syncPickwordImageActionGridState20(); } catch (eSync) {}
+                });
+            }
+        } catch (eListener) {}
+        syncPickwordImageActionGridState20();
+        return grid;
+    }
+
     function addPickwordTextArea20(parent, view, originalLp) {
         var meta = currentPickwordMeta20;
         if (!meta || meta.available !== true || !toolhubAppRef ||
@@ -524,10 +910,16 @@
                     } catch (eSaved) {}
                 },
                 onShared: function(info) {
+                    var closeAfterShare = pickwordGridShareClosePending20 === true;
+                    pickwordGridShareClosePending20 = false;
                     try { safeLog(toolhubAppRef && toolhubAppRef.L, "i", "pickword image shared uri=" + String(info && info.contentUri || "")); } catch (eShared) {}
+                    if (closeAfterShare) {
+                        try { 拾字Floaty.hide(); } catch (eHide) {}
+                    }
                 },
                 onDeleted: function(info) { removePickwordImageAfterDelete20(info); },
                 onError: function(stage, error) {
+                    if (String(stage || "").indexOf("share") === 0) pickwordGridShareClosePending20 = false;
                     try { safeLog(toolhubAppRef && toolhubAppRef.L, 'w', "pickword image stage=" + String(stage || "") + " err=" + String(error || "")); } catch (eLog) {}
                 }
             });
@@ -542,11 +934,12 @@
             }
 
             var dm = appContext.getResources().getDisplayMetrics();
-            var widthDp = Number(dm.widthPixels || 0) / Math.max(0.1, Number(dm.density || 1));
-            var horizontal = widthDp >= 520;
+            var density20 = Math.max(0.1, Number(dm.density || 1));
+            var contentWidthDp20 = Number(windowWidth || dm.widthPixels || 0) / density20;
+            var horizontal = contentWidthDp20 >= 320;
             var host = new LinearLayout(appContext);
             pickwordContentHost20 = host;
-            host.setOrientation(horizontal ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+            host.setOrientation(LinearLayout.VERTICAL);
             host.setGravity(Gravity.CENTER_VERTICAL);
 
             var textColumn = new LinearLayout(appContext);
@@ -555,25 +948,33 @@
             imageColumn.setOrientation(LinearLayout.VERTICAL);
             imageColumn.setGravity(Gravity.CENTER);
             var thumb = pickwordImageController20.createThumbnailView();
+            normalizePickwordThumbnailChrome20(thumb);
+            var actionGrid20 = createPickwordImageActionGrid20(thumb);
 
-            var thumbHeight20 = Math.round(uiDp(108, 132));
+            var mediaHeight20 = Math.round(uiDp(150, 188));
             if (horizontal) {
-                textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                var mediaRow20 = new LinearLayout(appContext);
+                mediaRow20.setOrientation(LinearLayout.HORIZONTAL);
+                mediaRow20.setGravity(Gravity.CENTER_VERTICAL);
                 imageColumn.addView(thumb, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-                host.addView(textColumn, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 7));
-                var imageLp = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 3);
-                imageLp.leftMargin = uiDp(8, 10);
-                host.addView(imageColumn, imageLp);
+                mediaRow20.addView(imageColumn, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
+                var gridLp20 = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+                gridLp20.leftMargin = uiDp(9, 12);
+                mediaRow20.addView(actionGrid20, gridLp20);
+                host.addView(mediaRow20, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, mediaHeight20));
             } else {
+                var thumbHeight20 = Math.round(uiDp(126, 154));
                 imageColumn.addView(thumb, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, thumbHeight20));
                 host.addView(imageColumn, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, thumbHeight20));
-                var compactTextHeight20 = Math.round(Math.min(textAreaHeight, uiDp(156, 220)));
-                if (!(compactTextHeight20 > 0)) compactTextHeight20 = Math.round(uiDp(156, 220));
-                var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, compactTextHeight20);
-                textLp.topMargin = uiDp(6, 8);
-                textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-                host.addView(textColumn, textLp);
+                var compactGridLp20 = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, Math.round(uiDp(126, 154)));
+                compactGridLp20.topMargin = uiDp(8, 10);
+                host.addView(actionGrid20, compactGridLp20);
             }
+
+            var textLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+            textLp.topMargin = uiDp(10, 12);
+            textColumn.addView(view, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+            host.addView(textColumn, textLp);
 
             var hostWidth20 = resolvedOriginalLp && resolvedOriginalLp.width !== undefined ? resolvedOriginalLp.width : LayoutParams.MATCH_PARENT;
             var hostLp = new LinearLayout.LayoutParams(hostWidth20, LayoutParams.WRAP_CONTENT);
@@ -597,6 +998,12 @@
         }
     }
 
+
+    function syncPickwordPreviewVisibility20() {
+        if (!previewTextView) return;
+        var hidePreview = currentPickwordMeta20 && currentPickwordMeta20.imageOnly === true;
+        try { previewTextView.setVisibility(hidePreview ? View.GONE : View.VISIBLE); } catch (eVisibility) {}
+    }
 
     var fullText = "";
     var selectedIndices = [];
@@ -1514,7 +1921,7 @@
 
     function resolveReplicaIconColor20(styleKind) {
         if (styleKind === "primary") return Colors.onPrimary;
-        if (styleKind === "pin") return replicaAccent20();
+        if (styleKind === "pin" || styleKind === "imageAction") return replicaAccent20();
         return Colors.text;
     }
 
@@ -1567,6 +1974,38 @@
                         canvas.drawCircle(left + s * 0.18, cy, r, paint);
                         canvas.drawCircle(right - s * 0.16, top + s * 0.18, r, paint);
                         canvas.drawCircle(right - s * 0.16, bottom - s * 0.18, r, paint);
+                    } else if (kind === "qr") {
+                        var q = s * 0.28;
+                        rect.set(left + s * 0.03, top + s * 0.03, left + s * 0.03 + q, top + s * 0.03 + q);
+                        canvas.drawRect(rect, paint);
+                        rect.set(right - s * 0.03 - q, top + s * 0.03, right - s * 0.03, top + s * 0.03 + q);
+                        canvas.drawRect(rect, paint);
+                        rect.set(left + s * 0.03, bottom - s * 0.03 - q, left + s * 0.03 + q, bottom - s * 0.03);
+                        canvas.drawRect(rect, paint);
+                        canvas.drawLine(cx + s * 0.05, cy + s * 0.05, right - s * 0.04, cy + s * 0.05, paint);
+                        canvas.drawLine(cx + s * 0.05, cy + s * 0.05, cx + s * 0.05, bottom - s * 0.04, paint);
+                        canvas.drawLine(cx + s * 0.24, cy + s * 0.22, right - s * 0.04, cy + s * 0.22, paint);
+                    } else if (kind === "image") {
+                        rect.set(left + s * 0.03, top + s * 0.08, right - s * 0.03, bottom - s * 0.08);
+                        canvas.drawRoundRect(rect, s * 0.08, s * 0.08, paint);
+                        canvas.drawCircle(right - s * 0.25, top + s * 0.28, s * 0.07, paint);
+                        var pImage = new android.graphics.Path();
+                        pImage.moveTo(left + s * 0.15, bottom - s * 0.20);
+                        pImage.lineTo(cx - s * 0.08, cy + s * 0.02);
+                        pImage.lineTo(cx + s * 0.08, cy + s * 0.18);
+                        pImage.lineTo(right - s * 0.18, cy - s * 0.02);
+                        pImage.lineTo(right - s * 0.08, bottom - s * 0.20);
+                        canvas.drawPath(pImage, paint);
+                    } else if (kind === "save") {
+                        canvas.drawLine(cx, top + s * 0.02, cx, cy + s * 0.18, paint);
+                        canvas.drawLine(cx, cy + s * 0.18, cx - s * 0.18, cy, paint);
+                        canvas.drawLine(cx, cy + s * 0.18, cx + s * 0.18, cy, paint);
+                        var pSave = new android.graphics.Path();
+                        pSave.moveTo(left + s * 0.10, cy + s * 0.18);
+                        pSave.lineTo(left + s * 0.10, bottom - s * 0.06);
+                        pSave.lineTo(right - s * 0.10, bottom - s * 0.06);
+                        pSave.lineTo(right - s * 0.10, cy + s * 0.18);
+                        canvas.drawPath(pSave, paint);
                     } else if (kind === "pin") {
                         paint.setStyle(Paint.Style.FILL);
                         var pPin = new android.graphics.Path();
@@ -2522,7 +2961,16 @@
         },
 
         show: function(text, meta) {
-            currentPickwordMeta20 = normalizePickwordImageMeta20(meta);
+            var nextMeta = normalizePickwordImageMeta20(meta);
+            var prevMeta = currentPickwordMeta20;
+            try {
+                if (mainLayout !== null && prevMeta && nextMeta &&
+                    String(prevMeta.internalPath || "") !== String(nextMeta.internalPath || "") &&
+                    android.os.Looper.getMainLooper().equals(android.os.Looper.myLooper())) {
+                    removeMainPickwordWindowNow20();
+                }
+            } catch (eRebuildMetaSwitch) {}
+            currentPickwordMeta20 = nextMeta;
             if (mainLayout !== null) {
                 isShowing = true;
                 this.resetSessionState(text);
@@ -3057,8 +3505,12 @@
             try {
                 var contentHeight = textCanvasControl.getContentHeight();
                 // contentHeight 已包含 Canvas 上下内边距，不再额外补高，确保父子高度一致。
-                var adaptiveHeight = Math.min(contentHeight, textAreaHeight);
-                var newHeight = Math.min(Math.max(adaptiveHeight, textAreaMinHeight), textAreaHeight);
+                var maxHeight = textAreaHeight;
+                if (currentPickwordMeta20 && currentPickwordMeta20.available === true) {
+                    maxHeight = Math.min(maxHeight, Math.round(uiDp(164, 220)));
+                }
+                var adaptiveHeight = Math.min(contentHeight, maxHeight);
+                var newHeight = Math.min(Math.max(adaptiveHeight, textAreaMinHeight), maxHeight);
                 var params = scrollView.getLayoutParams();
                 if (params.height !== newHeight) {
                     params.height = newHeight;
@@ -3131,6 +3583,7 @@
             previewTextView.setMaxLines(2);
             try { previewTextView.setEllipsize(android.text.TextUtils.TruncateAt.END); } catch (eEllipsize) {}
             previewTextView.setContentDescription("选中文字预览；点击编辑，长按去空格");
+            syncPickwordPreviewVisibility20();
             previewTextView.setOnClickListener(new View.OnClickListener({ onClick: function(v) {
                 if (selectedIndices.length > 0) { hapticFeedback(v); self.editPreviewText(); }
             } }));
@@ -4075,6 +4528,7 @@
             var count = isDragging ? dragSelectionCount : countSelectedGraphemes20(selectedSet);
             setCountLabel20(count);
             this.updateActionButtons();
+            syncPickwordPreviewVisibility20();
             try {
                 if (previewTextView) {
                     if (count > 0) {
@@ -4092,6 +4546,7 @@
             var count = countSelectedGraphemes20(selectedSet);
             setCountLabel20(count);
             this.updateActionButtons();
+            syncPickwordPreviewVisibility20();
             if (count === 0) {
                 previewTextOverride = null;
                 previewSelectionSignature = "";

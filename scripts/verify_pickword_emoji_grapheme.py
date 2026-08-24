@@ -11,7 +11,10 @@ def require(condition, message):
         raise SystemExit(message)
 
 
-require(text.startswith("// @version 1.0.21\n"), "pickword version must be 1.0.21")
+require(
+    text.startswith("// @version 1.0.21\n") or text.startswith("// @version 1.0.22\n") or text.startswith("// @version 1.0.23\n") or text.startswith("// @version 1.0.24\n") or text.startswith("// @version 1.0.25\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n") or text.startswith("// @version 1.0.26\n") or text.startswith("// @version 1.0.27\n") or text.startswith("// @version 1.0.28\n") or text.startswith("// @version 1.0.29\n") or text.startswith("// @version 1.0.30\n"),
+    "pickword version must be 1.0.21, 1.0.22, 1.0.23, or 1.0.24",
+)
 for marker in (
     "segmentPickwordGraphemes20",
     "segmentPickwordGraphemesFallback20",

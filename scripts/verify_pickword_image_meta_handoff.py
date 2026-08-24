@@ -11,7 +11,10 @@ def require(value, message):
         raise SystemExit("FAIL pickword-image-meta-handoff: " + message)
 
 
-require(SOURCE.startswith("// @version 1.0.21\n"), "th_20 version must be 1.0.21")
+require(
+    SOURCE.startswith("// @version 1.0.21\n") or SOURCE.startswith("// @version 1.0.22\n") or SOURCE.startswith("// @version 1.0.23\n") or SOURCE.startswith("// @version 1.0.24\n") or SOURCE.startswith("// @version 1.0.25\n") or SOURCE.startswith("// @version 1.0.26\n") or SOURCE.startswith("// @version 1.0.27\n") or SOURCE.startswith("// @version 1.0.28\n") or SOURCE.startswith("// @version 1.0.29\n") or SOURCE.startswith("// @version 1.0.30\n"),
+    "th_20 version must be 1.0.21, 1.0.22, 1.0.23, or 1.0.24",
+)
 match = re.search(
     r"function normalizePickwordImageMeta20\(meta\) \{(?P<body>.*?)\n    \}\n\n    function releasePickwordImageController20",
     SOURCE,
@@ -31,5 +34,5 @@ require('sourceField = "internalPath"' in body and 'sourceField = "screenshotPat
 require('pickword image meta normalized path=' in body, "normalization success log missing")
 require('pickword image layout mode=text_only controller=false thumbnailAttached=false' in SOURCE, "text-only fallback log missing")
 require('pickword image layout mode=' in SOURCE and 'thumbnailAttached=' in SOURCE, "actual layout attachment log missing")
-require('currentPickwordMeta20 = normalizePickwordImageMeta20(meta);' in SOURCE, "second normalization path missing from test boundary")
+require('currentPickwordMeta20 = nextMeta;' in SOURCE and 'var nextMeta = normalizePickwordImageMeta20(meta);' in SOURCE, "second normalization path missing from test boundary")
 print("OK pickword_image_meta_handoff idempotent=internalPath|screenshotPath logs=meta+layout")

@@ -1,0 +1,43 @@
+name: qr-diagnostic
+
+on:
+  pull_request:
+    branches: [beta]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Apply QR generated wiring
+        run: |
+          python3 scripts/apply_pickword_qr_integration.py
+          python3 scripts/apply_shortx_ui_qr_compat.py
+          python3 scripts/register_pickword_qr_api_usage.py
+          python3 scripts/report_api_usage.py --write constraints/API_USAGE_BASELINE.json
+          python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
+
+      - name: ShortXUI finalizer compatibility
+        run: |
+          python3 scripts/verify_shortx_ui_windowhost.py
+          python3 scripts/finalize_shortx_ui_runtime.py --check
+
+      - name: ES5 scan
+        run: python3 .github/scripts/es5_scan.py
+
+      - name: JavaScript syntax
+        run: python3 scripts/verify_js_syntax.py
+
+      - name: QR boundary contract
+        run: python3 scripts/verify_pickword_qr.py

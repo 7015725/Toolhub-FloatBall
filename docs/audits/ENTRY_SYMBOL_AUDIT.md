@@ -10,10 +10,10 @@
 ## 扫描摘要
 
 - 入口行数：`2430`
-- 子模块文件：`29`
+- 子模块文件：`33`
 - 普通函数定义：`120`
 - 顶层变量：`40`
-- 跨模块引用函数：`17`
+- 跨模块引用函数：`21`
 - 动态引用待确认函数：`0`
 - 高置信度零引用函数候选：`0`
 - 高置信度零引用变量候选：`0`
@@ -57,12 +57,12 @@
 |`readToolHubChannelState`|51|25|跨模块引用|4|4|1|2|0|
 |`writeToolHubChannelStateAtomic`|77|42|入口内使用|4|4|0|0|0|
 |`buildNoCacheUrl`|188|4|入口内使用|2|2|0|0|0|
-|`closeQuietly`|193|3|入口内使用|11|11|0|0|0|
+|`closeQuietly`|193|3|跨模块引用|11|11|4|5|0|
 |`disconnectQuietly`|197|3|入口内使用|2|2|0|0|0|
 |`syncFileOutput`|201|7|入口内使用|3|3|0|0|0|
 |`canWriteDirPath`|211|8|入口内使用|1|1|0|0|0|
-|`assertWritableDirPath`|220|23|入口内使用|2|2|0|0|0|
-|`getToolHubRootDir`|244|18|跨模块引用|6|6|3|5|0|
+|`assertWritableDirPath`|220|23|跨模块引用|2|2|2|4|0|
+|`getToolHubRootDir`|244|18|跨模块引用|6|6|6|10|0|
 |`getLogPath`|268|1|入口内使用|1|1|0|0|0|
 |`getCodeDirPath`|269|1|入口内使用|8|8|0|0|0|
 |`getTrustedShaPath`|270|1|入口内使用|3|3|0|0|0|
@@ -75,14 +75,14 @@
 |`beginToolHubChannelSwitch`|313|11|入口内使用|1|1|0|0|0|
 |`commitToolHubActiveChannel`|325|11|入口内使用|1|1|0|0|0|
 |`cancelToolHubPendingChannel`|337|11|入口内使用|3|3|0|0|0|
-|`writeLog`|349|27|跨模块引用|55|55|2|2|0|
+|`writeLog`|349|27|跨模块引用|55|55|6|7|0|
 |`runShell`|377|7|入口内使用|1|1|0|0|0|
 |`setDirPerms`|385|6|入口内使用|2|2|0|0|0|
 |`ensureCodeDir`|392|16|入口内使用|10|10|0|0|0|
 |`readTextFile`|409|16|入口内使用|7|7|0|0|0|
 |`writeTextFile`|426|20|跨模块引用|7|7|2|4|0|
 |`readFirstLine`|447|6|跨模块引用|3|3|1|2|0|
-|`sha256File`|454|23|入口内使用|18|18|0|0|0|
+|`sha256File`|454|23|跨模块引用|18|18|1|2|0|
 |`saveTrustedSha`|478|1|入口内使用|7|7|0|0|0|
 |`getTrustedSha`|479|1|入口内使用|5|5|0|0|0|
 |`getTrustedVersion`|480|5|跨模块引用|3|3|1|2|0|
@@ -97,7 +97,7 @@
 |`base64Decode`|644|3|入口内使用|2|2|0|0|0|
 |`getTrustedPublicKeyB64`|648|5|入口内使用|2|2|0|0|0|
 |`verifyManifestSignature`|654|17|入口内使用|1|1|0|0|0|
-|`fetchTrustedManifest`|672|49|入口内使用|6|6|0|0|0|
+|`fetchTrustedManifest`|672|49|跨模块引用|6|6|1|2|0|
 |`recoverAtomicReplacement`|722|13|入口内使用|6|6|0|0|0|
 |`replaceFile`|736|32|入口内使用|2|2|0|0|0|
 |`getManifestInfo`|769|4|入口内使用|6|6|0|0|0|
@@ -143,7 +143,7 @@
 |`checkModuleManifestConsistency`|1606|58|入口内使用|4|4|0|0|0|
 |`verifyLocalModuleBeforeEval`|1665|21|入口内使用|2|2|0|0|0|
 |`loadScript`|1687|29|入口内使用|3|3|0|0|0|
-|`copyToolHubModuleList`|1729|5|入口内使用|2|2|0|0|0|
+|`copyToolHubModuleList`|1728|5|入口内使用|2|2|0|0|0|
 |`refreshToolHubChannelModuleSet`|1736|8|入口内使用|2|2|0|0|0|
 |`notifyToolHubModulesLoaded`|1770|15|入口内使用|1|1|0|0|0|
 |`registerToolHubAppInstance`|1795|16|入口内使用|3|3|0|0|0|

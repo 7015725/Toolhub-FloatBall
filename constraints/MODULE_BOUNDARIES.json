@@ -29,19 +29,33 @@
     "completePointerTextCopy": "th_17_pointer.js",
     "showPickwordText": "th_20_pickword.js",
     "isPickwordShowing": "th_20_pickword.js",
-    "hidePickwordWindow": "th_20_pickword.js",
-    "disposePickwordModule": "th_20_pickword.js",
     "onPickwordConfigurationChanged": "th_20_pickword.js",
     "publishResultPreview": "th_21_result_preview.js",
     "dismissResultPreview": "th_21_result_preview.js",
     "openResultPreviewPrimaryAction": "th_21_result_preview.js",
     "disposeResultPreview": "th_21_result_preview.js",
     "onResultPreviewConfigurationChanged": "th_21_result_preview.js",
-    "createPickwordImageController": "th_22_image_viewer.js",
     "getPickwordImageService": "th_22_image_viewer.js",
     "buildScreenshotManagerPanelView": "th_23_screenshot_manager.js"
   },
   "duplicateDefinitions": [
+    {
+      "method": "buildPanelView",
+      "definitions": [
+        "th_15_extra.js",
+        "th_34_shortx_ui_lab.js"
+      ],
+      "effectiveOwner": "th_34_shortx_ui_lab.js",
+      "type": "wrapper",
+      "reason": "Beta 实验室新增独立 ToolApp 页面路由，其他面板继续委托原实现",
+      "wrappers": [
+        {
+          "module": "th_34_shortx_ui_lab.js",
+          "owner": "th_15_extra.js",
+          "oldVariable": "oldBuildPanelView"
+        }
+      ]
+    },
     {
       "method": "createPointerFrameView",
       "definitions": [
@@ -100,6 +114,57 @@
           "module": "th_18_pointer_ocr.js",
           "owner": "th_17_pointer.js",
           "oldVariable": "oldFinishPointerAreaCapture"
+        }
+      ]
+    },
+    {
+      "method": "getSettingsHomeCategoryDefs",
+      "definitions": [
+        "th_14_panels.js",
+        "th_34_shortx_ui_lab.js"
+      ],
+      "effectiveOwner": "th_34_shortx_ui_lab.js",
+      "type": "wrapper",
+      "reason": "Beta 设置首页追加 ShortX UI 实验室入口，保留原分类生成结果",
+      "wrappers": [
+        {
+          "module": "th_34_shortx_ui_lab.js",
+          "owner": "th_14_panels.js",
+          "oldVariable": "oldGetSettingsHomeCategoryDefs"
+        }
+      ]
+    },
+    {
+      "method": "getToolAppTitle",
+      "definitions": [
+        "th_15_extra.js",
+        "th_34_shortx_ui_lab.js"
+      ],
+      "effectiveOwner": "th_34_shortx_ui_lab.js",
+      "type": "wrapper",
+      "reason": "为 ShortX UI 实验室提供标题，其他路由继续委托原实现",
+      "wrappers": [
+        {
+          "module": "th_34_shortx_ui_lab.js",
+          "owner": "th_15_extra.js",
+          "oldVariable": "oldGetToolAppTitle"
+        }
+      ]
+    },
+    {
+      "method": "isToolAppRoute",
+      "definitions": [
+        "th_15_extra.js",
+        "th_34_shortx_ui_lab.js"
+      ],
+      "effectiveOwner": "th_34_shortx_ui_lab.js",
+      "type": "wrapper",
+      "reason": "登记 ShortX UI 实验室为 Beta ToolApp 路由，其他路由继续委托原实现",
+      "wrappers": [
+        {
+          "module": "th_34_shortx_ui_lab.js",
+          "owner": "th_15_extra.js",
+          "oldVariable": "oldIsToolAppRoute"
         }
       ]
     },
@@ -189,6 +254,23 @@
       ]
     },
     {
+      "method": "startAsync",
+      "definitions": [
+        "th_16_entry.js",
+        "th_25_shortx_ui_package.js"
+      ],
+      "effectiveOwner": "th_25_shortx_ui_package.js",
+      "type": "wrapper",
+      "reason": "在悬浮球启动成功后安装经真机验收的 ShortXUI 最终 R3 封装，保持原测试时序并将失败回传为启动失败",
+      "wrappers": [
+        {
+          "module": "th_25_shortx_ui_package.js",
+          "owner": "th_16_entry.js",
+          "oldVariable": "oldStartAsyncShortXUiPackage"
+        }
+      ]
+    },
+    {
       "method": "startPointerTool",
       "definitions": [
         "th_17_pointer.js",
@@ -202,6 +284,57 @@
           "module": "th_18_pointer_ocr.js",
           "owner": "th_17_pointer.js",
           "oldVariable": "oldStartPointerTool"
+        }
+      ]
+    },
+    {
+      "method": "createPickwordImageController",
+      "definitions": [
+        "th_22_image_viewer.js",
+        "th_26_qr_runtime.js"
+      ],
+      "effectiveOwner": "th_26_qr_runtime.js",
+      "type": "wrapper",
+      "reason": "Beta 拾字截图控制器叠加显式二维码解析入口与结果卡，不修改截图查看器内部实现",
+      "wrappers": [
+        {
+          "module": "th_26_qr_runtime.js",
+          "owner": "th_22_image_viewer.js",
+          "oldVariable": "originalControllerFactory"
+        }
+      ]
+    },
+    {
+      "method": "hidePickwordWindow",
+      "definitions": [
+        "th_20_pickword.js",
+        "th_26_qr_runtime.js"
+      ],
+      "effectiveOwner": "th_26_qr_runtime.js",
+      "type": "wrapper",
+      "reason": "关闭拾字窗口前取消二维码 worker、timeout 与迟到结果 token",
+      "wrappers": [
+        {
+          "module": "th_26_qr_runtime.js",
+          "owner": "th_20_pickword.js",
+          "oldVariable": "originalHide"
+        }
+      ]
+    },
+    {
+      "method": "disposePickwordModule",
+      "definitions": [
+        "th_20_pickword.js",
+        "th_26_qr_runtime.js"
+      ],
+      "effectiveOwner": "th_26_qr_runtime.js",
+      "type": "wrapper",
+      "reason": "释放拾字模块前取消二维码解析会话，不改变原拾字清理顺序",
+      "wrappers": [
+        {
+          "module": "th_26_qr_runtime.js",
+          "owner": "th_20_pickword.js",
+          "oldVariable": "originalDispose"
         }
       ]
     }

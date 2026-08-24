@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "a351cf038bae2065ae5148cc48d08bd6281ce3cb26efde9c1806e4054772632b",
-      "size": 62448,
-      "version": 20260809235317
+      "sha256": "9b99031916e63e9463cf9f2d3ce23332265e6ebbca398e05cc57a7eb69fd9708",
+      "size": 65331,
+      "version": 20260824090818
     }
   },
   "branch": "main",
@@ -14,16 +14,16 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "46ac5f0c32c2934c5e80c2a1827eaea72423083230ee78164e62524d7a9e4388",
-    "size": 107751,
-    "version": 20260810005000,
+    "sha256": "cde8158e2f73b96f71abfb4eeb08a23349f1d5324ada44e89650fb0f51e49531",
+    "size": 107774,
+    "version": 20260819231000,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "ab6eea7ab8eff9a4108c8a50a422ddfa7c436a731c5239298c618487f4a4519c",
-      "size": 85086,
-      "version": "1.1.19"
+      "sha256": "67c7000c85bfdd16ff2f4ca7193393d0475409524d772c6ed1f31bae97ef7b25",
+      "size": 85283,
+      "version": "1.1.20"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -61,9 +61,9 @@
       "version": "1.0.15"
     },
     "th_10_shell.js": {
-      "sha256": "36427d7146a4589cbcf0512804acd90f4210a3d512cde6e03f2cb40c42d86d2d",
-      "size": 18803,
-      "version": "1.0.9"
+      "sha256": "beb8260146b9292b96e9fd37b35e914d35dbd4dae4fcb140cc4d85f014c92240",
+      "size": 22334,
+      "version": "1.0.10"
     },
     "th_11_action.js": {
       "sha256": "95ddf32a4bf144e2f8703afccd0890249dcc7b2d056a861c493454ce058ca583",
@@ -121,24 +121,24 @@
       "version": "1.1.26"
     },
     "th_15_main_panel.js": {
-      "sha256": "14c8b142611d8b69129bfcb4efed5c52f0ce90d59f71da9f1dda29e930e9a702",
-      "size": 81937,
-      "version": "1.5.8"
+      "sha256": "8d8b4a7f513bcf872485af46d3ca812acbb79d1544797ab265159d3396e58364",
+      "size": 81853,
+      "version": "1.5.9"
     },
     "th_16_entry.js": {
-      "sha256": "beff1667a542e7ffbcfec887e3231bfd449b581cfad1753d1c6918e67ce4aeaa",
-      "size": 39530,
-      "version": "1.0.21"
+      "sha256": "2b8af2bb45e6a1dfa5b8d718107dcb821795bf47ea84ed7b4fc944a203279116",
+      "size": 39597,
+      "version": "1.0.22"
     },
     "th_17_pointer.js": {
-      "sha256": "84492391435fa07220c29cca6f8f761f9b15bc306245786efe4116fd4a993680",
-      "size": 186377,
-      "version": "1.2.14"
+      "sha256": "b75151ad4baceb4b4faa6a1a26cf28c249534c130147f13c42ce83fa409c4486",
+      "size": 186861,
+      "version": "1.2.15"
     },
     "th_18_pointer_ocr.js": {
-      "sha256": "70112b5098852b54e55ded3a3d05f6723ca29a22e8e09d1f093bf60def0aae85",
-      "size": 39331,
-      "version": "1.1.4"
+      "sha256": "0698ec5d6304e52edb510fdf22aff25c1b0ccb0b4c5b9546f30788ec6b21fb68",
+      "size": 40108,
+      "version": "1.1.5"
     },
     "th_19_position_state.js": {
       "sha256": "3cfc4b131cb70a1008a0e0e0b6213aded7a36f0ae722a0f309f003231b3c959a",
@@ -146,9 +146,9 @@
       "version": "1.0.13"
     },
     "th_20_pickword.js": {
-      "sha256": "03adfc0d055cceefedfb6ccaf89574fefa13d9c81db210218c1082a2ad47eb97",
-      "size": 266276,
-      "version": "1.0.21"
+      "sha256": "5eba9adde22c01be512e42b6f6173168d6e72d4ce2d1d5d0b2a8afad08df0a91",
+      "size": 289072,
+      "version": "1.0.30"
     },
     "th_21_result_preview.js": {
       "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
@@ -164,20 +164,52 @@
       "sha256": "fe47a98de21344b31c6447eb2759906fb119e7f129caa31effa57689e1bccd89",
       "size": 33007,
       "version": "1.0.7"
+    },
+    "th_24_shortx_ui_runtime.js": {
+      "sha256": "f0718092e479cb089d3567d353e8031cbd52d569551bfb51c06a524e97127b48",
+      "size": 32630,
+      "version": "0.2.0"
+    },
+    "th_25_shortx_ui_package.js": {
+      "sha256": "0c4562aff828d6cee0ba7b33364360ad9a40a93a6fadb1ca789bb91a1da4bfd6",
+      "size": 165464,
+      "version": "0.9.2"
+    },
+    "th_26_qr_runtime.js": {
+      "sha256": "d55302690c6ccb72c0b1ecf9103c1426a1d4686431ce5ae9a594b336a4a4a52c",
+      "size": 46610,
+      "version": "1.0.17"
+    },
+    "th_34_shortx_ui_lab.js": {
+      "sha256": "122fafc884443bb76050bf0ec880c38e134fbaae1d70870f14375c21e91a168f",
+      "size": 29693,
+      "version": "0.2.0"
     }
   },
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "将 2026-08-10 Beta 已完成真机与 CI 验证的更新同步到 Stable/main，包含可信清单离线安全回退、统一 IME 避让与键盘收起几何恢复、ColorOS WindowInsets 隐藏判定，以及更新重启窗口 detach 生命周期修复。",
-      "设置页、按钮编辑、Schema 编辑、颜色面板与 ShortX 图标选择器统一使用 IME 避让/回退契约；键盘隐藏后恢复首次避让前 width、height、gravity、x、y，并避免多次开合位置漂移。",
-      "更新重启与通道切换继续使用普通 WindowManager.removeView；WM HandlerThread 仅在受监控窗口真实 detach 后退出，4.2 秒超时只记录，15 秒仍不强制同步销毁，避免重新引入 system_server/ColorOS Hook 风险。",
-      "入口同步到 20260810005000，保留 Stable/main 与 Beta/beta 双通道隔离、可信本地模块回退和旧窗口未完成 detach 时阻止第二实例启动的 fail-closed 行为。",
+      "将 2026-08-10 之后 Beta 已完成真机与 CI 验证的更新同步到 Stable/main：二维码识别与生成（ZXing 运行时、密集码渲染增强、扫码结果直写文字区）、ShortXUI 运行时底座（DEX Bridge、IME 避让、生命周期收口）、拾字截图操作网格重构（重新识别/清空文字/窗内查看二维码）。",
+      "Shell 执行改为 ShortX Action 优先，可获取真实退出码与输出，广播桥兜底；主面板运行状态行点击直达更新与版本页面。",
+      "稳定性加固：更新重启窗口分离确认后退出、ColorOS IME 隐藏后窗口回位、pointer 反射捕获结构性失败熔断、init.log 纳入保留天数清理。",
       "Stable 独立生成 main 通道 Manifest、RSA 签名和更新历史，不复制 Beta 的 manifest.json、manifest.sig、update_history.json 或 Beta 发布记录。"
     ],
-    "date": "2026-08-10",
-    "title": "同步 2026-08-10 Beta 已验证更新到 Stable"
+    "date": "2026-08-24",
+    "title": "同步 Beta 二维码与 ShortXUI 运行时更新到 Stable"
   },
-  "schema": 5,
-  "version": 20260809235317
+  "runtimeFiles": {
+    "toolhub-zxing-runtime": {
+      "kind": "dex-jar",
+      "minApi": 24,
+      "path": "runtime/toolhub-zxing-runtime-3.5.4-r2.jar",
+      "requiredBy": [
+        "th_26_qr_runtime.js"
+      ],
+      "sha256": "a198634e3afb69002ea1e1c709b45a218beb6b9f3673cb67694b886f5883a367",
+      "size": 272988,
+      "version": "3.5.4-r2"
+    }
+  },
+  "schema": 6,
+  "version": 20260824090818
 }
