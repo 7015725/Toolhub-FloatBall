@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "9b99031916e63e9463cf9f2d3ce23332265e6ebbca398e05cc57a7eb69fd9708",
-      "size": 65331,
-      "version": 20260824090818
+      "sha256": "2e97e0eb1d9ab94237e70de422c66b47a0d4f2dfc97a45bdcebcf9e2264de0cf",
+      "size": 65862,
+      "version": 20260824143916
     }
   },
   "branch": "main",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "cde8158e2f73b96f71abfb4eeb08a23349f1d5324ada44e89650fb0f51e49531",
-    "size": 107774,
-    "version": 20260819231000,
+    "sha256": "55500053be662c07affa12b3222810cc33b843e26e504cc7fe9d5541b65769fa",
+    "size": 107797,
+    "version": 20260824221149,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -189,13 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "将 2026-08-10 之后 Beta 已完成真机与 CI 验证的更新同步到 Stable/main：二维码识别与生成（ZXing 运行时、密集码渲染增强、扫码结果直写文字区）、ShortXUI 运行时底座（DEX Bridge、IME 避让、生命周期收口）、拾字截图操作网格重构（重新识别/清空文字/窗内查看二维码）。",
-      "Shell 执行改为 ShortX Action 优先，可获取真实退出码与输出，广播桥兜底；主面板运行状态行点击直达更新与版本页面。",
-      "稳定性加固：更新重启窗口分离确认后退出、ColorOS IME 隐藏后窗口回位、pointer 反射捕获结构性失败熔断、init.log 纳入保留天数清理。",
-      "Stable 独立生成 main 通道 Manifest、RSA 签名和更新历史，不复制 Beta 的 manifest.json、manifest.sig、update_history.json 或 Beta 发布记录。"
+      "修复了因正式版模块列表未加载二维码运行时导致 ZXing lib 目录未创建、二维码解析与生成不可用的问题"
     ],
     "date": "2026-08-24",
-    "title": "同步 Beta 二维码与 ShortXUI 运行时更新到 Stable"
+    "title": "正式版启用二维码运行时"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -211,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260824090818
+  "version": 20260824143916
 }

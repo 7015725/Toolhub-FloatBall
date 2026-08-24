@@ -1,8 +1,25 @@
 {
   "schema": 1,
-  "historyVersion": 20260824090818,
-  "generatedAt": "2026-08-24T17:08:18+08:00",
+  "historyVersion": 20260824143916,
+  "generatedAt": "2026-08-24T22:39:16+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260824-stable-enable-qr-runtime",
+      "type": "fix",
+      "title": "正式版启用二维码运行时",
+      "details": [
+        "修复了因正式版模块列表未加载二维码运行时导致 ZXing lib 目录未创建、二维码解析与生成不可用的问题"
+      ],
+      "manifestVersion": 20260824143916,
+      "date": "2026-08-24",
+      "modules": [],
+      "entry": {
+        "changed": true,
+        "from": 20260819231000,
+        "to": 20260824221149
+      }
+    },
     {
       "schema": 1,
       "id": "20260824-stable-sync-beta-qr-shortxui",
