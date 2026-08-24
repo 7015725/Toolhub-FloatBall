@@ -4,7 +4,7 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260819231000; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260824221149; // 入口文件版本，仅在 ToolHub.js 变化时提升
 
 var TOOLHUB_CHANNEL_SPECS = {
     stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
@@ -1718,7 +1718,7 @@ var TOOLHUB_STABLE_MODULES = ["th_01_base.js", "th_02_core.js", "th_03_icon.js",
                               "th_06_icon_parser.js", "th_08_content.js", "th_09_animation.js",
                               "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",
                               "th_14_panels.js", "th_14_button_shortcut.js", "th_14_button_icon_editor.js", "th_14_button_editor.js",
-                              "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_15_main_panel.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_23_screenshot_manager.js"];
+                              "th_14_color_picker.js", "th_14_icon_picker.js", "th_14_schema_editor.js", "th_15_extra.js", "th_15_main_panel.js", "th_16_entry.js", "th_17_pointer.js", "th_18_pointer_ocr.js", "th_19_position_state.js", "th_20_pickword.js", "th_21_result_preview.js", "th_22_image_viewer.js", "th_26_qr_runtime.js", "th_23_screenshot_manager.js"];
 var modules = ["th_01_base.js", "th_02_core.js", "th_24_shortx_ui_runtime.js", "th_03_icon.js", "th_04_theme.js", "th_05_persistence.js",
                "th_06_icon_parser.js", "th_08_content.js", "th_09_animation.js",
                "th_10_shell.js", "th_11_action.js", "th_12_rebuild.js", "th_13_panel_ui.js",

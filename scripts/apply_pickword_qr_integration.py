@@ -17,7 +17,7 @@ BOUNDARIES = ROOT / "constraints" / "MODULE_BOUNDARIES.json"
 VERIFY_MANIFEST = ROOT / "scripts" / "verify_manifest.py"
 VERIFY_STORAGE = ROOT / "scripts" / "verify_channel_private_storage_isolation.py"
 VERIFY_QR = ROOT / "scripts" / "verify_pickword_qr.py"
-NEW_ENTRY_VERSION = 20260819231000
+NEW_ENTRY_VERSION = 20260824221149
 
 
 def require(condition, message):
@@ -28,11 +28,15 @@ def require(condition, message):
 def patch_entry():
     text = ENTRY.read_text(encoding="utf-8")
     require("var TOOLHUB_ENTRY_VERSION = %d;" % NEW_ENTRY_VERSION in text, "ToolHub entry version")
-    require(text.count('"th_26_qr_runtime.js"') == 1, "Beta QR module must appear exactly once")
+    require(text.count('"th_26_qr_runtime.js"') == 2, "QR module must appear once in stable list and once in beta list")
     stable_start = text.find("var TOOLHUB_STABLE_MODULES")
     stable_end = text.find("var modules =", stable_start)
     require(stable_start >= 0 and stable_end > stable_start, "stable module list")
-    require('"th_26_qr_runtime.js"' not in text[stable_start:stable_end], "Stable must remain QR-free")
+    stable_body = text[stable_start:stable_end]
+    require('"th_26_qr_runtime.js"' in stable_body, "Stable must load QR runtime")
+    require(stable_body.index('"th_26_qr_runtime.js"') > stable_body.index('"th_22_image_viewer.js"'), "Stable QR module must load after image viewer")
+    for beta_only in ('"th_24_shortx_ui_runtime.js"', '"th_25_shortx_ui_package.js"', '"th_34_shortx_ui_lab.js"'):
+        require(beta_only not in stable_body, "ShortXUI lab/runtime modules must remain Beta-only")
 
 
 def patch_qr_module():

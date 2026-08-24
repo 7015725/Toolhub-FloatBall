@@ -213,15 +213,24 @@ else:
     elif body.index('"th_26_qr_runtime.js"') < body.index('"th_22_image_viewer.js"'):
         errors.append("QR module must load after image viewer")
 stable_match = re.search(r"var\s+TOOLHUB_STABLE_MODULES\s*=\s*\[(.*?)\]\s*;", ENTRY, re.S)
-if stable_match and '"th_26_qr_runtime.js"' in stable_match.group(1):
-    errors.append("QR module must remain Beta-only in stable module set")
+if not stable_match:
+    errors.append("Stable modules list missing")
+else:
+    stable_body = stable_match.group(1)
+    if '"th_26_qr_runtime.js"' not in stable_body:
+        errors.append("Stable modules list does not contain th_26_qr_runtime.js")
+    elif stable_body.index('"th_26_qr_runtime.js"') < stable_body.index('"th_22_image_viewer.js"'):
+        errors.append("Stable QR module must load after image viewer")
+    for beta_only in ('"th_24_shortx_ui_runtime.js"', '"th_25_shortx_ui_package.js"', '"th_34_shortx_ui_lab.js"'):
+        if beta_only in stable_body:
+            errors.append("ShortXUI lab/runtime module must remain Beta-only in stable module set: " + beta_only)
 
 if errors:
     for item in errors:
         print("FAIL", item)
     raise SystemExit(1)
 
-print("OK pickword_qr beta_only=1 system_server_dexloader=%d rhino_packages=%d diagnostics=%d load_text_reuse_window=%d" % (
+print("OK pickword_qr stable_qr=1 system_server_dexloader=%d rhino_packages=%d diagnostics=%d load_text_reuse_window=%d" % (
     1 if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13", "// @version 1.0.14", "// @version 1.0.15", "// @version 1.0.16", "// @version 1.0.17") else 0,
     1 if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13", "// @version 1.0.14", "// @version 1.0.15", "// @version 1.0.16", "// @version 1.0.17") else 0,
     1 if qr_version in ("// @version 1.0.4", "// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7") else 0,
