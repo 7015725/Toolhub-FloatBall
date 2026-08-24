@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "20260824-entry-version-bump",
+  "type": "fix",
+  "title": "入口模块版本同步提升",
+  "details": [
+    "修复了因 th_16_entry.js 内容变更未提升版本导致 CI changed-module-versions 门禁失败的问题"
+  ],
+  "manifestVersion": 20260824051853,
+  "date": "2026-08-24",
+  "modules": [
+    {
+      "name": "th_10_shell.js",
+      "from": "1.0.9",
+      "to": "1.0.10",
+      "change": "updated"
+    },
+    {
+      "name": "th_16_entry.js",
+      "from": "1.0.21",
+      "to": "1.0.22",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
+}

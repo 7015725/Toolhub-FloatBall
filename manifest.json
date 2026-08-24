@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "7b7c91f211632e339a228b01e865a92cc17989f425d6eb2a3dda1f10ea701dbc",
-      "size": 111061,
-      "version": 20260824042347
+      "sha256": "b259a00f3b36350769937f7494e7440ad654844b19170970959855b3478bd8c1",
+      "size": 111844,
+      "version": 20260824051853
     }
   },
   "branch": "beta",
@@ -126,9 +126,9 @@
       "version": "1.5.9"
     },
     "th_16_entry.js": {
-      "sha256": "758d2021c144f1c9c2ad6c4176602c800825176d735e079e8580e4d3ad8d3459",
+      "sha256": "2b8af2bb45e6a1dfa5b8d718107dcb821795bf47ea84ed7b4fc944a203279116",
       "size": 39597,
-      "version": "1.0.21"
+      "version": "1.0.22"
     },
     "th_17_pointer.js": {
       "sha256": "b75151ad4baceb4b4faa6a1a26cf28c249534c130147f13c42ce83fa409c4486",
@@ -189,11 +189,10 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "Shell 按钮优先通过 shortx.executeAction(ShellCommand) 同步执行，可获取 shellOut/shellErr/shellCode 真实结果",
-      "ShortX Action 不可用时自动回退原广播桥，兼容配置与迁移逻辑保持不变"
+      "修复了因 th_16_entry.js 内容变更未提升版本导致 CI changed-module-versions 门禁失败的问题"
     ],
     "date": "2026-08-24",
-    "title": "Shell 执行改为 ShortX Action 优先"
+    "title": "入口模块版本同步提升"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -209,5 +208,5 @@
     }
   },
   "schema": 6,
-  "version": 20260824042347
+  "version": 20260824051853
 }
