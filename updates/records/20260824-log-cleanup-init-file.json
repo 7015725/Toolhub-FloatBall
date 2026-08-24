@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "id": "20260824-log-cleanup-init-file",
+  "type": "fix",
+  "title": "修复了因日志清理前缀过滤导致 init.log 永不清理的问题",
+  "details": [
+    "cleanupOldFiles 原先只匹配 ShortX_ToolHub 前缀，logs 目录下常驻追加的 init.log 被豁免而无限增长；现目录内全部日志文件统一按日志保留天数清理"
+  ],
+  "manifestVersion": 20260824064738,
+  "date": "2026-08-24",
+  "modules": [],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
+}
