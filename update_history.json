@@ -1,8 +1,26 @@
 {
   "schema": 1,
-  "historyVersion": 20260824064738,
-  "generatedAt": "2026-08-24T14:47:38+08:00",
+  "historyVersion": 20260824102806,
+  "generatedAt": "2026-08-24T18:28:06+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260824-beta-signed-input-baseline",
+      "type": "fix",
+      "title": "修复了因签名输入检测遗漏 API 基线导致纯元数据 PR 卡在待签校验的问题",
+      "details": [
+        "修复了因签名输入检测列表遗漏 constraints/API_USAGE_BASELINE.json 导致纯元数据 PR 卡在待签校验的问题：sign-toolhub 的 signed-input 检测补充该文件。",
+        "同步 API_USAGE_BASELINE.json 行号到 CI 生成版本：修复了因 Stable 同步后 th_01_base.js 行号变化导致基线与 CI 重新生成结果漂移的问题。"
+      ],
+      "manifestVersion": 20260824102806,
+      "date": "2026-08-24",
+      "modules": [],
+      "entry": {
+        "changed": false,
+        "from": 20260819231000,
+        "to": 20260819231000
+      }
+    },
     {
       "schema": 1,
       "id": "20260824-log-cleanup-init-file",

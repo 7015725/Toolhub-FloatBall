@@ -4108,7 +4108,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1899,
+          "line": 1901,
           "form": "direct_static_call"
         }
       ],
@@ -22494,12 +22494,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1928,
+          "line": 1930,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1928,
+          "line": 1930,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22561,12 +22561,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1927,
+          "line": 1929,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1927,
+          "line": 1929,
           "form": "direct_constructor_assignment"
         },
         {
@@ -24041,7 +24041,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1928,
+          "line": 1930,
           "form": "direct_static_call"
         },
         {
@@ -24088,7 +24088,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1927,
+          "line": 1929,
           "form": "direct_static_call"
         },
         {
@@ -24775,11 +24775,6 @@
           "form": "instance_call"
         },
         {
-          "file": "code/th_01_base.js",
-          "line": 1882,
-          "form": "instance_call"
-        },
-        {
           "file": "code/th_03_icon.js",
           "line": 127,
           "form": "instance_call"
@@ -24803,9 +24798,14 @@
           "file": "code/th_22_image_viewer.js",
           "line": 1307,
           "form": "instance_call"
+        },
+        {
+          "file": "code/th_22_image_viewer.js",
+          "line": 1661,
+          "form": "instance_call"
         }
       ],
-      "occurrenceCount": 15
+      "occurrenceCount": 14
     },
     {
       "key": "java|method|java.io.File#getParentFile",
@@ -25048,7 +25048,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1882,
+          "line": 1886,
           "form": "instance_call"
         },
         {
@@ -26115,7 +26115,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1930,
+          "line": 1932,
           "form": "instance_call"
         },
         {
@@ -26216,7 +26216,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1931,
+          "line": 1933,
           "form": "instance_call"
         },
         {
@@ -27331,7 +27331,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1916,
+          "line": 1918,
           "form": "direct_static_call"
         },
         {
@@ -27378,7 +27378,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1940,
+          "line": 1942,
           "form": "direct_static_call"
         },
         {
@@ -29179,5 +29179,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:95e983150b24541e20e36ffb32b0b5e1a6bc3156b003a0d4fd0f51fa325bb8b9"
+  "usageDigest": "sha256:c923789b828207c63d10777e9fbdd3254870947cb44495ea3d8a284ec7bf54b8"
 }
