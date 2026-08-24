@@ -1,4 +1,4 @@
-// @version 1.0.32
+// @version 1.0.33
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -497,6 +497,23 @@
                 }
             } catch (eControl) {}
         }
+    }
+
+    function maybeOpenGeneratedQrImagePage20(meta) {
+        try {
+            if (!meta || meta.imageOnly !== true) return;
+            var source = String(meta.source || "");
+            if (source !== "qr_generate" && source !== "qr_generate_text") return;
+            mainHandler.postDelayed(new java.lang.Runnable({ run: function() {
+                try {
+                    var opened = openPickwordImagePage20();
+                    safeLog(toolhubAppRef && toolhubAppRef.L, opened ? "i" : "w",
+                        "pickword generated qr auto open source=" + source + " opened=" + String(opened));
+                } catch (eOpenQr) {
+                    try { safeLog(toolhubAppRef && toolhubAppRef.L, "w", "pickword generated qr auto open failed: " + String(eOpenQr)); } catch (eLog) {}
+                }
+            }}), 80);
+        } catch (eMaybeOpen) {}
     }
 
     function collapsePickwordAuxView20(viewObj) {
@@ -5704,6 +5721,7 @@
                         " image=" + String(!!imageMeta) +
                         " imageOnly=" + String(imageOnly));
                 } catch (eLog) {}
+                if (ret && ret.ok && imageOnly) maybeOpenGeneratedQrImagePage20(ps.meta);
                 return ret;
             };
 
