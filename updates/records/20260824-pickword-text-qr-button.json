@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "20260824-pickword-text-qr-button",
+  "type": "feature",
+  "title": "拾字新增文本二维码生成按钮",
+  "details": [
+    "新增拾字底部二维码按钮；仅拾字没有截图时，也可以直接把当前文字生成二维码"
+  ],
+  "manifestVersion": 20260824153310,
+  "date": "2026-08-24",
+  "modules": [
+    {
+      "name": "th_20_pickword.js",
+      "from": "1.0.31",
+      "to": "1.0.32",
+      "change": "updated"
+    },
+    {
+      "name": "th_26_qr_runtime.js",
+      "from": "1.0.17",
+      "to": "1.0.18",
+      "change": "updated"
+    }
+  ],
+  "entry": {
+    "changed": false,
+    "from": 20260819231000,
+    "to": 20260819231000
+  }
+}

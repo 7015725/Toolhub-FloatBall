@@ -1,4 +1,4 @@
-// @version 1.0.31
+// @version 1.0.32
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -218,6 +218,7 @@
     var copyAllActionBtn = null;
     var cleanupActionBtn = null;
     var shareActionBtn = null;
+    var qrTextActionBtn = null;
     var fontSizeSelectorView = null;
     var fontSizeDropdownCardView = null;
     var fontSizePopupWindow = null;
@@ -487,7 +488,7 @@
         var meta = currentPickwordMeta20;
         if (!meta || meta.imageOnly !== true) return;
         var controls = [copyActionBtn, translateActionBtn, selectAllActionBtn, clearActionBtn, pinActionBtn,
-            copyAllActionBtn, cleanupActionBtn, shareActionBtn];
+            copyAllActionBtn, cleanupActionBtn, shareActionBtn, qrTextActionBtn];
         for (var i = 0; i < controls.length; i++) {
             try {
                 if (controls[i]) {
@@ -2268,6 +2269,7 @@
             styleReplicaButton20(copyAllActionBtn, "inline");
             styleReplicaButton20(cleanupActionBtn, "inline");
             styleReplicaButton20(shareActionBtn, "inline");
+            styleReplicaButton20(qrTextActionBtn, "inline");
             styleReplicaButton20(pinActionBtn, "pin");
             styleReplicaButton20(copyActionBtn, "primary");
             styleReplicaButton20(translateActionBtn, "outline");
@@ -2932,6 +2934,7 @@
         copyAllActionBtn = null;
         cleanupActionBtn = null;
         shareActionBtn = null;
+        qrTextActionBtn = null;
         copyActionBtn = null;
         translateActionBtn = null;
         selectAllActionBtn = null;
@@ -3609,11 +3612,14 @@
             inlineActions.setOrientation(LinearLayout.HORIZONTAL);
             inlineActions.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
 
+            qrTextActionBtn = createReplicaButton20("二维码", "qr", "inline", function() { self.createQrFromText(); }, null);
             copyAllActionBtn = createReplicaButton20("复制全部", "copy", "inline", function() { self.copyAllText(); }, null);
             cleanupActionBtn = createReplicaButton20("去重换行", "cleanup", "inline", function() { self.cleanReplicaNewlines(); }, function() { self.cleanReplicaSpaces(); });
             shareActionBtn = createReplicaButton20("分享", "share", "inline", function() { self.sharePickwordText(); }, null);
             pinActionBtn = createReplicaButton20("钉屏", "pin", "pin", function() { self.pinSelectedText(); }, null);
 
+            inlineActions.addView(qrTextActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40)));
+            inlineActions.addView(createReplicaSeparator20(true));
             inlineActions.addView(copyAllActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40)));
             inlineActions.addView(createReplicaSeparator20(true));
             inlineActions.addView(cleanupActionBtn, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, uiDp(34, 40)));
@@ -5464,6 +5470,21 @@
             var textValue = String(originalFullText || fullText || "");
             if (!textValue) { showToast("没有可复制的文字"); return; }
             if (setClipboard(textValue)) showToast("已复制全部文字");
+        },
+
+        createQrFromText: function() {
+            var textValue = String(originalFullText || fullText || "");
+            if (!textValue.replace(/\s+/g, "")) { showToast("没有可生成二维码的文字"); return; }
+            if (!toolhubAppRef || typeof toolhubAppRef.showPickwordTextQRCode !== "function") {
+                showToast("二维码运行时未加载");
+                return;
+            }
+            try {
+                var ok = toolhubAppRef.showPickwordTextQRCode(textValue) === true;
+                if (!ok) showToast("二维码生成未启动");
+            } catch (eQrText) {
+                showToast("二维码生成失败");
+            }
         },
 
         cleanReplicaNewlines: function() {
