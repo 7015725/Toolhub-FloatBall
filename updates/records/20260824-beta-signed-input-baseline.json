@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "id": "20260824-beta-signed-input-baseline",
+  "type": "fix",
+  "title": "修复了因签名输入检测遗漏 API 基线导致纯元数据 PR 卡在待签校验的问题",
+  "details": [
+    "sign-toolhub 的 signed-input 检测列表补充 constraints/API_USAGE_BASELINE.json；基线行号同步类 PR 现在会正常进入待发布记录消费与重签流程。"
+  ],
+  "manifestVersion": 0
+}
