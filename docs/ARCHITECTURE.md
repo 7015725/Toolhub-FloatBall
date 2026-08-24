@@ -1,8 +1,8 @@
 # ToolHub 技术架构
 
-更新时间：2026-07-20
+更新时间：2026-08-19
 
-本文基于当前 `main` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **29 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载，拾字截图查看与生命周期由 `th_22_image_viewer.js` 承载，截图管理列表由 `th_23_screenshot_manager.js` 承载。
+本文基于当前 `beta` 分支整理，只描述仓库中已经存在的代码结构与机制。项目当前实际加载 **33 个子模块**；`th_07_shortcut.js` 已退役，快捷方式选择能力由 `th_14_button_shortcut.js` 承载，指针取字能力由 `th_17_pointer.js` 承载，框选 OCR 由 `th_18_pointer_ocr.js` 承载，固定位置、指针布局和悬浮球重建回滚由 `th_19_position_state.js` 承载，主按钮面板由 `th_15_main_panel.js` 承载，拾字工具由 `th_20_pickword.js` 承载，顶部结果预览由 `th_21_result_preview.js` 承载，拾字截图查看与生命周期由 `th_22_image_viewer.js` 承载，截图管理列表由 `th_23_screenshot_manager.js` 承载。
 - 主面板尺寸遵循“网格决定面板宽高”：`gridWidth = cols × cellOuterWidth`，`panelWidth = gridWidth + 2 × panelPadding`；完整网格高度、可视高度和页脚共同反推面板高度，WindowManager 使用相同的 `EXACTLY` 宽高。
 
 ---
@@ -25,7 +25,7 @@ ShortX JS 任务入口
 - `ToolHub.js`：粘贴到 ShortX JS 任务中的入口文件，是更新、校验、加载和启动的信任根。
 - `FloatBallAppWM`：核心运行对象，负责状态、WindowManager View、配置、按钮动作、ToolApp 页面栈和生命周期。
 - `WindowManager`：承载悬浮球、主面板、遮罩、查看器和 ToolApp Shell。
-- `code/th_*.js`：入口按顺序加载的子模块，当前为 29 个。
+- `code/th_*.js`：入口按顺序加载的子模块，当前为 33 个。
 
 ---
 
@@ -94,12 +94,13 @@ ballRoot / ballContent Touch
 
 ## 3. 模块分层
 
-当前实际加载 29 个子模块，入口 `modules[]` 顺序如下：
+当前实际加载 33 个子模块，入口 `modules[]` 顺序如下：
 
 ```text
 基础能力层
   th_01_base.js
   th_02_core.js
+  th_24_shortx_ui_runtime.js
   th_03_icon.js
   th_04_theme.js
   th_05_persistence.js
@@ -122,6 +123,7 @@ UI 基础与页面层
   th_14_icon_picker.js
   th_14_schema_editor.js
   th_15_extra.js
+  th_34_shortx_ui_lab.js
   th_15_main_panel.js
 
 生命周期入口层
@@ -138,7 +140,11 @@ UI 基础与页面层
 
 拾字截图与管理层
   th_22_image_viewer.js
+  th_26_qr_runtime.js
   th_23_screenshot_manager.js
+
+最终封装层
+  th_25_shortx_ui_package.js
 ```
 
 模块职责：
@@ -149,6 +155,12 @@ th_01_base.js
 
 th_02_core.js
   完全结构化 SQLite、旧配置迁移、防抖并发写入，以及 FloatBallAppWM 核心状态和基础方法。
+
+th_24_shortx_ui_runtime.js
+  Beta 隔离的 ShortXUI 第一阶段基础运行时，提供 Core、Dispatcher、Scope、Color、Metrics、Display、Shape 和 Diagnostics；颜色操作通过已验证的 ToolHub 安全桥注入，不接管正式 UI。
+
+th_25_shortx_ui_package.js
+  Beta 最终 ShortXUI 封装模块。保存 Phase 2 至 Final R3 的确定性压缩源码和逐项 SHA-256，仅在 `startAsync()` 成功后按已验收顺序安装；安装失败立即关闭当前实例并返回启动失败。
 
 th_03_icon.js
   图标加载、图标缓存、Drawable / Bitmap 处理、悬浮球图标解析。
@@ -205,6 +217,9 @@ th_14_schema_editor.js
 th_15_extra.js
   查看器面板、通用面板定位与显示、ToolApp Shell、页面栈、响应式布局、左右滑返回预览。
 
+th_34_shortx_ui_lab.js
+  Beta 专用 ShortX UI 实验室 ToolApp 页面，保留基础环境、线程、WindowHost 和最终验收诊断入口；正式 IME、返回、Canvas、API 与生命周期能力由 `th_25_shortx_ui_package.js` 在启动成功后统一安装。
+
 th_15_main_panel.js
   主按钮面板顶部工具栏、可配置自适应网格、安全区域避让、分页吸附与圆点导航、方向展开/退出动画、实时运行状态和显式编辑模式拖动排序。
 - 网格列数由安全宽度、`PANEL_WIDTH_PERCENT`、`PANEL_AUTO_MAX_COLS`、`PANEL_MIN_CARD_WIDTH_DP`、间距和内边距动态计算；`PANEL_CARD_HEIGHT_DP` 与 `PANEL_ROWS` 控制卡片高度和可视行数。
@@ -231,6 +246,9 @@ th_21_result_preview.js
 
 th_22_image_viewer.js
   拾字截图缩略图、同窗原图查看、缩放平移、大图区域解码、保存、分享、删除和自动清理。
+
+th_26_qr_runtime.js
+  Beta 拾字截图二维码解析适配层；只在用户点击“解析二维码”后启动后台解码，按签名清单从 GitHub 下载 D8 运行时到 shortx.getShortXDir()/lib，校验 size/SHA-256、只读属性并通过 DexClassLoader 调用 ZXing Core。
 
 th_23_screenshot_manager.js
   截图管理器列表、内部与已保存分类、缩略图缓存、外部打开和删除入口。
@@ -287,6 +305,7 @@ var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: �
 ```
 
 - `UPDATE_SECURITY_MODE` 当前默认是 `2`，即完整验签安全更新模式；只有明确值 `0` 才进入普通模式，无效值会强制回退到完整验签模式 `2`。
+- 远程 manifest 临时不可用时，入口只允许加载目标通道中“文件存在且实际 SHA-256 与已保存可信 SHA-256 完全一致”的完整模块集合；缺失或任一哈希异常都会终止启动。手动检查更新与安装更新仍必须取得并验证远程 manifest。
 - 入口中 `criticalModules` 包含 `th_01_base.js`、`th_02_core.js`、`th_05_persistence.js`、`th_16_entry.js` 和 `th_19_position_state.js`，任一加载失败都会中断启动。
 - 其他模块加载失败会记录到 `loadErrors`；悬浮球仍能启动时返回 `degraded`，不会再误报为完整成功。
 - 入口启动结果使用 `healthy / degraded / failed` 三态，并汇总安全状态、同步状态、布局、关闭广播、更新模块和加载异常。
@@ -1252,3 +1271,7 @@ PopupOverlayBase
 - 拾字号文件写入当前通道 `APP_ROOT_DIR/data/pickword_font_size.txt`，Android SharedPreferences 名称也附加 `stable` 或 `beta` 后缀。
 - Stable 在新路径缺失时可以只读旧公共字号文件和旧 SharedPreferences，并复制到 Stable 私有路径；Beta 不读取旧公共状态。
 - 旧公共字号文件不会被删除，避免升级失败或回滚时丢失用户数据。
+
+## Beta ShortXUI WindowHost 第二阶段
+
+Beta 实验运行时增加 `NEW → PREPARED → ATTACHING → ATTACHED → CLOSING → DETACHED → DISPOSED` 生命周期。所有 WindowManager 调用由注入的 owner `Dispatcher` 执行；移除后通过 `OnAttachStateChangeListener`、`isAttachedToWindow()` 与有限超时共同确认 detach。超时时保留 View、`LayoutParams` 和监听器引用，不提前进入 `DISPOSED`。该路径只管理实验室独立窗口。

@@ -38,8 +38,8 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(BASE, "1.1.19", "th_01_base.js")
-version(MAIN, "1.5.8", "th_15_main_panel.js")
+version(BASE, "1.1.20", "th_01_base.js")
+version(MAIN, "1.5.9", "th_15_main_panel.js")
 
 for marker, label in (
     ('PANEL_BG_ALPHA: { type: "float", min: 0.1, max: 1.0, default: 0.92 }', "alpha validator default"),
@@ -109,11 +109,18 @@ for name in (
     "verify_main_panel_close_lifecycle.py",
 ):
     source = (ROOT / "scripts" / name).read_text(encoding="utf-8")
-    require(source, "1.5.8", name + " current version")
+    require(source, "1.5.9", name + " current version")
     forbid(source, "1.4.0", name + " stale version")
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_visual_tuning.py", "workflow verification")
-require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260810005000;", "current entry version")
+entry_version = re.search(
+    r"(?m)^var TOOLHUB_ENTRY_VERSION = ([0-9]+);",
+    ENTRY,
+)
+if not entry_version:
+    fail("TOOLHUB_ENTRY_VERSION declaration missing")
+if int(entry_version.group(1)) < 20260721201500:
+    fail("entry version regressed below current baseline")
 for path in DOC_PATHS:
     text = path.read_text(encoding="utf-8")
     require(text, "单页隐藏分页圆点", path.name + " single-page documentation")

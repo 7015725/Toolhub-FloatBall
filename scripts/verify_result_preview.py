@@ -149,8 +149,10 @@ def main() -> int:
         and "loadFullTextNow: function(showMsg, preserveHeight)" in pickword_load_full
         and "if (preserveHeight !== true) this.adjustScrollViewHeight();" in pickword_load_full
         and "textAreaMinHeight = Math.min(textAreaHeight, Math.round(uiDp(80, 96)))" in pickword_create_window
-        and "Math.min(contentHeight, textAreaHeight)" in pickword_height
-        and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), textAreaHeight)" in pickword_height
+        and "var maxHeight = textAreaHeight;" in pickword_height
+        and "maxHeight = Math.min(maxHeight, Math.round(uiDp(164, 220)))" in pickword_height
+        and "Math.min(contentHeight, maxHeight)" in pickword_height
+        and "Math.min(Math.max(adaptiveHeight, textAreaMinHeight), maxHeight)" in pickword_height
         and "contentHeight + uiDp(8, 10)" not in pickword_height,
         "maximum height and first-frame adaptive sizing must remain while ScrollView and CanvasView share one minimum-height contract",
         failures,

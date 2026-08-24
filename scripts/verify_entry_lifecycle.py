@@ -6,6 +6,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY_MODULE = ROOT / "code" / "th_16_entry.js"
+ANIMATION_MODULE = ROOT / "code" / "th_09_animation.js"
+ROOT_ENTRY = ROOT / "ToolHub.js"
 
 
 def require(name, condition, detail, failures):
@@ -28,6 +30,8 @@ def section(text, start_marker, end_marker):
 
 def main():
     text = ENTRY_MODULE.read_text(encoding="utf-8")
+    animation_text = ANIMATION_MODULE.read_text(encoding="utf-8")
+    root_entry_text = ROOT_ENTRY.read_text(encoding="utf-8")
     failures = []
 
     receiver_marker = "function registerReceiverOnMain(actions, callback, allowExternal)"
@@ -156,6 +160,51 @@ def main():
         "旧的不确定超时日志已移除",
         "addView result unknown" not in text,
         "不应继续保留无法清理迟到实例的旧超时路径",
+        failures,
+    )
+    require(
+        "关闭链禁止同步销毁 ViewRoot",
+        "removeViewImmediate" not in animation_text
+        and "removeViewImmediate" not in text
+        and "requestedImmediate" in animation_text,
+        "th_09_animation.js 与 th_16_entry.js 必须统一使用普通 removeView，并保留立即移除请求的诊断字段",
+        failures,
+    )
+    switch_flow = section(
+        root_entry_text,
+        "function switchToolHubUpdateChannel(targetChannel)",
+        "var __out = (function()",
+    )
+    require(
+        "通道切换等待旧窗口 detach",
+        "function snapshotToolHubAppWindows(apps)" in root_entry_text
+        and "function waitForToolHubWindowsDetached(snapshots, timeoutMs)" in root_entry_text
+        and "TOOLHUB_WINDOW_DETACH_QUARANTINE" in root_entry_text
+        and "if (!previousClose.detached)" in switch_flow,
+        "切换前必须捕获旧实例窗口、等待全部 detach，并保留超时窗口引用供后续检查",
+        failures,
+    )
+    close_sweep = section(
+        root_entry_text,
+        "function closeToolHubAppsForRestart(primaryApp)",
+        "function reloadLocalToolHubModulesForRestart()",
+    )
+    require(
+        "已知实例先于关闭广播清理",
+        close_sweep.find("closeToolHubAppForRestart(list[i])") >= 0
+        and close_sweep.find("sendToolHubCloseBroadcastForRestart(primaryApp)") >= 0
+        and close_sweep.find("closeToolHubAppForRestart(list[i])")
+        < close_sweep.find("sendToolHubCloseBroadcastForRestart(primaryApp)"),
+        "必须先在实例所属 HandlerThread 执行关闭，再发送广播兜底清理未知旧实例",
+        failures,
+    )
+    require(
+        "旧窗口关闭失败时阻止第二实例",
+        "previousCloseIncomplete = true;" in switch_flow
+        and "if (previousCloseIncomplete)" in switch_flow
+        and "已停止切换" in switch_flow
+        and switch_flow.find("if (!previousClose.detached)") < switch_flow.find("applyToolHubChannelRuntime(target)"),
+        "旧通道窗口未 detach 时不得加载或启动目标通道，也不得自动再启动回退实例",
         failures,
     )
 

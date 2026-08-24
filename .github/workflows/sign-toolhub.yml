@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main, beta]
     types: [opened, reopened, synchronize, ready_for_review]
+  push:
+    branches: [beta]
   workflow_dispatch:
 
 permissions:
@@ -21,6 +23,7 @@ jobs:
     environment: signing
     if: >
       github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref_name == 'beta') ||
       (
         (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'beta') &&
         github.event.pull_request.head.repo.full_name == github.repository &&
@@ -45,12 +48,47 @@ jobs:
           token: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN || github.token }}
           persist-credentials: false
 
+      - name: Detect generated signing commit
+        id: generated_signing_commit
+        shell: bash
+        run: |
+          subject="$(git log -1 --pretty=%s)"
+          generated=false
+          case "$subject" in
+            生成签名产物：*) generated=true ;;
+          esac
+          echo "generated=$generated" >> "$GITHUB_OUTPUT"
+          echo "generated signing commit=$generated subject=$subject"
+
+      - name: Detect signed input change
+        id: signed_input_change
+        shell: bash
+        run: |
+          changed=false
+          if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            while IFS= read -r path; do
+              case "$path" in
+                ToolHub.js|code/*.js|runtime-src/zxing/*|scripts/apply_pickword_qr_integration.py|scripts/apply_pickword_reference_layout.py|scripts/fix_pickword_reference_layout_api_usage.py|scripts/apply_shortx_ui_qr_compat.py|scripts/register_pickword_qr_api_usage.py|scripts/generate_signed_manifest.py|scripts/verify_manifest.py)
+                  changed=true
+                  echo "signed input changed: $path"
+                  ;;
+              esac
+            done < <(git diff --name-only HEAD^ HEAD)
+          else
+            changed=true
+            echo "no parent commit; require signing"
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "signed input change=$changed"
+
       - name: Guard branch
         shell: bash
         run: |
           case "$TARGET_BRANCH" in
+            beta)
+              ;;
             main)
-              echo "sign-toolhub runs on feature branches only"
+              echo "sign-toolhub does not write generated artifacts directly to main"
               exit 1
               ;;
             agent/*|feat/*|fix/*|rollback/*|chore/*|refactor/*|release/*)
@@ -67,7 +105,7 @@ jobs:
         shell: bash
         run: |
           base_ref="${{ github.event.pull_request.base.ref || '' }}"
-          if [ "$base_ref" = "beta" ]; then
+          if [ "$TARGET_BRANCH" = "beta" ] || [ "$base_ref" = "beta" ]; then
             echo "TOOLHUB_UPDATE_CHANNEL=beta" >> "$GITHUB_ENV"
           else
             echo "TOOLHUB_UPDATE_CHANNEL=stable" >> "$GITHUB_ENV"
@@ -77,6 +115,47 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build tools
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-34" "build-tools;35.0.0"
+
+      - name: Apply Beta QR integration wiring
+        shell: bash
+        run: |
+          python3 scripts/apply_pickword_qr_integration.py
+          python3 scripts/apply_pickword_reference_layout.py
+          python3 scripts/fix_pickword_reference_layout_api_usage.py
+          python3 scripts/apply_shortx_ui_qr_compat.py
+          python3 scripts/register_pickword_qr_api_usage.py
+          python3 scripts/report_api_usage.py --write constraints/API_USAGE_BASELINE.json
+          python3 scripts/report_api_usage.py --check constraints/API_USAGE_BASELINE.json
+
+      - name: Regenerate deterministic audits
+        shell: bash
+        run: |
+          python3 scripts/report_entry_symbols.py --write docs/audits/ENTRY_SYMBOL_AUDIT.md
+          python3 scripts/report_dead_module_symbols.py --write docs/audits/DEAD_CODE_AUDIT.md
+          python3 scripts/report_protected_wrapper_chains.py --write docs/audits/PROTECTED_WRAPPER_AUDIT.md
+          python3 scripts/report_module_symbol_audits.py --write docs/audits/MODULE_SYMBOL_AUDIT.md
+
+      - name: Build ZXing DEX runtime
+        shell: bash
+        run: |
+          chmod +x runtime-src/zxing/build_runtime.sh
+          runtime-src/zxing/build_runtime.sh
 
       - name: Verify changed module versions
         shell: bash
@@ -106,6 +185,9 @@ jobs:
         shell: bash
         run: |
           current=false
+          # A pending release record means the current signed bundle is stale and
+          # must be regenerated. Only a fully finalized manifest/history/signature
+          # may be treated as current.
           if python3 scripts/verify_manifest.py && python3 .github/scripts/verify_manifest_signature.py; then
             current=true
           fi
@@ -113,20 +195,30 @@ jobs:
           echo "current=$current" >> "$GITHUB_OUTPUT"
 
       - name: Verify pending release record
-        if: steps.current-generated.outputs.current != 'true'
+        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true' && steps.signed_input_change.outputs.changed == 'true'
         shell: bash
         run: python3 scripts/verify_update_history.py --require-one-pending
 
       - name: Generate signed manifest
-        if: steps.current-generated.outputs.current != 'true'
+        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true' && steps.signed_input_change.outputs.changed == 'true'
         shell: bash
-        run: python3 scripts/generate_signed_manifest.py --yes --channel "$TOOLHUB_UPDATE_CHANNEL"
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git fetch --no-tags origin "${{ github.event.pull_request.base.ref }}"
+            history_base="origin/${{ github.event.pull_request.base.ref }}"
+          else
+            history_base="$(git log -1 --format=%H -- manifest.json)"
+            if [ -z "$history_base" ]; then history_base="HEAD^"; fi
+          fi
+          echo "history_base=$history_base"
+          python3 scripts/generate_signed_manifest.py --yes --channel "$TOOLHUB_UPDATE_CHANNEL" --base-ref "$history_base"
 
       - name: Verify generated JavaScript
         shell: bash
         run: |
           python3 .github/scripts/es5_scan.py
           python3 scripts/verify_js_syntax.py
+          python3 scripts/verify_pickword_qr.py
 
       - name: Verify signed release bundle
         shell: bash
@@ -146,6 +238,7 @@ jobs:
         run: |
           python3 scripts/verify_toolapp_layout.py
           python3 scripts/verify_toolapp_main_thread_affinity.py
+          python3 scripts/verify_panel_ime_restore.py
 
       - name: Verify settings color scheme
         run: python3 scripts/verify_settings_color_scheme.py
@@ -168,6 +261,11 @@ jobs:
       - name: Verify schema validator
         run: python3 scripts/verify_schema_validator.py
 
+      - name: Verify ShortXUI package
+        run: |
+          python3 scripts/verify_shortx_ui_windowhost.py
+          python3 scripts/finalize_shortx_ui_runtime.py --check
+
       - name: Verify generated pointer regressions
         run: python3 scripts/verify_pointer_regressions.py --skip-manifest
 
@@ -188,7 +286,7 @@ jobs:
         run: git diff --check
 
       - name: Commit generated artifacts
-        if: steps.current-generated.outputs.current != 'true'
+        if: steps.current-generated.outputs.current != 'true' && steps.generated_signing_commit.outputs.generated != 'true' && steps.signed_input_change.outputs.changed == 'true'
         shell: bash
         env:
           TOOLHUB_AUTOMATION_TOKEN: ${{ secrets.TOOLHUB_AUTOMATION_TOKEN }}
@@ -199,7 +297,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add manifest.json manifest.sig ToolHub.js.sha256 update_history.json updates/records
+          git add ToolHub.js code/th_20_pickword.js code/th_26_qr_runtime.js constraints/MODULE_BOUNDARIES.json constraints/api.json constraints/API_USAGE_BASELINE.json scripts/apply_pickword_reference_layout.py scripts/fix_pickword_reference_layout_api_usage.py scripts/finalize_shortx_ui_runtime.py scripts/report_protected_wrapper_chains.py README.md docs/ARCHITECTURE.md docs/STRUCTURE.md docs/audits/ENTRY_SYMBOL_AUDIT.md docs/audits/DEAD_CODE_AUDIT.md docs/audits/PROTECTED_WRAPPER_AUDIT.md docs/audits/MODULE_SYMBOL_AUDIT.md ToolHub.js.sha256 manifest.json manifest.sig update_history.json updates/records runtime/toolhub-zxing-runtime-3.5.4-r2.jar
           if git diff --cached --quiet; then
             echo "No generated artifact changes"
             exit 0

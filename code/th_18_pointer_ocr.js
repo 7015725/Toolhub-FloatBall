@@ -1,4 +1,4 @@
-// @version 1.1.4
+// @version 1.1.5
 // =======================【指针：框选截图后文本识别扩展】======================
 // 正式模块，必须在 th_17_pointer.js 后加载。
 // OCR 方法：使用 ShortX OcrDetect + RectSourceRect 识别框选屏幕区域。
@@ -102,6 +102,22 @@
       .setOutputType(OcrDetectOutputType.OcrDetectOutputType_Text)
       .build();
 
+    var result = shortx.executeAction(action);
+    return String(result.contextData.get("ocrResult") || "");
+  }
+
+  function runShortxImageOcr18(path) {
+    var p = String(path == null ? "" : path).replace(/^\s+|\s+$/g, "");
+    if (!isUsableScreenshotPath18(p)) throw new Error("截图文件不可用");
+    importClass(Packages.tornaco.apps.shortx.core.proto.action.OcrDetect);
+    importClass(Packages.tornaco.apps.shortx.core.proto.action.OcrDetectOutputType);
+    var action = OcrDetect.newBuilder()
+      .setImagePath(p)
+      .setThreads(4)
+      .setUseSlim(false)
+      .setSeparator("\n")
+      .setOutputType(OcrDetectOutputType.OcrDetectOutputType_Text)
+      .build();
     var result = shortx.executeAction(action);
     return String(result.contextData.get("ocrResult") || "");
   }
@@ -804,6 +820,7 @@ function applyPerfDefaults18(appObj) {
       installPointerPerf18(proto);
 
       proto.runPointerAreaTextByRect = function(rect) { return runShortxRectOcr18(rect); };
+      proto.runPointerAreaTextByImage = function(path) { return runShortxImageOcr18(path); };
 
       var oldStartPointerTool = proto.startPointerTool;
       proto.startPointerTool = function(options) {

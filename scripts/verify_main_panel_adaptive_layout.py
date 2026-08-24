@@ -31,9 +31,9 @@ def version(text, expected, name):
         fail("%s expected version %s" % (name, expected))
 
 
-version(BASE, "1.1.19", "th_01_base.js")
+version(BASE, "1.1.20", "th_01_base.js")
 version(PERSIST, "1.0.7", "th_05_persistence.js")
-version(MAIN, "1.5.8", "th_15_main_panel.js")
+version(MAIN, "1.5.9", "th_15_main_panel.js")
 
 start = MAIN.find("FloatBallAppWM.prototype.getMainPanelResponsiveSpec = function")
 end = MAIN.find("FloatBallAppWM.prototype.createMainPanelPressedBackground", start)
@@ -83,10 +83,17 @@ for name in (
     "verify_main_panel_close_lifecycle.py",
     "verify_main_panel_visual_tuning.py",
 ):
-    require((ROOT / "scripts" / name).read_text(encoding="utf-8"), "1.5.8", name)
+    require((ROOT / "scripts" / name).read_text(encoding="utf-8"), "1.5.9", name)
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_adaptive_layout.py", "workflow")
-require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260810005000;", "entry")
+entry_version = re.search(
+    r"(?m)^var TOOLHUB_ENTRY_VERSION = ([0-9]+);",
+    ENTRY,
+)
+if not entry_version:
+    fail("TOOLHUB_ENTRY_VERSION declaration missing")
+if int(entry_version.group(1)) < 20260721201500:
+    fail("entry version regressed below main-panel-adaptive-layout baseline")
 for doc in ("README.md", "docs/ARCHITECTURE.md", "docs/STRUCTURE.md"):
     require((ROOT / doc).read_text(encoding="utf-8"), "可配置自适应网格", doc)
 

@@ -1,4 +1,4 @@
-// @version 1.1.19
+// @version 1.1.20
 // ToolHub - Android 悬浮球工具 (ShortX / Rhino ES5)
 // 来源: 阿然 (xin-blog.com)
 //
@@ -1879,9 +1879,11 @@ ToolHubLogger.prototype.cleanupOldFiles = function() {
     var cutoff = now - this.keepDays * 24 * 60 * 60 * 1000;
     for (var i = 0; i < files.length; i++) {
       var f = files[i];
-      if (f && f.isFile() && f.getName().indexOf(this.prefix) === 0 && f.lastModified() < cutoff) {
-        f["delete"]();
-      }
+      if (!f || !f.isFile()) continue;
+      // 日志目录内所有 ToolHub 日志文件统一按 keepDays 清理：
+      // 按天滚动的 ShortX_ToolHub_YYYYMMDD.log 与常驻追加的 init.log 都不能豁免，
+      // 否则 init.log 会无限增长。
+      f["delete"] && f.lastModified() < cutoff && f["delete"]();
     }
     return true;
   } catch (e) { return false; }

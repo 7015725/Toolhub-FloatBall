@@ -9,12 +9,12 @@
 
 ## 扫描摘要
 
-- 加载模块：`29`
-- 原型方法定义：`523`
-- 唯一原型方法：`513`
-- 已登记重复方法：`10`
+- 加载模块：`33`
+- 原型方法定义：`545`
+- 唯一原型方法：`527`
+- 已登记重复方法：`18`
 - 最终覆盖型候选节点：`0`
-- 受保护覆盖/包装链：`10`
+- 受保护覆盖/包装链：`18`
 - 第一批清理候选：`0`
 
 ## 候选节点
@@ -29,21 +29,29 @@
 
 |方法|类型|最终所有者|原因|
 |---|---|---|---|
+|`buildPanelView`|`wrapper`|`th_34_shortx_ui_lab.js`|Beta 实验室新增独立 ToolApp 页面路由，其他面板继续委托原实现|
+|`createPickwordImageController`|`wrapper`|`th_26_qr_runtime.js`|Beta 拾字截图控制器叠加显式二维码解析入口与结果卡，不修改截图查看器内部实现|
 |`createPointerFrameView`|`intentional_override`|`th_18_pointer_ocr.js`|OCR 扩展统一补充文字、框选和处理状态边框绘制|
 |`createPointerLayoutParams`|`wrapper`|`th_19_position_state.js`|补充屏幕边缘和刘海区域布局参数|
+|`disposePickwordModule`|`wrapper`|`th_26_qr_runtime.js`|释放拾字模块前取消二维码解析会话，不改变原拾字清理顺序|
 |`execPointerAction`|`wrapper`|`th_18_pointer_ocr.js`|增加 area_ocr 指针动作模式|
 |`finishPointerAreaCapture`|`wrapper`|`th_18_pointer_ocr.js`|框选截图完成后异步衔接 OCR|
+|`getSettingsHomeCategoryDefs`|`wrapper`|`th_34_shortx_ui_lab.js`|Beta 设置首页追加 ShortX UI 实验室入口，保留原分类生成结果|
+|`getToolAppTitle`|`wrapper`|`th_34_shortx_ui_lab.js`|为 ShortX UI 实验室提供标题，其他路由继续委托原实现|
+|`hidePickwordWindow`|`wrapper`|`th_26_qr_runtime.js`|关闭拾字窗口前取消二维码 worker、timeout 与迟到结果 token|
+|`isToolAppRoute`|`wrapper`|`th_34_shortx_ui_lab.js`|登记 ShortX UI 实验室为 Beta ToolApp 路由，其他路由继续委托原实现|
 |`popToolAppPage`|`wrapper`|`th_16_entry.js`|保存按钮后保留临时编辑状态|
 |`removePointerCallbacks`|`wrapper`|`th_19_position_state.js`|关闭指针时同步取消语义调度|
 |`resetPointerToolState`|`wrapper`|`th_19_position_state.js`|重置指针时同步重建语义调度会话|
 |`scheduleDraggingInspect`|`wrapper`|`th_18_pointer_ocr.js`|限制拖动期间无障碍扫描频率|
 |`showPointerAreaFrame`|`wrapper`|`th_18_pointer_ocr.js`|增加指针边框刷新节流和状态颜色|
+|`startAsync`|`wrapper`|`th_25_shortx_ui_package.js`|在悬浮球启动成功后安装经真机验收的 ShortXUI 最终 R3 封装，保持原测试时序并将失败回传为启动失败|
 |`startPointerTool`|`wrapper`|`th_18_pointer_ocr.js`|启动新指针前取消旧 OCR 并支持 area_ocr 模式|
 
 ## 建议顺序
 
 1. 后续覆盖候选、Shell 诊断和设置类型包装收敛已完成。
-2. 当前剩余 10 条受保护包装链均承担明确功能或生命周期职责。
+2. 当前剩余 18 条受保护包装链均承担明确功能或生命周期职责。
 3. 后续只在新增重复定义、失效包装或明确回归证据时重新开启专项审查。
 
 ## 使用方式

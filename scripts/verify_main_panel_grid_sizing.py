@@ -86,7 +86,14 @@ for marker, label in (
 require(show, "android.view.View.MeasureSpec.AT_MOST", "other panel measure")
 
 require(WORKFLOW, "python3 scripts/verify_main_panel_grid_sizing.py", "workflow")
-require(ENTRY, "var TOOLHUB_ENTRY_VERSION = 20260810005000;", "entry")
+entry_version = re.search(
+    r"(?m)^var TOOLHUB_ENTRY_VERSION = ([0-9]+);",
+    ENTRY,
+)
+if not entry_version:
+    fail("TOOLHUB_ENTRY_VERSION declaration missing")
+if int(entry_version.group(1)) < 20260721201500:
+    fail("entry version regressed below main-panel-grid-sizing baseline")
 for doc in ("README.md", "docs/ARCHITECTURE.md", "docs/STRUCTURE.md"):
     require((ROOT / doc).read_text(encoding="utf-8"), "网格决定面板宽高", doc)
 

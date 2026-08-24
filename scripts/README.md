@@ -24,6 +24,7 @@ Python 脚本继续平铺在 `scripts/` 下，原因是 GitHub Actions 直接按
 - `build_update_history.py`
 - `create_update_record.py`
 - `generate_signed_manifest.py`
+- `finalize_shortx_ui_runtime.py`：将已验收的 ShortXUI Phase 2 至 Final R3 链生成单一签名模块，并同步入口、约束和文档。
 
 ## 资产与审计报告
 

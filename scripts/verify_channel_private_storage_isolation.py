@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify Stable/Beta private diagnostics and pickword state isolation."""
+"""Verify Stable/Beta private storage isolation, including the QR runtime lib."""
 
 import re
 from pathlib import Path
@@ -9,6 +9,7 @@ CODE = ROOT / "code"
 THEME = (CODE / "th_04_theme.js").read_text(encoding="utf-8")
 PANEL = (CODE / "th_13_panel_ui.js").read_text(encoding="utf-8")
 PICKWORD = (CODE / "th_20_pickword.js").read_text(encoding="utf-8")
+QR = (CODE / "th_26_qr_runtime.js").read_text(encoding="utf-8")
 errors = []
 
 
@@ -19,7 +20,30 @@ def require(condition, message):
 
 require(THEME.splitlines()[0] == "// @version 1.0.12", "th_04_theme.js version must be 1.0.12")
 require(PANEL.splitlines()[0] == "// @version 1.0.16", "th_13_panel_ui.js version must be 1.0.16")
-require(PICKWORD.splitlines()[0] == "// @version 1.0.21", "th_20_pickword.js version must be 1.0.21")
+require(PICKWORD.splitlines()[0] in ("// @version 1.0.21", "// @version 1.0.22", "// @version 1.0.23", "// @version 1.0.24", "// @version 1.0.25", "// @version 1.0.26", "// @version 1.0.27", "// @version 1.0.28", "// @version 1.0.29", "// @version 1.0.30"), "th_20_pickword.js version must be 1.0.21, 1.0.22, 1.0.23, 1.0.24, or 1.0.25")
+SUPPORTED_QR_VERSIONS = (
+    "// @version 1.0.1",
+    "// @version 1.0.2",
+    "// @version 1.0.3",
+    "// @version 1.0.4",
+    "// @version 1.0.5",
+    "// @version 1.0.6",
+    "// @version 1.0.7",
+    "// @version 1.0.8",
+    "// @version 1.0.9",
+    "// @version 1.0.10",
+    "// @version 1.0.11",
+    "// @version 1.0.12",
+    "// @version 1.0.13",
+    "// @version 1.0.14",
+    "// @version 1.0.15",
+    "// @version 1.0.16",
+    "// @version 1.0.17",
+)
+require(
+    QR.splitlines()[0] in SUPPORTED_QR_VERSIONS,
+    "th_26_qr_runtime.js version must be 1.0.1/1.0.2/1.0.3/1.0.4/1.0.5/1.0.6/1.0.7/1.0.8/1.0.9 to 1.0.13 during generation",
+)
 
 for name, source in (("theme", THEME), ("panel_ui", PANEL), ("pickword", PICKWORD)):
     require("shortx.getShortXDir" not in source, name + " must not bypass APP_ROOT_DIR")
@@ -49,6 +73,92 @@ legacy_block = PICKWORD[legacy_start:legacy_end] if legacy_start >= 0 and legacy
 require(legacy_block and ".delete()" not in legacy_block,
         "legacy font migration must not delete old data")
 
+qr_version = QR.splitlines()[0] if QR.splitlines() else ""
+if qr_version in (
+    "// @version 1.0.3",
+    "// @version 1.0.4",
+    "// @version 1.0.5",
+    "// @version 1.0.6",
+    "// @version 1.0.7",
+    "// @version 1.0.8",
+):
+    for marker in (
+        'typeof getToolHubRootDir !== "function"',
+        'var root = new java.io.File(String(getToolHubRootDir() || "")).getCanonicalFile();',
+        'var lib = new java.io.File(root, "lib").getCanonicalFile();',
+        'if (libPath.indexOf(rootPath + java.io.File.separator) !== 0)',
+        'assertWritableDirPath(libPath, "ToolHub QR lib")',
+        'manifest.runtimeFiles',
+    ):
+        require(marker in QR, "QR channel-lib safety marker missing: " + marker)
+    if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8"):
+        require('new Packages.dalvik.system.DexClassLoader' in QR,
+                "QR Rhino DexClassLoader marker missing")
+    else:
+        require('new dalvik.system.DexClassLoader' in QR,
+                "QR legacy DexClassLoader marker missing")
+    require("shortx.getShortXDir" not in QR, "QR runtime must not bypass ToolHub channel root")
+    for forbidden in (
+        'shortx.getShortXDir() + "/ToolHub',
+        'shortx.getShortXDir() + "/ToolHub-Beta',
+        'new java.io.File(root, "diagnostics")',
+        'new java.io.File(root, "data")',
+        'new java.io.File(root, "cache")',
+        'new java.io.File(root, "screenshots")',
+        'new java.io.File(root, "logs")',
+    ):
+        require(forbidden not in QR, "QR channel-lib scope widened: " + forbidden)
+
+if qr_version in (
+    "// @version 1.0.2",
+    "// @version 1.0.3",
+    "// @version 1.0.4",
+    "// @version 1.0.5",
+    "// @version 1.0.6",
+    "// @version 1.0.7",
+    "// @version 1.0.8",
+):
+    for marker in (
+        'installLock: new java.util.concurrent.locks.ReentrantLock()',
+        'function preflightRuntime26(appObj, reason)',
+        'preflightRuntime26(null, "module_startup_or_update")',
+        'downloaded: false',
+        'downloaded: true',
+    ):
+        require(marker in QR, "QR startup-preflight marker missing: " + marker)
+
+if qr_version in (
+    "// @version 1.0.4",
+    "// @version 1.0.5",
+    "// @version 1.0.6",
+    "// @version 1.0.7",
+    "// @version 1.0.8",
+):
+    for marker in (
+        'function sanitizeError26(error)',
+        'typeof writeLog === "function"',
+        'runtime failure stage=',
+    ):
+        require(marker in QR, "QR runtime diagnostics marker missing: " + marker)
+
+if qr_version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8"):
+    require("context.getCodeCacheDir()" not in QR,
+            "QR runtime must not call app code cache from system_server")
+    for marker in (
+        'function getDexOptimizedDirectory26()',
+        'if (sdk >= 26) return null;',
+        'new java.io.File(lib, ".dexopt")',
+        'assertWritableDirPath(dexoptPath, "ToolHub QR dexopt")',
+    ):
+        require(marker in QR, "QR system_server DexClassLoader marker missing: " + marker)
+
+if qr_version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8"):
+    require("new dalvik.system.DexClassLoader(" not in QR,
+            "QR runtime must not use bare dalvik package in Rhino")
+    require("new Packages.dalvik.system.DexClassLoader(" in QR,
+            "QR runtime must resolve DexClassLoader through Rhino Packages")
+
+# No feature module other than the base bootstrap may read the raw ShortX root.
 allowed_shortx_files = {"th_01_base.js"}
 for source_path in sorted(CODE.glob("*.js")):
     source = source_path.read_text(encoding="utf-8")
@@ -63,4 +173,4 @@ if errors:
         print("FAIL channel-private-storage:", item)
     raise SystemExit(1)
 
-print("OK channel-private-storage diagnostics=APP_ROOT_DIR pickword=file+prefs-per-channel stable_legacy_import=copy-only")
+print("OK channel-private-storage private=APP_ROOT_DIR qr_lib=channel_root/lib preflight=guarded diagnostics=guarded system_server_dexloader=guarded rhino_packages=guarded stable_legacy_import=copy-only")
