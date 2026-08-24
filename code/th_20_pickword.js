@@ -1,4 +1,4 @@
-// @version 1.0.30
+// @version 1.0.31
 // ==========================================
 // 拾字 - 文字选择工具
 // ShortX / Rhino ES5 悬浮文字选择与翻译脚本
@@ -777,6 +777,16 @@
 
     function performPickwordQrAction20(action) {
         try {
+            // 生成场景下文字区为空时，先对当前截图做一次 OCR，
+            // 以图内文本作为二维码内容源（历史截图从管理器打开时文字区为空）。
+            if (String(action || "") === "generate" && !pickwordQrGenerateRunning20()) {
+                var genPs20 = toolhubAppRef && toolhubAppRef.state && toolhubAppRef.state.pickword ? toolhubAppRef.state.pickword : null;
+                var genText20 = genPs20 ? String(genPs20.fullText == null ? "" : genPs20.fullText) : "";
+                if (!genText20.replace(/\s+/g, "")) {
+                    startPickwordOcrThenGenerate20();
+                    return true;
+                }
+            }
             if (!pickwordImageController20 || typeof pickwordImageController20.performPickwordQrAction !== "function") {
                 showToast("二维码入口暂不可用");
                 return false;
@@ -788,6 +798,46 @@
             showToast("二维码操作失败");
         }
         return false;
+    }
+
+    function pickwordQrGenerateRunning20() {
+        try {
+            if (pickwordImageController20 && typeof pickwordImageController20.getPickwordQrActionState === "function") {
+                return pickwordImageController20.getPickwordQrActionState().generating === true;
+            }
+        } catch (eGenState) {}
+        return false;
+    }
+
+    function startPickwordOcrThenGenerate20() {
+        var sessionPath = currentReocrSessionKey20();
+        if (!sessionPath) { showToast("截图文件不可用"); return false; }
+        if (typeof toolhubAppRef.runPointerAreaTextByImage !== "function") { showToast("识别暂不可用"); return false; }
+        pickwordReocrRunning20 = true;
+        syncPickwordImageActionGridState20();
+        var mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        new java.lang.Thread(new java.lang.Runnable({ run: function() {
+            var ocrText = "";
+            var ocrErr = "";
+            try { ocrText = String(toolhubAppRef.runPointerAreaTextByImage(sessionPath) || ""); } catch (eOcr) { ocrErr = String(eOcr); }
+            mainHandler.post(new java.lang.Runnable({ run: function() {
+                pickwordReocrRunning20 = false;
+                if (ocrErr) { showToast("识别失败，无法生成二维码"); }
+                else if (!ocrText.replace(/\s+/g, "")) { showToast("截图未识别到文字"); }
+                else {
+                    pickwordReocrSnapshot20 = { text: "" };
+                    pickwordReocrApplied20 = true;
+                    try {
+                        toolhubAppRef.showPickwordText(ocrText, cloneCurrentPickwordMeta20());
+                        if (pickwordImageController20 && typeof pickwordImageController20.performPickwordQrAction === "function") {
+                            pickwordImageController20.performPickwordQrAction("generate");
+                        }
+                    } catch (eApply) { showToast("生成二维码失败"); }
+                }
+                try { syncPickwordImageActionGridState20(); } catch (eSync) {}
+            }}));
+        }})).start();
+        return true;
     }
 
     function performPickwordImagePageAction20(actionIndex, unavailableText) {
