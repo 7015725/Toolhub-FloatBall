@@ -1,0 +1,152 @@
+name: build-toolhub-dex-runtime
+
+on:
+  push:
+    branches: [agent/build-toolhub-dex-runtime]
+    paths:
+      - ToolHub.js
+      - code/**
+      - runtime-dex/**
+      - scripts/generate_toolhub_standalone.py
+      - .github/workflows/build-toolhub-dex-runtime.yml
+  pull_request:
+    branches: [beta]
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-toolhub-dex-runtime
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout DEX branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/build-toolhub-dex-runtime
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android D8
+        shell: bash
+        run: |
+          yes | sdkmanager "build-tools;35.0.0" >/dev/null || true
+          test -x "$ANDROID_HOME/build-tools/35.0.0/d8"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/dexdump"
+
+      - name: Generate verified ToolHub runtime bundle
+        shell: bash
+        run: |
+          python3 scripts/generate_toolhub_standalone.py
+          python3 scripts/generate_toolhub_standalone.py --check
+
+      - name: Compile Java public API
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD="$GITHUB_WORKSPACE/runtime-dex/build"
+          mkdir -p "$BUILD/lib" "$BUILD/classes" "$BUILD/dex" "$BUILD/package/META-INF" "$GITHUB_WORKSPACE/runtime-dex/dist"
+          curl --fail --location --retry 3 \
+            --output "$BUILD/lib/rhino.jar" \
+            "https://repo1.maven.org/maven2/org/mozilla/rhino/1.7.15.1/rhino-1.7.15.1.jar"
+          javac --release 8 \
+            -encoding UTF-8 \
+            -cp "$BUILD/lib/rhino.jar" \
+            -d "$BUILD/classes" \
+            $(find runtime-dex/src -name '*.java' -type f | sort)
+          jar cf "$BUILD/toolhub-runtime-classes.jar" -C "$BUILD/classes" .
+
+      - name: Convert API to classes.dex
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD="$GITHUB_WORKSPACE/runtime-dex/build"
+          "$ANDROID_HOME/build-tools/35.0.0/d8" \
+            --release \
+            --min-api 26 \
+            --classpath "$BUILD/lib/rhino.jar" \
+            --output "$BUILD/dex" \
+            "$BUILD/toolhub-runtime-classes.jar"
+          test -s "$BUILD/dex/classes.dex"
+          MAGIC="$(head -c 8 "$BUILD/dex/classes.dex" | od -An -tx1 | tr -d ' \n')"
+          case "$MAGIC" in
+            6465780a30333500|6465780a30333700|6465780a30333800|6465780a30333900|6465780a30343000) ;;
+            *) echo "Unexpected DEX magic: $MAGIC"; exit 1 ;;
+          esac
+
+      - name: Assemble single runtime JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD="$GITHUB_WORKSPACE/runtime-dex/build"
+          OUT="$GITHUB_WORKSPACE/runtime-dex/dist"
+          PACKAGE="$BUILD/package"
+          cp "$BUILD/dex/classes.dex" "$PACKAGE/classes.dex"
+          cp ToolHub-Beta-Standalone.js "$PACKAGE/toolhub-runtime.js"
+          cp runtime-dex/resources/toolhub-dex-api.js "$PACKAGE/toolhub-dex-api.js"
+          (cd "$PACKAGE" && sha256sum toolhub-runtime.js > toolhub-runtime.js.sha256)
+          cat > "$PACKAGE/META-INF/MANIFEST.MF" <<'EOF'
+          Manifest-Version: 1.0
+          Implementation-Title: ToolHubRuntime
+          Implementation-Version: 0.9.2-beta-dex-2
+          ToolHub-Api-Version: 1
+          ToolHub-Channel: beta
+          ToolHub-Entry-Class: com.xin.toolhub.runtime.ToolHubRuntime
+          EOF
+          (
+            cd "$PACKAGE"
+            zip -q -0 -r "$OUT/ToolHubRuntime.jar" .
+          )
+          test -s "$OUT/ToolHubRuntime.jar"
+          sha256sum "$OUT/ToolHubRuntime.jar"
+
+      - name: Verify single JAR contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD="$GITHUB_WORKSPACE/runtime-dex/build"
+          OUT="$GITHUB_WORKSPACE/runtime-dex/dist"
+          JAR="$OUT/ToolHubRuntime.jar"
+          unzip -Z1 "$JAR" | sed 's#^\./##' | sort > "$BUILD/jar-entries.txt"
+          for entry in classes.dex toolhub-runtime.js toolhub-runtime.js.sha256 toolhub-dex-api.js META-INF/MANIFEST.MF; do
+            grep -Fxq "$entry" "$BUILD/jar-entries.txt" || { echo "Missing JAR entry: $entry"; cat "$BUILD/jar-entries.txt"; exit 1; }
+          done
+          unzip -p "$JAR" toolhub-runtime.js > "$BUILD/toolhub-runtime.js"
+          unzip -p "$JAR" toolhub-runtime.js.sha256 > "$BUILD/toolhub-runtime.js.sha256"
+          (cd "$BUILD" && sha256sum -c toolhub-runtime.js.sha256)
+          unzip -p "$JAR" classes.dex > "$BUILD/classes.dex"
+          "$ANDROID_HOME/build-tools/35.0.0/dexdump" -f "$BUILD/classes.dex" > "$BUILD/dexdump.txt"
+          grep -Eq "Lcom/xin/toolhub/runtime/ToolHubRuntime;|com\.xin\.toolhub\.runtime\.ToolHubRuntime" "$BUILD/dexdump.txt"
+          for method in start status show hide toggle stop invoke version apiVersion; do
+            strings "$BUILD/classes.dex" | grep -Fxq "$method" || { echo "Missing public API method: $method"; exit 1; }
+          done
+
+      - name: Verify embedded Rhino ES5
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check ToolHub-Beta-Standalone.js
+          node --check runtime-dex/resources/toolhub-dex-api.js
+          python3 .github/scripts/es5_scan.py
+
+      - name: Upload one JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: ToolHubRuntime-0.9.2-beta-dex-2
+          path: runtime-dex/dist/ToolHubRuntime.jar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
