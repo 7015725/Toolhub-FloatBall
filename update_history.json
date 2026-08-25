@@ -1,8 +1,28 @@
 {
   "schema": 1,
-  "historyVersion": 20260824212942,
-  "generatedAt": "2026-08-25T05:29:58+08:00",
+  "historyVersion": 20260825075903,
+  "generatedAt": "2026-08-25T08:11:22+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20260825-shell-action-bridge-unification",
+      "type": "fix",
+      "title": "统一 Shell 调用能力",
+      "details": [
+        "修复了因拾字图片能力依赖 Shell 广播桥 sent 标记导致 ShortX Action 调用 Shell 成功后仍被判定失败的问题",
+        "修复了因 root Shell Action 失败后直接返回导致 Shell 广播桥兜底没有触发的问题",
+        "将历史 Shell 广播按钮统一收口到按钮 Shell 执行器，保持 Action 优先、广播桥兜底",
+        "入口目录权限修正改用 Java File API，减少 system_server 直接执行 chmod"
+      ],
+      "manifestVersion": 20260825075903,
+      "date": "2026-08-25",
+      "modules": [],
+      "entry": {
+        "changed": true,
+        "from": 20260824221149,
+        "to": 20260825075903
+      }
+    },
     {
       "schema": 1,
       "id": "20260825-stable-sync-beta-qr-pickword",

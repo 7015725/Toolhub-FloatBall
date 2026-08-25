@@ -4,7 +4,7 @@
 // 更新源固定为 GitHub；未通过签名/哈希/防回滚校验时，不覆盖本地模块。
 
 var UPDATE_SECURITY_MODE = 2; // 0: 普通更新, 1: manifest哈希校验, 2: 完整验签安全更新
-var TOOLHUB_ENTRY_VERSION = 20260824221149; // 入口文件版本，仅在 ToolHub.js 变化时提升
+var TOOLHUB_ENTRY_VERSION = 20260825075903; // 入口文件版本，仅在 ToolHub.js 变化时提升
 
 var TOOLHUB_CHANNEL_SPECS = {
     stable: { id: "stable", label: "正式版 Stable", branch: "main", rootName: "ToolHub" },
@@ -374,19 +374,16 @@ function writeLog(msg) {
     }
 }
 
-function runShell(cmdArr) {
-    try {
-        var proc = java.lang.Runtime.getRuntime().exec(cmdArr);
-        proc.waitFor();
-        return proc.exitValue() === 0;
-    } catch (e) { return false; }
-}
-
 function setDirPerms(path) {
-    // 只尝试 chmod，不再强制 chown 1000:1000。
-    // 在部分 ColorOS/ShortX 环境中，shortx.getShortXDir() 位于 /data/system/shortx_*，
-    // 强制改 owner 反而会让当前 JS 进程失去写权限，导致 Dir not writable。
-    runShell(["chmod", "700", path]);
+    try {
+        var f = new java.io.File(String(path));
+        if (!f.exists()) return false;
+        var ok = true;
+        try { ok = f.setReadable(true, true) && ok; } catch (eRead) {}
+        try { ok = f.setWritable(true, true) && ok; } catch (eWrite) {}
+        try { ok = f.setExecutable(true, true) && ok; } catch (eExec) {}
+        return ok;
+    } catch (e) { return false; }
 }
 
 function ensureCodeDir() {
