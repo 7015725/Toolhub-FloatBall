@@ -83,7 +83,7 @@ def validate_qr_runtime():
 
 def main():
     text = TARGET.read_text(encoding="utf-8")
-    text = replace_once(text, "ENTRY_VERSION = 20260819231000", "ENTRY_VERSION = 20260824221149", "entry version")
+    text = replace_once(text, "ENTRY_VERSION = 20260824221149", "ENTRY_VERSION = 20260825075903", "entry version")
     text = replace_once(
         text,
         "def patch_manifest_generator(text: str) -> str:\n    source = '    \"th_23_screenshot_manager.js\",\\n]'",
