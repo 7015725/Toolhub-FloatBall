@@ -478,6 +478,26 @@
       "reason": "Explicitly review the finite API keys and exact current file scopes needed by the icon-only 2x3 screenshot action grid; no usage-key prefix or wildcard scope is introduced."
     },
     {
+      "id": "api-entry-java-file-permissions",
+      "usageKeys": [
+        "java|method|java.io.File#setExecutable",
+        "java|method|java.io.File#setReadable"
+      ],
+      "source": "java",
+      "classOrObject": "java.io.File",
+      "method": "setReadable/setExecutable",
+      "classification": "guarded",
+      "scope": [
+        "ToolHub.js"
+      ],
+      "allowScopeExpansion": false,
+      "guard": "入口仅对已存在的 ToolHub code 目录执行 owner-only 权限修正，用于替代 Runtime.exec chmod。",
+      "owner": "ToolHub entry bootstrap",
+      "threadContract": "只在入口目录初始化/补救阶段同步调用，不进入高频 UI 绘制或触摸路径。",
+      "fallback": "权限 API 调用失败时返回 false，并继续由后续 canWrite 校验给出明确启动错误。",
+      "reason": "收口入口目录权限修正，避免 system_server 直接 Runtime.exec chmod，同时登记新增 Java File 权限 API。"
+    },
+    {
       "id": "api-shell-action-first",
       "usageKeys": [
         "shortx|method|shortx#executeAction"
