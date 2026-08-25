@@ -13,14 +13,14 @@ GitHub: https://github.com/7015725/Toolhub-FloatBall
 相关文档：
 
 ```text
-docs/docs/docs/STRUCTURE.md
-docs/docs/docs/ARCHITECTURE.md
-docs/docs/docs/SQLITE_STORAGE.md
+docs/STRUCTURE.md
+docs/ARCHITECTURE.md
+docs/SQLITE_STORAGE.md
 docs/README.md
 scripts/README.md
 docs/features/button-types.md
 docs/security/security-config-clean.md
-docs/audits/docs/audits/docs/audits/MODULE_SYMBOL_AUDIT.md
+docs/audits/MODULE_SYMBOL_AUDIT.md
 ```
 
 
@@ -38,12 +38,12 @@ docs/audits/docs/audits/docs/audits/MODULE_SYMBOL_AUDIT.md
 - Schema 使用递归关系节点保存数组、对象和选项。
 - 旧 JSON 文档表和配置文件会在迁移成功后删除。
 - ToolApp 设置页支持手机、横屏和平板宽屏布局。
-- Beta 通道加载 `th_24_shortx_ui_runtime.js`、`th_34_shortx_ui_lab.js`、`th_26_qr_runtime.js` 与最终封装模块 `th_25_shortx_ui_package.js`；二维码模块仅在有效拾字截图上按用户点击触发，并按需从签名清单下载 ZXing DEX/JAR 到 `shortx.getShortXDir()/lib`。
+- Stable/main 已加载 `th_24_shortx_ui_runtime.js`、`th_34_shortx_ui_lab.js`、`th_26_qr_runtime.js` 与封装模块 `th_25_shortx_ui_package.js`；二维码模块支持拾字文字生成、截图识别和窗内查看，并按需从签名清单下载 ZXing DEX/JAR 到 `shortx.getShortXDir()/lib`。
 - 主按钮面板采用可配置自适应网格：宽度占比只用于确定列数预算，网格根据卡片尺寸、精确间距和可视行数计算，面板与 WindowManager 使用同一精确宽高，避免右侧额外空白。
 - 主面板支持实时运行状态、拖动排序、分页吸附、新增和编辑按钮直接保存、单页隐藏分页圆点和关闭闪烁；默认背景透明度为 0.92。
 - 支持按钮搜索、筛选、启停、排序和编辑。
 - 支持悬浮球拖动唤出指针、悬停取字、小框回退和框选 OCR。
-- 支持拾字截图查看、保存、分享、删除、自动清理和截图管理；Beta 有有效框选截图时可显式解析二维码，结果不会自动复制或打开外部链接。
+- 支持拾字截图查看、保存、分享、删除、自动清理和截图管理；拾字文字和有效框选截图都可生成或解析二维码，结果保持在 ToolHub 窗内处理。
 - 支持 Android 返回键、预测性返回和 ToolApp 横向滑动返回。
 - 启动、更新、存储和运行异常写入 `ToolHub/logs/`。
 
@@ -100,7 +100,7 @@ var UPDATE_SECURITY_MODE = 2;   // 0: 普通, 1: manifest校验, 2: 完整验签
 ```text
 shortx.getShortXDir()/
 ├── lib/
-│   └── toolhub-zxing-runtime-3.5.4-r1.jar   # Beta 首次解析二维码时按需下载、验签清单哈希并只读加载
+│   └── toolhub-zxing-runtime-3.5.4-r2.jar   # 首次使用二维码能力时按需下载、验签清单哈希并只读加载
 └── ToolHub/
     ├── code/
     │   ├── th_01_base.js
@@ -385,7 +385,7 @@ lastError
 storage engine=sqlite format=structured backend=sqlite-structured path=... exists=true healthy=true pending=0 error=
 ```
 
-详细说明见 [`docs/docs/docs/SQLITE_STORAGE.md`](docs/docs/docs/SQLITE_STORAGE.md)，按钮图标 BLOB、去重、迁移和清理规则已统一收录在该文档。
+详细说明见 [`docs/SQLITE_STORAGE.md`](docs/SQLITE_STORAGE.md)，按钮图标 BLOB、去重、迁移和清理规则已统一收录在该文档。
 
 ---
 
@@ -500,6 +500,10 @@ WindowManager 使用同一精确尺寸
 | `th_21_result_preview.js` | 取字和 OCR 顶部两行全自绘结果预览 |
 | `th_22_image_viewer.js` | 拾字截图缩略图、原图查看、缩放平移、保存分享删除及自动清理 |
 | `th_23_screenshot_manager.js` | 截图管理器列表、内部/已保存分类、缩略图缓存与外部打开 |
+| `th_24_shortx_ui_runtime.js` | ShortXUI 运行时底座、WindowHost、IME 避让与生命周期管理 |
+| `th_25_shortx_ui_package.js` | ShortXUI 封装入口、窗内工具组件和拾字截图操作网格 |
+| `th_26_qr_runtime.js` | ZXing 二维码运行时加载、二维码生成、截图识别与结果回填 |
+| `th_34_shortx_ui_lab.js` | ShortXUI 实验能力与兼容验证入口 |
 
 ---
 
@@ -540,6 +544,29 @@ python3 .github/scripts/verify_manifest_signature.py
 ---
 
 ## 更新记录
+
+### 2026-08-25
+
+**修复 root Shell 状态标记超时，统一 Shell 调用与拾字二维码体验**
+
+- 统一按钮 Shell、拾字图片保存、分享和目录测试的 Shell 调用链，优先使用 ShortX ShellCommand，并保留广播桥兜底。
+- 修复了因 Shell Action 成功后状态标记未同步导致图片操作被判定失败的问题。
+- 修复了因 root Shell 仅发送广播桥且接收器未回写状态标记导致拾字图片保存和分享超时的问题。
+- 拾字底部新增二维码按钮，纯文字拾字也可以直接生成二维码。
+- 修复了因生成二维码后未自动打开图片页导致二维码图片页面未显示的问题。
+- 修复了因纯文字拾字切换到二维码图片时未重建图片控制器导致第一次点击二维码按钮未显示图片页的问题。
+
+### 2026-08-24
+
+**同步二维码与 ShortXUI 运行时能力到 Stable**
+
+- Stable/main 同步 Beta 已完成真机与 CI 验证的二维码识别、二维码生成和 ShortXUI 运行时底座。
+- 拾字截图操作区重构为窗内网格，支持重新识别、清空文字和查看二维码。
+- 二维码能力按需加载 ZXing 运行时，支持密集二维码渲染增强和扫码结果回填文字区。
+- Shell 执行改为 ShortX Action 优先，支持真实退出码和输出读取，并保留广播桥兜底。
+- 主面板运行状态行可直达“更新与版本”页面。
+- 修复了因正式版模块列表未加载二维码运行时导致 ZXing lib 目录未创建、二维码解析与生成不可用的问题。
+- 加强更新重启、IME 避让、反射捕获熔断和日志清理，减少窗口残留、位置漂移和重复告警。
 
 ### 2026-07-14
 
@@ -632,6 +659,6 @@ update_history.json
 
 主面板提供“截图管理”入口，包含“内部截图”和“已保存”两个标签。内部截图支持查看原图、保存、分享和删除；已保存标签管理系统相册或公共目录副本，删除公共副本时会显示额外的永久删除警告。公共副本不会被内部截图保留策略自动清理。
 
-## Beta ShortXUI WindowHost 实验
+## ShortXUI 与二维码运行时
 
-`beta` 通道的 `th_24_shortx_ui_runtime.js` 与 `th_34_shortx_ui_lab.js` 已进入第二阶段，新增独立 `WindowHost` 生命周期实验。它在 ToolHub WM HandlerThread 上验证 `addView`、`updateViewLayout`、普通/立即移除以及 attach/detach 确认。实验窗口使用独立状态和 `LayoutParams`，不覆盖悬浮球、主面板、设置页或正式 `safeRemoveView()`。
+Stable/main 已同步 ShortXUI 运行时底座、WindowHost 生命周期、IME 避让和二维码运行时。拾字结果页可在窗内完成二维码生成、二维码识别和结果回填，ZXing 运行时按需下载并受签名清单校验。
