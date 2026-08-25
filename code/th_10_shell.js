@@ -1,7 +1,7 @@
-// @version 1.0.11
+// @version 1.0.12
 // =======================【Shell：Action 优先 + 广播桥兜底】======================
 // 优先通过 shortx.executeAction(ShellCommand) 同步执行（能拿到 shellOut/shellErr/shellCode 真实结果）；
-// Action 不可用或执行失败时，回退到旧广播桥（shortx.toolhub.SHELL）由外部接收器执行。
+// Action 不可用时回退到旧广播桥；Action 已执行且命令返回非 0 时直接返回真实失败。
 // 广播桥兼容默认值保留：旧设备/新装设备的兜底路径仍需可工作。
 (function() {
   try {
@@ -112,29 +112,26 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
   var requestedRoot = (needRoot === true);
   var migrationTargetVersion = 1;
 
-  // # 普通权限走 shortx.executeAction(ShellCommand) 同步执行，能拿到真实 out/err/code。
-  // # root 权限继续走广播桥；当前 ShellCommand 无 root 字段，避免在普通权限下误执行 root 命令。
-  if (!requestedRoot) {
-    try {
-      var actionRet = this.execShellViaShortxAction(cmdB64, requestedRoot);
-      if (actionRet && actionRet.ok) {
-        safeLog(this.L, 'i', "shell via action ok root=" + String(requestedRoot) +
-          " cmd_b64_len=" + String(cmdB64 ? String(cmdB64).length : 0) +
-          " code=" + String(actionRet.code));
-        return actionRet;
-      }
-      if (actionRet && actionRet.executed === true) {
-        safeLog(this.L, 'w', "shell via action command failed code=" + String(actionRet.code) +
-          " err_type=" + String(actionRet.errType || "") + " fallback=none");
-        return actionRet;
-      }
+  // # root/普通权限都先走 shortx.executeAction(ShellCommand)，ShellCommand 底层使用已附着的 ShellService。
+  // # Action 不可用时再走广播桥兜底，避免只发广播后无人执行导致状态标记超时。
+  try {
+    var actionRet = this.execShellViaShortxAction(cmdB64, requestedRoot);
+    if (actionRet && actionRet.ok) {
+      safeLog(this.L, 'i', "shell via action ok root=" + String(requestedRoot) +
+        " cmd_b64_len=" + String(cmdB64 ? String(cmdB64).length : 0) +
+        " code=" + String(actionRet.code));
+      return actionRet;
+    }
+    if (actionRet && actionRet.executed === true) {
+      safeLog(this.L, 'w', "shell via action command failed code=" + String(actionRet.code) +
+        " err_type=" + String(actionRet.errType || "") + " fallback=none");
+      return actionRet;
+    } else {
       safeLog(this.L, 'w', "shell via action unavailable err_type=" + String(actionRet && actionRet.errType ? actionRet.errType : "unknown") +
         " fallback=broadcast_bridge");
-    } catch (eActionFirst) {
-      try { safeLog(this.L, 'w', "shell via action exception fallback=broadcast_bridge"); } catch (eLogA) {}
     }
-  } else {
-    try { safeLog(this.L, 'i', "shell root requested fallback=broadcast_bridge"); } catch (eRootLog) {}
+  } catch (eActionFirst) {
+    try { safeLog(this.L, 'w', "shell via action exception fallback=broadcast_bridge"); } catch (eLogA) {}
   }
 
   var ret = {

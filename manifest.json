@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "cff5245021f636ef62973bf3eb68bfb5126da82296f940e50f98f77eb844b505",
-      "size": 67801,
-      "version": 20260825075903
+      "sha256": "1031e96fb6e9f06c5037416ba06051afae2f6a011989d19ad6eaa8ffb5d277cc",
+      "size": 68435,
+      "version": 20260825084735
     }
   },
   "branch": "main",
@@ -14,9 +14,9 @@
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
-    "sha256": "fff5bd7588d84afb802fefa90239814d4b9acbb14f215201f0787be4a4931cb5",
+    "sha256": "c1537644c61b53fb542ef51bd797654fae8a3e7e9132276c06dca1c02a89a030",
     "size": 107695,
-    "version": 20260825075903,
+    "version": 20260825084735,
     "versionSource": "TOOLHUB_ENTRY_VERSION"
   },
   "files": {
@@ -61,9 +61,9 @@
       "version": "1.0.15"
     },
     "th_10_shell.js": {
-      "sha256": "fe5f4c4f1d823b515b55cb40013730a529f687432bbb4df73ddd3ac7a9e5b14f",
-      "size": 23112,
-      "version": "1.0.11"
+      "sha256": "95ec798cc6b37008475a3fc921977ecbb66c65d6c950e6b69fea79f7cda11f37",
+      "size": 22954,
+      "version": "1.0.12"
     },
     "th_11_action.js": {
       "sha256": "e5fce4d6afb03c16917c9e9a490334ab9ff69d9cf834214a766ab0ea91598dc7",
@@ -189,13 +189,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因拾字图片能力依赖 Shell 广播桥 sent 标记导致 ShortX Action 调用 Shell 成功后仍被判定失败的问题",
-      "修复了因 root Shell Action 失败后直接返回导致 Shell 广播桥兜底没有触发的问题",
-      "将历史 Shell 广播按钮统一收口到按钮 Shell 执行器，保持 Action 优先、广播桥兜底",
-      "入口目录权限修正改用 Java File API，减少 system_server 直接执行 chmod"
+      "修复了因 root Shell 仅发送广播桥且接收器未回写状态标记导致拾字图片保存和分享超时的问题。",
+      "root Shell 现在直接走 ShortX ShellCommand 能力，Action 不可用时再走广播桥兜底。"
     ],
     "date": "2026-08-25",
-    "title": "统一 Shell 调用能力"
+    "title": "修复 root Shell 状态标记超时"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -211,5 +209,5 @@
     }
   },
   "schema": 6,
-  "version": 20260825075903
+  "version": 20260825084735
 }

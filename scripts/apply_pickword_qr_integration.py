@@ -17,7 +17,7 @@ BOUNDARIES = ROOT / "constraints" / "MODULE_BOUNDARIES.json"
 VERIFY_MANIFEST = ROOT / "scripts" / "verify_manifest.py"
 VERIFY_STORAGE = ROOT / "scripts" / "verify_channel_private_storage_isolation.py"
 VERIFY_QR = ROOT / "scripts" / "verify_pickword_qr.py"
-NEW_ENTRY_VERSION = 20260825075903
+NEW_ENTRY_VERSION = 20260825084735
 
 
 def require(condition, message):
