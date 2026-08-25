@@ -41,6 +41,10 @@ Toolhub-FloatBall/
 ├── README.md
 ├── manifest.json
 ├── manifest.sig
+├── beta/
+│   ├── phase2/ ... phase7/
+│   ├── final/
+│   └── legacy/root-entry-chain/   # 旧版 ToolHub-beta-* 根入口链归档
 ├── code/
 │   ├── th_01_base.js
 │   ├── th_02_core.js
