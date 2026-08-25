@@ -1,4 +1,4 @@
-// @version 1.1.2
+// @version 1.1.3
 // =======================【Shell 按钮诊断】=======================
 FloatBallAppWM.prototype.getShellDiagCommandMeta = function(cmdPlain, cmdB64) {
   var plain = "";
@@ -322,6 +322,62 @@ FloatBallAppWM.prototype.execButtonAction = function(btn, idx) {
       if (btn.extras) ex = btn.extras;
       else if (btn.extra) ex = btn.extra;
     } catch (eEx0) { ex = null; }
+
+    // Shell 广播桥动作统一收口到 shell 执行器：Action 优先，广播桥兜底。
+    try {
+      var bridgeActionEarly = String(this.config.SHELL_BRIDGE_ACTION || "shortx.toolhub.SHELL");
+      if (action === bridgeActionEarly) {
+        var bridgeCmdPlain = "";
+        var bridgeCmdB64 = "";
+        var bridgeNeedRoot = false;
+        var bridgeCmdKey = String(this.config.SHELL_BRIDGE_EXTRA_CMD || "cmd_b64");
+        var bridgeRootKey = String(this.config.SHELL_BRIDGE_EXTRA_ROOT || "root");
+        try {
+          if (ex && ex[bridgeCmdKey] !== undefined && ex[bridgeCmdKey] !== null) bridgeCmdB64 = String(ex[bridgeCmdKey]);
+          else if (ex && ex.cmd_b64 !== undefined && ex.cmd_b64 !== null) bridgeCmdB64 = String(ex.cmd_b64);
+          else if (btn.cmd_b64 !== undefined && btn.cmd_b64 !== null) bridgeCmdB64 = String(btn.cmd_b64);
+        } catch(eBridgeB64) { bridgeCmdB64 = ""; }
+        try {
+          if (ex && ex.cmd !== undefined && ex.cmd !== null) bridgeCmdPlain = String(ex.cmd);
+          else if (btn.cmd !== undefined && btn.cmd !== null) bridgeCmdPlain = String(btn.cmd);
+        } catch(eBridgeCmd) { bridgeCmdPlain = ""; }
+        if ((!bridgeCmdB64 || bridgeCmdB64.length === 0) && bridgeCmdPlain && bridgeCmdPlain.length > 0) {
+          try { bridgeCmdB64 = String(encodeBase64Utf8(bridgeCmdPlain) || ""); } catch(eBridgeEncode) { bridgeCmdB64 = ""; }
+        }
+        if (bridgeCmdB64 && bridgeCmdB64.length > 0 && (!bridgeCmdPlain || bridgeCmdPlain.length === 0)) {
+          try {
+            var bridgeDecoded = decodeBase64Utf8(bridgeCmdB64);
+            if (!bridgeDecoded || String(bridgeDecoded).length === 0) {
+              bridgeCmdPlain = String(bridgeCmdB64);
+              bridgeCmdB64 = String(encodeBase64Utf8(bridgeCmdPlain) || "");
+            }
+          } catch(eBridgeDecode) {}
+        }
+        try {
+          if (ex && ex[bridgeRootKey] !== undefined && ex[bridgeRootKey] !== null) bridgeNeedRoot = parseBoolLike(ex[bridgeRootKey], false);
+          else if (ex && ex.root !== undefined && ex.root !== null) bridgeNeedRoot = parseBoolLike(ex.root, false);
+          else if (btn.root !== undefined && btn.root !== null) bridgeNeedRoot = parseBoolLike(btn.root, false);
+        } catch(eBridgeRoot) { bridgeNeedRoot = false; }
+        if (!bridgeCmdB64 || bridgeCmdB64.length === 0) {
+          this.toast("Shell 命令为空");
+          safeLog(this.L, 'e', "broadcast shell bridge missing command idx=" + String(idx));
+          return;
+        }
+        var bridgeExec = this.execShellSmart(bridgeCmdB64, bridgeNeedRoot);
+        if (bridgeExec && bridgeExec.ok) return;
+        this.toast("Shell 执行失败");
+        safeLog(this.L, 'e', "broadcast shell bridge exec failed idx=" + String(idx) +
+          " via=" + String(bridgeExec && bridgeExec.via ? bridgeExec.via : "") +
+          " code=" + String(bridgeExec && bridgeExec.code !== undefined ? bridgeExec.code : "") +
+          " err_type=" + String(bridgeExec && bridgeExec.errType ? bridgeExec.errType : "") +
+          " err=" + String(bridgeExec && bridgeExec.err ? bridgeExec.err : ""));
+        return;
+      }
+    } catch(eBridgeExec) {
+      this.toast("Shell 执行异常");
+      safeLog(this.L, 'e', "broadcast shell bridge exec exception idx=" + String(idx) + " err=" + String(eBridgeExec));
+      return;
+    }
 
     // # 2) 写入 extras（支持 number / boolean / string；其他类型一律转字符串）
     if (ex) {

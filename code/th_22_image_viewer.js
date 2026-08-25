@@ -1,4 +1,4 @@
-// @version 1.3.3
+// @version 1.3.4
 // =======================【拾字截图：查看、保存、分享、删除与自动清理】=======================
 // 只处理当前通道 APP_ROOT_DIR/screenshots 内部截图；公共保存副本不会被自动清理。
 (function() {
@@ -520,7 +520,7 @@
 
   function runRootShell22(command, appObj) {
     var app = resolveShellBridgeApp22(appObj);
-    if (!app) throw new Error("ShortX Shell 广播桥不可用");
+    if (!app) throw new Error("ShortX Shell 不可用");
     var dir = shellBridgeMarkerDir22();
     cleanupShellBridgeMarkers22(dir);
     var token = shellBridgeToken22();
@@ -545,14 +545,14 @@
     try { sent = app.execShellSmart(commandB64, true); }
     catch (eSend) {
       try { marker.delete(); } catch (eDelete1) {}
-      throw new Error("Shell 广播桥发送异常: " + String(eSend));
+      throw new Error("ShortX Shell 调用异常: " + String(eSend));
     }
-    if (!sent || sent.ok !== true || sent.sent !== true) {
+    if (!sent || sent.ok !== true) {
       try { marker.delete(); } catch (eDelete2) {}
-      throw new Error("Shell 广播桥发送失败: " + String(sent && sent.err || "unknown"));
+      throw new Error("ShortX Shell 执行失败: " + String(sent && sent.err || "unknown"));
     }
     try {
-      safeLog(app.L, "i", "pickword image root bridge dispatched via=" + String(sent.via || "") +
+      safeLog(app.L, "i", "pickword image root shell dispatched via=" + String(sent.via || "") +
         " marker=" + String(marker.getName() || ""));
     } catch (eLog0) {}
     var deadline = now22() + 20000;
@@ -564,18 +564,18 @@
     }
     if (status.indexOf(donePrefix) !== 0) {
       try { marker.delete(); } catch (eDelete3) {}
-      throw new Error("Shell 广播桥执行超时");
+      throw new Error("ShortX Shell 执行超时");
     }
     var exitText = status.substring(donePrefix.length).replace(/^\s+|\s+$/g, "");
     var exitCode = parseInt(exitText, 10);
     try { marker.delete(); } catch (eDelete4) {}
-    if (isNaN(exitCode)) throw new Error("Shell 广播桥结果无效: " + exitText);
-    if (exitCode !== 0) throw new Error("Shell 广播桥命令失败 exit=" + String(exitCode));
-    try { safeLog(app.L, "i", "pickword image root bridge completed via=" + String(sent.via || "") + " exit=0"); }
+    if (isNaN(exitCode)) throw new Error("ShortX Shell 结果无效: " + exitText);
+    if (exitCode !== 0) throw new Error("ShortX Shell 命令失败 exit=" + String(exitCode));
+    try { safeLog(app.L, "i", "pickword image root shell completed via=" + String(sent.via || "") + " exit=0"); }
     catch (eLog1) {}
     return {
       ok: true,
-      via: "shortx_shell_bridge",
+      via: "shortx_shell",
       executable: String(sent.via || "BroadcastBridge"),
       bridgeMode: String(sent.bridgeMode || ""),
       targetMode: String(sent.targetMode || "")
@@ -2052,7 +2052,7 @@
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
       var proto = FloatBallAppWM.prototype;
-      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.3.3") return true;
+      if (String(proto.__toolHubPickwordImageViewerVersion || "") === "1.3.4") return true;
 
       proto.validatePickwordImagePublicDir = function(pathValue) {
         var result = { ok: false, path: "", error: "" };
@@ -2877,7 +2877,7 @@
       };
 
       proto.__toolHubPickwordImageViewerInstalled = true;
-      proto.__toolHubPickwordImageViewerVersion = "1.3.3";
+      proto.__toolHubPickwordImageViewerVersion = "1.3.4";
       return true;
     } catch (eInstall) {
       try { if (typeof safeLog === "function") safeLog(null, "e", "install pickword image viewer fail " + String(eInstall)); } catch (eLog) {}

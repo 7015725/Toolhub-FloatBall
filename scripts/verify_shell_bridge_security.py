@@ -8,6 +8,7 @@ SHELL = (ROOT / "code" / "th_10_shell.js").read_text(encoding="utf-8")
 ACTION = (ROOT / "code" / "th_11_action.js").read_text(encoding="utf-8")
 REBUILD = (ROOT / "code" / "th_12_rebuild.js").read_text(encoding="utf-8")
 EDITOR = (ROOT / "code" / "th_14_button_editor.js").read_text(encoding="utf-8")
+ENTRY = (ROOT / "ToolHub.js").read_text(encoding="utf-8")
 
 
 def require(text, fragment, label):
@@ -47,6 +48,12 @@ require(SHELL, 'throw "shell bridge target missing mode=" + String(resolved.mode
 require(SHELL, 'requireToken: (mode === "strict") || requireToken', "strict token policy")
 require(SHELL, 'throw "shell bridge token missing mode=" + String(resolved.mode || "")', "missing token block")
 require(SHELL, 'var requestedRoot = (needRoot === true);', "explicit root only")
+require(SHELL, 'executed: false,', "action result executed flag")
+require(SHELL, 'transportOk: false,', "action transport flag")
+require(SHELL, 'sent: false,', "action result sent flag")
+require(SHELL, 'if (!requestedRoot)', "non-root action path only")
+require(SHELL, 'shell root requested fallback=broadcast_bridge', "root skips action and uses bridge")
+require(SHELL, 'return actionRet;', "non-root action failure is not replayed")
 forbid(SHELL, 'var requestedRoot = true;', "forced root")
 
 # 自定义广播进入 Shell bridge 时继续保持 strict/target/token 约束。
@@ -54,6 +61,9 @@ require(ACTION, 'this.config.SHELL_BRIDGE_MODE || "strict"', "broadcast strict f
 require(ACTION, 'shellBridgeBlockErr = "shell bridge target missing mode=" + bridgeMode', "broadcast target block")
 require(ACTION, 'var requireToken = (bridgeMode === "strict") || (this.config.SHELL_BRIDGE_REQUIRE_TOKEN === true);', "broadcast token policy")
 require(ACTION, 'shellBridgeBlockErr = "shell bridge token missing mode=" + bridgeMode', "broadcast token block")
+require(ACTION, 'if (action === bridgeAction)', "broadcast shell bridge detection")
+require(ACTION, 'this.execShellSmart(bridgeCmdB64, bridgeNeedRoot)', "broadcast shell bridge reuses shell executor")
+require(ACTION, 'broadcast shell bridge exec failed', "broadcast shell bridge failure diagnostic")
 
 # root 缺失时必须是 false；显式 true 仍能透传。
 require(ACTION, 'var root = false;', "diagnostic root false")
@@ -68,6 +78,12 @@ require(EDITOR, 'shellRootText.setText("使用 Root 权限")', "root switch labe
 require(EDITOR, 'var initialShellRoot = false;', "root switch default")
 require(EDITOR, 'newBtn.root = !!shellRootSwitch.isChecked();', "root switch persistence")
 forbid(EDITOR, 'newBtn.root = true;', "forced root persistence")
+
+# 入口 bootstrap 目录权限使用 Java File API 收口，避免 system_server 直接 Runtime.exec。
+forbid(ENTRY, 'Runtime.getRuntime().exec', "entry direct runtime exec")
+require(ENTRY, '.setReadable(true, true)', "entry Java readable permission")
+require(ENTRY, '.setWritable(true, true)', "entry Java writable permission")
+require(ENTRY, '.setExecutable(true, true)', "entry Java executable permission")
 
 
 def resolve_policy(

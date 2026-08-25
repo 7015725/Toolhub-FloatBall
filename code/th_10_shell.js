@@ -1,4 +1,4 @@
-// @version 1.0.10
+// @version 1.0.11
 // =======================【Shell：Action 优先 + 广播桥兜底】======================
 // 优先通过 shortx.executeAction(ShellCommand) 同步执行（能拿到 shellOut/shellErr/shellCode 真实结果）；
 // Action 不可用或执行失败时，回退到旧广播桥（shortx.toolhub.SHELL）由外部接收器执行。
@@ -40,7 +40,10 @@ FloatBallAppWM.prototype.execShellViaShortxAction = function(cmdB64, needRoot) {
     out: "",
     err: "",
     code: -1,
-    errType: ""
+    errType: "",
+    executed: false,
+    transportOk: false,
+    sent: false
   };
   try {
     if (typeof shortx === "undefined" || !shortx || typeof shortx.executeAction !== "function") {
@@ -84,7 +87,16 @@ FloatBallAppWM.prototype.execShellViaShortxAction = function(cmdB64, needRoot) {
     ret.out = shellOutText;
     ret.err = shellErrText;
     ret.code = shellCodeNum;
-    ret.ok = true; // Action 已真实执行；业务成败看 code
+    ret.executed = true;
+    ret.transportOk = true;
+    ret.sent = false;
+    if (shellCodeNum === 0) {
+      ret.ok = true;
+    } else {
+      ret.ok = false;
+      ret.errType = shellCodeNum === -1 ? "shell_code_missing" : "exit_nonzero";
+      if (!ret.err) ret.err = "shell exit code=" + String(shellCodeNum);
+    }
     return ret;
   } catch (eAction) {
     ret.errType = "action_error";
@@ -100,20 +112,29 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
   var requestedRoot = (needRoot === true);
   var migrationTargetVersion = 1;
 
-  // # Action 优先：shortx.executeAction(ShellCommand) 同步执行，能拿到真实 out/err/code。
-  // # 失败（不可用/异常）时静默走下方广播桥兜底，保持旧设备可执行。
-  try {
-    var actionRet = this.execShellViaShortxAction(cmdB64, needRoot);
-    if (actionRet && actionRet.ok) {
-      safeLog(this.L, 'i', "shell via action ok root=" + String(requestedRoot) +
-        " cmd_b64_len=" + String(cmdB64 ? String(cmdB64).length : 0) +
-        " code=" + String(actionRet.code));
-      return actionRet;
+  // # 普通权限走 shortx.executeAction(ShellCommand) 同步执行，能拿到真实 out/err/code。
+  // # root 权限继续走广播桥；当前 ShellCommand 无 root 字段，避免在普通权限下误执行 root 命令。
+  if (!requestedRoot) {
+    try {
+      var actionRet = this.execShellViaShortxAction(cmdB64, requestedRoot);
+      if (actionRet && actionRet.ok) {
+        safeLog(this.L, 'i', "shell via action ok root=" + String(requestedRoot) +
+          " cmd_b64_len=" + String(cmdB64 ? String(cmdB64).length : 0) +
+          " code=" + String(actionRet.code));
+        return actionRet;
+      }
+      if (actionRet && actionRet.executed === true) {
+        safeLog(this.L, 'w', "shell via action command failed code=" + String(actionRet.code) +
+          " err_type=" + String(actionRet.errType || "") + " fallback=none");
+        return actionRet;
+      }
+      safeLog(this.L, 'w', "shell via action unavailable err_type=" + String(actionRet && actionRet.errType ? actionRet.errType : "unknown") +
+        " fallback=broadcast_bridge");
+    } catch (eActionFirst) {
+      try { safeLog(this.L, 'w', "shell via action exception fallback=broadcast_bridge"); } catch (eLogA) {}
     }
-    safeLog(this.L, 'w', "shell via action unavailable err_type=" + String(actionRet && actionRet.errType ? actionRet.errType : "unknown") +
-      " fallback=broadcast_bridge");
-  } catch (eActionFirst) {
-    try { safeLog(this.L, 'w', "shell via action exception fallback=broadcast_bridge"); } catch (eLogA) {}
+  } else {
+    try { safeLog(this.L, 'i', "shell root requested fallback=broadcast_bridge"); } catch (eRootLog) {}
   }
 
   var ret = {
