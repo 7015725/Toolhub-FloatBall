@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "20260825-root-shell-action-marker",
+  "type": "fix",
+  "title": "修复 root Shell 状态标记超时",
+  "details": [
+    "修复了因 root Shell 仅发送广播桥且接收器未回写状态标记导致拾字图片保存和分享超时的问题。",
+    "root Shell 现在直接走 ShortX ShellCommand 能力，Action 不可用时再走广播桥兜底。"
+  ],
+  "manifestVersion": 20260825084735,
+  "date": "2026-08-25",
+  "modules": [],
+  "entry": {
+    "changed": true,
+    "from": 20260825075903,
+    "to": 20260825084735
+  }
+}
