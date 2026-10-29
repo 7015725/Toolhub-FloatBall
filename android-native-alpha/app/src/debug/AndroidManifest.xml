@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Debug-only test entry. No additional exported component is added to release builds. -->
+    <instrumentation android:name="com.toolhub.floatball.SmokeInstrumentation"
+        android:targetPackage="com.toolhub.floatball" android:functionalTest="true" />
+</manifest>
