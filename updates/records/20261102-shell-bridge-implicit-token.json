@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "id": "20261102-shell-bridge-implicit-token",
+  "type": "fix",
+  "title": "隐式 Shell 广播桥不再附带令牌",
+  "details": [
+    "修复了未配置目标包时 Shell 广播桥兜底会把令牌随隐式广播发出、可被其他应用接收的问题。",
+    "隐式广播现在不附带令牌；设置为必须令牌但未配置目标包时会拒绝发送并提示配置错误。"
+  ],
+  "manifestVersion": 0
+}

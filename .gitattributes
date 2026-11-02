@@ -1,0 +1,6 @@
+# 签名清单按仓库中的 LF 字节计算 SHA-256；任何平台检出都必须保持 LF，否则本地校验和签名会不一致。
+* text=auto eol=lf
+
+*.jar binary
+*.png binary
+*.jpg binary
