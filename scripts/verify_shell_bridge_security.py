@@ -47,6 +47,12 @@ require(SHELL, 'resolved.targetMode !== "implicit"', "non implicit target guard"
 require(SHELL, 'throw "shell bridge target missing mode=" + String(resolved.mode || "")', "missing target block")
 require(SHELL, 'requireToken: (mode === "strict") || requireToken', "strict token policy")
 require(SHELL, 'throw "shell bridge token missing mode=" + String(resolved.mode || "")', "missing token block")
+
+# 隐式广播任何 App 都能接收：令牌不得随隐式广播发出；需要令牌时必须配置目标包。
+require(SHELL, 'if (resolved.targetMode === "implicit") {', "implicit token guard")
+require(SHELL, 'throw "shell bridge token requires explicit target mode=" + String(resolved.mode || "")', "implicit required token block")
+require(SHELL, 'ret.tokenWithheld = resolved.hasToken === true;', "implicit token withheld marker")
+require(SHELL, '} else if (resolved.tokenValue) {', "token only attached to explicit target")
 require(SHELL, 'var requestedRoot = (needRoot === true);', "explicit root only")
 require(SHELL, 'executed: false,', "action result executed flag")
 require(SHELL, 'transportOk: false,', "action transport flag")
@@ -123,9 +129,21 @@ def resolve_policy(
             "migrated": migrated,
             "migration_reason": reason,
             "root": root is True,
+            "token_sent": False,
         }
 
     token_required = raw == "strict" or require_token is True
+    implicit = not target and raw == "compat"
+    if implicit and token_required:
+        return {
+            "allowed": False,
+            "reason": "token_requires_target",
+            "mode": raw,
+            "migrated": migrated,
+            "migration_reason": reason,
+            "root": root is True,
+            "token_sent": False,
+        }
     if token_required and not token:
         return {
             "allowed": False,
@@ -134,6 +152,7 @@ def resolve_policy(
             "migrated": migrated,
             "migration_reason": reason,
             "root": root is True,
+            "token_sent": False,
         }
 
     return {
@@ -143,37 +162,51 @@ def resolve_policy(
         "migrated": migrated,
         "migration_reason": reason,
         "root": root is True,
+        "token_sent": bool(token) and not implicit,
     }
 
 
 cases = [
     (
         resolve_policy(),
-        {"allowed": True, "reason": "", "mode": "compat", "migrated": False, "migration_reason": "", "root": False},
+        {"allowed": True, "reason": "", "mode": "compat", "migrated": False, "migration_reason": "", "root": False, "token_sent": False},
     ),
     (
         resolve_policy(mode="strict", target=False, token=False, require_token=True, migration_version=0),
-        {"allowed": True, "reason": "", "mode": "compat", "migrated": True, "migration_reason": "legacy_missing_target", "root": False},
+        {"allowed": True, "reason": "", "mode": "compat", "migrated": True, "migration_reason": "legacy_missing_target", "root": False, "token_sent": False},
     ),
     (
         resolve_policy(mode="compat", target=False, token=False, require_token=True, migration_version=0),
-        {"allowed": True, "reason": "", "mode": "compat", "migrated": True, "migration_reason": "legacy_missing_token", "root": False},
+        {"allowed": True, "reason": "", "mode": "compat", "migrated": True, "migration_reason": "legacy_missing_token", "root": False, "token_sent": False},
     ),
     (
         resolve_policy(mode="strict", target=True, token=True, require_token=False, migration_version=1),
-        {"allowed": True, "reason": "", "mode": "strict", "migrated": False, "migration_reason": "", "root": False},
+        {"allowed": True, "reason": "", "mode": "strict", "migrated": False, "migration_reason": "", "root": False, "token_sent": True},
     ),
     (
         resolve_policy(mode="strict", target=True, token=False, require_token=False, migration_version=1),
-        {"allowed": False, "reason": "token", "mode": "strict", "migrated": False, "migration_reason": "", "root": False},
+        {"allowed": False, "reason": "token", "mode": "strict", "migrated": False, "migration_reason": "", "root": False, "token_sent": False},
     ),
     (
         resolve_policy(mode="explicit", target=False, token=False, require_token=False, migration_version=1),
-        {"allowed": False, "reason": "target", "mode": "explicit", "migrated": False, "migration_reason": "", "root": False},
+        {"allowed": False, "reason": "target", "mode": "explicit", "migrated": False, "migration_reason": "", "root": False, "token_sent": False},
     ),
     (
         resolve_policy(mode="unknown", target=True, token=False, require_token=False, migration_version=0, root=True),
-        {"allowed": True, "reason": "", "mode": "explicit", "migrated": False, "migration_reason": "", "root": True},
+        {"allowed": True, "reason": "", "mode": "explicit", "migrated": False, "migration_reason": "", "root": True, "token_sent": False},
+    ),
+    # 隐式广播：配置了令牌也不发出；要求令牌时拒绝而不是泄露。
+    (
+        resolve_policy(mode="compat", target=False, token=True, require_token=False, migration_version=1),
+        {"allowed": True, "reason": "", "mode": "compat", "migrated": False, "migration_reason": "", "root": False, "token_sent": False},
+    ),
+    (
+        resolve_policy(mode="compat", target=False, token=True, require_token=True, migration_version=1),
+        {"allowed": False, "reason": "token_requires_target", "mode": "compat", "migrated": False, "migration_reason": "", "root": False, "token_sent": False},
+    ),
+    (
+        resolve_policy(mode="compat", target=True, token=True, require_token=False, migration_version=1),
+        {"allowed": True, "reason": "", "mode": "compat", "migrated": False, "migration_reason": "", "root": False, "token_sent": True},
     ),
 ]
 
