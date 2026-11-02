@@ -1,4 +1,4 @@
-// @version 1.0.12
+// @version 1.0.13
 // =======================【Shell：Action 优先 + 广播桥兜底】======================
 // 优先通过 shortx.executeAction(ShellCommand) 同步执行（能拿到 shellOut/shellErr/shellCode 真实结果）；
 // Action 不可用时回退到旧广播桥；Action 已执行且命令返回非 0 时直接返回真实失败。
@@ -149,6 +149,7 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
     migrated: false,
     requireToken: false,
     hasToken: false,
+    tokenWithheld: false,
     rootRequested: requestedRoot,
     root: requestedRoot,
     sent: false,
@@ -309,7 +310,14 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
       throw "shell bridge target missing mode=" + String(resolved.mode || "");
     }
 
-    if (resolved.tokenValue) {
+    if (resolved.targetMode === "implicit") {
+      // 隐式广播任何 App 都能接收：令牌不随隐式广播发出，需要令牌时必须配置目标包。
+      if (resolved.requireToken) {
+        ret.errType = "token_requires_target";
+        throw "shell bridge token requires explicit target mode=" + String(resolved.mode || "");
+      }
+      ret.tokenWithheld = resolved.hasToken === true;
+    } else if (resolved.tokenValue) {
       it.putExtra(String(resolved.tokenKey || "token"), String(resolved.tokenValue));
     } else if (resolved.requireToken) {
       ret.errType = "token_missing";
@@ -334,7 +342,8 @@ FloatBallAppWM.prototype.execShellSmart = function(cmdB64, needRoot) {
       " mode=" + String(resolved.mode || "") +
       " source=" + String(resolved.source || "") +
       " migrated=" + String(resolved.migrated === true) +
-      " token=" + String(resolved.hasToken === true));
+      " token=" + String(resolved.hasToken === true) +
+      " token_withheld=" + String(ret.tokenWithheld === true));
   } catch (eB) {
     if (!ret.errType) ret.errType = "broadcast_error";
     ret.err = "Broadcast err=" + String(eB);
