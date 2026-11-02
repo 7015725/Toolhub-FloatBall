@@ -1,8 +1,51 @@
 {
   "schema": 1,
-  "historyVersion": 20261102145652,
-  "generatedAt": "2026-11-02T22:56:52+08:00",
+  "historyVersion": 20261102153947,
+  "generatedAt": "2026-11-02T23:39:47+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20261102-clipboard-result-preview",
+      "type": "feature",
+      "title": "剪贴板新内容提醒",
+      "details": [
+        "其他应用复制文字后，顶部显示与取字相同的结果预览，点击即可进入拾字，右侧图标可再次复制。",
+        "可在设置“指针 → 结果预览 → 剪贴板新内容提醒”中关闭；锁屏或熄屏、拾字窗口内复制、ToolHub 自身复制、标记为敏感的内容、非文本和超过 10000 字的内容不会提醒。"
+      ],
+      "manifestVersion": 20261102153947,
+      "date": "2026-11-02",
+      "modules": [
+        {
+          "name": "th_01_base.js",
+          "from": "1.1.20",
+          "to": "1.1.21",
+          "change": "updated"
+        },
+        {
+          "name": "th_14_panels.js",
+          "from": "1.1.17",
+          "to": "1.1.18",
+          "change": "updated"
+        },
+        {
+          "name": "th_16_entry.js",
+          "from": "1.0.22",
+          "to": "1.0.23",
+          "change": "updated"
+        },
+        {
+          "name": "th_21_result_preview.js",
+          "from": "1.3.3",
+          "to": "1.4.0",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260825084735,
+        "to": 20260825084735
+      }
+    },
     {
       "schema": 1,
       "id": "20261102-shell-bridge-implicit-token",

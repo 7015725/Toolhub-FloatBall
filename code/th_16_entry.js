@@ -1,4 +1,4 @@
-// @version 1.0.22
+// @version 1.0.23
 
 // =======================【热修：按钮编辑保存返回保留临时按钮】=======================
 // 这段代码的主要内容/用途：修复 ToolApp 页面栈在“添加工具→先存起来→返回列表”时恢复旧快照，导致 tempButtons 被重新从 buttons.json 覆盖的问题。
@@ -250,6 +250,9 @@ FloatBallAppWM.prototype.close = function() {
     });
     closeStep("flushDebouncedWrites", function() {
       if (FileIO.flushDebouncedWrites() === false) throw "flush returned false";
+    });
+    closeStep("stopClipboardResultPreview", function() {
+      if (typeof self.stopClipboardResultPreview === "function") self.stopClipboardResultPreview("ToolHub 关闭");
     });
     closeStep("disposeResultPreview", function() {
       if (typeof self.disposeResultPreview === "function") self.disposeResultPreview("ToolHub 关闭");
@@ -638,6 +641,9 @@ FloatBallAppWM.prototype.startAsync = function(entryProcInfo, closeRule) {
           }
 
           self.setupDisplayMonitor();
+          try {
+            if (typeof self.startClipboardResultPreview === "function") self.startClipboardResultPreview();
+          } catch (eClipboardPreview) {}
           self.touchActivity();
 
           if (!isStartCurrent()) {

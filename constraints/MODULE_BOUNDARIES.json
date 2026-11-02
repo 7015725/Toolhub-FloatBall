@@ -35,6 +35,8 @@
     "openResultPreviewPrimaryAction": "th_21_result_preview.js",
     "disposeResultPreview": "th_21_result_preview.js",
     "onResultPreviewConfigurationChanged": "th_21_result_preview.js",
+    "startClipboardResultPreview": "th_21_result_preview.js",
+    "stopClipboardResultPreview": "th_21_result_preview.js",
     "getPickwordImageService": "th_22_image_viewer.js",
     "buildScreenshotManagerPanelView": "th_23_screenshot_manager.js"
   },

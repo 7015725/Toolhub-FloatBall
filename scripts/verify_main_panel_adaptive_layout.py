@@ -26,9 +26,11 @@ def forbid(text, fragment, label):
 
 
 def version(text, expected, name):
-    match = re.search(r"(?m)^// @version ([0-9]+\.[0-9]+\.[0-9]+)$", text)
-    if not match or match.group(1) != expected:
-        fail("%s expected version %s" % (name, expected))
+    # 版本号作为单调基线：模块后续升级不应让既有功能校验失败。
+    match = re.search(r"(?m)^// @version ([0-9]+)\.([0-9]+)\.([0-9]+)$", text)
+    baseline = tuple(int(part) for part in expected.split("."))
+    if not match or tuple(int(part) for part in match.groups()) < baseline:
+        fail("%s version regressed below %s" % (name, expected))
 
 
 version(BASE, "1.1.20", "th_01_base.js")

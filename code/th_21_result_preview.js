@@ -1,4 +1,4 @@
-// @version 1.3.3
+// @version 1.4.0
 // =======================【取字 / OCR 顶部结果预览】=======================
 // Canvas 全自绘单实例悬浮预览；点击正文进入拾字，右侧图标复制完整原文。
 (function() {
@@ -1455,6 +1455,118 @@
     };
   }
 
+  // =======================【剪贴板新内容提醒】=======================
+  // 其他应用写入剪贴板后发布与取字相同的结果预览；ToolHub 自身复制、拾字窗口内复制、
+  // 敏感内容、锁屏/熄屏、非文本和超长内容一律跳过。日志只记录长度，不记录内容。
+  var CLIPBOARD_OWN_LABELS21 = ["拾字", "二维码内容"];
+  var CLIPBOARD_MAX_TEXT21 = 10000;
+  var CLIPBOARD_DUPLICATE_MS21 = 1500;
+
+  function clipboardEnabled21(appObj) {
+    var raw = true;
+    try { raw = appObj && appObj.config ? appObj.config.POINTER_RESULT_PREVIEW_CLIPBOARD : true; } catch (eConfig) { raw = true; }
+    if (raw === undefined || raw === null) return true;
+    if (raw === false || raw === 0) return false;
+    var text = String(raw).replace(/^\s+|\s+$/g, "").toLowerCase();
+    return !(text === "false" || text === "0" || text === "off" || text === "no");
+  }
+
+  function isOwnClipboardLabel21(label) {
+    var text = String(label === null || label === undefined ? "" : label);
+    if (text.indexOf("ToolHub") === 0) return true;
+    for (var i = 0; i < CLIPBOARD_OWN_LABELS21.length; i++) {
+      if (text === CLIPBOARD_OWN_LABELS21[i]) return true;
+    }
+    return false;
+  }
+
+  function isDeviceUnlockedAndInteractive21() {
+    try {
+      var pm = context.getSystemService(android.content.Context.POWER_SERVICE);
+      if (pm && pm.isInteractive() !== true) return false;
+    } catch (ePower) {}
+    try {
+      var km = context.getSystemService(android.content.Context.KEYGUARD_SERVICE);
+      if (km && km.isKeyguardLocked() === true) return false;
+    } catch (eKeyguard) {}
+    return true;
+  }
+
+  function readClipboardChange21(appObj, cm) {
+    var out = { ok: false, reason: "", text: "" };
+    if (!clipboardEnabled21(appObj)) { out.reason = "disabled"; return out; }
+    if (!isDeviceUnlockedAndInteractive21()) { out.reason = "locked_or_screen_off"; return out; }
+    try {
+      if (typeof appObj.isPickwordShowing === "function" && appObj.isPickwordShowing() === true) {
+        out.reason = "pickword_showing";
+        return out;
+      }
+    } catch (ePickword) {}
+
+    var desc = null;
+    try { desc = cm.getPrimaryClipDescription(); } catch (eDesc) { desc = null; }
+    if (!desc) { out.reason = "no_description"; return out; }
+    var label = "";
+    try { label = String(desc.getLabel() || ""); } catch (eLabel) { label = ""; }
+    if (isOwnClipboardLabel21(label)) { out.reason = "own_write"; return out; }
+    try {
+      var extras = desc.getExtras();
+      if (extras && extras.getBoolean("android.content.extra.IS_SENSITIVE", false) === true) {
+        out.reason = "sensitive";
+        return out;
+      }
+    } catch (eSensitive) {}
+
+    var clip = null;
+    try { clip = cm.getPrimaryClip(); } catch (eClip) { clip = null; }
+    if (!clip || clip.getItemCount() <= 0) { out.reason = "empty"; return out; }
+    var raw = null;
+    try { raw = clip.getItemAt(0).getText(); } catch (eItem) { raw = null; }
+    if (raw === null || raw === undefined) { out.reason = "not_text"; return out; }
+    var text = String(raw);
+    if (!text.replace(/\s+/g, "")) { out.reason = "blank"; return out; }
+    if (text.length > CLIPBOARD_MAX_TEXT21) { out.reason = "too_long"; out.text = text; return out; }
+    out.ok = true;
+    out.text = text;
+    return out;
+  }
+
+  function handleClipboardChanged21(appObj, monitor) {
+    if (!appObj || !appObj.state || appObj.state.closed === true || appObj.state.closing === true) return false;
+    var st = appObj.state.clipboardPreview;
+    if (!st || st !== monitor || st.active !== true) return false;
+    var ret = readClipboardChange21(appObj, st.cm);
+    var now = now21();
+    if (ret.ok && ret.text === st.lastText && now - Number(st.lastAt || 0) < CLIPBOARD_DUPLICATE_MS21) {
+      ret.ok = false;
+      ret.reason = "duplicate";
+    }
+    if (!ret.ok) {
+      try {
+        safeLog(appObj.L, 'd', "clipboard preview skip reason=" + String(ret.reason) +
+          (ret.text ? " textLen=" + String(ret.text.length) : ""));
+      } catch (eSkipLog) {}
+      return false;
+    }
+    st.lastText = ret.text;
+    st.lastAt = now;
+    var previewRet = appObj.publishResultPreview({
+      kind: "text",
+      source: "clipboard",
+      text: ret.text,
+      previewText: ret.text,
+      screenshotPath: "",
+      primaryAction: "pickword",
+      actions: [],
+      createdAt: now
+    });
+    try {
+      safeLog(appObj.L, 'i', "clipboard preview publish textLen=" + String(ret.text.length) +
+        " queued=" + String(!!(previewRet && previewRet.ok === true)));
+    } catch (ePublishLog) {}
+    return !!(previewRet && previewRet.ok === true);
+  }
+
   function install21() {
     try {
       if (typeof FloatBallAppWM === "undefined" || !FloatBallAppWM || !FloatBallAppWM.prototype) return false;
@@ -1640,6 +1752,47 @@
           }
         });
         return true;
+      };
+
+      proto.startClipboardResultPreview = function() {
+        if (!this.state || this.state.closed === true || this.state.closing === true) return false;
+        if (this.state.clipboardPreview && this.state.clipboardPreview.active === true) return true;
+        var self = this;
+        var monitor = { active: false, cm: null, listener: null, lastText: "", lastAt: 0 };
+        try {
+          monitor.cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+          if (!monitor.cm) throw "clipboard service unavailable";
+          monitor.listener = new android.content.ClipboardManager.OnPrimaryClipChangedListener({
+            onPrimaryClipChanged: function() {
+              try { handleClipboardChanged21(self, monitor); } catch (eChanged) {
+                try { safeLog(self.L, 'e', "clipboard preview handle fail: " + String(eChanged)); } catch (eChangedLog) {}
+              }
+            }
+          });
+          monitor.cm.addPrimaryClipChangedListener(monitor.listener);
+          monitor.active = true;
+          this.state.clipboardPreview = monitor;
+          safeLog(this.L, 'i', "clipboard preview monitor started enabled=" + String(clipboardEnabled21(this)));
+          return true;
+        } catch (eStart) {
+          try { safeLog(this.L, 'w', "clipboard preview monitor start fail: " + String(eStart)); } catch (eStartLog) {}
+          return false;
+        }
+      };
+
+      proto.stopClipboardResultPreview = function(reason) {
+        var monitor = this.state ? this.state.clipboardPreview : null;
+        if (!monitor) return true;
+        monitor.active = false;
+        this.state.clipboardPreview = null;
+        try {
+          if (monitor.cm && monitor.listener) monitor.cm.removePrimaryClipChangedListener(monitor.listener);
+          safeLog(this.L, 'i', "clipboard preview monitor stopped reason=" + String(reason || ""));
+          return true;
+        } catch (eStop) {
+          try { safeLog(this.L, 'w', "clipboard preview monitor stop fail: " + String(eStop)); } catch (eStopLog) {}
+          return false;
+        }
       };
 
       proto.__toolHubResultPreviewInstalled = true;

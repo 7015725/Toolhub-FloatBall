@@ -1,4 +1,4 @@
-// @version 1.1.17
+// @version 1.1.18
 
 
 FloatBallAppWM.prototype.getSettingsResponsiveSpec = function() {
@@ -109,10 +109,11 @@ FloatBallAppWM.prototype.getPointerSettingsBlocks = function() {
     {
       key: "result_preview",
       title: "结果预览",
-      desc: "取字或框选 OCR 成功后显示两行预览；可调整垂直位置和停留时间，点击进入拾字",
+      desc: "取字、框选 OCR 或其他应用复制文字后显示两行预览；可调整垂直位置和停留时间，点击进入拾字",
       keys: [
         "POINTER_RESULT_PREVIEW_POSITION_PERCENT",
-        "POINTER_RESULT_PREVIEW_TIMEOUT_SEC"
+        "POINTER_RESULT_PREVIEW_TIMEOUT_SEC",
+        "POINTER_RESULT_PREVIEW_CLIPBOARD"
       ]
     },
     {

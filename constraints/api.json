@@ -517,6 +517,26 @@
       "threadContract": "execShellSmart 在按钮点击调用线程同步执行；广播桥兜底保持原异步语义",
       "fallback": "Action 不可用或异常时回退旧广播桥（compat/explicit/strict 配置不变）",
       "reason": "登记 th_10_shell.js Action 优先路径对 shortx.executeAction 的复用，与 th_18_pointer_ocr.js 既有用法同源"
+    },
+    {
+      "id": "api-result-preview-clipboard-monitor",
+      "usageKeys": [
+        "android|class|android.content.ClipboardManager.OnPrimaryClipChangedListener",
+        "android|method|android.content.ClipboardManager#OnPrimaryClipChangedListener"
+      ],
+      "source": "android",
+      "classOrObject": "android.content.ClipboardManager.OnPrimaryClipChangedListener",
+      "method": "OnPrimaryClipChangedListener",
+      "classification": "guarded",
+      "scope": [
+        "code/th_21_result_preview.js"
+      ],
+      "allowScopeExpansion": false,
+      "guard": "监听器只在 startAsync 成功后注册、close 时注销；回调先检查实例状态、设置开关、锁屏/熄屏、拾字窗口、ToolHub 自身标签与敏感标记，日志只记录长度",
+      "owner": "ToolHub result preview",
+      "threadContract": "ClipboardManager 在 Android Main Looper 回调；发布预览沿用 publishResultPreview 的主线程调度",
+      "fallback": "注册失败只记录警告，不影响启动；读取失败或不满足条件时跳过本次提醒",
+      "reason": "其他应用复制文字后复用顶部结果预览进入拾字"
     }
   ],
   "explicitRuleRequirements": [

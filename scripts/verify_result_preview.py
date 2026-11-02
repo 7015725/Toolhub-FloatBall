@@ -593,11 +593,72 @@ def main() -> int:
         failures,
     )
 
+    clipboard = section(preview, "【剪贴板新内容提醒】", "function install21()")
+    require(
+        "clipboard / setting registered",
+        'POINTER_RESULT_PREVIEW_CLIPBOARD: { type: "bool", default: true }' in base
+        and 'POINTER_RESULT_PREVIEW_CLIPBOARD: true,' in base
+        and '{ key: "POINTER_RESULT_PREVIEW_CLIPBOARD", name: "剪贴板新内容提醒"' in base
+        and 'sStr.indexOf("POINTER_RESULT_PREVIEW_CLIPBOARD") < 0' in base
+        and '"POINTER_RESULT_PREVIEW_CLIPBOARD"' in panels,
+        "clipboard toggle must exist in schema, defaults, settings UI, legacy refresh and pointer subpage",
+        failures,
+    )
+    require(
+        "clipboard / skip guards",
+        all(token in clipboard for token in (
+            "clipboardEnabled21(appObj)",
+            "isDeviceUnlockedAndInteractive21()",
+            "appObj.isPickwordShowing()",
+            "isOwnClipboardLabel21(label)",
+            '"android.content.extra.IS_SENSITIVE"',
+            "CLIPBOARD_MAX_TEXT21",
+            '"duplicate"',
+        )),
+        "clipboard preview must skip disabled, locked, pickword-internal, own, sensitive, oversized and duplicate clips",
+        failures,
+    )
+    require(
+        "clipboard / own labels cover ToolHub writers",
+        'text.indexOf("ToolHub") === 0' in clipboard
+        and '"拾字"' in clipboard
+        and '"二维码内容"' in clipboard
+        and 'newPlainText("ToolHub指针取字"' in pointer,
+        "every ToolHub clipboard writer label must be ignored",
+        failures,
+    )
+    require(
+        "clipboard / logs never include content",
+        "clipboard preview publish textLen=" in clipboard
+        and not re.search(r"safeLog\([^;]*\+\s*(?:ret\.)?text\b(?!\.length)", clipboard),
+        "clipboard logs may record length only",
+        failures,
+    )
+    require(
+        "clipboard / publishes pickword preview",
+        'source: "clipboard"' in clipboard and 'primaryAction: "pickword"' in clipboard,
+        "clipboard preview must reuse the pickword primary action",
+        failures,
+    )
+    require(
+        "clipboard / lifecycle",
+        "addPrimaryClipChangedListener(monitor.listener)" in preview
+        and "removePrimaryClipChangedListener(monitor.listener)" in preview
+        and "self.startClipboardResultPreview()" in entry
+        and entry.find("self.startClipboardResultPreview()") > entry.find("self.setupDisplayMonitor();")
+        and 'self.stopClipboardResultPreview("ToolHub 关闭")' in entry
+        and entry.find("stopClipboardResultPreview") < entry.find('closeStep("disposeResultPreview"'),
+        "listener must register after start succeeds and unregister before preview disposal on close",
+        failures,
+    )
+
     for owner in (
         '"completePointerTextResult": "th_17_pointer.js"',
         '"showPickwordText": "th_20_pickword.js"',
         '"publishResultPreview": "th_21_result_preview.js"',
         '"disposeResultPreview": "th_21_result_preview.js"',
+        '"startClipboardResultPreview": "th_21_result_preview.js"',
+        '"stopClipboardResultPreview": "th_21_result_preview.js"',
     ):
         require(
             "boundaries / " + owner.split(":", 1)[0].strip('"'),

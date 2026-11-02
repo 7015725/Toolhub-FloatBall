@@ -44,7 +44,7 @@
     "code/th_26_qr_runtime.js",
     "code/th_34_shortx_ui_lab.js"
   ],
-  "usageCount": 786,
+  "usageCount": 788,
   "entries": [
     {
       "key": "android|class|android.animation.Animator.AnimatorListener",
@@ -100,6 +100,29 @@
         {
           "file": "code/th_20_pickword.js",
           "line": 4658,
+          "form": "direct_constructor_assignment"
+        }
+      ],
+      "occurrenceCount": 2
+    },
+    {
+      "key": "android|class|android.content.ClipboardManager.OnPrimaryClipChangedListener",
+      "source": "android",
+      "kind": "class",
+      "classOrObject": "android.content.ClipboardManager.OnPrimaryClipChangedListener",
+      "method": null,
+      "files": [
+        "code/th_21_result_preview.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_21_result_preview.js",
+          "line": 1765,
+          "form": "direct_constructor"
+        },
+        {
+          "file": "code/th_21_result_preview.js",
+          "line": 1765,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -1272,22 +1295,22 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 371,
+          "line": 372,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 371,
+          "line": 372,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 376,
+          "line": 377,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 376,
+          "line": 377,
           "form": "direct_constructor_assignment"
         },
         {
@@ -1339,12 +1362,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 374,
+          "line": 375,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 374,
+          "line": 375,
           "form": "direct_constructor_assignment"
         },
         {
@@ -1359,12 +1382,12 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 505,
+          "line": 508,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 505,
+          "line": 508,
           "form": "direct_constructor_assignment"
         },
         {
@@ -1717,7 +1740,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1814,
+          "line": 1815,
           "form": "class_alias"
         },
         {
@@ -2030,7 +2053,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1710,
+          "line": 1711,
           "form": "direct_constructor"
         }
       ],
@@ -2149,12 +2172,12 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 901,
+          "line": 907,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 901,
+          "line": 907,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -2269,12 +2292,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1882,
+          "line": 1883,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1882,
+          "line": 1883,
           "form": "direct_constructor_assignment"
         },
         {
@@ -2390,7 +2413,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1893,
+          "line": 1894,
           "form": "class_alias"
         }
       ],
@@ -2589,7 +2612,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1408,
+          "line": 1409,
           "form": "direct_constructor"
         }
       ],
@@ -2826,12 +2849,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 245,
+          "line": 246,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 398,
+          "line": 399,
           "form": "direct_constructor"
         }
       ],
@@ -2985,7 +3008,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 863,
+          "line": 864,
           "form": "direct_constructor"
         }
       ],
@@ -3008,12 +3031,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 865,
+          "line": 866,
           "form": "class_alias"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1512,
+          "line": 1513,
           "form": "class_alias"
         }
       ],
@@ -3042,12 +3065,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 239,
+          "line": 240,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 239,
+          "line": 240,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -3650,42 +3673,42 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 836,
+          "line": 837,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 836,
+          "line": 837,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1161,
+          "line": 1162,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1243,
+          "line": 1244,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1284,
+          "line": 1285,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1472,
+          "line": 1473,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1845,
+          "line": 1846,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2540,
+          "line": 2541,
           "form": "direct_constructor"
         }
       ],
@@ -3818,12 +3841,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1397,
+          "line": 1398,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1397,
+          "line": 1398,
           "form": "direct_constructor_assignment"
         }
       ],
@@ -3943,7 +3966,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1924,
+          "line": 1925,
           "form": "class_alias"
         }
       ],
@@ -4080,7 +4103,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 430,
+          "line": 431,
           "form": "direct_static_call"
         },
         {
@@ -4108,7 +4131,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1901,
+          "line": 1906,
           "form": "direct_static_call"
         }
       ],
@@ -4337,7 +4360,7 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 494,
+          "line": 497,
           "form": "direct_static_call"
         },
         {
@@ -4435,6 +4458,24 @@
         {
           "file": "code/th_22_image_viewer.js",
           "line": 1475,
+          "form": "direct_static_call"
+        }
+      ],
+      "occurrenceCount": 1
+    },
+    {
+      "key": "android|method|android.content.ClipboardManager#OnPrimaryClipChangedListener",
+      "source": "android",
+      "kind": "method",
+      "classOrObject": "android.content.ClipboardManager",
+      "method": "OnPrimaryClipChangedListener",
+      "files": [
+        "code/th_21_result_preview.js"
+      ],
+      "locations": [
+        {
+          "file": "code/th_21_result_preview.js",
+          "line": 1765,
           "form": "direct_static_call"
         }
       ],
@@ -4568,7 +4609,7 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 293,
+          "line": 296,
           "form": "instance_call"
         },
         {
@@ -4591,12 +4632,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 813,
+          "line": 814,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 845,
+          "line": 846,
           "form": "instance_call"
         }
       ],
@@ -4770,7 +4811,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1714,
+          "line": 1719,
           "form": "instance_call"
         }
       ],
@@ -4886,7 +4927,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1741,
+          "line": 1746,
           "form": "instance_call"
         },
         {
@@ -4945,7 +4986,7 @@
           "form": "instance_call"
         }
       ],
-      "occurrenceCount": 26
+      "occurrenceCount": 29
     },
     {
       "key": "android|method|android.content.Context#sendBroadcast",
@@ -4977,7 +5018,7 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 494,
+          "line": 497,
           "form": "instance_call"
         }
       ],
@@ -7919,12 +7960,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 371,
+          "line": 372,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 376,
+          "line": 377,
           "form": "direct_static_call"
         },
         {
@@ -7954,7 +7995,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2199,
+          "line": 2200,
           "form": "direct_static_call"
         },
         {
@@ -7986,7 +8027,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 374,
+          "line": 375,
           "form": "direct_static_call"
         },
         {
@@ -7996,7 +8037,7 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 505,
+          "line": 508,
           "form": "direct_static_call"
         },
         {
@@ -8144,32 +8185,32 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 516,
+          "line": 519,
           "form": "instance_call"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 528,
+          "line": 531,
           "form": "instance_call"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 570,
+          "line": 573,
           "form": "instance_call"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 665,
+          "line": 671,
           "form": "instance_call"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 690,
+          "line": 696,
           "form": "instance_call"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 804,
+          "line": 810,
           "form": "instance_call"
         },
         {
@@ -8207,12 +8248,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 392,
+          "line": 393,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2200,
+          "line": 2201,
           "form": "instance_call"
         },
         {
@@ -8285,12 +8326,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 382,
+          "line": 383,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 397,
+          "line": 398,
           "form": "instance_call"
         },
         {
@@ -8300,12 +8341,12 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 688,
+          "line": 694,
           "form": "instance_call"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 703,
+          "line": 709,
           "form": "instance_call"
         },
         {
@@ -8487,7 +8528,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 376,
+          "line": 377,
           "form": "instance_call"
         },
         {
@@ -8497,7 +8538,7 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 508,
+          "line": 511,
           "form": "instance_call"
         },
         {
@@ -8527,7 +8568,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 403,
+          "line": 404,
           "form": "instance_call"
         },
         {
@@ -8557,7 +8598,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 402,
+          "line": 403,
           "form": "instance_call"
         },
         {
@@ -8589,7 +8630,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 375,
+          "line": 376,
           "form": "instance_call"
         },
         {
@@ -8599,7 +8640,7 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 506,
+          "line": 509,
           "form": "instance_call"
         },
         {
@@ -8653,12 +8694,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 371,
+          "line": 372,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1718,
+          "line": 1723,
           "form": "direct_static_call"
         },
         {
@@ -8683,7 +8724,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2199,
+          "line": 2200,
           "form": "direct_static_call"
         },
         {
@@ -8720,12 +8761,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1716,
+          "line": 1721,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1719,
+          "line": 1724,
           "form": "direct_static_call"
         },
         {
@@ -8735,12 +8776,12 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 766,
+          "line": 772,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 773,
+          "line": 779,
           "form": "direct_static_call"
         },
         {
@@ -8779,7 +8820,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1711,
+          "line": 1716,
           "form": "direct_static_call"
         },
         {
@@ -8818,7 +8859,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1712,
+          "line": 1717,
           "form": "direct_static_call"
         },
         {
@@ -8843,7 +8884,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1710,
+          "line": 1715,
           "form": "direct_static_call"
         },
         {
@@ -9497,12 +9538,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1769,
+          "line": 1774,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1771,
+          "line": 1776,
           "form": "direct_static_call"
         },
         {
@@ -9530,7 +9571,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 789,
+          "line": 790,
           "form": "direct_static_call"
         }
       ],
@@ -9711,7 +9752,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 399,
+          "line": 400,
           "form": "direct_static_call"
         }
       ],
@@ -9949,7 +9990,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1710,
+          "line": 1711,
           "form": "direct_static_call"
         }
       ],
@@ -10172,7 +10213,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1001,
+          "line": 1002,
           "form": "instance_call"
         },
         {
@@ -10501,7 +10542,7 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 901,
+          "line": 907,
           "form": "direct_static_call"
         }
       ],
@@ -10679,7 +10720,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1882,
+          "line": 1883,
           "form": "direct_static_call"
         },
         {
@@ -10978,7 +11019,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 397,
+          "line": 398,
           "form": "direct_static_call"
         },
         {
@@ -11074,7 +11115,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 239,
+          "line": 240,
           "form": "direct_static_call"
         }
       ],
@@ -11382,37 +11423,37 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 836,
+          "line": 837,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1161,
+          "line": 1162,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1243,
+          "line": 1244,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1284,
+          "line": 1285,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1472,
+          "line": 1473,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1845,
+          "line": 1846,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2540,
+          "line": 2541,
           "form": "direct_static_call"
         },
         {
@@ -11496,7 +11537,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1397,
+          "line": 1398,
           "form": "direct_static_call"
         }
       ],
@@ -11656,7 +11697,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1408,
+          "line": 1409,
           "form": "direct_static_call"
         }
       ],
@@ -12491,27 +12532,27 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 245,
+          "line": 246,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 398,
+          "line": 399,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 403,
+          "line": 404,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1813,
+          "line": 1814,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1858,
+          "line": 1859,
           "form": "direct_static_call"
         }
       ],
@@ -12589,12 +12630,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 398,
+          "line": 399,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 404,
+          "line": 405,
           "form": "instance_call"
         },
         {
@@ -13847,7 +13888,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1702,
+          "line": 1703,
           "form": "direct_static_call"
         }
       ],
@@ -13865,7 +13906,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1682,
+          "line": 1683,
           "form": "direct_static_call"
         }
       ],
@@ -13883,7 +13924,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1692,
+          "line": 1693,
           "form": "direct_static_call"
         }
       ],
@@ -13935,12 +13976,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 863,
+          "line": 864,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1510,
+          "line": 1511,
           "form": "direct_static_call"
         },
         {
@@ -14212,7 +14253,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1296,
+          "line": 1297,
           "form": "instance_call"
         }
       ],
@@ -14311,12 +14352,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 866,
+          "line": 867,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1513,
+          "line": 1514,
           "form": "direct_static_call"
         }
       ],
@@ -14368,12 +14409,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 867,
+          "line": 868,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1514,
+          "line": 1515,
           "form": "instance_call"
         },
         {
@@ -14407,7 +14448,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 245,
+          "line": 246,
           "form": "instance_call"
         }
       ],
@@ -14431,7 +14472,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 240,
+          "line": 241,
           "form": "instance_call"
         }
       ],
@@ -14449,7 +14490,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 240,
+          "line": 241,
           "form": "instance_call"
         }
       ],
@@ -14854,12 +14895,12 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1210,
+          "line": 1211,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1264,
+          "line": 1265,
           "form": "instance_call"
         },
         {
@@ -14963,7 +15004,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1916,
+          "line": 1917,
           "form": "instance_call"
         }
       ],
@@ -15017,7 +15058,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1958,
+          "line": 1959,
           "form": "instance_call"
         },
         {
@@ -15193,7 +15234,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1912,
+          "line": 1913,
           "form": "instance_call"
         },
         {
@@ -15223,12 +15264,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 807,
-          "form": "instance_call"
-        },
-        {
-          "file": "code/th_14_panels.js",
-          "line": 1175,
+          "line": 808,
           "form": "instance_call"
         },
         {
@@ -15238,7 +15274,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1358,
+          "line": 1177,
+          "form": "instance_call"
+        },
+        {
+          "file": "code/th_14_panels.js",
+          "line": 1359,
           "form": "instance_call"
         },
         {
@@ -15280,7 +15321,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1911,
+          "line": 1912,
           "form": "instance_call"
         },
         {
@@ -15306,17 +15347,17 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1210,
+          "line": 1211,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1264,
+          "line": 1265,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2920,
+          "line": 2921,
           "form": "instance_call"
         },
         {
@@ -15491,7 +15532,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1707,
+          "line": 1708,
           "form": "instance_call"
         },
         {
@@ -15537,12 +15578,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 861,
+          "line": 862,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1508,
+          "line": 1509,
           "form": "instance_call"
         },
         {
@@ -15582,12 +15623,12 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 758,
+          "line": 759,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1034,
+          "line": 1035,
           "form": "instance_call"
         },
         {
@@ -15657,42 +15698,42 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 386,
+          "line": 387,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 608,
+          "line": 609,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 860,
+          "line": 861,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1140,
+          "line": 1141,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1172,
+          "line": 1173,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1282,
+          "line": 1283,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1507,
+          "line": 1508,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1818,
+          "line": 1819,
           "form": "instance_call"
         }
       ],
@@ -15730,7 +15771,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1708,
+          "line": 1709,
           "form": "instance_call"
         },
         {
@@ -15768,7 +15809,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1708,
+          "line": 1709,
           "form": "instance_call"
         }
       ],
@@ -15915,27 +15956,27 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 868,
+          "line": 869,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 872,
+          "line": 873,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1515,
+          "line": 1516,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1519,
+          "line": 1520,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1815,
+          "line": 1816,
           "form": "instance_call"
         }
       ],
@@ -15971,22 +16012,22 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 384,
+          "line": 385,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 558,
+          "line": 559,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 605,
+          "line": 606,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 995,
+          "line": 996,
           "form": "instance_call"
         },
         {
@@ -16051,27 +16092,27 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 442,
+          "line": 443,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1875,
+          "line": 1876,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1878,
+          "line": 1879,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2688,
+          "line": 2689,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2921,
+          "line": 2922,
           "form": "instance_call"
         }
       ],
@@ -16089,7 +16130,7 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1710,
+          "line": 1711,
           "form": "instance_call"
         }
       ],
@@ -18010,37 +18051,37 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 841,
+          "line": 842,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1165,
+          "line": 1166,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1249,
+          "line": 1250,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1289,
+          "line": 1290,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1479,
+          "line": 1480,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1858,
+          "line": 1859,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2544,
+          "line": 2545,
           "form": "instance_call"
         },
         {
@@ -18446,12 +18487,12 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 1846,
+          "line": 1847,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2541,
+          "line": 2542,
           "form": "instance_call"
         },
         {
@@ -18497,7 +18538,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1853,
+          "line": 1854,
           "form": "instance_call"
         },
         {
@@ -18562,17 +18603,17 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 851,
+          "line": 852,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1290,
+          "line": 1291,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1492,
+          "line": 1493,
           "form": "instance_call"
         },
         {
@@ -18626,27 +18667,27 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 837,
+          "line": 838,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1162,
+          "line": 1163,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1244,
+          "line": 1245,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1285,
+          "line": 1286,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1473,
+          "line": 1474,
           "form": "instance_call"
         },
         {
@@ -18723,32 +18764,32 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 837,
+          "line": 838,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1162,
+          "line": 1163,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1244,
+          "line": 1245,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1285,
+          "line": 1286,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1474,
+          "line": 1475,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1847,
+          "line": 1848,
           "form": "instance_call"
         },
         {
@@ -19166,7 +19207,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1407,
+          "line": 1408,
           "form": "instance_call"
         }
       ],
@@ -19196,7 +19237,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1408,
+          "line": 1409,
           "form": "instance_call"
         }
       ],
@@ -19220,7 +19261,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1398,
+          "line": 1399,
           "form": "instance_call"
         }
       ],
@@ -19244,7 +19285,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1398,
+          "line": 1399,
           "form": "instance_call"
         }
       ],
@@ -19273,27 +19314,27 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1376,
+          "line": 1377,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1428,
+          "line": 1429,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1449,
+          "line": 1450,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1828,
+          "line": 1829,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1842,
+          "line": 1843,
           "form": "instance_call"
         }
       ],
@@ -19751,7 +19792,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 262,
+          "line": 263,
           "form": "instance_call"
         },
         {
@@ -19944,22 +19985,22 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 577,
+          "line": 578,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 585,
+          "line": 586,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 636,
+          "line": 637,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 644,
+          "line": 645,
           "form": "instance_call"
         },
         {
@@ -20023,7 +20064,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 262,
+          "line": 263,
           "form": "instance_call"
         },
         {
@@ -20365,7 +20406,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2556,
+          "line": 2557,
           "form": "instance_call"
         },
         {
@@ -20453,7 +20494,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1027,
+          "line": 1028,
           "form": "instance_call"
         },
         {
@@ -20497,12 +20538,12 @@
       "locations": [
         {
           "file": "code/th_14_panels.js",
-          "line": 577,
+          "line": 578,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 585,
+          "line": 586,
           "form": "instance_call"
         },
         {
@@ -20582,7 +20623,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 258,
+          "line": 259,
           "form": "instance_call"
         },
         {
@@ -20661,7 +20702,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 259,
+          "line": 260,
           "form": "instance_call"
         },
         {
@@ -20729,7 +20770,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 258,
+          "line": 259,
           "form": "instance_call"
         },
         {
@@ -20792,7 +20833,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 259,
+          "line": 260,
           "form": "instance_call"
         },
         {
@@ -20976,7 +21017,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1821,
+          "line": 1822,
           "form": "instance_call"
         }
       ],
@@ -21190,17 +21231,17 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 253,
+          "line": 254,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 576,
+          "line": 577,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 635,
+          "line": 636,
           "form": "instance_call"
         }
       ],
@@ -21573,12 +21614,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 402,
+          "line": 403,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2163,
+          "line": 2164,
           "form": "instance_call"
         },
         {
@@ -21911,12 +21952,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 571,
+          "line": 572,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 571,
+          "line": 572,
           "form": "direct_constructor_assignment"
         },
         {
@@ -21979,12 +22020,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1725,
+          "line": 1730,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1725,
+          "line": 1730,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22148,22 +22189,22 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 569,
+          "line": 570,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 569,
+          "line": 570,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1724,
+          "line": 1729,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1724,
+          "line": 1729,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22240,22 +22281,22 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 420,
+          "line": 421,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 592,
+          "line": 593,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 634,
+          "line": 635,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 769,
+          "line": 770,
           "form": "direct_constructor"
         }
       ],
@@ -22356,12 +22397,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 570,
+          "line": 571,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 570,
+          "line": 571,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22420,32 +22461,32 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 593,
+          "line": 594,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 593,
+          "line": 594,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 635,
+          "line": 636,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 635,
+          "line": 636,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 770,
+          "line": 771,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 770,
+          "line": 771,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22494,12 +22535,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1930,
+          "line": 1935,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1930,
+          "line": 1935,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22561,12 +22602,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1929,
+          "line": 1934,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1929,
+          "line": 1934,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22597,27 +22638,27 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 814,
+          "line": 815,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 814,
+          "line": 815,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 835,
+          "line": 836,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 842,
+          "line": 843,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 844,
+          "line": 845,
           "form": "direct_constructor"
         },
         {
@@ -22660,12 +22701,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 805,
+          "line": 806,
           "form": "class_alias"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 841,
+          "line": 842,
           "form": "class_alias"
         }
       ],
@@ -22729,12 +22770,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 387,
+          "line": 388,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 387,
+          "line": 388,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22806,27 +22847,27 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 788,
+          "line": 789,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 788,
+          "line": 789,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1734,
+          "line": 1739,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1734,
+          "line": 1739,
           "form": "direct_constructor_assignment"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1773,
+          "line": 1778,
           "form": "direct_constructor"
         },
         {
@@ -22841,7 +22882,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2003,
+          "line": 2004,
           "form": "direct_constructor"
         }
       ],
@@ -22905,12 +22946,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 572,
+          "line": 573,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 572,
+          "line": 573,
           "form": "direct_constructor_assignment"
         },
         {
@@ -22971,22 +23012,22 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2230,
+          "line": 2231,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2388,
+          "line": 2389,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2488,
+          "line": 2489,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2769,
+          "line": 2770,
           "form": "direct_constructor"
         },
         {
@@ -23278,12 +23319,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 614,
+          "line": 615,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 614,
+          "line": 615,
           "form": "direct_constructor_assignment"
         },
         {
@@ -23345,12 +23386,12 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 578,
+          "line": 581,
           "form": "direct_constructor"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 578,
+          "line": 581,
           "form": "direct_constructor_assignment"
         },
         {
@@ -23513,7 +23554,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 571,
+          "line": 572,
           "form": "direct_static_call"
         },
         {
@@ -23581,7 +23622,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1725,
+          "line": 1730,
           "form": "direct_static_call"
         },
         {
@@ -23725,12 +23766,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 569,
+          "line": 570,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1724,
+          "line": 1729,
           "form": "direct_static_call"
         },
         {
@@ -23807,22 +23848,22 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 420,
+          "line": 421,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 592,
+          "line": 593,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 634,
+          "line": 635,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 769,
+          "line": 770,
           "form": "direct_static_call"
         },
         {
@@ -23928,7 +23969,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 570,
+          "line": 571,
           "form": "direct_static_call"
         },
         {
@@ -23982,17 +24023,17 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 593,
+          "line": 594,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 635,
+          "line": 636,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 770,
+          "line": 771,
           "form": "direct_static_call"
         },
         {
@@ -24041,7 +24082,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1930,
+          "line": 1935,
           "form": "direct_static_call"
         },
         {
@@ -24088,7 +24129,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1929,
+          "line": 1934,
           "form": "direct_static_call"
         },
         {
@@ -24116,7 +24157,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 579,
+          "line": 580,
           "form": "instance_call"
         },
         {
@@ -24205,7 +24246,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 574,
+          "line": 575,
           "form": "instance_call"
         },
         {
@@ -24271,7 +24312,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1731,
+          "line": 1736,
           "form": "instance_call"
         }
       ],
@@ -24291,7 +24332,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1734,
+          "line": 1739,
           "form": "instance_call"
         },
         {
@@ -24321,7 +24362,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1730,
+          "line": 1735,
           "form": "instance_call"
         },
         {
@@ -24766,12 +24807,12 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 631,
+          "line": 632,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 646,
+          "line": 647,
           "form": "instance_call"
         },
         {
@@ -24839,17 +24880,17 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 590,
+          "line": 591,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 628,
+          "line": 629,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 767,
+          "line": 768,
           "form": "instance_call"
         },
         {
@@ -24896,7 +24937,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 418,
+          "line": 419,
           "form": "instance_call"
         },
         {
@@ -24956,7 +24997,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1882,
+          "line": 1887,
           "form": "instance_call"
         },
         {
@@ -25048,7 +25089,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1886,
+          "line": 1891,
           "form": "instance_call"
         },
         {
@@ -25194,7 +25235,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1876,
+          "line": 1881,
           "form": "instance_call"
         },
         {
@@ -25259,17 +25300,17 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 417,
+          "line": 418,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 557,
+          "line": 558,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 629,
+          "line": 630,
           "form": "instance_call"
         },
         {
@@ -25284,7 +25325,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2347,
+          "line": 2348,
           "form": "instance_call"
         },
         {
@@ -25486,12 +25527,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 581,
+          "line": 582,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1733,
+          "line": 1738,
           "form": "instance_call"
         },
         {
@@ -25543,7 +25584,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1728,
+          "line": 1733,
           "form": "instance_call"
         },
         {
@@ -25585,27 +25626,27 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 422,
+          "line": 423,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 601,
+          "line": 602,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 641,
+          "line": 642,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 676,
+          "line": 677,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 778,
+          "line": 779,
           "form": "instance_call"
         },
         {
@@ -25723,7 +25764,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 638,
+          "line": 639,
           "form": "instance_call"
         },
         {
@@ -25808,7 +25849,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 421,
+          "line": 422,
           "form": "instance_call"
         },
         {
@@ -25932,7 +25973,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 580,
+          "line": 581,
           "form": "instance_call"
         }
       ],
@@ -25955,22 +25996,22 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 600,
+          "line": 601,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 640,
+          "line": 641,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 675,
+          "line": 676,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 777,
+          "line": 778,
           "form": "instance_call"
         },
         {
@@ -26039,17 +26080,17 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 595,
+          "line": 596,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 637,
+          "line": 638,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 772,
+          "line": 773,
           "form": "instance_call"
         },
         {
@@ -26103,17 +26144,17 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 594,
+          "line": 595,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 636,
+          "line": 637,
           "form": "instance_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 771,
+          "line": 772,
           "form": "instance_call"
         },
         {
@@ -26157,7 +26198,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1932,
+          "line": 1937,
           "form": "instance_call"
         },
         {
@@ -26258,7 +26299,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1933,
+          "line": 1938,
           "form": "instance_call"
         },
         {
@@ -26282,22 +26323,22 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 814,
+          "line": 815,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 835,
+          "line": 836,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 842,
+          "line": 843,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 844,
+          "line": 845,
           "form": "direct_static_call"
         },
         {
@@ -26371,7 +26412,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 387,
+          "line": 388,
           "form": "direct_static_call"
         },
         {
@@ -26448,22 +26489,22 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 788,
-          "form": "direct_static_call"
-        },
-        {
-          "file": "code/th_01_base.js",
           "line": 789,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1734,
+          "line": 790,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1773,
+          "line": 1739,
+          "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_01_base.js",
+          "line": 1778,
           "form": "direct_static_call"
         },
         {
@@ -26478,12 +26519,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2003,
+          "line": 2004,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2019,
+          "line": 2020,
           "form": "direct_static_call"
         },
         {
@@ -26532,7 +26573,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 572,
+          "line": 573,
           "form": "direct_static_call"
         },
         {
@@ -26552,7 +26593,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2009,
+          "line": 2010,
           "form": "direct_static_call"
         },
         {
@@ -26608,22 +26649,22 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2230,
+          "line": 2231,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2388,
+          "line": 2389,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2488,
+          "line": 2489,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2769,
+          "line": 2770,
           "form": "direct_static_call"
         },
         {
@@ -26690,12 +26731,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 343,
-          "form": "direct_static_call"
-        },
-        {
-          "file": "code/th_01_base.js",
-          "line": 802,
+          "line": 344,
           "form": "direct_static_call"
         },
         {
@@ -26710,7 +26746,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 838,
+          "line": 805,
           "form": "direct_static_call"
         },
         {
@@ -26721,6 +26757,11 @@
         {
           "file": "code/th_01_base.js",
           "line": 840,
+          "form": "direct_static_call"
+        },
+        {
+          "file": "code/th_01_base.js",
+          "line": 841,
           "form": "direct_static_call"
         },
         {
@@ -26793,7 +26834,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2011,
+          "line": 2012,
           "form": "direct_static_call"
         },
         {
@@ -26973,7 +27014,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 574,
+          "line": 575,
           "form": "instance_call"
         },
         {
@@ -26993,12 +27034,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2012,
+          "line": 2013,
           "form": "instance_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2013,
+          "line": 2014,
           "form": "instance_call"
         },
         {
@@ -27088,7 +27129,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 575,
+          "line": 576,
           "form": "instance_call"
         },
         {
@@ -27103,7 +27144,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2015,
+          "line": 2016,
           "form": "instance_call"
         },
         {
@@ -27252,7 +27293,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 631,
+          "line": 632,
           "form": "direct_static_call"
         },
         {
@@ -27291,7 +27332,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1715,
+          "line": 1720,
           "form": "direct_static_call"
         },
         {
@@ -27306,12 +27347,12 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 779,
+          "line": 785,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 780,
+          "line": 786,
           "form": "direct_static_call"
         },
         {
@@ -27355,7 +27396,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1918,
+          "line": 1923,
           "form": "direct_static_call"
         },
         {
@@ -27402,7 +27443,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 1942,
+          "line": 1947,
           "form": "direct_static_call"
         },
         {
@@ -27441,37 +27482,37 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1104,
+          "line": 1107,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1301,
+          "line": 1306,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1515,
+          "line": 1520,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2776,
+          "line": 2777,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2789,
+          "line": 2790,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2791,
+          "line": 2792,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2808,
+          "line": 2809,
           "form": "direct_static_call"
         },
         {
@@ -27567,12 +27608,12 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2004,
+          "line": 2005,
           "form": "direct_static_call"
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2008,
+          "line": 2009,
           "form": "direct_static_call"
         }
       ],
@@ -27619,7 +27660,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 1726,
+          "line": 1731,
           "form": "direct_static_call"
         },
         {
@@ -27966,7 +28007,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 2005,
+          "line": 2006,
           "form": "direct_static_call"
         },
         {
@@ -28208,7 +28249,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 614,
+          "line": 615,
           "form": "direct_static_call"
         },
         {
@@ -28302,7 +28343,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 755,
+          "line": 756,
           "form": "instance_call"
         },
         {
@@ -28326,7 +28367,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 756,
+          "line": 757,
           "form": "instance_call"
         },
         {
@@ -28350,7 +28391,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 731,
+          "line": 732,
           "form": "instance_call"
         },
         {
@@ -28409,7 +28450,7 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 578,
+          "line": 581,
           "form": "direct_static_call"
         },
         {
@@ -28444,7 +28485,7 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 681,
+          "line": 687,
           "form": "instance_call"
         },
         {
@@ -28491,12 +28532,12 @@
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 661,
+          "line": 667,
           "form": "instance_call"
         },
         {
           "file": "code/th_16_entry.js",
-          "line": 670,
+          "line": 676,
           "form": "instance_call"
         },
         {
@@ -28711,12 +28752,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 802,
+          "line": 803,
           "form": "reflection_class_literal"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 838,
+          "line": 839,
           "form": "reflection_class_literal"
         }
       ],
@@ -28806,12 +28847,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 803,
+          "line": 804,
           "form": "reflection_class_literal"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 839,
+          "line": 840,
           "form": "reflection_class_literal"
         }
       ],
@@ -28859,7 +28900,7 @@
         },
         {
           "file": "code/th_14_panels.js",
-          "line": 1918,
+          "line": 1919,
           "form": "reflection_class_literal"
         }
       ],
@@ -28895,12 +28936,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 804,
+          "line": 805,
           "form": "reflection_class_literal"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 840,
+          "line": 841,
           "form": "reflection_class_literal"
         }
       ],
@@ -28924,12 +28965,7 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 343,
-          "form": "reflection_dynamic_class"
-        },
-        {
-          "file": "code/th_01_base.js",
-          "line": 802,
+          "line": 344,
           "form": "reflection_dynamic_class"
         },
         {
@@ -28944,7 +28980,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 838,
+          "line": 805,
           "form": "reflection_dynamic_class"
         },
         {
@@ -28955,6 +28991,11 @@
         {
           "file": "code/th_01_base.js",
           "line": 840,
+          "form": "reflection_dynamic_class"
+        },
+        {
+          "file": "code/th_01_base.js",
+          "line": 841,
           "form": "reflection_dynamic_class"
         },
         {
@@ -28998,17 +29039,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 354,
+          "line": 355,
           "form": "reflection_dynamic_method"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 810,
-          "form": "reflection_dynamic_method"
-        },
-        {
-          "file": "code/th_01_base.js",
-          "line": 812,
+          "line": 811,
           "form": "reflection_dynamic_method"
         },
         {
@@ -29018,17 +29054,22 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 842,
+          "line": 814,
           "form": "reflection_dynamic_method"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 844,
+          "line": 843,
           "form": "reflection_dynamic_method"
         },
         {
           "file": "code/th_01_base.js",
           "line": 845,
+          "form": "reflection_dynamic_method"
+        },
+        {
+          "file": "code/th_01_base.js",
+          "line": 846,
           "form": "reflection_dynamic_method"
         },
         {
@@ -29069,12 +29110,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 812,
+          "line": 813,
           "form": "reflection_method_literal"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 844,
+          "line": 845,
           "form": "reflection_method_literal"
         }
       ],
@@ -29092,12 +29133,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 810,
+          "line": 811,
           "form": "reflection_method_literal"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 842,
+          "line": 843,
           "form": "reflection_method_literal"
         }
       ],
@@ -29115,12 +29156,12 @@
       "locations": [
         {
           "file": "code/th_01_base.js",
-          "line": 813,
+          "line": 814,
           "form": "reflection_method_literal"
         },
         {
           "file": "code/th_01_base.js",
-          "line": 845,
+          "line": 846,
           "form": "reflection_method_literal"
         }
       ],
@@ -29178,7 +29219,7 @@
         },
         {
           "file": "code/th_01_base.js",
-          "line": 457,
+          "line": 458,
           "form": "shortx_call"
         }
       ],
@@ -29203,5 +29244,5 @@
       "occurrenceCount": 1
     }
   ],
-  "usageDigest": "sha256:7ea3dc85be895fd71d5fd8dfe4dcefea5132bea266a3755c1ae358bb8092dda2"
+  "usageDigest": "sha256:57e1a72a939b5773c6f93ea2722752930784d19c7fc5a76fcb87ae2134458e8d"
 }
