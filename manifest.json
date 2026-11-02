@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "b88a7d9a48978434abccc6f60766bb2feb1412436b8b01ab2f79d9f292bab376",
-      "size": 69243,
-      "version": 20261102145652
+      "sha256": "3d5e5f3ae90fa93dfdf937596f8dff86ffef09b47045961b2fc11a792d6d3b8c",
+      "size": 70580,
+      "version": 20261102153947
     }
   },
   "branch": "beta",
@@ -21,9 +21,9 @@
   },
   "files": {
     "th_01_base.js": {
-      "sha256": "67c7000c85bfdd16ff2f4ca7193393d0475409524d772c6ed1f31bae97ef7b25",
-      "size": 85283,
-      "version": "1.1.20"
+      "sha256": "b3c2cef2d5b812e785ed9b99e9605d86ce8b8c7faa97de6cb9efaf774d220477",
+      "size": 85803,
+      "version": "1.1.21"
     },
     "th_02_core.js": {
       "sha256": "8fe68357ac099438776722ea70903afe806839623093084279b22a1ae4c3bf63",
@@ -106,9 +106,9 @@
       "version": "1.0.5"
     },
     "th_14_panels.js": {
-      "sha256": "f41f23f6b215e1ed3d0cb9f74372270f772c896518a2f4b9a937b61541d9dd7a",
-      "size": 157599,
-      "version": "1.1.17"
+      "sha256": "d2b7ae3a1870275f184fd87aa4887886b370c0c80303788f4f9d0d06bd62531d",
+      "size": 157664,
+      "version": "1.1.18"
     },
     "th_14_schema_editor.js": {
       "sha256": "331d43cacc9643ad63b5323588a928a69239b764f41be7f95cddd283fdab617f",
@@ -126,9 +126,9 @@
       "version": "1.5.9"
     },
     "th_16_entry.js": {
-      "sha256": "2b8af2bb45e6a1dfa5b8d718107dcb821795bf47ea84ed7b4fc944a203279116",
-      "size": 39597,
-      "version": "1.0.22"
+      "sha256": "b041acf19e1fa4456b2b717120b96f3e16fd5c07a61eaa2fa16298b9ff212cb5",
+      "size": 39943,
+      "version": "1.0.23"
     },
     "th_17_pointer.js": {
       "sha256": "b75151ad4baceb4b4faa6a1a26cf28c249534c130147f13c42ce83fa409c4486",
@@ -151,9 +151,9 @@
       "version": "1.0.34"
     },
     "th_21_result_preview.js": {
-      "sha256": "d0017f62cfffb6883212bb4d795fc431aa57f2f98a9c3dc8b6d8aa71d32edf44",
-      "size": 67792,
-      "version": "1.3.3"
+      "sha256": "b09e9670671f6d3e63861744f2da7d83bff0a77af16768c37c01cc6027dce3a0",
+      "size": 74546,
+      "version": "1.4.0"
     },
     "th_22_image_viewer.js": {
       "sha256": "70a86ec39d2f21fe9690eabb6d52f9c25c35c2033006788839ab5bd58916ed27",
@@ -189,11 +189,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了未配置目标包时 Shell 广播桥兜底会把令牌随隐式广播发出、可被其他应用接收的问题。",
-      "隐式广播现在不附带令牌；设置为必须令牌但未配置目标包时会拒绝发送并提示配置错误。"
+      "其他应用复制文字后，顶部显示与取字相同的结果预览，点击即可进入拾字，右侧图标可再次复制。",
+      "可在设置“指针 → 结果预览 → 剪贴板新内容提醒”中关闭；锁屏或熄屏、拾字窗口内复制、ToolHub 自身复制、标记为敏感的内容、非文本和超过 10000 字的内容不会提醒。"
     ],
     "date": "2026-11-02",
-    "title": "隐式 Shell 广播桥不再附带令牌"
+    "title": "剪贴板新内容提醒"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -209,5 +209,5 @@
     }
   },
   "schema": 6,
-  "version": 20261102145652
+  "version": 20261102153947
 }
