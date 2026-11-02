@@ -4,9 +4,9 @@
     "updateHistory": {
       "name": "update_history.json",
       "schema": 1,
-      "sha256": "1031e96fb6e9f06c5037416ba06051afae2f6a011989d19ad6eaa8ffb5d277cc",
-      "size": 68435,
-      "version": 20260825084735
+      "sha256": "b88a7d9a48978434abccc6f60766bb2feb1412436b8b01ab2f79d9f292bab376",
+      "size": 69243,
+      "version": 20261102145652
     }
   },
   "branch": "main",
@@ -61,9 +61,9 @@
       "version": "1.0.15"
     },
     "th_10_shell.js": {
-      "sha256": "95ec798cc6b37008475a3fc921977ecbb66c65d6c950e6b69fea79f7cda11f37",
-      "size": 22954,
-      "version": "1.0.12"
+      "sha256": "d4edac632c4161293db7578e0612c4f95be90061134443f81ca945cb2221bb0d",
+      "size": 23458,
+      "version": "1.0.13"
     },
     "th_11_action.js": {
       "sha256": "e5fce4d6afb03c16917c9e9a490334ab9ff69d9cf834214a766ab0ea91598dc7",
@@ -189,11 +189,11 @@
   "keyId": "toolhub-targets-20260703-rsa3072",
   "release": {
     "changes": [
-      "修复了因 root Shell 仅发送广播桥且接收器未回写状态标记导致拾字图片保存和分享超时的问题。",
-      "root Shell 现在直接走 ShortX ShellCommand 能力，Action 不可用时再走广播桥兜底。"
+      "修复了未配置目标包时 Shell 广播桥兜底会把令牌随隐式广播发出、可被其他应用接收的问题。",
+      "隐式广播现在不附带令牌；设置为必须令牌但未配置目标包时会拒绝发送并提示配置错误。"
     ],
-    "date": "2026-08-25",
-    "title": "修复 root Shell 状态标记超时"
+    "date": "2026-11-02",
+    "title": "隐式 Shell 广播桥不再附带令牌"
   },
   "runtimeFiles": {
     "toolhub-zxing-runtime": {
@@ -209,5 +209,5 @@
     }
   },
   "schema": 6,
-  "version": 20260825084735
+  "version": 20261102145652
 }

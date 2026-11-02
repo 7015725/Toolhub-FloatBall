@@ -1,8 +1,33 @@
 {
   "schema": 1,
-  "historyVersion": 20260825084735,
-  "generatedAt": "2026-08-25T09:08:21+08:00",
+  "historyVersion": 20261102145652,
+  "generatedAt": "2026-11-02T22:56:52+08:00",
   "records": [
+    {
+      "schema": 1,
+      "id": "20261102-shell-bridge-implicit-token",
+      "type": "fix",
+      "title": "隐式 Shell 广播桥不再附带令牌",
+      "details": [
+        "修复了未配置目标包时 Shell 广播桥兜底会把令牌随隐式广播发出、可被其他应用接收的问题。",
+        "隐式广播现在不附带令牌；设置为必须令牌但未配置目标包时会拒绝发送并提示配置错误。"
+      ],
+      "manifestVersion": 20261102145652,
+      "date": "2026-11-02",
+      "modules": [
+        {
+          "name": "th_10_shell.js",
+          "from": "1.0.12",
+          "to": "1.0.13",
+          "change": "updated"
+        }
+      ],
+      "entry": {
+        "changed": false,
+        "from": 20260825084735,
+        "to": 20260825084735
+      }
+    },
     {
       "schema": 1,
       "id": "20260825-root-shell-action-marker",
