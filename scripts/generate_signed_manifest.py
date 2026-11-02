@@ -113,6 +113,46 @@ def build_runtime_manifest():
     return output
 
 
+def read_manifest_at(ref):
+    try:
+        text = subprocess.check_output(
+            ["git", "show", "%s:manifest.json" % ref],
+            cwd=str(ROOT), text=True, encoding="utf-8", stderr=subprocess.DEVNULL,
+        )
+        return json.loads(text)
+    except Exception:
+        return None
+
+
+def load_resign_release(channel, previous_ref):
+    """通道重签：分支内容来自另一通道（如 beta 快进到 main）时复用已发布记录。"""
+    current = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    if str(current.get("channel", "")).strip().lower() == channel:
+        raise SystemExit("resign-channel requires a manifest from another channel")
+    history = json.loads(HISTORY.read_text(encoding="utf-8"))
+    records = history.get("records") or []
+    if not records:
+        raise SystemExit("resign-channel requires finalized update history")
+    record = records[0]
+    version = int(current.get("version", 0) or 0)
+    if version <= 0 or int(record.get("manifestVersion", 0) or 0) != version:
+        raise SystemExit("resign-channel requires manifest version to match latest history record")
+
+    if previous_ref:
+        previous = read_manifest_at(previous_ref)
+        if previous is None:
+            print("resign previous_ref=%s unavailable; rollback guard skipped" % previous_ref)
+        elif str(previous.get("channel", "")).strip().lower() == channel:
+            previous_version = int(previous.get("version", 0) or 0)
+            if version < previous_version:
+                raise SystemExit(
+                    "resign-channel would roll back %s: %s < %s"
+                    % (channel, version, previous_version)
+                )
+    print("resign_channel from=%s to=%s version=%s" % (current.get("channel"), channel, version))
+    return version, record, history
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--yes", action="store_true")
@@ -121,6 +161,16 @@ def main():
     ap.add_argument("--date", default="")
     ap.add_argument("--base-ref", default="")
     ap.add_argument("--channel", choices=sorted(CHANNEL_BRANCHES), default="")
+    ap.add_argument(
+        "--resign-channel",
+        action="store_true",
+        help="通道重签：沿用当前清单版本、发布说明和 update_history.json，仅按目标通道重新签名",
+    )
+    ap.add_argument(
+        "--previous-ref",
+        default="",
+        help="通道重签时用于防回滚的上一提交；其清单属于同一通道时，新版本不得更低",
+    )
     args = ap.parse_args()
 
     if not PRIVATE_KEY.exists():
@@ -141,9 +191,12 @@ def main():
         raise SystemExit("Unsupported update channel: %s" % channel)
     branch = CHANNEL_BRANCHES[channel]
 
-    from build_update_history import finalize_history
+    if args.resign_channel:
+        version, record, history = load_resign_release(channel, args.previous_ref)
+    else:
+        from build_update_history import finalize_history
 
-    record, history = finalize_history(version, base_ref, args.date)
+        record, history = finalize_history(version, base_ref, args.date)
     release_title = str(record.get("title", "")).strip()
     release_date = str(record.get("date", "")).strip()
     release_changes = [

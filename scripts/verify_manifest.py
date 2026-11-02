@@ -133,6 +133,15 @@ def verify_runtime_files(manifest, py_runtime_files, py_modules):
                 fail("runtime bridge contract missing: " + runtime_id)
 
 
+def qr_module_version(text):
+    """返回 th_26 首行 @version 的数字元组；无法解析时返回 (0, 0, 0)。"""
+    first = text.splitlines()[0] if text.splitlines() else ""
+    match = re.match(r"^// @version (\d+)\.(\d+)\.(\d+)\s*$", first)
+    if not match:
+        return (0, 0, 0)
+    return tuple(int(part) for part in match.groups())
+
+
 def verify_beta_qr_thumbnail_fail_open(channel):
     if channel != "beta":
         return
@@ -140,54 +149,16 @@ def verify_beta_qr_thumbnail_fail_open(channel):
     if not path.exists():
         fail("Beta QR module missing")
     text = path.read_text(encoding="utf-8")
-    version = text.splitlines()[0] if text.splitlines() else ""
-    supported = (
-        "// @version 1.0.1",
-        "// @version 1.0.2",
-        "// @version 1.0.3",
-        "// @version 1.0.4",
-        "// @version 1.0.5",
-        "// @version 1.0.6",
-        "// @version 1.0.7",
-        "// @version 1.0.8",
-    "// @version 1.0.8",
-    "// @version 1.0.9",
-    "// @version 1.0.10",
-    "// @version 1.0.11",
-    "// @version 1.0.12",
-    "// @version 1.0.13",
-    "// @version 1.0.14",
-    "// @version 1.0.15",
-    "// @version 1.0.16",
-    "// @version 1.0.17",
-    )
-    if version not in supported:
-        fail("Beta QR fail-open fix requires th_26_qr_runtime.js version 1.0.1..1.0.9")
+    version = qr_module_version(text)
+    if version < (1, 0, 1):
+        fail("Beta QR fail-open fix requires th_26_qr_runtime.js version >= 1.0.1")
     if "root.__toolHubQrDecorated26" in text:
         fail("QR module must not attach dynamic state to Android thumbnail View")
     if 'log26(appObj, "w", "thumbnail decorate fail-open=" + String(eDecorate))' not in text:
         fail("QR thumbnail decorator must fail open to the original screenshot View")
     if "controller.__toolHubQrThumbnailDecorated26 = true" not in text:
         fail("QR thumbnail decoration marker must live on the JS controller")
-    if version in (
-        "// @version 1.0.2",
-        "// @version 1.0.3",
-        "// @version 1.0.4",
-        "// @version 1.0.5",
-        "// @version 1.0.6",
-        "// @version 1.0.7",
-        "// @version 1.0.8",
-    "// @version 1.0.8",
-    "// @version 1.0.9",
-    "// @version 1.0.10",
-    "// @version 1.0.11",
-    "// @version 1.0.12",
-    "// @version 1.0.13",
-    "// @version 1.0.14",
-    "// @version 1.0.15",
-    "// @version 1.0.16",
-    "// @version 1.0.17",
-    ):
+    if version >= (1, 0, 2):
         for marker in (
             "installLock: new java.util.concurrent.locks.ReentrantLock()",
             "function preflightRuntime26(appObj, reason)",
@@ -198,24 +169,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         ):
             if marker not in text:
                 fail("Beta QR startup preflight marker missing: " + marker)
-    if version in (
-        "// @version 1.0.3",
-        "// @version 1.0.4",
-        "// @version 1.0.5",
-        "// @version 1.0.6",
-        "// @version 1.0.7",
-        "// @version 1.0.8",
-    "// @version 1.0.8",
-    "// @version 1.0.9",
-    "// @version 1.0.10",
-    "// @version 1.0.11",
-    "// @version 1.0.12",
-    "// @version 1.0.13",
-    "// @version 1.0.14",
-    "// @version 1.0.15",
-    "// @version 1.0.16",
-    "// @version 1.0.17",
-    ):
+    if version >= (1, 0, 3):
         for marker in (
             'typeof getToolHubRootDir !== "function"',
             'new java.io.File(root, "lib")',
@@ -225,23 +179,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
                 fail("Beta QR channel-lib marker missing: " + marker)
         if "shortx.getShortXDir" in text:
             fail("Beta QR must not bypass ToolHub channel root")
-    if version in (
-        "// @version 1.0.4",
-        "// @version 1.0.5",
-        "// @version 1.0.6",
-        "// @version 1.0.7",
-        "// @version 1.0.8",
-    "// @version 1.0.8",
-    "// @version 1.0.9",
-    "// @version 1.0.10",
-    "// @version 1.0.11",
-    "// @version 1.0.12",
-    "// @version 1.0.13",
-    "// @version 1.0.14",
-    "// @version 1.0.15",
-    "// @version 1.0.16",
-    "// @version 1.0.17",
-    ):
+    if version >= (1, 0, 4):
         for marker in (
             'function sanitizeError26(error)',
             'typeof writeLog === "function"',
@@ -252,7 +190,7 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         ):
             if marker not in text:
                 fail("Beta QR runtime diagnostics marker missing: " + marker)
-    if version in ("// @version 1.0.5", "// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13", "// @version 1.0.14", "// @version 1.0.15", "// @version 1.0.16"):
+    if version >= (1, 0, 5):
         if "context.getCodeCacheDir()" in text:
             fail("Beta QR must not call Context.getCodeCacheDir from system_server")
         for marker in (
@@ -264,12 +202,12 @@ def verify_beta_qr_thumbnail_fail_open(channel):
         ):
             if marker not in text:
                 fail("Beta QR system_server DexClassLoader marker missing: " + marker)
-    if version in ("// @version 1.0.6", "// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13", "// @version 1.0.14", "// @version 1.0.15", "// @version 1.0.16"):
+    if version >= (1, 0, 6):
         if "new dalvik.system.DexClassLoader(" in text:
             fail("Beta QR must not use bare dalvik package in Rhino")
         if "new Packages.dalvik.system.DexClassLoader(" not in text:
             fail("Beta QR must resolve DexClassLoader through Rhino Packages")
-    if version in ("// @version 1.0.7", "// @version 1.0.8", "// @version 1.0.9", "// @version 1.0.10", "// @version 1.0.11", "// @version 1.0.12", "// @version 1.0.13", "// @version 1.0.14", "// @version 1.0.15", "// @version 1.0.16"):
+    if version >= (1, 0, 7):
         if 'hidePickwordWindow("qr_load")' in text:
             fail("Beta QR load-to-pickword must not async hide before show")
         for marker in (

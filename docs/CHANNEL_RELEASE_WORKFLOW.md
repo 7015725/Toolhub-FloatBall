@@ -62,6 +62,21 @@ updates/records/**
 
 ### 第二步：同步 Beta
 
+#### 方式 A：Beta 跟随 Stable（Beta 无独立改动时推荐）
+
+1. 确认 `beta` 没有尚未进入 `main` 的独立改动。
+2. 将 `beta` 快进或重置到最新 `main` 并推送。
+3. `sign-toolhub` 检测到 Manifest 通道为 `stable`、目标通道为 `beta` 且没有待发布记录，自动执行通道重签：
+
+```text
+generate_signed_manifest.py --resign-channel --previous-ref <推送前的 beta>
+```
+
+4. 通道重签沿用 `main` 的 Manifest 版本、发布说明和 `update_history.json`，只把 `channel/branch` 改为 `beta/beta` 并重新签名，然后提交“生成签名产物”到 `beta`。
+5. 推送前的 `beta` 若已是 Beta Manifest 且版本更高，重签会失败，避免 Beta 设备触发防回滚。
+
+#### 方式 B：精确同步共享文件（Beta 有独立改动时）
+
 1. 从最新 `beta` 创建同步分支。
 2. 从最新 `main` 精确复制本次共享文件。
 3. 不复制 Stable 的以下产物：
@@ -100,7 +115,7 @@ channel-parity
 - 更新历史串通道；
 - 签名内容与分支文件不一致。
 
-因此使用“共享文件精确同步 + Beta 独立签名”的方式。
+因此 Beta 有独立改动时使用“共享文件精确同步 + Beta 独立签名”的方式；Beta 无独立改动时使用方式 A，由通道重签保证 Beta 始终持有自己的 Manifest 和签名。
 
 ## 6. 防漂移工作流
 

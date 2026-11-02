@@ -132,7 +132,11 @@ def patch_verifiers():
     if current_qr_text.startswith("// @version 1.0.8\n") or current_qr_text.startswith("// @version 1.0.9\n") or current_qr_text.startswith("// @version 1.0.10\n") or current_qr_text.startswith("// @version 1.0.11\n") or current_qr_text.startswith("// @version 1.0.12\n") or current_qr_text.startswith("// @version 1.0.13\n") or current_qr_text.startswith("// @version 1.0.14\n") or current_qr_text.startswith("// @version 1.0.15\n") or current_qr_text.startswith("// @version 1.0.16\n") or current_qr_text.startswith("// @version 1.0.17\n") or current_qr_text.startswith("// @version 1.0.18\n"):
         for path in (VERIFY_MANIFEST, VERIFY_STORAGE, VERIFY_QR):
             verifier_text = path.read_text(encoding="utf-8")
-            require('"// @version 1.0.8"' in verifier_text, "QR 1.0.8 verifier support missing: " + str(path.name))
+            # verify_manifest.py 使用最低版本比较，不再维护逐个版本列表。
+            supports_qr_108 = '"// @version 1.0.8"' in verifier_text or (
+                path == VERIFY_MANIFEST and "version = qr_module_version(text)" in verifier_text
+            )
+            require(supports_qr_108, "QR 1.0.8 verifier support missing: " + str(path.name))
         qr_verify_text = VERIFY_QR.read_text(encoding="utf-8")
         require("controller.performPickwordQrAction = function(action)" in qr_verify_text, "QR 1.0.8 action-bridge verifier missing")
         require('forbid(QR, "textButton26("' in qr_verify_text, "QR 1.0.8 legacy text-button verifier missing")
