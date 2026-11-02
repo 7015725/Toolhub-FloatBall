@@ -9,8 +9,8 @@
       "version": 20261102145652
     }
   },
-  "branch": "main",
-  "channel": "stable",
+  "branch": "beta",
+  "channel": "beta",
   "entry": {
     "manualUpdate": true,
     "name": "ToolHub.js",
